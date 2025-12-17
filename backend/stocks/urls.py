@@ -14,5 +14,7 @@ urlpatterns = [
     path('history/<str:ticker>/', views.stock_history, name='stock_history'),
     path('details/<str:ticker>/', views.stock_detail, name='stock_detail'),
     path('floorsheet/<str:ticker>/', views.stock_floorsheet, name='stock_floorsheet'),
+    path('dividends/<str:ticker>/', views.stock_dividends, name='stock_dividends'),
+    path('financials/<str:ticker>/', views.stock_financials, name='stock_financials'),
     path('sector-history/<str:sector_name>/', views.sector_history, name='sector_history'),
 ]

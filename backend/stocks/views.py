@@ -182,6 +182,23 @@ def stock_floorsheet(request, ticker):
     serializer = DailyFloorsheetSerializer(data, many=True)
     return Response(serializer.data)
 
+from .models import Dividend, FinancialReport
+from .serializers import DividendSerializer, FinancialReportSerializer
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def stock_dividends(request, ticker):
+    data = Dividend.objects.filter(ticker=ticker).order_by('-fiscal_year')
+    serializer = DividendSerializer(data, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def stock_financials(request, ticker):
+    data = FinancialReport.objects.filter(ticker=ticker).order_by('-fiscal_year', '-quarter')
+    serializer = FinancialReportSerializer(data, many=True)
+    return Response(serializer.data)
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def stock_detail(request, ticker):
