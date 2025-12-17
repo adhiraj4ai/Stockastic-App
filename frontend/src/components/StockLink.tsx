@@ -1,0 +1,19 @@
+import Link from 'next/link';
+
+interface StockLinkProps {
+    ticker: string;
+    children?: React.ReactNode;
+    className?: string;
+}
+
+export default function StockLink({ ticker, children, className }: StockLinkProps) {
+    return (
+        <Link
+            href={`/stock/${ticker}`}
+            className={`hover:text-blue-600 hover:underline cursor-pointer ${className || ''}`}
+            onClick={(e) => e.stopPropagation()} // Prevent row click events if nested
+        >
+            {children || ticker}
+        </Link>
+    );
+}
