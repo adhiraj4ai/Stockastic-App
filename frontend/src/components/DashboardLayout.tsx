@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb } from 'lucide-react';
 
 const navItems = [
     { name: 'Dashboard', href: '/home', icon: LayoutDashboard },
     { name: 'Stocks', href: '/stock/NABIL', icon: TrendingUp },
     { name: 'Portfolio', href: '/portfolio', icon: Wallet },
     { name: 'Floorsheet', href: '/floorsheet', icon: FileText },
+    { name: 'Strategies', href: '/strategies', icon: Lightbulb },
 ];
 
 const stocks = [
@@ -27,8 +28,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const router = useRouter();
 
     const handleLogout = () => {
+        // Clear LocalStorage
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
+
+        // Clear Cookies (set expiration to past)
+        document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+
         router.push('/login');
     };
 

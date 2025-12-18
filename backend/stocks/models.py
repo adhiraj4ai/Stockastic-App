@@ -158,3 +158,23 @@ class FinancialReport(models.Model):
 
     def __str__(self):
         return f"{self.ticker} - {self.fiscal_year} Q{self.quarter}"
+
+class Strategy(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+    code = models.TextField(blank=True, default="")
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_public = models.BooleanField(default=False)
+    
+    # Performance Metrics (Snapshots)
+    pnl = models.DecimalField(max_digits=12, decimal_places=2, default=0.00) # Percentage or Absolute? User showed $ and % but let's store value and maybe % separate or just value. User text: "$2239.07 (22.39%)". Let's store both or just one string? Better structured.
+    # Let's add pnl_amount and pnl_percent
+    pnl_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    pnl_percent = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
+    max_drawdown = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
+    sharpe_ratio = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
+    win_rate = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
+
+    def __str__(self):
+        return self.name

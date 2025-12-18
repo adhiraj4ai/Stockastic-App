@@ -84,9 +84,24 @@ export default function DashboardPage() {
                     dailyPLPositive: totalDayPL >= 0
                 });
 
-            } catch (err) {
+            } catch (err: any) {
                 console.error('Failed to fetch dashboard data', err);
-                setError('Failed to load market data. Please ensure the backend server is running.');
+                if (status === 401) {
+                    setError('Session expired. Redirecting to login...');
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('refresh_token');
+
+                    // Clear Cookies (set expiration to past)
+                    document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+                    document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    const msg = err.response?.data?.detail || err.message;
+                    setError(`Failed to load data: ${msg}`);
+                }
             } finally {
                 setLoading(false);
             }

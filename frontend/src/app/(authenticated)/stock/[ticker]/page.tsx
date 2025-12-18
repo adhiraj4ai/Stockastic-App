@@ -328,11 +328,11 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
 
                 <Tabs defaultValue="overview" className="w-full">
                     <TabsList className="grid w-full grid-cols-5 mb-4">
-                        <TabsTrigger value="overview">Overview</TabsTrigger>
-                        <TabsTrigger value="indicators">Indicators</TabsTrigger>
-                        <TabsTrigger value="floorsheet">Accumulation/Distribution</TabsTrigger>
-                        <TabsTrigger value="dividends">Dividends</TabsTrigger>
-                        <TabsTrigger value="financials">Financials</TabsTrigger>
+                        <TabsTrigger value="overview" className="hover:bg-gray-100 hover:text-gray-900 transition-colors">Overview</TabsTrigger>
+                        <TabsTrigger value="indicators" className="hover:bg-gray-100 hover:text-gray-900 transition-colors">Indicators</TabsTrigger>
+                        <TabsTrigger value="floorsheet" className="hover:bg-gray-100 hover:text-gray-900 transition-colors">Accumulation/Distribution</TabsTrigger>
+                        <TabsTrigger value="dividends" className="hover:bg-gray-100 hover:text-gray-900 transition-colors">Dividends</TabsTrigger>
+                        <TabsTrigger value="financials" className="hover:bg-gray-100 hover:text-gray-900 transition-colors">Financials</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="overview" className="space-y-6">
@@ -386,176 +386,6 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                             </CardContent>
                         </Card>
 
-                        <TabsContent value="overview" className="space-y-6">
-                            {/* Overview Content: Charts & Broker Accumulation */}
-
-                            {/* Technical Chart - Moved to top of overview for better visibility? Or keep as is. Keeping structure similar but removing indicators. */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-sm font-medium text-gray-500 flex items-center gap-2">
-                                        <Activity className="h-4 w-4" /> Technical Chart
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <ReactECharts option={getChartOption()} style={{ height: '500px' }} />
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-
-                        <TabsContent value="indicators" className="space-y-6">
-                            {/* Indicators Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Fundamental Indicators */}
-                                {data.fundamental?.fundamental_indicators && data.fundamental.fundamental_indicators.length > 0 && (
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle className="text-lg flex items-center gap-2">
-                                                <Activity className="h-4 w-4" /> Fundamental Indicators
-                                            </CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="rounded-md border overflow-x-auto">
-                                                <table className="w-full text-sm text-left">
-                                                    <thead className="bg-gray-50 text-gray-700 font-medium border-b">
-                                                        <tr>
-                                                            <th className="px-4 py-3">Indicator</th>
-                                                            <th className="px-4 py-3 bg-blue-50/50">{data.fundamental.ticker}</th>
-                                                            <th className="px-4 py-3">Sector High</th>
-                                                            <th className="px-4 py-3">Sector Low</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y">
-                                                        {data.fundamental.fundamental_indicators.map((item, i) => (
-                                                            <tr key={i} className="hover:bg-gray-50">
-                                                                <td className="px-4 py-3 font-medium text-gray-900">{item.name}</td>
-                                                                <td className="px-4 py-3 font-bold bg-blue-50/30 text-blue-700">{item.value}</td>
-                                                                <td className="px-4 py-3">
-                                                                    <div className="flex flex-col">
-                                                                        <span className="font-semibold">{item.sector_high}</span>
-                                                                        <StockLink ticker={item.sector_high_ticker} className="text-xs text-gray-500">
-                                                                            {item.sector_high_ticker}
-                                                                        </StockLink>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="px-4 py-3">
-                                                                    <div className="flex flex-col">
-                                                                        <span className="font-semibold">{item.sector_low}</span>
-                                                                        <StockLink ticker={item.sector_low_ticker} className="text-xs text-gray-500">
-                                                                            {item.sector_low_ticker}
-                                                                        </StockLink>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                )}
-
-                                {/* Technical Indicators */}
-                                {data.fundamental?.technical_indicators && data.fundamental.technical_indicators.length > 0 && (
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle className="text-lg flex items-center gap-2">
-                                                <BarChart2 className="h-4 w-4" /> Technical Indicators
-                                            </CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="rounded-md border overflow-x-auto">
-                                                <table className="w-full text-sm text-left">
-                                                    <thead className="bg-gray-50 text-gray-700 font-medium border-b">
-                                                        <tr>
-                                                            <th className="px-4 py-3">Indicator</th>
-                                                            <th className="px-4 py-3 bg-blue-50/50">{data.fundamental.ticker}</th>
-                                                            <th className="px-4 py-3">Sector High</th>
-                                                            <th className="px-4 py-3">Sector Low</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y">
-                                                        {data.fundamental.technical_indicators.map((item, i) => (
-                                                            <tr key={i} className="hover:bg-gray-50">
-                                                                <td className="px-4 py-3 font-medium text-gray-900">{item.name}</td>
-                                                                <td className="px-4 py-3 font-bold bg-blue-50/30 text-blue-700">{item.value}</td>
-                                                                <td className="px-4 py-3">
-                                                                    <div className="flex flex-col">
-                                                                        <span className="font-semibold">{item.sector_high}</span>
-                                                                        <StockLink ticker={item.sector_high_ticker} className="text-xs text-gray-500">
-                                                                            {item.sector_high_ticker}
-                                                                        </StockLink>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="px-4 py-3">
-                                                                    <div className="flex flex-col">
-                                                                        <span className="font-semibold">{item.sector_low}</span>
-                                                                        <StockLink ticker={item.sector_low_ticker} className="text-xs text-gray-500">
-                                                                            {item.sector_low_ticker}
-                                                                        </StockLink>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                )}
-                            </div>
-
-                            {/* Broker Accumulation - Moved to Floorsheet/Accumulation Tab */}
-                        </TabsContent>
-
-                        <TabsContent value="floorsheet" className="space-y-6">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-lg flex items-center gap-2">
-                                        <Activity className="h-4 w-4" /> Accumulation / Distribution
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <Tabs defaultValue="1D" className="w-full">
-                                        <TabsList className="mb-4">
-                                            {['2Y', '1Y', '6M', '3M', '1W', '1D'].map((range) => (
-                                                <TabsTrigger key={range} value={range}>{range}</TabsTrigger>
-                                            ))}
-                                        </TabsList>
-                                        {['2Y', '1Y', '6M', '3M', '1W', '1D'].map((range) => (
-                                            <TabsContent key={range} value={range}>
-                                                <div className="rounded-md border">
-                                                    <table className="w-full text-sm text-left">
-                                                        <thead className="bg-gray-50 text-gray-700 font-medium border-b">
-                                                            <tr>
-                                                                <th className="px-4 py-3">Broker</th>
-                                                                <th className="px-4 py-3 text-right">Quantity</th>
-                                                                <th className="px-4 py-3">Type</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y">
-                                                            {data.fundamental?.broker_accumulation?.[range]?.map((item, idx) => (
-                                                                <tr key={idx} className="hover:bg-gray-50">
-                                                                    <td className={`px-4 py-3 font-semibold ${item.type === 'BUY' ? 'text-blue-600' : 'text-red-600'}`}>
-                                                                        Broker No. {item.broker}
-                                                                    </td>
-                                                                    <td className="px-4 py-3 text-right">{item.qty.toLocaleString()}</td>
-                                                                    <td className="px-4 py-3">
-                                                                        <span className={`px-2 py-1 rounded text-xs font-bold ${item.type === 'BUY' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
-                                                                            {item.type}
-                                                                        </span>
-                                                                    </td>
-                                                                </tr>
-                                                            )) || <tr><td colSpan={3} className="px-4 py-3 text-center text-gray-500">No data available</td></tr>}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </TabsContent>
-                                        ))}
-                                    </Tabs>
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-
                         {/* Technical Chart */}
                         <Card>
                             <CardHeader>
@@ -568,6 +398,201 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                             </CardContent>
                         </Card>
                     </TabsContent>
+
+                    <TabsContent value="indicators" className="space-y-6">
+                        {/* Indicators Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Fundamental Indicators */}
+                            {data.fundamental?.fundamental_indicators && data.fundamental.fundamental_indicators.length > 0 && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <Activity className="h-4 w-4" /> Fundamental Indicators
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="rounded-md border overflow-x-auto">
+                                            <table className="w-full text-sm text-left">
+                                                <thead className="bg-gray-50 text-gray-700 font-medium border-b">
+                                                    <tr>
+                                                        <th className="px-4 py-3">Indicator</th>
+                                                        <th className="px-4 py-3 bg-blue-50/50">{data.fundamental.ticker}</th>
+                                                        <th className="px-4 py-3">Sector High</th>
+                                                        <th className="px-4 py-3">Sector Low</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y">
+                                                    {data.fundamental.fundamental_indicators.map((item, i) => (
+                                                        <tr key={i} className="hover:bg-gray-50">
+                                                            <td className="px-4 py-3 font-medium text-gray-900">{item.name}</td>
+                                                            <td className="px-4 py-3 font-bold bg-blue-50/30 text-blue-700">{item.value}</td>
+                                                            <td className="px-4 py-3">
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-semibold">{item.sector_high}</span>
+                                                                    <StockLink ticker={item.sector_high_ticker} className="text-xs text-gray-500">
+                                                                        {item.sector_high_ticker}
+                                                                    </StockLink>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-semibold">{item.sector_low}</span>
+                                                                    <StockLink ticker={item.sector_low_ticker} className="text-xs text-gray-500">
+                                                                        {item.sector_low_ticker}
+                                                                    </StockLink>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                            {/* Technical Indicators */}
+                            {data.fundamental?.technical_indicators && data.fundamental.technical_indicators.length > 0 && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-lg flex items-center gap-2">
+                                            <BarChart2 className="h-4 w-4" /> Technical Indicators
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="rounded-md border overflow-x-auto">
+                                            <table className="w-full text-sm text-left">
+                                                <thead className="bg-gray-50 text-gray-700 font-medium border-b">
+                                                    <tr>
+                                                        <th className="px-4 py-3">Indicator</th>
+                                                        <th className="px-4 py-3 bg-blue-50/50">{data.fundamental.ticker}</th>
+                                                        <th className="px-4 py-3">Sector High</th>
+                                                        <th className="px-4 py-3">Sector Low</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y">
+                                                    {data.fundamental.technical_indicators.map((item, i) => (
+                                                        <tr key={i} className="hover:bg-gray-50">
+                                                            <td className="px-4 py-3 font-medium text-gray-900">{item.name}</td>
+                                                            <td className="px-4 py-3 font-bold bg-blue-50/30 text-blue-700">{item.value}</td>
+                                                            <td className="px-4 py-3">
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-semibold">{item.sector_high}</span>
+                                                                    <StockLink ticker={item.sector_high_ticker} className="text-xs text-gray-500">
+                                                                        {item.sector_high_ticker}
+                                                                    </StockLink>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-semibold">{item.sector_low}</span>
+                                                                    <StockLink ticker={item.sector_low_ticker} className="text-xs text-gray-500">
+                                                                        {item.sector_low_ticker}
+                                                                    </StockLink>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
+
+                        {/* Broker Accumulation - Moved to Floorsheet/Accumulation Tab */}
+                    </TabsContent>
+
+                    <TabsContent value="floorsheet" className="space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <Activity className="h-4 w-4" /> Accumulation / Distribution
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <Tabs defaultValue="1D" className="w-full">
+                                    <TabsList className="mb-4">
+                                        {['2Y', '1Y', '6M', '3M', '1W', '1D'].map((range) => (
+                                            <TabsTrigger
+                                                key={range}
+                                                value={range}
+                                                className="hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                                            >
+                                                {range}
+                                            </TabsTrigger>
+                                        ))}
+                                    </TabsList>
+                                    {['2Y', '1Y', '6M', '3M', '1W', '1D'].map((range) => {
+                                        const rangeData = data.fundamental?.broker_accumulation?.[range] || [];
+                                        const buyers = rangeData.filter(d => d.type === 'BUY').sort((a, b) => b.qty - a.qty);
+                                        const sellers = rangeData.filter(d => d.type === 'SELL').sort((a, b) => b.qty - a.qty);
+
+                                        return (
+                                            <TabsContent key={range} value={range}>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    {/* Accumulation (Buyers) */}
+                                                    <div className="space-y-3">
+                                                        <h3 className="font-semibold text-center text-blue-700 bg-blue-50 py-2 rounded">Accumulation (Top Buyers)</h3>
+                                                        <div className="rounded-md border">
+                                                            <table className="w-full text-sm text-left">
+                                                                <thead className="bg-gray-50 text-gray-700 font-medium border-b">
+                                                                    <tr>
+                                                                        <th className="px-4 py-3">Broker</th>
+                                                                        <th className="px-4 py-3 text-right">Quantity</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y">
+                                                                    {buyers.map((item, idx) => (
+                                                                        <tr key={idx} className="hover:bg-gray-50">
+                                                                            <td className="px-4 py-3 font-semibold text-blue-600">
+                                                                                Broker No. {item.broker}
+                                                                            </td>
+                                                                            <td className="px-4 py-3 text-right">{item.qty.toLocaleString()}</td>
+                                                                        </tr>
+                                                                    ))}
+                                                                    {buyers.length === 0 && <tr><td colSpan={2} className="px-4 py-3 text-center text-gray-500">No buyers found</td></tr>}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Distribution (Sellers) */}
+                                                    <div className="space-y-3">
+                                                        <h3 className="font-semibold text-center text-red-700 bg-red-50 py-2 rounded">Distribution (Top Sellers)</h3>
+                                                        <div className="rounded-md border">
+                                                            <table className="w-full text-sm text-left">
+                                                                <thead className="bg-gray-50 text-gray-700 font-medium border-b">
+                                                                    <tr>
+                                                                        <th className="px-4 py-3">Broker</th>
+                                                                        <th className="px-4 py-3 text-right">Quantity</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y">
+                                                                    {sellers.map((item, idx) => (
+                                                                        <tr key={idx} className="hover:bg-gray-50">
+                                                                            <td className="px-4 py-3 font-semibold text-red-600">
+                                                                                Broker No. {item.broker}
+                                                                            </td>
+                                                                            <td className="px-4 py-3 text-right">{item.qty.toLocaleString()}</td>
+                                                                        </tr>
+                                                                    ))}
+                                                                    {sellers.length === 0 && <tr><td colSpan={2} className="px-4 py-3 text-center text-gray-500">No sellers found</td></tr>}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </TabsContent>
+                                        );
+                                    })}
+                                </Tabs>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+
 
                     <TabsContent value="dividends">
                         <Card>
@@ -660,6 +685,6 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                     accounts={accounts}
                 />
             </div>
-        </DashboardLayout>
+        </DashboardLayout >
     );
 }

@@ -1,17 +1,24 @@
 
+
 from rest_framework import status, viewsets
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, TransactionType, StockFundamental, PortfolioAccount
+from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, TransactionType, StockFundamental, PortfolioAccount, Strategy
 from .serializers import (
     DailyStockPriceSerializer, DailyFloorsheetSerializer, PortfolioItemSerializer, 
-    PortfolioTransactionSerializer, StockFundamentalSerializer
+    PortfolioTransactionSerializer, StockFundamentalSerializer, StrategySerializer
 )
 from . import serializers # For PortfolioAccountSerializer which was added differently in replacement
 from .utils import calculate_broker_commission, calculate_sebon_fee, calculate_dp_charge, calculate_cgt
 from decimal import Decimal
 from django.db.models import Q
+import ast
+import tempfile
+import os
+import subprocess
+import json
+# rest_framework imports are already at the top
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -402,3 +409,201 @@ class PortfolioTransactionViewSet(viewsets.ModelViewSet):
             cgt=cgt,
             receivable_amount=receivable_amount
         )
+
+class StrategyViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = StrategySerializer
+
+    def get_queryset(self):
+        # Return user's own strategies and public ones
+        return Strategy.objects.filter(Q(user=self.request.user) | Q(is_public=True))
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['post'])
+    def validate_code(self, request):
+        code = request.data.get('code', '')
+        
+        # 1. Basic Syntax Check (AST)
+        try:
+            ast.parse(code)
+        except SyntaxError as e:
+            return Response({
+                'valid': False,
+                'issues': [{
+                    'line': e.lineno,
+                    'message': f"Syntax Error: {e.msg}",
+                    'type': 'error',
+                    'symbol': 'syntax-error'
+                }]
+            })
+            
+        # 2. Advanced Linting (Pylint)
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as temp:
+            temp.write(code)
+            temp_path = temp.name
+
+        try:
+            # Run pylint with JSON output
+            # Use sys.executable to ensure we use the same python environment
+            import sys
+            result = subprocess.run(
+                [sys.executable, '-m', 'pylint', '--output-format=json', '--disable=C0114,C0115,C0116,C0103', temp_path],
+                capture_output=True,
+                text=True
+            )
+            
+            issues = []
+            if result.stdout:
+                try:
+                    pylint_issues = json.loads(result.stdout)
+                    for issue in pylint_issues:
+                        issues.append({
+                            'line': issue['line'],
+                            'message': issue['message'],
+                            'type': issue['type'], # convention, refactor, warning, error
+                            'symbol': issue['symbol-id'] if 'symbol-id' in issue else issue['symbol']
+                        })
+                except json.JSONDecodeError:
+                    # If stdout isn't JSON, maybe it crashed or printed something else
+                    issues.append({
+                        'line': 0, 
+                        'message': f"Linter Parse Error: {result.stdout[:100]}", 
+                        'type': 'error', 
+                        'symbol': 'pylint-error'
+                    })
+            
+            if result.stderr:
+                 issues.append({
+                    'line': 0, 
+                    'message': f"Linter Stderr: {result.stderr[:100]}", 
+                    'type': 'error', 
+                    'symbol': 'pylint-stderr'
+                })
+
+            return Response({
+                'valid': len(issues) == 0,
+                'issues': issues,
+                'message': 'Linting completed'
+            })
+
+        except Exception as e:
+            return Response({
+                'valid': False, 
+                'message': str(e), 
+                'issues': [{
+                    'line': 0,
+                    'message': f"Internal Error: {str(e)}",
+                    'type': 'error',
+                    'symbol': 'internal-error'
+                }]
+            })
+    @action(detail=False, methods=['post'])
+    def backtest(self, request):
+        code = request.data.get('code', '')
+        symbol = request.data.get('symbol', 'NABIL')
+        start_date = request.data.get('start_date')
+        end_date = request.data.get('end_date')
+
+        # 1. Fetch Data
+        queryset = DailyStockPrice.objects.filter(
+            ticker=symbol, 
+            date__range=[start_date, end_date]
+        ).order_by('date')
+        
+        # Optimize: Values list for speed
+        ticks = list(queryset.values('date', 'open', 'high', 'low', 'close', 'volume'))
+        if not ticks:
+             return Response({'error': 'No data found for symbol/dates'}, status=404)
+
+        # 2. Prepare Execution Environment
+        local_scope = {}
+        try:
+            exec(code, {}, local_scope)
+            if 'next_move' not in local_scope:
+                 return Response({'error': 'Function "next_move" not found in code'}, status=400)
+            next_move = local_scope['next_move']
+        except Exception as e:
+             return Response({'error': f"Code Compilation Error: {str(e)}"}, status=400)
+
+        # 3. Simulate Backtest
+        capital = 100000.0
+        cash = capital
+        holdings = 0
+        trades = []
+        equity_curve = []
+        
+        # Simple Logic: 100% equity on BUY, 0% on SELL
+        for i, tick in enumerate(ticks):
+            # Pre-calculate indicators (simple MA for demo)
+            # In real system, user code does this or we pass a rich object
+            # Pass previous ticks context? For MVP, just current tick + history list?
+            # Let's pass the 'tick' dict enriched with basic history if possible, or just raw tick
+            
+            # Simple MA_50 calculation for the demo code in Editor
+            ma_50 = 0
+            if i >= 49:
+                 ma_50 = sum([t['close'] for t in ticks[i-49:i+1]]) / 50
+            tick['ma_50'] = ma_50
+
+            try:
+                signal = next_move(tick) # Expect "BUY", "SELL", "HOLD"
+            except Exception as e:
+                return Response({'error': f"Runtime Error at {tick['date']}: {str(e)}"}, status=400)
+
+            # Transaction Logic
+            status = 'HOLD'
+            if signal == "BUY" and cash > 0 and holdings == 0:
+                quantity = int(cash / tick['close'])
+                if quantity > 0:
+                    cost = quantity * tick['close']
+                    cash -= cost
+                    holdings = quantity
+                    trades.append({
+                        'date': tick['date'], 'type': 'BUY', 'price': tick['close'], 'qty': quantity, 'balance': cash
+                    })
+                    status = 'BOUGHT'
+            
+            elif signal == "SELL" and holdings > 0:
+                revenue = holdings * tick['close']
+                cash += revenue
+                
+                # Calculate Trade PnL
+                last_buy = next((t for t in reversed(trades) if t['type'] == 'BUY'), None)
+                pnl = 0
+                if last_buy:
+                    pnl = revenue - (last_buy['qty'] * last_buy['price'])
+
+                trades.append({
+                    'date': tick['date'], 'type': 'SELL', 'price': tick['close'], 'qty': holdings, 'balance': cash, 'pnl': pnl
+                })
+                holdings = 0
+                status = 'SOLD'
+
+            # Update Equity
+            current_equity = cash + (holdings * tick['close'])
+            equity_curve.append({'date': tick['date'], 'equity': current_equity})
+
+        # 4. Final Stats
+        final_equity = cash + (holdings * ticks[-1]['close'])
+        total_pnl = final_equity - capital
+        pnl_percent = (total_pnl / capital) * 100
+        
+        winning_trades = [t for t in trades if t.get('pnl', 0) > 0]
+        total_sell_trades = len([t for t in trades if t['type'] == 'SELL'])
+        win_rate = (len(winning_trades) / total_sell_trades * 100) if total_sell_trades > 0 else 0
+
+        return Response({
+            'trades': trades,
+            'stats': {
+                'total_pnl': total_pnl,
+                'pnl_percent': pnl_percent,
+                'win_rate': win_rate,
+                'final_equity': final_equity,
+                'total_trades': len(trades)
+            },
+            'equity_curve': equity_curve # Optional: for graphing later
+        })
+
+

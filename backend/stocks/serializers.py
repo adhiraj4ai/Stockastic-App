@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, StockFundamental, PortfolioAccount, Dividend, FinancialReport
+from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, StockFundamental, PortfolioAccount, Dividend, FinancialReport, Strategy
 
 class DailyStockPriceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -54,18 +54,12 @@ class PortfolioTransactionSerializer(serializers.ModelSerializer):
         model = PortfolioTransaction
         fields = '__all__'
 
-class DividendSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Dividend
-        fields = '__all__'
 
-class FinancialReportSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = FinancialReport
-        fields = '__all__'
-        read_only_fields = ['id', 'user', 'commission', 'sebon_fee', 'dp_charge', 'cgt', 'receivable_amount', 'amount', 'created_at']
 
-class StockFundamentalSerializer(serializers.ModelSerializer):
+
+
+class StrategySerializer(serializers.ModelSerializer):
     class Meta:
-        model = StockFundamental
-        fields = '__all__'
+        model = Strategy
+        fields = ['id', 'name', 'description', 'code', 'created_at', 'is_public', 'pnl_amount', 'pnl_percent', 'max_drawdown', 'sharpe_ratio', 'win_rate']
+        read_only_fields = ['id', 'created_at']

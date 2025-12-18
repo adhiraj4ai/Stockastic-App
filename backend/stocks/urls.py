@@ -6,6 +6,7 @@ router = DefaultRouter()
 router.register(r'portfolio', views.PortfolioViewSet, basename='portfolio')
 router.register(r'accounts', views.PortfolioAccountViewSet, basename='portfolio-accounts')
 router.register(r'transactions', views.PortfolioTransactionViewSet, basename='portfolio-transactions')
+router.register(r'strategies', views.StrategyViewSet, basename='strategies')
 
 urlpatterns = [
     path('', include(router.urls)),

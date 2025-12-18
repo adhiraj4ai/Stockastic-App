@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from stocks.models import DailyStockPrice, DailyFloorsheet
+from stocks.models import DailyStockPrice, DailyFloorsheet, StockFundamental
 from django.utils import timezone
 import random
 from datetime import timedelta
@@ -11,26 +11,155 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         self.stdout.write('Seeding data...')
         
-        tickers = ['AAPL', 'GOOGL', 'TSLA', 'AMZN', 'MSFT', 'NFLX', 'NVDA', 'META']
-        brokers = ['Broker 1', 'Broker 2', 'Broker 3', 'Broker 4', 'Broker 5']
+        tickers = ['NABIL', 'SCB', 'NICA', 'HIDCL', 'MLBSL']
+        brokers = [str(i) for i in range(1, 60)] # Broker 1 to 59
         
         end_date = timezone.now().date()
-        start_date = end_date - timedelta(days=365)
+        start_date = end_date - timedelta(days=365*2) # 2 years data
         
-        # Seed Stock Prices
-        daily_prices = []
+        # 1. Seed Stock Fundamentals with Detailed Indicators & Accumulation
         for ticker in tickers:
+            self.stdout.write(f'Seeding fundamentals for {ticker}...')
+            
+            if ticker == 'NABIL':
+                # Authentic Data from User
+                fund_indicators = [
+                    {"name": "PE TTM", "value": "19.81", "sector_high": "278.19", "sector_high_ticker": "NICA", "sector_low": "8.77", "sector_low_ticker": "PRVU"},
+                    {"name": "PBV", "value": "2.08", "sector_high": "2.82", "sector_high_ticker": "SCB", "sector_low": "0.92", "sector_low_ticker": "NBL"},
+                    {"name": "ROE TTM", "value": "10.96 %", "sector_high": "16.22 %", "sector_high_ticker": "EBL", "sector_low": "0.58 %", "sector_low_ticker": "NICA"},
+                    {"name": "PS TTM", "value": "3.43", "sector_high": "7.56", "sector_high_ticker": "SCB", "sector_low": "1.51", "sector_low_ticker": "ADBL"},
+                    {"name": "PEG (3-5) yrs", "value": "1.55", "sector_high": "9.24", "sector_high_ticker": "SBI", "sector_low": "0.31", "sector_low_ticker": "PRVU"},
+                    {"name": "ROA TTM", "value": "1.10 %", "sector_high": "1.99 %", "sector_high_ticker": "SCB", "sector_low": "0.05 %", "sector_low_ticker": "NICA"},
+                    {"name": "Dividend Yield", "value": "2.50 %", "sector_high": "4.68 %", "sector_high_ticker": "LSL", "sector_low": "1.98 %", "sector_low_ticker": "PCBL"},
+                    {"name": "Payout Ratio", "value": "49.53 %", "sector_high": "88.66 %", "sector_high_ticker": "CZBIL", "sector_low": "24.11 %", "sector_low_ticker": "PCBL"},
+                    {"name": "QOQ Earnings Growth", "value": "-1.40 %", "sector_high": "202.43 %", "sector_high_ticker": "NICA", "sector_low": "11.30 %", "sector_low_ticker": "SBI"},
+                    {"name": "YOY Earnings Growth", "value": "-14.57 %", "sector_high": "22.92 %", "sector_high_ticker": "GBIME", "sector_low": "4.57 %", "sector_low_ticker": "EBL"},
+                    {"name": "Distance From Graham Number", "value": "35.22 %", "sector_high": "348.26 %", "sector_high_ticker": "NICA", "sector_low": "-38.00 %", "sector_low_ticker": "NBL"},
+                    {"name": "Debt to Equity", "value": "9.37", "sector_high": "12.35", "sector_high_ticker": "NICA", "sector_low": "6.23", "sector_low_ticker": "SCB"},
+                ]
+                
+                tech_indicators = [
+                    {"name": "RSI 14", "value": "44.41", "sector_high": "68.08", "sector_high_ticker": "SBL", "sector_low": "40.13", "sector_low_ticker": "PRVU"},
+                    {"name": "MFI 14", "value": "29.88", "sector_high": "81.73", "sector_high_ticker": "SBI", "sector_low": "29.88", "sector_low_ticker": "NABIL"},
+                    {"name": "Price Relative Strength", "value": "65.31 %", "sector_high": "96.33 %", "sector_high_ticker": "SBL", "sector_low": "18.37 %", "sector_low_ticker": "PRVU"},
+                    {"name": "%B", "value": "35 %", "sector_high": "93 %", "sector_high_ticker": "SBI", "sector_low": "25 %", "sector_low_ticker": "CZBIL"},
+                    {"name": "Stochastic 14", "value": "33.03", "sector_high": "85.45", "sector_high_ticker": "SBL", "sector_low": "14.16", "sector_low_ticker": "NIMB"},
+                    {"name": "MACD", "value": "Bearish", "sector_high": "-", "sector_high_ticker": "-", "sector_low": "-", "sector_low_ticker": "-"},
+                    {"name": "SMA 10", "value": "Bearish", "sector_high": "-", "sector_high_ticker": "-", "sector_low": "-", "sector_low_ticker": "-"}, # Inferred from context or placeholder
+                    {"name": "SMA 20", "value": "Bearish", "sector_high": "-", "sector_high_ticker": "-", "sector_low": "-", "sector_low_ticker": "-"},
+                    {"name": "SMA 50", "value": "Bearish", "sector_high": "-", "sector_high_ticker": "-", "sector_low": "-", "sector_low_ticker": "-"},
+                    {"name": "SMA 200", "value": "Bullish", "sector_high": "-", "sector_high_ticker": "-", "sector_low": "-", "sector_low_ticker": "-"},
+                    {"name": "Volume Trend", "value": "High", "sector_high": "-", "sector_high_ticker": "-", "sector_low": "-", "sector_low_ticker": "-"},
+                    {"name": "3M Price Trend", "value": "Bearish", "sector_high": "-", "sector_high_ticker": "-", "sector_low": "-", "sector_low_ticker": "-"},
+                ]
+                
+                market_cap = Decimal("135257928827.83")
+                free_float_mcap = Decimal("54103171531.13")
+                shares_outstanding = Decimal("270569972")
+                public_shares = Decimal("108227989")
+                listed_date = timezone.datetime(1985, 11, 24).date()
+                sector = "Commercial Banks"
+                
+            else:
+                # Random Data for Others
+                fund_indicators = [
+                    {"name": "EPS", "value": str(random.randint(10, 50)), "sector_high": "60", "sector_high_ticker": "SCB", "sector_low": "5", "sector_low_ticker": "NABIL"},
+                    {"name": "P/E Ratio", "value": str(random.randint(15, 40)), "sector_high": "50", "sector_high_ticker": "NICA", "sector_low": "10", "sector_low_ticker": "SCB"},
+                    {"name": "Book Value", "value": str(random.randint(100, 300)), "sector_high": "350", "sector_high_ticker": "NABIL", "sector_low": "80", "sector_low_ticker": "HIDCL"},
+                    {"name": "PBV", "value": str(round(random.uniform(1.5, 5.0), 2)), "sector_high": "6.0", "sector_high_ticker": "NICA", "sector_low": "1.1", "sector_low_ticker": "MLBSL"},
+                    {"name": "ROE", "value": str(round(random.uniform(10, 25), 2)) + "%", "sector_high": "30%", "sector_high_ticker": "NABIL", "sector_low": "5%", "sector_low_ticker": "HIDCL"},
+                    {"name": "Dividend Yield", "value": str(round(random.uniform(2, 8), 2)) + "%", "sector_high": "10%", "sector_high_ticker": "NABIL", "sector_low": "0%", "sector_low_ticker": "NICA"},
+                ]
+                
+                tech_indicators = [
+                    {"name": "RSI (14)", "value": str(random.randint(30, 70)), "sector_high": "85", "sector_high_ticker": "NICA", "sector_low": "20", "sector_low_ticker": "SCB"},
+                    {"name": "MACD", "value": "Bullish", "sector_high": "-", "sector_high_ticker": "-", "sector_low": "-", "sector_low_ticker": "-"},
+                    {"name": "Bollinger Bands", "value": "Middle", "sector_high": "-", "sector_high_ticker": "-", "sector_low": "-", "sector_low_ticker": "-"},
+                    {"name": "Moving Avg (20)", "value": str(random.randint(400, 900)), "sector_high": "-", "sector_high_ticker": "-", "sector_low": "-", "sector_low_ticker": "-"},
+                    {"name": "Moving Avg (200)", "value": str(random.randint(400, 900)), "sector_high": "-", "sector_high_ticker": "-", "sector_low": "-", "sector_low_ticker": "-"},
+                ]
+                market_cap = Decimal(random.randint(5000000000, 100000000000))
+                free_float_mcap = Decimal(random.randint(2000000000, 50000000000))
+                shares_outstanding = Decimal(random.randint(10000000, 100000000))
+                public_shares = Decimal(random.randint(5000000, 50000000))
+                listed_date = start_date + timedelta(days=random.randint(0, 365))
+                sector = "Commercial Banks" if ticker in ['NABIL', 'SCB', 'NICA'] else "Others"
+                
+            
+            # --- Broker Accumulation Data ---
+            accumulation_data = {}
+            ranges = ['2Y', '1Y', '6M', '3M', '1W', '1D']
+            
+            for time_range in ranges:
+                range_records = []
+                # Generate Buyers
+                for _ in range(random.randint(3, 8)):
+                    range_records.append({
+                        "broker": random.choice(brokers),
+                        "qty": random.randint(1000, 50000),
+                        "type": "BUY"
+                    })
+                # Generate Sellers
+                for _ in range(random.randint(3, 8)):
+                    range_records.append({
+                        "broker": random.choice(brokers),
+                        "qty": random.randint(1000, 50000),
+                        "type": "SELL"
+                    })
+                
+                # Sort by quantity desc
+                range_records.sort(key=lambda x: x['qty'], reverse=True)
+                accumulation_data[time_range] = range_records
+
+            # Create/Update StockFundamental
+            StockFundamental.objects.update_or_create(
+                ticker=ticker,
+                defaults={
+                    "company_name": f"{ticker} Bank Ltd." if ticker in ['NABIL', 'SCB', 'NICA'] else f"{ticker} Company",
+                    "sector": sector,
+                    "market_cap": market_cap,
+                    "paid_up_capital": Decimal(random.randint(1000000000, 20000000000)),
+                    "shares_outstanding": shares_outstanding,
+                    "public_shares": public_shares,
+                    "free_float_market_cap": free_float_mcap,
+                    "listed_date": listed_date,
+                    "fifty_two_week_high": Decimal(random.randint(800, 1500)),
+                    "fifty_two_week_low": Decimal(random.randint(200, 700)),
+                    "eps": Decimal(fund_indicators[0]["value"].replace('%', '').strip()) if ticker != 'NABIL' else Decimal("22.3"), # Fallback or parse
+                    "pe_ratio": Decimal(fund_indicators[1]["value"]) if ticker != 'NABIL' else Decimal("19.81"),
+                    "book_value": Decimal(fund_indicators[2]["value"].replace('%', '').strip()) if ticker != 'NABIL' else Decimal("240"), # Placeholder
+                    "dividend_yield": Decimal(random.uniform(2, 8)),
+                    "fundamental_indicators": fund_indicators,
+                    "technical_indicators": tech_indicators,
+                    "broker_accumulation": accumulation_data
+                }
+            )
+
+        # 2. Seed Stock Prices (Simplify for speed if needed, but keeping logic)
+        daily_prices = []
+        existing_tickers = set(DailyStockPrice.objects.values_list('ticker', flat=True).distinct())
+        
+        for ticker in tickers:
+            if ticker in existing_tickers:
+                 self.stdout.write(f'Skipping prices for {ticker}, already exists.')
+                 continue 
+
             current_price = Decimal(random.uniform(100, 1000))
             current_date = start_date
             
             while current_date <= end_date:
-                # Random walk
-                change = Decimal(random.uniform(-5, 5))
+                change = Decimal(random.uniform(-10, 10))
                 open_price = current_price + change
-                close_price = open_price + Decimal(random.uniform(-2, 2))
-                high_price = max(open_price, close_price) + Decimal(random.uniform(0, 5))
-                low_price = min(open_price, close_price) - Decimal(random.uniform(0, 5))
-                volume = random.randint(1000, 1000000)
+                close_price = open_price + Decimal(random.uniform(-5, 5))
+                # Avoid negative prices
+                if close_price < 10: close_price = Decimal(10)
+                if open_price < 10: open_price = Decimal(10)
+                
+                high_price = max(open_price, close_price) + Decimal(random.uniform(0, 10))
+                low_price = min(open_price, close_price) - Decimal(random.uniform(0, 10))
+                if low_price < 1: low_price = Decimal(1)
+
+                volume = random.randint(1000, 50000)
                 
                 daily_prices.append(DailyStockPrice(
                     ticker=ticker,
@@ -41,35 +170,9 @@ class Command(BaseCommand):
                     close=close_price,
                     volume=volume
                 ))
-                
                 current_price = close_price
                 current_date += timedelta(days=1)
                 
-        # Bulk create prices (chunks of 1000 to be safe)
         DailyStockPrice.objects.bulk_create(daily_prices, batch_size=1000, ignore_conflicts=True)
-        self.stdout.write(f'Seeded {len(daily_prices)} stock price records.')
 
-        # Seed Floorsheet
-        floorsheets = []
-        for i in range(500):
-            ticker = random.choice(tickers)
-            date = end_date - timedelta(days=random.randint(0, 30))
-            qty = random.randint(10, 1000)
-            rate = Decimal(random.uniform(100, 1000))
-            amount = qty * rate
-            
-            floorsheets.append(DailyFloorsheet(
-                transaction_id=f"TXN-{random.randint(100000, 999999)}",
-                ticker=ticker,
-                buyer_broker=random.choice(brokers),
-                seller_broker=random.choice(brokers),
-                quantity=qty,
-                rate=rate,
-                amount=amount,
-                date=date
-            ))
-            
-        DailyFloorsheet.objects.bulk_create(floorsheets, ignore_conflicts=True)
-        self.stdout.write(f'Seeded {len(floorsheets)} floorsheet records.')
-        
-        self.stdout.write(self.style.SUCCESS('Successfully seeded database'))
+        self.stdout.write(self.style.SUCCESS(f'Successfully seeded comprehensive data for {tickers}'))
