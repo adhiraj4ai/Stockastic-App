@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/lib/api';
 import { useRouter, useParams } from 'next/navigation'; // Changed from 'next/router' for App Router
 import Editor from '@monaco-editor/react';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -43,21 +43,14 @@ export default function EditStrategyPage() {
 
     const fetchStrategy = async () => {
         try {
-            const token = localStorage.getItem('access_token');
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const response = await axios.get(`${apiUrl}/api/stocks/strategies/${strategyId}/`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await api.get(`/api/stocks/strategies/${strategyId}/`);
             setStrategy(response.data);
             if (response.data.code) {
                 setCode(response.data.code);
             }
         } catch (error: any) {
             console.error('Failed to fetch strategy', error);
-            if (error.response?.status === 401) {
-                window.location.href = '/login';
-                return;
-            }
+            // 401 handled by global interceptor
             toast.error('Failed to load strategy');
         } finally {
             setLoading(false);
@@ -67,16 +60,11 @@ export default function EditStrategyPage() {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const token = localStorage.getItem('access_token');
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            await axios.patch(`${apiUrl}/api/stocks/strategies/${strategyId}/`,
-                {
-                    code,
-                    name: strategy?.name,
-                    description: strategy?.description
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            await api.patch(`/api/stocks/strategies/${strategyId}/`, {
+                code,
+                name: strategy?.name,
+                description: strategy?.description
+            });
             toast.success('Strategy saved successfully');
         } catch (error) {
             console.error('Failed to save strategy', error);
@@ -105,12 +93,7 @@ export default function EditStrategyPage() {
         }
 
         try {
-            const token = localStorage.getItem('access_token');
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const response = await axios.post(`${apiUrl}/api/stocks/strategies/validate_code/`,
-                { code },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await api.post('/api/stocks/strategies/validate_code/', { code });
 
             if (response.data.valid) {
                 toast.success('Code looks good!');

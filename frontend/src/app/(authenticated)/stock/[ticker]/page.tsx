@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -86,12 +86,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
     useEffect(() => {
         const fetchAccounts = async () => {
             try {
-                const token = localStorage.getItem('access_token');
-                if (!token) return;
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                const response = await axios.get(`${apiUrl}/api/stocks/accounts/`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const response = await api.get('/api/stocks/accounts/');
                 setAccounts(response.data);
             } catch (err) {
                 console.error('Failed to fetch accounts', err);
@@ -103,37 +98,31 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
                 // Fetch Details
-                const detailRes = await axios.get(`${apiUrl}/api/stocks/details/${ticker}/`);
-                if (!detailRes.data || (!detailRes.data.fundamental && !detailRes.data.price)) {
-                    // If data is empty structure, treat as not found or loading?
-                    // Let's assume valid data structure return.
-                }
+                const detailRes = await api.get(`/api/stocks/details/${ticker}/`);
                 setData(detailRes.data);
 
                 // Fetch History for Chart
                 try {
-                    const historyRes = await axios.get(`${apiUrl}/api/stocks/history/${ticker}/`);
+                    const historyRes = await api.get(`/api/stocks/history/${ticker}/`);
                     setHistory(historyRes.data);
                 } catch (hErr) { console.error("History fetch failed", hErr); }
 
                 // Fetch Floorsheet
                 try {
-                    const floorRes = await axios.get(`${apiUrl}/api/stocks/floorsheet/${ticker}/`);
+                    const floorRes = await api.get(`/api/stocks/floorsheet/${ticker}/`);
                     setFloorsheet(floorRes.data);
                 } catch (fErr) { console.error("Floorsheet fetch failed", fErr); }
 
                 // Fetch Dividends
                 try {
-                    const divRes = await axios.get(`${apiUrl}/api/stocks/dividends/${ticker}/`);
+                    const divRes = await api.get(`/api/stocks/dividends/${ticker}/`);
                     setDividends(divRes.data);
                 } catch (dErr) { console.error("Dividends fetch failed", dErr); }
 
                 // Fetch Financials
                 try {
-                    const finRes = await axios.get(`${apiUrl}/api/stocks/financials/${ticker}/`);
+                    const finRes = await api.get(`/api/stocks/financials/${ticker}/`);
                     setFinancials(finRes.data);
                 } catch (fnErr) { console.error("Financials fetch failed", fnErr); }
 

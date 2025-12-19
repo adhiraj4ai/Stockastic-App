@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import axios from 'axios';
+import api from '@/lib/api';
 import { Loader2, ArrowLeft, TrendingUp, Shield, PieChart, Scale, ArrowRight, Wallet, Network, ShieldAlert, Anchor, LayoutGrid } from 'lucide-react';
 
 interface OptimizationResult {
@@ -108,14 +108,11 @@ export default function OptimizePage() {
         setLoading(true);
         setError(null);
         try {
-            const token = localStorage.getItem('access_token');
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const response = await axios.get(`${apiUrl}/api/stocks/portfolio/optimize/`, {
+            const response = await api.get('/api/stocks/portfolio/optimize/', {
                 params: {
                     account: accountId,
                     method: selectedStrategy
-                },
-                headers: { Authorization: `Bearer ${token}` }
+                }
             });
             setResult(response.data);
         } catch (err: any) {

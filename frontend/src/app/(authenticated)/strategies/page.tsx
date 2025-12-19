@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import api from '@/lib/api';
 import { Plus, Lightbulb, ExternalLink, Play, Edit, Trash2, Info, LayoutGrid, List, Search, MoreVertical, TrendingUp, TrendingDown, Target, Zap, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,6 +73,7 @@ export default function StrategiesPage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
+    const [mounted, setMounted] = useState(false);
 
     // Recommender State
     const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
@@ -89,10 +90,7 @@ export default function StrategiesPage() {
     const fetchStrategies = async () => {
         setLoadingStrategies(true);
         try {
-            const token = localStorage.getItem('access_token');
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const response = await axios.get(`${apiUrl}/api/stocks/strategies/`, {
-                headers: { Authorization: `Bearer ${token}` },
+            const response = await api.get('/api/stocks/strategies/', {
                 params: { _t: Date.now() }
             });
             if (Array.isArray(response.data)) {
@@ -102,11 +100,6 @@ export default function StrategiesPage() {
                 setStrategies([]);
             }
         } catch (error: any) {
-            const status = error.response?.status;
-            if (status === 401 || status === 403) {
-                window.location.href = '/login';
-                return;
-            }
             setStrategiesError(`Failed to load strategies: ${error.message}`);
         } finally {
             setLoadingStrategies(false);
@@ -117,10 +110,7 @@ export default function StrategiesPage() {
         setLoadingRecs(true);
         setRecommendations([]); // Clear previous
         try {
-            const token = localStorage.getItem('access_token');
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const response = await axios.get(`${apiUrl}/api/stocks/companies/recommendations/`, {
-                headers: { Authorization: `Bearer ${token}` },
+            const response = await api.get('/api/stocks/companies/recommendations/', {
                 params: { strategy: recStrategy, sector: recSector }
             });
             setRecommendations(response.data);
@@ -133,6 +123,7 @@ export default function StrategiesPage() {
 
     // Initial Fetch
     useEffect(() => {
+        setMounted(true);
         fetchStrategies();
         fetchRecommendations();
     }, []);
@@ -151,11 +142,7 @@ export default function StrategiesPage() {
             const confirmed = confirm(`Are you sure you want to delete "${name}"?`);
             if (!confirmed) return;
             try {
-                const token = localStorage.getItem('access_token');
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                await axios.delete(`${apiUrl}/api/stocks/strategies/${id}/`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                await api.delete(`/api/stocks/strategies/${id}/`);
                 alert('Strategy deleted successfully');
                 fetchStrategies();
             } catch (err: any) {
@@ -163,6 +150,8 @@ export default function StrategiesPage() {
             }
         }, 150);
     };
+
+    if (!mounted) return null;
 
     return (
         <DashboardLayout>
