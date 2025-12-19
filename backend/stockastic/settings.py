@@ -82,11 +82,20 @@ WSGI_APPLICATION = "stockastic.wsgi.application"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 # Check if running in Docker (DB_HOST set) or locally
+# Check if running in Docker (DB_HOST set) or locally
 if os.environ.get("DB_HOST"):
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
             "NAME": os.environ.get("POSTGRES_DB", "stockastic"),
+            "USER": os.environ.get("POSTGRES_USER", "postgres"),
+            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
+            "HOST": os.environ.get("DB_HOST", "db"),
+            "PORT": os.environ.get("DB_PORT", "5432"),
+        },
+        "stock_market": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "stock_market",
             "USER": os.environ.get("POSTGRES_USER", "postgres"),
             "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
             "HOST": os.environ.get("DB_HOST", "db"),
@@ -103,8 +112,18 @@ else:
             "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
             "HOST": os.environ.get("DB_HOST", "localhost"),
             "PORT": os.environ.get("DB_PORT", "5434"),
+        },
+        "stock_market": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "stock_market",
+            "USER": os.environ.get("POSTGRES_USER", "postgres"),
+            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
+            "HOST": os.environ.get("DB_HOST", "localhost"),
+            "PORT": os.environ.get("DB_PORT", "5434"),
         }
     }
+
+DATABASE_ROUTERS = ['stocks.routers.StockMarketRouter']
 
 
 # Password validation

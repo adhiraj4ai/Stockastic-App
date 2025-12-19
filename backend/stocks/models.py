@@ -1,16 +1,46 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+class Company(models.Model):
+    id = models.AutoField(primary_key=True)
+    symbol = models.CharField(max_length=20, unique=True, db_index=True)
+    name = models.CharField(max_length=255, db_column='companyName')
+    sector = models.CharField(max_length=100, db_column='sectorName')
+    status = models.CharField(max_length=1, default='A')
+
+    class Meta:
+        managed = False
+        db_table = 'companies'
+
+    def __str__(self):
+        return f"{self.symbol} - {self.name}"
+
 class DailyStockPrice(models.Model):
-    ticker = models.CharField(max_length=20, db_index=True)
-    date = models.DateField(db_index=True)
+    ticker = models.CharField(max_length=20, db_index=True, db_column='symbol', primary_key=True)
+    date = models.DateField(db_index=True, db_column='transaction_date')
     open = models.DecimalField(max_digits=10, decimal_places=2)
     high = models.DecimalField(max_digits=10, decimal_places=2)
     low = models.DecimalField(max_digits=10, decimal_places=2)
     close = models.DecimalField(max_digits=10, decimal_places=2)
-    volume = models.BigIntegerField()
+    volume = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    prev_close = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    turnover = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    conf = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    vwap = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    trans = models.IntegerField(null=True, blank=True)
+    diff = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    range = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    diff_percent = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    range_percent = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    vwap_percent = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    days_120 = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    days_180 = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    weeks_52_high = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    weeks_52_low = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     class Meta:
+        managed = False
+        db_table = 'daily_stock_price'
         unique_together = ('ticker', 'date')
         ordering = ['-date']
         indexes = [
@@ -73,6 +103,11 @@ class PortfolioItem(models.Model):
     buy_price = models.DecimalField(max_digits=10, decimal_places=2) # This now effectively acts as WACC
     wacc = models.DecimalField(max_digits=10, decimal_places=2, default=0) # Specific WACC field
     purchased_at = models.DateTimeField(auto_now_add=True)
+    
+    # Exit Strategy Fields
+    stop_loss_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    target_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    strategy_type = models.CharField(max_length=50, default='MANUAL') # MANUAL, FIXED_PCT, ATR, SUPPORT_RESIST
 
     class Meta:
         unique_together = ('user', 'account', 'ticker')
@@ -110,15 +145,37 @@ class PortfolioTransaction(models.Model):
 
 class DailyFloorsheet(models.Model):
     transaction_id = models.CharField(max_length=50, unique=True)
-    ticker = models.CharField(max_length=20, db_index=True)
-    buyer_broker = models.CharField(max_length=50)
-    seller_broker = models.CharField(max_length=50)
-    quantity = models.IntegerField()
-    rate = models.DecimalField(max_digits=10, decimal_places=2)
-    amount = models.DecimalField(max_digits=15, decimal_places=2)
-    date = models.DateField(db_index=True)
+    ticker = models.CharField(max_length=20, db_index=True, db_column='symbol')
+    buyer_broker = models.CharField(max_length=50) # Assuming matches or checked schema? Schema: buyer_id (int), buyer_name?
+    # External schema: buyer_id (int), seller_id (int), buyer_name (char), seller_name (char)
+    # My model has buyer_broker (char). I should map it to buyer_name if that's what I want, or buyer_id?
+    # User said "Daily Floorsheet". Schema has buyer_name. I'll map buyer_broker -> buyer_name.
+    # Also seller_broker -> seller_name.
+    # quantity -> transaction_quantity
+    # rate -> transaction_rate
+    # amount -> transaction_amount
+    # date -> transaction_date
+    
+    # Wait, simple mapping is risky without knowing data.
+    # Schema: transaction_id (PK), symbol, buyer_id, seller_id, transaction_quantity, transaction_rate, transaction_amount, transaction_date, buyer_name, seller_name.
+    
+    # I will update fields to match schema names exactly for safety? 
+    # Or map my existing fields.
+    # My existing code uses `buyer_broker` etc. 
+    # I will map `buyer_broker` to `buyer_name`.
+    
+    # Let's do the block replacement properly.
+    ticker = models.CharField(max_length=20, db_index=True, db_column='symbol')
+    buyer_broker = models.CharField(max_length=50, db_column='buyer_name')
+    seller_broker = models.CharField(max_length=50, db_column='seller_name')
+    quantity = models.IntegerField(db_column='transaction_quantity')
+    rate = models.DecimalField(max_digits=10, decimal_places=2, db_column='transaction_rate')
+    amount = models.DecimalField(max_digits=15, decimal_places=2, db_column='transaction_amount')
+    date = models.DateField(db_index=True, db_column='transaction_date')
 
     class Meta:
+        managed = False
+        db_table = 'daily_floorsheet'
         ordering = ['-date', '-transaction_id']
 
     def __str__(self):
@@ -178,3 +235,31 @@ class Strategy(models.Model):
 
     def __str__(self):
         return self.name
+
+class DailyBuyerFloorsheet(models.Model):
+    transaction_date = models.DateField(primary_key=True) # Fake PK for Django
+    symbol = models.CharField(max_length=20)
+    buyer_id = models.IntegerField()
+    buy_volume = models.BigIntegerField(blank=True, null=True)
+    total_volume = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    buy_volume_percentage = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    buyer_rank = models.BigIntegerField(blank=True, null=True)
+    average_weighted_price = models.DecimalField(max_digits=20, decimal_places=4, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'daily_buyer_floorsheet'
+
+class DailySellerFloorsheet(models.Model):
+    transaction_date = models.DateField(primary_key=True) # Fake PK for Django
+    symbol = models.CharField(max_length=20)
+    seller_id = models.IntegerField()
+    sell_volume = models.BigIntegerField(blank=True, null=True)
+    total_volume = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    sell_volume_percentage = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    seller_rank = models.BigIntegerField(blank=True, null=True)
+    average_weighted_price = models.DecimalField(max_digits=20, decimal_places=4, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'daily_seller_floorsheet'

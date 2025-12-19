@@ -4,10 +4,10 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, TransactionType, StockFundamental, PortfolioAccount, Strategy
+from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, TransactionType, StockFundamental, PortfolioAccount, Strategy, Company
 from .serializers import (
     DailyStockPriceSerializer, DailyFloorsheetSerializer, PortfolioItemSerializer, 
-    PortfolioTransactionSerializer, StockFundamentalSerializer, StrategySerializer
+    PortfolioTransactionSerializer, StockFundamentalSerializer, StrategySerializer, CompanySerializer
 )
 from . import serializers # For PortfolioAccountSerializer which was added differently in replacement
 from .utils import calculate_broker_commission, calculate_sebon_fee, calculate_dp_charge, calculate_cgt
@@ -18,6 +18,7 @@ import tempfile
 import os
 import subprocess
 import json
+from .optimization import perform_portfolio_optimization
 # rest_framework imports are already at the top
 
 @api_view(['GET'])
@@ -40,25 +41,22 @@ def stock_history(request, ticker):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def stock_summary(request):
-    # Get the latest two dates
-    dates = DailyStockPrice.objects.order_by('-date').values_list('date', flat=True).distinct()[:2]
-    if not dates:
+    from django.db.models import Max
+    # 1. Get Latest Date
+    max_date_agg = DailyStockPrice.objects.aggregate(Max('date'))
+    latest_date = max_date_agg['date__max']
+    
+    if not latest_date:
         return Response({})
-    
-    latest_date = dates[0]
-    prev_date = dates[1] if len(dates) > 1 else None
-    
-    # Fetch data
+
+    # 2. Fetch Data (External DB)
     todays_data = DailyStockPrice.objects.filter(date=latest_date)
-    prev_data = DailyStockPrice.objects.filter(date=prev_date) if prev_date else []
-    
-    # Create a map of previous closes
-    # Create Sector Map
-    fundamentals = StockFundamental.objects.values('ticker', 'sector')
-    sector_map = {f['ticker']: f['sector'] for f in fundamentals}
-    
-    # Create a map of previous closes
-    prev_close_map = {d.ticker: d.close for d in prev_data}
+
+    # 3. Create Sector Map (using Company model)
+    # Using 'Company' model mapped to 'companies' table
+    companies = Company.objects.all()
+    # Create dict: symbol -> sector
+    sector_map = {c.symbol: c.sector for c in companies}
     
     summary_list = []
     sector_stats = {} # { 'Banking': { 'total_change': 0, 'count': 0, 'positive': 0, ... } }
@@ -73,19 +71,26 @@ def stock_summary(request):
     unchanged_count = 0
 
     for stock in todays_data:
-        prev_close = prev_close_map.get(stock.ticker, stock.open)
+        # Use prev_close directly from the model (mapped to DB)
+        prev_close = stock.prev_close or stock.open # Fallback if None
+        
+        # Calculate change
         change = stock.close - prev_close
         percent_change = (change / prev_close * 100) if prev_close else 0
-        turnover = stock.close * stock.volume
+        
+        # Use turnover directly from model (mapped to DB)
+        turnover = stock.turnover or (stock.close * stock.volume)
         
         total_volume += stock.volume
         total_turnover += turnover
         market_points_today += stock.close
         market_points_prev += prev_close
         
-        if stock.close > stock.open:
+        diff = stock.close - stock.open
+
+        if change > 0:
              advancers_count += 1
-        elif stock.close < stock.open:
+        elif change < 0:
              decliners_count += 1
         else:
              unchanged_count += 1
@@ -109,7 +114,7 @@ def stock_summary(request):
             'turnover': turnover,
             'change': change,
             'percent_change': percent_change,
-            'diff': stock.close - stock.open,
+            'diff': diff,
             'sector': sector
         })
 
@@ -148,7 +153,7 @@ def stock_summary(request):
             'advancers': advancers_count,
             'decliners': decliners_count,
             'advancers_percent': advancers_percent,
-            'decliners_percent': decliners_percent
+            'decliners_percent': (decliners_count / total_stocks * 100) if total_stocks else 0
         },
         'sector_summary': final_sector_summary,
         'top_volume': by_volume[-10:][::-1],
@@ -276,8 +281,15 @@ class PortfolioViewSet(viewsets.ModelViewSet):
         tickers = [item.ticker for item in queryset]
         latest_prices = {}
         prev_closes = {}
+        company_sectors = {}
+        volatilities = {}
         
         if tickers:
+            import pandas as pd
+            from datetime import timedelta
+            from django.utils import timezone
+            
+            # 1. Fetch Price Data
             dates = DailyStockPrice.objects.order_by('-date').values_list('date', flat=True).distinct()[:2]
             if len(dates) >= 1:
                 latest_date = dates[0]
@@ -288,6 +300,40 @@ class PortfolioViewSet(viewsets.ModelViewSet):
                     prev_date = dates[1]
                     prev_prices = DailyStockPrice.objects.filter(date=prev_date, ticker__in=tickers)
                     prev_closes = {p.ticker: p.close for p in prev_prices}
+            
+            # 2. Fetch Sector Data
+            companies = Company.objects.filter(symbol__in=tickers).values('symbol', 'sector')
+            company_sectors = {c['symbol']: c['sector'] for c in companies}
+            
+            # 3. Calculate Volatility (30-day Annualized)
+            # Fetch last 45 days (approx 30 trading days)
+            try:
+                cutoff_date = (timezone.now() if dates else timezone.now()) - timedelta(days=60)
+                if dates: cutoff_date = dates[0] - timedelta(days=60)
+                
+                # Fetch price history for tickers
+                hist_qs = DailyStockPrice.objects.filter(
+                    ticker__in=tickers,
+                    date__gte=cutoff_date
+                ).values('ticker', 'date', 'close').order_by('date')
+                
+                df_hist = pd.DataFrame.from_records(hist_qs)
+                if not df_hist.empty:
+                    df_hist['close'] = df_hist['close'].astype(float)
+                    
+                    for ticker in tickers:
+                        df_t = df_hist[df_hist['ticker'] == ticker]
+                        if len(df_t) > 10:
+                            # Daily Returns
+                            df_t = df_t.sort_values('date')
+                            returns = df_t['close'].pct_change().dropna()
+                            # Annualized Volatility = StdDev * sqrt(252) * 100
+                            # Using 30-day window primarily, but here we take whatever we fetched
+                            if not returns.empty:
+                                vol = returns.std() * (252 ** 0.5) * 100
+                                volatilities[ticker] = vol
+            except Exception as e:
+                print(f"Volatility Calc Error: {e}")
 
         # Enrich data
         data = []
@@ -311,10 +357,126 @@ class PortfolioViewSet(viewsets.ModelViewSet):
             item.gain_loss = gain_loss
             item.gain_loss_percent = gain_loss_percent
             item.day_gain_loss = day_gain_loss
+            
+            # Risk Metrics
+            item.sector = company_sectors.get(item.ticker, 'Unknown')
+            item.volatility = volatilities.get(item.ticker, 0.0)
+            
             data.append(item)
 
         serializer = self.get_serializer(data, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def optimize(self, request):
+        user = request.user
+        account_id = request.query_params.get('account')
+        
+        queryset = PortfolioItem.objects.filter(user=user)
+        if account_id and account_id != 'all':
+            queryset = queryset.filter(account_id=account_id)
+            
+        tickers = list(queryset.values_list('ticker', flat=True).distinct())
+        
+        if not tickers:
+            return Response({"error": "Portfolio is empty"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        method = request.query_params.get('method', 'max_sharpe')
+        
+        # Prepare current holdings for trade suggestions
+        current_holdings = {}
+        for item in queryset:
+            ticker = item.ticker
+            if ticker not in current_holdings:
+                # Get the latest price for this ticker
+                latest_price_obj = DailyStockPrice.objects.filter(ticker=ticker).order_by('-date').first()
+                latest_price = float(latest_price_obj.close) if latest_price_obj else 0
+                current_holdings[ticker] = {'quantity': 0, 'price': latest_price}
+            
+            current_holdings[ticker]['quantity'] += float(item.quantity)
+
+        result = perform_portfolio_optimization(tickers, current_holdings=current_holdings, method=method)
+        
+        if not result.get("success"):
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+            
+        return Response(result)
+
+    @action(detail=True, methods=['get'])
+    def suggest_exits(self, request, pk=None):
+        """
+        Suggest Exit Strategies (SL/TP) based on different logic.
+        """
+        import pandas as pd
+        from datetime import timedelta
+        import numpy as np
+        
+        item = self.get_object()
+        ticker = item.ticker
+        
+        # Fetch Data
+        hist = DailyStockPrice.objects.filter(ticker=ticker).order_by('-date')[:60] # Last ~3 months
+        if not hist:
+            return Response({"error": "No price data found"}, status=400)
+            
+        latest_price = float(hist[0].close)
+        
+        # Prepare Dataframe
+        df = pd.DataFrame(list(hist.values('date', 'high', 'low', 'close'))[::-1]) # Reverse to chronological
+        
+        # 1. ATR Strategy
+        if len(df) > 14:
+            df['tr1'] = df['high'] - df['low']
+            df['tr2'] = (df['high'] - df['close'].shift(1)).abs()
+            df['tr3'] = (df['low'] - df['close'].shift(1)).abs()
+            df['tr'] = df[['tr1', 'tr2', 'tr3']].max(axis=1)
+            atr = df['tr'].rolling(window=14).mean().iloc[-1]
+            atr = float(atr) if not pd.isna(atr) else (latest_price * 0.02)
+        else:
+            atr = latest_price * 0.02 # Fallback 2%
+            
+        # 2. Swing Levels (Last 20 days)
+        recent = df.tail(20)
+        swing_low = float(recent['low'].min())
+        swing_high = float(recent['high'].max())
+        
+        strategies = {
+            "fixed": {
+                "name": "Fixed Percentage",
+                "sl": latest_price * 0.95, # 5% SL
+                "tp": latest_price * 1.10, # 10% TP
+                "desc": "Traditional 5% Stop / 10% Target"
+            },
+            "atr_conservative": {
+                "name": "ATR (Conservative)",
+                "sl": latest_price - (2 * atr),
+                "tp": latest_price + (3 * atr),
+                "desc": f"Based on volatility ({atr:.2f}). 2x ATR Stop."
+            },
+            "atr_aggressive": {
+                "name": "ATR (Aggressive)",
+                "sl": latest_price - (1 * atr),
+                "tp": latest_price + (2 * atr),
+                "desc": "Tight stop for momentum trades."
+            },
+            "swing": {
+                "name": "Support/Resistance",
+                "sl": swing_low * 0.99, # Just below support
+                "tp": swing_high * 1.01, # Just above resistance (breakout) or at resistance? Usually Target is Resistance. Let's say Target = Resistance.
+                "desc": f"Recent Low: {swing_low}, Recent High: {swing_high}"
+            }
+        }
+        
+        # Adjust Swing TP: If current price is near high, TP should be higher (Projected).
+        # For simplicity, if Price ~ High, we set TP using Fib or just 1.1x.
+        if strategies['swing']['tp'] <= latest_price * 1.02:
+             strategies['swing']['tp'] = latest_price * 1.15
+        
+        return Response({
+            "current_price": latest_price,
+            "avg_buy_price": float(item.buy_price),
+            "strategies": strategies
+        })
 
 class PortfolioTransactionViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -499,111 +661,988 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     'symbol': 'internal-error'
                 }]
             })
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def backtest(self, request):
         code = request.data.get('code', '')
-        symbol = request.data.get('symbol', 'NABIL')
+        symbol = request.data.get('symbol')
+        sector = request.data.get('sector')
         start_date = request.data.get('start_date')
         end_date = request.data.get('end_date')
 
+        if not start_date or not end_date:
+            return Response({'error': 'Start and End dates are required'}, status=400)
+        
+        if not symbol and not sector:
+            return Response({'error': 'Either symbol or sector is required'}, status=400)
+
+        # If sector is provided, run backtest for all stocks in sector
+        if sector:
+            # Note: case-insensitive match for sector
+            companies = Company.objects.filter(sector__iexact=sector, status='A').values_list('symbol', flat=True)
+            if not companies:
+                return Response({'error': f'No active companies found in sector: {sector}'}, status=404)
+            
+            sector_results = []
+            successful_backtests = 0
+            failed_stocks = []
+            
+            for stock_symbol in companies:
+                try:
+                    # Run backtest for this stock
+                    result, error = self._run_single_backtest(code, stock_symbol, start_date, end_date)
+                    if result:
+                        sector_results.append({
+                            'symbol': stock_symbol,
+                            'return': result['stats']['pnl_percent'], # Consistent key
+                            'total_pnl': result['stats']['total_pnl'],
+                            'win_rate': result['stats']['win_rate'],
+                            'total_trades': result['stats']['total_trades']
+                        })
+                        successful_backtests += 1
+                    else:
+                        failed_stocks.append({'symbol': stock_symbol, 'error': error or 'No data'})
+                except Exception as e:
+                    failed_stocks.append({'symbol': stock_symbol, 'error': str(e)})
+                    continue
+            
+            # Calculate aggregated metrics if any succeeded
+            avg_return = 0
+            avg_win_rate = 0
+            total_trades = 0
+            best_stock = None
+            worst_stock = None
+
+            if sector_results:
+                avg_return = sum(r.get('return', 0) or 0 for r in sector_results) / len(sector_results)
+                avg_win_rate = sum(r.get('win_rate', 0) or 0 for r in sector_results) / len(sector_results)
+                total_trades = sum(r.get('total_trades', 0) or 0 for r in sector_results)
+                best_stock = max(sector_results, key=lambda x: x.get('return', 0) or 0)
+                worst_stock = min(sector_results, key=lambda x: x.get('return', 0) or 0)
+            
+            return Response({
+                'sector': sector,
+                'total_companies': len(companies),
+                'successful_backtests': successful_backtests,
+                'aggregated_stats': {
+                    'avg_return': avg_return,
+                    'avg_win_rate': avg_win_rate,
+                    'total_trades': total_trades,
+                    'best_stock': best_stock,
+                    'worst_stock': worst_stock
+                },
+                'individual_results': sorted(sector_results, key=lambda x: x.get('return', 0) or 0, reverse=True),
+                'failed_stocks': failed_stocks
+            })
+        
+        # Single stock backtest
+        result, error = self._run_single_backtest(code, symbol, start_date, end_date)
+        if result is None:
+            return Response({'error': error or 'No data found for symbol/dates'}, status=400)
+        return Response(result)
+    
+    def _run_single_backtest(self, code, symbol, start_date, end_date):
+        """Helper method to run backtest for a single stock. Returns (result_dict, error_msg)."""
         # 1. Fetch Data
         queryset = DailyStockPrice.objects.filter(
             ticker=symbol, 
             date__range=[start_date, end_date]
         ).order_by('date')
         
-        # Optimize: Values list for speed
-        ticks = list(queryset.values('date', 'open', 'high', 'low', 'close', 'volume'))
-        if not ticks:
-             return Response({'error': 'No data found for symbol/dates'}, status=404)
+        ticks_data = list(queryset.values('date', 'open', 'high', 'low', 'close', 'volume'))
+        if not ticks_data:
+            return None, "No historical data found for this symbol/date range."
 
-        # 2. Prepare Execution Environment
-        local_scope = {}
         try:
-            exec(code, {}, local_scope)
-            if 'next_move' not in local_scope:
-                 return Response({'error': 'Function "next_move" not found in code'}, status=400)
-            next_move = local_scope['next_move']
-        except Exception as e:
-             return Response({'error': f"Code Compilation Error: {str(e)}"}, status=400)
-
-        # 3. Simulate Backtest
-        capital = 100000.0
-        cash = capital
-        holdings = 0
-        trades = []
-        equity_curve = []
-        
-        # Simple Logic: 100% equity on BUY, 0% on SELL
-        for i, tick in enumerate(ticks):
-            # Pre-calculate indicators (simple MA for demo)
-            # In real system, user code does this or we pass a rich object
-            # Pass previous ticks context? For MVP, just current tick + history list?
-            # Let's pass the 'tick' dict enriched with basic history if possible, or just raw tick
+            import pandas as pd
+            from backtesting import Backtest, Strategy
+            from backtesting.lib import crossover
+            from backtesting.test import SMA
+            import inspect
+            import os
+            import tempfile
+            import datetime
+            import numpy as np
             
-            # Simple MA_50 calculation for the demo code in Editor
-            ma_50 = 0
-            if i >= 49:
-                 ma_50 = sum([t['close'] for t in ticks[i-49:i+1]]) / 50
-            tick['ma_50'] = ma_50
-
+            # Create DataFrame
+            df = pd.DataFrame(ticks_data)
+            df.rename(columns={
+                'open': 'Open', 
+                'high': 'High', 
+                'low': 'Low', 
+                'close': 'Close', 
+                'volume': 'Volume'
+            }, inplace=True)
+            
+            # Convert Decimals to Floats for backtesting.py
+            numeric_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
+            df[numeric_cols] = df[numeric_cols].astype(float)
+            
+            # Filter Bad Data (Price Spikes due to bad Open)
+            df = df[
+                (df['High'] / df['Open'] <= 2.0) & 
+                (df['Low'] / df['Open'] >= 0.5) &
+                (df['Close'] > 0)
+            ].copy()
+            
+            if len(df) < 10: # Need minimum amount of data to run signals
+                return None, f"Insufficient data points ({len(df)}) after filtering."
+            
+            df['date'] = pd.to_datetime(df['date'])
+            df.set_index('date', inplace=True)
+            
+            # 2. Execution Environment
+            local_scope = {
+                'Backtest': Backtest,
+                'Strategy': Strategy,
+                'crossover': crossover,
+                'SMA': SMA,
+                'pd': pd,
+            }
+            
+            # Execute User Code
             try:
-                signal = next_move(tick) # Expect "BUY", "SELL", "HOLD"
-            except Exception as e:
-                return Response({'error': f"Runtime Error at {tick['date']}: {str(e)}"}, status=400)
-
-            # Transaction Logic
-            status = 'HOLD'
-            if signal == "BUY" and cash > 0 and holdings == 0:
-                quantity = int(cash / tick['close'])
-                if quantity > 0:
-                    cost = quantity * tick['close']
-                    cash -= cost
-                    holdings = quantity
-                    trades.append({
-                        'date': tick['date'], 'type': 'BUY', 'price': tick['close'], 'qty': quantity, 'balance': cash
-                    })
-                    status = 'BOUGHT'
+                exec(code, local_scope)
+            except Exception as code_err:
+                return None, f"Code Execution Error: {str(code_err)}"
             
-            elif signal == "SELL" and holdings > 0:
-                revenue = holdings * tick['close']
-                cash += revenue
-                
-                # Calculate Trade PnL
-                last_buy = next((t for t in reversed(trades) if t['type'] == 'BUY'), None)
-                pnl = 0
-                if last_buy:
-                    pnl = revenue - (last_buy['qty'] * last_buy['price'])
+            # Find the Strategy Class
+            strategy_class = None
+            for name, obj in local_scope.items():
+                if inspect.isclass(obj) and issubclass(obj, Strategy) and obj is not Strategy:
+                    strategy_class = obj
+                    break
+            
+            if not strategy_class:
+                return None, "No Strategy class found in code."
 
-                trades.append({
-                    'date': tick['date'], 'type': 'SELL', 'price': tick['close'], 'qty': holdings, 'balance': cash, 'pnl': pnl
-                })
-                holdings = 0
-                status = 'SOLD'
+            # 3. Run Backtest
+            bt = Backtest(df, strategy_class,
+                          cash=1000000, commission=.002,
+                          exclusive_orders=True)
+            
+            try:
+                stats = bt.run()
+            except Exception as bt_err:
+                return None, f"Backtest Engine Error: {str(bt_err)}"
+            
+            # 4. Generate Plot (Optional for Sector)
+            plot_html = None
+            fd, plot_path = tempfile.mkstemp(suffix='.html')
+            os.close(fd) 
+            
+            try:
+                bt.plot(filename=plot_path, open_browser=False)
+                with open(plot_path, 'r', encoding='utf-8') as f:
+                    plot_html = f.read()
+            except:
+                pass # Non-critical if plot fails
+            finally:
+                if os.path.exists(plot_path):
+                    os.remove(plot_path)
 
-            # Update Equity
-            current_equity = cash + (holdings * tick['close'])
-            equity_curve.append({'date': tick['date'], 'equity': current_equity})
+            # 5. Format Stats for Frontend
+            stats_dict = stats.to_dict()
+            clean_stats = {}
+            
+            # Extract Trades DataFrame for advanced calculation
+            trades_df = stats.get('_trades')
+            
+            # Helper to safely convert numbers
+            def safe_num(val, default=0.0):
+                if val is None: return default
+                if isinstance(val, (int, float)):
+                    return float(val) if not np.isnan(val) else default
+                return default
 
-        # 4. Final Stats
-        final_equity = cash + (holdings * ticks[-1]['close'])
-        total_pnl = final_equity - capital
-        pnl_percent = (total_pnl / capital) * 100
+            # Standard Stats
+            clean_stats['pnl_percent'] = safe_num(stats.get('Return [%]'))
+            clean_stats['total_pnl'] = safe_num(stats.get('Equity Final [$]', 1000000) - 1000000)
+            clean_stats['win_rate'] = safe_num(stats.get('Win Rate [%]'))
+            clean_stats['total_trades'] = int(safe_num(stats.get('# Trades'), 0))
+            
+            # Advanced Stats
+            if isinstance(trades_df, pd.DataFrame) and not trades_df.empty:
+                try:
+                    winning_trades = trades_df[trades_df['PnL'] > 0]
+                    losing_trades = trades_df[trades_df['PnL'] <= 0]
+                    
+                    count_win = len(winning_trades)
+                    count_loss = len(losing_trades)
+                    
+                    gross_profit = safe_num(winning_trades['PnL'].sum())
+                    gross_loss = safe_num(losing_trades['PnL'].sum())
+                    
+                    clean_stats['Total Winning Trades'] = count_win
+                    clean_stats['Total Losing Trades'] = count_loss
+                    clean_stats['Gross Profit'] = gross_profit
+                    clean_stats['Gross Loss'] = gross_loss
+                    clean_stats['Average Win'] = safe_num(gross_profit / count_win) if count_win > 0 else 0
+                    clean_stats['Average Loss'] = safe_num(gross_loss / count_loss) if count_loss > 0 else 0
+                    
+                except Exception as e:
+                    print(f"Error calculating advanced stats: {e}")
+
+            # Collect all other stats safely
+            for k, v in stats_dict.items():
+                if k.startswith('_'): continue
+                if k in clean_stats: continue # Keep our safe ones
+
+                if isinstance(v, (int, float, np.integer, np.floating)):
+                    clean_stats[k] = safe_num(v)
+                elif isinstance(v, (str, bool, type(None))):
+                    clean_stats[k] = v
+                elif hasattr(v, 'isoformat'):
+                    clean_stats[k] = v.isoformat()
+                else:
+                    clean_stats[k] = str(v)
+            
+            formatted_stats = {
+                'total_pnl': clean_stats.get('total_pnl', 0.0),
+                'pnl_percent': clean_stats.get('pnl_percent', 0.0),
+                'win_rate': clean_stats.get('win_rate', 0.0),
+                'final_equity': clean_stats.get('Equity Final [$]', 1000000.0),
+                'total_trades': clean_stats.get('total_trades', 0),
+                'sharpe_ratio': clean_stats.get('Sharpe Ratio', 0.0),
+                'max_drawdown': clean_stats.get('Max. Drawdown [%]', 0.0),
+                'raw': clean_stats
+            }
+
+            return {
+                'stats': formatted_stats,
+                'plot_html': plot_html
+            }, None
+
+        except Exception as e:
+            return None, str(e)
+
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+    def optimize(self, request):
+        """
+        Optimize strategy parameters using Optuna
+        """
+        import optuna
         
-        winning_trades = [t for t in trades if t.get('pnl', 0) > 0]
-        total_sell_trades = len([t for t in trades if t['type'] == 'SELL'])
-        win_rate = (len(winning_trades) / total_sell_trades * 100) if total_sell_trades > 0 else 0
+        code_template = request.data.get('code', '')
+        symbol = request.data.get('symbol', 'NABIL')
+        start_date = request.data.get('start_date')
+        end_date = request.data.get('end_date')
+        n_trials = request.data.get('n_trials', 50)
+        param_ranges = request.data.get('param_ranges', {})
+        
+        if not start_date or not end_date:
+            return Response({'error': 'Start and End dates are required'}, status=400)
+        
+        if not param_ranges:
+            return Response({'error': 'param_ranges required (e.g., {"n1": [5, 30], "n2": [20, 100]})'}, status=400)
+        
+        try:
+            import pandas as pd
+            from backtesting import Backtest, Strategy
+            from backtesting.lib import crossover
+            from backtesting.test import SMA
+            import inspect
+            
+            # Fetch data once
+            queryset = DailyStockPrice.objects.filter(
+                ticker=symbol,
+                date__range=[start_date, end_date]
+            ).order_by('date')
+            
+            ticks_data = list(queryset.values('date', 'open', 'high', 'low', 'close', 'volume'))
+            if not ticks_data:
+                return Response({'error': 'No data found for symbol/dates'}, status=404)
+            
+            df = pd.DataFrame(ticks_data)
+            df.rename(columns={
+                'open': 'Open',
+                'high': 'High',
+                'low': 'Low',
+                'close': 'Close',
+                'volume': 'Volume'
+            }, inplace=True)
+            
+            numeric_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
+            df[numeric_cols] = df[numeric_cols].astype(float)
+            
+            # Filter bad data
+            df = df[
+                (df['High'] / df['Open'] <= 2.0) &
+                (df['Low'] / df['Open'] >= 0.5) &
+                (df['Close'] > 0)
+            ].copy()
+            
+            if df.empty:
+                return Response({'error': 'No valid data after filtering'}, status=400)
+            
+            df['date'] = pd.to_datetime(df['date'])
+            df.set_index('date', inplace=True)
+            
+            # Validate that all parameters exist in the code
+            for param_name in param_ranges.keys():
+                if f"{param_name} = " not in code_template:
+                    return Response({
+                        'error': f'Parameter "{param_name}" not found in strategy code. Available parameters must be defined as class attributes like "n1 = 10".'
+                    }, status=400)
+            
+            # Define objective function
+            def objective(trial):
+                # Suggest parameters
+                params = {}
+                for param_name, param_config in param_ranges.items():
+                    # Support both old format [min, max] and new format {type: 'int/float', range: [min, max]}
+                    if isinstance(param_config, dict):
+                        param_type = param_config.get('type', 'int')
+                        min_val, max_val = param_config['range']
+                        
+                        if param_type == 'float':
+                            params[param_name] = trial.suggest_float(param_name, min_val, max_val)
+                        else:
+                            params[param_name] = trial.suggest_int(param_name, int(min_val), int(max_val))
+                    else:
+                        # Old format: [min, max]
+                        min_val, max_val = param_config
+                        params[param_name] = trial.suggest_int(param_name, min_val, max_val)
+                
+                # Replace parameters in code template
+                code = code_template
+                for param_name, param_value in params.items():
+                    # Replace class attributes like "n1 = 10" with "n1 = <optimized_value>"
+                    code = code.replace(f"{param_name} = ", f"{param_name} = {param_value} #")
+                
+                # Execute strategy code
+                local_scope = {
+                    'Backtest': Backtest,
+                    'Strategy': Strategy,
+                    'crossover': crossover,
+                    'SMA': SMA,
+                    'pd': pd,
+                }
+                
+                exec(code, local_scope)
+                
+                # Find strategy class
+                strategy_class = None
+                for name, obj in local_scope.items():
+                    if inspect.isclass(obj) and issubclass(obj, Strategy) and obj is not Strategy:
+                        strategy_class = obj
+                        break
+                
+                if not strategy_class:
+                    raise ValueError('No Strategy class found')
+                
+                # Run backtest
+                bt = Backtest(df, strategy_class, cash=1000000, commission=.002, exclusive_orders=True)
+                stats = bt.run()
+                
+                # Return metric to optimize (Return %)
+                return stats['Return [%]']
+            
+            # Run optimization
+            study = optuna.create_study(direction='maximize', study_name='strategy_optimization')
+            study.optimize(objective, n_trials=n_trials, show_progress_bar=False)
+            
+            # Get results
+            best_params = study.best_params
+            best_value = study.best_value
+            
+            # Get trial history
+            trials_data = []
+            for trial in study.trials:
+                trials_data.append({
+                    'number': trial.number,
+                    'params': trial.params,
+                    'value': trial.value,
+                    'state': str(trial.state)
+                })
+            
+            # Generate optimized code with best parameters
+            optimized_code = code_template
+            for param_name, param_value in best_params.items():
+                # Replace parameter values in code
+                import re
+                pattern = rf'(\s{param_name}\s*=\s*)\d+'
+                optimized_code = re.sub(pattern, rf'\g<1>{param_value}', optimized_code)
+            
+            return Response({
+                'best_params': best_params,
+                'best_value': best_value,
+                'n_trials': len(study.trials),
+                'trials': trials_data,
+                'optimized_code': optimized_code
+            })
+            
+        except Exception as e:
+            import traceback
+            tb = traceback.format_exc()
+            return Response({'error': f"Optimization Error: {str(e)}", 'traceback': tb}, status=400)
 
+
+class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Company.objects.filter(status='A').order_by('symbol')
+    serializer_class = CompanySerializer
+    permission_classes = [AllowAny]
+    search_fields = ['symbol', 'name']
+    
+    def get_queryset(self):
+        queryset = Company.objects.filter(status='A').order_by('symbol')
+        search = self.request.query_params.get('search', None)
+        if search:
+            queryset = queryset.filter(Q(symbol__icontains=search) | Q(name__icontains=search))
+        return queryset
+    
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
+    def sectors(self, request):
+        """Return all unique sectors with company counts (status='A' only)"""
+        from django.db.models import Count
+        sectors = Company.objects.filter(status='A').values('sector').annotate(
+            count=Count('id')
+        ).order_by('sector')
+        return Response([
+            {'name': s['sector'], 'count': s['count']} 
+            for s in sectors
+        ])
+    
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
+    def accumulation(self, request):
+        """
+        Return accumulation data using accurate row-based offsets (LAG).
+        """
+        time_range = request.query_params.get('range', '1D')
+        sector = request.query_params.get('sector', 'All')
+        
+        # Map frontend range to row offset
+        range_map = {
+            '1D': 1, '1W': 5, '2W': 10, '1M': 20, '3M': 60, '6M': 120, '1Y': 250, '2Y': 500
+        }
+        offset = range_map.get(time_range, 1) if time_range != 'ALL' else 1000000
+
+        from django.db import connections
+        
+        # Using LAG for accurate N-row lookback regardless of calendar dates
+        query = f"""
+        WITH ranked_data AS (
+            SELECT 
+                ca.symbol, ca.entity_id, ca.transaction_date, ca.cumulative_net as pos_now,
+                LAG(ca.cumulative_net, {offset}) OVER (
+                    PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date
+                ) as pos_past,
+                MAX(ca.transaction_date) OVER () as latest_date
+            FROM daily_cumulative_accumulation ca
+            INNER JOIN companies c ON ca.symbol = c.symbol
+            WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
+            {"" if sector.lower() == 'all' else f"AND c.\\\"sectorName\\\" = '{sector}'"}
+        ),
+        institutional_flows AS (
+            SELECT 
+                symbol, entity_id, pos_now,
+                COALESCE(pos_past, 0) as pos_past,
+                (pos_now - COALESCE(pos_past, 0)) as net_volume
+            FROM ranked_data
+            WHERE transaction_date = latest_date
+            -- Define "Institutional" as having at least 100k shares at some point
+            AND (pos_now > 100000 OR pos_past > 100000)
+        ),
+        aggregated_accumulation AS (
+            SELECT 
+                symbol,
+                SUM(CASE WHEN net_volume > 0 THEN net_volume ELSE 0 END) AS buy_qty,
+                SUM(CASE WHEN net_volume < 0 THEN ABS(net_volume) ELSE 0 END) AS sell_qty,
+                ARRAY_AGG(entity_id ORDER BY net_volume DESC) FILTER (WHERE net_volume > 0) AS buyers,
+                ARRAY_AGG(entity_id ORDER BY net_volume ASC) FILTER (WHERE net_volume < 0) AS sellers
+            FROM institutional_flows
+            GROUP BY symbol
+        )
+        SELECT 
+            aa.symbol, c."companyName" as name, c."sectorName" as sector,
+            aa.buy_qty, aa.sell_qty, (aa.buy_qty - aa.sell_qty) as net_qty,
+            CASE WHEN (aa.buy_qty + aa.sell_qty) > 0 
+                THEN (CAST(aa.buy_qty AS NUMERIC) / (aa.buy_qty + aa.sell_qty)) * 100 
+                ELSE 0 END as accumulation_ratio,
+            COALESCE(aa.buyers[1:3], ARRAY[]::text[]) as top_buyers,
+            COALESCE(aa.sellers[1:3], ARRAY[]::text[]) as top_sellers,
+            dsp.close
+        FROM aggregated_accumulation aa
+        INNER JOIN companies c ON aa.symbol = c.symbol
+        LEFT JOIN (
+            SELECT DISTINCT ON (symbol) symbol, close 
+            FROM daily_stock_price ORDER BY symbol, transaction_date DESC
+        ) dsp ON aa.symbol = dsp.symbol
+        ORDER BY net_qty DESC;
+        """
+        
+        with connections['stock_market'].cursor() as cursor:
+            cursor.execute(query)
+            columns = [col[0] for col in cursor.description]
+            results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            
+        return Response(results)
+
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
+    def aggressive(self, request):
+        """
+        Identify aggressive institutional activity relative to 20D average volume.
+        Uses accurate LAG-based row offsets for deltas.
+        """
+        time_range = request.query_params.get('range', '1W')
+        sector = request.query_params.get('sector', 'All')
+        
+        range_map = {
+            '1D': 1, '1W': 5, '2W': 10, '1M': 20, '3M': 60, '6M': 120, '1Y': 250, '2Y': 500
+        }
+        offset_val = range_map.get(time_range, 5)
+        
+        from django.db import connections
+        
+        query = f"""
+        WITH ranked_data AS (
+            SELECT 
+                ca.symbol, ca.entity_id, ca.transaction_date, ca.cumulative_net as pos_now,
+                LAG(ca.cumulative_net, {offset_val}) OVER (
+                    PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date
+                ) as pos_past,
+                MAX(ca.transaction_date) OVER () as latest_date
+            FROM daily_cumulative_accumulation ca
+            INNER JOIN companies c ON ca.symbol = c.symbol
+            WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
+            {"" if sector.lower() == 'all' else f"AND c.\\\"sectorName\\\" = '{sector}'"}
+        ),
+        avg_volume_cte AS (
+            SELECT 
+                symbol,
+                AVG(volume) OVER (PARTITION BY symbol ORDER BY transaction_date DESC ROWS BETWEEN CURRENT ROW AND 19 FOLLOWING) as avg_vol_20d,
+                transaction_date,
+                ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY transaction_date DESC) as rn
+            FROM daily_stock_price
+            WHERE transaction_date <= (SELECT MAX(transaction_date) FROM daily_cumulative_accumulation)
+        ),
+        latest_avg_vol AS (
+            SELECT symbol, avg_vol_20d FROM avg_volume_cte WHERE rn = 1
+        ),
+        pos_change AS (
+            SELECT 
+                symbol, entity_id, pos_now,
+                (pos_now - COALESCE(pos_past, 0)) as net_volume
+            FROM ranked_data
+            WHERE transaction_date = latest_date
+            AND (pos_now > 100000 OR pos_past > 100000)
+        ),
+        symbol_summary AS (
+            SELECT 
+                symbol,
+                SUM(CASE WHEN net_volume > 0 THEN net_volume ELSE 0 END) as institutional_buy,
+                SUM(CASE WHEN net_volume < 0 THEN ABS(net_volume) ELSE 0 END) as institutional_sell,
+                ARRAY_AGG(entity_id ORDER BY net_volume DESC) FILTER (WHERE net_volume > 0) as top_buyers,
+                ARRAY_AGG(entity_id ORDER BY net_volume ASC) FILTER (WHERE net_volume < 0) as top_sellers
+            FROM pos_change
+            GROUP BY symbol
+        ),
+        intensity_cte AS (
+            SELECT 
+                ss.symbol, c."companyName" as name, c."sectorName" as sector,
+                ss.institutional_buy, ss.institutional_sell,
+                (ss.institutional_buy - ss.institutional_sell) as net_qty,
+                lav.avg_vol_20d,
+                CASE 
+                    WHEN lav.avg_vol_20d > 0 
+                    THEN ROUND(((CAST(ss.institutional_buy AS NUMERIC) - ss.institutional_sell) / lav.avg_vol_20d) * 100, 2)
+                    ELSE 0 
+                END as intensity,
+                COALESCE(ss.top_buyers[1:3], ARRAY[]::text[]) as producers,
+                COALESCE(ss.top_sellers[1:3], ARRAY[]::text[]) as offloaders
+            FROM symbol_summary ss
+            INNER JOIN companies c ON ss.symbol = c.symbol
+            INNER JOIN latest_avg_vol lav ON ss.symbol = lav.symbol
+        )
+        SELECT * FROM intensity_cte
+        WHERE ABS(intensity) > 5 -- At least 5% of daily volume
+        ORDER BY ABS(intensity) DESC;
+        """
+        
+        with connections['stock_market'].cursor() as cursor:
+            cursor.execute(query)
+            columns = [col[0] for col in cursor.description]
+            results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            
         return Response({
-            'trades': trades,
-            'stats': {
-                'total_pnl': total_pnl,
-                'pnl_percent': pnl_percent,
-                'win_rate': win_rate,
-                'final_equity': final_equity,
-                'total_trades': len(trades)
-            },
-            'equity_curve': equity_curve # Optional: for graphing later
+            'accumulators': [r for r in results if r['intensity'] > 0][:10],
+            'distributors': [r for r in results if r['intensity'] < 0][:10]
         })
+            
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
+    def broker_trends(self, request):
+        """
+        Execute raw SQL for broker-level accumulation trends.
+        """
+        from django.db import connections
+        
+        query = """
+        WITH trend_data AS (
+            SELECT 
+                ca.*,
+                ca.cumulative_net - LAG(ca.cumulative_net, 5) OVER (
+                    PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date
+                ) AS net_5d,
+                ca.cumulative_net - LAG(ca.cumulative_net, 10) OVER (
+                    PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date
+                ) AS net_10d,
+                ca.cumulative_net - LAG(ca.cumulative_net, 20) OVER (
+                    PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date
+                ) AS net_20d,
+                ca.cumulative_net - LAG(ca.cumulative_net, 50) OVER (
+                    PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date
+                ) AS net_50d,
+                MAX(ca.transaction_date) OVER () AS latest_date
+            FROM daily_cumulative_accumulation ca
+            INNER JOIN companies c ON ca.symbol = c.symbol
+            WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
+        )
+        SELECT 
+            symbol,
+            entity_id as broker,
+            cumulative_net,
+            CASE WHEN net_5d > 0 THEN 'Increasing' WHEN net_5d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_5d,
+            ABS(COALESCE(net_5d, 0)) AS change_5d,
+            CASE WHEN net_10d > 0 THEN 'Increasing' WHEN net_10d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_10d,
+            ABS(COALESCE(net_10d, 0)) AS change_10d,
+            CASE WHEN net_20d > 0 THEN 'Increasing' WHEN net_20d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_20d,
+            ABS(COALESCE(net_20d, 0)) AS change_20d,
+            CASE WHEN net_50d > 0 THEN 'Increasing' WHEN net_50d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_50d,
+            ABS(COALESCE(net_50d, 0)) AS change_50d
+        FROM trend_data
+        WHERE transaction_date = latest_date
+        AND cumulative_net > 100000
+        ORDER BY cumulative_net DESC;
+        """
+        
+        with connections['stock_market'].cursor() as cursor:
+            cursor.execute(query)
+            # Fetch all rows and convert to list of dicts
+            columns = [col[0] for col in cursor.description]
+            results = [
+                dict(zip(columns, row))
+                for row in cursor.fetchall()
+            ]
+            
+        return Response(results)
+
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
+    def recommendations(self, request):
+        """
+        Scan market for trading signals.
+        Strategy: 'smart_cross', 'ema_cross', 'ichimoku'
+        """
+        strategy_type = request.query_params.get('strategy', 'smart_cross')
+        sector = request.query_params.get('sector', 'All')
+        
+        import pandas as pd
+        from datetime import timedelta
+        from django.utils import timezone
+        
+        # 1. Fetch relevant stocks
+        companies = Company.objects.all()
+        if sector != 'All':
+            companies = companies.filter(sectorName=sector)
+        
+        # Exclude funds
+        companies = companies.exclude(instrumentType__in=['Mutual Funds', 'Non-Convertible Debentures'])
+        
+        active_tickers = list(companies.values_list('symbol', flat=True))
+        
+        # Optimization: Limit to top 100 active stocks if sector is 'All' to prevent timeout
+        # Or scan mostly active ones. For now, scan all but optimize the loop
+        
+        # 2. Fetch price data (Optimize: Last 300 days for safety)
+        lookback_days = 300
+        start_date = timezone.now().date() - timedelta(days=lookback_days)
+        
+        # Fetching efficiently
+        queryset = DailyStockPrice.objects.filter(
+            ticker__in=active_tickers,
+            date__gte=start_date
+        ).values('ticker', 'date', 'close', 'high', 'low', 'volume').order_by('ticker', 'date')
+        
+        if not queryset.exists():
+             return Response([])
+
+        df_all = pd.DataFrame.from_records(queryset)
+        if df_all.empty:
+            return Response([])
+            
+        df_all['date'] = pd.to_datetime(df_all['date'])
+        
+        results = []
+        
+        # Vectorized GroupBy + Apply is faster than looping if tailored, but looping distinct tickers is safer for complex logic
+        grouped = df_all.groupby('ticker')
+        
+        for ticker, group in grouped:
+            if len(group) < 50: continue # Skip if not enough data
+            
+            # Simple technical indicators
+            df = group.set_index('date').sort_index()
+            close = df['close']
+            high = df['high']
+            low = df['low']
+            
+            signal = None
+            strength = 0 # 0-100
+            reason = ""
+            
+            try:
+                if strategy_type == 'ema_cross':
+                    # Golden Cross: 50 EMA crosses above 200 EMA
+                    ema_50 = close.ewm(span=50, adjust=False).mean()
+                    ema_200 = close.ewm(span=200, adjust=False).mean()
+                    
+                    if len(close) < 200: continue
+                    
+                    # Check latest and prev
+                    curr_50 = ema_50.iloc[-1]
+                    curr_200 = ema_200.iloc[-1]
+                    prev_50 = ema_50.iloc[-2]
+                    prev_200 = ema_200.iloc[-2]
+                    
+                    if prev_50 <= prev_200 and curr_50 > curr_200:
+                        signal = 'BUY'
+                        strength = 85
+                        reason = f"Golden Cross (EMA 50 > EMA 200). Close: {close.iloc[-1]}"
+                    elif prev_50 >= prev_200 and curr_50 < curr_200:
+                        signal = 'SELL'
+                        strength = 85
+                        reason = f"Death Cross (EMA 50 < EMA 200). Close: {close.iloc[-1]}"
+                    elif curr_50 > curr_200 and (curr_50 - curr_200) / curr_200 < 0.02:
+                         # Near cross support
+                         signal = 'BUY'
+                         strength = 60
+                         reason = "Trend Support (EMA 50 near EMA 200)"
+
+                elif strategy_type == 'smart_cross':
+                    # RSI + MACD
+                    # RSI
+                    delta = close.diff()
+                    gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+                    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+                    rs = gain / loss
+                    rsi = 100 - (100 / (1 + rs))
+                    
+                    # MACD (12, 26, 9)
+                    exp1 = close.ewm(span=12, adjust=False).mean()
+                    exp2 = close.ewm(span=26, adjust=False).mean()
+                    macd_line = exp1 - exp2
+                    signal_line = macd_line.ewm(span=9, adjust=False).mean()
+                    
+                    curr_rsi = rsi.iloc[-1]
+                    curr_macd = macd_line.iloc[-1]
+                    curr_sig = signal_line.iloc[-1]
+                    prev_macd = macd_line.iloc[-2]
+                    prev_sig = signal_line.iloc[-2]
+                    
+                    # Buy Logic: RSI < 50 AND MACD Bullish Cross
+                    if curr_rsi < 55 and (prev_macd <= prev_sig and curr_macd > curr_sig):
+                        signal = 'BUY'
+                        strength = 90
+                        reason = f"Smart Buy: RSI {curr_rsi:.0f} (Oversold/Neutral) + MACD Cross"
+                    # Sell Logic: RSI > 65 AND MACD Bearish Cross
+                    elif curr_rsi > 60 and (prev_macd >= prev_sig and curr_macd < curr_sig):
+                        signal = 'SELL'
+                        strength = 80
+                        reason = f"Smart Sell: RSI {curr_rsi:.0f} (Overbought) + MACD Cross"
+                        
+                elif strategy_type == 'ichimoku':
+                    # Tenkan (9), Kijun (26)
+                    # Note: We simulate standard Ichimoku logic without full cloud shift checks for simplicity
+                    high_9 = high.rolling(window=9).max()
+                    low_9 = low.rolling(window=9).min()
+                    tenkan = (high_9 + low_9) / 2
+                    
+                    high_26 = high.rolling(window=26).max()
+                    low_26 = low.rolling(window=26).min()
+                    kijun = (high_26 + low_26) / 2
+                    
+                    curr_tenkan = tenkan.iloc[-1]
+                    curr_kijun = kijun.iloc[-1]
+                    prev_tenkan = tenkan.iloc[-2]
+                    prev_kijun = kijun.iloc[-2]
+                    
+                    # TK Cross
+                    if prev_tenkan <= prev_kijun and curr_tenkan > curr_kijun:
+                        signal = 'BUY'
+                        strength = 75
+                        reason = f"Ichimoku: Bullish Tenkan-Kijun Cross"
+                    elif prev_tenkan >= prev_kijun and curr_tenkan < curr_kijun:
+                        signal = 'SELL'
+                        strength = 75
+                        reason = f"Ichimoku: Bearish Tenkan-Kijun Cross"
+
+                elif strategy_type == 'mean_reversion':
+                    # Bollinger Bands (20, 2)
+                    sma_20 = close.rolling(window=20).mean()
+                    std_20 = close.rolling(window=20).std()
+                    upper_band = sma_20 + (std_20 * 2)
+                    lower_band = sma_20 - (std_20 * 2)
+                    
+                    curr_close = close.iloc[-1]
+                    curr_lower = lower_band.iloc[-1]
+                    curr_upper = upper_band.iloc[-1]
+                    
+                    # Mean Reversion Buy: Price dips below lower band
+                    if curr_close < curr_lower:
+                        signal = 'BUY'
+                        # Strength based on depth
+                        diff_pct = (curr_lower - curr_close) / curr_close * 100
+                        strength = min(100, 70 + (diff_pct * 10)) # Base 70, +10 per 1% drop
+                        reason = f"Mean Reversion: Price below Lower BB. Oversold."
+                    
+                    # Mean Reversion Sell: Price exceeds upper band
+                    elif curr_close > curr_upper:
+                        signal = 'SELL'
+                        diff_pct = (curr_close - curr_upper) / curr_upper * 100
+                        strength = min(100, 70 + (diff_pct * 10))
+                        reason = f"Mean Reversion: Price above Upper BB. Overbought."
+
+                elif strategy_type == 'stochastic':
+                    # Stochastic Oscillator (14, 3, 3)
+                    # %K = (Current Close - Lowest Low)/(Highest High - Lowest Low) * 100
+                    low_14 = low.rolling(window=14).min()
+                    high_14 = high.rolling(window=14).max()
+                    
+                    k_percent = 100 * ((close - low_14) / (high_14 - low_14))
+                    d_percent = k_percent.rolling(window=3).mean()
+                    
+                    curr_k = k_percent.iloc[-1]
+                    curr_d = d_percent.iloc[-1]
+                    prev_k = k_percent.iloc[-2]
+                    prev_d = d_percent.iloc[-2]
+                    
+                    # Buy: %K < 20 and crosses above %D
+                    if curr_k < 20 and prev_k <= prev_d and curr_k > curr_d:
+                         signal = 'BUY'
+                         strength = 80
+                         reason = f"Stochastic: Bullish Cross in Oversold Zone (K={curr_k:.1f})"
+                    
+                    # Sell: %K > 80 and crosses below %D
+                    elif curr_k > 80 and prev_k >= prev_d and curr_k < curr_d:
+                         signal = 'SELL'
+                         strength = 80
+                         reason = f"Stochastic: Bearish Cross in Overbought Zone (K={curr_k:.1f})"
+
+                elif strategy_type == 'volume_breakout':
+                    # Volume > 200% of 20-day Average AND Price Up
+                    adv_vol = df['volume']
+                    avg_vol = adv_vol.rolling(window=20).mean()
+                    
+                    curr_vol = adv_vol.iloc[-1]
+                    curr_avg = avg_vol.iloc[-1]
+                    
+                    if curr_vol > (curr_avg * 2.0) and close.iloc[-1] > close.iloc[-2]:
+                        signal = 'BUY'
+                        # Strength based on volume multiple
+                        multiple = curr_vol / curr_avg
+                        strength = min(100, 60 + (multiple * 10))
+                        reason = f"Volume Breakout: {multiple:.1f}x Average Volume + Price Up"
+
+                elif strategy_type == 'supertrend':
+                    # Supertrend (10, 3)
+                    # ATR 10
+                    tr1 = high - low
+                    tr2 = abs(high - close.shift(1))
+                    tr3 = abs(low - close.shift(1))
+                    tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+                    atr = tr.rolling(window=10).mean()
+                    
+                    hl2 = (high + low) / 2
+                    basic_upper = hl2 + (3 * atr)
+                    basic_lower = hl2 - (3 * atr)
+                    
+                    # Supertrend calculation requires iteration or recursive shift, optimizing for last few rows
+                    # Simplified Trend Check for last row:
+                    # If Close > Prev SuperTrend Upper -> Bullish
+                    # We will implement a simplified scan looking for trend *change*
+                    
+                    # Full calculation is complex in vectorized form without Numba or loop.
+                    # We will simulate the last 2 periods of logic to detect a FLIP.
+                    # Prerequisite: We need a reasonable approximation of the trend state.
+                    
+                    # Let's use a simpler "ATR Trailing Stop" logic for scan
+                    curr_close = close.iloc[-1]
+                    curr_atr = atr.iloc[-1]
+                    prev_close = close.iloc[-2]
+                    
+                    # Trend Change Buy: Price crosses above (Close[t-1] + 3*ATR) - simplified breakout
+                    # Actually, standard Supertrend uses recursive bands.
+                    # Alternative: Keltner Channel Breakout (EMA 20 +/- 2 ATR)
+                    # Let's stick to Keltner Channel for vectorization speed, often used similarly to Supertrend
+                    
+                    ema_20 = close.ewm(span=20, adjust=False).mean()
+                    k_upper = ema_20 + (2 * atr)
+                    k_lower = ema_20 - (2 * atr)
+                    
+                    curr_ku = k_upper.iloc[-1]
+                    prev_ku = k_upper.iloc[-2]
+                    
+                    # Breakout Buy
+                    if prev_close <= prev_ku and curr_close > curr_ku:
+                         signal = 'BUY'
+                         strength = 80
+                         reason = "Keltner Channel Breakout (Volatility Expansion)"
+                    
+                    # Breakdown Sell
+                    curr_kl = k_lower.iloc[-1]
+                    prev_kl = k_lower.iloc[-2]
+                    if prev_close >= prev_kl and curr_close < curr_kl:
+                         signal = 'SELL'
+                         strength = 80
+                         reason = "Keltner Channel Breakdown"
+
+                elif strategy_type == 'candlestick_engulfing':
+                    # Bullish Engulfing:
+                    # Day 1: Red Candle
+                    # Day 2: Green Candle, Open < Day 1 Close, Close > Day 1 Open
+                    
+                    o1 = df['open'].iloc[-2]
+                    c1 = close.iloc[-2]
+                    o2 = df['open'].iloc[-1]
+                    c2 = close.iloc[-1]
+                    
+                    # Prev Day Red
+                    is_red_1 = c1 < o1
+                    # Curr Day Green
+                    is_green_2 = c2 > o2
+                    
+                    # Bullish Engulfing
+                    if is_red_1 and is_green_2 and o2 < c1 and c2 > o1:
+                        signal = 'BUY'
+                        strength = 75
+                        reason = "Bullish Engulfing Pattern (Price Action)"
+                    
+                    # Bearish Engulfing
+                    # Prev Day Green
+                    is_green_1 = c1 > o1
+                    # Curr Day Red
+                    is_red_2 = c2 < o2
+                    
+                    if is_green_1 and is_red_2 and o2 > c1 and c2 < o1:
+                        signal = 'SELL'
+                        strength = 75
+                        reason = "Bearish Engulfing Pattern (Price Action)"
+                        
+            except Exception as e:
+                continue
+            except Exception as e:
+                continue
+                
+            if signal:
+                results.append({
+                    'symbol': ticker,
+                    'signal': signal,
+                    'strength': strength,
+                    'reason': reason,
+                    'close': float(close.iloc[-1]),
+                    'date': df.index[-1].strftime('%Y-%m-%d')
+                })
+        
+        # Sort by strength
+        results.sort(key=lambda x: x['strength'], reverse=True)
+        return Response(results)
 
 

@@ -1,0 +1,493 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useRouter, useParams } from 'next/navigation';
+import DashboardLayout from '@/components/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Play, ArrowLeft, Calendar, FileText, TrendingUp, Activity, Zap } from 'lucide-react';
+import { toast } from 'sonner';
+import { CompanySelect } from '@/components/CompanySelect';
+
+interface Strategy {
+    id: number;
+    name: string;
+    description: string;
+    code: string;
+}
+
+const METRIC_GROUPS = [
+    {
+        title: "Performance Metrics",
+        metrics: [
+            { label: "Return", key: "Return [%]", suffix: "%" },
+            { label: "Win Rate", key: "Win Rate [%]", suffix: "%" },
+            { label: "Sharpe Ratio", key: "Sharpe Ratio" },
+            { label: "Sortino Ratio", key: "Sortino Ratio" },
+            { label: "Calmar Ratio", key: "Calmar Ratio" },
+            { label: "Avg Win/Loss Ratio", key: "Avg Win/Loss Ratio" },
+            { label: "Average Win", key: "Average Win" },
+            { label: "Average Loss", key: "Average Loss" },
+        ]
+    },
+    {
+        title: "Risk Metrics",
+        metrics: [
+            { label: "Max Drawdown", key: "Max. Drawdown [%]", suffix: "%" },
+            { label: "Largest Winning Trade", key: "Largest Winning Trade" },
+            { label: "Largest Losing Trade", key: "Largest Losing Trade" },
+            { label: "Expectancy", key: "Expectancy [%]", suffix: "%" },
+            { label: "Avg Holding Period", key: "Average Holding Period" },
+            { label: "Gross Profit", key: "Gross Profit" },
+            { label: "Gross Loss", key: "Gross Loss" },
+        ]
+    },
+    {
+        title: "Trade Metrics",
+        metrics: [
+            { label: "Total Trades", key: "# Trades" },
+            { label: "Winning Trades", key: "Total Winning Trades" },
+            { label: "Losing Trades", key: "Total Losing Trades" },
+            { label: "Finishing Balance", key: "Equity Final [$]" },
+            { label: "Longs Count", key: "Total Long Trades" },
+            { label: "Shorts Count", key: "Total Short Trades" },
+            { label: "Fee", key: "Commissions [$]" },
+        ]
+    }
+];
+
+export default function RunStrategyPage() {
+    const router = useRouter();
+    const params = useParams();
+    const strategyId = params.id;
+
+    const [strategy, setStrategy] = useState<Strategy | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [running, setRunning] = useState(false);
+    const [results, setResults] = useState<any>(null);
+    const [optimizing, setOptimizing] = useState(false);
+    const [showOptimizeDialog, setShowOptimizeDialog] = useState(false);
+    const [optimizationResults, setOptimizationResults] = useState<any>(null);
+
+    // Param State
+    const [symbol, setSymbol] = useState('');
+
+    // Default Dates: Last 5 Years
+    const today = new Date();
+    const fiveYearsAgo = new Date();
+    fiveYearsAgo.setFullYear(today.getFullYear() - 5);
+
+    const formatDate = (date: Date) => date.toISOString().split('T')[0];
+
+    const [startDate, setStartDate] = useState(formatDate(fiveYearsAgo));
+    const [endDate, setEndDate] = useState(formatDate(today));
+
+    useEffect(() => {
+        if (strategyId) {
+            fetchStrategy();
+        }
+    }, [strategyId]);
+
+    const fetchStrategy = async () => {
+        try {
+            const token = localStorage.getItem('access_token');
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const response = await axios.get(`${apiUrl}/api/stocks/strategies/${strategyId}/`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setStrategy(response.data);
+        } catch (error: any) {
+            if (error.response?.status === 401) {
+                window.location.href = '/login';
+                return;
+            }
+            toast.error('Failed to load strategy');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRun = async () => {
+        if (!strategy) return;
+        setRunning(true);
+        setResults(null);
+        try {
+            const token = localStorage.getItem('access_token');
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const response = await axios.post(`${apiUrl}/api/stocks/strategies/backtest/`,
+                { code: strategy.code, symbol, start_date: startDate, end_date: endDate },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setResults(response.data);
+            toast.success('Backtest complete');
+        } catch (error: any) {
+            console.error('Backtest failed', error);
+            toast.error(error.response?.data?.error || 'Backtest failed');
+        } finally {
+            setRunning(false);
+        }
+    };
+
+    const handleOptimize = async (paramRanges: any, nTrials: number) => {
+        if (!strategy) return;
+        setOptimizing(true);
+        try {
+            const token = localStorage.getItem('access_token');
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const response = await axios.post(`${apiUrl}/api/stocks/strategies/optimize/`,
+                {
+                    code: strategy.code,
+                    symbol,
+                    start_date: startDate,
+                    end_date: endDate,
+                    param_ranges: paramRanges,
+                    n_trials: nTrials
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setOptimizationResults(response.data);
+            toast.success(`Optimization complete! Best return: ${response.data.best_value.toFixed(2)}%`);
+        } catch (error: any) {
+            console.error('Optimization failed', error);
+            toast.error(error.response?.data?.error || 'Optimization failed');
+        } finally {
+            setOptimizing(false);
+        }
+    };
+
+    const handleApplyOptimized = async () => {
+        if (!optimizationResults || !strategy) return;
+        try {
+            const token = localStorage.getItem('access_token');
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            await axios.patch(`${apiUrl}/api/stocks/strategies/${strategyId}/`,
+                { code: optimizationResults.optimized_code },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setStrategy({ ...strategy, code: optimizationResults.optimized_code });
+            setOptimizationResults(null);
+            toast.success('Optimized parameters applied to strategy!');
+        } catch (error: any) {
+            toast.error('Failed to update strategy');
+        }
+    };
+
+    if (loading) return <DashboardLayout><div>Loading...</div></DashboardLayout>;
+
+    return (
+        <DashboardLayout>
+            <div className="flex flex-col h-[calc(100vh-64px)]">
+                {/* Header */}
+                <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => router.push('/strategies')}
+                        >
+                            <ArrowLeft size={20} />
+                        </Button>
+                        <div>
+                            <h1 className="text-xl font-bold text-gray-900">{strategy?.name || 'Strategy Backtest'}</h1>
+                            <p className="text-sm text-gray-500">Backtest Configuration & Results</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Button variant="outline" onClick={() => router.push(`/strategies/${strategyId}/edit`)}>
+                            Edit Strategy
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowOptimizeDialog(true)}
+                            disabled={optimizing}
+                            className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                        >
+                            {optimizing ? 'Optimizing...' : <><Zap size={16} className="mr-2" /> Optimize Parameters</>}
+                        </Button>
+                        <Button onClick={handleRun} disabled={running} className="bg-blue-600 hover:bg-blue-700">
+                            {running ? 'Running...' : <><Play size={16} className="mr-2" /> Run Backtest</>}
+                        </Button>
+                    </div>
+                </div>
+
+                <div className="flex flex-1 overflow-hidden">
+                    {/* Sidebar: Config */}
+                    <div className="w-80 bg-gray-50 border-r border-gray-200 p-6 overflow-y-auto">
+                        <h3 className="font-bold text-gray-900 mb-6 uppercase tracking-wider text-sm flex items-center gap-2">
+                            <Activity size={16} /> Configuration
+                        </h3>
+
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <Label>Ticker Symbol</Label>
+                                <CompanySelect value={symbol} onChange={(val) => setSymbol(val)} />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Start Date</Label>
+                                <div className="relative">
+                                    <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="bg-white pl-10" />
+                                    <Calendar className="absolute left-3 top-2.5 text-gray-400" size={16} />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>End Date</Label>
+                                <div className="relative">
+                                    <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="bg-white pl-10" />
+                                    <Calendar className="absolute left-3 top-2.5 text-gray-400" size={16} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Main Content: Results */}
+                    <div className="flex-1 bg-gray-50/50 p-6 overflow-y-auto">
+                        {results ? (
+                            <div className="max-w-5xl mx-auto space-y-6">
+                                {/* KPI Cards */}
+                                <div className="grid grid-cols-4 gap-4">
+                                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                                        <div className="text-sm text-gray-500 mb-1">Total PnL</div>
+                                        <div className={`text-2xl font-bold ${results.stats.total_pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            Rs. {results.stats.total_pnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </div>
+                                    </div>
+                                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                                        <div className="text-sm text-gray-500 mb-1">Win Rate</div>
+                                        <div className="text-2xl font-bold text-gray-900">
+                                            {results.stats.win_rate.toFixed(1)}%
+                                        </div>
+                                    </div>
+                                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                                        <div className="text-sm text-gray-500 mb-1">Total Trades</div>
+                                        <div className="text-2xl font-bold text-gray-900">
+                                            {results.stats.total_trades}
+                                        </div>
+                                    </div>
+                                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                                        <div className="text-sm text-gray-500 mb-1">Return %</div>
+                                        <div className={`text-2xl font-bold ${results.stats.pnl_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {results.stats.pnl_percent.toFixed(2)}%
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Backtesting.py Interactive Plot */}
+                                {results.plot_html && (
+                                    <div className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm overflow-hidden h-[600px]">
+                                        <iframe
+                                            srcDoc={results.plot_html}
+                                            className="w-full h-full border-none"
+                                            title="Backtest Results"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Raw Stats (Grouped View) */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {METRIC_GROUPS.map((group) => (
+                                        <div key={group.title} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden h-fit">
+                                            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                                                <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm uppercase tracking-wider">
+                                                    {group.title}
+                                                </h3>
+                                            </div>
+                                            <div className="p-6 space-y-4">
+                                                {group.metrics.map((metric) => {
+                                                    const rawValue = results.stats.raw ? results.stats.raw[metric.key] : null;
+                                                    let displayValue = rawValue;
+
+                                                    // Special handling for PNL in Performance Metrics
+                                                    if (metric.label === "Return" && results.stats.total_pnl && results.stats.pnl_percent) {
+                                                        const pnl = results.stats.total_pnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                                        const pct = results.stats.pnl_percent.toFixed(2);
+                                                        displayValue = `Rs. ${pnl} (${pct}%)`;
+                                                    } else if (typeof rawValue === 'number') {
+                                                        displayValue = rawValue.toLocaleString('en-US', { maximumFractionDigits: 2 });
+                                                        if (metric.suffix) displayValue += metric.suffix;
+                                                    } else if (rawValue === null || rawValue === undefined) {
+                                                        displayValue = "-";
+                                                    }
+
+                                                    return (
+                                                        <div key={metric.label} className="flex justify-between items-center text-sm">
+                                                            <span className="text-gray-500">{metric.label}</span>
+                                                            <span className="font-medium font-mono">{displayValue}</span>
+                                                        </div>
+                                                    );
+                                                })}
+
+                                                {/* Add any unmapped keys to 'Risk' or specific other logic if needed? 
+                                                    For now keeping it strict to the config for cleanliness. 
+                                                */}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                            </div>
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                                <Activity size={48} className="mb-4 opacity-20" />
+                                <p className="text-lg font-medium">Ready to Backtest</p>
+                                <p className="text-sm">Configure parameters and click "Run Backtest" to begin.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Optimization Dialog */}
+            {showOptimizeDialog && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                        <div className="p-6 border-b border-gray-200">
+                            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                                <Zap className="text-purple-600" size={24} />
+                                Optimize Strategy Parameters
+                            </h2>
+                            <p className="text-sm text-gray-500 mt-1">Find the best parameter values using Optuna optimization</p>
+                        </div>
+
+                        {!optimizationResults ? (
+                            <OptimizeForm
+                                onOptimize={handleOptimize}
+                                onCancel={() => setShowOptimizeDialog(false)}
+                                optimizing={optimizing}
+                            />
+                        ) : (
+                            <OptimizationResults
+                                results={optimizationResults}
+                                onApply={handleApplyOptimized}
+                                onClose={() => {
+                                    setOptimizationResults(null);
+                                    setShowOptimizeDialog(false);
+                                }}
+                            />
+                        )}
+                    </div>
+                </div>
+            )}
+        </DashboardLayout>
+    );
+}
+
+// Optimization Form Component
+function OptimizeForm({ onOptimize, onCancel, optimizing }: any) {
+    const [nTrials, setNTrials] = useState(50);
+    const [paramJson, setParamJson] = useState(JSON.stringify({
+        "n1": [5, 30],
+        "n2": [20, 100]
+    }, null, 2));
+    const [jsonError, setJsonError] = useState('');
+
+    const handleSubmit = () => {
+        try {
+            const paramRanges = JSON.parse(paramJson);
+
+            // Validate format
+            for (const [key, value] of Object.entries(paramRanges)) {
+                if (!Array.isArray(value) || value.length !== 2) {
+                    setJsonError(`Invalid format for "${key}". Expected [min, max] array.`);
+                    return;
+                }
+            }
+
+            setJsonError('');
+            onOptimize(paramRanges, nTrials);
+        } catch (error) {
+            setJsonError('Invalid JSON format. Please check your syntax.');
+        }
+    };
+
+    return (
+        <div className="p-6 space-y-6">
+            <div>
+                <Label className="text-sm font-medium text-gray-700 mb-2 block">Number of Trials</Label>
+                <Input
+                    type="number"
+                    value={nTrials}
+                    onChange={(e) => setNTrials(parseInt(e.target.value))}
+                    min={10}
+                    max={200}
+                    className="w-full"
+                />
+                <p className="text-xs text-gray-500 mt-1">More trials = better results but slower (recommended: 50-100)</p>
+            </div>
+
+
+            <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button variant="outline" onClick={onCancel} disabled={optimizing}>
+                    Cancel
+                </Button>
+                <Button onClick={handleSubmit} disabled={optimizing} className="bg-purple-600 hover:bg-purple-700">
+                    {optimizing ? 'Optimizing...' : 'Start Optimization'}
+                </Button>
+            </div>
+        </div>
+    );
+}
+
+// Optimization Results Component
+function OptimizationResults({ results, onApply, onClose }: any) {
+    return (
+        <div className="p-6 space-y-6">
+            <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg border border-purple-200">
+                <div className="text-sm text-gray-600 mb-2">Best Return Achieved</div>
+                <div className="text-4xl font-bold text-purple-600">{results.best_value.toFixed(2)}%</div>
+            </div>
+
+            <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Optimized Parameters</h3>
+                <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                    {Object.entries(results.best_params).map(([key, value]: any) => (
+                        <div key={key} className="flex justify-between items-center">
+                            <span className="text-gray-600 font-mono">{key}</span>
+                            <span className="font-bold text-gray-900">{value}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Top 5 Trials</h3>
+                <div className="space-y-2">
+                    {results.trials
+                        .filter((t: any) => t.value !== null)
+                        .sort((a: any, b: any) => b.value - a.value)
+                        .slice(0, 5)
+                        .map((trial: any, idx: number) => (
+                            <div key={trial.number} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-sm font-bold">
+                                        {idx + 1}
+                                    </div>
+                                    <div className="text-sm">
+                                        {Object.entries(trial.params).map(([k, v]: any) => (
+                                            <span key={k} className="mr-3">
+                                                <span className="text-gray-500">{k}=</span>
+                                                <span className="font-mono font-semibold">{v}</span>
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="text-sm font-bold text-gray-900">{trial.value.toFixed(2)}%</div>
+                            </div>
+                        ))}
+                </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button variant="outline" onClick={onClose}>
+                    Close
+                </Button>
+                <Button onClick={onApply} className="bg-green-600 hover:bg-green-700">
+                    Apply to Strategy
+                </Button>
+            </div>
+        </div>
+    );
+}

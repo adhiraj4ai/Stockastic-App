@@ -6,10 +6,12 @@ import axios from 'axios';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Trash2, Plus, TrendingUp, TrendingDown, DollarSign, Wallet, Users, FolderPlus } from 'lucide-react';
+import { Trash2, Plus, TrendingUp, TrendingDown, DollarSign, Wallet, Users, FolderPlus, ShieldAlert, CheckCircle2, Activity } from 'lucide-react';
 import TransactionModal, { PortfolioAccount } from '@/components/TransactionModal';
 import { CreateAccountDialog } from '@/components/CreateAccountDialog';
 import StockLink from '@/components/StockLink';
+import { Wand2, Target } from 'lucide-react';
+import { ExitStrategyDialog } from '@/components/ExitStrategyDialog';
 
 interface PortfolioItem {
     id: number;
@@ -23,6 +25,11 @@ interface PortfolioItem {
     gain_loss: number;
     gain_loss_percent: number;
     day_gain_loss: number;
+    sector?: string;
+    volatility?: number;
+    stop_loss_price?: number;
+    target_price?: number;
+    strategy_type?: string;
 }
 
 export default function PortfolioPage() {
@@ -32,6 +39,7 @@ export default function PortfolioPage() {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
+    const [selectedExitItem, setSelectedExitItem] = useState<PortfolioItem | null>(null);
     const router = useRouter();
 
     const fetchAccounts = async () => {
@@ -183,6 +191,16 @@ export default function PortfolioPage() {
                             <Plus className="h-5 w-5" />
                             <span className="hidden sm:inline">Add Transaction</span>
                         </button>
+
+                        <button
+                            onClick={() => router.push(`/portfolio/optimize?account=${selectedAccount}`)}
+                            disabled={displayedItems.length === 0}
+                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Advanced Portfolio Optimization"
+                        >
+                            <Wand2 className="h-5 w-5" />
+                            <span className="hidden sm:inline">Optimize</span>
+                        </button>
                     </div>
                 </div>
 
@@ -245,6 +263,100 @@ export default function PortfolioPage() {
                     </Card>
                 </div>
 
+                {/* Risk Management Section */}
+                {displayedItems.length > 0 && (
+                    <Card className="bg-slate-50 border-slate-200">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="flex items-center gap-2 text-lg">
+                                <ShieldAlert className="h-5 w-5 text-slate-600" />
+                                Risk Analysis
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* Sector Allocation */}
+                                <div>
+                                    <h4 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">Sector Allocation</h4>
+                                    <div className="space-y-3">
+                                        {Object.entries(
+                                            displayedItems.reduce((acc, item) => {
+                                                const sector = item.sector || 'Unknown';
+                                                acc[sector] = (acc[sector] || 0) + Number(item.current_value);
+                                                return acc;
+                                            }, {} as Record<string, number>)
+                                        )
+                                            .sort(([, a], [, b]) => b - a)
+                                            .map(([sector, value]) => {
+                                                const percent = (value / totalCurrentValue) * 100;
+                                                return (
+                                                    <div key={sector}>
+                                                        <div className="flex justify-between text-sm mb-1">
+                                                            <span className="font-medium text-gray-700">{sector}</span>
+                                                            <span className={percent > 40 ? "text-red-500 font-bold" : "text-gray-500"}>
+                                                                {percent.toFixed(1)}%
+                                                            </span>
+                                                        </div>
+                                                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                            <div
+                                                                className={`h-full rounded-full ${percent > 40 ? 'bg-red-500' : 'bg-blue-500'}`}
+                                                                style={{ width: `${percent}%` }}
+                                                            />
+                                                        </div>
+                                                        {percent > 40 && <p className="text-xs text-red-500 mt-0.5">⚠️ Overweight in this sector</p>}
+                                                    </div>
+                                                );
+                                            })}
+                                    </div>
+                                </div>
+
+                                {/* Concentration & Volatility Risks */}
+                                <div className="space-y-6">
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">Concentration Risk</h4>
+                                        <ul className="space-y-2">
+                                            {displayedItems
+                                                .filter(item => (Number(item.current_value) / totalCurrentValue) > 0.20)
+                                                .map(item => (
+                                                    <li key={item.ticker} className="flex items-center justify-between text-sm bg-white p-2 rounded border border-red-100 text-red-700">
+                                                        <span className="flex items-center gap-2">
+                                                            <ShieldAlert className="h-4 w-4" />
+                                                            High Exposure: <strong>{item.ticker}</strong>
+                                                        </span>
+                                                        <span className="font-bold">{((Number(item.current_value) / totalCurrentValue) * 100).toFixed(1)}%</span>
+                                                    </li>
+                                                ))}
+                                            {displayedItems.every(item => (Number(item.current_value) / totalCurrentValue) <= 0.20) && (
+                                                <li className="text-sm text-green-600 flex items-center gap-2">
+                                                    <CheckCircle2 className="h-4 w-4" />
+                                                    Portfolio is well diversified (No stock &gt; 20%)
+                                                </li>
+                                            )}
+                                        </ul>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">High Volatility Holdings</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {displayedItems
+                                                .filter(item => (item.volatility || 0) > 40) // >40% annualized vol considered high
+                                                .sort((a, b) => (b.volatility || 0) - (a.volatility || 0))
+                                                .map(item => (
+                                                    <div key={item.ticker} className="flex items-center gap-1.5 bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-xs font-medium border border-orange-100">
+                                                        <Activity className="h-3 w-3" />
+                                                        {item.ticker} {item.volatility?.toFixed(1)}%
+                                                    </div>
+                                                ))}
+                                            {!displayedItems.some(i => (i.volatility || 0) > 40) && (
+                                                <span className="text-sm text-gray-400 italic">No high volatility stocks detected.</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
                 {/* Holdings Table */}
                 <Card className="shadow-sm">
                     <CardHeader>
@@ -265,11 +377,12 @@ export default function PortfolioPage() {
                                         <TableRow>
                                             <TableHead>Ticker</TableHead>
                                             <TableHead className="text-right">Quantity</TableHead>
-                                            <TableHead className="text-right">WACC</TableHead>
-                                            <TableHead className="text-right">LTP</TableHead>
-                                            <TableHead className="text-right">Total Value</TableHead>
-                                            <TableHead className="text-right">Profit/Loss</TableHead>
-                                            <TableHead className="text-right">Today's P/L</TableHead>
+                                            <TableHead className="text-right">WACC (Rs.)</TableHead>
+                                            <TableHead className="text-right">LTP (Rs.)</TableHead>
+                                            <TableHead className="text-right">Total Value (Rs.)</TableHead>
+                                            <TableHead className="text-right">Profit/Loss (Rs.)</TableHead>
+                                            <TableHead className="text-right">Today's P/L (Rs.)</TableHead>
+                                            <TableHead className="text-right">Exit Plan</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -282,12 +395,21 @@ export default function PortfolioPage() {
                                             return (
                                                 <TableRow key={`${item.ticker}-${idx}`} className="hover:bg-gray-50">
                                                     <TableCell className="font-semibold">
-                                                        <StockLink ticker={item.ticker} />
+                                                        <div className="flex flex-col">
+                                                            <StockLink ticker={item.ticker} />
+                                                            {/* Exit Strategy Badges */}
+                                                            {(item.stop_loss_price || item.target_price) && (
+                                                                <div className="flex gap-1 mt-1">
+                                                                    {item.stop_loss_price && <span className="text-[10px] bg-red-50 text-red-600 px-1 rounded border border-red-100">SL: {Number(item.stop_loss_price).toFixed(0)}</span>}
+                                                                    {item.target_price && <span className="text-[10px] bg-green-50 text-green-600 px-1 rounded border border-green-100">TP: {Number(item.target_price).toFixed(0)}</span>}
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </TableCell>
                                                     <TableCell className="text-right">{item.quantity}</TableCell>
-                                                    <TableCell className="text-right">Rs. {Number(item.wacc || item.buy_price).toFixed(2)}</TableCell>
-                                                    <TableCell className="text-right">Rs. {item.current_price}</TableCell>
-                                                    <TableCell className="text-right font-medium">Rs. {Number(item.current_value).toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
+                                                    <TableCell className="text-right">{Number(item.wacc || item.buy_price).toFixed(2)}</TableCell>
+                                                    <TableCell className="text-right">{item.current_price}</TableCell>
+                                                    <TableCell className="text-right font-medium">{Number(item.current_value).toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
                                                     <TableCell className={`text-right ${isPos ? 'text-green-600' : 'text-red-600'}`}>
                                                         <div className="font-medium">
                                                             {isPos ? '+' : ''}{pl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
@@ -298,6 +420,15 @@ export default function PortfolioPage() {
                                                     </TableCell>
                                                     <TableCell className={`text-right font-medium ${isDayPos ? 'text-green-600' : 'text-red-600'}`}>
                                                         {isDayPos ? '+' : ''}{dayPl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <button
+                                                            onClick={() => setSelectedExitItem(item)}
+                                                            className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all"
+                                                            title="Set Stop Loss / Target"
+                                                        >
+                                                            <Target className="h-4 w-4" />
+                                                        </button>
                                                     </TableCell>
                                                 </TableRow>
                                             );
@@ -325,6 +456,15 @@ export default function PortfolioPage() {
                         fetchAccounts(); // Refresh accounts too, maybe balance changed?
                     }}
                     accounts={accounts}
+                />
+
+                {/* Optimized Dialog Removed */}
+
+                <ExitStrategyDialog
+                    open={!!selectedExitItem}
+                    onOpenChange={(open) => !open && setSelectedExitItem(null)}
+                    portfolioItem={selectedExitItem}
+                    onSave={fetchPortfolio}
                 />
 
             </div>

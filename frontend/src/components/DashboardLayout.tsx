@@ -2,13 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft } from 'lucide-react';
+import { SearchBar } from './SearchBar';
 
 const navItems = [
     { name: 'Dashboard', href: '/home', icon: LayoutDashboard },
     { name: 'Stocks', href: '/stock/NABIL', icon: TrendingUp },
     { name: 'Portfolio', href: '/portfolio', icon: Wallet },
     { name: 'Floorsheet', href: '/floorsheet', icon: FileText },
+    { name: 'Accumulation', href: '/accumulation', icon: Activity },
     { name: 'Strategies', href: '/strategies', icon: Lightbulb },
 ];
 
@@ -23,7 +25,7 @@ const stocks = [
     { symbol: 'MSFT', name: 'Microsoft Corporation' }
 ];
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({ children, title, noPadding, showBack }: { children: React.ReactNode; title?: string; noPadding?: boolean; showBack?: boolean }) {
     const pathname = usePathname();
     const router = useRouter();
 
@@ -37,13 +39,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 
         router.push('/login');
-    };
-
-    const handleTickerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const ticker = e.target.value;
-        if (ticker) {
-            router.push(`/stock/${ticker}`);
-        }
     };
 
     return (
@@ -86,28 +81,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <main className="flex-1 flex flex-col ml-64 min-w-0">
                 {/* Top Navigation Bar */}
                 <header className="bg-white border-b border-gray-200 sticky top-0 z-10 px-8 py-4 flex justify-between items-center shadow-sm">
-                    <div className="w-1/4">
+                    <div className="w-1/4 flex items-center gap-3">
+                        {showBack && (
+                            <button
+                                onClick={() => router.back()}
+                                className="p-1.5 rounded-full hover:bg-gray-100 text-gray-600 transition-colors"
+                                title="Go Back"
+                            >
+                                <ArrowLeft size={20} />
+                            </button>
+                        )}
                         <h2 className="text-xl font-semibold text-gray-800 capitalize truncate">
-                            {pathname.includes('/stock/') ? 'Stock Details' : pathname.split('/').pop()}
+                            {title || (pathname.includes('/stock/') ? 'Stock Details' : pathname.split('/').pop())}
                         </h2>
                     </div>
 
                     {/* Centered Search Bar */}
-                    <div className="flex-1 flex justify-center">
-                        <div className="w-full max-w-2xl">
-                            <select
-                                onChange={handleTickerChange}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer shadow-sm text-lg"
-                                defaultValue=""
-                            >
-                                <option value="" disabled>Search for a company (e.g. NABIL, NICA)...</option>
-                                {stocks.map((stock) => (
-                                    <option key={stock.symbol} value={stock.symbol}>
-                                        {stock.symbol} - {stock.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                    <div className="w-1/2 flex justify-center">
+                        <SearchBar />
                     </div>
 
                     <div className="w-1/4 flex justify-end">
@@ -117,7 +108,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
                 </header>
 
-                <div className="p-8">
+                <div className={noPadding ? '' : 'p-8'}>
                     {children}
                 </div>
             </main>

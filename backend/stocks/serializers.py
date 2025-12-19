@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, StockFundamental, PortfolioAccount, Dividend, FinancialReport, Strategy
+from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, StockFundamental, PortfolioAccount, Dividend, FinancialReport, Strategy, Company
 
 class DailyStockPriceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -42,17 +42,22 @@ class PortfolioItemSerializer(serializers.ModelSerializer):
     gain_loss_percent = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     wacc = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     day_gain_loss = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    sector = serializers.CharField(read_only=True)
+    volatility = serializers.FloatField(read_only=True)
 
     class Meta:
         model = PortfolioItem
         fields = ['id', 'account', 'ticker', 'quantity', 'buy_price', 'wacc', 'purchased_at', 
-                  'current_price', 'current_value', 'investment_value', 'gain_loss', 'gain_loss_percent', 'day_gain_loss']
+                  'current_price', 'current_value', 'investment_value', 'gain_loss', 
+                  'gain_loss_percent', 'day_gain_loss', 'sector', 'volatility',
+                  'stop_loss_price', 'target_price', 'strategy_type']
         read_only_fields = ['id', 'purchased_at']
 
 class PortfolioTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = PortfolioTransaction
         fields = '__all__'
+        read_only_fields = ['id', 'user', 'amount', 'receivable_amount', 'commission', 'sebon_fee', 'dp_charge', 'cgt', 'created_at']
 
 
 
@@ -63,3 +68,8 @@ class StrategySerializer(serializers.ModelSerializer):
         model = Strategy
         fields = ['id', 'name', 'description', 'code', 'created_at', 'is_public', 'pnl_amount', 'pnl_percent', 'max_drawdown', 'sharpe_ratio', 'win_rate']
         read_only_fields = ['id', 'created_at']
+
+class CompanySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = ['id', 'symbol', 'name', 'sector']

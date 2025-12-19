@@ -146,7 +146,7 @@ export default function DashboardPage() {
                 <TableHeader>
                     <TableRow>
                         <TableHead>Ticker</TableHead>
-                        <TableHead className="text-right">Price</TableHead>
+                        <TableHead className="text-right">Price (Rs.)</TableHead>
                         <TableHead className="text-right">Change</TableHead>
                         <TableHead className="text-right">Volume</TableHead>
                     </TableRow>
@@ -161,7 +161,7 @@ export default function DashboardPage() {
                                 onClick={() => router.push(`/stock/${stock.ticker}`)}
                             >
                                 <TableCell className="font-medium">{stock.ticker}</TableCell>
-                                <TableCell className="text-right">${Number(stock.close).toFixed(2)}</TableCell>
+                                <TableCell className="text-right">{Number(stock.close).toFixed(2)}</TableCell>
                                 <TableCell className={`text-right ${isStockPositive ? 'text-green-600' : 'text-red-600'}`}>
                                     {isStockPositive ? '+' : ''}{Number(stock.percent_change).toFixed(2)}%
                                 </TableCell>
@@ -189,14 +189,14 @@ export default function DashboardPage() {
                     {/* 1. Total Turnover */}
                     <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-600">Turnover</CardTitle>
+                            <CardTitle className="text-sm font-medium text-gray-600">Turnover (Rs.)</CardTitle>
                             <div className="p-2 bg-purple-100 rounded-lg">
                                 <Activity className="h-4 w-4 text-purple-600" />
                             </div>
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold text-gray-900">
-                                ${(market_summary.total_turnover / 1_000_000).toFixed(2)}M
+                                {(market_summary.total_turnover / 1_000_000).toFixed(2)}M
                             </div>
                         </CardContent>
                     </Card>
@@ -264,14 +264,14 @@ export default function DashboardPage() {
                     {/* 5. Portfolio Investment */}
                     <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-600">My Investment</CardTitle>
+                            <CardTitle className="text-sm font-medium text-gray-600">My Investment (Rs.)</CardTitle>
                             <div className="p-2 bg-blue-100 rounded-lg">
                                 <DollarSign className="h-4 w-4 text-blue-600" />
                             </div>
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold text-gray-900">
-                                ${portfolioStats.investment.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                {portfolioStats.investment.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </div>
                         </CardContent>
                     </Card>
@@ -279,7 +279,7 @@ export default function DashboardPage() {
                     {/* 6. Today's P/L */}
                     <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-600">Today's P/L</CardTitle>
+                            <CardTitle className="text-sm font-medium text-gray-600">Today's P/L (Rs.)</CardTitle>
                             <div className={`p-2 rounded-lg ${portfolioStats.dailyPLPositive ? 'bg-green-100' : 'bg-red-100'}`}>
                                 {portfolioStats.dailyPLPositive ? <TrendingUp className="h-4 w-4 text-green-600" /> : <TrendingDown className="h-4 w-4 text-red-600" />}
                             </div>

@@ -25,7 +25,7 @@ export function SectorSummary({ sectors }: { sectors: SectorData[] }) {
                             <TableRow>
                                 <TableHead>Sector</TableHead>
                                 <TableHead className="text-right">Change</TableHead>
-                                <TableHead className="text-right">Turnover</TableHead>
+                                <TableHead className="text-right">Turnover (Rs.)</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -38,7 +38,7 @@ export function SectorSummary({ sectors }: { sectors: SectorData[] }) {
                                             {isPositive ? '+' : ''}{sector.change.toFixed(2)}%
                                         </TableCell>
                                         <TableCell className="text-right text-gray-500 text-xs">
-                                            Rs. {(sector.turnover / 1_000_000).toFixed(1)}M
+                                            {(sector.turnover / 1_000_000).toFixed(1)}M
                                         </TableCell>
                                     </TableRow>
                                 )

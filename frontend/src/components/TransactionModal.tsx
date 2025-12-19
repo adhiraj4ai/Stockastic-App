@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Calculator } from 'lucide-react';
 import axios from 'axios';
+import { CompanySelect } from './CompanySelect';
 
 export interface PortfolioAccount {
     id: number;
@@ -139,9 +140,10 @@ export default function TransactionModal({
                 quantity: '',
                 rate: '',
             }));
-        } catch (err) {
-            console.error(err);
-            alert("Failed to submit transaction");
+        } catch (err: any) {
+            console.error('Transaction failed:', err);
+            const errorMsg = err.response?.data ? JSON.stringify(err.response.data) : "Failed to submit transaction";
+            alert(`Error: ${errorMsg}`);
         } finally {
             setLoading(false);
         }
@@ -206,13 +208,9 @@ export default function TransactionModal({
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Ticker</label>
-                            <input
-                                type="text"
-                                required
-                                placeholder="e.g. NABIL"
-                                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all uppercase"
+                            <CompanySelect
                                 value={formData.ticker}
-                                onChange={(e) => setFormData({ ...formData, ticker: e.target.value.toUpperCase() })}
+                                onChange={(val) => setFormData({ ...formData, ticker: val })}
                             />
                         </div>
                         <div className="space-y-2">
