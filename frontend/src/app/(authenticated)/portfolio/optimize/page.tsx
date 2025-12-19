@@ -131,7 +131,7 @@ export default function OptimizePage() {
             <div className="space-y-6 max-w-7xl mx-auto">
                 {/* Strategy Selection */}
                 <section>
-                    <h2 className="text-base font-semibold mb-3 text-gray-800">1. Select Strategy</h2>
+                    <h2 className="text-base font-semibold mb-3 text-gray-800">Strategies</h2>
                     <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
                         {strategies.filter(s => s.id !== 'equal').map((strat) => {
                             const Icon = strat.icon;

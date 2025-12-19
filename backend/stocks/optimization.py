@@ -128,28 +128,29 @@ def perform_portfolio_optimization(tickers, current_holdings=None, method='max_s
                 "max_drawdown": 0.0 # PyPfOpt doesn't calc this easily without backtest
             }
 
-        elif method in ['hrp', 'cvar'] and 'rp' in globals():
+        elif method in ['hrp', 'cvar', 'cdar'] and 'rp' in globals():
             # Use Riskfolio-Lib
-            port = rp.Portfolio(returns=returns)
-            port.assets_stats(method_mu='hist', method_cov='hist', d=0.94)
             
             if method == 'hrp':
-                # Hierarchical Risk Parity
-                # Provide link: https://riskfolio-lib.readthedocs.io/en/latest/examples.html
-                w = port.optimization(model='HRP', codependence='pearson', rm='MV', rf=0, link='single',leaf_order=True)
+                # Hierarchical Risk Parity uses HCPortfolio class
+                port = rp.HCPortfolio(returns=returns)
+                w = port.optimization(model='HRP', codependence='pearson', rm='MV', rf=0, link='single', leaf_order=True)
                 note = "Optimized via Riskfolio-Lib (HRP - Hierarchical Clustering)"
                 
-            elif method == 'cvar':
-                # Min Conditional Value at Risk
-                # model='Classic', rm='CVaR', obj='MinRisk'
-                w = port.optimization(model='Classic', rm='CVaR', obj='MinRisk', rf=0, l=0, hist=True)
-                note = "Optimized via Riskfolio-Lib (Min CVaR - Conditional Value at Risk)"
-                
-            elif method == 'cdar':
-                # Min CDaR (Conditional Drawdown at Risk)
-                # rm='CDaR'
-                w = port.optimization(model='Classic', rm='CDaR', obj='MinRisk', rf=0, l=0, hist=True)
-                note = "Optimized via Riskfolio-Lib (Min CDaR - Minimizes Deep Drawdowns)"
+            else:
+                # Classic Mean-Risk Optimization uses Portfolio class
+                port = rp.Portfolio(returns=returns)
+                port.assets_stats(method_mu='hist', method_cov='hist')
+
+                if method == 'cvar':
+                    # Min Conditional Value at Risk
+                    w = port.optimization(model='Classic', rm='CVaR', obj='MinRisk', rf=0, l=0, hist=True)
+                    note = "Optimized via Riskfolio-Lib (Min CVaR - Conditional Value at Risk)"
+                    
+                elif method == 'cdar':
+                    # Min CDaR (Conditional Drawdown at Risk)
+                    w = port.optimization(model='Classic', rm='CDaR', obj='MinRisk', rf=0, l=0, hist=True)
+                    note = "Optimized via Riskfolio-Lib (Min CDaR - Minimizes Deep Drawdowns)"
 
             weight_map = w.to_dict()['weights'] # Riskfolio returns DataFrame with 'weights' col
             

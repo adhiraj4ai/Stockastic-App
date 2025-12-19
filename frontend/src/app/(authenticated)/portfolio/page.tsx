@@ -12,6 +12,19 @@ import { CreateAccountDialog } from '@/components/CreateAccountDialog';
 import StockLink from '@/components/StockLink';
 import { Wand2, Target } from 'lucide-react';
 import { ExitStrategyDialog } from '@/components/ExitStrategyDialog';
+import { Input } from '@/components/ui/input';
+import { Eye, PlusCircle, X } from 'lucide-react';
+
+interface WatchlistItem {
+    id: number;
+    ticker: string;
+    target_price?: number;
+    notes?: string;
+    current_price?: number;
+    day_change?: number;
+    day_change_percent?: number;
+    added_at: string;
+}
 
 interface PortfolioItem {
     id: number;
@@ -40,6 +53,8 @@ export default function PortfolioPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
     const [selectedExitItem, setSelectedExitItem] = useState<PortfolioItem | null>(null);
+    const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
+    const [newWatchlistTicker, setNewWatchlistTicker] = useState('');
     const router = useRouter();
 
     const fetchAccounts = async () => {
@@ -53,6 +68,50 @@ export default function PortfolioPage() {
             setAccounts(response.data);
         } catch (err) {
             console.error('Failed to fetch accounts', err);
+        }
+    };
+
+    const fetchWatchlist = async () => {
+        try {
+            const token = localStorage.getItem('access_token');
+            if (!token) return;
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const response = await axios.get(`${apiUrl}/api/stocks/watchlist/`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setWatchlist(response.data);
+        } catch (err) {
+            console.error('Failed to fetch watchlist', err);
+        }
+    };
+
+    const addWatchlistItem = async () => {
+        if (!newWatchlistTicker) return;
+        try {
+            const token = localStorage.getItem('access_token');
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            await axios.post(`${apiUrl}/api/stocks/watchlist/`,
+                { ticker: newWatchlistTicker.toUpperCase() },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setNewWatchlistTicker('');
+            fetchWatchlist();
+        } catch (err) {
+            console.error('Failed to add to watchlist', err);
+            // Optionally add toast error here
+        }
+    };
+
+    const removeWatchlistItem = async (id: number) => {
+        try {
+            const token = localStorage.getItem('access_token');
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            await axios.delete(`${apiUrl}/api/stocks/watchlist/${id}/`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            fetchWatchlist();
+        } catch (err) {
+            console.error('Failed to remove from watchlist', err);
         }
     };
 
@@ -85,6 +144,7 @@ export default function PortfolioPage() {
 
     useEffect(() => {
         fetchAccounts();
+        fetchWatchlist();
     }, []);
 
     useEffect(() => {
@@ -437,6 +497,86 @@ export default function PortfolioPage() {
                                 </Table>
                             </div>
                         )}
+                    </CardContent>
+                </Card>
+
+                {/* Watchlist Section */}
+                <Card className="mt-6 border-none shadow-sm bg-white">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-gray-100 mb-0">
+                        <CardTitle className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                            <div className="p-1.5 bg-blue-100 rounded text-blue-600">
+                                <Eye size={18} />
+                            </div>
+                            Watchlist
+                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                            <Input
+                                placeholder="Add Ticker (e.g. NABIL)"
+                                value={newWatchlistTicker}
+                                onChange={(e) => setNewWatchlistTicker(e.target.value)}
+                                className="w-48 h-9 text-sm"
+                                onKeyDown={(e) => e.key === 'Enter' && addWatchlistItem()}
+                            />
+                            <button
+                                onClick={addWatchlistItem}
+                                className="h-9 px-3 flex items-center gap-1 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800 transition-colors"
+                            >
+                                <PlusCircle size={16} /> Add
+                            </button>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <Table>
+                            <TableHeader className="bg-gray-50/50">
+                                <TableRow>
+                                    <TableHead className="pl-6">Ticker</TableHead>
+                                    <TableHead className="text-right">Price</TableHead>
+                                    <TableHead className="text-right">Day Change</TableHead>
+                                    <TableHead className="text-right">Added On</TableHead>
+                                    <TableHead className="text-right w-[80px] pr-6">Action</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {watchlist.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center text-gray-500 py-8">
+                                            Your watchlist is empty. Add stocks to monitor them.
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    watchlist.map((item) => (
+                                        <TableRow key={item.id} className="hover:bg-gray-50/50 border-b border-gray-100 last:border-0">
+                                            <TableCell className="font-semibold text-gray-900 pl-6">
+                                                <StockLink ticker={item.ticker} />
+                                            </TableCell>
+                                            <TableCell className="text-right font-medium">
+                                                {item.current_price ? `Rs. ${item.current_price}` : '-'}
+                                            </TableCell>
+                                            <TableCell className={`text-right font-medium ${Number(item.day_change) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                {item.day_change ? (
+                                                    <span className="flex items-center justify-end gap-1">
+                                                        {Number(item.day_change) >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                                                        {item.day_change} ({item.day_change_percent}%)
+                                                    </span>
+                                                ) : '-'}
+                                            </TableCell>
+                                            <TableCell className="text-right text-gray-500 text-xs">
+                                                {new Date(item.added_at).toLocaleDateString()}
+                                            </TableCell>
+                                            <TableCell className="text-right pr-6">
+                                                <button
+                                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                                                    onClick={() => removeWatchlistItem(item.id)}
+                                                    title="Remove from Watchlist"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
                     </CardContent>
                 </Card>
 

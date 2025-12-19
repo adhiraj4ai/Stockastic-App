@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, StockFundamental, PortfolioAccount, Dividend, FinancialReport, Strategy, Company
+from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, StockFundamental, PortfolioAccount, Dividend, FinancialReport, Strategy, Company, WatchlistItem
 
 class DailyStockPriceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -73,3 +73,25 @@ class CompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
         fields = ['id', 'symbol', 'name', 'sector']
+
+class WatchlistItemSerializer(serializers.ModelSerializer):
+    current_price = serializers.SerializerMethodField()
+    day_change = serializers.SerializerMethodField()
+    day_change_percent = serializers.SerializerMethodField()
+
+    class Meta:
+        model = WatchlistItem
+        fields = ['id', 'ticker', 'added_at', 'target_price', 'notes', 'current_price', 'day_change', 'day_change_percent']
+        read_only_fields = ['id', 'added_at']
+
+    def get_current_price(self, obj):
+        latest = DailyStockPrice.objects.filter(ticker=obj.ticker).order_by('-date').first()
+        return latest.close if latest else None
+
+    def get_day_change(self, obj):
+        latest = DailyStockPrice.objects.filter(ticker=obj.ticker).order_by('-date').first()
+        return latest.diff if latest else None
+
+    def get_day_change_percent(self, obj):
+        latest = DailyStockPrice.objects.filter(ticker=obj.ticker).order_by('-date').first()
+        return latest.diff_percent if latest else None

@@ -8,6 +8,7 @@ router.register(r'accounts', views.PortfolioAccountViewSet, basename='portfolio-
 router.register(r'transactions', views.PortfolioTransactionViewSet, basename='portfolio-transactions')
 router.register(r'strategies', views.StrategyViewSet, basename='strategies')
 router.register(r'companies', views.CompanyViewSet, basename='companies')
+router.register(r'watchlist', views.WatchlistViewSet, basename='watchlist')
 
 urlpatterns = [
     path('', include(router.urls)),
