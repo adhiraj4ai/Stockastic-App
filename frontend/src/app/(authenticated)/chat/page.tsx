@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ChatInterface } from '@/components/ChatInterface';
 import { ChatHistorySidebar } from '@/components/ChatHistorySidebar';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -29,9 +30,12 @@ Want to see your **Portfolio Performance**? [GRAPH:performance]`,
 
 const MOCK_HISTORY: ChatHistoryItem[] = [];
 
-export default function ChatPage() {
+function ChatContent() {
+    const searchParams = useSearchParams();
+    const sessionId = searchParams.get('id');
+
     const [history, setHistory] = useState<ChatHistoryItem[]>([]);
-    const [activeChatId, setActiveChatId] = useState<string>('draft');
+    const [activeChatId, setActiveChatId] = useState<string>(sessionId || 'draft');
     const [isLoading, setIsLoading] = useState(false);
 
     // Initial load: fetch sessions
@@ -195,5 +199,19 @@ export default function ChatPage() {
                 </main>
             </div>
         </DashboardLayout>
+    );
+}
+
+export default function ChatPage() {
+    return (
+        <Suspense fallback={
+            <DashboardLayout title="Chat" noPadding>
+                <div className="flex h-full items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+                </div>
+            </DashboardLayout>
+        }>
+            <ChatContent />
+        </Suspense>
     );
 }

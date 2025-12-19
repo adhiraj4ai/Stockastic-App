@@ -108,7 +108,12 @@ export function ChatSidebar({ isPinned = false, onPinToggle }: ChatSidebarProps)
                         setIsOpen(false);
                         if (isPinned && onPinToggle) onPinToggle();
                     }}
-                    onMaximize={() => router.push('/chat')}
+                    onMaximize={() => {
+                        const url = activeSessionId && activeSessionId !== 'draft'
+                            ? `/chat?id=${activeSessionId}`
+                            : '/chat';
+                        router.push(url);
+                    }}
                     messages={messages.map(m => ({
                         ...m,
                         timestamp: new Date(m.timestamp)
