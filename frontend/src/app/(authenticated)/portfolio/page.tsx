@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -55,16 +55,12 @@ export default function PortfolioPage() {
     const [selectedExitItem, setSelectedExitItem] = useState<PortfolioItem | null>(null);
     const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
     const [newWatchlistTicker, setNewWatchlistTicker] = useState('');
+    const [mounted, setMounted] = useState(false);
     const router = useRouter();
 
     const fetchAccounts = async () => {
         try {
-            const token = localStorage.getItem('access_token');
-            if (!token) return;
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const response = await axios.get(`${apiUrl}/api/stocks/accounts/`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await api.get('/api/stocks/accounts/');
             setAccounts(response.data);
         } catch (err) {
             console.error('Failed to fetch accounts', err);
@@ -73,12 +69,7 @@ export default function PortfolioPage() {
 
     const fetchWatchlist = async () => {
         try {
-            const token = localStorage.getItem('access_token');
-            if (!token) return;
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const response = await axios.get(`${apiUrl}/api/stocks/watchlist/`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await api.get('/api/stocks/watchlist/');
             setWatchlist(response.data);
         } catch (err) {
             console.error('Failed to fetch watchlist', err);
@@ -88,27 +79,17 @@ export default function PortfolioPage() {
     const addWatchlistItem = async () => {
         if (!newWatchlistTicker) return;
         try {
-            const token = localStorage.getItem('access_token');
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            await axios.post(`${apiUrl}/api/stocks/watchlist/`,
-                { ticker: newWatchlistTicker.toUpperCase() },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            await api.post('/api/stocks/watchlist/', { ticker: newWatchlistTicker.toUpperCase() });
             setNewWatchlistTicker('');
             fetchWatchlist();
         } catch (err) {
             console.error('Failed to add to watchlist', err);
-            // Optionally add toast error here
         }
     };
 
     const removeWatchlistItem = async (id: number) => {
         try {
-            const token = localStorage.getItem('access_token');
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            await axios.delete(`${apiUrl}/api/stocks/watchlist/${id}/`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.delete(`/api/stocks/watchlist/${id}/`);
             fetchWatchlist();
         } catch (err) {
             console.error('Failed to remove from watchlist', err);
@@ -118,22 +99,13 @@ export default function PortfolioPage() {
     const fetchPortfolio = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('access_token');
-            if (!token) {
-                router.push('/login');
-                return;
-            }
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
             // Build query
             let query = '';
             if (selectedAccount !== 'all') {
                 query = `?account=${selectedAccount}`;
             }
 
-            const response = await axios.get(`${apiUrl}/api/stocks/portfolio/${query}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await api.get(`/api/stocks/portfolio/${query}`);
             setItems(response.data);
         } catch (err) {
             console.error('Failed to fetch portfolio', err);
@@ -143,6 +115,7 @@ export default function PortfolioPage() {
     };
 
     useEffect(() => {
+        setMounted(true);
         fetchAccounts();
         fetchWatchlist();
     }, []);
@@ -198,6 +171,8 @@ export default function PortfolioPage() {
     const totalGainLoss = totalCurrentValue - totalInvestment;
     const totalGainLossPercent = totalInvestment ? (totalGainLoss / totalInvestment * 100) : 0;
     const totalDayGainLoss = displayedItems.reduce((acc, item) => acc + Number(item.day_gain_loss), 0);
+
+    if (!mounted) return null;
 
     return (
         <DashboardLayout>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -91,8 +91,7 @@ export default function AccumulationPage() {
     useEffect(() => {
         const fetchSectors = async () => {
             try {
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                const res = await axios.get(`${apiUrl}/api/stocks/companies/sectors/`);
+                const res = await api.get('/api/stocks/companies/sectors/');
                 setSectors(['All', ...res.data.map((s: any) => s.name)]);
             } catch (err) {
                 console.error('Failed to fetch sectors', err);
@@ -106,8 +105,7 @@ export default function AccumulationPage() {
             const fetchData = async () => {
                 setLoading(true);
                 try {
-                    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                    const res = await axios.get(`${apiUrl}/api/stocks/companies/accumulation/`, {
+                    const res = await api.get('/api/stocks/companies/accumulation/', {
                         params: { range, sector }
                     });
                     setData(res.data);
@@ -126,8 +124,7 @@ export default function AccumulationPage() {
             const fetchTrends = async () => {
                 setTrendsLoading(true);
                 try {
-                    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                    const res = await axios.get(`${apiUrl}/api/stocks/companies/broker_trends/`);
+                    const res = await api.get('/api/stocks/companies/broker_trends/');
                     setTrends(res.data);
                 } catch (err) {
                     console.error('Failed to fetch broker trends', err);
@@ -144,8 +141,7 @@ export default function AccumulationPage() {
             const fetchAggressive = async () => {
                 setAggressiveLoading(true);
                 try {
-                    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                    const res = await axios.get(`${apiUrl}/api/stocks/companies/aggressive/`, {
+                    const res = await api.get('/api/stocks/companies/aggressive/', {
                         params: { range, sector }
                     });
                     setAggressiveData(res.data);

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -55,24 +55,21 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [portfolioStats, setPortfolioStats] = useState({ investment: 0, dayPL: 0, dailyPLPositive: true });
     const [error, setError] = useState<string | null>(null);
+    const [mounted, setMounted] = useState(false);
 
     const router = useRouter();
 
     useEffect(() => {
-        // ... (token check)
+        setMounted(true);
 
         const fetchData = async () => {
             try {
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
                 // Fetch Market Summary
-                const summaryResponse = await axios.get(`${apiUrl}/api/stocks/summary/`);
+                const summaryResponse = await api.get('/api/stocks/summary/');
                 setData(summaryResponse.data);
 
                 // Fetch Portfolio for Stats
-                const portfolioResponse = await axios.get(`${apiUrl}/api/stocks/portfolio/`, {
-                    headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` }
-                });
+                const portfolioResponse = await api.get('/api/stocks/portfolio/');
                 const portfolioItems: any[] = portfolioResponse.data;
 
                 const totalInvestment = portfolioItems.reduce((acc, item) => acc + Number(item.investment_value), 0);
@@ -86,22 +83,9 @@ export default function DashboardPage() {
 
             } catch (err: any) {
                 console.error('Failed to fetch dashboard data', err);
-                if (status === 401) {
-                    setError('Session expired. Redirecting to login...');
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('refresh_token');
-
-                    // Clear Cookies (set expiration to past)
-                    document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-                    document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-
-                    setTimeout(() => {
-                        window.location.href = '/login';
-                    }, 2000);
-                } else {
-                    const msg = err.response?.data?.detail || err.message;
-                    setError(`Failed to load data: ${msg}`);
-                }
+                // Errors are mostly handled by global interceptor if 401
+                const msg = err.response?.data?.detail || err.message;
+                setError(`Failed to load data: ${msg}`);
             } finally {
                 setLoading(false);
             }
@@ -109,6 +93,8 @@ export default function DashboardPage() {
 
         fetchData();
     }, [router]);
+
+    if (!mounted) return null;
 
     if (error) {
         return (

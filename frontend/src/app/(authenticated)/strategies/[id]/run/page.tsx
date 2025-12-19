@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/lib/api';
 import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -96,17 +96,10 @@ export default function RunStrategyPage() {
 
     const fetchStrategy = async () => {
         try {
-            const token = localStorage.getItem('access_token');
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const response = await axios.get(`${apiUrl}/api/stocks/strategies/${strategyId}/`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await api.get(`/api/stocks/strategies/${strategyId}/`);
             setStrategy(response.data);
         } catch (error: any) {
-            if (error.response?.status === 401) {
-                window.location.href = '/login';
-                return;
-            }
+            // 401 handled by global interceptor
             toast.error('Failed to load strategy');
         } finally {
             setLoading(false);
@@ -115,8 +108,7 @@ export default function RunStrategyPage() {
 
     const fetchSectors = async () => {
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const response = await axios.get(`${apiUrl}/api/stocks/companies/sectors/`);
+            const response = await api.get('/api/stocks/companies/sectors/');
             setSectors(response.data);
         } catch (error) {
             console.error('Failed to load sectors', error);
@@ -139,24 +131,17 @@ export default function RunStrategyPage() {
         setRunning(true);
         setResults(null);
         try {
-            const token = localStorage.getItem('access_token');
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
             const requestData = mode === 'symbol'
                 ? { code: strategy.code, symbol, start_date: startDate, end_date: endDate }
                 : { code: strategy.code, sector, start_date: startDate, end_date: endDate };
             console.log('Backtest request:', requestData);
-            const response = await axios.post(`${apiUrl}/api/stocks/strategies/backtest/`,
-                requestData,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await api.post('/api/stocks/strategies/backtest/', requestData);
             setResults(response.data);
             toast.success(mode === 'sector' ? 'Sector backtest complete' : 'Backtest complete');
         } catch (error: any) {
             console.error('Backtest failed', error);
             console.error('Error response:', error.response?.data);
             console.error('Error status:', error.response?.status);
-            console.error('Error headers:', error.response?.headers);
-            console.error('Full error:', JSON.stringify(error.response, null, 2));
 
             let errorMsg = 'Backtest failed';
             if (error.response?.data?.error) {
@@ -188,8 +173,6 @@ export default function RunStrategyPage() {
         }
         setOptimizing(true);
         try {
-            const token = localStorage.getItem('access_token');
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
             const requestData = {
                 code: strategy.code,
                 symbol,
@@ -199,17 +182,13 @@ export default function RunStrategyPage() {
                 n_trials: nTrials
             };
             console.log('Optimization request:', requestData);
-            const response = await axios.post(`${apiUrl}/api/stocks/strategies/optimize/`,
-                requestData,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await api.post('/api/stocks/strategies/optimize/', requestData);
             setOptimizationResults(response.data);
             toast.success(`Optimization complete! Best return: ${response.data.best_value.toFixed(2)}%`);
         } catch (error: any) {
             console.error('Optimization failed', error);
             console.error('Error response:', error.response?.data);
             console.error('Error status:', error.response?.status);
-            console.error('Full error:', JSON.stringify(error.response, null, 2));
 
             let errorMsg = 'Optimization failed';
             if (error.response?.data?.error) {
@@ -231,11 +210,8 @@ export default function RunStrategyPage() {
     const handleApplyOptimized = async () => {
         if (!optimizationResults || !strategy) return;
         try {
-            const token = localStorage.getItem('access_token');
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            await axios.patch(`${apiUrl}/api/stocks/strategies/${strategyId}/`,
-                { code: optimizationResults.optimized_code },
-                { headers: { Authorization: `Bearer ${token}` } }
+            await api.patch(`/api/stocks/strategies/${strategyId}/`,
+                { code: optimizationResults.optimized_code }
             );
             setStrategy({ ...strategy, code: optimizationResults.optimized_code });
             setOptimizationResults(null);
