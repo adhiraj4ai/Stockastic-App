@@ -45,4 +45,29 @@ api.interceptors.response.use(
     }
 );
 
+export interface ChatMessage {
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: string;
+}
+
+export interface ChatSession {
+    id: string;
+    title: string;
+    created_at: string;
+    updated_at: string;
+    message_count: number;
+}
+
+export const chatApi = {
+    getSessions: () => api.get<ChatSession[]>('/api/chat/sessions/'),
+    createSession: (title: string = 'New Chat') => api.post<ChatSession>('/api/chat/sessions/', { title }),
+    renameSession: (id: string, title: string) => api.patch<ChatSession>(`/api/chat/sessions/${id}/`, { title }),
+    deleteSession: (id: string) => api.delete(`/api/chat/sessions/${id}/`),
+    getMessages: (sessionId: string) => api.get<ChatMessage[]>(`/api/chat/sessions/${sessionId}/messages/`),
+    addMessage: (sessionId: string, role: string, content: string) =>
+        api.post<ChatMessage>(`/api/chat/sessions/${sessionId}/add_message/`, { role, content }),
+};
+
 export default api;

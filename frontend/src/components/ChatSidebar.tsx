@@ -1,9 +1,8 @@
-'use client';
-
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { MessageSquare } from 'lucide-react';
 import { ChatInterface } from './ChatInterface';
 import { useRouter } from 'next/navigation';
+import { chatApi, ChatMessage } from '@/lib/api';
 
 interface ChatSidebarProps {
     isPinned?: boolean;
@@ -12,10 +11,73 @@ interface ChatSidebarProps {
 
 export function ChatSidebar({ isPinned = false, onPinToggle }: ChatSidebarProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 
     // Keep open if pinned
     const showSidebar = isOpen || isPinned;
+
+    // Load latest session on mount
+    useEffect(() => {
+        const loadLatestSession = async () => {
+            try {
+                const sessionRes = await chatApi.getSessions();
+                if (sessionRes.data.length > 0) {
+                    const latest = sessionRes.data[0];
+                    setActiveSessionId(latest.id);
+                    const msgRes = await chatApi.getMessages(latest.id);
+                    setMessages(msgRes.data);
+                } else {
+                    setActiveSessionId('draft');
+                }
+            } catch (error) {
+                console.error('Failed to load chat session:', error);
+                setActiveSessionId('draft');
+            }
+        };
+        loadLatestSession();
+    }, []);
+
+    const handleSendMessage = useCallback(async (content: string) => {
+        if (!content.trim()) return;
+
+        let sessionId = activeSessionId;
+
+        try {
+            // 1. Create session if draft
+            if (activeSessionId === 'draft' || !activeSessionId) {
+                const title = content.slice(0, 30) + (content.length > 30 ? '...' : '');
+                const res = await chatApi.createSession(title);
+                sessionId = res.data.id;
+                setActiveSessionId(sessionId);
+            }
+
+            if (!sessionId) return;
+
+            // 2. Add user message
+            const userRes = await chatApi.addMessage(sessionId, 'user', content);
+            setMessages(prev => [...prev, userRes.data]);
+
+            // 3. AI Simulation (mirroring logic from ChatPage for consistency)
+            setIsLoading(true);
+            setTimeout(async () => {
+                try {
+                    const aiContent = `I am your floating assistant. I see you're on ${window.location.pathname}. How can I help with your portfolio?`;
+                    const aiRes = await chatApi.addMessage(sessionId!, 'assistant', aiContent);
+                    setMessages(prev => [...prev, aiRes.data]);
+                } catch (err) {
+                    console.error('Failed to save AI response:', err);
+                } finally {
+                    setIsLoading(false);
+                }
+            }, 1000);
+
+        } catch (error) {
+            console.error('Failed to send message:', error);
+        }
+    }, [activeSessionId]);
 
     return (
         <>
@@ -46,7 +108,17 @@ export function ChatSidebar({ isPinned = false, onPinToggle }: ChatSidebarProps)
                         setIsOpen(false);
                         if (isPinned && onPinToggle) onPinToggle();
                     }}
-                    onMaximize={() => router.push('/chat')}
+                    onMaximize={() => {
+                        const url = activeSessionId && activeSessionId !== 'draft'
+                            ? `/chat?id=${activeSessionId}`
+                            : '/chat';
+                        router.push(url);
+                    }}
+                    messages={messages.map(m => ({
+                        ...m,
+                        timestamp: new Date(m.timestamp)
+                    }))}
+                    onSendMessage={handleSendMessage}
                 />
             </div>
 
