@@ -1,26 +1,21 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { ChatInterface } from '@/components/ChatInterface';
 import { ChatHistorySidebar } from '@/components/ChatHistorySidebar';
 import DashboardLayout from '@/components/DashboardLayout';
+import { chatApi, ChatMessage, ChatSession } from '@/lib/api';
 
-interface Message {
-    id: string;
-    role: 'user' | 'assistant';
-    content: string;
-    timestamp: Date;
-    metadata?: any;
-}
-
+// Map API ChatHistoryItem to UI's ChatHistoryItem interface if needed, 
+// but we'll adapt ChatPage to use API types directly for consistency.
 interface ChatHistoryItem {
     id: string;
     title: string;
     date: Date;
-    messages: Message[];
+    messages: ChatMessage[];
 }
 
-const INITIAL_MESSAGE: Message = {
+const INITIAL_MESSAGE: ChatMessage = {
     id: '1',
     role: 'assistant',
     content: `Hello! I am your AI portfolio assistant. I can help you with:
@@ -29,74 +24,113 @@ const INITIAL_MESSAGE: Message = {
 2. **Strategy Backtesting**: See how your strategies would have performed.
 
 Want to see your **Portfolio Performance**? [GRAPH:performance]`,
-    timestamp: new Date()
+    timestamp: new Date().toISOString()
 };
 
 const MOCK_HISTORY: ChatHistoryItem[] = [];
 
 export default function ChatPage() {
-    const [history, setHistory] = useState<ChatHistoryItem[]>(MOCK_HISTORY);
+    const [history, setHistory] = useState<ChatHistoryItem[]>([]);
     const [activeChatId, setActiveChatId] = useState<string>('draft');
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Initial load: fetch sessions
+    useEffect(() => {
+        const fetchSessions = async () => {
+            try {
+                const response = await chatApi.getSessions();
+                const sessions = response.data.map(s => ({
+                    id: s.id,
+                    title: s.title,
+                    date: new Date(s.updated_at),
+                    messages: [] // Messages will be fetched on demand
+                }));
+                setHistory(sessions);
+            } catch (error) {
+                console.error('Failed to fetch chat sessions:', error);
+            }
+        };
+        fetchSessions();
+    }, []);
+
+    // Load messages when active chat changes
+    useEffect(() => {
+        if (activeChatId === 'draft') return;
+
+        const fetchMessages = async () => {
+            try {
+                const response = await chatApi.getMessages(activeChatId);
+                setHistory(prev => prev.map(chat =>
+                    chat.id === activeChatId ? { ...chat, messages: response.data } : chat
+                ));
+            } catch (error) {
+                console.error('Failed to fetch messages:', error);
+            }
+        };
+        fetchMessages();
+    }, [activeChatId]);
 
     const activeChat = history.find(c => c.id === activeChatId) || { messages: [] };
 
-    const handleSendMessage = useCallback((content: string) => {
-        const newMessage: Message = {
-            id: Date.now().toString(),
-            role: 'user',
-            content,
-            timestamp: new Date()
-        };
+    const handleSendMessage = useCallback(async (content: string) => {
+        if (!content.trim()) return;
 
-        if (activeChatId === 'draft') {
-            const newId = `chat-${Date.now()}`;
-            const newChat: ChatHistoryItem = {
-                id: newId,
-                title: content.slice(0, 30) + (content.length > 30 ? '...' : ''),
-                date: new Date(),
-                messages: [newMessage]
-            };
-            setHistory(prev => [newChat, ...prev]);
-            setActiveChatId(newId);
+        let currentSessionId = activeChatId;
 
-            // Simulate AI response for new chat
-            setTimeout(() => {
-                const aiResponse: Message = {
-                    id: (Date.now() + 1).toString(),
-                    role: 'assistant',
-                    content: `Hello Jugal! I've started a new conversation for you. I see you're interested in: "${content}". How can I further assist you?`,
-                    timestamp: new Date()
+        try {
+            // 1. If it's a draft, create a new session in the backend
+            if (activeChatId === 'draft') {
+                const title = content.slice(0, 30) + (content.length > 30 ? '...' : '');
+                const sessionRes = await chatApi.createSession(title);
+                const newSession = sessionRes.data;
+                currentSessionId = newSession.id;
+
+                const newChat: ChatHistoryItem = {
+                    id: newSession.id,
+                    title: newSession.title,
+                    date: new Date(newSession.updated_at),
+                    messages: []
                 };
-                setHistory(prev => prev.map(chat =>
-                    chat.id === newId ? { ...chat, messages: [...chat.messages, aiResponse] } : chat
-                ));
-            }, 1000);
-            return;
-        }
 
-        setHistory(prev => prev.map(chat => {
-            if (chat.id === activeChatId) {
-                return { ...chat, messages: [...chat.messages, newMessage] };
+                // Add to history and set as active
+                setHistory(prev => [newChat, ...prev]);
+                setActiveChatId(newSession.id);
             }
-            return chat;
-        }));
 
-        // Simulate AI response
-        setTimeout(() => {
-            const aiResponse: Message = {
-                id: (Date.now() + 1).toString(),
-                role: 'assistant',
-                content: `I've received your message: "${content}". I'm analyzing your portfolio data now.`,
-                timestamp: new Date()
-            };
+            // 2. Add user message to backend
+            const userMsgRes = await chatApi.addMessage(currentSessionId, 'user', content);
+            const userMsg = userMsgRes.data;
 
-            setHistory(prev => prev.map(chat => {
-                if (chat.id === activeChatId) {
-                    return { ...chat, messages: [...chat.messages, aiResponse] };
+            // Update local state with user message
+            setHistory(prev => prev.map(chat =>
+                chat.id === currentSessionId ? { ...chat, messages: [...chat.messages, userMsg] } : chat
+            ));
+
+            // 3. Simulate AI response (or replace with real AI call if available)
+            // For now, continue simulating but save it to the backend too
+            setIsLoading(true);
+            setTimeout(async () => {
+                try {
+                    const aiContent = activeChatId === 'draft'
+                        ? `Hello Jugal! I've started a new conversation for you. I see you're interested in: "${content}". How can I further assist you?`
+                        : `I've received your message: "${content}". I'm analyzing your portfolio data now.`;
+
+                    const aiMsgRes = await chatApi.addMessage(currentSessionId, 'assistant', aiContent);
+                    const aiMsg = aiMsgRes.data;
+
+                    setHistory(prev => prev.map(chat =>
+                        chat.id === currentSessionId ? { ...chat, messages: [...chat.messages, aiMsg] } : chat
+                    ));
+                } catch (error) {
+                    console.error('Failed to save AI response:', error);
+                } finally {
+                    setIsLoading(false);
                 }
-                return chat;
-            }));
-        }, 1000);
+            }, 1000);
+
+        } catch (error) {
+            console.error('Failed to send message:', error);
+        }
     }, [activeChatId, history]);
 
     const handleNewChat = () => {
@@ -107,20 +141,30 @@ export default function ChatPage() {
         setActiveChatId(id);
     };
 
-    const handleRenameChat = (id: string, newTitle: string) => {
-        setHistory(prev => prev.map(chat =>
-            chat.id === id ? { ...chat, title: newTitle } : chat
-        ));
+    const handleRenameChat = async (id: string, newTitle: string) => {
+        try {
+            await chatApi.renameSession(id, newTitle);
+            setHistory(prev => prev.map(chat =>
+                chat.id === id ? { ...chat, title: newTitle } : chat
+            ));
+        } catch (error) {
+            console.error('Failed to rename chat:', error);
+        }
     };
 
-    const handleDeleteChat = (id: string) => {
-        setHistory(prev => {
-            const newHistory = prev.filter(chat => chat.id !== id);
-            if (activeChatId === id) {
-                setActiveChatId(newHistory.length > 0 ? newHistory[0].id : 'draft');
-            }
-            return newHistory;
-        });
+    const handleDeleteChat = async (id: string) => {
+        try {
+            await chatApi.deleteSession(id);
+            setHistory(prev => {
+                const newHistory = prev.filter(chat => chat.id !== id);
+                if (activeChatId === id) {
+                    setActiveChatId(newHistory.length > 0 ? newHistory[0].id : 'draft');
+                }
+                return newHistory;
+            });
+        } catch (error) {
+            console.error('Failed to delete chat:', error);
+        }
     };
 
     return (
@@ -142,7 +186,10 @@ export default function ChatPage() {
                     <ChatInterface
                         hideHeader
                         className="border-0 shadow-none bg-transparent h-full"
-                        messages={activeChat.messages}
+                        messages={activeChat.messages.map(m => ({
+                            ...m,
+                            timestamp: new Date(m.timestamp)
+                        }))}
                         onSendMessage={handleSendMessage}
                     />
                 </main>
