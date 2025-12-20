@@ -1,4 +1,4 @@
-from django.db import connection, ensure_atomic_transaction
+from django.db import connection
 from collections import defaultdict
 
 def get_database_schema_string():

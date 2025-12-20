@@ -1,6 +1,6 @@
 import os
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from langchain_groq import ChatGroq
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
@@ -79,15 +79,24 @@ class LLMFactory:
     def get_provider() -> LLMProvider:
         provider_name = os.getenv("LLM_PROVIDER", "groq").lower()
         api_key = os.getenv("LLM_API_KEY")
+        model_name = os.getenv("LLM_MODEL_NAME")
 
         if not api_key:
             # Fallback for development if no key is provided
-            # In a real app, this should probably raise an error
             print(f"Warning: LLM_API_KEY not set for provider {provider_name}")
             
         if provider_name == "groq":
-            return GroqProvider(api_key=api_key)
+            # Pass model_name only if it exists, otherwise rely on class default
+            kwargs = {"api_key": api_key}
+            if model_name:
+                kwargs["model_name"] = model_name
+            return GroqProvider(**kwargs)
+            
         elif provider_name == "gemini":
-            return GeminiProvider(api_key=api_key)
+            kwargs = {"api_key": api_key}
+            if model_name:
+                kwargs["model_name"] = model_name
+            return GeminiProvider(**kwargs)
+            
         else:
             raise ValueError(f"Unsupported LLM provider: {provider_name}")
