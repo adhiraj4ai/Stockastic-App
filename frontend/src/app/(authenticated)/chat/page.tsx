@@ -1,34 +1,18 @@
 'use client';
 
-import { useState, useCallback, useEffect, Suspense } from 'react';
+import { useState, useCallback, useEffect, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ChatInterface } from '@/components/ChatInterface';
 import { ChatHistorySidebar } from '@/components/ChatHistorySidebar';
 import DashboardLayout from '@/components/DashboardLayout';
-import { chatApi, ChatMessage, ChatSession } from '@/lib/api';
+import { chatApi, ChatMessage } from '@/lib/api';
 
-// Map API ChatHistoryItem to UI's ChatHistoryItem interface if needed, 
-// but we'll adapt ChatPage to use API types directly for consistency.
 interface ChatHistoryItem {
     id: string;
     title: string;
     date: Date;
     messages: ChatMessage[];
 }
-
-const INITIAL_MESSAGE: ChatMessage = {
-    id: '1',
-    role: 'assistant',
-    content: `Hello! I am your AI portfolio assistant. I can help you with:
-
-1. **Portfolio Analysis**: Get insights on your risk and returns.
-2. **Strategy Backtesting**: See how your strategies would have performed.
-
-Want to see your **Portfolio Performance**? [GRAPH:performance]`,
-    timestamp: new Date().toISOString()
-};
-
-const MOCK_HISTORY: ChatHistoryItem[] = [];
 
 function ChatContent() {
     const searchParams = useSearchParams();
@@ -38,28 +22,49 @@ function ChatContent() {
     const [activeChatId, setActiveChatId] = useState<string>(sessionId || 'draft');
     const [isLoading, setIsLoading] = useState(false);
 
+    // Track if we just created this session to avoid race condition with useEffect fetch
+    const creatingSessionId = useRef<string | null>(null);
+
     // Initial load: fetch sessions
     useEffect(() => {
         const fetchSessions = async () => {
             try {
                 const response = await chatApi.getSessions();
+
+                if (response.data.length === 0) {
+                    return;
+                }
+
                 const sessions = response.data.map(s => ({
                     id: s.id,
                     title: s.title,
                     date: new Date(s.updated_at),
-                    messages: [] // Messages will be fetched on demand
+                    messages: []
                 }));
                 setHistory(sessions);
+
+                if (sessionId) {
+                    setActiveChatId(sessionId);
+                } else if (activeChatId === 'draft' && sessions.length > 0) {
+                    // logic to stay on draft
+                }
+
             } catch (error) {
                 console.error('Failed to fetch chat sessions:', error);
             }
         };
         fetchSessions();
-    }, []);
+    }, [sessionId]);
 
     // Load messages when active chat changes
     useEffect(() => {
         if (activeChatId === 'draft') return;
+
+        // Skip fetch if we just created this session (optimistic updates already in place)
+        if (creatingSessionId.current === activeChatId) {
+            creatingSessionId.current = null;
+            return;
+        }
 
         const fetchMessages = async () => {
             try {
@@ -74,7 +79,7 @@ function ChatContent() {
         fetchMessages();
     }, [activeChatId]);
 
-    const activeChat = history.find(c => c.id === activeChatId) || { messages: [] };
+    const activeChat = history.find(c => c.id === activeChatId) || { id: 'draft', title: 'New Chat', date: new Date(), messages: [] };
 
     const handleSendMessage = useCallback(async (content: string) => {
         if (!content.trim()) return;
@@ -82,7 +87,23 @@ function ChatContent() {
         let currentSessionId = activeChatId;
 
         try {
-            // 1. If it's a draft, create a new session in the backend
+            // 1. Prepare messages optimistically
+            const tempUserMsg: ChatMessage = {
+                id: Date.now().toString(),
+                role: 'user',
+                content,
+                timestamp: new Date().toISOString()
+            };
+
+            const aiMsgId = (Date.now() + 1).toString();
+            const tempAiMsg: ChatMessage = {
+                id: aiMsgId,
+                role: 'assistant',
+                content: 'Thinking...',
+                timestamp: new Date().toISOString()
+            };
+
+            // 2. If it's a draft, handle session creation and initial messages together
             if (activeChatId === 'draft') {
                 const title = content.slice(0, 30) + (content.length > 30 ? '...' : '');
                 const sessionRes = await chatApi.createSession(title);
@@ -93,49 +114,52 @@ function ChatContent() {
                     id: newSession.id,
                     title: newSession.title,
                     date: new Date(newSession.updated_at),
-                    messages: []
+                    messages: [tempUserMsg, tempAiMsg]
                 };
 
-                // Add to history and set as active
                 setHistory(prev => [newChat, ...prev]);
+
+                // Set ref before state update so useEffect sees it
+                creatingSessionId.current = newSession.id;
                 setActiveChatId(newSession.id);
+            } else {
+                // 3. Existing session: update history atomically
+                setHistory(prev => prev.map(chat =>
+                    chat.id === currentSessionId
+                        ? { ...chat, messages: [...chat.messages, tempUserMsg, tempAiMsg] }
+                        : chat
+                ));
             }
 
-            // 2. Add user message to backend
-            const userMsgRes = await chatApi.addMessage(currentSessionId, 'user', content);
-            const userMsg = userMsgRes.data;
-
-            // Update local state with user message
-            setHistory(prev => prev.map(chat =>
-                chat.id === currentSessionId ? { ...chat, messages: [...chat.messages, userMsg] } : chat
-            ));
-
-            // 3. Simulate AI response (or replace with real AI call if available)
-            // For now, continue simulating but save it to the backend too
+            // 4. Stream message from backend
             setIsLoading(true);
-            setTimeout(async () => {
-                try {
-                    const aiContent = activeChatId === 'draft'
-                        ? `Hello Jugal! I've started a new conversation for you. I see you're interested in: "${content}". How can I further assist you?`
-                        : `I've received your message: "${content}". I'm analyzing your portfolio data now.`;
+            let fullAiContent = "";
+            let chunkCount = 0;
 
-                    const aiMsgRes = await chatApi.addMessage(currentSessionId, 'assistant', aiContent);
-                    const aiMsg = aiMsgRes.data;
+            await chatApi.streamMessage(currentSessionId, 'user', content, (chunk) => {
+                chunkCount++;
+                if (chunkCount === 1) fullAiContent = ""; // Clear placeholder
+                fullAiContent += chunk;
 
-                    setHistory(prev => prev.map(chat =>
-                        chat.id === currentSessionId ? { ...chat, messages: [...chat.messages, aiMsg] } : chat
-                    ));
-                } catch (error) {
-                    console.error('Failed to save AI response:', error);
-                } finally {
-                    setIsLoading(false);
-                }
-            }, 1000);
+                setHistory(prev => prev.map(chat => {
+                    if (chat.id === currentSessionId) {
+                        return {
+                            ...chat,
+                            messages: chat.messages.map(m =>
+                                m.id === aiMsgId ? { ...m, content: fullAiContent } : m
+                            )
+                        };
+                    }
+                    return chat;
+                }));
+            });
 
         } catch (error) {
             console.error('Failed to send message:', error);
+        } finally {
+            setIsLoading(false);
         }
-    }, [activeChatId, history]);
+    }, [activeChatId, setHistory, setActiveChatId]);
 
     const handleNewChat = () => {
         setActiveChatId('draft');
@@ -162,7 +186,8 @@ function ChatContent() {
             setHistory(prev => {
                 const newHistory = prev.filter(chat => chat.id !== id);
                 if (activeChatId === id) {
-                    setActiveChatId(newHistory.length > 0 ? newHistory[0].id : 'draft');
+                    // Start new draft if we deleted the active chat
+                    setActiveChatId('draft');
                 }
                 return newHistory;
             });
@@ -171,13 +196,19 @@ function ChatContent() {
         }
     };
 
+    // Convert ChatMessage (string timestamp) to Component Message (Date timestamp)
+    const uiMessages = activeChat.messages.map(m => ({
+        ...m,
+        timestamp: new Date(m.timestamp)
+    }));
+
     return (
         <DashboardLayout
             title="Stockastic AI"
             subtitle="Get insights and help with your portfolio"
             noPadding
         >
-            <div className="h-[calc(100vh-5rem)] flex overflow-hidden bg-white">
+            <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-white">
                 <ChatHistorySidebar
                     history={history}
                     activeChatId={activeChatId}
@@ -186,14 +217,11 @@ function ChatContent() {
                     onRenameChat={handleRenameChat}
                     onDeleteChat={handleDeleteChat}
                 />
-                <main className="flex-1 flex flex-col min-w-0 bg-[#fafafa]">
+                <main className="flex-1 relative flex flex-col min-w-0 bg-[#fafafa]">
                     <ChatInterface
                         hideHeader
                         className="border-0 shadow-none bg-transparent h-full"
-                        messages={activeChat.messages.map(m => ({
-                            ...m,
-                            timestamp: new Date(m.timestamp)
-                        }))}
+                        messages={uiMessages}
                         onSendMessage={handleSendMessage}
                     />
                 </main>

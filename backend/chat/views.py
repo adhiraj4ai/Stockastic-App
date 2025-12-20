@@ -1,8 +1,10 @@
+from django.http import StreamingHttpResponse
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import ChatSession, ChatMessage
 from .serializers import ChatSessionSerializer, ChatMessageSerializer
+import json
 
 class ChatSessionViewSet(viewsets.ModelViewSet):
     serializer_class = ChatSessionSerializer
@@ -17,7 +19,7 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def messages(self, request, pk=None):
         session = self.get_object()
-        messages = session.messages.all()
+        messages = session.messages.all().order_by('timestamp')
         serializer = ChatMessageSerializer(messages, many=True)
         return Response(serializer.data)
 
@@ -26,8 +28,86 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
         session = self.get_object()
         serializer = ChatMessageSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(session=session)
+            user_msg = serializer.save(session=session)
             # Update session's updated_at timestamp
-            session.save() 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            session.save()
+
+            # If the user sent a message, trigger AI response
+            if user_msg.role == 'user':
+                try:
+                    from .agents import SupervisorAgent
+                    agent = SupervisorAgent()
+                    
+                    # Prepare message history
+                    history = []
+                    for msg in session.messages.all().order_by('timestamp'):
+                        history.append({
+                            "role": msg.role,
+                            "content": msg.content
+                        })
+                    
+                    # Generate response (consume generator)
+                    ai_content = "".join(list(agent.process_request(history)))
+                    
+                    # Save AI response
+                    ChatMessage.objects.create(
+                        session=session,
+                        role='assistant',
+                        content=ai_content
+                    )
+                    
+                    # Reload messages to include the AI response
+                    messages = session.messages.all().order_by('timestamp')
+                    return Response(ChatMessageSerializer(messages, many=True).data, status=status.HTTP_201_CREATED)
+                except Exception as e:
+                    print(f"Error generating AI response: {str(e)}")
+                    # Still return the user message even if AI fails
+            
+            # Always return the full message list for consistency
+            messages = session.messages.all().order_by('timestamp')
+            return Response(ChatMessageSerializer(messages, many=True).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'])
+    def stream_message(self, request, pk=None):
+        session = self.get_object()
+        serializer = ChatMessageSerializer(data=request.data)
+        
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        user_msg = serializer.save(session=session)
+        session.save() # Update updated_at
+
+        def stream_generator():
+            from .agents import SupervisorAgent
+            
+            try:
+                # Use the Supervisor Agent to route and handle the request
+                agent = SupervisorAgent()
+                
+                # Prepare history
+                history = []
+                for msg in session.messages.all().order_by('timestamp'):
+                    history.append({"role": msg.role, "content": msg.content})
+                
+                full_content = ""
+                # process_request determines the correct sub-agent and streams its response
+                for chunk in agent.process_request(history):
+                    if chunk:
+                        full_content += chunk
+                        yield f"data: {json.dumps({'content': chunk})}\n\n"
+                
+                # Save the complete AI response
+                if full_content:
+                    ChatMessage.objects.create(
+                        session=session,
+                        role='assistant',
+                        content=full_content
+                    )
+            except Exception as e:
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+        response = StreamingHttpResponse(stream_generator(), content_type='text/event-stream')
+        response['Cache-Control'] = 'no-cache'
+        return response
