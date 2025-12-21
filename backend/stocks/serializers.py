@@ -24,6 +24,8 @@ class FinancialReportSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class DailyFloorsheetSerializer(serializers.ModelSerializer):
+    transaction_no = serializers.CharField(source='transaction_id')
+    
     class Meta:
         model = DailyFloorsheet
         fields = ['transaction_no', 'ticker', 'buyer_broker', 'seller_broker', 'quantity', 'rate', 'amount', 'date']

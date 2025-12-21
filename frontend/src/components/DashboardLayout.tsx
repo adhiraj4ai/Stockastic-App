@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown } from 'lucide-react';
 import { SearchBar } from './SearchBar';
 import { ChatSidebar } from './ChatSidebar';
 import {
@@ -20,8 +20,22 @@ const navItems = [
     { name: 'Chat', href: '/chat', icon: MessageSquare },
     { name: 'Stocks', href: '/stock/NABIL', icon: TrendingUp },
     { name: 'Portfolio', href: '/portfolio', icon: Wallet },
-    { name: 'Accumulation', href: '/accumulation', icon: Activity },
+
+    {
+        name: 'Accumulation',
+        icon: Activity,
+        subItems: [
+            { name: 'Accumulation Overview', href: '/accumulation?tab=overview' },
+            { name: 'Aggressive Patterns', href: '/accumulation?tab=aggressive' },
+            { name: 'Aggressive Trader', href: '/accumulation?tab=aggressive-trader' },
+            { name: 'Broker Trends', href: '/accumulation?tab=trends' },
+            { name: 'Accumulation History', href: '/accumulation?tab=history' },
+            { name: 'Broker Favorites', href: '/accumulation?tab=favorites' },
+            { name: 'Accumulators', href: '/accumulation?tab=accumulators' },
+        ]
+    },
     { name: 'Strategies', href: '/strategies', icon: Lightbulb },
+    { name: 'Pipeline', href: '/pipeline', icon: Settings },
 ];
 
 const stocks = [
@@ -38,8 +52,10 @@ const stocks = [
 export default function DashboardLayout({ children, title, subtitle, noPadding, showBack }: { children: React.ReactNode; title?: string; subtitle?: string; noPadding?: boolean; showBack?: boolean }) {
     const pathname = usePathname();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [isChatPinned, setIsChatPinned] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [expandedMenus, setExpandedMenus] = useState<string[]>(['Accumulation']);
 
     const isChatPage = pathname === '/chat';
 
@@ -49,6 +65,19 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
 
     const toggleSidebar = () => {
         setIsSidebarCollapsed(!isSidebarCollapsed);
+    };
+
+    const toggleMenu = (name: string) => {
+        if (isSidebarCollapsed) {
+            setIsSidebarCollapsed(false);
+            if (!expandedMenus.includes(name)) {
+                setExpandedMenus([...expandedMenus, name]);
+            }
+            return;
+        }
+        setExpandedMenus(prev =>
+            prev.includes(name) ? prev.filter(i => i !== name) : [...prev, name]
+        );
     };
 
     const handleLogout = () => {
@@ -83,22 +112,67 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
                         {isSidebarCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
                     </button>
                 </div>
-                <nav className="flex-1 p-3 space-y-1">
+                <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
                     {navItems.map((item) => {
-                        const isActive = pathname.startsWith(item.href) && item.href !== '/home' || pathname === item.href;
+                        const hasSubItems = 'subItems' in item && item.subItems && item.subItems.length > 0;
+                        const isExpanded = expandedMenus.includes(item.name);
+                        const isActive = 'href' in item && item.href ? (pathname.startsWith(item.href) && item.href !== '/home' || pathname === item.href) : false;
+
                         return (
-                            <Link
-                                key={item.name}
-                                href={item.href}
-                                className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${isActive
-                                    ? 'bg-gray-900 text-white'
-                                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                                    } ${isSidebarCollapsed ? 'justify-center' : ''}`}
-                                title={isSidebarCollapsed ? item.name : ''}
-                            >
-                                <item.icon size={18} className={isActive ? 'text-blue-400' : 'text-gray-400'} />
-                                {!isSidebarCollapsed && <span className="text-sm font-medium whitespace-nowrap">{item.name}</span>}
-                            </Link>
+                            <div key={item.name} className="space-y-1">
+                                {hasSubItems ? (
+                                    <button
+                                        onClick={() => toggleMenu(item.name)}
+                                        className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900 ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}
+                                        title={isSidebarCollapsed ? item.name : ''}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <item.icon size={18} className="text-gray-400" />
+                                            {!isSidebarCollapsed && <span className="text-sm font-medium whitespace-nowrap">{item.name}</span>}
+                                        </div>
+                                        {!isSidebarCollapsed && (
+                                            isExpanded ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />
+                                        )}
+                                    </button>
+                                ) : (
+                                    <Link
+                                        href={'href' in item ? item.href : '#'}
+                                        className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${isActive
+                                            ? 'bg-gray-900 text-white shadow-md'
+                                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                            } ${isSidebarCollapsed ? 'justify-center' : ''}`}
+                                        title={isSidebarCollapsed ? item.name : ''}
+                                    >
+                                        <item.icon size={18} className={isActive ? 'text-blue-400' : 'text-gray-400'} />
+                                        {!isSidebarCollapsed && <span className="text-sm font-medium whitespace-nowrap">{item.name}</span>}
+                                    </Link>
+                                )}
+
+                                {/* Render Sub-items */}
+                                {hasSubItems && isExpanded && !isSidebarCollapsed && (
+                                    <div className="ml-9 space-y-1 animate-in slide-in-from-left-2 duration-200">
+                                        {(item as any).subItems.map((subItem: any) => {
+                                            const subTab = new URLSearchParams(subItem.href.split('?')[1]).get('tab');
+                                            // Ensure searchParams is available (it might be null during SSR if suspense not used, but usually fine in client comp)
+                                            const currentTab = searchParams.get('tab');
+                                            const isActiveLink = pathname === '/accumulation' && currentTab === subTab;
+
+                                            return (
+                                                <Link
+                                                    key={subItem.name}
+                                                    href={subItem.href}
+                                                    className={`block px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${isActiveLink
+                                                        ? 'bg-blue-50 text-blue-700'
+                                                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                                                        }`}
+                                                >
+                                                    {subItem.name}
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
                         );
                     })}
                 </nav>

@@ -144,7 +144,7 @@ class PortfolioTransaction(models.Model):
         return f"{self.user.username} - {self.transaction_type} {self.ticker}"
 
 class DailyFloorsheet(models.Model):
-    transaction_id = models.CharField(max_length=50, unique=True)
+    transaction_id = models.CharField(max_length=50, primary_key=True, db_column='transaction_id')
     ticker = models.CharField(max_length=20, db_index=True, db_column='symbol')
     buyer_broker = models.CharField(max_length=50) # Assuming matches or checked schema? Schema: buyer_id (int), buyer_name?
     # External schema: buyer_id (int), seller_id (int), buyer_name (char), seller_name (char)
@@ -166,8 +166,8 @@ class DailyFloorsheet(models.Model):
     
     # Let's do the block replacement properly.
     ticker = models.CharField(max_length=20, db_index=True, db_column='symbol')
-    buyer_broker = models.CharField(max_length=50, db_column='buyer_name')
-    seller_broker = models.CharField(max_length=50, db_column='seller_name')
+    buyer_broker = models.CharField(max_length=50, db_column='buyer_id')
+    seller_broker = models.CharField(max_length=50, db_column='seller_id')
     quantity = models.IntegerField(db_column='transaction_quantity')
     rate = models.DecimalField(max_digits=10, decimal_places=2, db_column='transaction_rate')
     amount = models.DecimalField(max_digits=15, decimal_places=2, db_column='transaction_amount')
