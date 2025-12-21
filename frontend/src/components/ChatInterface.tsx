@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import 'katex/dist/katex.min.css';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import ReactECharts from 'echarts-for-react';
@@ -29,6 +32,7 @@ interface ChatInterfaceProps {
     hideHeader?: boolean;
     messages: Message[];
     onSendMessage: (content: string) => void;
+    isLoading?: boolean;
 }
 
 function ThoughtContainer({ rawContent, role, isFinished }: { rawContent: string, role: 'user' | 'assistant', isFinished?: boolean }) {
@@ -290,7 +294,8 @@ function MarkdownRenderer({ content }: { content: string }) {
     return (
         <div className="prose prose-sm max-w-none prose-p:leading-relaxed prose-pre:p-0 prose-pre:bg-transparent prose-img:rounded-xl prose-img:max-w-md prose-img:mx-auto">
             <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
+                remarkPlugins={[remarkGfm, remarkMath]}
+                rehypePlugins={[rehypeKatex]}
                 components={{
                     code({ className, children, ...props }: any) {
                         const match = /language-(\w+)/.exec(className || '');
@@ -357,7 +362,8 @@ export function ChatInterface({
     className = '',
     hideHeader = false,
     messages = [],
-    onSendMessage
+    onSendMessage,
+    isLoading = false
 }: ChatInterfaceProps) {
     const [mounted, setMounted] = useState(false);
     const [inputValue, setInputValue] = useState('');
@@ -538,12 +544,13 @@ export function ChatInterface({
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                                placeholder="Ask about your portfolio..."
+                                placeholder={isLoading ? "AI is thinking..." : "Ask about your portfolio..."}
                                 className="border-none shadow-none focus-visible:ring-0 bg-transparent h-9 px-2 relative text-base"
+                                disabled={isLoading}
                             />
                             <button
                                 onClick={handleSendMessage}
-                                disabled={!inputValue.trim()}
+                                disabled={!inputValue.trim() || isLoading}
                                 className="p-2.5 bg-black text-white rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
                             >
                                 <Send size={18} className={inputValue.trim() ? 'ml-0.5' : ''} />

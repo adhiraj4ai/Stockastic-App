@@ -223,6 +223,7 @@ function ChatContent() {
                         className="border-0 shadow-none bg-transparent h-full"
                         messages={uiMessages}
                         onSendMessage={handleSendMessage}
+                        isLoading={isLoading}
                     />
                 </main>
             </div>

@@ -82,6 +82,12 @@ export const chatApi = {
         });
 
         if (!response.ok) {
+            console.error('Stream request failed:', response.status, response.statusText);
+            if (response.status === 401) {
+                console.error('Token expired during streaming. Redirecting to login.');
+                logoutAndRedirect();
+                return;
+            }
             throw new Error(`Failed to stream: ${response.statusText}`);
         }
 

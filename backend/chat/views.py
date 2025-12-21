@@ -35,7 +35,7 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
             # If the user sent a message, trigger AI response
             if user_msg.role == 'user':
                 try:
-                    from .agents import SupervisorAgent
+                    from agentic.agents import SupervisorAgent
                     agent = SupervisorAgent()
                     
                     # Prepare message history
@@ -80,7 +80,7 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
         session.save() # Update updated_at
 
         def stream_generator():
-            from .agents import SupervisorAgent
+            from agentic.agents import SupervisorAgent
             
             try:
                 # Use the Supervisor Agent to route and handle the request
@@ -95,6 +95,11 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
                 # process_request determines the correct sub-agent and streams its response
                 for chunk in agent.process_request(history):
                     if chunk:
+                        # Defensive: Ensure chunk is a string
+                        if not isinstance(chunk, str):
+                            print(f"Warning: agent yielded non-string chunk: {type(chunk)} - {chunk}")
+                            chunk = str(chunk)
+                            
                         full_content += chunk
                         yield f"data: {json.dumps({'content': chunk})}\n\n"
                 
