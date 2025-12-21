@@ -131,8 +131,8 @@ export default function PipelinePage() {
                                             <div className="flex items-center gap-2">
                                                 {getStatusIcon(task.status)}
                                                 <span className={`capitalize ${task.status === 'success' ? 'text-green-700' :
-                                                        task.status === 'failed' ? 'text-red-700' :
-                                                            task.status === 'running' ? 'text-blue-700' : 'text-gray-600'
+                                                    task.status === 'failed' ? 'text-red-700' :
+                                                        task.status === 'running' ? 'text-blue-700' : 'text-gray-600'
                                                     }`}>
                                                     {task.status}
                                                 </span>
@@ -150,8 +150,8 @@ export default function PipelinePage() {
                                                 onClick={() => handleRunTask(task.id)}
                                                 disabled={task.status === 'running' || runningTasks.includes(task.id)}
                                                 className={`${task.status === 'running' || runningTasks.includes(task.id)
-                                                        ? 'opacity-50 cursor-not-allowed'
-                                                        : 'hover:bg-indigo-600 bg-indigo-50 text-indigo-700 hover:text-white border-indigo-200'
+                                                    ? 'opacity-50 cursor-not-allowed'
+                                                    : 'hover:bg-indigo-600 bg-indigo-50 text-indigo-700 hover:text-white border-indigo-200'
                                                     }`}
                                                 variant="outline"
                                             >
