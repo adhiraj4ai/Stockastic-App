@@ -1,3 +1,4 @@
+from typing import Dict
 import pandas as pd
 import json
 import traceback
@@ -49,3 +50,36 @@ def execute_chart_code(df: pd.DataFrame, code: str) -> str:
             "error": f"Error executing chart code: {str(e)}",
             "traceback": traceback.format_exc()
         })
+
+def execute_calculation_code(df: pd.DataFrame, code: str) -> Dict:
+    """
+    Executes Python code to calculate technical indicators.
+    Expected output variable: 'computed_results' (dict).
+    """
+    local_scope = {
+        "df": df,
+        "pd": pd,
+        "json": json,
+        "datetime": datetime,
+        "np": np
+    }
+    
+    try:
+        # Execute the code
+        exec(code, local_scope)
+        
+        if "computed_results" not in local_scope:
+            return {"error": "The code did not define a 'computed_results' dictionary."}
+            
+        results = local_scope["computed_results"]
+        
+        if not isinstance(results, dict):
+             return {"error": "'computed_results' must be a dictionary."}
+
+        return results
+        
+    except Exception as e:
+        return {
+            "error": f"Error executing calculation code: {str(e)}",
+            "traceback": traceback.format_exc()
+        }

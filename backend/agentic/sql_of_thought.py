@@ -1,5 +1,5 @@
-import json
 import os
+import re
 from typing import Dict, Any, List
 from .llm import LLMFactory
 from langchain_community.utilities import SQLDatabase
@@ -57,7 +57,45 @@ class SQLOfThoughtAgent:
         except:
             return base_text
 
-    def stream_pipeline(self, user_question: str) -> Dict[str, Any]:
+    def _format_history_context(self, messages: List[Dict[str, str]]) -> str:
+        """
+        Cleans and formats conversation history for the LLM.
+        Strips UI-specific tags (thoughts, status, JSON) to save tokens,
+        but preserves User questions and Assistant SQL/Interpretations.
+        """
+        if not messages:
+            return "None."
+        
+        # Take last 6 turns (3 pairs) to keep context manageable
+        history_window = messages[-6:]
+        formatted_turns = []
+        
+        for msg in history_window:
+            role = msg['role'].capitalize()
+            content = msg['content']
+            
+            if role == "Assistant":
+                # Strip out internal thoughts, status logs, and ECharts JSON
+                content = re.sub(r'<<<THOUGHT_START:.*?>>>.*?<<<THOUGHT_END>>>', '', content, flags=re.DOTALL)
+                content = re.sub(r'<<<COLLAPSIBLE_PYTHON_START>>>.*?<<<COLLAPSIBLE_PYTHON_END>>>', '', content, flags=re.DOTALL)
+                content = re.sub(r'<<<ECHART_JSON:.*?>>>', '', content)
+                content = re.sub(r'\[\[STATUS:.*?\]\]', '', content)
+                content = re.sub(r'\[\[FINISH\]\]', '', content)
+                
+                # We want to KEEP the SQL queries but maybe label them clearly
+                # Change collapsible tags to standard markdown SQL for the LLM
+                content = content.replace("<<<COLLAPSIBLE_SQL_START>>>", "Executed SQL: \n```sql\n")
+                content = content.replace("<<<COLLAPSIBLE_SQL_END>>>", "\n```")
+                
+                # Clean up whitespace
+                content = re.sub(r'\n{3,}', '\n\n', content).strip()
+            
+            if content:
+                formatted_turns.append(f"{role}: {content}")
+        
+        return "\n\n".join(formatted_turns)
+
+    def stream_pipeline(self, user_question: str, messages: List[Dict[str, str]] = None) -> Dict[str, Any]:
         """
         Orchestrates the complete SQL-of-Thought pipeline yielding steps.
         """
@@ -65,10 +103,13 @@ class SQLOfThoughtAgent:
              yield {"type": "error", "content": "Database connection invalid."}
              return
 
+        # Format history context
+        history_context = self._format_history_context(messages or [])
+
         # Step 0: Plan / Split Questions
         yield {"type": "status", "content": "Planning & Breaking down request..."}
         try:
-            questions = self.splitter_agent(user_question)
+            questions = self.splitter_agent(user_question, history_context)
             # Ensure it's a list
             if isinstance(questions, str):
                 questions = json.loads(questions)
@@ -83,34 +124,34 @@ class SQLOfThoughtAgent:
             status_text = self._generate_dynamic_text("Analyzing Database Schema", sub_q)
             yield {"type": "status", "content": f"{prefix} {status_text}..."}
             
-            schema_links = self.schema_linking_agent(sub_q)
+            schema_links = self.schema_linking_agent(sub_q, history_context)
             
-            header_text = self._generate_dynamic_text("Schema Identification", sub_q)
+            header_text = self._generate_dynamic_text("Schema Identification", sub_q).title()
             yield {"type": "thought", "header": f"{header_text} {prefix}", "content": schema_links}
             
             # Step 2: Subproblem Decomposition
             status_text = self._generate_dynamic_text("Decomposing Query", sub_q)
             yield {"type": "status", "content": f"{prefix} {status_text}..."}
             
-            subproblems = self.subproblem_agent(sub_q, schema_links)
+            subproblems = self.subproblem_agent(sub_q, schema_links, history_context)
             
-            header_text = self._generate_dynamic_text("Subproblems", sub_q)
+            header_text = self._generate_dynamic_text("Subproblems", sub_q).title()
             yield {"type": "thought", "header": f"{header_text} {prefix}", "content": subproblems}
             
             # Step 3: Query Planning
             status_text = self._generate_dynamic_text("Planning Execution", sub_q)
             yield {"type": "status", "content": f"{prefix} {status_text}..."}
             
-            query_plan = self.query_plan_agent(sub_q, subproblems)
+            query_plan = self.query_plan_agent(sub_q, subproblems, history_context)
             
-            header_text = self._generate_dynamic_text("Execution Plan", sub_q)
+            header_text = self._generate_dynamic_text("Execution Plan", sub_q).title()
             yield {"type": "thought", "header": f"{header_text} {prefix}", "content": query_plan}
             
             # Step 4: Initial SQL Generation
             status_text = self._generate_dynamic_text("Generating SQL", sub_q)
             yield {"type": "status", "content": f"{prefix} {status_text}..."}
             
-            sql_query = self.sql_agent(sub_q, query_plan)
+            sql_query = self.sql_agent(sub_q, query_plan, history_context)
             
             # No dynamic header needed here as Agent.py handles "Drafting SQL" hardcoded or we can pass it
             yield {"type": "sql", "content": sql_query}
@@ -127,8 +168,8 @@ class SQLOfThoughtAgent:
             # Yield result IMMEDIATELY
             yield {"type": "result", "payload": result}
 
-    def splitter_agent(self, question: str) -> List[str]:
-        prompt = get_question_splitter_prompt(question)
+    def splitter_agent(self, question: str, history: str = "") -> List[str]:
+        prompt = get_question_splitter_prompt(question, history)
         response = self.provider.generate_response([{"role": "user", "content": prompt}])
         try:
             # Extract JSON list if embedded in markdown
@@ -138,20 +179,20 @@ class SQLOfThoughtAgent:
         except:
             return [question]
 
-    def schema_linking_agent(self, question: str) -> str:
-        prompt = get_schema_linking_prompt(self.schema_str, question, self.temporal_context)
+    def schema_linking_agent(self, question: str, history: str = "") -> str:
+        prompt = get_schema_linking_prompt(self.schema_str, question, self.temporal_context, history)
         return self.provider.generate_response([{"role": "user", "content": prompt}])
 
-    def subproblem_agent(self, question: str, schema_links: str) -> str:
-        prompt = get_subproblem_prompt(question, schema_links)
+    def subproblem_agent(self, question: str, schema_links: str, history: str = "") -> str:
+        prompt = get_subproblem_prompt(question, schema_links, history)
         return self.provider.generate_response([{"role": "user", "content": prompt}])
 
-    def query_plan_agent(self, question: str, subproblems: str) -> str:
-        prompt = get_query_plan_prompt(question, subproblems)
+    def query_plan_agent(self, question: str, subproblems: str, history: str = "") -> str:
+        prompt = get_query_plan_prompt(question, subproblems, history)
         return self.provider.generate_response([{"role": "user", "content": prompt}])
 
-    def sql_agent(self, question: str, plan: str) -> str:
-        prompt = get_sql_generation_prompt(self.schema_str, question, plan, self.temporal_context)
+    def sql_agent(self, question: str, plan: str, history: str = "") -> str:
+        prompt = get_sql_generation_prompt(self.schema_str, question, plan, self.temporal_context, history)
         response = self.provider.generate_response([{"role": "user", "content": prompt}])
         return self._extract_sql(response)
 
