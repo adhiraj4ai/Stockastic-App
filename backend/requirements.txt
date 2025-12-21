@@ -33,3 +33,8 @@ tzdata==2025.3
 urllib3==2.6.2
 websockets==15.0.1
 yfinance==0.2.66
+langchain==0.3.17
+langchain-groq==0.2.4
+langchain-google-genai==2.0.9
+langchain-core==0.3.33
+plotly<6.0.0

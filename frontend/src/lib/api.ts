@@ -67,7 +67,65 @@ export const chatApi = {
     deleteSession: (id: string) => api.delete(`/api/chat/sessions/${id}/`),
     getMessages: (sessionId: string) => api.get<ChatMessage[]>(`/api/chat/sessions/${sessionId}/messages/`),
     addMessage: (sessionId: string, role: string, content: string) =>
-        api.post<ChatMessage>(`/api/chat/sessions/${sessionId}/add_message/`, { role, content }),
+        api.post<ChatMessage[]>(`/api/chat/sessions/${sessionId}/add_message/`, { role, content }),
+    streamMessage: async (sessionId: string, role: string, content: string, onChunk: (chunk: string) => void) => {
+        const token = localStorage.getItem('access_token');
+        const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+        const response = await fetch(`${baseURL}/api/chat/sessions/${sessionId}/stream_message/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ role, content })
+        });
+
+        if (!response.ok) {
+            console.error('Stream request failed:', response.status, response.statusText);
+            if (response.status === 401) {
+                console.error('Token expired during streaming. Redirecting to login.');
+                logoutAndRedirect();
+                return;
+            }
+            throw new Error(`Failed to stream: ${response.statusText}`);
+        }
+
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+
+        if (!reader) return;
+
+        let buffer = '';
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+
+            // Keep the last partial line in the buffer
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                if (!trimmedLine) continue;
+
+                if (trimmedLine.startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(trimmedLine.slice(6));
+                        if (data.content) {
+                            onChunk(data.content);
+                        } else if (data.error) {
+                            console.error('Streaming error from backend:', data.error);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing stream chunk JSON:', e, 'Line:', trimmedLine);
+                    }
+                }
+            }
+        }
+    }
 };
 
 export default api;
