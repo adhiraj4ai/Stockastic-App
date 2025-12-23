@@ -2157,6 +2157,42 @@ class PipelineViewSet(viewsets.ViewSet):
     }
 
     @action(detail=False, methods=['get'])
+    def history(self, request):
+        """
+        Returns recent upload history.
+        """
+        from .models import DataUploadLog
+        from django.core.paginator import Paginator
+        
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 10)
+        
+        logs = DataUploadLog.objects.all().order_by('-created_at')
+        paginator = Paginator(logs, page_size)
+        
+        try:
+            current_page = paginator.page(page)
+        except:
+            current_page = paginator.page(1)
+            
+        data = [{
+            'id': l.id,
+            'file_name': l.file_name,
+            'upload_type': l.get_upload_type_display(),
+            'status': l.status,
+            'records_count': l.records_count,
+            'error_message': l.error_message,
+            'created_at': l.created_at
+        } for l in current_page]
+        
+        return Response({
+            'results': data,
+            'total': paginator.count,
+            'page': current_page.number,
+            'pages': paginator.num_pages
+        })
+
+    @action(detail=False, methods=['get'])
     def status(self, request):
         """
         Returns list of tasks and their simulated status.
@@ -2208,3 +2244,217 @@ class PipelineViewSet(viewsets.ViewSet):
             'status': 'running',
             'message': f'Task {self.TASKS[task_id]} started successfully.'
         })
+
+    @action(detail=False, methods=['post'])
+    def upload_floorsheet(self, request):
+        """
+        Action to upload and process floorsheet JSON data.
+        """
+        from .models import DataUploadLog, DailyFloorsheet
+        import json
+        
+        file = request.FILES.get('file')
+        if not file:
+            return Response({'error': 'No file uploaded'}, status=400)
+            
+        try:
+            data = json.load(file)
+            if not isinstance(data, list):
+                # Handle single object case if necessary, but usually it's a list
+                data = [data]
+                
+            log = DataUploadLog.objects.create(
+                file_name=file.name,
+                upload_type='FLOORSHEET',
+                status='PENDING'
+            )
+            
+            floorsheet_items = []
+            for item in data:
+                try:
+                    floorsheet_items.append(DailyFloorsheet(
+                        transaction_id=int(item.get('contractId')),
+                        symbol=item.get('stockSymbol'),
+                        buyer_id=int(item.get('buyerMemberId')),
+                        seller_id=int(item.get('sellerMemberId')),
+                        transaction_quantity=int(item.get('contractQuantity')),
+                        transaction_rate=item.get('contractRate'),
+                        transaction_amount=item.get('contractAmount'),
+                        transaction_date=item.get('businessDate'),
+                        transaction_book_id=int(item.get('tradeBookId')),
+                        stock_id=int(item.get('stockId')) if item.get('stockId') else None,
+                        buyer_name=item.get('buyerBrokerName'),
+                        seller_name=item.get('sellerBrokerName'),
+                        transaction_datetime=item.get('tradeTime'),
+                        security_name=item.get('securityName')
+                    ))
+                except (ValueError, TypeError) as e:
+                    # Skip rows with malformed data but log it?
+                    # For now just continue to avoid failing the whole batch
+                    continue
+            
+            # Use bulk_create with ignore_conflicts=True to handle duplicates gracefully
+            DailyFloorsheet.objects.bulk_create(floorsheet_items, ignore_conflicts=True)
+            
+            log.status = 'SUCCESS'
+            log.records_count = len(floorsheet_items)
+            log.save()
+            
+            return Response({'message': f'Successfully uploaded {len(floorsheet_items)} floorsheet records.'})
+            
+        except Exception as e:
+            if 'log' in locals():
+                log.status = 'FAILED'
+                log.error_message = str(e)
+                log.save()
+            return Response({'error': str(e)}, status=500)
+
+    @action(detail=False, methods=['post'])
+    def upload_daily_prices(self, request):
+        """
+        Action to upload and process daily price CSV data.
+        """
+        from .models import DataUploadLog, DailyStockPrice
+        import csv
+        import io
+        
+        file = request.FILES.get('file')
+        date_str = request.data.get('date')
+        
+        if not file or not date_str:
+            return Response({'error': 'File and date are required'}, status=400)
+            
+        try:
+            log = DataUploadLog.objects.create(
+                file_name=file.name,
+                upload_type='PRICE',
+                status='PENDING'
+            )
+            
+            decoded_file = file.read().decode('utf-8')
+            io_string = io.StringIO(decoded_file)
+            reader = csv.DictReader(io_string)
+            
+            price_items = []
+            for row in reader:
+                # Basic mapping based on standard ShareSansar export format
+                # You might need to adjust column names based on actual CSV headers
+                symbol = row.get('Symbol') or row.get('Ticker') or row.get('symbol')
+                if not symbol: continue
+                
+                price_items.append(DailyStockPrice(
+                    ticker=symbol,
+                    date=date_str,
+                    open=row.get('Open', 0),
+                    high=row.get('High', 0),
+                    low=row.get('Low', 0),
+                    close=row.get('Close', row.get('LTP', 0)),
+                    volume=row.get('Volume', row.get('Qty', 0)),
+                    prev_close=row.get('Prev Close', 0),
+                    turnover=row.get('Turnover', 0)
+                ))
+                
+            DailyStockPrice.objects.bulk_create(price_items, ignore_conflicts=True)
+            
+            log.status = 'SUCCESS'
+            log.records_count = len(price_items)
+            log.save()
+            
+            return Response({'message': f'Successfully uploaded {len(price_items)} price records for {date_str}.'})
+            
+        except Exception as e:
+            if 'log' in locals():
+                log.status = 'FAILED'
+                log.error_message = str(e)
+                log.save()
+            return Response({'error': str(e)}, status=500)
+
+    @action(detail=False, methods=['post'])
+    def fetch_daily_prices_from_github(self, request):
+        """
+        Action to fetch daily prices from GitHub repository.
+        """
+        from .models import DataUploadLog, DailyStockPrice
+        import requests
+        import csv
+        import io
+        
+        date_str = request.data.get('date')
+        if not date_str:
+            return Response({'error': 'Date is required'}, status=400)
+            
+        try:
+            log = DataUploadLog.objects.create(
+                file_name=f"github_sync_{date_str}.csv",
+                upload_type='GITHUB_SYNC',
+                status='PENDING'
+            )
+            
+            # Format date as YYYY_MM_DD for the filename
+            formatted_date = date_str.replace('-', '_')
+            url = f"https://raw.githubusercontent.com/fuunshi/ShareSansarDataScrape/master/Data/{formatted_date}.csv"
+            
+            print(f"DEBUG: Fetching from GitHub: {url}")
+            response = requests.get(url)
+            print(f"DEBUG: GitHub response status: {response.status_code}")
+            
+            if response.status_code != 200:
+                log.status = 'FAILED'
+                log.error_message = f"Failed to fetch from GitHub. Status code: {response.status_code}. URL: {url}"
+                log.save()
+                return Response({
+                    'error': f'Data for {date_str} not found on GitHub. Please check if the file exists in the repository.'
+                }, status=400)
+                
+            decoded_file = response.content.decode('utf-8')
+            io_string = io.StringIO(decoded_file)
+            reader = csv.DictReader(io_string)
+            
+            def parse_decimal(val):
+                if not val or val == '-': return 0
+                return float(val.replace(',', ''))
+
+            price_items = []
+            for row in reader:
+                symbol = row.get('Symbol')
+                if not symbol: continue
+                
+                price_items.append(DailyStockPrice(
+                    ticker=symbol,
+                    date=date_str,
+                    open=parse_decimal(row.get('Open')),
+                    high=parse_decimal(row.get('High')),
+                    low=parse_decimal(row.get('Low')),
+                    close=parse_decimal(row.get('Close')),
+                    volume=parse_decimal(row.get('Vol')),
+                    prev_close=parse_decimal(row.get('Prev. Close')),
+                    turnover=parse_decimal(row.get('Turnover')),
+                    conf=parse_decimal(row.get('Conf.')),
+                    vwap=parse_decimal(row.get('VWAP')),
+                    trans=int(parse_decimal(row.get('Trans.'))),
+                    diff=parse_decimal(row.get('Diff')),
+                    range=parse_decimal(row.get('Range')),
+                    diff_percent=parse_decimal(row.get('Diff %')),
+                    range_percent=parse_decimal(row.get('Range %')),
+                    vwap_percent=parse_decimal(row.get('VWAP %')),
+                    days_120=parse_decimal(row.get('120 Days')),
+                    days_180=parse_decimal(row.get('180 Days')),
+                    weeks_52_high=parse_decimal(row.get('52 Weeks High')),
+                    weeks_52_low=parse_decimal(row.get('52 Weeks Low'))
+                ))
+                
+            DailyStockPrice.objects.bulk_create(price_items, ignore_conflicts=True)
+            
+            log.status = 'SUCCESS'
+            log.records_count = len(price_items)
+            log.save()
+            
+            return Response({'message': f'Successfully synced {len(price_items)} price records from GitHub for {date_str}.'})
+            
+        except Exception as e:
+            if 'log' in locals():
+                log.status = 'FAILED'
+                log.error_message = str(e)
+                log.save()
+            return Response({'error': str(e)}, status=500)
+

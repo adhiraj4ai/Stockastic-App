@@ -4,7 +4,7 @@ class StockMarketRouter:
     stock_market database.
     """
     route_app_labels = {'stocks'}
-    route_models = {'dailystockprice', 'dailyfloorsheet', 'company', 'dailybuyerfloorsheet', 'dailysellerfloorsheet'}
+    route_models = {'dailystockprice', 'dailyfloorsheet', 'company', 'dailybuyerfloorsheet', 'dailysellerfloorsheet', 'dailycumulativeaccumulation', 'dailymarketsummary', 'datauploadlog'}
 
     def db_for_read(self, model, **hints):
         """
