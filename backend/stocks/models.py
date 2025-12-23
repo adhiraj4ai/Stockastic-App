@@ -373,3 +373,29 @@ class DataUploadLog(models.Model):
 
     def __str__(self):
         return f"{self.file_name} ({self.status})"
+
+class Notification(models.Model):
+    class NotificationType(models.TextChoices):
+        INFO = 'INFO', 'Information'
+        SUCCESS = 'SUCCESS', 'Success'
+        WARNING = 'WARNING', 'Warning'
+        PRICE_ALERT = 'PRICE_ALERT', 'Price Alert'
+        STOP_LOSS = 'STOP_LOSS', 'Stop Loss'
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    type = models.CharField(max_length=20, choices=NotificationType.choices, default=NotificationType.INFO)
+    
+    # Ticker context for direct navigation or actions
+    ticker = models.CharField(max_length=20, null=True, blank=True)
+    
+    read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'notifications'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, StockFundamental, PortfolioAccount, Dividend, FinancialReport, Strategy, Company, WatchlistItem
+from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, StockFundamental, PortfolioAccount, Dividend, FinancialReport, Strategy, Company, WatchlistItem, Notification
 
 class DailyStockPriceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -104,3 +104,9 @@ class WatchlistItemSerializer(serializers.ModelSerializer):
     def get_sector(self, obj):
         company = Company.objects.filter(symbol=obj.ticker).first()
         return company.sector if company else None
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id', 'title', 'message', 'type', 'ticker', 'read', 'created_at']
+        read_only_fields = ['id', 'created_at']

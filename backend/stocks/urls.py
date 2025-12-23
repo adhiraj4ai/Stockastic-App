@@ -11,6 +11,7 @@ router.register(r'strategies', views.StrategyViewSet, basename='strategies')
 router.register(r'companies', views.CompanyViewSet, basename='companies')
 router.register(r'watchlist', views.WatchlistViewSet, basename='watchlist')
 router.register(r'pipeline', views.PipelineViewSet, basename='pipeline')
+router.register(r'notifications', views.NotificationViewSet, basename='notifications')
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -4,10 +4,10 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, TransactionType, StockFundamental, PortfolioAccount, Strategy, Company, WatchlistItem
+from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, TransactionType, StockFundamental, PortfolioAccount, Strategy, Company, WatchlistItem, Notification
 from .serializers import (
     DailyStockPriceSerializer, DailyFloorsheetSerializer, PortfolioItemSerializer, 
-    PortfolioTransactionSerializer, StockFundamentalSerializer, StrategySerializer, CompanySerializer, WatchlistItemSerializer
+    PortfolioTransactionSerializer, StockFundamentalSerializer, StrategySerializer, CompanySerializer, WatchlistItemSerializer, NotificationSerializer
 )
 from . import serializers # For PortfolioAccountSerializer which was added differently in replacement
 from .utils import calculate_broker_commission, calculate_sebon_fee, calculate_dp_charge, calculate_cgt
@@ -2070,6 +2070,121 @@ class WatchlistViewSet(viewsets.ModelViewSet):
             
         serializer = self.get_serializer(data, many=True)
         return Response(serializer.data)
+
+class NotificationViewSet(viewsets.ModelViewSet):
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user)
+
+    @action(detail=False, methods=['POST'])
+    def mark_all_as_read(self, request):
+        Notification.objects.filter(user=request.user, read=False).update(read=True)
+        return Response({'status': 'messages marked as read'})
+
+    @action(detail=True, methods=['POST'])
+    def mark_as_read(self, request, pk=None):
+        notification = self.get_object()
+        notification.read = True
+        notification.save()
+        return Response({'status': 'notification marked as read'})
+
+    @action(detail=False, methods=['POST'])
+    def trigger_check(self, request):
+        count = check_market_alerts(request.user)
+        return Response({'status': 'check complete', 'notifications_created': count})
+
+def check_market_alerts(user):
+    """
+    Check portfolio and watchlist items against current prices to generate notifications.
+    """
+    from django.db.models import Max
+    notifications_created = 0
+    
+    # 1. Get latest prices for all active tickers
+    portfolio_tickers = PortfolioItem.objects.filter(user=user).values_list('ticker', flat=True)
+    watchlist_tickers = WatchlistItem.objects.filter(user=user).values_list('ticker', flat=True)
+    all_tickers = set(list(portfolio_tickers) + list(watchlist_tickers))
+    
+    if not all_tickers:
+        return 0
+
+    # Fetch latest prices for these tickers
+    latest_date_agg = DailyStockPrice.objects.aggregate(Max('date'))
+    latest_date = latest_date_agg['date__max']
+    if not latest_date:
+        return 0
+        
+    prices = DailyStockPrice.objects.filter(date=latest_date, ticker__in=all_tickers)
+    price_map = {p.ticker: float(p.close) for p in prices}
+
+    # 2. Check Portfolio Items
+    portfolio_items = PortfolioItem.objects.filter(user=user)
+    for item in portfolio_items:
+        current_price = price_map.get(item.ticker)
+        if current_price is None: continue
+        
+        # Stop Loss Check
+        if item.stop_loss_price and current_price <= float(item.stop_loss_price):
+            title = f"❗ Stop Loss Hit: {item.ticker}"
+            message = f"{item.ticker} has dropped to Rs. {current_price}, hitting your stop loss of Rs. {item.stop_loss_price}. Consider exiting to protect capital."
+            
+            # Simple daily deduplication
+            recent = Notification.objects.filter(
+                user=user, ticker=item.ticker, title=title, 
+                created_at__date=latest_date
+            ).exists()
+            
+            if not recent:
+                Notification.objects.create(
+                    user=user, ticker=item.ticker, title=title, 
+                    message=message, type=Notification.NotificationType.STOP_LOSS
+                )
+                notifications_created += 1
+
+        # Target Price Check
+        for i, target in enumerate([item.target_price, item.target_price_2, item.target_price_3], 1):
+            if target and current_price >= float(target):
+                title = f"🎯 Target {i} Reached: {item.ticker}"
+                message = f"{item.ticker} has reached Rs. {current_price}, hitting your target price of Rs. {target}. Time to lock in profits!"
+                
+                recent = Notification.objects.filter(
+                    user=user, ticker=item.ticker, title=title,
+                    created_at__date=latest_date
+                ).exists()
+                
+                if not recent:
+                    Notification.objects.create(
+                        user=user, ticker=item.ticker, title=title,
+                        message=message, type=Notification.NotificationType.PRICE_ALERT
+                    )
+                    notifications_created += 1
+
+    # 3. Check Watchlist Items
+    watchlist_items = WatchlistItem.objects.filter(user=user)
+    for item in watchlist_items:
+        current_price = price_map.get(item.ticker)
+        if current_price is None: continue
+        
+        if item.target_price and current_price <= float(item.target_price):
+            title = f"🚀 Entry Signal: {item.ticker}"
+            message = f"{item.ticker} is now at Rs. {current_price}, hitting your strategic entry target of Rs. {item.target_price}. Ready for promotion to portfolio?"
+            
+            recent = Notification.objects.filter(
+                user=user, ticker=item.ticker, title=title,
+                created_at__date=latest_date
+            ).exists()
+            
+            if not recent:
+                Notification.objects.create(
+                    user=user, ticker=item.ticker, title=title,
+                    message=message, type=Notification.NotificationType.PRICE_ALERT
+                )
+                notifications_created += 1
+                
+    return notifications_created
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_broker_portfolio(request):
