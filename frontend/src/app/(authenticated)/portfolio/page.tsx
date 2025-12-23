@@ -10,11 +10,12 @@ import { Trash2, Plus, TrendingUp, TrendingDown, DollarSign, Wallet, Users, Fold
 import TransactionModal, { PortfolioAccount } from '@/components/TransactionModal';
 import { CreateAccountDialog } from '@/components/CreateAccountDialog';
 import StockLink from '@/components/StockLink';
-import { Wand2, Target, ChevronDown, ChevronUp, Radio } from 'lucide-react';
+import { Wand2, Target, ChevronDown, ChevronUp, Radio, PieChart as PieIcon, BarChart as BarIcon, Grid3X3, Zap } from 'lucide-react';
 import { InlineExitPlan } from '@/components/InlineExitPlan';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Eye, PlusCircle, X } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 interface WatchlistItem {
     id: number;
@@ -176,6 +177,24 @@ export default function PortfolioPage() {
     const totalGainLossPercent = totalInvestment ? (totalGainLoss / totalInvestment * 100) : 0;
     const totalDayGainLoss = displayedItems.reduce((acc, item) => acc + Number(item.day_gain_loss), 0);
 
+    const bestPerformer = useMemo(() => {
+        if (displayedItems.length === 0) return null;
+        return [...displayedItems].sort((a, b) => b.gain_loss_percent - a.gain_loss_percent)[0];
+    }, [displayedItems]);
+
+    const sectorData = useMemo(() => {
+        const sectors: Record<string, { name: string; value: number; pnl: number }> = {};
+        displayedItems.forEach(item => {
+            const s = item.sector || 'Others';
+            if (!sectors[s]) sectors[s] = { name: s, value: 0, pnl: 0 };
+            sectors[s].value += Number(item.current_value);
+            sectors[s].pnl += Number(item.gain_loss);
+        });
+        return Object.values(sectors).sort((a, b) => b.value - a.value);
+    }, [displayedItems]);
+
+    const CHART_COLORS = ['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#6366F1', '#F43F5E'];
+
     if (!mounted) return null;
 
     return (
@@ -245,33 +264,39 @@ export default function PortfolioPage() {
 
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <Card className="bg-white border-blue-100 shadow-sm">
+                    <Card className="bg-white border-blue-100 shadow-sm hover:shadow-md transition-shadow">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-500">Total Investment</CardTitle>
+                            <CardTitle className="text-sm font-medium text-gray-500">Capital Deployed</CardTitle>
                             <Wallet className="h-4 w-4 text-blue-500" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold text-gray-900">
                                 Rs. {totalInvestment.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </div>
+                            <div className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-wider">
+                                Across {displayedItems.length} Holdings
+                            </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-white border-purple-100 shadow-sm">
+                    <Card className="bg-white border-purple-100 shadow-sm hover:shadow-md transition-shadow">
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-500">Current Value</CardTitle>
+                            <CardTitle className="text-sm font-medium text-gray-500">Portfolio Value</CardTitle>
                             <DollarSign className="h-4 w-4 text-purple-500" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold text-gray-900">
                                 Rs. {totalCurrentValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </div>
+                            <div className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-wider italic">
+                                Real-time Valuation
+                            </div>
                         </CardContent>
                     </Card>
 
-                    <Card className={totalGainLoss >= 0 ? "border-green-100 shadow-sm" : "border-red-100 shadow-sm"}>
+                    <Card className={totalGainLoss >= 0 ? "border-green-100 shadow-sm hover:shadow-md transition-shadow" : "border-red-100 shadow-sm hover:shadow-md transition-shadow"}>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-500">Total Profit/Loss</CardTitle>
+                            <CardTitle className="text-sm font-medium text-gray-500">Total Returns</CardTitle>
                             {totalGainLoss >= 0 ? <TrendingUp className="h-4 w-4 text-green-500" /> : <TrendingDown className="h-4 w-4 text-red-500" />}
                         </CardHeader>
                         <CardContent>
@@ -279,148 +304,65 @@ export default function PortfolioPage() {
                                 <div className={`text-2xl font-bold ${totalGainLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                     Rs. {Math.abs(totalGainLoss).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </div>
-                                <div className={`text-xs font-medium ${totalGainLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    {totalGainLoss >= 0 ? '+' : '-'}{Math.abs(totalGainLossPercent).toFixed(2)}%
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${totalGainLoss >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                        {totalGainLoss >= 0 ? '+' : '-'}{Math.abs(totalGainLossPercent).toFixed(2)}%
+                                    </span>
+                                    {bestPerformer && (
+                                        <span className="text-[9px] text-gray-400 font-medium">
+                                            Top: <span className="text-green-600 font-bold">{bestPerformer.ticker}</span>
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className={totalDayGainLoss >= 0 ? "border-green-100 shadow-sm bg-green-50/30" : "border-red-100 shadow-sm bg-red-50/30"}>
+                    <Card className={totalDayGainLoss >= 0 ? "border-green-100 shadow-sm bg-green-50/20 hover:shadow-md transition-shadow" : "border-red-100 shadow-sm bg-red-50/20 hover:shadow-md transition-shadow"}>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-500">Today's Profit/Loss</CardTitle>
-                            {totalDayGainLoss >= 0 ? <TrendingUp className="h-4 w-4 text-green-500" /> : <TrendingDown className="h-4 w-4 text-red-500" />}
+                            <CardTitle className="text-sm font-medium text-gray-500">Session Swing</CardTitle>
+                            <Zap className={`h-4 w-4 ${totalDayGainLoss >= 0 ? 'text-amber-500' : 'text-red-400'}`} />
                         </CardHeader>
                         <CardContent>
                             <div className={`text-2xl font-bold ${totalDayGainLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                 Rs. {Math.abs(totalDayGainLoss).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </div>
-                            <div className="text-xs text-gray-400 mt-1">
-                                vs Yesterday's Close
+                            <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
+                                <Activity className="h-3 w-3" /> Intraday Movement
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Risk Management Section */}
-                {displayedItems.length > 0 && (
-                    <Card className="bg-slate-50 border-slate-200">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="flex items-center gap-2 text-lg">
-                                <ShieldAlert className="h-5 w-5 text-slate-600" />
-                                Risk Analysis
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                {/* Sector Allocation */}
-                                <div>
-                                    <h4 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">Sector Allocation</h4>
-                                    <div className="space-y-3">
-                                        {Object.entries(
-                                            displayedItems.reduce((acc, item) => {
-                                                const sector = item.sector || 'Unknown';
-                                                acc[sector] = (acc[sector] || 0) + Number(item.current_value);
-                                                return acc;
-                                            }, {} as Record<string, number>)
-                                        )
-                                            .sort(([, a], [, b]) => b - a)
-                                            .map(([sector, value]) => {
-                                                const percent = (value / totalCurrentValue) * 100;
-                                                return (
-                                                    <div key={sector}>
-                                                        <div className="flex justify-between text-sm mb-1">
-                                                            <span className="font-medium text-gray-700">{sector}</span>
-                                                            <span className={percent > 40 ? "text-red-500 font-bold" : "text-gray-500"}>
-                                                                {percent.toFixed(1)}%
-                                                            </span>
-                                                        </div>
-                                                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                                            <div
-                                                                className={`h-full rounded-full ${percent > 40 ? 'bg-red-500' : 'bg-blue-500'}`}
-                                                                style={{ width: `${percent}%` }}
-                                                            />
-                                                        </div>
-                                                        {percent > 40 && <p className="text-xs text-red-500 mt-0.5">⚠️ Overweight in this sector</p>}
-                                                    </div>
-                                                );
-                                            })}
-                                    </div>
-                                </div>
-
-                                {/* Concentration & Volatility Risks */}
-                                <div className="space-y-6">
-                                    <div>
-                                        <h4 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">Concentration Risk</h4>
-                                        <ul className="space-y-2">
-                                            {displayedItems
-                                                .filter(item => (Number(item.current_value) / totalCurrentValue) > 0.20)
-                                                .map(item => (
-                                                    <li key={item.ticker} className="flex items-center justify-between text-sm bg-white p-2 rounded border border-red-100 text-red-700">
-                                                        <span className="flex items-center gap-2">
-                                                            <ShieldAlert className="h-4 w-4" />
-                                                            High Exposure: <strong>{item.ticker}</strong>
-                                                        </span>
-                                                        <span className="font-bold">{((Number(item.current_value) / totalCurrentValue) * 100).toFixed(1)}%</span>
-                                                    </li>
-                                                ))}
-                                            {displayedItems.every(item => (Number(item.current_value) / totalCurrentValue) <= 0.20) && (
-                                                <li className="text-sm text-green-600 flex items-center gap-2">
-                                                    <CheckCircle2 className="h-4 w-4" />
-                                                    Portfolio is well diversified (No stock &gt; 20%)
-                                                </li>
-                                            )}
-                                        </ul>
-                                    </div>
-
-                                    <div>
-                                        <h4 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">High Volatility Holdings</h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {displayedItems
-                                                .filter(item => (item.volatility || 0) > 40) // >40% annualized vol considered high
-                                                .sort((a, b) => (b.volatility || 0) - (a.volatility || 0))
-                                                .map(item => (
-                                                    <div key={item.ticker} className="flex items-center gap-1.5 bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-xs font-medium border border-orange-100">
-                                                        <Activity className="h-3 w-3" />
-                                                        {item.ticker} {item.volatility?.toFixed(1)}%
-                                                    </div>
-                                                ))}
-                                            {!displayedItems.some(i => (i.volatility || 0) > 40) && (
-                                                <span className="text-sm text-gray-400 italic">No high volatility stocks detected.</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-
-                {/* Holdings Table */}
-                <Card className="shadow-sm">
-                    <CardHeader>
+                {/* Holdings Table - MOVED UP */}
+                <Card className="shadow-lg border-blue-50/50">
+                    <CardHeader className="border-b border-gray-50 pb-4">
                         <CardTitle className="flex items-center justify-between">
-                            <span>Your Holdings {selectedAccount !== 'all' && <span className="text-gray-400 ml-2 text-sm font-normal">(Account: {accounts.find(a => a.id.toString() == selectedAccount)?.name})</span>}</span>
+                            <div className="flex items-center gap-2">
+                                <Grid3X3 className="h-5 w-5 text-gray-400" />
+                                <span>Strategic Holdings {selectedAccount !== 'all' && <span className="text-gray-400 ml-2 text-sm font-normal">(Account: {accounts.find(a => a.id.toString() == selectedAccount)?.name})</span>}</span>
+                            </div>
                             {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>}
                         </CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="pt-6">
                         {displayedItems.length === 0 && !loading ? (
-                            <div className="text-center py-10 text-gray-500">
-                                No stocks in portfolio. Add a transaction to get started.
+                            <div className="text-center py-10 text-gray-500 flex flex-col items-center gap-2">
+                                <Wallet className="h-10 w-10 text-gray-200" />
+                                <p>No stocks in portfolio. Add a transaction to get started.</p>
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Ticker</TableHead>
-                                            <TableHead className="text-right">Quantity</TableHead>
-                                            <TableHead className="text-right">WACC (Rs.)</TableHead>
-                                            <TableHead className="text-right">LTP (Rs.)</TableHead>
-                                            <TableHead className="text-right">Total Value (Rs.)</TableHead>
-                                            <TableHead className="text-right">Profit/Loss (Rs.)</TableHead>
-                                            <TableHead className="text-right">Today's P/L (Rs.)</TableHead>
+                                        <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
+                                            <TableHead className="font-bold text-gray-900">Ticker</TableHead>
+                                            <TableHead className="text-right font-bold text-gray-900">Quantity</TableHead>
+                                            <TableHead className="text-right font-bold text-gray-900">WACC (Rs.)</TableHead>
+                                            <TableHead className="text-right font-bold text-gray-900">LTP (Rs.)</TableHead>
+                                            <TableHead className="text-right font-bold text-gray-900">Total Value (Rs.)</TableHead>
+                                            <TableHead className="text-right font-bold text-gray-900">Profit/Loss (Rs.)</TableHead>
+                                            <TableHead className="text-right font-bold text-gray-900">Today's P/L (Rs.)</TableHead>
                                             <TableHead className="w-[80px]"></TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -448,8 +390,8 @@ export default function PortfolioPage() {
                                                         className={`transition-all duration-300 cursor-pointer border-l-4 ${isExpanded ? 'bg-blue-50/30 border-l-blue-500' : hasStrategy ? 'border-l-green-500/50 hover:bg-gray-50' : 'border-l-transparent hover:bg-gray-50'}`}
                                                         onClick={() => setExpandedTicker(isExpanded ? null : item.ticker)}
                                                     >
-                                                        <TableCell className="font-semibold py-4">
-                                                            <div className="flex flex-col gap-1">
+                                                        <TableCell className="font-semibold py-5">
+                                                            <div className="flex flex-col gap-1.5">
                                                                 <div className="flex items-center gap-2">
                                                                     <StockLink ticker={item.ticker} />
                                                                     {hasStrategy && (
@@ -460,32 +402,32 @@ export default function PortfolioPage() {
                                                                 </div>
                                                                 {(item.stop_loss_price || item.target_price) && (
                                                                     <div className="flex flex-wrap gap-1">
-                                                                        {item.stop_loss_price && <span className="text-[10px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-100 font-bold">SL: {Number(item.stop_loss_price).toFixed(0)}</span>}
-                                                                        {item.target_price && <span className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100 font-bold">TP: {Number(item.target_price).toFixed(0)}</span>}
-                                                                        {rrRatio !== 'N/A' && <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 font-bold">R/R: {rrRatio}</span>}
+                                                                        {item.stop_loss_price && <span className="text-[10px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-100 font-bold uppercase tracking-tighter shadow-sm">SL: {Number(item.stop_loss_price).toFixed(0)}</span>}
+                                                                        {item.target_price && <span className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100 font-bold uppercase tracking-tighter shadow-sm">TP: {Number(item.target_price).toFixed(0)}</span>}
+                                                                        {rrRatio !== 'N/A' && <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 font-bold uppercase tracking-tighter shadow-sm">R/R: {rrRatio}</span>}
                                                                     </div>
                                                                 )}
                                                             </div>
                                                         </TableCell>
-                                                        <TableCell className="text-right text-gray-600">{item.quantity}</TableCell>
-                                                        <TableCell className="text-right text-gray-600">{Number(item.wacc || item.buy_price).toFixed(2)}</TableCell>
-                                                        <TableCell className="text-right text-gray-900 font-medium">{item.current_price}</TableCell>
-                                                        <TableCell className="text-right font-bold text-gray-900">{Number(item.current_value).toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
+                                                        <TableCell className="text-right text-gray-600 font-medium">{item.quantity}</TableCell>
+                                                        <TableCell className="text-right text-gray-600 font-medium">{Number(item.wacc || item.buy_price).toFixed(2)}</TableCell>
+                                                        <TableCell className="text-right text-gray-900 font-bold">{item.current_price}</TableCell>
+                                                        <TableCell className="text-right font-black text-gray-900">{Number(item.current_value).toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
                                                         <TableCell className={`text-right ${isPos ? 'text-green-600' : 'text-red-600'}`}>
-                                                            <div className="font-bold">
+                                                            <div className="font-black text-sm">
                                                                 {isPos ? '+' : ''}{pl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                                             </div>
-                                                            <div className="text-[10px] font-bold opacity-80 uppercase tracking-tighter">
+                                                            <div className={`text-[10px] font-black uppercase tracking-tighter ${isPos ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'} px-1 rounded inline-block mt-0.5`}>
                                                                 {Number(item.gain_loss_percent).toFixed(2)}%
                                                             </div>
                                                         </TableCell>
-                                                        <TableCell className={`text-right font-bold ${isDayPos ? 'text-green-600' : 'text-red-600'}`}>
+                                                        <TableCell className={`text-right font-black ${isDayPos ? 'text-green-600' : 'text-red-600'}`}>
                                                             {isDayPos ? '+' : ''}{dayPl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                                         </TableCell>
                                                         <TableCell className="text-right">
                                                             <div className="flex justify-end">
                                                                 <button
-                                                                    className={`p-2 rounded-lg transition-all ${isExpanded ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                                                                    className={`p-2 rounded-lg transition-all ${isExpanded ? 'bg-blue-600 text-white shadow-xl rotate-0' : 'text-gray-300 hover:text-blue-600 hover:bg-blue-50 rotate-[-45deg] hover:rotate-0'}`}
                                                                 >
                                                                     {isExpanded ? <X className="h-4 w-4" /> : <Target className="h-4 w-4" />}
                                                                 </button>
@@ -493,14 +435,16 @@ export default function PortfolioPage() {
                                                         </TableCell>
                                                     </TableRow>
                                                     {isExpanded && (
-                                                        <TableRow className="bg-blue-50/10 border-none hover:bg-blue-50/10 h-0 p-0">
-                                                            <TableCell colSpan={8} className="p-0 border-none overflow-hidden">
-                                                                <div className="p-6 pt-2 bg-blue-50/5 border-x-2 border-b-2 border-blue-500/20 rounded-b-2xl mx-1 mb-2 shadow-inner">
-                                                                    <InlineExitPlan
-                                                                        portfolioItem={item}
-                                                                        onSave={fetchPortfolio}
-                                                                        onClose={() => setExpandedTicker(null)}
-                                                                    />
+                                                        <TableRow className="bg-blue-50/5 border-none hover:bg-blue-50/5">
+                                                            <TableCell colSpan={8} className="p-0 border-none">
+                                                                <div className="p-6 pt-0 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                                    <div className="bg-white border-x border-b border-blue-100 rounded-b-2xl p-6 shadow-xl relative z-10 mx-2 mb-4">
+                                                                        <InlineExitPlan
+                                                                            portfolioItem={item}
+                                                                            onSave={fetchPortfolio}
+                                                                            onClose={() => setExpandedTicker(null)}
+                                                                        />
+                                                                    </div>
                                                                 </div>
                                                             </TableCell>
                                                         </TableRow>
@@ -515,76 +459,310 @@ export default function PortfolioPage() {
                     </CardContent>
                 </Card>
 
-                {/* Watchlist Section */}
-                <Card className="mt-6 border-none shadow-sm bg-white">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-gray-100 mb-0">
-                        <CardTitle className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                            <div className="p-1.5 bg-blue-100 rounded text-blue-600">
-                                <Eye size={18} />
+                {/* Visual Analytics & Heatmap Section */}
+                {displayedItems.length > 0 && (
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        {/* Sector Analysis */}
+                        <Card className="lg:col-span-8 shadow-sm">
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <BarIcon className="h-5 w-5 text-blue-500" />
+                                    Portfolio Visualizer
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-[300px]">
+                                    {/* Pie Chart: Allocation */}
+                                    <div className="relative">
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                            <span className="text-[10px] text-gray-400 font-bold uppercase">Diversification</span>
+                                            <span className="text-lg font-black text-gray-800">{sectorData.length} Sectors</span>
+                                        </div>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie
+                                                    data={sectorData}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    innerRadius={60}
+                                                    outerRadius={80}
+                                                    paddingAngle={5}
+                                                    dataKey="value"
+                                                >
+                                                    {sectorData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="rgba(255,255,255,0.2)" />
+                                                    ))}
+                                                </Pie>
+                                                <RechartsTooltip />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+
+                                    {/* Bar Chart: Performance by Sector */}
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={sectorData} layout="vertical" margin={{ left: 20, right: 20 }}>
+                                            <XAxis type="number" hide />
+                                            <YAxis
+                                                dataKey="name"
+                                                type="category"
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tick={{ fontSize: 10, fontWeight: 700, fill: '#6B7280' }}
+                                                width={80}
+                                            />
+                                            <RechartsTooltip
+                                                cursor={{ fill: '#F3F4F6' }}
+                                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                            />
+                                            <Bar
+                                                dataKey="pnl"
+                                                radius={[0, 4, 4, 0]}
+                                                barSize={20}
+                                            >
+                                                {sectorData.map((entry, index) => (
+                                                    <Cell
+                                                        key={`cell-${index}`}
+                                                        fill={entry.pnl >= 0 ? '#10B981' : '#EF4444'}
+                                                    />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+
+                                {/* Custom Legend */}
+                                <div className="flex flex-wrap gap-4 mt-6 pt-6 border-t border-gray-50">
+                                    {sectorData.map((s, i) => (
+                                        <div key={s.name} className="flex items-center gap-2">
+                                            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
+                                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">
+                                                {s.name} ({((s.value / totalCurrentValue) * 100).toFixed(0)}%)
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Performance Heatmap (Grid) */}
+                        <Card className="lg:col-span-4 shadow-sm overflow-hidden">
+                            <CardHeader>
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <PieIcon className="h-5 w-5 text-purple-500" />
+                                    PnL Heatmap
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                                    {displayedItems.map((item) => {
+                                        const pnlP = item.gain_loss_percent;
+                                        let bgColor = 'bg-gray-100';
+                                        if (pnlP > 20) bgColor = 'bg-green-600';
+                                        else if (pnlP > 10) bgColor = 'bg-green-500';
+                                        else if (pnlP > 0) bgColor = 'bg-green-400';
+                                        else if (pnlP > -10) bgColor = 'bg-red-400';
+                                        else if (pnlP > -20) bgColor = 'bg-red-500';
+                                        else bgColor = 'bg-red-600';
+
+                                        return (
+                                            <div
+                                                key={item.ticker}
+                                                className={`aspect-square ${bgColor} rounded-md flex flex-col items-center justify-center text-white shadow-inner group relative cursor-help transition-transform hover:scale-105 hover:z-20`}
+                                            >
+                                                <span className="text-[10px] font-black">{item.ticker}</span>
+                                                <span className="text-[8px] font-bold opacity-80">{Number(pnlP).toFixed(0)}%</span>
+
+                                                {/* Tooltip on Hover */}
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-gray-900 text-white p-2 rounded text-[9px] opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-2xl z-30">
+                                                    <p className="font-black border-b border-gray-700 pb-1 mb-1">{item.ticker}</p>
+                                                    <p className="flex justify-between">Profit: <span>Rs. {Number(item.gain_loss).toFixed(0)}</span></p>
+                                                    <p className="flex justify-between">Value: <span>Rs. {Number(item.current_value).toFixed(0)}</span></p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <div className="mt-6 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                    <span>Bearish</span>
+                                    <div className="flex gap-1">
+                                        {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className={`h-2 w-2 rounded-sm ${i <= 3 ? 'bg-red-' + (i * 200) : 'bg-green-' + ((7 - i) * 200)}`} />)}
+                                    </div>
+                                    <span>Bullish</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
+
+                {/* Risk Management Section - MOVED DOWN */}
+                {displayedItems.length > 0 && (
+                    <Card className="bg-slate-50/50 border-slate-200 border-dashed">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="flex items-center gap-2 text-lg text-slate-700">
+                                <ShieldAlert className="h-5 w-5 text-slate-500" />
+                                Portfolio Health Scan
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* Sector Concentration Risk List */}
+                                <div>
+                                    <h4 className="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        Allocation Alerts
+                                    </h4>
+                                    <div className="space-y-2">
+                                        {Object.entries(
+                                            displayedItems.reduce((acc, item) => {
+                                                const sector = item.sector || 'Unknown';
+                                                acc[sector] = (acc[sector] || 0) + Number(item.current_value);
+                                                return acc;
+                                            }, {} as Record<string, number>)
+                                        )
+                                            .sort(([, a], [, b]) => b - a)
+                                            .map(([sector, value]) => {
+                                                const percent = (value / totalCurrentValue) * 100;
+                                                return (
+                                                    <div key={sector}>
+                                                        <div className="flex justify-between text-xs mb-1.5 p-2 bg-white rounded border border-slate-100">
+                                                            <span className="font-bold text-slate-600">{sector}</span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={`text-[10px] font-black ${percent > 40 ? "text-red-500" : "text-slate-400"}`}>
+                                                                    {percent.toFixed(1)}%
+                                                                </span>
+                                                                <div className="w-16 h-1 bg-slate-100 rounded-full overflow-hidden">
+                                                                    <div
+                                                                        className={`h-full rounded-full ${percent > 40 ? 'bg-red-500' : 'bg-blue-400'}`}
+                                                                        style={{ width: `${percent}%` }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        {percent > 40 && <p className="text-[10px] font-bold text-red-500 pl-2">⚠️ Diversification alert: Overexposed to {sector}.</p>}
+                                                    </div>
+                                                );
+                                            })}
+                                    </div>
+                                </div>
+
+                                {/* Concentration & Volatility Risks */}
+                                <div className="space-y-6">
+                                    <div>
+                                        <h4 className="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-[0.2em]">Holdings Concentration</h4>
+                                        <ul className="space-y-2">
+                                            {displayedItems
+                                                .filter(item => (Number(item.current_value) / totalCurrentValue) > 0.20)
+                                                .map(item => (
+                                                    <li key={item.ticker} className="flex items-center justify-between text-[11px] bg-red-50/50 p-2.5 rounded-lg border border-red-100 text-red-800">
+                                                        <span className="flex items-center gap-2 font-bold uppercase tracking-tight">
+                                                            <ShieldAlert className="h-3.5 w-3.5" />
+                                                            {item.ticker} Oversized
+                                                        </span>
+                                                        <span className="font-black bg-red-100 px-2 py-0.5 rounded-full">{((Number(item.current_value) / totalCurrentValue) * 100).toFixed(1)}%</span>
+                                                    </li>
+                                                ))}
+                                            {displayedItems.every(item => (Number(item.current_value) / totalCurrentValue) <= 0.20) && (
+                                                <li className="text-[11px] font-bold text-emerald-600 bg-emerald-50/50 p-3 rounded-lg border border-emerald-100 flex items-center gap-2">
+                                                    <CheckCircle2 className="h-4 w-4" />
+                                                    Portfolio capital is healthy and well-distributed.
+                                                </li>
+                                            )}
+                                        </ul>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-[0.2em]">Volatility Monitoring</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {displayedItems
+                                                .filter(item => (item.volatility || 0) > 40)
+                                                .sort((a, b) => (b.volatility || 0) - (a.volatility || 0))
+                                                .map(item => (
+                                                    <div key={item.ticker} className="flex items-center gap-1.5 bg-white text-slate-700 px-3 py-1.5 rounded-lg text-[10px] font-black border border-slate-200 shadow-sm">
+                                                        <Activity className="h-3 w-3 text-amber-500" />
+                                                        {item.ticker} <span className="text-slate-400 opacity-60">/</span> {item.volatility?.toFixed(1)}% VOL
+                                                    </div>
+                                                ))}
+                                            {!displayedItems.some(i => (i.volatility || 0) > 40) && (
+                                                <span className="text-xs text-slate-400 italic">Position stability confirmed across all holdings.</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            Watchlist
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Watchlist Section */}
+                <Card className="mt-6 border-none shadow-sm bg-white overflow-hidden">
+                    <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-gray-100 bg-slate-50/30">
+                        <CardTitle className="text-lg font-bold text-gray-800 flex items-center gap-2 uppercase tracking-tighter">
+                            <Eye size={20} className="text-blue-600" />
+                            Strategic Watchlist
                         </CardTitle>
                         <div className="flex items-center gap-2">
                             <Input
-                                placeholder="Add Ticker (e.g. NABIL)"
+                                placeholder="Add Ticker..."
                                 value={newWatchlistTicker}
                                 onChange={(e) => setNewWatchlistTicker(e.target.value)}
-                                className="w-48 h-9 text-sm"
+                                className="w-40 h-9 text-xs font-bold uppercase"
                                 onKeyDown={(e) => e.key === 'Enter' && addWatchlistItem()}
                             />
                             <button
                                 onClick={addWatchlistItem}
-                                className="h-9 px-3 flex items-center gap-1 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800 transition-colors"
+                                className="h-9 px-4 flex items-center gap-1 bg-blue-600 text-white rounded-md text-xs font-black shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all uppercase tracking-widest"
                             >
-                                <PlusCircle size={16} /> Add
+                                <PlusCircle size={14} /> Tracking
                             </button>
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
                         <Table>
-                            <TableHeader className="bg-gray-50/50">
-                                <TableRow>
-                                    <TableHead className="pl-6">Ticker</TableHead>
-                                    <TableHead className="text-right">Price</TableHead>
-                                    <TableHead className="text-right">Day Change</TableHead>
-                                    <TableHead className="text-right">Added On</TableHead>
-                                    <TableHead className="text-right w-[80px] pr-6">Action</TableHead>
+                            <TableHeader className="bg-white">
+                                <TableRow className="hover:bg-white border-none">
+                                    <TableHead className="pl-6 text-[10px] font-black uppercase text-gray-400 tracking-widest">Ticker</TableHead>
+                                    <TableHead className="text-right text-[10px] font-black uppercase text-gray-400 tracking-widest">Live Price</TableHead>
+                                    <TableHead className="text-right text-[10px] font-black uppercase text-gray-400 tracking-widest">Day Change</TableHead>
+                                    <TableHead className="text-right text-[10px] font-black uppercase text-gray-400 tracking-widest">Tracked Since</TableHead>
+                                    <TableHead className="text-right w-[80px] pr-6 text-[10px] font-black uppercase text-gray-400 tracking-widest">Remove</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {watchlist.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center text-gray-500 py-8">
-                                            Your watchlist is empty. Add stocks to monitor them.
+                                        <TableCell colSpan={5} className="text-center text-gray-400 py-12 text-sm italic">
+                                            No active surveillance. Add tickers to monitor entry levels.
                                         </TableCell>
                                     </TableRow>
                                 ) : (
                                     watchlist.map((item) => (
-                                        <TableRow key={item.id} className="hover:bg-gray-50/50 border-b border-gray-100 last:border-0">
-                                            <TableCell className="font-semibold text-gray-900 pl-6">
+                                        <TableRow key={item.id} className="hover:bg-blue-50/20 border-b border-gray-50 last:border-0 group">
+                                            <TableCell className="font-black text-slate-800 pl-6 text-sm">
                                                 <StockLink ticker={item.ticker} />
                                             </TableCell>
-                                            <TableCell className="text-right font-medium">
-                                                {item.current_price ? `Rs. ${item.current_price}` : '-'}
+                                            <TableCell className="text-right font-black text-slate-900">
+                                                {item.current_price ? `Rs. ${Number(item.current_price).toLocaleString()}` : 'N/A'}
                                             </TableCell>
-                                            <TableCell className={`text-right font-medium ${Number(item.day_change) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            <TableCell className={`text-right font-black ${Number(item.day_change) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                                 {item.day_change ? (
-                                                    <span className="flex items-center justify-end gap-1">
-                                                        {Number(item.day_change) >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                                                        {item.day_change} ({item.day_change_percent}%)
-                                                    </span>
+                                                    <div className="flex items-center justify-end gap-1.5">
+                                                        <div className={`p-0.5 rounded ${Number(item.day_change) >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
+                                                            {Number(item.day_change) >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                                                        </div>
+                                                        <span className="text-xs">
+                                                            {Number(item.day_change).toFixed(1)} ({item.day_change_percent}%)
+                                                        </span>
+                                                    </div>
                                                 ) : '-'}
                                             </TableCell>
-                                            <TableCell className="text-right text-gray-500 text-xs">
-                                                {new Date(item.added_at).toLocaleDateString()}
+                                            <TableCell className="text-right text-gray-400 text-[10px] font-bold">
+                                                {new Date(item.added_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                                             </TableCell>
                                             <TableCell className="text-right pr-6">
                                                 <button
-                                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                                                    className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                                                     onClick={() => removeWatchlistItem(item.id)}
-                                                    title="Remove from Watchlist"
                                                 >
-                                                    <X size={16} />
+                                                    <X size={14} />
                                                 </button>
                                             </TableCell>
                                         </TableRow>
