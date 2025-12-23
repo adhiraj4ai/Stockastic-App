@@ -388,7 +388,7 @@ export default function PortfolioPage() {
                 {/* Holdings Table - MOVED UP - Only for Holdings */}
                 {activeTab === 'holdings' && (
                     <Card className="shadow-lg border-blue-50/50">
-                        <CardHeader className="border-b border-gray-50 pb-3">
+                        <CardHeader className="border-b border-gray-50">
                             <CardTitle className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                 <div className="flex items-center gap-2">
                                     <Grid3X3 className="h-5 w-5 text-gray-400" />
@@ -408,7 +408,7 @@ export default function PortfolioPage() {
                                 </div>
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-2">
+                        <CardContent className="pt-0">
                             {displayedItems.length === 0 && !loading ? (
                                 <div className="text-center py-10 text-gray-500 flex flex-col items-center gap-2">
                                     <Wallet className="h-10 w-10 text-gray-200" />
