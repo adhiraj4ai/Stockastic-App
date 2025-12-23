@@ -15,6 +15,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import Cookies from 'js-cookie';
 
 const navItems = [
     { name: 'Dashboard', href: '/home', icon: LayoutDashboard },
@@ -152,10 +153,15 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
 
-        // Clear Cookies (set expiration to past)
-        document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-        document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        // Clear Cookies
+        Cookies.remove('access_token');
+        Cookies.remove('refresh_token');
+
+        // Redirect
+        router.push('/login');
     };
+
+
 
     return (
         <div className="min-h-screen bg-gray-50 flex">

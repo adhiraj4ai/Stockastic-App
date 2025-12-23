@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Cookies from 'js-cookie';
-import { User, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { User, ShieldCheck, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
     const [selectedUser, setSelectedUser] = useState<'admin' | 'ashmi' | null>(null);
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
@@ -48,7 +49,7 @@ export default function LoginPage() {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
             const response = await axios.post(`${apiUrl}/api/token/`, {
                 username: selectedUser,
-                password,
+                password: password.trim(),
             });
 
             const { access, refresh } = response.data;
@@ -108,19 +109,26 @@ export default function LoginPage() {
                         </div>
                     ) : (
                         <form onSubmit={handleLogin} className="space-y-6">
-                            <div className="space-y-2">
+                            <div className="space-y-2 relative">
                                 <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">
                                     Verify Identity
                                 </label>
                                 <Input
-                                    type="password"
+                                    type={showPassword ? "text" : "password"}
                                     autoFocus
                                     placeholder="Enter authorization key..."
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="h-12 bg-slate-50 border-slate-200 font-bold text-lg"
+                                    className="h-12 bg-slate-50 border-slate-200 font-bold text-lg pr-10"
                                     required
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-9 text-slate-400 hover:text-slate-600"
+                                >
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
                             </div>
 
                             {error && (

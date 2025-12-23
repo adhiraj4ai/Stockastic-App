@@ -10,6 +10,12 @@ def dashboard(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_current_user(request):
+    # Auto-create Default Account for Ashmi
+    if request.user.username == 'ashmi':
+        from stocks.models import PortfolioAccount
+        if not PortfolioAccount.objects.filter(user=request.user).exists():
+            PortfolioAccount.objects.create(user=request.user, name="Main Portfolio")
+
     return Response({
         "id": request.user.id,
         "username": request.user.username,
