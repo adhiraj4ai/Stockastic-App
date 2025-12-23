@@ -19,8 +19,14 @@ const navItems = [
     { name: 'Dashboard', href: '/home', icon: LayoutDashboard },
     { name: 'Chat', href: '/chat', icon: MessageSquare },
     { name: 'Stocks', href: '/stock/NABIL', icon: TrendingUp },
-    { name: 'Portfolio', href: '/portfolio', icon: Wallet },
-
+    {
+        name: 'Finfolio',
+        icon: Wallet,
+        subItems: [
+            { name: 'My Portfolio', href: '/portfolio?tab=holdings' },
+            { name: 'Watchlist', href: '/portfolio?tab=watchlist' },
+        ]
+    },
     {
         name: 'Accumulation',
         icon: Activity,
@@ -55,7 +61,7 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
     const searchParams = useSearchParams();
     const [isChatPinned, setIsChatPinned] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-    const [expandedMenus, setExpandedMenus] = useState<string[]>(['Accumulation']);
+    const [expandedMenus, setExpandedMenus] = useState<string[]>(['Finfolio', 'Accumulation']);
 
     const isChatPage = pathname === '/chat';
 
@@ -136,7 +142,7 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
                                     </button>
                                 ) : (
                                     <Link
-                                        href={'href' in item ? item.href : '#'}
+                                        href={('href' in item ? item.href : '#') as string}
                                         className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${isActive
                                             ? 'bg-gray-900 text-white shadow-md'
                                             : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
@@ -152,10 +158,12 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
                                 {hasSubItems && isExpanded && !isSidebarCollapsed && (
                                     <div className="ml-9 space-y-1 animate-in slide-in-from-left-2 duration-200">
                                         {(item as any).subItems.map((subItem: any) => {
+                                            const subPath = subItem.href.split('?')[0];
                                             const subTab = new URLSearchParams(subItem.href.split('?')[1]).get('tab');
-                                            // Ensure searchParams is available (it might be null during SSR if suspense not used, but usually fine in client comp)
                                             const currentTab = searchParams.get('tab');
-                                            const isActiveLink = pathname === '/accumulation' && currentTab === subTab;
+
+                                            // Generic active logic: match path AND tab (if present)
+                                            const isActiveLink = pathname === subPath && (subTab ? currentTab === subTab : true);
 
                                             return (
                                                 <Link
