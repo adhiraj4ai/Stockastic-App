@@ -12,6 +12,8 @@ interface StrategyOption {
     name: string;
     sl: number;
     tp: number;
+    tp2?: number;
+    tp3?: number;
     desc: string;
 }
 
@@ -41,6 +43,8 @@ export function InlineExitPlan({ portfolioItem, onSave, onClose }: InlineExitPla
     const [thesis, setThesis] = useState<string>('');
     const [selectedStrategy, setSelectedStrategy] = useState<string>('MANUAL');
     const [currentPrice, setCurrentPrice] = useState<number>(0);
+    const [wacc, setWacc] = useState<number>(0);
+    const [isUnderwater, setIsUnderwater] = useState<boolean>(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -51,6 +55,8 @@ export function InlineExitPlan({ portfolioItem, onSave, onClose }: InlineExitPla
                 setStrategies(res.data.strategies);
                 setHealthWarnings(res.data.health_warnings || []);
                 setCurrentPrice(res.data.current_price);
+                setWacc(res.data.wacc);
+                setIsUnderwater(res.data.is_underwater);
 
                 // Load existing values
                 setSl(portfolioItem.stop_loss_price?.toString() || '');
@@ -65,6 +71,8 @@ export function InlineExitPlan({ portfolioItem, onSave, onClose }: InlineExitPla
                     const def = res.data.strategies['fixed'];
                     setSl(def.sl.toFixed(2));
                     setTp(def.tp.toFixed(2));
+                    setTp2(def.tp2 ? def.tp2.toFixed(2) : '');
+                    setTp3(def.tp3 ? def.tp3.toFixed(2) : '');
                     setSelectedStrategy('fixed');
                 }
             } catch (error) {
@@ -81,8 +89,8 @@ export function InlineExitPlan({ portfolioItem, onSave, onClose }: InlineExitPla
         if (s) {
             setSl(s.sl.toFixed(2));
             setTp(s.tp.toFixed(2));
-            setTp2('');
-            setTp3('');
+            setTp2(s.tp2 ? s.tp2.toFixed(2) : '');
+            setTp3(s.tp3 ? s.tp3.toFixed(2) : '');
             setSelectedStrategy(key);
         }
     };
@@ -155,9 +163,20 @@ export function InlineExitPlan({ portfolioItem, onSave, onClose }: InlineExitPla
                     </div>
                     <div>
                         <h3 className="font-bold text-gray-900 tracking-tight">Advanced Portfolio Exit Plan</h3>
-                        <p className="text-xs text-gray-500 flex items-center gap-1">
-                            Current Price: <span className="font-bold text-blue-600">Rs. {currentPrice}</span>
-                        </p>
+                        <div className="flex items-center gap-4">
+                            <p className="text-xs text-gray-500 flex items-center gap-1">
+                                Current Price: <span className="font-bold text-blue-600">Rs. {currentPrice}</span>
+                            </p>
+                            <div className="h-3 w-[1px] bg-gray-200" />
+                            <p className="text-xs text-gray-500 flex items-center gap-1">
+                                Cost Basis (WACC): <span className="font-bold text-gray-700">Rs. {wacc}</span>
+                            </p>
+                            {isUnderwater && (
+                                <span className="px-1.5 py-0.5 rounded bg-red-50 text-[9px] font-black text-red-600 uppercase border border-red-100 animate-pulse">
+                                    Underwater
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
                 <button

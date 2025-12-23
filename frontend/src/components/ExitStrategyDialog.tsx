@@ -17,6 +17,8 @@ interface StrategyOption {
     name: string;
     sl: number;
     tp: number;
+    tp2?: number;
+    tp3?: number;
     desc: string;
 }
 
@@ -28,8 +30,12 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
     // Form State
     const [sl, setSl] = useState<string>('');
     const [tp, setTp] = useState<string>('');
+    const [tp2, setTp2] = useState<string>('');
+    const [tp3, setTp3] = useState<string>('');
     const [selectedStrategy, setSelectedStrategy] = useState<string>('MANUAL');
     const [currentPrice, setCurrentPrice] = useState<number>(0);
+    const [wacc, setWacc] = useState<number>(0);
+    const [isUnderwater, setIsUnderwater] = useState<boolean>(false);
 
     const fetchData = async () => {
         if (!portfolioItem) return;
@@ -42,17 +48,23 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
             });
             setStrategies(res.data.strategies);
             setCurrentPrice(res.data.current_price);
+            setWacc(res.data.wacc);
+            setIsUnderwater(res.data.is_underwater);
 
             // Initialize with existing values if set, else use Fixed default
             if (portfolioItem.stop_loss_price) {
                 setSl(portfolioItem.stop_loss_price.toString());
                 setTp(portfolioItem.target_price?.toString() || '');
+                setTp2(portfolioItem.target_price_2?.toString() || '');
+                setTp3(portfolioItem.target_price_3?.toString() || '');
                 setSelectedStrategy(portfolioItem.strategy_type || 'MANUAL');
             } else {
                 // Default to Fixed
                 const def = res.data.strategies['fixed'];
                 setSl(def.sl.toFixed(2));
                 setTp(def.tp.toFixed(2));
+                setTp2(def.tp2 ? def.tp2.toFixed(2) : '');
+                setTp3(def.tp3 ? def.tp3.toFixed(2) : '');
                 setSelectedStrategy('fixed');
             }
         } catch (error) {
@@ -73,6 +85,8 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
         if (s) {
             setSl(s.sl.toFixed(2));
             setTp(s.tp.toFixed(2));
+            setTp2(s.tp2 ? s.tp2.toFixed(2) : '');
+            setTp3(s.tp3 ? s.tp3.toFixed(2) : '');
             setSelectedStrategy(key);
         }
     };
@@ -86,6 +100,8 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
             await axios.patch(`${apiUrl}/api/stocks/portfolio/${portfolioItem.id}/`, {
                 stop_loss_price: parseFloat(sl),
                 target_price: parseFloat(tp),
+                target_price_2: tp2 ? parseFloat(tp2) : null,
+                target_price_3: tp3 ? parseFloat(tp3) : null,
                 strategy_type: selectedStrategy
             }, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -117,8 +133,19 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
                         <Target className="h-5 w-5 text-blue-600" />
                         Exit Plan: {portfolioItem?.ticker}
                     </DialogTitle>
-                    <DialogDescription>
-                        Set your Stop Loss and Profit Targets. Current Price: <span className="font-bold text-black">Rs. {currentPrice}</span>
+                    <DialogDescription className="flex flex-col gap-1">
+                        <div className="flex items-center gap-3">
+                            <span>Current Price: <span className="font-bold text-blue-600">Rs. {currentPrice}</span></span>
+                            <div className="h-3 w-[1px] bg-gray-300" />
+                            <span>Cost Basis (WACC): <span className="font-bold text-gray-700">Rs. {wacc}</span></span>
+                        </div>
+                        {isUnderwater && (
+                            <div className="mt-1">
+                                <span className="px-1.5 py-0.5 rounded bg-red-50 text-[9px] font-black text-red-600 uppercase border border-red-100 animate-pulse">
+                                    Underwater Position
+                                </span>
+                            </div>
+                        )}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -172,7 +199,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-xs font-semibold uppercase text-gray-500">Take Profit (Rs.)</Label>
+                                    <Label className="text-xs font-semibold uppercase text-gray-500">Take Profit (Target 1)</Label>
                                     <div className="relative">
                                         <TrendingUp className="absolute left-3 top-2.5 h-4 w-4 text-green-500" />
                                         <Input
@@ -186,6 +213,27 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
                                             +{((parseFloat(tp) / currentPrice - 1) * 100).toFixed(2)}% Gain
                                         </p>
                                     )}
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] font-semibold uppercase text-gray-400">Target 2</Label>
+                                        <Input
+                                            value={tp2}
+                                            onChange={(e) => { setTp2(e.target.value); setSelectedStrategy('MANUAL'); }}
+                                            placeholder="Optional"
+                                            className="h-8 text-xs font-mono"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] font-semibold uppercase text-gray-400">Target 3</Label>
+                                        <Input
+                                            value={tp3}
+                                            onChange={(e) => { setTp3(e.target.value); setSelectedStrategy('MANUAL'); }}
+                                            placeholder="Optional"
+                                            className="h-8 text-xs font-mono"
+                                        />
+                                    </div>
                                 </div>
                             </div>
 

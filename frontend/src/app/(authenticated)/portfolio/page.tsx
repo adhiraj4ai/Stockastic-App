@@ -533,6 +533,7 @@ export default function PortfolioPage() {
 
                                                 const isExpanded = expandedTicker === item.ticker;
                                                 const hasStrategy = !!item.stop_loss_price;
+                                                const isUnderwater = Number(item.current_price) < Number(item.wacc || item.buy_price);
 
                                                 // Calculate R/R for row display
                                                 let rrRatio = 'N/A';
@@ -545,13 +546,18 @@ export default function PortfolioPage() {
                                                 return (
                                                     <React.Fragment key={`${item.ticker}-${idx}`}>
                                                         <TableRow
-                                                            className={`transition-all duration-300 cursor-pointer border-l-4 ${isExpanded ? 'bg-blue-50/30 border-l-blue-500' : hasStrategy ? 'border-l-green-500/50 hover:bg-gray-50' : 'border-l-transparent hover:bg-gray-50'}`}
+                                                            className={`transition-all duration-300 cursor-pointer border-l-4 ${isExpanded ? 'bg-blue-50/30 border-l-blue-500' : isUnderwater ? 'border-l-red-500/50 hover:bg-red-50/10' : hasStrategy ? 'border-l-green-500/50 hover:bg-gray-50' : 'border-l-transparent hover:bg-gray-50'}`}
                                                             onClick={() => setExpandedTicker(isExpanded ? null : item.ticker)}
                                                         >
                                                             <TableCell className="font-semibold py-5">
                                                                 <div className="flex flex-col gap-1.5">
                                                                     <div className="flex items-center gap-2">
                                                                         <StockLink ticker={item.ticker} />
+                                                                        {isUnderwater && (
+                                                                            <Badge variant="secondary" className="bg-red-50 text-red-600 border-red-100 text-[9px] px-1.5 h-4 flex items-center gap-1">
+                                                                                UNDERWATER
+                                                                            </Badge>
+                                                                        )}
                                                                         {hasStrategy && (
                                                                             <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] px-1.5 h-4 flex items-center gap-1 animate-pulse">
                                                                                 <Radio className="h-2 w-2" /> ACTIVE
