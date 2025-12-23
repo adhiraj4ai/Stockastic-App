@@ -82,6 +82,13 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
     const [txnType, setTxnType] = useState('BUY');
     const [error, setError] = useState<string | null>(null);
     const [accounts, setAccounts] = useState<any[]>([]);
+    const [accRange, setAccRange] = useState('1Y');
+    const [accGraphData, setAccGraphData] = useState<any[]>([]);
+    const [accTopBrokers, setAccTopBrokers] = useState<string[]>([]);
+    const [accVolumeLeaders, setAccVolumeLeaders] = useState<any[]>([]);
+    const [accBuyLeaders, setAccBuyLeaders] = useState<any[]>([]);
+    const [accSellLeaders, setAccSellLeaders] = useState<any[]>([]);
+    const [accLoading, setAccLoading] = useState(false);
 
     useEffect(() => {
         const fetchAccounts = async () => {
@@ -137,6 +144,28 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
         if (ticker) fetchData();
     }, [ticker]);
 
+    useEffect(() => {
+        const fetchAccData = async () => {
+            if (!ticker) return;
+            setAccLoading(true);
+            try {
+                const res = await api.get('/api/stocks/companies/brokers_graph/', {
+                    params: { symbol: ticker, range: accRange }
+                });
+                setAccGraphData(res.data.data || []);
+                setAccTopBrokers(res.data.brokers || []);
+                setAccVolumeLeaders(res.data.volume_leaders || []);
+                setAccBuyLeaders(res.data.buy_leaders || []);
+                setAccSellLeaders(res.data.sell_leaders || []);
+            } catch (err) {
+                console.error('Failed to fetch accumulation graph data', err);
+            } finally {
+                setAccLoading(false);
+            }
+        };
+        fetchAccData();
+    }, [ticker, accRange]);
+
     const getChartOption = () => {
         if (!history.length) return {};
 
@@ -167,15 +196,10 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
             ],
             series: [
                 {
-                    name: 'Stock Price',
+                    name: ticker,
                     type: 'candlestick',
                     data: data,
-                    itemStyle: {
-                        color: '#10B981',
-                        color0: '#EF4444',
-                        borderColor: '#10B981',
-                        borderColor0: '#EF4444'
-                    }
+                    itemStyle: { color: '#10B981', color0: '#EF4444', borderColor: '#10B981', borderColor0: '#EF4444' }
                 },
                 {
                     name: 'Volume',
@@ -184,12 +208,51 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                     yAxisIndex: 1,
                     data: volumes,
                     itemStyle: {
-                        color: (params: any) => {
-                            return params.data[2] > 0 ? '#10B981' : '#EF4444';
-                        }
+                        color: (params: any) => params.data[2] > 0 ? '#10B981' : '#EF4444'
                     }
                 }
             ]
+        };
+    };
+
+    const getAccGraphOption = () => {
+        if (!accGraphData.length) return {};
+        const brokerNames = accTopBrokers.map(b => `Broker ${b}`);
+        return {
+            tooltip: {
+                trigger: 'axis',
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                textStyle: { color: '#1f2937', fontSize: 12 },
+                extraCssText: 'box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: none;'
+            },
+            legend: {
+                data: brokerNames,
+                bottom: 0,
+                icon: 'circle',
+                itemGap: 15,
+                textStyle: { color: '#4b5563', fontSize: 11 }
+            },
+            grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: accGraphData.map(d => d.date),
+                axisLabel: { color: '#6b7280', fontSize: 10 }
+            },
+            yAxis: {
+                type: 'value',
+                splitLine: { lineStyle: { color: '#f3f4f6' } },
+                axisLabel: { color: '#6b7280', fontSize: 10, formatter: (val: number) => val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val }
+            },
+            series: accTopBrokers.map((broker, idx) => ({
+                name: `Broker ${broker}`,
+                type: 'line',
+                data: accGraphData.map(d => d[broker]),
+                smooth: true,
+                showSymbol: false,
+                lineStyle: { width: 2 },
+                itemStyle: { color: `hsl(${idx * 45 + 210}, 80%, 50%)` }
+            }))
         };
     };
 
@@ -501,82 +564,154 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <Tabs defaultValue="1D" className="w-full">
-                                    <TabsList className="mb-4">
-                                        {['2Y', '1Y', '6M', '3M', '1W', '1D'].map((range) => (
-                                            <TabsTrigger
+                                <div className="space-y-8">
+                                    {/* Range Selector */}
+                                    <div className="flex flex-wrap gap-2 mb-2 p-1 bg-gray-50 rounded-lg w-fit">
+                                        {['ALL', '1Y', '6M', '3M', '1M', '2W', '1W'].map((range) => (
+                                            <button
                                                 key={range}
-                                                value={range}
-                                                className="hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                                                onClick={() => setAccRange(range)}
+                                                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${accRange === range
+                                                    ? 'bg-blue-600 text-white shadow-sm'
+                                                    : 'text-gray-500 hover:text-gray-800'
+                                                    }`}
                                             >
                                                 {range}
-                                            </TabsTrigger>
+                                            </button>
                                         ))}
-                                    </TabsList>
-                                    {['2Y', '1Y', '6M', '3M', '1W', '1D'].map((range) => {
-                                        const rangeData = data.fundamental?.broker_accumulation?.[range] || [];
-                                        const buyers = rangeData.filter(d => d.type === 'BUY').sort((a, b) => b.qty - a.qty);
-                                        const sellers = rangeData.filter(d => d.type === 'SELL').sort((a, b) => b.qty - a.qty);
+                                    </div>
 
-                                        return (
-                                            <TabsContent key={range} value={range}>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                    {/* Accumulation (Buyers) */}
-                                                    <div className="space-y-3">
-                                                        <h3 className="font-semibold text-center text-blue-700 bg-blue-50 py-2 rounded">Accumulation (Top Buyers)</h3>
-                                                        <div className="rounded-md border">
-                                                            <table className="w-full text-sm text-left">
-                                                                <thead className="bg-gray-50 text-gray-700 font-medium border-b">
-                                                                    <tr>
-                                                                        <th className="px-4 py-3">Broker</th>
-                                                                        <th className="px-4 py-3 text-right">Quantity</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody className="divide-y">
-                                                                    {buyers.map((item, idx) => (
-                                                                        <tr key={idx} className="hover:bg-gray-50">
-                                                                            <td className="px-4 py-3 font-semibold text-blue-600">
-                                                                                Broker No. {item.broker}
-                                                                            </td>
-                                                                            <td className="px-4 py-3 text-right">{item.qty.toLocaleString()}</td>
-                                                                        </tr>
-                                                                    ))}
-                                                                    {buyers.length === 0 && <tr><td colSpan={2} className="px-4 py-3 text-center text-gray-500">No buyers found</td></tr>}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    </div>
+                                    {/* Trend Chart */}
+                                    <div className="bg-white rounded-xl border p-4 h-[400px]">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                                <BarChart2 className="w-4 h-4 text-blue-500" />
+                                                Top 5 Broker Accumulation Trend
+                                            </h3>
+                                        </div>
+                                        {accLoading ? (
+                                            <div className="h-full flex items-center justify-center">
+                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                            </div>
+                                        ) : accGraphData.length > 0 ? (
+                                            <ReactECharts option={getAccGraphOption()} style={{ height: '320px' }} />
+                                        ) : (
+                                            <div className="h-full flex items-center justify-center text-gray-400 italic">No trend data available for this range.</div>
+                                        )}
+                                    </div>
 
-                                                    {/* Distribution (Sellers) */}
-                                                    <div className="space-y-3">
-                                                        <h3 className="font-semibold text-center text-red-700 bg-red-50 py-2 rounded">Distribution (Top Sellers)</h3>
-                                                        <div className="rounded-md border">
-                                                            <table className="w-full text-sm text-left">
-                                                                <thead className="bg-gray-50 text-gray-700 font-medium border-b">
-                                                                    <tr>
-                                                                        <th className="px-4 py-3">Broker</th>
-                                                                        <th className="px-4 py-3 text-right">Quantity</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody className="divide-y">
-                                                                    {sellers.map((item, idx) => (
-                                                                        <tr key={idx} className="hover:bg-gray-50">
-                                                                            <td className="px-4 py-3 font-semibold text-red-600">
-                                                                                Broker No. {item.broker}
-                                                                            </td>
-                                                                            <td className="px-4 py-3 text-right">{item.qty.toLocaleString()}</td>
-                                                                        </tr>
-                                                                    ))}
-                                                                    {sellers.length === 0 && <tr><td colSpan={2} className="px-4 py-3 text-center text-gray-500">No sellers found</td></tr>}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    </div>
+                                    {/* Multi-column Grid */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                                        {/* Aggressive Accumulators */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-sm font-bold text-green-700 flex items-center gap-2 uppercase tracking-tight">
+                                                <TrendingUp className="w-4 h-4" /> Top Accumulators (Net Buyers)
+                                            </h3>
+                                            <div className="rounded-xl border overflow-hidden bg-white shadow-sm">
+                                                <table className="w-full text-xs text-left">
+                                                    <thead className="bg-green-50/50 text-green-800 border-b">
+                                                        <tr>
+                                                            <th className="px-4 py-3">Broker</th>
+                                                            <th className="px-4 py-3 text-right">Net Qty</th>
+                                                            <th className="px-4 py-3 text-right">Avg Rate</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y">
+                                                        {accBuyLeaders.slice(0, 10).map((item, idx) => (
+                                                            <tr key={idx} className="hover:bg-green-50/30">
+                                                                <td className="px-4 py-3 font-bold text-gray-700">Broker No. {item.broker}</td>
+                                                                <td className="px-4 py-3 text-right font-mono text-green-600">+{item.net_qty.toLocaleString()}</td>
+                                                                <td className="px-4 py-3 text-right font-mono text-gray-500">Rs. {item.buy_rate.toFixed(1)}</td>
+                                                            </tr>
+                                                        ))}
+                                                        {accBuyLeaders.length === 0 && (
+                                                            <tr><td colSpan={3} className="px-4 py-8 text-center text-gray-400 italic">No significant accumulation</td></tr>
+                                                        )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                        {/* Volume Leaders */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-sm font-bold text-blue-700 flex items-center gap-2 uppercase tracking-tight">
+                                                <Activity className="w-4 h-4" /> Most Active Traders (By Volume)
+                                            </h3>
+                                            <div className="rounded-xl border overflow-hidden bg-white shadow-sm">
+                                                <table className="w-full text-xs text-left">
+                                                    <thead className="bg-blue-50/50 text-blue-800 border-b">
+                                                        <tr>
+                                                            <th className="px-4 py-3">Broker</th>
+                                                            <th className="px-4 py-3 text-right">Total Vol</th>
+                                                            <th className="px-4 py-3 text-right">Mkt %</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y">
+                                                        {accVolumeLeaders.slice(0, 10).map((item, idx) => (
+                                                            <tr key={idx} className="hover:bg-blue-50/30">
+                                                                <td className="px-4 py-3 font-bold text-gray-700">Broker No. {item.broker}</td>
+                                                                <td className="px-4 py-3 text-right font-mono">{item.volume.toLocaleString()}</td>
+                                                                <td className="px-4 py-3 text-right">
+                                                                    <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-bold">
+                                                                        {item.percentage}%
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                        {accVolumeLeaders.length === 0 && (
+                                                            <tr><td colSpan={3} className="px-4 py-8 text-center text-gray-400 italic">No trading activity data</td></tr>
+                                                        )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                        {/* Aggressive Sellers */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-sm font-bold text-red-700 flex items-center gap-2 uppercase tracking-tight">
+                                                <TrendingDown className="w-4 h-4" /> Top Distributors (Net Sellers)
+                                            </h3>
+                                            <div className="rounded-xl border overflow-hidden bg-white shadow-sm">
+                                                <table className="w-full text-xs text-left">
+                                                    <thead className="bg-red-50/50 text-red-800 border-b">
+                                                        <tr>
+                                                            <th className="px-4 py-3">Broker</th>
+                                                            <th className="px-4 py-3 text-right">Net Qty</th>
+                                                            <th className="px-4 py-3 text-right">Avg Rate</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y">
+                                                        {accSellLeaders.slice(0, 10).map((item, idx) => (
+                                                            <tr key={idx} className="hover:bg-red-50/30">
+                                                                <td className="px-4 py-3 font-bold text-gray-700">Broker No. {item.broker}</td>
+                                                                <td className="px-4 py-3 text-right font-mono text-red-600">{item.net_qty.toLocaleString()}</td>
+                                                                <td className="px-4 py-3 text-right font-mono text-gray-500">Rs. {item.sell_rate.toFixed(1)}</td>
+                                                            </tr>
+                                                        ))}
+                                                        {accSellLeaders.length === 0 && (
+                                                            <tr><td colSpan={3} className="px-4 py-8 text-center text-gray-400 italic">No significant distribution</td></tr>
+                                                        )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                        {/* Context/Summary */}
+                                        <div className="p-6 bg-gradient-to-br from-gray-50 to-white rounded-xl border flex flex-col justify-center">
+                                            <h4 className="text-xs font-black text-gray-400 uppercase mb-4 tracking-widest">Market Context</h4>
+                                            <div className="space-y-4">
+                                                <p className="text-xs text-gray-500 leading-relaxed">
+                                                    This data provides an insight into how major brokers are positioning themselves in {ticker}.
+                                                    <strong> Accumulators</strong> represent buying conviction while <strong>Active Traders</strong> highlight high-frequency activities.
+                                                </p>
+                                                <div className="pt-4 border-t flex items-center justify-between">
+                                                    <span className="text-[10px] font-bold text-gray-400">Analysis Period</span>
+                                                    <span className="text-xs font-black text-blue-600">{accRange}</span>
                                                 </div>
-                                            </TabsContent>
-                                        );
-                                    })}
-                                </Tabs>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
                     </TabsContent>
