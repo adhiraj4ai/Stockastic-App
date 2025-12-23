@@ -87,6 +87,8 @@ export function InlineExitPlan({ portfolioItem, onSave, onClose }: InlineExitPla
         }
     };
 
+    const [success, setSuccess] = useState(false);
+
     const handleSave = async () => {
         setSaving(true);
         try {
@@ -98,8 +100,11 @@ export function InlineExitPlan({ portfolioItem, onSave, onClose }: InlineExitPla
                 thesis: thesis,
                 strategy_type: selectedStrategy
             });
+            setSuccess(true);
             onSave();
-            onClose();
+            setTimeout(() => {
+                onClose();
+            }, 1000);
         } catch (error) {
             console.error("Failed to save exit strategy", error);
         } finally {
@@ -274,11 +279,11 @@ export function InlineExitPlan({ portfolioItem, onSave, onClose }: InlineExitPla
                             </div>
                             <Button
                                 onClick={handleSave}
-                                disabled={saving}
-                                className="bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-500/20 px-8 font-bold"
+                                disabled={saving || success}
+                                className={`transition-all duration-300 ${success ? 'bg-green-600 hover:bg-green-700 shadow-green-500/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20'} text-white px-8 font-bold`}
                             >
-                                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                                Commit Strategy
+                                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : success ? <Shield className="h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                                {success ? 'Mission Active' : 'Commit Strategy'}
                             </Button>
                         </div>
                     </div>

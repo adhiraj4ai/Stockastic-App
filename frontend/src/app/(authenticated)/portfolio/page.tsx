@@ -10,8 +10,9 @@ import { Trash2, Plus, TrendingUp, TrendingDown, DollarSign, Wallet, Users, Fold
 import TransactionModal, { PortfolioAccount } from '@/components/TransactionModal';
 import { CreateAccountDialog } from '@/components/CreateAccountDialog';
 import StockLink from '@/components/StockLink';
-import { Wand2, Target, ChevronDown, ChevronUp } from 'lucide-react';
+import { Wand2, Target, ChevronDown, ChevronUp, Radio } from 'lucide-react';
 import { InlineExitPlan } from '@/components/InlineExitPlan';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Eye, PlusCircle, X } from 'lucide-react';
 
@@ -431,20 +432,37 @@ export default function PortfolioPage() {
                                             const isDayPos = dayPl >= 0;
 
                                             const isExpanded = expandedTicker === item.ticker;
+                                            const hasStrategy = !!item.stop_loss_price;
+
+                                            // Calculate R/R for row display
+                                            let rrRatio = 'N/A';
+                                            if (item.stop_loss_price && item.target_price && item.current_price) {
+                                                const risk = Number(item.current_price) - Number(item.stop_loss_price);
+                                                const reward = Number(item.target_price) - Number(item.current_price);
+                                                if (risk > 0) rrRatio = (reward / risk).toFixed(1);
+                                            }
 
                                             return (
                                                 <React.Fragment key={`${item.ticker}-${idx}`}>
                                                     <TableRow
-                                                        className={`transition-colors cursor-pointer ${isExpanded ? 'bg-blue-50/20' : 'hover:bg-gray-50'}`}
+                                                        className={`transition-all duration-300 cursor-pointer border-l-4 ${isExpanded ? 'bg-blue-50/30 border-l-blue-500' : hasStrategy ? 'border-l-green-500/50 hover:bg-gray-50' : 'border-l-transparent hover:bg-gray-50'}`}
                                                         onClick={() => setExpandedTicker(isExpanded ? null : item.ticker)}
                                                     >
-                                                        <TableCell className="font-semibold">
-                                                            <div className="flex flex-col">
-                                                                <StockLink ticker={item.ticker} />
+                                                        <TableCell className="font-semibold py-4">
+                                                            <div className="flex flex-col gap-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    <StockLink ticker={item.ticker} />
+                                                                    {hasStrategy && (
+                                                                        <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] px-1.5 h-4 flex items-center gap-1 animate-pulse">
+                                                                            <Radio className="h-2 w-2" /> ACTIVE
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
                                                                 {(item.stop_loss_price || item.target_price) && (
-                                                                    <div className="flex gap-1 mt-1">
-                                                                        {item.stop_loss_price && <span className="text-[10px] bg-red-50 text-red-600 px-1 rounded border border-red-100 font-bold">SL: {Number(item.stop_loss_price).toFixed(0)}</span>}
-                                                                        {item.target_price && <span className="text-[10px] bg-green-50 text-green-600 px-1 rounded border border-green-100 font-bold">TP: {Number(item.target_price).toFixed(0)}</span>}
+                                                                    <div className="flex flex-wrap gap-1">
+                                                                        {item.stop_loss_price && <span className="text-[10px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-100 font-bold">SL: {Number(item.stop_loss_price).toFixed(0)}</span>}
+                                                                        {item.target_price && <span className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100 font-bold">TP: {Number(item.target_price).toFixed(0)}</span>}
+                                                                        {rrRatio !== 'N/A' && <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 font-bold">R/R: {rrRatio}</span>}
                                                                     </div>
                                                                 )}
                                                             </div>
