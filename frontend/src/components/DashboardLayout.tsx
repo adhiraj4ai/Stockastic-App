@@ -63,8 +63,27 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
     const [isChatPinned, setIsChatPinned] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+    const [currentUser, setCurrentUser] = useState<{ id: number; username: string; email: string } | null>(null);
 
     const isChatPage = pathname === '/chat';
+
+    useEffect(() => {
+        // Fetch current user
+        import('@/lib/api').then(({ default: api }) => {
+            api.get('/api/users/me/')
+                .then(res => setCurrentUser(res.data))
+                .catch(err => console.error("Failed to load user profile", err));
+        });
+    }, []);
+
+    // Filter Navigation Items based on User
+    const filteredNavItems = navItems.filter(item => {
+        if (!currentUser) return true; // Show all while loading/default
+        if (currentUser.username === 'ashmi') {
+            return !['Chat', 'Pipeline'].includes(item.name);
+        }
+        return true;
+    });
 
     useEffect(() => {
         setIsSidebarCollapsed(isChatPinned || isChatPage);
@@ -161,7 +180,7 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
                     </button>
                 </div>
                 <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-                    {navItems.map((item) => {
+                    {filteredNavItems.map((item) => {
                         const hasSubItems = 'subItems' in item && item.subItems && item.subItems.length > 0;
                         const isExpanded = expandedMenus.includes(item.name);
                         const isActive = 'href' in item && item.href ? (pathname.startsWith(item.href) && item.href !== '/home' || pathname === item.href) : false;
@@ -274,7 +293,7 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
                     <div className="w-1/3 flex justify-end gap-4 items-center">
                         <AlertsDropdown />
                         <div className="flex flex-col items-end mr-2">
-                            <span className="text-sm font-semibold text-gray-800">Hi Jugal</span>
+                            <span className="text-sm font-semibold text-gray-800">Hi {currentUser?.username === 'admin' ? 'Jugal' : currentUser?.username === 'ashmi' ? 'Ashmi' : 'Guest'}</span>
                             <span className="text-[10px] text-green-500 font-medium flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
                                 Online
@@ -282,8 +301,8 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
                         </div>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <button className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shadow-sm hover:ring-2 hover:ring-blue-400 transition-all outline-none">
-                                    J
+                                <button className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shadow-sm hover:ring-2 hover:ring-blue-400 transition-all outline-none uppercase">
+                                    {currentUser?.username?.[0] || 'G'}
                                 </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-56">
