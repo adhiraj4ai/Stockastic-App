@@ -106,6 +106,9 @@ class PortfolioItem(models.Model):
     # Exit Strategy Fields
     stop_loss_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     target_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    target_price_2 = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    target_price_3 = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    thesis = models.TextField(blank=True, null=True)
     strategy_type = models.CharField(max_length=50, default='MANUAL') # MANUAL, FIXED_PCT, ATR, SUPPORT_RESIST
 
     class Meta:

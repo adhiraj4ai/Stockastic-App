@@ -52,7 +52,7 @@ class PortfolioItemSerializer(serializers.ModelSerializer):
         fields = ['id', 'account', 'ticker', 'quantity', 'buy_price', 'wacc', 'purchased_at', 
                   'current_price', 'current_value', 'investment_value', 'gain_loss', 
                   'gain_loss_percent', 'day_gain_loss', 'sector', 'volatility',
-                  'stop_loss_price', 'target_price', 'strategy_type']
+                  'stop_loss_price', 'target_price', 'target_price_2', 'target_price_3', 'thesis', 'strategy_type']
         read_only_fields = ['id', 'purchased_at']
 
 class PortfolioTransactionSerializer(serializers.ModelSerializer):
@@ -80,10 +80,13 @@ class WatchlistItemSerializer(serializers.ModelSerializer):
     current_price = serializers.SerializerMethodField()
     day_change = serializers.SerializerMethodField()
     day_change_percent = serializers.SerializerMethodField()
+    sector = serializers.SerializerMethodField()
+    rsi = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
+    roc = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
 
     class Meta:
         model = WatchlistItem
-        fields = ['id', 'ticker', 'added_at', 'target_price', 'notes', 'current_price', 'day_change', 'day_change_percent']
+        fields = ['id', 'ticker', 'added_at', 'target_price', 'notes', 'current_price', 'day_change', 'day_change_percent', 'sector', 'rsi', 'roc']
         read_only_fields = ['id', 'added_at']
 
     def get_current_price(self, obj):
@@ -97,3 +100,7 @@ class WatchlistItemSerializer(serializers.ModelSerializer):
     def get_day_change_percent(self, obj):
         latest = DailyStockPrice.objects.filter(ticker=obj.ticker).order_by('-date').first()
         return latest.diff_percent if latest else None
+
+    def get_sector(self, obj):
+        company = Company.objects.filter(symbol=obj.ticker).first()
+        return company.sector if company else None

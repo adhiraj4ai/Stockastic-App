@@ -467,15 +467,42 @@ class PortfolioViewSet(viewsets.ModelViewSet):
             }
         }
         
-        # Adjust Swing TP: If current price is near high, TP should be higher (Projected).
-        # For simplicity, if Price ~ High, we set TP using Fib or just 1.1x.
+        # Adjust Swing TP
         if strategies['swing']['tp'] <= latest_price * 1.02:
              strategies['swing']['tp'] = latest_price * 1.15
         
+        # 3. Fundamental Health Check
+        health_warnings = []
+        try:
+            reports = FinancialReport.objects.filter(ticker=ticker).order_by('-fiscal_year', '-quarter')[:4]
+            if len(reports) >= 2:
+                latest_r = reports[0]
+                prev_r = reports[1]
+                
+                if latest_r.net_profit and prev_r.net_profit:
+                    if float(latest_r.net_profit) < float(prev_r.net_profit):
+                        health_warnings.append({
+                            "type": "PROFIT_DIP",
+                            "message": f"Net Profit dropped from {float(prev_r.net_profit):,.0f} to {float(latest_r.net_profit):,.0f} in latest report.",
+                            "severity": "MEDIUM"
+                        })
+                
+                if latest_r.revenue and prev_r.revenue:
+                    if float(latest_r.revenue) < float(prev_r.revenue):
+                        health_warnings.append({
+                            "type": "REVENUE_DIP",
+                            "message": f"Revenue declined by {((1 - float(latest_r.revenue)/float(prev_r.revenue))*100):.1f}% in latest period.",
+                            "severity": "LOW"
+                        })
+        except Exception as e:
+            print(f"Health check error: {e}")
+
         return Response({
+            "ticker": ticker,
             "current_price": latest_price,
             "avg_buy_price": float(item.buy_price),
-            "strategies": strategies
+            "strategies": strategies,
+            "health_warnings": health_warnings
         })
 
 class PortfolioTransactionViewSet(viewsets.ModelViewSet):
@@ -1989,6 +2016,60 @@ class WatchlistViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        tickers = [item.ticker for item in queryset]
+        
+        rsi_data = {}
+        roc_data = {}
+        
+        if tickers:
+            import pandas as pd
+            from datetime import timedelta
+            from django.utils import timezone
+            
+            # Fetch last 60 days to ensure enough data for 14-period indicators
+            cutoff_date = timezone.now().date() - timedelta(days=60)
+            
+            hist_qs = DailyStockPrice.objects.filter(
+                ticker__in=tickers,
+                date__gte=cutoff_date
+            ).values('ticker', 'date', 'close').order_by('date')
+            
+            df_hist = pd.DataFrame.from_records(hist_qs)
+            if not df_hist.empty:
+                df_hist['close'] = df_hist['close'].astype(float)
+                
+                for ticker in tickers:
+                    df_t = df_hist[df_hist['ticker'] == ticker].sort_values('date')
+                    if len(df_t) > 15:
+                        # RSI (14)
+                        delta = df_t['close'].diff()
+                        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+                        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+                        
+                        rs = gain / loss
+                        rsi = 100 - (100 / (1 + rs))
+                        if not pd.isna(rsi.iloc[-1]):
+                            rsi_data[ticker] = float(rsi.iloc[-1])
+                        
+                        # ROC (14)
+                        past_close = df_t['close'].iloc[-15]
+                        curr_close = df_t['close'].iloc[-1]
+                        if past_close != 0:
+                            roc = ((curr_close - past_close) / past_close) * 100
+                            roc_data[ticker] = float(roc)
+
+        data = []
+        for item in queryset:
+            # Attach calculated fields for the serializer
+            item.rsi = rsi_data.get(item.ticker)
+            item.roc = roc_data.get(item.ticker)
+            data.append(item)
+            
+        serializer = self.get_serializer(data, many=True)
+        return Response(serializer.data)
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_broker_portfolio(request):
