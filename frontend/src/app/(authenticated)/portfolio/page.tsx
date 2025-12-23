@@ -241,6 +241,12 @@ export default function PortfolioPage() {
     const totalGainLossPercent = totalInvestment ? (totalGainLoss / totalInvestment * 100) : 0;
     const totalDayGainLoss = displayedItems.reduce((acc, item) => acc + Number(item.day_gain_loss), 0);
 
+    const stats = useMemo(() => {
+        const profit = displayedItems.filter(i => Number(i.gain_loss) > 0).length;
+        const loss = displayedItems.filter(i => Number(i.gain_loss) < 0).length;
+        return { profit, loss };
+    }, [displayedItems]);
+
     const bestPerformer = useMemo(() => {
         if (displayedItems.length === 0) return null;
         return [...displayedItems].sort((a, b) => b.gain_loss_percent - a.gain_loss_percent)[0];
@@ -471,7 +477,16 @@ export default function PortfolioPage() {
                             <CardTitle className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                 <div className="flex items-center gap-2">
                                     <Grid3X3 className="h-5 w-5 text-gray-400" />
-                                    <span>Strategic Holdings {selectedAccount !== 'all' && <span className="text-gray-400 ml-2 text-sm font-normal">(Account: {accounts.find(a => a.id.toString() == selectedAccount)?.name})</span>}</span>
+                                    <span>Strategic Holdings</span>
+                                    <div className="flex items-center gap-1.5">
+                                        <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-50 text-[10px] px-2 py-0 h-5 font-black">
+                                            #{stats.profit} PROFIT
+                                        </Badge>
+                                        <Badge className="bg-rose-50 text-rose-700 border-rose-100 hover:bg-rose-50 text-[10px] px-2 py-0 h-5 font-black">
+                                            #{stats.loss} LOSS
+                                        </Badge>
+                                    </div>
+                                    {selectedAccount !== 'all' && <span className="text-gray-400 ml-2 text-sm font-normal">(Account: {accounts.find(a => a.id.toString() == selectedAccount)?.name})</span>}
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <div className="relative">
@@ -541,7 +556,7 @@ export default function PortfolioPage() {
                                                 if (item.stop_loss_price && item.target_price && item.current_price) {
                                                     const risk = Number(item.current_price) - Number(item.stop_loss_price);
                                                     const reward = Number(item.target_price) - Number(item.current_price);
-                                                    if (risk > 0) rrRatio = (reward / risk).toFixed(1);
+                                                    if (risk > 0) rrRatio = `1:${(reward / risk).toFixed(1)}`;
                                                 }
 
                                                 return (

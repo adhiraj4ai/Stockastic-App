@@ -126,7 +126,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
         const risk = currentPrice - slNum;
         const reward = tpNum - currentPrice;
         if (risk <= 0) return "Invalid SL";
-        return (reward / risk).toFixed(2);
+        return `1:${(reward / risk).toFixed(2)}`;
     };
 
     return (
