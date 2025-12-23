@@ -519,13 +519,21 @@ class PortfolioViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print(f"Health check error: {e}")
 
+        # 4. Fetch Transaction History
+        txns = PortfolioTransaction.objects.filter(
+            user=request.user, 
+            ticker=ticker
+        ).order_by('-transaction_date')
+        txn_serializer = PortfolioTransactionSerializer(txns, many=True)
+
         return Response({
             "ticker": ticker,
             "current_price": latest_price,
             "wacc": wacc,
             "is_underwater": is_underwater,
             "strategies": strategies,
-            "health_warnings": health_warnings
+            "health_warnings": health_warnings,
+            "transactions": txn_serializer.data
         })
 
 class PortfolioTransactionViewSet(viewsets.ModelViewSet):
