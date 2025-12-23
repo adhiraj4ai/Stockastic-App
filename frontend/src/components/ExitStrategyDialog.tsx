@@ -132,7 +132,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent showCloseButton={false} className="max-w-[95vw] sm:max-w-7xl xl:max-w-[1400px] max-h-[95vh] overflow-y-auto p-0 border-none shadow-2xl rounded-[2.5rem] bg-white">
-                <div className="flex flex-col h-full">
+                <div className="flex flex-col">
                     {/* Header Section */}
                     <div className="bg-slate-50/50 p-5 px-8 border-b border-gray-100/80">
                         <DialogHeader>
@@ -177,7 +177,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
                         </DialogHeader>
                     </div>
 
-                    <div className="p-5 space-y-4 bg-white">
+                    <div className="p-5 pt-2 space-y-4 bg-white">
                         {loading ? (
                             <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-dashed border-gray-200">
                                 <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-4" />
