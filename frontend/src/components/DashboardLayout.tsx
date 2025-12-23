@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell } from 'lucide-react';
 import { SearchBar } from './SearchBar';
 import { ChatSidebar } from './ChatSidebar';
+import { AlertsDropdown } from './AlertsDropdown';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -271,6 +272,7 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
                     </div>
 
                     <div className="w-1/3 flex justify-end gap-4 items-center">
+                        <AlertsDropdown />
                         <div className="flex flex-col items-end mr-2">
                             <span className="text-sm font-semibold text-gray-800">Hi Jugal</span>
                             <span className="text-[10px] text-green-500 font-medium flex items-center gap-1">
