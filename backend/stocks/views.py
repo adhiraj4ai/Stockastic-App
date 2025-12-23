@@ -2016,6 +2016,60 @@ class WatchlistViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        tickers = [item.ticker for item in queryset]
+        
+        rsi_data = {}
+        roc_data = {}
+        
+        if tickers:
+            import pandas as pd
+            from datetime import timedelta
+            from django.utils import timezone
+            
+            # Fetch last 60 days to ensure enough data for 14-period indicators
+            cutoff_date = timezone.now().date() - timedelta(days=60)
+            
+            hist_qs = DailyStockPrice.objects.filter(
+                ticker__in=tickers,
+                date__gte=cutoff_date
+            ).values('ticker', 'date', 'close').order_by('date')
+            
+            df_hist = pd.DataFrame.from_records(hist_qs)
+            if not df_hist.empty:
+                df_hist['close'] = df_hist['close'].astype(float)
+                
+                for ticker in tickers:
+                    df_t = df_hist[df_hist['ticker'] == ticker].sort_values('date')
+                    if len(df_t) > 15:
+                        # RSI (14)
+                        delta = df_t['close'].diff()
+                        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+                        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+                        
+                        rs = gain / loss
+                        rsi = 100 - (100 / (1 + rs))
+                        if not pd.isna(rsi.iloc[-1]):
+                            rsi_data[ticker] = float(rsi.iloc[-1])
+                        
+                        # ROC (14)
+                        past_close = df_t['close'].iloc[-15]
+                        curr_close = df_t['close'].iloc[-1]
+                        if past_close != 0:
+                            roc = ((curr_close - past_close) / past_close) * 100
+                            roc_data[ticker] = float(roc)
+
+        data = []
+        for item in queryset:
+            # Attach calculated fields for the serializer
+            item.rsi = rsi_data.get(item.ticker)
+            item.roc = roc_data.get(item.ticker)
+            data.append(item)
+            
+        serializer = self.get_serializer(data, many=True)
+        return Response(serializer.data)
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_broker_portfolio(request):

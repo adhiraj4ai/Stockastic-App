@@ -6,12 +6,14 @@ import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Trash2, Plus, TrendingUp, TrendingDown, DollarSign, Wallet, Users, FolderPlus, ShieldAlert, CheckCircle2, Activity } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Trash2, Plus, TrendingUp, TrendingDown, DollarSign, Wallet, Users, FolderPlus, ShieldAlert, CheckCircle2, Activity, Pencil } from 'lucide-react';
 import TransactionModal, { PortfolioAccount } from '@/components/TransactionModal';
 import { CreateAccountDialog } from '@/components/CreateAccountDialog';
 import StockLink from '@/components/StockLink';
-import { Wand2, Target, ChevronDown, ChevronUp, Radio, PieChart as PieIcon, BarChart as BarIcon, Grid3X3, Zap, Search, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Wand2, Target, Check, ChevronDown, ChevronUp, Radio, PieChart as PieIcon, BarChart as BarIcon, Grid3X3, Zap, Search, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { InlineExitPlan } from '@/components/InlineExitPlan';
+import { CompanySelect } from '@/components/CompanySelect';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Eye, PlusCircle, X } from 'lucide-react';
@@ -26,6 +28,9 @@ interface WatchlistItem {
     day_change?: number;
     day_change_percent?: number;
     added_at: string;
+    sector?: string;
+    rsi?: number;
+    roc?: number;
 }
 
 interface PortfolioItem {
@@ -57,11 +62,20 @@ export default function PortfolioPage() {
     const [selectedAccount, setSelectedAccount] = useState<string>('all');
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [promoteTicker, setPromoteTicker] = useState<string>('');
     const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
     const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
     const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
-    const [newWatchlistTicker, setNewWatchlistTicker] = useState('');
+    const [isWatchlistModalOpen, setIsWatchlistModalOpen] = useState(false);
+    const [selectedWatchlistItem, setSelectedWatchlistItem] = useState<WatchlistItem | null>(null);
+    const [watchlistForm, setWatchlistForm] = useState({
+        ticker: '',
+        target_price: '',
+        notes: ''
+    });
     const [searchQuery, setSearchQuery] = useState('');
+    const [watchlistSearchQuery, setWatchlistSearchQuery] = useState('');
+    const [watchlistCurrentPage, setWatchlistCurrentPage] = useState(1);
     const [currentPage, setCurrentPage] = useState(1);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
         key: 'investment_value',
@@ -92,17 +106,54 @@ export default function PortfolioPage() {
     };
 
     const addWatchlistItem = async () => {
-        if (!newWatchlistTicker) return;
+        if (!watchlistForm.ticker) return;
         try {
-            await api.post('/api/stocks/watchlist/', { ticker: newWatchlistTicker.toUpperCase() });
-            setNewWatchlistTicker('');
+            await api.post('/api/stocks/watchlist/', {
+                ticker: watchlistForm.ticker.toUpperCase(),
+                target_price: watchlistForm.target_price ? Number(watchlistForm.target_price) : null,
+                notes: watchlistForm.notes || null
+            });
+            setIsWatchlistModalOpen(false);
+            setWatchlistForm({ ticker: '', target_price: '', notes: '' });
             fetchWatchlist();
         } catch (err) {
             console.error('Failed to add to watchlist', err);
         }
     };
 
+    const updateWatchlistItem = async () => {
+        if (!selectedWatchlistItem) return;
+        try {
+            await api.patch(`/api/stocks/watchlist/${selectedWatchlistItem.id}/`, {
+                target_price: watchlistForm.target_price ? Number(watchlistForm.target_price) : null,
+                notes: watchlistForm.notes || null
+            });
+            setIsWatchlistModalOpen(false);
+            setSelectedWatchlistItem(null);
+            setWatchlistForm({ ticker: '', target_price: '', notes: '' });
+            fetchWatchlist();
+        } catch (err) {
+            console.error('Failed to update watchlist item', err);
+        }
+    };
+
+    const handleEditWatchlist = (item: WatchlistItem) => {
+        setSelectedWatchlistItem(item);
+        setWatchlistForm({
+            ticker: item.ticker,
+            target_price: item.target_price?.toString() || '',
+            notes: item.notes || ''
+        });
+        setIsWatchlistModalOpen(true);
+    };
+
+    const handlePromoteToPortfolio = (ticker: string) => {
+        setPromoteTicker(ticker);
+        setIsModalOpen(true);
+    };
+
     const removeWatchlistItem = async (id: number) => {
+        if (!confirm('Are you sure you want to remove this ticker from your surveillance?')) return;
         try {
             await api.delete(`/api/stocks/watchlist/${id}/`);
             fetchWatchlist();
@@ -236,6 +287,24 @@ export default function PortfolioPage() {
     }, [sortedAndFilteredItems, currentPage]);
 
     const totalPages = Math.ceil(sortedAndFilteredItems.length / pageSize);
+
+    // Watchlist Logic
+    const sortedAndFilteredWatchlist = useMemo(() => {
+        let result = watchlist.filter(item =>
+            item.ticker.toLowerCase().includes(watchlistSearchQuery.toLowerCase()) ||
+            (item.sector && item.sector.toLowerCase().includes(watchlistSearchQuery.toLowerCase()))
+        );
+
+        // Default sort by ticker for watchlist
+        return result.sort((a, b) => a.ticker.localeCompare(b.ticker));
+    }, [watchlist, watchlistSearchQuery]);
+
+    const paginatedWatchlist = useMemo(() => {
+        const startIndex = (watchlistCurrentPage - 1) * pageSize;
+        return sortedAndFilteredWatchlist.slice(startIndex, startIndex + pageSize);
+    }, [sortedAndFilteredWatchlist, watchlistCurrentPage]);
+
+    const watchlistTotalPages = Math.ceil(sortedAndFilteredWatchlist.length / pageSize);
 
     const handleSort = (key: string) => {
         setSortConfig(prev => ({
@@ -523,7 +592,7 @@ export default function PortfolioPage() {
                                                                     <button
                                                                         className={`p-2 rounded-lg transition-all ${isExpanded ? 'bg-blue-600 text-white shadow-xl rotate-0' : 'text-gray-300 hover:text-blue-600 hover:bg-blue-50 rotate-[-45deg] hover:rotate-0'}`}
                                                                     >
-                                                                        {isExpanded ? <X className="h-4 w-4" /> : <Target className="h-4 w-4" />}
+                                                                        {isExpanded ? <X size={18} /> : <Target size={18} />}
                                                                     </button>
                                                                 </div>
                                                             </TableCell>
@@ -827,83 +896,215 @@ export default function PortfolioPage() {
 
                 {/* Strategic Watchlist Section - Only for Watchlist tab */}
                 {activeTab === 'watchlist' && (
-                    <Card className="shadow-sm border-none overflow-hidden">
-                        <CardHeader className="flex flex-row items-center justify-between bg-white/50 backdrop-blur px-6 py-4">
-                            <CardTitle className="text-lg flex items-center gap-2">
-                                <Eye className="h-5 w-5 text-blue-500" />
-                                Strategic Watchlist
+                    <Card className="shadow-lg border-blue-50/50">
+                        <CardHeader className="border-b border-gray-50 pb-2">
+                            <CardTitle className="text-xl font-black text-slate-900 tracking-tight flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-50 rounded-lg">
+                                        <Eye className="h-5 w-5 text-blue-600" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span>Strategic Watchlist</span>
+                                        <span className="text-[10px] font-bold text-blue-500/70 uppercase tracking-widest mt-1">High-Conviction Surveillance</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                                        <Input
+                                            placeholder="Quick filter..."
+                                            value={watchlistSearchQuery}
+                                            onChange={(e) => {
+                                                setWatchlistSearchQuery(e.target.value);
+                                                setWatchlistCurrentPage(1);
+                                            }}
+                                            className="pl-9 h-9 w-48 text-xs font-medium bg-gray-50/50 border-gray-200 focus:bg-white transition-all"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            setSelectedWatchlistItem(null);
+                                            setWatchlistForm({ ticker: '', target_price: '', notes: '' });
+                                            setIsWatchlistModalOpen(true);
+                                        }}
+                                        className="h-9 px-4 flex items-center gap-1 bg-gray-900 text-white rounded-md text-[10px] font-black hover:bg-black transition-all uppercase tracking-widest shadow-md whitespace-nowrap"
+                                    >
+                                        <Plus size={14} /> Add New Surveillance
+                                    </button>
+                                </div>
                             </CardTitle>
-                            <div className="flex items-center gap-2">
-                                <Input
-                                    placeholder="Add Ticker..."
-                                    value={newWatchlistTicker}
-                                    onChange={(e) => setNewWatchlistTicker(e.target.value)}
-                                    className="w-40 h-9 text-xs font-bold uppercase"
-                                    onKeyDown={(e) => e.key === 'Enter' && addWatchlistItem()}
-                                />
-                                <button
-                                    onClick={addWatchlistItem}
-                                    className="h-9 px-4 flex items-center gap-1 bg-blue-600 text-white rounded-md text-xs font-black shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all uppercase tracking-widest"
-                                >
-                                    <PlusCircle size={14} /> Tracking
-                                </button>
-                            </div>
                         </CardHeader>
-                        <CardContent className="p-0">
-                            <Table>
-                                <TableHeader className="bg-white">
-                                    <TableRow className="hover:bg-white border-none">
-                                        <TableHead className="pl-6 text-[10px] font-black uppercase text-gray-400 tracking-widest">Ticker</TableHead>
-                                        <TableHead className="text-right text-[10px] font-black uppercase text-gray-400 tracking-widest">Live Price</TableHead>
-                                        <TableHead className="text-right text-[10px] font-black uppercase text-gray-400 tracking-widest">Day Change</TableHead>
-                                        <TableHead className="text-right text-[10px] font-black uppercase text-gray-400 tracking-widest">Tracked Since</TableHead>
-                                        <TableHead className="text-right w-[80px] pr-6 text-[10px] font-black uppercase text-gray-400 tracking-widest">Remove</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {watchlist.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={5} className="text-center text-gray-400 py-12 text-sm italic">
-                                                No active surveillance. Add tickers to monitor entry levels.
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        watchlist.map((item) => (
-                                            <TableRow key={item.id} className="hover:bg-blue-50/20 border-b border-gray-50 last:border-0 group">
-                                                <TableCell className="font-black text-slate-800 pl-6 text-sm">
-                                                    <StockLink ticker={item.ticker} />
-                                                </TableCell>
-                                                <TableCell className="text-right font-black text-slate-900">
-                                                    {item.current_price ? `Rs. ${Number(item.current_price).toLocaleString()}` : 'N/A'}
-                                                </TableCell>
-                                                <TableCell className={`text-right font-black ${Number(item.day_change) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                    {item.day_change ? (
-                                                        <div className="flex items-center justify-end gap-1.5">
-                                                            <div className={`p-0.5 rounded ${Number(item.day_change) >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
-                                                                {Number(item.day_change) >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                                                            </div>
-                                                            <span className="text-xs">
-                                                                {Number(item.day_change).toFixed(1)} ({item.day_change_percent}%)
-                                                            </span>
-                                                        </div>
-                                                    ) : '-'}
-                                                </TableCell>
-                                                <TableCell className="text-right text-gray-400 text-[10px] font-bold">
-                                                    {new Date(item.added_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                </TableCell>
-                                                <TableCell className="text-right pr-6">
-                                                    <button
-                                                        className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                                                        onClick={() => removeWatchlistItem(item.id)}
-                                                    >
-                                                        <X size={14} />
-                                                    </button>
-                                                </TableCell>
+                        <CardContent className="pt-0">
+                            {paginatedWatchlist.length === 0 ? (
+                                <div className="text-center py-20 text-gray-500 flex flex-col items-center gap-2">
+                                    <Eye className="h-10 w-10 text-gray-200" />
+                                    <p className="text-sm font-medium italic">No active surveillance. Add tickers to monitor entry levels.</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
+                                                <TableHead className="font-bold text-gray-900">Ticker</TableHead>
+                                                <TableHead className="text-right font-bold text-gray-900">LTP</TableHead>
+                                                <TableHead className="text-right font-bold text-gray-900">Day Change</TableHead>
+                                                <TableHead className="text-right font-bold text-gray-900">RSI (14)</TableHead>
+                                                <TableHead className="text-right font-bold text-gray-900">ROC (14)</TableHead>
+                                                <TableHead className="text-right font-bold text-gray-900">Signal Proximity</TableHead>
+                                                <TableHead className="text-right font-bold text-gray-900">Tracked Since</TableHead>
+                                                <TableHead className="w-[80px] pr-6"></TableHead>
                                             </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {paginatedWatchlist.map((item) => {
+                                                const dayChange = Number(item.day_change);
+                                                const isPos = dayChange >= 0;
+
+                                                // Calculate proximity if target_price exists
+                                                const proximity = item.target_price && item.current_price
+                                                    ? ((Number(item.current_price) - item.target_price) / item.target_price) * 100
+                                                    : null;
+
+                                                return (
+                                                    <TableRow key={item.id} className="hover:bg-blue-50/30 border-b border-gray-50 last:border-0 group transition-all">
+                                                        <TableCell className="py-4">
+                                                            <div className="flex flex-col">
+                                                                <StockLink ticker={item.ticker} className="font-black text-slate-900 text-sm" />
+                                                                {item.sector && (
+                                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                                                                        {item.sector}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="text-right py-4">
+                                                            <div className="font-black text-slate-900">
+                                                                {item.current_price ? `Rs. ${Number(item.current_price).toLocaleString(undefined, { minimumFractionDigits: 1 })}` : 'N/A'}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="text-right py-4">
+                                                            <div className={`flex flex-col items-end`}>
+                                                                <div className={`font-black flex items-center gap-1 ${isPos ? 'text-green-600' : 'text-red-600'}`}>
+                                                                    {isPos ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                                                                    {isPos ? '+' : ''}{dayChange.toFixed(1)}
+                                                                </div>
+                                                                <div className={`text-[10px] font-black uppercase tracking-tighter px-1 rounded ${isPos ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                                                                    {item.day_change_percent}%
+                                                                </div>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="text-right py-4">
+                                                            {item.rsi !== null && item.rsi !== undefined ? (
+                                                                <div className="flex flex-col items-end">
+                                                                    <div className={`font-black ${Number(item.rsi) >= 70 ? 'text-orange-600' : Number(item.rsi) <= 30 ? 'text-green-600' : 'text-blue-600'}`}>
+                                                                        {Number(item.rsi).toFixed(1)}
+                                                                    </div>
+                                                                    <div className={`text-[10px] font-black uppercase tracking-tighter px-1 rounded ${Number(item.rsi) >= 70 ? 'bg-orange-50 text-orange-700' : Number(item.rsi) <= 30 ? 'bg-green-50 text-green-700' : 'bg-blue-50 text-blue-700'}`}>
+                                                                        {Number(item.rsi) >= 70 ? 'Overbought' : Number(item.rsi) <= 30 ? 'Oversold' : 'Neutral'}
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-gray-300">--</span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="text-right py-4">
+                                                            {item.roc !== null && item.roc !== undefined ? (
+                                                                <div className={`font-black ${Number(item.roc) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                    {Number(item.roc) >= 0 ? '+' : ''}{Number(item.roc).toFixed(1)}%
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-gray-300">--</span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="text-right py-4">
+                                                            {proximity !== null ? (
+                                                                <div className="flex flex-col items-end">
+                                                                    <div className={`text-xs font-bold ${Math.abs(proximity) < 2 ? 'text-emerald-600' : 'text-gray-500'}`}>
+                                                                        {Math.abs(proximity).toFixed(1)}% {proximity < 0 ? 'BELOW' : 'ABOVE'}
+                                                                    </div>
+                                                                    <div className="w-24 h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
+                                                                        <div
+                                                                            className={`h-full transition-all duration-500 ${proximity < 0 ? 'bg-emerald-500' : 'bg-amber-400'}`}
+                                                                            style={{ width: `${Math.min(100, Math.max(5, 100 - Math.abs(proximity)))}%` }}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-gray-300">--</span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="text-right py-4">
+                                                            <div className="flex flex-col items-end">
+                                                                <div className="text-[10px] font-black text-slate-900 uppercase">
+                                                                    {new Date(item.added_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                                </div>
+                                                                {item.notes && (
+                                                                    <div className="text-[9px] font-bold text-blue-600 uppercase tracking-tighter mt-0.5 max-w-[120px] truncate">
+                                                                        {item.notes}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="w-[80px] pr-6 text-right">
+                                                            <div className="flex items-center justify-end gap-2 text-right">
+                                                                <button
+                                                                    onClick={() => handlePromoteToPortfolio(item.ticker)}
+                                                                    className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors opacity-0 group-hover:opacity-100"
+                                                                    title="Promote to Portfolio (Buy)"
+                                                                >
+                                                                    <FolderPlus size={18} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleEditWatchlist(item)}
+                                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors opacity-0 group-hover:opacity-100"
+                                                                    title="Edit Strategy"
+                                                                >
+                                                                    <Wand2 size={18} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => removeWatchlistItem(item.id)}
+                                                                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100"
+                                                                    title="Remove surveillance"
+                                                                >
+                                                                    <X size={18} />
+                                                                </button>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            )}
+
+                            {/* Watchlist Pagination */}
+                            {watchlistTotalPages > 1 && (
+                                <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-50 pb-4">
+                                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                                        Monitoring <span className="text-gray-900">{sortedAndFilteredWatchlist.length}</span> key tickers
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setWatchlistCurrentPage(p => Math.max(1, p - 1))}
+                                            disabled={watchlistCurrentPage === 1}
+                                            className="p-2 rounded-lg border border-gray-100 hover:bg-gray-50 disabled:opacity-20 transition-all font-black text-gray-600"
+                                        >
+                                            <ChevronLeft size={16} />
+                                        </button>
+                                        <span className="text-xs font-black px-4 py-2 bg-gray-900 text-white rounded-lg shadow-lg">
+                                            {watchlistCurrentPage} / {watchlistTotalPages}
+                                        </span>
+                                        <button
+                                            onClick={() => setWatchlistCurrentPage(p => Math.min(watchlistTotalPages, p + 1))}
+                                            disabled={watchlistCurrentPage === watchlistTotalPages}
+                                            className="p-2 rounded-lg border border-gray-100 hover:bg-gray-50 disabled:opacity-20 transition-all font-black text-gray-600"
+                                        >
+                                            <ChevronRight size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 )}
@@ -918,11 +1119,15 @@ export default function PortfolioPage() {
                 {/* Transaction Modal */}
                 <TransactionModal
                     isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
+                    onClose={() => {
+                        setIsModalOpen(false);
+                        setPromoteTicker('');
+                    }}
                     onSuccess={() => {
                         fetchPortfolio();
-                        fetchAccounts(); // Refresh accounts too, maybe balance changed?
+                        fetchAccounts();
                     }}
+                    defaultTicker={promoteTicker}
                     accounts={accounts}
                 />
 
@@ -931,6 +1136,86 @@ export default function PortfolioPage() {
                 {/* Exit Strategy Dialog Removed - Now Inline */}
 
             </div>
+            {/* Watchlist Management Modal */}
+            <Dialog open={isWatchlistModalOpen} onOpenChange={setIsWatchlistModalOpen}>
+                <DialogContent className="sm:max-w-[425px] overflow-hidden p-0 border-none shadow-2xl">
+                    <DialogHeader className="p-6 pb-0">
+                        <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                            <div className="p-2 bg-blue-50 rounded-lg">
+                                <Eye className="h-5 w-5 text-blue-600" />
+                            </div>
+                            {selectedWatchlistItem ? 'Edit Surveillance' : 'New Surveillance'}
+                        </DialogTitle>
+                        <DialogDescription className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
+                            {selectedWatchlistItem ? `Updating strategy for ${selectedWatchlistItem.ticker}` : 'Target elite entries for your portfolio'}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="p-6 space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Stock Ticker</label>
+                            {selectedWatchlistItem ? (
+                                <div className="h-12 flex items-center px-4 bg-slate-50 border border-slate-100 rounded-xl font-medium text-lg text-slate-900">
+                                    {selectedWatchlistItem.ticker}
+                                </div>
+                            ) : (
+                                <CompanySelect
+                                    value={watchlistForm.ticker}
+                                    onChange={(val) => setWatchlistForm({ ...watchlistForm, ticker: val })}
+                                    className="h-12 bg-white border-blue-100 uppercase font-medium text-lg"
+                                />
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Target Entry Price (Rs.)</label>
+                                <div className="relative">
+                                    <Target className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-500" />
+                                    <Input
+                                        placeholder="0.00"
+                                        type="number"
+                                        value={watchlistForm.target_price}
+                                        onChange={(e) => setWatchlistForm({ ...watchlistForm, target_price: e.target.value })}
+                                        className="pl-10 h-12 bg-white border-blue-50 font-black text-slate-900 text-lg focus:ring-2 focus:ring-blue-100 placeholder:text-slate-300"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Strategic Notes</label>
+                            <textarea
+                                placeholder="Why follow this? Entry thesis..."
+                                value={watchlistForm.notes}
+                                onChange={(e) => setWatchlistForm({ ...watchlistForm, notes: e.target.value })}
+                                className="w-full min-h-[100px] p-3 rounded-xl border border-blue-50 bg-white font-bold text-sm text-slate-900 uppercase placeholder:text-slate-300 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all"
+                            />
+                        </div>
+                    </div>
+
+                    <DialogFooter className="p-6 pt-2 bg-slate-50/50">
+                        <div className="flex w-full gap-3">
+                            <button
+                                onClick={() => setIsWatchlistModalOpen(false)}
+                                className="flex-1 h-12 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all text-slate-500"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={selectedWatchlistItem ? updateWatchlistItem : addWatchlistItem}
+                                className="flex-[2] h-12 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg flex items-center justify-center gap-2 group"
+                            >
+                                {selectedWatchlistItem ? (
+                                    <>Update Strategy <Target size={14} className="group-hover:scale-125 transition-transform" /></>
+                                ) : (
+                                    <>Start Surveillance <Plus size={14} className="group-hover:rotate-90 transition-transform" /></>
+                                )}
+                            </button>
+                        </div>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </DashboardLayout>
     );
 }
