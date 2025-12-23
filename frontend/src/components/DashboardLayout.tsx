@@ -69,6 +69,34 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
         setIsSidebarCollapsed(isChatPinned || isChatPage);
     }, [isChatPinned, isChatPage]);
 
+    // Auto-expand menus that contain the active sub-item
+    useEffect(() => {
+        navItems.forEach(item => {
+            if ('subItems' in item && item.subItems) {
+                const hasActiveSubItem = item.subItems.some(subItem => {
+                    const subPath = subItem.href.split('?')[0];
+                    const subTab = new URLSearchParams(subItem.href.split('?')[1]).get('tab');
+                    const currentTab = searchParams.get('tab');
+                    return pathname === subPath && (subTab ? currentTab === subTab : true);
+                });
+
+                if (hasActiveSubItem && !expandedMenus.includes(item.name)) {
+                    setExpandedMenus(prev => [...prev, item.name]);
+                }
+            }
+        });
+    }, [pathname, searchParams]);
+
+    const isMenuHoverActive = (item: any) => {
+        if (!('subItems' in item && item.subItems)) return false;
+        return item.subItems.some((subItem: any) => {
+            const subPath = subItem.href.split('?')[0];
+            const subTab = new URLSearchParams(subItem.href.split('?')[1]).get('tab');
+            const currentTab = searchParams.get('tab');
+            return pathname === subPath && (subTab ? currentTab === subTab : true);
+        });
+    };
+
     const toggleSidebar = () => {
         setIsSidebarCollapsed(!isSidebarCollapsed);
     };
@@ -92,9 +120,10 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
         }
     };
 
-    const closeMenu = (name: string) => {
-        if (!isSidebarCollapsed && expandedMenus.includes(name)) {
-            setExpandedMenus(prev => prev.filter(i => i !== name));
+    const closeMenu = (item: any) => {
+        const isCurrentlyActive = isMenuHoverActive(item);
+        if (!isSidebarCollapsed && expandedMenus.includes(item.name) && !isCurrentlyActive) {
+            setExpandedMenus(prev => prev.filter(i => i !== item.name));
         }
     };
 
@@ -141,7 +170,7 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
                                 key={item.name}
                                 className="space-y-1"
                                 onMouseEnter={() => hasSubItems && openMenu(item.name)}
-                                onMouseLeave={() => hasSubItems && closeMenu(item.name)}
+                                onMouseLeave={() => hasSubItems && closeMenu(item)}
                             >
                                 {hasSubItems ? (
                                     <button
