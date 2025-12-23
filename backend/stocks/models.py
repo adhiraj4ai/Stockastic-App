@@ -195,27 +195,42 @@ class Dividend(models.Model):
         return f"{self.ticker} - {self.fiscal_year}"
 
 class FinancialReport(models.Model):
+    class ReportType(models.TextChoices):
+        ANNUAL = 'ANNUAL', 'Annual'
+        QUARTERLY = 'QUARTERLY', 'Quarterly'
+
     ticker = models.CharField(max_length=20, db_index=True)
     fiscal_year = models.CharField(max_length=20)
-    quarter = models.IntegerField(choices=[(1, 'Q1'), (2, 'Q2'), (3, 'Q3'), (4, 'Q4')])
+    report_type = models.CharField(max_length=20, choices=ReportType.choices, default=ReportType.QUARTERLY)
+    quarter = models.IntegerField(choices=[(1, 'Q1'), (2, 'Q2'), (3, 'Q3'), (4, 'Q4')], null=True, blank=True)
+    is_audited = models.BooleanField(default=False)
+    report_template = models.CharField(max_length=50, default='GENERAL', help_text='Template for rendering (e.g. BANK, HYDRO)')
     
-    paid_up_capital = models.DecimalField(max_digits=20, decimal_places=2, null=True)
-    reserves_and_surplus = models.DecimalField(max_digits=20, decimal_places=2, null=True)
+    paid_up_capital = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    reserves_and_surplus = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
     
-    revenue = models.DecimalField(max_digits=20, decimal_places=2, null=True)
-    operating_profit = models.DecimalField(max_digits=20, decimal_places=2, null=True)
-    net_profit = models.DecimalField(max_digits=20, decimal_places=2, null=True)
+    revenue = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    operating_profit = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    net_profit = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
     
-    eps = models.DecimalField(max_digits=10, decimal_places=2, null=True)
-    pe_ratio = models.DecimalField(max_digits=10, decimal_places=2, null=True)
-    book_value = models.DecimalField(max_digits=10, decimal_places=2, null=True)
-    return_on_equity = models.DecimalField(max_digits=6, decimal_places=2, null=True) # in %
+    eps = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    pe_ratio = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    book_value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    return_on_equity = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True) # in %
+
+    # Granular Report Data
+    balance_sheet = models.JSONField(null=True, blank=True)
+    profit_loss = models.JSONField(null=True, blank=True)
+    cash_flow = models.JSONField(null=True, blank=True)
+    key_ratios = models.JSONField(null=True, blank=True)
 
     class Meta:
-        unique_together = ('ticker', 'fiscal_year', 'quarter')
-        ordering = ['-fiscal_year', '-quarter']
+        unique_together = ('ticker', 'fiscal_year', 'report_type', 'quarter')
+        ordering = ['-fiscal_year', '-report_type', '-quarter']
 
     def __str__(self):
+        if self.report_type == self.ReportType.ANNUAL:
+            return f"{self.ticker} - {self.fiscal_year} (Annual)"
         return f"{self.ticker} - {self.fiscal_year} Q{self.quarter}"
 
 class Strategy(models.Model):
