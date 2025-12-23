@@ -74,7 +74,7 @@ class StrategySerializer(serializers.ModelSerializer):
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
-        fields = ['id', 'symbol', 'name', 'sector']
+        fields = ['symbol', 'name', 'sector']
 
 class WatchlistItemSerializer(serializers.ModelSerializer):
     current_price = serializers.SerializerMethodField()

@@ -20,7 +20,6 @@ import {
 import axios from "axios"
 
 interface Company {
-    id: number;
     symbol: string;
     name: string;
 }
@@ -99,7 +98,7 @@ export function CompanySelect({ value, onChange, className }: CompanySelectProps
                         <CommandGroup>
                             {companies.map((framework) => (
                                 <CommandItem
-                                    key={framework.id}
+                                    key={framework.symbol}
                                     value={framework.symbol}
                                     onSelect={() => {
                                         onChange(framework.symbol === value ? "" : framework.symbol)

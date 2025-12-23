@@ -2,8 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 
 class Company(models.Model):
-    id = models.AutoField(primary_key=True)
-    symbol = models.CharField(max_length=20, unique=True, db_index=True)
+    symbol = models.CharField(max_length=20, primary_key=True, db_index=True)
     name = models.CharField(max_length=255, db_column='companyName')
     sector = models.CharField(max_length=100, db_column='sectorName')
     status = models.CharField(max_length=1, default='A')
@@ -16,7 +15,7 @@ class Company(models.Model):
         return f"{self.symbol} - {self.name}"
 
 class DailyStockPrice(models.Model):
-    ticker = models.CharField(max_length=20, db_index=True, db_column='symbol')
+    ticker = models.CharField(max_length=20, primary_key=True, db_column='symbol')
     date = models.DateField(db_index=True, db_column='transaction_date')
     open = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     high = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -308,7 +307,7 @@ class DailyMarketSummary(models.Model):
         return f"Market Summary - {self.date}"
 
 class DailyCumulativeAccumulation(models.Model):
-    symbol = models.CharField(max_length=20, db_index=True)
+    symbol = models.CharField(max_length=20, primary_key=True, db_index=True)
     transaction_date = models.DateField(db_index=True)
     entity_id = models.CharField(max_length=10, db_index=True) # Broker ID
     
@@ -320,6 +319,7 @@ class DailyCumulativeAccumulation(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        managed = False
         db_table = 'daily_cumulative_accumulation'
         unique_together = ('symbol', 'transaction_date', 'entity_id')
         indexes = [

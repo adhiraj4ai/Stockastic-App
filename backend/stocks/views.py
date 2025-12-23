@@ -1095,7 +1095,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
         """Return all unique sectors with company counts (status='A' only)"""
         from django.db.models import Count
         sectors = Company.objects.filter(status='A').values('sector').annotate(
-            count=Count('id')
+            count=Count('symbol')
         ).order_by('sector')
         return Response([
             {'name': s['sector'], 'count': s['count']} 
