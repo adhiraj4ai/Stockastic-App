@@ -138,15 +138,19 @@ function DailyPriceUpload({ onSuccess }: { onSuccess?: () => void }) {
     const [fetchingGithub, setFetchingGithub] = useState(false);
     const [uploading, setUploading] = useState(false);
 
+    const isTradingDay = (d: Date) => {
+        const day = d.getDay();
+        return day !== 5 && day !== 6; // Friday and Saturday are weekends in Nepal
+    };
+
     const handleGithubFetch = async () => {
         if (!date) {
             toast.error("Please select a date first");
             return;
         }
 
-        const day = date.getDay();
-        if (day === 5 || day === 6) {
-            toast.error("Cannot sync from GitHub on Friday or Saturday");
+        if (!isTradingDay(date)) {
+            toast.error("Market is closed on Friday and Saturday");
             return;
         }
 
@@ -237,28 +241,82 @@ function DailyPriceUpload({ onSuccess }: { onSuccess?: () => void }) {
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700">Select Date</label>
+                <div className="flex flex-col gap-3 bg-blue-50/30 p-4 rounded-xl border border-blue-100/50">
+                    <div className="flex items-center justify-between">
+                        <label className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                            <CalendarIcon className="w-4 h-4 text-blue-600" />
+                            Trading Date
+                        </label>
+                        {date && !isTradingDay(date) && (
+                            <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded uppercase tracking-wider">
+                                Market Closed
+                            </span>
+                        )}
+                    </div>
+
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button
                                 variant={"outline"}
                                 className={cn(
-                                    "w-full justify-start text-left font-normal border-gray-200 hover:bg-gray-50 hover:text-blue-600 transition-colors",
-                                    !date && "text-muted-foreground"
+                                    "w-full justify-between text-left font-medium border-gray-200 bg-white shadow-sm ring-offset-background transition-all hover:bg-white hover:border-blue-400 hover:ring-2 hover:ring-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                                    !date && "text-muted-foreground",
+                                    date && isTradingDay(date) && "border-blue-200 text-blue-900"
                                 )}
                             >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {date ? format(date, "PPP") : <span>Pick a date</span>}
+                                <div className="flex items-center">
+                                    <Clock className="mr-2 h-4 w-4 text-blue-500 opacity-70" />
+                                    {date ? format(date, "EEEE, MMMM do, yyyy") : <span>Select trading date...</span>}
+                                </div>
+                                <RefreshCw className={cn("h-4 w-4 text-gray-400 transition-transform duration-500", fetchingGithub && "animate-spin")} />
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                            <Calendar
-                                mode="single"
-                                selected={date}
-                                onSelect={setDate}
-                                initialFocus
-                            />
+                        <PopoverContent className="p-0 border-none shadow-2xl rounded-xl overflow-hidden bg-white" align="start">
+                            <div className="bg-blue-600 p-5 text-white">
+                                <p className="text-[10px] uppercase tracking-[0.2em] font-black opacity-60 mb-1">Market Session</p>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-xl font-bold">{date ? format(date, "MMMM do") : "Pick a Date"}</p>
+                                        <p className="text-sm opacity-80">{date ? format(date, "yyyy") : "Select a session"}</p>
+                                    </div>
+                                    <CalendarIcon className="w-8 h-8 opacity-20" />
+                                </div>
+                            </div>
+                            <div className="p-3 min-w-[300px]">
+                                <Calendar
+                                    mode="single"
+                                    selected={date}
+                                    onSelect={setDate}
+                                    initialFocus
+                                    disabled={(d) => d > new Date() || d.getDay() === 5 || d.getDay() === 6}
+                                    className="border-none"
+                                />
+                            </div>
+                            <div className="p-3 bg-gray-50 border-t flex justify-between gap-2">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-xs text-blue-600 hover:bg-blue-50"
+                                    onClick={() => {
+                                        const d = new Date();
+                                        // Find last trading day
+                                        while (!isTradingDay(d)) {
+                                            d.setDate(d.getDate() - 1);
+                                        }
+                                        setDate(d);
+                                    }}
+                                >
+                                    Last Trading Day
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-xs text-gray-500"
+                                    onClick={() => setDate(undefined)}
+                                >
+                                    Clear
+                                </Button>
+                            </div>
                         </PopoverContent>
                     </Popover>
                 </div>
