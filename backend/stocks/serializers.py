@@ -24,6 +24,8 @@ class FinancialReportSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class DailyFloorsheetSerializer(serializers.ModelSerializer):
+    transaction_no = serializers.CharField(source='transaction_id')
+    
     class Meta:
         model = DailyFloorsheet
         fields = ['transaction_no', 'ticker', 'buyer_broker', 'seller_broker', 'quantity', 'rate', 'amount', 'date']
@@ -72,7 +74,7 @@ class StrategySerializer(serializers.ModelSerializer):
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
-        fields = ['id', 'symbol', 'name', 'sector']
+        fields = ['symbol', 'name', 'sector']
 
 class WatchlistItemSerializer(serializers.ModelSerializer):
     current_price = serializers.SerializerMethodField()

@@ -1,5 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+# Trigger reload
 from . import views
 
 router = DefaultRouter()
@@ -9,6 +10,7 @@ router.register(r'transactions', views.PortfolioTransactionViewSet, basename='po
 router.register(r'strategies', views.StrategyViewSet, basename='strategies')
 router.register(r'companies', views.CompanyViewSet, basename='companies')
 router.register(r'watchlist', views.WatchlistViewSet, basename='watchlist')
+router.register(r'pipeline', views.PipelineViewSet, basename='pipeline')
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -20,4 +22,7 @@ urlpatterns = [
     path('dividends/<str:ticker>/', views.stock_dividends, name='stock_dividends'),
     path('financials/<str:ticker>/', views.stock_financials, name='stock_financials'),
     path('sector-history/<str:sector_name>/', views.sector_history, name='sector_history'),
+    path('broker_portfolio/', views.get_broker_portfolio, name='broker_portfolio'),
+    path('floorsheet_list/', views.floorsheet_list, name='floorsheet_list'),
+    path('accumulation_history/', views.accumulation_history, name='accumulation_history'),
 ]

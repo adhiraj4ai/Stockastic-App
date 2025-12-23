@@ -1095,7 +1095,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
         """Return all unique sectors with company counts (status='A' only)"""
         from django.db.models import Count
         sectors = Company.objects.filter(status='A').values('sector').annotate(
-            count=Count('id')
+            count=Count('symbol')
         ).order_by('sector')
         return Response([
             {'name': s['sector'], 'count': s['count']} 
@@ -1210,13 +1210,14 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
             SELECT 
                 symbol,
                 AVG(volume) OVER (PARTITION BY symbol ORDER BY transaction_date DESC ROWS BETWEEN CURRENT ROW AND 19 FOLLOWING) as avg_vol_20d,
+                close,
                 transaction_date,
                 ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY transaction_date DESC) as rn
             FROM daily_stock_price
             WHERE transaction_date <= (SELECT MAX(transaction_date) FROM daily_cumulative_accumulation)
         ),
         latest_avg_vol AS (
-            SELECT symbol, avg_vol_20d FROM avg_volume_cte WHERE rn = 1
+            SELECT symbol, avg_vol_20d, close FROM avg_volume_cte WHERE rn = 1
         ),
         pos_change AS (
             SELECT 
@@ -1242,6 +1243,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
                 ss.institutional_buy, ss.institutional_sell,
                 (ss.institutional_buy - ss.institutional_sell) as net_qty,
                 lav.avg_vol_20d,
+                lav.close,
                 CASE 
                     WHEN lav.avg_vol_20d > 0 
                     THEN ROUND(((CAST(ss.institutional_buy AS NUMERIC) - ss.institutional_sell) / lav.avg_vol_20d) * 100, 2)
@@ -1300,6 +1302,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
             symbol,
             entity_id as broker,
             cumulative_net,
+            ROUND(cumulative_buy_amount / NULLIF(cumulative_buy, 0), 2) as wac,
             CASE WHEN net_5d > 0 THEN 'Increasing' WHEN net_5d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_5d,
             ABS(COALESCE(net_5d, 0)) AS change_5d,
             CASE WHEN net_10d > 0 THEN 'Increasing' WHEN net_10d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_10d,
@@ -1310,7 +1313,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
             ABS(COALESCE(net_50d, 0)) AS change_50d
         FROM trend_data
         WHERE transaction_date = latest_date
-        AND cumulative_net > 100000
+        AND cumulative_net > 250000
         ORDER BY cumulative_net DESC;
         """
         
@@ -1324,6 +1327,336 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
             ]
             
         return Response(results)
+
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
+    def accumulation_brokers(self, request):
+        """Return unique broker IDs from accumulation data."""
+        from django.db import connections
+        query = "SELECT DISTINCT entity_id FROM daily_cumulative_accumulation"
+        with connections['stock_market'].cursor() as cursor:
+            cursor.execute(query)
+            results = [row[0] for row in cursor.fetchall() if row[0]]
+        # Sort as integers for numeric ordering
+        return Response(sorted(results, key=lambda x: int(x) if x.isdigit() else 999))
+
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
+    def accumulation_symbols(self, request):
+        """Return unique symbols from accumulation data."""
+        from django.db import connections
+        query = "SELECT DISTINCT symbol FROM daily_cumulative_accumulation"
+        with connections['stock_market'].cursor() as cursor:
+            cursor.execute(query)
+            results = [row[0] for row in cursor.fetchall() if row[0]]
+        return Response(sorted(results))
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
+    def broker_favorites(self, request):
+        """
+        Calculate net accumulation for a specific broker across multiple time periods.
+        Allows identifying a broker's preferred stocks over 1D, 1W, 1M, etc.
+        """
+        from django.db import connections
+        broker = request.query_params.get('broker')
+        
+        if not broker:
+            return Response({'error': 'broker ID is required'}, status=400)
+
+        query = """
+        WITH latest_date AS (
+            SELECT MAX(transaction_date) as mdate FROM daily_cumulative_accumulation
+        ),
+        base_data AS (
+            SELECT 
+                symbol,
+                cumulative_net,
+                cumulative_buy,
+                cumulative_buy_amount,
+                transaction_date,
+                LAG(cumulative_net, 1) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_1d,
+                LAG(cumulative_net, 2) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_2d,
+                LAG(cumulative_net, 3) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_3d,
+                LAG(cumulative_net, 7) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_1w,
+                LAG(cumulative_net, 30) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_1m,
+                LAG(cumulative_net, 90) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_3m,
+                LAG(cumulative_net, 180) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_6m,
+                LAG(cumulative_net, 365) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_1y,
+                FIRST_VALUE(cumulative_net) OVER (PARTITION BY symbol ORDER BY transaction_date) as initial_val
+            FROM daily_cumulative_accumulation
+            WHERE entity_id = %s
+        )
+        SELECT 
+            b.symbol,
+            c."companyName" as name,
+            b.cumulative_net as current_net,
+            ROUND(b.cumulative_buy_amount / NULLIF(b.cumulative_buy, 0), 2) as wac,
+            (b.cumulative_net - COALESCE(b.prev_1d, b.cumulative_net)) as change_1d,
+            (b.cumulative_net - COALESCE(b.prev_2d, b.prev_1d, b.cumulative_net)) as change_2d,
+            (b.cumulative_net - COALESCE(b.prev_3d, b.prev_1d, b.cumulative_net)) as change_3d,
+            (b.cumulative_net - COALESCE(b.prev_1w, b.prev_1d, b.cumulative_net)) as change_1w,
+            (b.cumulative_net - COALESCE(b.prev_1m, b.prev_1d, b.cumulative_net)) as change_1m,
+            (b.cumulative_net - COALESCE(b.prev_3m, b.prev_1d, b.cumulative_net)) as change_3m,
+            (b.cumulative_net - COALESCE(b.prev_6m, b.prev_1d, b.cumulative_net)) as change_6m,
+            (b.cumulative_net - COALESCE(b.prev_1y, b.prev_1d, b.cumulative_net)) as change_1y,
+            (b.cumulative_net - b.initial_val) as change_all
+        FROM base_data b
+        JOIN companies c ON b.symbol = c.symbol
+        WHERE b.transaction_date = (SELECT mdate FROM latest_date)
+        ORDER BY b.cumulative_net DESC;
+        """
+        
+        with connections['stock_market'].cursor() as cursor:
+            cursor.execute(query, [broker])
+            columns = [col[0] for col in cursor.description]
+            results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            
+        return Response(results)
+
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
+    def broker_portfolio(self, request):
+        """
+        Get current portfolio/holdings of a specific broker.
+        """
+        broker_id = request.query_params.get('broker_id')
+        if not broker_id:
+            return Response({'error': 'broker_id is required'}, status=400)
+            
+        from django.db import connections
+        
+        query = """
+        WITH latest_positions AS (
+            SELECT 
+                ca.symbol, 
+                ca.entity_id, 
+                ca.cumulative_net,
+                ROW_NUMBER() OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date DESC) as rn
+            FROM daily_cumulative_accumulation ca
+            WHERE ca.entity_id = %s
+        )
+        SELECT 
+            pos.symbol,
+            c."companyName" as name,
+            c."sectorName" as sector,
+            pos.cumulative_net as quantity,
+            dsp.close as current_price,
+            (pos.cumulative_net * dsp.close) as value,
+            dsp.transaction_date as latest_price_date
+        FROM latest_positions pos
+        INNER JOIN companies c ON pos.symbol = c.symbol
+        LEFT JOIN (
+            SELECT DISTINCT ON (symbol) symbol, close, transaction_date
+            FROM daily_stock_price
+            ORDER BY symbol, transaction_date DESC
+        ) dsp ON pos.symbol = dsp.symbol
+        WHERE pos.rn = 1 
+        AND pos.cumulative_net > 0
+        ORDER BY value DESC;
+        """
+        
+        with connections['stock_market'].cursor() as cursor:
+            cursor.execute(query, [broker_id])
+            columns = [col[0] for col in cursor.description]
+            results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            
+        return Response({
+            'broker_id': broker_id,
+            'total_value': sum(r['value'] for r in results if r['value']),
+            'holdings': results
+        })
+
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
+    def brokers_graph(self, request):
+        """
+        Return time-series data for the Top 5 accumulators of a specific symbol.
+        Format: [{ "date": "2023-01-01", "broker_1": 100, "broker_2": 150, ... }]
+        """
+        symbol = request.query_params.get('symbol')
+        time_range = request.query_params.get('range', '1Y')
+        
+        if not symbol:
+            return Response({'error': 'Symbol is required'}, status=400)
+            
+        from django.db import connections
+        from datetime import timedelta
+        from django.utils import timezone
+        
+        from django.db.models import Max
+        
+        # Calculate start date based on range
+        # Use latest market date instead of system date
+        max_date_agg = DailyStockPrice.objects.aggregate(Max('date'))
+        today = max_date_agg['date__max'] or timezone.now().date()
+        
+        range_map = {
+            '1W': 7, '2W': 14, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, '2Y': 730, '5Y': 1825, 'ALL': 3650
+        }
+        days = range_map.get(time_range, 365)
+        start_date = today - timedelta(days=days)
+        
+        with connections['stock_market'].cursor() as cursor:
+            # 1. Identify Top 5 Brokers by current holding
+            cursor.execute("""
+                SELECT entity_id 
+                FROM daily_cumulative_accumulation 
+                WHERE symbol = %s 
+                AND transaction_date = (SELECT MAX(transaction_date) FROM daily_cumulative_accumulation)
+                ORDER BY cumulative_net DESC 
+                LIMIT 5
+            """, [symbol])
+            top_brokers = [row[0] for row in cursor.fetchall()]
+            
+            if not top_brokers:
+                return Response({'data': [], 'brokers': []})
+            
+            # 2. Fetch history for these brokers
+            # We use dynamic columns for the pivot-like result in Python
+            placeholders = ', '.join(['%s'] * len(top_brokers))
+            query = f"""
+                SELECT 
+                    transaction_date, 
+                    entity_id, 
+                    cumulative_net 
+                FROM daily_cumulative_accumulation
+                WHERE symbol = %s 
+                AND entity_id IN ({placeholders})
+                AND transaction_date >= %s
+            """
+            cursor.execute(query, [symbol] + top_brokers + [start_date])
+            rows = cursor.fetchall()
+            
+            # 3. Fetch Volume Leaders (Active Investors) - MUST BE INSIDE CURSOR BLOCK
+            volume_leaders = self._get_volume_leaders(cursor, symbol, start_date)
+            
+            # Fetch Aggressive Traders (Net Buyers/Sellers)
+            aggressive_traders = self._get_aggressive_traders(cursor, symbol, start_date)
+            
+            # Calculate Total Volume for the period to determine percentage
+            total_vol_query = """
+                SELECT SUM(volume) 
+                FROM daily_stock_price 
+                WHERE symbol = %s AND transaction_date >= %s
+            """
+            cursor.execute(total_vol_query, [symbol, start_date])
+            total_market_vol = cursor.fetchone()[0] or 1 # Avoid div by 0
+            
+        # 4. Process into Recharts/ECharts format with Forward Fill
+        # Create a complete date range
+        date_list = [start_date + timedelta(days=x) for x in range((today - start_date).days + 1)]
+        
+        # Organize raw data: { broker_id: { date_str: qty } }
+        raw_data_map = {}
+        for row in rows:
+            t_date = row[0].isoformat() if hasattr(row[0], 'isoformat') else str(row[0])
+            broker = str(row[1])
+            qty = row[2]
+            
+            if broker not in raw_data_map:
+                raw_data_map[broker] = {}
+            raw_data_map[broker][t_date] = qty
+
+        # Forward fill for each broker
+        final_data = []
+        
+        # Dictionary to hold the running cumulative count for each broker
+        running_holdings = {broker: 0 for broker in top_brokers}
+
+        for d in date_list:
+            d_str = d.isoformat()
+            day_entry = {'date': d_str}
+            
+            for broker in top_brokers:
+                if broker in raw_data_map and d_str in raw_data_map[broker]:
+                    running_holdings[broker] = raw_data_map[broker][d_str]
+                day_entry[broker] = running_holdings[broker]
+                
+            final_data.append(day_entry)
+        
+        # Annotate with percentage (Calculate outside DB block)
+        for v in volume_leaders:
+             v['percentage'] = round((v['volume'] / (total_market_vol * 2)) * 100, 2)
+
+        return Response({
+            'data': final_data,
+            'brokers': top_brokers,
+            'volume_leaders': volume_leaders,
+            'buy_leaders': aggressive_traders['buy_leaders'],
+            'sell_leaders': aggressive_traders['sell_leaders']
+        })
+        
+
+
+
+    def _get_volume_leaders(self, cursor, symbol, start_date):
+        """Helper to fetch top brokers by volume (buy + sell) in the period using Floorsheet."""
+        # Calculate volume directly from floorsheet transactions for accuracy
+        query = """
+            WITH broker_volume AS (
+                SELECT buyer_id as broker, transaction_quantity as vol FROM daily_floorsheet 
+                WHERE symbol = %s AND transaction_date >= %s
+                UNION ALL
+                SELECT seller_id as broker, transaction_quantity as vol FROM daily_floorsheet 
+                WHERE symbol = %s AND transaction_date >= %s
+            )
+            SELECT broker, SUM(vol) as total_vol
+            FROM broker_volume
+            GROUP BY broker
+            ORDER BY total_vol DESC
+            LIMIT 10
+        """
+        cursor.execute(query, [symbol, start_date, symbol, start_date])
+        return [
+            {'broker': str(row[0]), 'volume': row[1]} 
+            for row in cursor.fetchall()
+        ]
+
+    def _get_aggressive_traders(self, cursor, symbol, start_date):
+        """Helper to fetch top Net Buyers and Net Sellers."""
+        # 1. Aggregate Buys
+        cursor.execute("""
+            SELECT buyer_id, SUM(transaction_quantity), SUM(transaction_quantity * transaction_rate)
+            FROM daily_floorsheet
+            WHERE symbol = %s AND transaction_date >= %s
+            GROUP BY buyer_id
+        """, [symbol, start_date])
+        buys = {row[0]: {'qty': row[1], 'amt': row[2]} for row in cursor.fetchall()}
+
+        # 2. Aggregate Sells
+        cursor.execute("""
+            SELECT seller_id, SUM(transaction_quantity), SUM(transaction_quantity * transaction_rate)
+            FROM daily_floorsheet
+            WHERE symbol = %s AND transaction_date >= %s
+            GROUP BY seller_id
+        """, [symbol, start_date])
+        sells = {row[0]: {'qty': row[1], 'amt': row[2]} for row in cursor.fetchall()}
+
+        # 3. Calculate Net
+        brokers = set(buys.keys()) | set(sells.keys())
+        net_stats = []
+        
+        for b in brokers:
+            b_buy = buys.get(b, {'qty': 0, 'amt': 0})
+            b_sell = sells.get(b, {'qty': 0, 'amt': 0})
+            
+            net_qty = b_buy['qty'] - b_sell['qty']
+            
+            # WAC (Weighted Average Cost)
+            # For Buyer: Buy Avg Rate
+            # For Seller: Sell Avg Rate
+            buy_rate = (b_buy['amt'] / b_buy['qty']) if b_buy['qty'] else 0
+            sell_rate = (b_sell['amt'] / b_sell['qty']) if b_sell['qty'] else 0
+            
+            net_stats.append({
+                'broker': str(b),
+                'net_qty': net_qty,
+                'buy_qty': b_buy['qty'],
+                'sell_qty': b_sell['qty'],
+                'buy_rate': round(buy_rate, 2),
+                'sell_rate': round(sell_rate, 2)
+            })
+
+        # 4. Sort Leaders
+        buy_leaders = sorted([x for x in net_stats if x['net_qty'] > 0], key=lambda x: x['net_qty'], reverse=True)[:10]
+        sell_leaders = sorted([x for x in net_stats if x['net_qty'] < 0], key=lambda x: x['net_qty'])[:10] # Most negative first
+
+        return {'buy_leaders': buy_leaders, 'sell_leaders': sell_leaders}
 
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def recommendations(self, request):
@@ -1656,3 +1989,472 @@ class WatchlistViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_broker_portfolio(request):
+    """
+    Get current portfolio/holdings of a specific broker.
+    Standalone view to avoid ViewSet routing caching issues.
+    """
+    broker_id = request.query_params.get('broker_id')
+    if not broker_id:
+        return Response({'error': 'broker_id is required'}, status=400)
+        
+    from django.db import connections
+    
+    query = """
+    WITH latest_positions AS (
+        SELECT 
+            ca.symbol, 
+            ca.entity_id, 
+            ca.cumulative_net,
+            ROW_NUMBER() OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date DESC) as rn
+        FROM daily_cumulative_accumulation ca
+        WHERE ca.entity_id = %s
+    )
+    SELECT 
+        pos.symbol,
+        c."companyName" as name,
+        c."sectorName" as sector,
+        pos.cumulative_net as quantity,
+        dsp.close as current_price,
+        (pos.cumulative_net * dsp.close) as value,
+        dsp.transaction_date as latest_price_date
+    FROM latest_positions pos
+    INNER JOIN companies c ON pos.symbol = c.symbol
+    LEFT JOIN (
+        SELECT DISTINCT ON (symbol) symbol, close, transaction_date
+        FROM daily_stock_price
+        ORDER BY symbol, transaction_date DESC
+    ) dsp ON pos.symbol = dsp.symbol
+    WHERE pos.rn = 1 
+    AND pos.cumulative_net > 0
+    ORDER BY value DESC;
+    """
+    
+    with connections['stock_market'].cursor() as cursor:
+        cursor.execute(query, [broker_id])
+        columns = [col[0] for col in cursor.description]
+        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        
+    return Response({
+        'broker_id': broker_id,
+        'total_value': sum(r['value'] for r in results if r['value']),
+        'holdings': results
+    })
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def floorsheet_list(request):
+    """
+    List floorsheet transactions with optional filtering by broker and symbol.
+    """
+    broker = request.query_params.get('broker')
+    symbol = request.query_params.get('symbol')
+    limit = int(request.query_params.get('limit', 100))
+
+    try:
+        queryset = DailyFloorsheet.objects.all()
+
+        if symbol:
+            queryset = queryset.filter(ticker=symbol)
+        
+        if broker:
+            # Filter where broker is either buyer or seller
+            from django.db.models import Q
+            queryset = queryset.filter(Q(buyer_broker=broker) | Q(seller_broker=broker))
+
+        # Order by date descending
+        queryset = queryset.order_by('-date')[:limit]
+        
+        serializer = DailyFloorsheetSerializer(queryset, many=True)
+        return Response(serializer.data)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def accumulation_history(request):
+    """
+    Get daily accumulation history (derived from cumulative data) for a specific broker and symbol.
+    Calculates daily buy/sell/net/rate values using window functions.
+    """
+    broker = request.query_params.get('broker')
+    symbol = request.query_params.get('symbol')
+
+    if not broker or not symbol:
+        return Response({'error': 'Both broker and symbol are required filters for accumulation history.'}, status=400)
+
+    try:
+        page = int(request.query_params.get('page', 1))
+        page_size = int(request.query_params.get('page_size', 250))
+    except ValueError:
+        page = 1
+        page_size = 250
+
+    offset = (page - 1) * page_size
+
+    from django.db import connections
+    
+    query = """
+    WITH base_data AS (
+        SELECT
+            transaction_date,
+            cumulative_buy,
+            cumulative_buy_amount,
+            cumulative_sell,
+            cumulative_sell_amount,
+            cumulative_net
+        FROM daily_cumulative_accumulation
+        WHERE entity_id = %s AND symbol = %s
+    ),
+    diff_data AS (
+        SELECT
+            transaction_date,
+            cumulative_net,
+            cumulative_buy,
+            cumulative_buy_amount,
+            cumulative_sell_amount,
+            cumulative_buy - LAG(cumulative_buy, 1, 0) OVER (ORDER BY transaction_date) as buy_qty,
+            cumulative_buy_amount - LAG(cumulative_buy_amount, 1, 0) OVER (ORDER BY transaction_date) as buy_amount,
+            cumulative_sell - LAG(cumulative_sell, 1, 0) OVER (ORDER BY transaction_date) as sell_qty,
+            cumulative_sell_amount - LAG(cumulative_sell_amount, 1, 0) OVER (ORDER BY transaction_date) as sell_amount
+        FROM base_data
+    )
+    SELECT
+        transaction_date as date,
+        buy_qty,
+        CASE WHEN buy_qty > 0 THEN ROUND(buy_amount / buy_qty, 2) ELSE 0 END as buy_rate,
+        buy_amount,
+        sell_qty,
+        CASE WHEN sell_qty > 0 THEN ROUND(sell_amount / sell_qty, 2) ELSE 0 END as sell_rate,
+        sell_amount,
+        (buy_qty - sell_qty) as net_quantity,
+        cumulative_net as cumulative_qty,
+        ROUND(cumulative_buy_amount / NULLIF(cumulative_buy, 0), 2) as wac
+    FROM diff_data
+    ORDER BY transaction_date DESC
+    LIMIT %s OFFSET %s;
+    """
+    
+    with connections['stock_market'].cursor() as cursor:
+        cursor.execute(query, [broker, symbol, page_size, offset])
+        columns = [col[0] for col in cursor.description]
+        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        
+    return Response(results)
+
+class PipelineViewSet(viewsets.ViewSet):
+    """
+    ViewSet to manage data pipeline tasks.
+    """
+    permission_classes = [AllowAny] # Change to IsAuthenticated in production
+
+    TASKS = {
+        'sync_stocks': 'Sync Stock List',
+        'sync_prices': 'Sync Daily Prices',
+        'sync_floorsheet': 'Sync Floorsheet Data',
+        'update_indexes': 'Update DB Indexes',
+    }
+
+    @action(detail=False, methods=['get'])
+    def history(self, request):
+        """
+        Returns recent upload history.
+        """
+        from .models import DataUploadLog
+        from django.core.paginator import Paginator
+        
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 10)
+        
+        logs = DataUploadLog.objects.all().order_by('-created_at')
+        paginator = Paginator(logs, page_size)
+        
+        try:
+            current_page = paginator.page(page)
+        except:
+            current_page = paginator.page(1)
+            
+        data = [{
+            'id': l.id,
+            'file_name': l.file_name,
+            'upload_type': l.get_upload_type_display(),
+            'status': l.status,
+            'records_count': l.records_count,
+            'error_message': l.error_message,
+            'created_at': l.created_at
+        } for l in current_page]
+        
+        return Response({
+            'results': data,
+            'total': paginator.count,
+            'page': current_page.number,
+            'pages': paginator.num_pages
+        })
+
+    @action(detail=False, methods=['get'])
+    def status(self, request):
+        """
+        Returns list of tasks and their simulated status.
+        In a real app, this would query a Task model or Celery backend.
+        """
+        from datetime import datetime
+        import random
+        
+        # Mock status data
+        statuses = []
+        for key, name in self.TASKS.items():
+            # Simulate random states for demo
+            state = 'idle'
+            last_run = datetime.now()
+            
+            statuses.append({
+                'id': key,
+                'name': name,
+                'status': state, 
+                'last_run': last_run.isoformat(),
+                'message': 'Waiting for trigger'
+            })
+            
+        return Response(statuses)
+
+    @action(detail=True, methods=['post'])
+    def run(self, request, pk=None):
+        """
+        Triggers a specific task.
+        pk is the task_id (e.g., 'sync_stocks')
+        """
+        task_id = pk
+        if task_id not in self.TASKS:
+            return Response({'error': f'Invalid task ID: {task_id}'}, status=400)
+
+        # Here you would actually trigger the task (e.g., subprocess or Celery)
+        # For now, we just simulate a success response
+        
+        # Example of how to call the existing management command:
+        # if task_id == 'seed_data':
+        #     from django.core.management import call_command
+        #     call_command('seed_stocks')
+            
+        import time
+        # Simulate processing time or trigger
+        
+        return Response({
+            'id': task_id,
+            'status': 'running',
+            'message': f'Task {self.TASKS[task_id]} started successfully.'
+        })
+
+    @action(detail=False, methods=['post'])
+    def upload_floorsheet(self, request):
+        """
+        Action to upload and process floorsheet JSON data.
+        """
+        from .models import DataUploadLog, DailyFloorsheet
+        import json
+        
+        file = request.FILES.get('file')
+        if not file:
+            return Response({'error': 'No file uploaded'}, status=400)
+            
+        try:
+            data = json.load(file)
+            if not isinstance(data, list):
+                # Handle single object case if necessary, but usually it's a list
+                data = [data]
+                
+            log = DataUploadLog.objects.create(
+                file_name=file.name,
+                upload_type='FLOORSHEET',
+                status='PENDING'
+            )
+            
+            floorsheet_items = []
+            for item in data:
+                try:
+                    floorsheet_items.append(DailyFloorsheet(
+                        transaction_id=int(item.get('contractId')),
+                        symbol=item.get('stockSymbol'),
+                        buyer_id=int(item.get('buyerMemberId')),
+                        seller_id=int(item.get('sellerMemberId')),
+                        transaction_quantity=int(item.get('contractQuantity')),
+                        transaction_rate=item.get('contractRate'),
+                        transaction_amount=item.get('contractAmount'),
+                        transaction_date=item.get('businessDate'),
+                        transaction_book_id=int(item.get('tradeBookId')),
+                        stock_id=int(item.get('stockId')) if item.get('stockId') else None,
+                        buyer_name=item.get('buyerBrokerName'),
+                        seller_name=item.get('sellerBrokerName'),
+                        transaction_datetime=item.get('tradeTime'),
+                        security_name=item.get('securityName')
+                    ))
+                except (ValueError, TypeError) as e:
+                    # Skip rows with malformed data but log it?
+                    # For now just continue to avoid failing the whole batch
+                    continue
+            
+            # Use bulk_create with ignore_conflicts=True to handle duplicates gracefully
+            DailyFloorsheet.objects.bulk_create(floorsheet_items, ignore_conflicts=True)
+            
+            log.status = 'SUCCESS'
+            log.records_count = len(floorsheet_items)
+            log.save()
+            
+            return Response({'message': f'Successfully uploaded {len(floorsheet_items)} floorsheet records.'})
+            
+        except Exception as e:
+            if 'log' in locals():
+                log.status = 'FAILED'
+                log.error_message = str(e)
+                log.save()
+            return Response({'error': str(e)}, status=500)
+
+    @action(detail=False, methods=['post'])
+    def upload_daily_prices(self, request):
+        """
+        Action to upload and process daily price CSV data.
+        """
+        from .models import DataUploadLog, DailyStockPrice
+        import csv
+        import io
+        
+        file = request.FILES.get('file')
+        date_str = request.data.get('date')
+        
+        if not file or not date_str:
+            return Response({'error': 'File and date are required'}, status=400)
+            
+        try:
+            log = DataUploadLog.objects.create(
+                file_name=file.name,
+                upload_type='PRICE',
+                status='PENDING'
+            )
+            
+            decoded_file = file.read().decode('utf-8')
+            io_string = io.StringIO(decoded_file)
+            reader = csv.DictReader(io_string)
+            
+            price_items = []
+            for row in reader:
+                # Basic mapping based on standard ShareSansar export format
+                # You might need to adjust column names based on actual CSV headers
+                symbol = row.get('Symbol') or row.get('Ticker') or row.get('symbol')
+                if not symbol: continue
+                
+                price_items.append(DailyStockPrice(
+                    ticker=symbol,
+                    date=date_str,
+                    open=row.get('Open', 0),
+                    high=row.get('High', 0),
+                    low=row.get('Low', 0),
+                    close=row.get('Close', row.get('LTP', 0)),
+                    volume=row.get('Volume', row.get('Qty', 0)),
+                    prev_close=row.get('Prev Close', 0),
+                    turnover=row.get('Turnover', 0)
+                ))
+                
+            DailyStockPrice.objects.bulk_create(price_items, ignore_conflicts=True)
+            
+            log.status = 'SUCCESS'
+            log.records_count = len(price_items)
+            log.save()
+            
+            return Response({'message': f'Successfully uploaded {len(price_items)} price records for {date_str}.'})
+            
+        except Exception as e:
+            if 'log' in locals():
+                log.status = 'FAILED'
+                log.error_message = str(e)
+                log.save()
+            return Response({'error': str(e)}, status=500)
+
+    @action(detail=False, methods=['post'])
+    def fetch_daily_prices_from_github(self, request):
+        """
+        Action to fetch daily prices from GitHub repository.
+        """
+        from .models import DataUploadLog, DailyStockPrice
+        import requests
+        import csv
+        import io
+        
+        date_str = request.data.get('date')
+        if not date_str:
+            return Response({'error': 'Date is required'}, status=400)
+            
+        try:
+            log = DataUploadLog.objects.create(
+                file_name=f"github_sync_{date_str}.csv",
+                upload_type='GITHUB_SYNC',
+                status='PENDING'
+            )
+            
+            # Format date as YYYY_MM_DD for the filename
+            formatted_date = date_str.replace('-', '_')
+            url = f"https://raw.githubusercontent.com/fuunshi/ShareSansarDataScrape/master/Data/{formatted_date}.csv"
+            
+            print(f"DEBUG: Fetching from GitHub: {url}")
+            response = requests.get(url)
+            print(f"DEBUG: GitHub response status: {response.status_code}")
+            
+            if response.status_code != 200:
+                log.status = 'FAILED'
+                log.error_message = f"Failed to fetch from GitHub. Status code: {response.status_code}. URL: {url}"
+                log.save()
+                return Response({
+                    'error': f'Data for {date_str} not found on GitHub. Please check if the file exists in the repository.'
+                }, status=400)
+                
+            decoded_file = response.content.decode('utf-8')
+            io_string = io.StringIO(decoded_file)
+            reader = csv.DictReader(io_string)
+            
+            def parse_decimal(val):
+                if not val or val == '-': return 0
+                return float(val.replace(',', ''))
+
+            price_items = []
+            for row in reader:
+                symbol = row.get('Symbol')
+                if not symbol: continue
+                
+                price_items.append(DailyStockPrice(
+                    ticker=symbol,
+                    date=date_str,
+                    open=parse_decimal(row.get('Open')),
+                    high=parse_decimal(row.get('High')),
+                    low=parse_decimal(row.get('Low')),
+                    close=parse_decimal(row.get('Close')),
+                    volume=parse_decimal(row.get('Vol')),
+                    prev_close=parse_decimal(row.get('Prev. Close')),
+                    turnover=parse_decimal(row.get('Turnover')),
+                    conf=parse_decimal(row.get('Conf.')),
+                    vwap=parse_decimal(row.get('VWAP')),
+                    trans=int(parse_decimal(row.get('Trans.'))),
+                    diff=parse_decimal(row.get('Diff')),
+                    range=parse_decimal(row.get('Range')),
+                    diff_percent=parse_decimal(row.get('Diff %')),
+                    range_percent=parse_decimal(row.get('Range %')),
+                    vwap_percent=parse_decimal(row.get('VWAP %')),
+                    days_120=parse_decimal(row.get('120 Days')),
+                    days_180=parse_decimal(row.get('180 Days')),
+                    weeks_52_high=parse_decimal(row.get('52 Weeks High')),
+                    weeks_52_low=parse_decimal(row.get('52 Weeks Low'))
+                ))
+                
+            DailyStockPrice.objects.bulk_create(price_items, ignore_conflicts=True)
+            
+            log.status = 'SUCCESS'
+            log.records_count = len(price_items)
+            log.save()
+            
+            return Response({'message': f'Successfully synced {len(price_items)} price records from GitHub for {date_str}.'})
+            
+        except Exception as e:
+            if 'log' in locals():
+                log.status = 'FAILED'
+                log.error_message = str(e)
+                log.save()
+            return Response({'error': str(e)}, status=500)
+

@@ -2,8 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 
 class Company(models.Model):
-    id = models.AutoField(primary_key=True)
-    symbol = models.CharField(max_length=20, unique=True, db_index=True)
+    symbol = models.CharField(max_length=20, primary_key=True, db_index=True)
     name = models.CharField(max_length=255, db_column='companyName')
     sector = models.CharField(max_length=100, db_column='sectorName')
     status = models.CharField(max_length=1, default='A')
@@ -16,12 +15,12 @@ class Company(models.Model):
         return f"{self.symbol} - {self.name}"
 
 class DailyStockPrice(models.Model):
-    ticker = models.CharField(max_length=20, db_index=True, db_column='symbol', primary_key=True)
+    ticker = models.CharField(max_length=20, primary_key=True, db_column='symbol')
     date = models.DateField(db_index=True, db_column='transaction_date')
-    open = models.DecimalField(max_digits=10, decimal_places=2)
-    high = models.DecimalField(max_digits=10, decimal_places=2)
-    low = models.DecimalField(max_digits=10, decimal_places=2)
-    close = models.DecimalField(max_digits=10, decimal_places=2)
+    open = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    high = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    low = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    close = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     volume = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
     prev_close = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     turnover = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
@@ -144,42 +143,45 @@ class PortfolioTransaction(models.Model):
         return f"{self.user.username} - {self.transaction_type} {self.ticker}"
 
 class DailyFloorsheet(models.Model):
-    transaction_id = models.CharField(max_length=50, unique=True)
-    ticker = models.CharField(max_length=20, db_index=True, db_column='symbol')
-    buyer_broker = models.CharField(max_length=50) # Assuming matches or checked schema? Schema: buyer_id (int), buyer_name?
-    # External schema: buyer_id (int), seller_id (int), buyer_name (char), seller_name (char)
-    # My model has buyer_broker (char). I should map it to buyer_name if that's what I want, or buyer_id?
-    # User said "Daily Floorsheet". Schema has buyer_name. I'll map buyer_broker -> buyer_name.
-    # Also seller_broker -> seller_name.
-    # quantity -> transaction_quantity
-    # rate -> transaction_rate
-    # amount -> transaction_amount
-    # date -> transaction_date
-    
-    # Wait, simple mapping is risky without knowing data.
-    # Schema: transaction_id (PK), symbol, buyer_id, seller_id, transaction_quantity, transaction_rate, transaction_amount, transaction_date, buyer_name, seller_name.
-    
-    # I will update fields to match schema names exactly for safety? 
-    # Or map my existing fields.
-    # My existing code uses `buyer_broker` etc. 
-    # I will map `buyer_broker` to `buyer_name`.
-    
-    # Let's do the block replacement properly.
-    ticker = models.CharField(max_length=20, db_index=True, db_column='symbol')
-    buyer_broker = models.CharField(max_length=50, db_column='buyer_name')
-    seller_broker = models.CharField(max_length=50, db_column='seller_name')
-    quantity = models.IntegerField(db_column='transaction_quantity')
-    rate = models.DecimalField(max_digits=10, decimal_places=2, db_column='transaction_rate')
-    amount = models.DecimalField(max_digits=15, decimal_places=2, db_column='transaction_amount')
-    date = models.DateField(db_index=True, db_column='transaction_date')
+    # Mapping to actual database schema in stock_market DB
+    transaction_id = models.BigIntegerField(primary_key=True, db_column='transaction_id')
+    symbol = models.CharField(max_length=20, db_index=True, db_column='symbol')
+    buyer_id = models.IntegerField(db_index=True, db_column='buyer_id')
+    seller_id = models.IntegerField(db_index=True, db_column='seller_id')
+    transaction_quantity = models.IntegerField(db_column='transaction_quantity')
+    transaction_rate = models.DecimalField(max_digits=10, decimal_places=2, db_column='transaction_rate')
+    transaction_amount = models.DecimalField(max_digits=15, decimal_places=2, db_column='transaction_amount')
+    transaction_date = models.DateField(db_index=True, db_column='transaction_date')
+    transaction_book_id = models.BigIntegerField(db_column='transaction_book_id')
+    stock_id = models.IntegerField(db_column='stock_id')
+    buyer_name = models.CharField(max_length=255, null=True, blank=True, db_column='buyer_name')
+    seller_name = models.CharField(max_length=255, null=True, blank=True, db_column='seller_name')
+    transaction_datetime = models.DateTimeField(db_column='transaction_datetime')
+    security_name = models.CharField(max_length=255, null=True, blank=True, db_column='security_name')
+
+    # Aliases for compatibility
+    @property
+    def ticker(self): return self.symbol
+    @property
+    def date(self): return self.transaction_date
+    @property
+    def quantity(self): return self.transaction_quantity
+    @property
+    def rate(self): return self.transaction_rate
+    @property
+    def buyer_broker(self): return self.buyer_id
+    @property
+    def seller_broker(self): return self.seller_id
+    @property
+    def amount(self): return self.transaction_amount
 
     class Meta:
         managed = False
         db_table = 'daily_floorsheet'
-        ordering = ['-date', '-transaction_id']
+        ordering = ['-transaction_date', '-transaction_id']
 
     def __str__(self):
-        return f"{self.transaction_id} - {self.ticker}"
+        return f"{self.transaction_id} - {self.symbol}"
 
 class Dividend(models.Model):
     ticker = models.CharField(max_length=20, db_index=True)
@@ -277,3 +279,79 @@ class WatchlistItem(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.ticker}"
+
+class DailyMarketSummary(models.Model):
+    date = models.DateField(unique=True)
+    total_turnover = models.DecimalField(max_digits=20, decimal_places=2)
+    total_volume = models.BigIntegerField()
+    total_transactions = models.IntegerField()
+    
+    # JSON Fields for lists of top items
+    # Expected format: [{'symbol': 'ACL', 'value': 100, ...}, ...]
+    top_gainers = models.JSONField(default=list)
+    top_losers = models.JSONField(default=list)
+    top_turnovers = models.JSONField(default=list)
+    top_volumes = models.JSONField(default=list)
+    
+    # Sectorwise turnover
+    sector_turnover = models.JSONField(default=dict)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'daily_market_summary'
+        ordering = ['-date']
+    
+    def __str__(self):
+        return f"Market Summary - {self.date}"
+
+class DailyCumulativeAccumulation(models.Model):
+    symbol = models.CharField(max_length=20, primary_key=True, db_index=True)
+    transaction_date = models.DateField(db_index=True)
+    entity_id = models.CharField(max_length=10, db_index=True) # Broker ID
+    
+    daily_net = models.IntegerField(default=0) # Net change for the day
+    cumulative_net = models.IntegerField(default=0) # Running total
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        managed = False
+        db_table = 'daily_cumulative_accumulation'
+        unique_together = ('symbol', 'transaction_date', 'entity_id')
+        indexes = [
+            models.Index(fields=['symbol', 'transaction_date']),
+            models.Index(fields=['symbol', 'entity_id']),
+        ]
+
+    def __str__(self):
+        return f"{self.symbol} - {self.entity_id} - {self.transaction_date}"
+
+class DataUploadLog(models.Model):
+    UPLOAD_TYPES = (
+        ('FLOORSHEET', 'Floorsheet'),
+        ('PRICE', 'Daily Price'),
+        ('GITHUB_SYNC', 'GitHub Sync'),
+    )
+    STATUS_CHOICES = (
+        ('PENDING', 'Pending'),
+        ('SUCCESS', 'Success'),
+        ('FAILED', 'Failed'),
+    )
+
+    file_name = models.CharField(max_length=255)
+    upload_type = models.CharField(max_length=20, choices=UPLOAD_TYPES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    records_count = models.IntegerField(default=0)
+    error_message = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'data_upload_log'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.file_name} ({self.status})"
