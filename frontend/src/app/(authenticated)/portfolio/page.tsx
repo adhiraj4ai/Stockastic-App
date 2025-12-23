@@ -48,6 +48,7 @@ interface PortfolioItem {
     target_price_3?: number;
     thesis?: string;
     strategy_type?: string;
+    value_yield?: number;
 }
 
 export default function PortfolioPage() {
@@ -140,29 +141,31 @@ export default function PortfolioPage() {
 
     // Aggregate Items for "All Accounts" view
     const displayedItems = useMemo(() => {
-        if (selectedAccount !== 'all') return items;
+        const processItem = (item: PortfolioItem) => ({
+            ...item,
+            value_yield: item.current_value > 0 ? (Number(item.gain_loss) / Number(item.current_value)) * 100 : 0
+        });
+
+        if (selectedAccount !== 'all') return items.map(processItem);
 
         // Group by ticker
         const grouped: { [key: string]: PortfolioItem } = {};
         items.forEach(item => {
             if (!grouped[item.ticker]) {
-                // Clone to avoid mutating state directly
-                grouped[item.ticker] = { ...item };
+                grouped[item.ticker] = processItem({ ...item });
             } else {
                 const existing = grouped[item.ticker];
 
-                // Accumulate values
                 const newQty = existing.quantity + item.quantity;
                 const newInvestment = Number(existing.investment_value) + Number(item.investment_value);
                 const newCurrentValue = Number(existing.current_value) + Number(item.current_value);
                 const newGainLoss = Number(existing.gain_loss) + Number(item.gain_loss);
                 const newDayGainLoss = Number(existing.day_gain_loss) + Number(item.day_gain_loss);
 
-                // Recalculate WACC for the combined group
                 const newWacc = newQty > 0 ? newInvestment / newQty : 0;
                 const newGainLossPercent = newInvestment > 0 ? (newGainLoss / newInvestment * 100) : 0;
 
-                grouped[item.ticker] = {
+                grouped[item.ticker] = processItem({
                     ...existing,
                     quantity: newQty,
                     investment_value: newInvestment,
@@ -172,7 +175,7 @@ export default function PortfolioPage() {
                     wacc: newWacc,
                     buy_price: newWacc,
                     gain_loss_percent: newGainLossPercent
-                };
+                });
             }
         });
 
@@ -210,8 +213,14 @@ export default function PortfolioPage() {
 
         if (sortConfig.key) {
             result.sort((a, b) => {
-                const aValue = a[sortConfig.key as keyof PortfolioItem] ?? 0;
-                const bValue = b[sortConfig.key as keyof PortfolioItem] ?? 0;
+                let aValue = a[sortConfig.key as keyof PortfolioItem] ?? 0;
+                let bValue = b[sortConfig.key as keyof PortfolioItem] ?? 0;
+
+                // Cast to Number for numeric keys to ensure correct sorting
+                if (typeof aValue !== 'string' || !isNaN(Number(aValue))) {
+                    aValue = Number(aValue);
+                    bValue = Number(bValue);
+                }
 
                 if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
                 if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
@@ -435,7 +444,10 @@ export default function PortfolioPage() {
                                                     <div className="flex items-center justify-end gap-1">Total Value (Rs.) <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
                                                 <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none" onClick={() => handleSort('gain_loss')}>
-                                                    <div className="flex items-center justify-end gap-1">Profit/Loss (Rs.) <ArrowUpDown size={12} className="opacity-50" /></div>
+                                                    <div className="flex items-center justify-end gap-1">Profit/Loss <ArrowUpDown size={12} className="opacity-50" /></div>
+                                                </TableHead>
+                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none" onClick={() => handleSort('value_yield')}>
+                                                    <div className="flex items-center justify-end gap-1" title="Profit to Total Value Ratio">Value Yield <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
                                                 <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none" onClick={() => handleSort('day_gain_loss')}>
                                                     <div className="flex items-center justify-end gap-1">Today's P/L <ArrowUpDown size={12} className="opacity-50" /></div>
@@ -496,6 +508,11 @@ export default function PortfolioPage() {
                                                                 </div>
                                                                 <div className={`text-[10px] font-black uppercase tracking-tighter ${isPos ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'} px-1 rounded inline-block mt-0.5`}>
                                                                     {Number(item.gain_loss_percent).toFixed(2)}%
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell className="text-right">
+                                                                <div className="font-bold text-gray-600 text-xs text-right">
+                                                                    {(item.value_yield || 0).toFixed(1)}%
                                                                 </div>
                                                             </TableCell>
                                                             <TableCell className={`text-right font-black ${isDayPos ? 'text-green-600' : 'text-red-600'}`}>
