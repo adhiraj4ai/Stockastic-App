@@ -12,7 +12,7 @@ import TransactionModal, { PortfolioAccount } from '@/components/TransactionModa
 import { CreateAccountDialog } from '@/components/CreateAccountDialog';
 import StockLink from '@/components/StockLink';
 import { Wand2, Target, Check, ChevronDown, ChevronUp, Radio, PieChart as PieIcon, BarChart as BarIcon, Grid3X3, Zap, Search, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
-import { InlineExitPlan } from '@/components/InlineExitPlan';
+import { ExitStrategyDialog } from '@/components/ExitStrategyDialog';
 import { CompanySelect } from '@/components/CompanySelect';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -64,7 +64,8 @@ export default function PortfolioPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [promoteTicker, setPromoteTicker] = useState<string>('');
     const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
-    const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
+    const [isExitPlanDialogOpen, setIsExitPlanDialogOpen] = useState(false);
+    const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<PortfolioItem | null>(null);
     const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
     const [isWatchlistModalOpen, setIsWatchlistModalOpen] = useState(false);
     const [selectedWatchlistItem, setSelectedWatchlistItem] = useState<WatchlistItem | null>(null);
@@ -531,7 +532,6 @@ export default function PortfolioPage() {
                                                 const dayPl = Number(item.day_gain_loss);
                                                 const isDayPos = dayPl >= 0;
 
-                                                const isExpanded = expandedTicker === item.ticker;
                                                 const hasStrategy = !!item.stop_loss_price;
                                                 const isUnderwater = Number(item.current_price) < Number(item.wacc || item.buy_price);
 
@@ -546,8 +546,11 @@ export default function PortfolioPage() {
                                                 return (
                                                     <React.Fragment key={`${item.ticker}-${idx}`}>
                                                         <TableRow
-                                                            className={`transition-all duration-300 cursor-pointer border-l-4 ${isExpanded ? 'bg-blue-50/30 border-l-blue-500' : isUnderwater ? 'border-l-red-500/50 hover:bg-red-50/10' : hasStrategy ? 'border-l-green-500/50 hover:bg-gray-50' : 'border-l-transparent hover:bg-gray-50'}`}
-                                                            onClick={() => setExpandedTicker(isExpanded ? null : item.ticker)}
+                                                            className={`transition-all duration-300 cursor-pointer border-l-4 ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-blue-50/30 border-l-blue-500' : isUnderwater ? 'border-l-red-500/50 hover:bg-red-50/10' : hasStrategy ? 'border-l-green-500/50 hover:bg-gray-50' : 'border-l-transparent hover:bg-gray-50'}`}
+                                                            onClick={() => {
+                                                                setSelectedPortfolioItem(item);
+                                                                setIsExitPlanDialogOpen(true);
+                                                            }}
                                                         >
                                                             <TableCell className="font-semibold py-5">
                                                                 <div className="flex flex-col gap-1.5">
@@ -596,28 +599,13 @@ export default function PortfolioPage() {
                                                             <TableCell className="text-right">
                                                                 <div className="flex justify-end">
                                                                     <button
-                                                                        className={`p-2 rounded-lg transition-all ${isExpanded ? 'bg-blue-600 text-white shadow-xl rotate-0' : 'text-gray-300 hover:text-blue-600 hover:bg-blue-50 rotate-[-45deg] hover:rotate-0'}`}
+                                                                        className={`p-2 rounded-lg transition-all ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-blue-600 text-white shadow-xl rotate-0' : 'text-gray-300 hover:text-blue-600 hover:bg-blue-50 rotate-[-45deg] hover:rotate-0'}`}
                                                                     >
-                                                                        {isExpanded ? <X size={18} /> : <Target size={18} />}
+                                                                        <Target size={18} />
                                                                     </button>
                                                                 </div>
                                                             </TableCell>
                                                         </TableRow>
-                                                        {isExpanded && (
-                                                            <TableRow className="bg-blue-50/5 border-none hover:bg-blue-50/5">
-                                                                <TableCell colSpan={8} className="p-0 border-none">
-                                                                    <div className="p-6 pt-0 animate-in fade-in slide-in-from-top-2 duration-300">
-                                                                        <div className="bg-white border-x border-b border-blue-100 rounded-b-2xl p-6 shadow-xl relative z-10 mx-2 mb-4">
-                                                                            <InlineExitPlan
-                                                                                portfolioItem={item}
-                                                                                onSave={fetchPortfolio}
-                                                                                onClose={() => setExpandedTicker(null)}
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        )}
                                                     </React.Fragment>
                                                 );
                                             })}
@@ -625,6 +613,17 @@ export default function PortfolioPage() {
                                     </Table>
                                 </div>
                             )}
+
+                            {/* Exit Strategy Dialog */}
+                            <ExitStrategyDialog
+                                open={isExitPlanDialogOpen}
+                                onOpenChange={setIsExitPlanDialogOpen}
+                                portfolioItem={selectedPortfolioItem}
+                                onSave={() => {
+                                    fetchPortfolio();
+                                    setIsExitPlanDialogOpen(false);
+                                }}
+                            />
 
                             {/* Pagination Controls */}
                             {totalPages > 1 && (
