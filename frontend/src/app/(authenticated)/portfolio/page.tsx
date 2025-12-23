@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -10,8 +10,8 @@ import { Trash2, Plus, TrendingUp, TrendingDown, DollarSign, Wallet, Users, Fold
 import TransactionModal, { PortfolioAccount } from '@/components/TransactionModal';
 import { CreateAccountDialog } from '@/components/CreateAccountDialog';
 import StockLink from '@/components/StockLink';
-import { Wand2, Target } from 'lucide-react';
-import { ExitStrategyDialog } from '@/components/ExitStrategyDialog';
+import { Wand2, Target, ChevronDown, ChevronUp } from 'lucide-react';
+import { InlineExitPlan } from '@/components/InlineExitPlan';
 import { Input } from '@/components/ui/input';
 import { Eye, PlusCircle, X } from 'lucide-react';
 
@@ -42,6 +42,9 @@ interface PortfolioItem {
     volatility?: number;
     stop_loss_price?: number;
     target_price?: number;
+    target_price_2?: number;
+    target_price_3?: number;
+    thesis?: string;
     strategy_type?: string;
 }
 
@@ -52,7 +55,7 @@ export default function PortfolioPage() {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
-    const [selectedExitItem, setSelectedExitItem] = useState<PortfolioItem | null>(null);
+    const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
     const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
     const [newWatchlistTicker, setNewWatchlistTicker] = useState('');
     const [mounted, setMounted] = useState(false);
@@ -417,7 +420,7 @@ export default function PortfolioPage() {
                                             <TableHead className="text-right">Total Value (Rs.)</TableHead>
                                             <TableHead className="text-right">Profit/Loss (Rs.)</TableHead>
                                             <TableHead className="text-right">Today's P/L (Rs.)</TableHead>
-                                            <TableHead className="text-right">Exit Plan</TableHead>
+                                            <TableHead className="w-[80px]"></TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -427,45 +430,64 @@ export default function PortfolioPage() {
                                             const dayPl = Number(item.day_gain_loss);
                                             const isDayPos = dayPl >= 0;
 
+                                            const isExpanded = expandedTicker === item.ticker;
+
                                             return (
-                                                <TableRow key={`${item.ticker}-${idx}`} className="hover:bg-gray-50">
-                                                    <TableCell className="font-semibold">
-                                                        <div className="flex flex-col">
-                                                            <StockLink ticker={item.ticker} />
-                                                            {/* Exit Strategy Badges */}
-                                                            {(item.stop_loss_price || item.target_price) && (
-                                                                <div className="flex gap-1 mt-1">
-                                                                    {item.stop_loss_price && <span className="text-[10px] bg-red-50 text-red-600 px-1 rounded border border-red-100">SL: {Number(item.stop_loss_price).toFixed(0)}</span>}
-                                                                    {item.target_price && <span className="text-[10px] bg-green-50 text-green-600 px-1 rounded border border-green-100">TP: {Number(item.target_price).toFixed(0)}</span>}
+                                                <React.Fragment key={`${item.ticker}-${idx}`}>
+                                                    <TableRow
+                                                        className={`transition-colors cursor-pointer ${isExpanded ? 'bg-blue-50/20' : 'hover:bg-gray-50'}`}
+                                                        onClick={() => setExpandedTicker(isExpanded ? null : item.ticker)}
+                                                    >
+                                                        <TableCell className="font-semibold">
+                                                            <div className="flex flex-col">
+                                                                <StockLink ticker={item.ticker} />
+                                                                {(item.stop_loss_price || item.target_price) && (
+                                                                    <div className="flex gap-1 mt-1">
+                                                                        {item.stop_loss_price && <span className="text-[10px] bg-red-50 text-red-600 px-1 rounded border border-red-100 font-bold">SL: {Number(item.stop_loss_price).toFixed(0)}</span>}
+                                                                        {item.target_price && <span className="text-[10px] bg-green-50 text-green-600 px-1 rounded border border-green-100 font-bold">TP: {Number(item.target_price).toFixed(0)}</span>}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="text-right text-gray-600">{item.quantity}</TableCell>
+                                                        <TableCell className="text-right text-gray-600">{Number(item.wacc || item.buy_price).toFixed(2)}</TableCell>
+                                                        <TableCell className="text-right text-gray-900 font-medium">{item.current_price}</TableCell>
+                                                        <TableCell className="text-right font-bold text-gray-900">{Number(item.current_value).toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
+                                                        <TableCell className={`text-right ${isPos ? 'text-green-600' : 'text-red-600'}`}>
+                                                            <div className="font-bold">
+                                                                {isPos ? '+' : ''}{pl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                                            </div>
+                                                            <div className="text-[10px] font-bold opacity-80 uppercase tracking-tighter">
+                                                                {Number(item.gain_loss_percent).toFixed(2)}%
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className={`text-right font-bold ${isDayPos ? 'text-green-600' : 'text-red-600'}`}>
+                                                            {isDayPos ? '+' : ''}{dayPl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <div className="flex justify-end">
+                                                                <button
+                                                                    className={`p-2 rounded-lg transition-all ${isExpanded ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                                                                >
+                                                                    {isExpanded ? <X className="h-4 w-4" /> : <Target className="h-4 w-4" />}
+                                                                </button>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                    {isExpanded && (
+                                                        <TableRow className="bg-blue-50/10 border-none hover:bg-blue-50/10 h-0 p-0">
+                                                            <TableCell colSpan={8} className="p-0 border-none overflow-hidden">
+                                                                <div className="p-6 pt-2 bg-blue-50/5 border-x-2 border-b-2 border-blue-500/20 rounded-b-2xl mx-1 mb-2 shadow-inner">
+                                                                    <InlineExitPlan
+                                                                        portfolioItem={item}
+                                                                        onSave={fetchPortfolio}
+                                                                        onClose={() => setExpandedTicker(null)}
+                                                                    />
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-right">{item.quantity}</TableCell>
-                                                    <TableCell className="text-right">{Number(item.wacc || item.buy_price).toFixed(2)}</TableCell>
-                                                    <TableCell className="text-right">{item.current_price}</TableCell>
-                                                    <TableCell className="text-right font-medium">{Number(item.current_value).toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
-                                                    <TableCell className={`text-right ${isPos ? 'text-green-600' : 'text-red-600'}`}>
-                                                        <div className="font-medium">
-                                                            {isPos ? '+' : ''}{pl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                                                        </div>
-                                                        <div className="text-xs">
-                                                            {Number(item.gain_loss_percent).toFixed(2)}%
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className={`text-right font-medium ${isDayPos ? 'text-green-600' : 'text-red-600'}`}>
-                                                        {isDayPos ? '+' : ''}{dayPl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        <button
-                                                            onClick={() => setSelectedExitItem(item)}
-                                                            className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all"
-                                                            title="Set Stop Loss / Target"
-                                                        >
-                                                            <Target className="h-4 w-4" />
-                                                        </button>
-                                                    </TableCell>
-                                                </TableRow>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    )}
+                                                </React.Fragment>
                                             );
                                         })}
                                     </TableBody>
@@ -575,12 +597,7 @@ export default function PortfolioPage() {
 
                 {/* Optimized Dialog Removed */}
 
-                <ExitStrategyDialog
-                    open={!!selectedExitItem}
-                    onOpenChange={(open) => !open && setSelectedExitItem(null)}
-                    portfolioItem={selectedExitItem}
-                    onSave={fetchPortfolio}
-                />
+                {/* Exit Strategy Dialog Removed - Now Inline */}
 
             </div>
         </DashboardLayout>

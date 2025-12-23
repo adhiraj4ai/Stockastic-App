@@ -467,15 +467,42 @@ class PortfolioViewSet(viewsets.ModelViewSet):
             }
         }
         
-        # Adjust Swing TP: If current price is near high, TP should be higher (Projected).
-        # For simplicity, if Price ~ High, we set TP using Fib or just 1.1x.
+        # Adjust Swing TP
         if strategies['swing']['tp'] <= latest_price * 1.02:
              strategies['swing']['tp'] = latest_price * 1.15
         
+        # 3. Fundamental Health Check
+        health_warnings = []
+        try:
+            reports = FinancialReport.objects.filter(ticker=ticker).order_by('-fiscal_year', '-quarter')[:4]
+            if len(reports) >= 2:
+                latest_r = reports[0]
+                prev_r = reports[1]
+                
+                if latest_r.net_profit and prev_r.net_profit:
+                    if float(latest_r.net_profit) < float(prev_r.net_profit):
+                        health_warnings.append({
+                            "type": "PROFIT_DIP",
+                            "message": f"Net Profit dropped from {float(prev_r.net_profit):,.0f} to {float(latest_r.net_profit):,.0f} in latest report.",
+                            "severity": "MEDIUM"
+                        })
+                
+                if latest_r.revenue and prev_r.revenue:
+                    if float(latest_r.revenue) < float(prev_r.revenue):
+                        health_warnings.append({
+                            "type": "REVENUE_DIP",
+                            "message": f"Revenue declined by {((1 - float(latest_r.revenue)/float(prev_r.revenue))*100):.1f}% in latest period.",
+                            "severity": "LOW"
+                        })
+        except Exception as e:
+            print(f"Health check error: {e}")
+
         return Response({
+            "ticker": ticker,
             "current_price": latest_price,
             "avg_buy_price": float(item.buy_price),
-            "strategies": strategies
+            "strategies": strategies,
+            "health_warnings": health_warnings
         })
 
 class PortfolioTransactionViewSet(viewsets.ModelViewSet):

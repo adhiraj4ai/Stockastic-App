@@ -52,7 +52,7 @@ class PortfolioItemSerializer(serializers.ModelSerializer):
         fields = ['id', 'account', 'ticker', 'quantity', 'buy_price', 'wacc', 'purchased_at', 
                   'current_price', 'current_value', 'investment_value', 'gain_loss', 
                   'gain_loss_percent', 'day_gain_loss', 'sector', 'volatility',
-                  'stop_loss_price', 'target_price', 'strategy_type']
+                  'stop_loss_price', 'target_price', 'target_price_2', 'target_price_3', 'thesis', 'strategy_type']
         read_only_fields = ['id', 'purchased_at']
 
 class PortfolioTransactionSerializer(serializers.ModelSerializer):
