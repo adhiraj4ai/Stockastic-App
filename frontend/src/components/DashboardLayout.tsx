@@ -61,7 +61,7 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
     const searchParams = useSearchParams();
     const [isChatPinned, setIsChatPinned] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-    const [expandedMenus, setExpandedMenus] = useState<string[]>(['Finfolio', 'Accumulation']);
+    const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
 
     const isChatPage = pathname === '/chat';
 
@@ -84,6 +84,18 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
         setExpandedMenus(prev =>
             prev.includes(name) ? prev.filter(i => i !== name) : [...prev, name]
         );
+    };
+
+    const openMenu = (name: string) => {
+        if (!isSidebarCollapsed && !expandedMenus.includes(name)) {
+            setExpandedMenus(prev => [...prev, name]);
+        }
+    };
+
+    const closeMenu = (name: string) => {
+        if (!isSidebarCollapsed && expandedMenus.includes(name)) {
+            setExpandedMenus(prev => prev.filter(i => i !== name));
+        }
     };
 
     const handleLogout = () => {
@@ -125,7 +137,12 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
                         const isActive = 'href' in item && item.href ? (pathname.startsWith(item.href) && item.href !== '/home' || pathname === item.href) : false;
 
                         return (
-                            <div key={item.name} className="space-y-1">
+                            <div
+                                key={item.name}
+                                className="space-y-1"
+                                onMouseEnter={() => hasSubItems && openMenu(item.name)}
+                                onMouseLeave={() => hasSubItems && closeMenu(item.name)}
+                            >
                                 {hasSubItems ? (
                                     <button
                                         onClick={() => toggleMenu(item.name)}
