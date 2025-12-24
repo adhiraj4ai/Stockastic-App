@@ -251,6 +251,7 @@ export const FINANCIAL_TEMPLATES: Record<string, FinancialTemplate> = {
                         { label: 'Cash and Bank Balances', key: 'cash_bank' },
                         { label: 'Fixed Assets', key: 'fixed_assets' },
                         { label: 'Insurance Receivables', key: 'insurance_receivables' },
+                        { label: 'Total Assets', key: 'total_assets' },
                     ]
                 },
                 {
@@ -294,6 +295,7 @@ export const FINANCIAL_TEMPLATES: Record<string, FinancialTemplate> = {
                         { label: 'Inventories', key: 'inventories' },
                         { label: 'Trade Debtors', key: 'debtors' },
                         { label: 'Cash and Bank', key: 'cash_bank' },
+                        { label: 'Total Assets', key: 'total_assets' },
                     ]
                 },
                 {

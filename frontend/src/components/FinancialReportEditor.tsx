@@ -191,6 +191,32 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
             return;
         }
 
+        if (!netProfit) {
+            toast.error('Net Profit is required');
+            return;
+        }
+
+        if (!eps) {
+            toast.error('EPS is required');
+            return;
+        }
+
+        // Validate Total Assets
+        const template = FINANCIAL_TEMPLATES[reportTemplate] || FINANCIAL_TEMPLATES.GENERAL;
+        let totalAssetsKey = '';
+        for (const section of template.sections.balance_sheet) {
+            const found = section.particulars.find(p => p.key === 'total_assets');
+            if (found) {
+                totalAssetsKey = `${section.key}.total_assets`;
+                break;
+            }
+        }
+
+        if (totalAssetsKey && !balanceSheet[totalAssetsKey]) {
+            toast.error('Total Assets is required');
+            return;
+        }
+
         setSaving(true);
         const payload: any = {
             ticker,
@@ -284,7 +310,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
             {/* Scrollable Form Content - Compact Full Width */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 w-full">
                 {/* Granular Data Tabs - Compact */}
-                <Tabs defaultValue="pl" className="w-full">
+                <Tabs defaultValue="bs" className="w-full">
                     <TabsList className="bg-white p-1 rounded-xl h-10 border inline-flex shadow-sm mb-2">
                         <TabsTrigger value="bs" className="px-6 rounded-lg data-[state=active]:bg-gray-100 data-[state=active]:text-blue-600 font-bold text-sm uppercase tracking-wider">
                             Balance Sheet
