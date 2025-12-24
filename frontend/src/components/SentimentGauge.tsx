@@ -56,13 +56,13 @@ export const SentimentGauge = ({ value, height = 200 }: SentimentGaugeProps) => 
                     }
                 },
                 axisLabel: {
-                    color: '#94a3b8',
+                    color: '#0f172a',
                     fontSize: 10,
                     distance: -50,
                     formatter: function (value: number) {
-                        if (value === 0) return 'FEAR';
-                        if (value === 50) return 'NEUTRAL';
-                        if (value === 100) return 'GREED';
+                        if (value === 0) return 'Fear';
+                        if (value === 50) return 'Neutral';
+                        if (value === 100) return 'Greed';
                         return '';
                     }
                 },
@@ -70,7 +70,7 @@ export const SentimentGauge = ({ value, height = 200 }: SentimentGaugeProps) => 
                     offsetCenter: [0, '-20%'],
                     fontSize: 12,
                     fontWeight: 'bold',
-                    color: '#64748b'
+                    color: '#0f172a'
                 },
                 detail: {
                     fontSize: 24,
@@ -84,7 +84,7 @@ export const SentimentGauge = ({ value, height = 200 }: SentimentGaugeProps) => 
                 data: [
                     {
                         value: value,
-                        name: 'MARKET MOOD'
+                        name: 'Market Mood'
                     }
                 ]
             }

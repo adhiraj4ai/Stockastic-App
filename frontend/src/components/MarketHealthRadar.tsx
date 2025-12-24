@@ -27,18 +27,18 @@ export const MarketHealthRadar = ({ data, height = 300 }: MarketHealthRadarProps
             shape: 'circle',
             splitNumber: 5,
             axisName: {
-                color: '#94a3b8',
+                color: '#0f172a',
                 fontSize: 10,
                 fontWeight: 'bold'
             },
             splitLine: {
                 lineStyle: {
                     color: [
-                        'rgba(203, 213, 225, 0.1)',
-                        'rgba(203, 213, 225, 0.2)',
                         'rgba(203, 213, 225, 0.4)',
                         'rgba(203, 213, 225, 0.6)',
-                        'rgba(203, 213, 225, 0.8)'
+                        'rgba(203, 213, 225, 0.8)',
+                        'rgba(148, 163, 184, 0.5)',
+                        'rgba(15, 23, 42, 0.1)'
                     ].reverse()
                 }
             },
@@ -47,7 +47,7 @@ export const MarketHealthRadar = ({ data, height = 300 }: MarketHealthRadarProps
             },
             axisLine: {
                 lineStyle: {
-                    color: 'rgba(203, 213, 225, 0.5)'
+                    color: 'rgba(15, 23, 42, 0.2)'
                 }
             }
         },
@@ -66,10 +66,10 @@ export const MarketHealthRadar = ({ data, height = 300 }: MarketHealthRadarProps
                         ],
                         name: 'Current Market State',
                         itemStyle: {
-                            color: '#3b82f6'
+                            color: '#2563eb'
                         },
                         areaStyle: {
-                            color: 'rgba(59, 130, 246, 0.3)'
+                            color: 'rgba(37, 99, 235, 0.3)'
                         },
                         lineStyle: {
                             width: 2
