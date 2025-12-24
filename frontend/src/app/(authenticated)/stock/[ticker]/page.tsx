@@ -276,10 +276,10 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                 shadowBlur: 20,
                 shadowColor: 'rgba(0, 0, 0, 0.05)',
                 padding: [12, 16],
-                textStyle: { color: '#1f2937', fontSize: 12 },
+                textStyle: { color: '#1f2937', fontSize: 13 },
                 formatter: (params: any) => {
                     if (!params || params.length === 0) return '';
-                    let res = `<div style="font-weight: 900; color: #64748b; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">FY ${params[0].name}</div>`;
+                    let res = `<div style="font-weight: 900; color: #64748b; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; font-size: 13px;">FY ${params[0].name}</div>`;
                     params.forEach((p: any) => {
                         const m = allAvailableMetrics.find(metric => metric.key === p.seriesId);
                         let valStr = '-';
@@ -295,11 +295,11 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                             }
                         }
                         res += `<div style="display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 4px;">
-                            <span style="display: flex; align-items: center; gap: 8px; color: #475569; font-weight: 600;">
+                            <span style="display: flex; align-items: center; gap: 8px; color: #475569; font-weight: 600; font-size: 12px;">
                                 <span style="width:8px;height:8px;border-radius:2px;background-color:${p.color}"></span>
                                 ${p.seriesName}
                             </span>
-                            <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 700; color: #1e293b;">${valStr}</span>
+                            <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 700; color: #1e293b; font-size: 13px;">${valStr}</span>
                         </div>`;
                     });
                     return res;
@@ -317,17 +317,18 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                 type: 'category',
                 data: filteredFin.map(f => f.fiscal_year),
                 axisLine: { lineStyle: { color: '#f1f5f9' } },
-                axisLabel: { color: '#94a3b8', fontWeight: 600, fontSize: 11, margin: 15 },
+                axisLabel: { color: '#64748b', fontWeight: 600, fontSize: 12, margin: 15 },
                 boundaryGap: false
             },
             yAxis: [
                 {
                     type: 'value',
                     name: 'Amount (Rs)',
-                    nameTextStyle: { color: '#94a3b8', fontWeight: 600, padding: [0, 40, 0, 0] },
+                    nameTextStyle: { color: '#94a3b8', fontWeight: 600, padding: [0, 40, 0, 0], fontSize: 12 },
                     axisLabel: {
                         color: '#94a3b8',
                         fontWeight: 600,
+                        fontSize: 11,
                         formatter: (val: number) => {
                             if (Math.abs(val) >= 10000000) return (val / 10000000).toFixed(0) + 'Cr';
                             if (Math.abs(val) >= 100000) return (val / 100000).toFixed(0) + 'L';
@@ -339,10 +340,11 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                 {
                     type: 'value',
                     name: 'Percentage (%)',
-                    nameTextStyle: { color: '#94a3b8', fontWeight: 600, padding: [0, 0, 0, 40] },
+                    nameTextStyle: { color: '#94a3b8', fontWeight: 600, padding: [0, 0, 0, 40], fontSize: 12 },
                     axisLabel: {
                         color: '#94a3b8',
                         fontWeight: 600,
+                        fontSize: 11,
                         formatter: '{value}%'
                     },
                     splitLine: { show: false }
@@ -921,7 +923,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                                         <div className="flex items-center gap-2">
                                                                             <BarChart2 className="w-4 h-4 text-blue-500" />
                                                                             <span className="font-bold">Select Metrics</span>
-                                                                            <span className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded text-[10px] font-black">{visibleMetrics.length}</span>
+                                                                            <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs font-black">{visibleMetrics.length}</span>
                                                                         </div>
                                                                         <ChevronDown className="w-4 h-4 text-gray-400" />
                                                                     </Button>
@@ -946,7 +948,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                                                                             : [...prev, m.key]
                                                                                                     );
                                                                                                 }}
-                                                                                                className="flex items-center gap-2 rounded-lg cursor-pointer"
+                                                                                                className="flex items-center gap-2 rounded-lg cursor-pointer py-2"
                                                                                             >
                                                                                                 <div className={cn(
                                                                                                     "flex h-4 w-4 items-center justify-center rounded border transition-all",
@@ -954,8 +956,8 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                                                                 )}>
                                                                                                     {visibleMetrics.includes(m.key) && <Check className="h-3 w-3 text-white" />}
                                                                                                 </div>
-                                                                                                <span className="flex-1 text-sm font-medium">{m.label}</span>
-                                                                                                {m.category && <span className="text-[10px] text-gray-400 bg-gray-50 px-1 rounded">{m.category}</span>}
+                                                                                                <span className="flex-1 text-sm font-medium text-gray-700">{m.label}</span>
+                                                                                                {m.category && <span className="text-xs text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">{m.category}</span>}
                                                                                             </CommandItem>
                                                                                         ))}
                                                                                     </CommandGroup>
@@ -966,7 +968,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                                             <Button
                                                                                 variant="ghost"
                                                                                 size="sm"
-                                                                                className="h-8 text-[10px] font-bold text-gray-500 hover:text-red-500"
+                                                                                className="h-8 text-xs font-bold text-gray-500 hover:text-red-600"
                                                                                 onClick={() => setVisibleMetrics([])}
                                                                             >
                                                                                 Clear All
@@ -974,7 +976,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                                             <Button
                                                                                 variant="ghost"
                                                                                 size="sm"
-                                                                                className="h-8 text-[10px] font-bold text-blue-600"
+                                                                                className="h-8 text-xs font-bold text-blue-600 hover:bg-blue-50"
                                                                                 onClick={() => setVisibleMetrics(['net_profit', 'revenue'])}
                                                                             >
                                                                                 Reset Defaults
@@ -990,9 +992,9 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                                     <button
                                                                         key={m.key}
                                                                         onClick={() => setVisibleMetrics(prev => prev.filter(k => k !== m.key))}
-                                                                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-100 text-blue-700 text-[10px] font-bold hover:bg-blue-100 transition-colors shrink-0"
+                                                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-100 text-blue-700 text-xs font-bold hover:bg-blue-100 transition-colors shrink-0"
                                                                     >
-                                                                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: m.color }} />
+                                                                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: m.color }} />
                                                                         {m.label}
                                                                         <X className="w-3 h-3 ml-0.5 opacity-50" />
                                                                     </button>
@@ -1042,14 +1044,14 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                                     <table className="w-full text-left border-collapse min-w-[1000px]">
                                                                         <thead>
                                                                             <tr className="bg-gray-50/80 backdrop-blur-md">
-                                                                                <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase tracking-widest sticky left-0 z-20 bg-gray-50/90 border-r border-b border-gray-100 w-80">
+                                                                                <th className="px-6 py-4 text-sm font-bold text-gray-600 uppercase tracking-wider sticky left-0 z-20 bg-gray-50/95 border-r border-b border-gray-200 w-80">
                                                                                     Particulars
                                                                                 </th>
                                                                                 {finWithData.map((fin: any, idx) => (
-                                                                                    <th key={idx} className="px-6 py-4 text-center border-b border-gray-100">
-                                                                                        <div className="text-xs font-black text-blue-700 tracking-tighter uppercase mb-0.5">FY {fin.fiscal_year}</div>
-                                                                                        <div className="text-[10px] font-bold text-gray-400">
-                                                                                            {fin.report_type === 'QUARTERLY' ? `Q${fin.quarter} PROVISIONAL` : 'AUDITED REPORT'}
+                                                                                    <th key={idx} className="px-6 py-4 text-center border-b border-gray-200 bg-gray-50/50">
+                                                                                        <div className="text-sm font-bold text-gray-900 mb-1">FY {fin.fiscal_year}</div>
+                                                                                        <div className="text-xs font-semibold text-blue-600">
+                                                                                            {fin.report_type === 'QUARTERLY' ? `Q${fin.quarter}` : 'ANNUAL'}
                                                                                         </div>
                                                                                     </th>
                                                                                 ))}
@@ -1068,19 +1070,19 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                                                             <Fragment key={`${depth}-${key}`}>
                                                                                                 <tr
                                                                                                     className={cn(
-                                                                                                        "hover:bg-gray-50/50 transition-colors group",
-                                                                                                        isTotal && "bg-gray-50/30",
-                                                                                                        isGroup ? "bg-gray-50/10 cursor-pointer" : ""
+                                                                                                        "hover:bg-gray-50/80 transition-colors group border-b border-gray-50",
+                                                                                                        isTotal && "bg-gray-50/40",
+                                                                                                        isGroup ? "bg-gray-50/20 cursor-pointer" : ""
                                                                                                     )}
                                                                                                     onClick={() => isGroup && toggleCollapse(`${categoryId}-${pathPrefix.join('-')}-${key}`)}
                                                                                                 >
                                                                                                     <td className={cn(
-                                                                                                        "px-6 py-4 sticky left-0 z-10 border-r border-b border-gray-100 transition-colors",
+                                                                                                        "px-6 py-3 sticky left-0 z-10 border-r border-gray-200 transition-colors",
                                                                                                         isTotal ? "bg-gray-50 font-bold text-gray-900" : "bg-white font-medium text-gray-600"
                                                                                                     )}>
-                                                                                                        <div style={{ paddingLeft: `${depth * 20}px` }} className={cn("flex items-center gap-2", isGroup ? "text-blue-600 font-bold text-[11px]" : "")}>
+                                                                                                        <div style={{ paddingLeft: `${depth * 24}px` }} className={cn("flex items-center gap-2 text-sm", isGroup ? "text-blue-700 font-bold" : "")}>
                                                                                                             {isGroup ? (
-                                                                                                                <ChevronDown className={cn("w-3 h-3 transition-transform", isCollapsed ? "-rotate-90" : "")} />
+                                                                                                                <ChevronDown className={cn("w-4 h-4 transition-transform text-blue-500", isCollapsed ? "-rotate-90" : "")} />
                                                                                                             ) : null}
                                                                                                             {key}
                                                                                                         </div>
@@ -1090,13 +1092,13 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                                                                         pathPrefix.forEach(p => current = current?.[p]);
                                                                                                         const cellVal = current?.[key];
 
-                                                                                                        if (isGroup) return <td key={fIdx} className="px-6 py-4 border-b border-gray-100 bg-gray-50/10" />;
+                                                                                                        if (isGroup) return <td key={fIdx} className="px-6 py-3 border-gray-100 bg-gray-50/20" />;
 
                                                                                                         return (
                                                                                                             <td key={fIdx} className={cn(
-                                                                                                                "px-6 py-4 text-right font-mono text-[11px] border-b border-gray-100",
-                                                                                                                isTotal ? "font-bold text-gray-900 bg-gray-50/20" : "",
-                                                                                                                (cellVal === null || cellVal === undefined) ? "text-gray-300" : "text-gray-700"
+                                                                                                                "px-6 py-3 text-right font-mono text-sm",
+                                                                                                                isTotal ? "font-bold text-gray-900 bg-gray-50/40" : "text-gray-700",
+                                                                                                                (cellVal === null || cellVal === undefined) ? "text-gray-300" : ""
                                                                                                             )}>
                                                                                                                 {cellVal !== null && cellVal !== undefined ? (cellVal as any).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}
                                                                                                             </td>
@@ -1114,11 +1116,11 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                                                 return (
                                                                                     <Fragment key={catIdx}>
                                                                                         <tr
-                                                                                            className="bg-blue-50/10 cursor-pointer hover:bg-blue-50/20 transition-colors"
+                                                                                            className="bg-blue-50/30 cursor-pointer hover:bg-blue-50/50 transition-colors border-y border-blue-100"
                                                                                             onClick={() => toggleCollapse(categoryId)}
                                                                                         >
-                                                                                            <td colSpan={finWithData.length + 1} className="px-6 py-3 font-bold text-blue-700 uppercase tracking-widest text-[10px] border-b border-gray-100 flex items-center gap-2">
-                                                                                                <ChevronDown className={cn("w-4 h-4 transition-transform", isCatCollapsed && "-rotate-90")} />
+                                                                                            <td colSpan={finWithData.length + 1} className="px-6 py-3 font-bold text-blue-800 uppercase tracking-wide text-sm flex items-center gap-2 sticky left-0 z-10 bg-blue-50/30 backdrop-blur-sm">
+                                                                                                <ChevronDown className={cn("w-5 h-5 transition-transform text-blue-600", isCatCollapsed && "-rotate-90")} />
                                                                                                 {category}
                                                                                             </td>
                                                                                         </tr>
