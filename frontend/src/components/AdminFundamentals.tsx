@@ -17,13 +17,16 @@ import { Label } from "@/components/ui/label";
 interface AdminFundamentalsProps {
     ticker: string;
     data?: any;
+    hasFinancials?: boolean;
 }
 
-export default function AdminFundamentals({ ticker, data }: AdminFundamentalsProps) {
+export default function AdminFundamentals({ ticker, data, hasFinancials = true }: AdminFundamentalsProps) {
+    // ... existing state ...
     const [fundamental, setFundamental] = useState<any>(data || null);
     const [loading, setLoading] = useState(!data);
     const [calculating, setCalculating] = useState(false);
 
+    // ... existing fetchFundamental ...
     const fetchFundamental = async () => {
         setLoading(true);
         try {
@@ -39,6 +42,7 @@ export default function AdminFundamentals({ ticker, data }: AdminFundamentalsPro
         }
     };
 
+    // ... existing handleRefresh ...
     const handleRefresh = async () => {
         setCalculating(true);
         try {
@@ -53,6 +57,7 @@ export default function AdminFundamentals({ ticker, data }: AdminFundamentalsPro
         }
     };
 
+    // ... existing useEffect ...
     useEffect(() => {
         if (data) {
             setFundamental(data);
@@ -62,6 +67,7 @@ export default function AdminFundamentals({ ticker, data }: AdminFundamentalsPro
         }
     }, [ticker, data]);
 
+    // ... existing loading check ...
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center py-10 gap-4">
@@ -71,7 +77,7 @@ export default function AdminFundamentals({ ticker, data }: AdminFundamentalsPro
         );
     }
 
-    // Enhanced formatters
+    // ... existing formatters ...
     const formatQuantity = (val: any) => {
         if (val === null || val === undefined) return '-';
         const num = typeof val === 'string' ? parseFloat(val) : val;
@@ -167,7 +173,7 @@ export default function AdminFundamentals({ ticker, data }: AdminFundamentalsPro
                         </div>
                     </div>
 
-                    {/* Growth & Health */}
+                    {/* Growth & Performance */}
                     <div className="space-y-6">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="w-1 h-5 bg-purple-500 rounded-full" />
@@ -209,20 +215,20 @@ export default function AdminFundamentals({ ticker, data }: AdminFundamentalsPro
                         </div>
                         <div className="bg-gray-50/50 rounded-xl p-5 border border-dashed border-gray-200">
                             <p className="text-xs text-gray-500 leading-relaxed font-medium mb-4">
-                                {fundamental
+                                {hasFinancials
                                     ? "Fundamentals are automatically derived from the latest verified financial reports and market prices."
-                                    : "Global fundamental data not yet calculated. It will be derived automatically when financial reports are added."
+                                    : "No financial reports found. Add reports below to enable automatic metric calculation."
                                 }
                             </p>
                             <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={handleRefresh}
-                                disabled={calculating}
+                                disabled={calculating || !hasFinancials}
                                 className="w-full text-xs font-bold gap-2"
                             >
                                 <RefreshCw className={`w-3.5 h-3.5 ${calculating ? 'animate-spin' : ''}`} />
-                                {calculating ? 'Recalculating...' : 'Refresh Metrics'}
+                                {calculating ? 'Recalculating...' : hasFinancials ? 'Refresh Metrics' : 'Add Reports to Enable'}
                             </Button>
                         </div>
                     </div>

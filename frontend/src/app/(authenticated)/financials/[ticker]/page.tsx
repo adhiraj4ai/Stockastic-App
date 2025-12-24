@@ -22,9 +22,11 @@ export default function AdminTickerPage({ params }: { params: Promise<{ ticker: 
     const [company, setCompany] = useState<CompanyDetails | null>(null);
     const [fundamental, setFundamental] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [hasFinancials, setHasFinancials] = useState<boolean>(false);
 
     useEffect(() => {
         const fetchDetails = async () => {
+            // ... (fetchDetails body logic omitted for brevity as it's just context, I will include it implicitly or just inject the hook)
             try {
                 // Fetching from existing list endpoint but filtering or detail endpoint if available
                 // Ideally we have a detail endpoint. Checking existing code...
@@ -96,13 +98,20 @@ export default function AdminTickerPage({ params }: { params: Promise<{ ticker: 
                 <div className="space-y-6">
                     {/* Section 1: Fundamentals */}
                     <div id="fundamentals" className="scroll-mt-6">
-                        <AdminFundamentals ticker={ticker} data={fundamental} />
+                        <AdminFundamentals
+                            ticker={ticker}
+                            data={fundamental}
+                            hasFinancials={hasFinancials}
+                        />
                     </div>
 
                     {/* Section 2: Financial Reports */}
                     <div id="financials" className="scroll-mt-6">
                         <div>
-                            <AdminFinancials ticker={ticker} />
+                            <AdminFinancials
+                                ticker={ticker}
+                                onHasReports={setHasFinancials}
+                            />
                         </div>
                     </div>
                 </div>

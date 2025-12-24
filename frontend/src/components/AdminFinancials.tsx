@@ -49,18 +49,12 @@ interface FinancialReport {
 
 interface AdminFinancialsProps {
     ticker: string;
+    onHasReports?: (hasReports: boolean) => void;
 }
 
-type FiscalYearData = {
-    year: string;
-    q1?: FinancialReport;
-    q2?: FinancialReport;
-    q3?: FinancialReport;
-    q4?: FinancialReport;
-    annual?: FinancialReport;
-};
+// ... (FiscalYearData type remains same)
 
-export default function AdminFinancials({ ticker }: AdminFinancialsProps) {
+export default function AdminFinancials({ ticker, onHasReports }: AdminFinancialsProps) {
     const [reports, setReports] = useState<FinancialReport[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
@@ -72,12 +66,20 @@ export default function AdminFinancials({ ticker }: AdminFinancialsProps) {
     const [isAddYearDialogOpen, setIsAddYearDialogOpen] = useState(false);
     const [newFiscalYear, setNewFiscalYear] = useState('');
 
+    // Notify parent when reports change
+    useEffect(() => {
+        if (onHasReports) {
+            onHasReports(reports.length > 0);
+        }
+    }, [reports, onHasReports]);
+
     const fetchReports = async () => {
         setLoading(true);
         try {
             // Using correct endpoint defined in urls.py
             const response = await api.get(`/api/stocks/financials/${ticker}/`);
-            setReports(response.data.results || response.data);
+            const fetchedReports = response.data.results || response.data;
+            setReports(fetchedReports);
         } catch (error) {
             toast.error('Failed to fetch financial reports');
         } finally {
