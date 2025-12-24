@@ -20,6 +20,7 @@ import {
     TabsList,
     TabsTrigger,
 } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import {
     ArrowLeft,
     Save,
@@ -263,17 +264,10 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                     <Button variant="ghost" size="sm" onClick={onClose} className="rounded-full hover:bg-gray-100 h-10 w-10 p-0 text-gray-500">
                         <ArrowLeft className="w-5 h-5" />
                     </Button>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-lg font-bold text-gray-900">{ticker}</h2>
-                            <span className="text-gray-300">•</span>
-                            <span className="text-sm font-medium text-gray-500">
-                                {reportId ? 'Editing Report' : (reportType === 'ANNUAL' ? 'Annual Financial Return' : 'Quarterly Update')}
-                            </span>
-                        </div>
-                        <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">
-                            {fiscalYear || 'Pending Year'} {reportType} {reportType === 'QUARTERLY' ? `Q${quarter}` : ''}
-                        </p>
+                    <div className="flex items-center gap-3">
+                        <span className="text-lg font-bold text-blue-600">
+                            {fiscalYear || 'FY ????'} {reportType === 'QUARTERLY' ? `Q${quarter}` : 'Annual'}
+                        </span>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -286,236 +280,241 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                 </div>
             </div>
 
-            {/* Scrollable Form Content */}
-            <div className="flex-1 overflow-y-auto overflow-x-hidden p-8 max-w-7xl mx-auto w-full">
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Scrollable Form Content - Compact Full Width */}
+            <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 w-full">
+                {/* Granular Data Tabs - Compact */}
+                <Tabs defaultValue="pl" className="w-full">
+                    <TabsList className="bg-white p-1 rounded-xl h-10 border inline-flex shadow-sm mb-2">
+                        <TabsTrigger value="bs" className="px-6 rounded-lg data-[state=active]:bg-gray-100 data-[state=active]:text-blue-600 font-bold text-xs uppercase tracking-wider">
+                            Balance Sheet
+                        </TabsTrigger>
+                        <TabsTrigger value="pl" className="px-6 rounded-lg data-[state=active]:bg-gray-100 data-[state=active]:text-blue-600 font-bold text-xs uppercase tracking-wider">
+                            Profit & Loss
+                        </TabsTrigger>
+                        {template.sections.cash_flow && (
+                            <TabsTrigger value="cf" className="px-6 rounded-lg data-[state=active]:bg-gray-100 data-[state=active]:text-blue-600 font-bold text-xs uppercase tracking-wider">
+                                Cash Flow
+                            </TabsTrigger>
+                        )}
+                    </TabsList>
 
-                    {/* Left Sidebar: Controls & Summary */}
-                    <div className="lg:col-span-1 space-y-6">
-                        <Card className="border-none shadow-sm bg-white overflow-hidden">
-                            <CardHeader className="bg-gray-50/50 border-b py-4">
-                                <CardTitle className="text-xs font-black uppercase tracking-widest text-gray-500 flex items-center gap-2">
-                                    <Info className="w-3.5 h-3.5 text-blue-500" />
-                                    Report Identity
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-4 space-y-4">
-                                <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-bold uppercase text-gray-400">Fiscal Year</Label>
-                                    <Input
-                                        placeholder="e.g. 081/82"
-                                        value={fiscalYear}
-                                        onChange={(e) => setFiscalYear(e.target.value)}
-                                        className="h-9 focus:ring-blue-500"
-                                    />
+                    <TabsContent value="bs" className="mt-0 space-y-2 animate-in fade-in duration-300">
+                        {template.sections.balance_sheet.map(section => (
+                            <div key={section.key} className="bg-white rounded-2xl border shadow-sm p-4 pt-4 overflow-hidden">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="w-1 h-5 bg-blue-500 rounded-full" />
+                                    <h4 className="text-xs font-black uppercase text-gray-900 tracking-wider">{section.label}</h4>
                                 </div>
-                                <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-bold uppercase text-gray-400">Template</Label>
-                                    <div className="h-9 px-3 border rounded-md bg-gray-50 flex items-center text-xs font-bold text-gray-600">
-                                        {FINANCIAL_TEMPLATES[reportTemplate]?.label || reportTemplate}
-                                    </div>
-                                    <p className="text-[9px] text-gray-400 font-medium italic">Fixed based on company sector and report type.</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
+                                    {section.particulars.map(p => (
+                                        <div key={p.key} className="flex items-center justify-between gap-6 py-0.5 group">
+                                            <div className="flex-1">
+                                                <Label className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-900 transition-colors leading-tight">
+                                                    {p.label}
+                                                </Label>
+                                                {p.description && <p className="text-[10px] text-gray-400 mt-0.5">{p.description}</p>}
+                                            </div>
+                                            <div className="relative w-40">
+                                                <Input
+                                                    className="h-9 text-right font-mono text-xs focus:ring-blue-500 border-gray-200"
+                                                    value={balanceSheet[`${section.key}.${p.key}`] || ''}
+                                                    onChange={(e) => setBalanceSheet(prev => ({ ...prev, [`${section.key}.${p.key}`]: e.target.value }))}
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1.5">
-                                        <Label className="text-[10px] font-bold uppercase text-gray-400">Type</Label>
-                                        <Select value={reportType} onValueChange={setReportType}>
-                                            <SelectTrigger className="h-9">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="QUARTERLY">Quarterly</SelectItem>
-                                                <SelectItem value="ANNUAL">Annual</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                            </div>
+                        ))}
+                    </TabsContent>
+
+                    <TabsContent value="pl" className="mt-0 space-y-2 animate-in fade-in duration-300">
+                        {/* Report Identity (Editable Only) - Compact 3 Columns */}
+                        {(!reportId && !initialData?.fiscalYear) && (
+                            <div className="bg-white rounded-2xl border shadow-sm p-4 pt-4 overflow-hidden">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="w-1 h-5 bg-blue-500 rounded-full" />
+                                    <h4 className="text-xs font-black uppercase text-gray-900 tracking-wider">Report Identity</h4>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
+                                    <div className="flex items-center justify-between gap-6 py-0.5 group">
+                                        <div className="flex-1">
+                                            <Label className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-900 transition-colors leading-tight">Fiscal Year</Label>
+                                        </div>
+                                        <div className="relative w-40">
+                                            <Input
+                                                placeholder="e.g. 081/82"
+                                                value={fiscalYear}
+                                                onChange={(e) => setFiscalYear(e.target.value)}
+                                                className="h-9 text-right font-mono text-xs border-gray-200 focus:ring-blue-500"
+                                            />
+                                        </div>
                                     </div>
-                                    {reportType === 'QUARTERLY' && (
-                                        <div className="space-y-1.5">
-                                            <Label className="text-[10px] font-bold uppercase text-gray-400">Quarter</Label>
-                                            <Select value={quarter} onValueChange={setQuarter}>
-                                                <SelectTrigger className="h-9">
+                                    <div className="flex items-center justify-between gap-6 py-0.5 group">
+                                        <div className="flex-1">
+                                            <Label className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-900 transition-colors leading-tight">Report Type</Label>
+                                        </div>
+                                        <div className="relative w-40">
+                                            <Select value={reportType} onValueChange={setReportType}>
+                                                <SelectTrigger className="h-9 font-mono text-xs border-gray-200">
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="1">Q1</SelectItem>
-                                                    <SelectItem value="2">Q2</SelectItem>
-                                                    <SelectItem value="3">Q3</SelectItem>
-                                                    <SelectItem value="4">Q4</SelectItem>
+                                                    <SelectItem value="QUARTERLY">Quarterly</SelectItem>
+                                                    <SelectItem value="ANNUAL">Annual</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
-                                    )}
+                                    </div>
+                                    <div className="flex items-center justify-between gap-6 py-0.5 group">
+                                        <div className="flex-1">
+                                            <Label className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-900 transition-colors leading-tight">
+                                                {reportType === 'QUARTERLY' ? 'Quarter' : 'Status'}
+                                            </Label>
+                                        </div>
+                                        <div className="relative w-40 flex justify-end">
+                                            {reportType === 'QUARTERLY' ? (
+                                                <Select value={quarter} onValueChange={setQuarter}>
+                                                    <SelectTrigger className="h-9 font-mono text-xs border-gray-200">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="1">Q1</SelectItem>
+                                                        <SelectItem value="2">Q2</SelectItem>
+                                                        <SelectItem value="3">Q3</SelectItem>
+                                                        <SelectItem value="4">Q4</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            ) : (
+                                                <div className="flex items-center gap-2">
+                                                    <Checkbox
+                                                        id="audited-top"
+                                                        checked={isAudited}
+                                                        onCheckedChange={(c) => setIsAudited(c as boolean)}
+                                                        className="h-4 w-4 data-[state=checked]:bg-amber-600 border-gray-300"
+                                                    />
+                                                    <label htmlFor="audited-top" className="text-[10px] font-bold text-gray-400 uppercase cursor-pointer">Audited</label>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                                {reportType === 'ANNUAL' && (
-                                    <div className="pt-2">
-                                        <label className="flex items-center gap-2 cursor-pointer group">
-                                            <Checkbox
-                                                checked={isAudited}
-                                                onCheckedChange={(c) => setIsAudited(c as boolean)}
-                                                className="data-[state=checked]:bg-blue-600 border-gray-300"
+                            </div>
+                        )}
+
+                        {/* Key Metrics - Compact 3 Columns */}
+                        <div className="bg-white rounded-2xl border shadow-sm p-4 pt-4 overflow-hidden">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="w-1 h-5 bg-indigo-500 rounded-full" />
+                                <h4 className="text-xs font-black uppercase text-gray-900 tracking-wider">Key Metrics</h4>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
+                                {[
+                                    { label: 'Total Revenue', value: revenue, onChange: setRevenue, suffix: 'Rs' },
+                                    { label: 'Net Profit', value: netProfit, onChange: setNetProfit, suffix: 'Rs' },
+                                    { label: 'EPS', value: eps, onChange: setEps }
+                                ].map((item, idx) => (
+                                    <div key={item.label} className="flex items-center justify-between gap-6 py-0.5 group">
+                                        <div className="flex-1">
+                                            <Label className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-900 transition-colors leading-tight">
+                                                {item.label}
+                                            </Label>
+                                        </div>
+                                        <div className="relative w-40">
+                                            <Input
+                                                type="number"
+                                                step={item.label.includes('EPS') ? '0.01' : '1'}
+                                                className="h-9 text-right font-mono text-xs focus:ring-indigo-500 border-gray-200"
+                                                value={item.value}
+                                                onChange={(e) => item.onChange(e.target.value)}
                                             />
-                                            <span className="text-xs font-semibold text-gray-600 group-hover:text-gray-900 transition-colors">
-                                                Mark as Audited
-                                            </span>
-                                        </label>
+                                            {item.suffix && (
+                                                <div className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-300 pointer-events-none">
+                                                    {item.suffix}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                                ))}
+                            </div>
+                        </div>
 
-                        <Card className="border-none shadow-sm bg-white overflow-hidden">
-                            <CardHeader className="bg-gray-50/50 border-b py-4">
-                                <CardTitle className="text-xs font-black uppercase tracking-widest text-gray-500 flex items-center gap-2">
-                                    <Calculator className="w-3.5 h-3.5 text-blue-500" />
-                                    Headline Figures
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-4 space-y-4">
-                                <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-bold uppercase text-gray-400">Total Revenue</Label>
-                                    <div className="relative">
-                                        <Input
-                                            type="number"
-                                            value={revenue}
-                                            onChange={(e) => setRevenue(e.target.value)}
-                                            className="h-9 pr-12 text-right font-mono text-xs"
+                        {/* Report Status (Annual Only) - Compact */}
+                        {(reportType === 'ANNUAL' && (reportId || initialData?.fiscalYear)) && (
+                            <div className="bg-white rounded-2xl border shadow-sm p-4 overflow-hidden flex flex-col justify-center">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="w-1 h-5 bg-amber-500 rounded-full" />
+                                    <h4 className="text-xs font-black uppercase text-gray-900 tracking-wider">Report Status</h4>
+                                </div>
+                                <label className="flex items-center justify-between gap-6 pb-1 cursor-pointer group">
+                                    <span className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-900 transition-colors">Mark as Audited Report</span>
+                                    <div className="w-40 flex justify-end">
+                                        <Checkbox
+                                            checked={isAudited}
+                                            onCheckedChange={(c) => setIsAudited(c as boolean)}
+                                            className="h-5 w-5 data-[state=checked]:bg-amber-600 border-gray-300"
                                         />
-                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-300 pointer-events-none">Rs</div>
                                     </div>
+                                </label>
+                            </div>
+                        )}
+                        {template.sections.profit_loss.map(section => (
+                            <div key={section.key} className="bg-white rounded-2xl border shadow-sm p-4 pt-4 overflow-hidden">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="w-1 h-5 bg-indigo-500 rounded-full" />
+                                    <h4 className="text-xs font-black uppercase text-gray-900 tracking-wider">{section.label}</h4>
                                 </div>
-                                <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-bold uppercase text-gray-400">Net Profit</Label>
-                                    <div className="relative">
-                                        <Input
-                                            type="number"
-                                            value={netProfit}
-                                            onChange={(e) => setNetProfit(e.target.value)}
-                                            className="h-9 pr-12 text-right font-mono text-xs"
-                                        />
-                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-300 pointer-events-none">Rs</div>
-                                    </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
+                                    {section.particulars.map(p => (
+                                        <div key={p.key} className="flex items-center justify-between gap-6 py-0.5 group">
+                                            <div className="flex-1">
+                                                <Label className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-900 transition-colors leading-tight">
+                                                    {p.label}
+                                                </Label>
+                                            </div>
+                                            <div className="relative w-40">
+                                                <Input
+                                                    className="h-9 text-right font-mono text-xs focus:ring-indigo-500 border-gray-200"
+                                                    value={profitLoss[`${section.key}.${p.key}`] || ''}
+                                                    onChange={(e) => setProfitLoss(prev => ({ ...prev, [`${section.key}.${p.key}`]: e.target.value }))}
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                                <div className="space-y-1.5">
-                                    <Label className="text-[10px] font-bold uppercase text-gray-400">EPS</Label>
-                                    <Input
-                                        type="number"
-                                        step="0.01"
-                                        value={eps}
-                                        onChange={(e) => setEps(e.target.value)}
-                                        className="h-9 text-right font-mono text-xs"
-                                    />
+                            </div>
+                        ))}
+                    </TabsContent>
+
+                    <TabsContent value="cf" className="mt-0 space-y-2 animate-in fade-in duration-300">
+                        {template.sections.cash_flow?.map(section => (
+                            <div key={section.key} className="bg-white rounded-2xl border shadow-sm p-4 pt-4 overflow-hidden">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="w-1 h-5 bg-emerald-500 rounded-full" />
+                                    <h4 className="text-xs font-black uppercase text-gray-900 tracking-wider">{section.label}</h4>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Right Main Content: Granular Data Tabs */}
-                    <div className="lg:col-span-3">
-                        <Tabs defaultValue="bs" className="w-full">
-                            <TabsList className="bg-white p-1 rounded-xl h-11 border inline-flex shadow-sm mb-6">
-                                <TabsTrigger value="bs" className="px-6 rounded-lg data-[state=active]:bg-gray-100 data-[state=active]:text-blue-600 font-bold text-xs uppercase tracking-wider">
-                                    Balance Sheet
-                                </TabsTrigger>
-                                <TabsTrigger value="pl" className="px-6 rounded-lg data-[state=active]:bg-gray-100 data-[state=active]:text-blue-600 font-bold text-xs uppercase tracking-wider">
-                                    Profit & Loss
-                                </TabsTrigger>
-                                {template.sections.cash_flow && (
-                                    <TabsTrigger value="cf" className="px-6 rounded-lg data-[state=active]:bg-gray-100 data-[state=active]:text-blue-600 font-bold text-xs uppercase tracking-wider">
-                                        Cash Flow
-                                    </TabsTrigger>
-                                )}
-                            </TabsList>
-
-                            <TabsContent value="bs" className="mt-0 space-y-8 animate-in fade-in duration-300">
-                                {template.sections.balance_sheet.map(section => (
-                                    <div key={section.key} className="bg-white rounded-2xl border shadow-sm p-6 overflow-hidden">
-                                        <div className="flex items-center gap-3 mb-6">
-                                            <div className="w-1.5 h-6 bg-blue-500 rounded-full" />
-                                            <h4 className="text-sm font-black uppercase text-gray-900 tracking-wide">{section.label}</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
+                                    {section.particulars.map(p => (
+                                        <div key={p.key} className="flex items-center justify-between gap-6 py-0.5 group">
+                                            <div className="flex-1">
+                                                <Label className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-900 transition-colors leading-tight">
+                                                    {p.label}
+                                                </Label>
+                                            </div>
+                                            <div className="relative w-40">
+                                                <Input
+                                                    className="h-9 text-right font-mono text-xs focus:ring-emerald-500 border-gray-200"
+                                                    value={cashFlow[`${section.key}.${p.key}`] || ''}
+                                                    onChange={(e) => setCashFlow(prev => ({ ...prev, [`${section.key}.${p.key}`]: e.target.value }))}
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
-                                            {section.particulars.map(p => (
-                                                <div key={p.key} className="flex items-center justify-between gap-6 py-1 group">
-                                                    <div className="flex-1">
-                                                        <Label className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-900 transition-colors leading-tight">
-                                                            {p.label}
-                                                        </Label>
-                                                        {p.description && <p className="text-[10px] text-gray-400 mt-0.5">{p.description}</p>}
-                                                    </div>
-                                                    <div className="relative w-40">
-                                                        <Input
-                                                            className="h-9 text-right font-mono text-xs focus:ring-blue-500 border-gray-200"
-                                                            value={balanceSheet[`${section.key}.${p.key}`] || ''}
-                                                            onChange={(e) => setBalanceSheet(prev => ({ ...prev, [`${section.key}.${p.key}`]: e.target.value }))}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </TabsContent>
-
-                            <TabsContent value="pl" className="mt-0 space-y-8 animate-in fade-in duration-300">
-                                {template.sections.profit_loss.map(section => (
-                                    <div key={section.key} className="bg-white rounded-2xl border shadow-sm p-6 overflow-hidden">
-                                        <div className="flex items-center gap-3 mb-6">
-                                            <div className="w-1.5 h-6 bg-indigo-500 rounded-full" />
-                                            <h4 className="text-sm font-black uppercase text-gray-900 tracking-wide">{section.label}</h4>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
-                                            {section.particulars.map(p => (
-                                                <div key={p.key} className="flex items-center justify-between gap-6 py-1 group">
-                                                    <div className="flex-1">
-                                                        <Label className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-900 transition-colors leading-tight">
-                                                            {p.label}
-                                                        </Label>
-                                                    </div>
-                                                    <div className="relative w-40">
-                                                        <Input
-                                                            className="h-9 text-right font-mono text-xs focus:ring-indigo-500 border-gray-200"
-                                                            value={profitLoss[`${section.key}.${p.key}`] || ''}
-                                                            onChange={(e) => setProfitLoss(prev => ({ ...prev, [`${section.key}.${p.key}`]: e.target.value }))}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </TabsContent>
-
-                            <TabsContent value="cf" className="mt-0 space-y-8 animate-in fade-in duration-300">
-                                {template.sections.cash_flow?.map(section => (
-                                    <div key={section.key} className="bg-white rounded-2xl border shadow-sm p-6 overflow-hidden">
-                                        <div className="flex items-center gap-3 mb-6">
-                                            <div className="w-1.5 h-6 bg-emerald-500 rounded-full" />
-                                            <h4 className="text-sm font-black uppercase text-gray-900 tracking-wide">{section.label}</h4>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
-                                            {section.particulars.map(p => (
-                                                <div key={p.key} className="flex items-center justify-between gap-6 py-1 group">
-                                                    <div className="flex-1">
-                                                        <Label className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-900 transition-colors leading-tight">
-                                                            {p.label}
-                                                        </Label>
-                                                    </div>
-                                                    <div className="relative w-40">
-                                                        <Input
-                                                            className="h-9 text-right font-mono text-xs focus:ring-emerald-500 border-gray-200"
-                                                            value={cashFlow[`${section.key}.${p.key}`] || ''}
-                                                            onChange={(e) => setCashFlow(prev => ({ ...prev, [`${section.key}.${p.key}`]: e.target.value }))}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </TabsContent>
-                        </Tabs>
-                    </div>
-                </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </TabsContent>
+                </Tabs>
             </div>
         </div>
     );

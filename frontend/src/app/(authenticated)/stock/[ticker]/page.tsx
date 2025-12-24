@@ -7,6 +7,7 @@ import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, TrendingUp, TrendingDown, DollarSign, Activity, BarChart2 } from 'lucide-react';
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
@@ -20,6 +21,12 @@ import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 
 interface StockDetailData {
+    company: {
+        symbol: string;
+        name: string;
+        sector: string;
+        status: string;
+    } | null;
     fundamental: {
         ticker: string;
         company_name: string;
@@ -63,6 +70,7 @@ interface StockDetailData {
         change: number;
         percent_change: number;
         date: string;
+        prev_close?: number;
     };
 }
 
@@ -432,24 +440,22 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
     const isPositive = (data.price?.change ?? 0) >= 0;
 
     return (
-        <DashboardLayout>
+        <DashboardLayout
+            showBack
+            title={
+                <div className="flex items-center gap-3">
+                    {data.company?.symbol || data.fundamental?.ticker || ticker}
+                    <Badge variant="secondary" className="text-xs font-bold px-2 py-0.5 bg-blue-50 text-blue-700 border-none">
+                        {data.company?.sector || data.fundamental?.sector || 'Unknown'}
+                    </Badge>
+                </div>
+            }
+            subtitle={data.company?.name || data.fundamental?.company_name}
+        >
             <div className="space-y-6 animate-in fade-in duration-500">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div className="flex items-center gap-4">
-                        <Button variant="outline" size="icon" onClick={() => router.back()}>
-                            <ArrowLeft className="h-4 w-4" />
-                        </Button>
-                        <div>
-                            <h1 className="text-3xl font-bold flex items-center gap-2">
-                                {data.fundamental?.ticker || ticker}
-                                <span className="text-sm font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                                    {data.fundamental?.sector || 'Unknown Sector'}
-                                </span>
-                            </h1>
-                            <p className="text-gray-500">{data.fundamental?.company_name}</p>
-                        </div>
-                    </div>
+                {/* Real-time Price Info */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b">
+                    <div></div>
 
                     <div className="flex items-end gap-6">
                         <div className="text-right">

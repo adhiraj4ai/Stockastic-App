@@ -24,6 +24,17 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import FinancialReportEditor from './FinancialReportEditor';
 
 interface FinancialReport {
@@ -56,10 +67,16 @@ export default function AdminFinancials({ ticker }: AdminFinancialsProps) {
     const [editingReportId, setEditingReportId] = useState<number | null>(null);
     const [initialEditorData, setInitialEditorData] = useState<{ fiscalYear: string, reportType: string, quarter: string } | null>(null);
 
+    // New State for Manual Fiscal Year
+    const [manualYears, setManualYears] = useState<string[]>([]);
+    const [isAddYearDialogOpen, setIsAddYearDialogOpen] = useState(false);
+    const [newFiscalYear, setNewFiscalYear] = useState('');
+
     const fetchReports = async () => {
         setLoading(true);
         try {
-            const response = await api.get(`/api/stocks/financial-reports/?ticker=${ticker}`);
+            // Using correct endpoint defined in urls.py
+            const response = await api.get(`/api/stocks/financials/${ticker}/`);
             setReports(response.data.results || response.data);
         } catch (error) {
             toast.error('Failed to fetch financial reports');
@@ -120,9 +137,6 @@ export default function AdminFinancials({ ticker }: AdminFinancialsProps) {
     // Let's generate a dynamic list of years based on current date back to some reasonable past, or just use detected years.
     // Simplified: Show detected years sorted descending. Add a "Add Year" button to insert a new row for a specific year.
 
-    // Sort years descending
-    const sortedYears = Object.keys(fiscalYearMap).sort().reverse();
-
     // Helper to generate next year string "082-083" from "081-082"
     const getNextYearInfo = (lastYear: string) => {
         if (!lastYear) return '080-081'; // Default fall back
@@ -141,17 +155,23 @@ export default function AdminFinancials({ ticker }: AdminFinancialsProps) {
         return '';
     };
 
+    // Merge fetched years with manually added years and specific sort
+    const allYears = Array.from(new Set([...Object.keys(fiscalYearMap), ...manualYears]));
+    const sortedYears = allYears.sort().reverse();
+
     const handleAddNextYear = () => {
         const lastYear = sortedYears[0];
-        const nextYear = getNextYearInfo(lastYear);
-        if (nextYear) {
-            // Fake a row for UI? Or just open editor immediately for Q1 of that year?
-            // Open editor for Q1 of next year is easiest
-            handleAdd(nextYear, 'QUARTERLY', 1);
-        } else {
-            // Fallback manual entry
-            handleAdd('', 'QUARTERLY', 1);
+        const next = getNextYearInfo(lastYear);
+        setNewFiscalYear(next || '2081/82');
+        setIsAddYearDialogOpen(true);
+    };
+
+    const handleConfirmAddYear = () => {
+        if (newFiscalYear && !sortedYears.includes(newFiscalYear)) {
+            setManualYears(prev => [...prev, newFiscalYear]);
+            toast.success(`Added Fiscal Year ${newFiscalYear}`);
         }
+        setIsAddYearDialogOpen(false);
     };
 
     // New Year Row Logic (Manual) - Optional, for now just handleAddNextYear handles the "New" case nicely.
@@ -295,6 +315,35 @@ export default function AdminFinancials({ ticker }: AdminFinancialsProps) {
                     </Table>
                 </div>
             </div>
+            {/* Add Fiscal Year Modal */}
+            <Dialog open={isAddYearDialogOpen} onOpenChange={setIsAddYearDialogOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Add New Fiscal Year</DialogTitle>
+                        <DialogDescription>
+                            Enter the fiscal year label (e.g., 2081/82 or 081-082). Only years not already present will be added.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="fy" className="text-right">
+                                Fiscal Year
+                            </Label>
+                            <Input
+                                id="fy"
+                                value={newFiscalYear}
+                                onChange={(e) => setNewFiscalYear(e.target.value)}
+                                className="col-span-3"
+                                placeholder="2081/82"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="secondary" onClick={() => setIsAddYearDialogOpen(false)}>Cancel</Button>
+                        <Button type="submit" onClick={handleConfirmAddYear}>Add Row</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

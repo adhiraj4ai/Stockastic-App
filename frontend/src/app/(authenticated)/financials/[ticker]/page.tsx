@@ -8,9 +8,7 @@ import AdminFundamentals from '@/components/AdminFundamentals';
 import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Building2, ArrowLeft, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 interface CompanyDetails {
     symbol: string;
@@ -21,8 +19,8 @@ interface CompanyDetails {
 
 export default function AdminTickerPage({ params }: { params: Promise<{ ticker: string }> }) {
     const { ticker } = use(params);
-    const router = useRouter();
     const [company, setCompany] = useState<CompanyDetails | null>(null);
+    const [fundamental, setFundamental] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -40,15 +38,20 @@ export default function AdminTickerPage({ params }: { params: Promise<{ ticker: 
                         sector: res.data.company.sector,
                         status: res.data.company.status
                     });
-                } else if (res.data && res.data.fundamental) {
-                    setCompany({
-                        symbol: res.data.fundamental.ticker,
-                        name: res.data.fundamental.company_name,
-                        sector: res.data.fundamental.sector,
-                        status: 'Active'
-                    });
-                } else {
-                    // Fallback if detail structure is different or missing
+                }
+
+                if (res.data.fundamental) {
+                    setFundamental(res.data.fundamental);
+                    // Fallback to fundamental if company missing (legacy support)
+                    if (!res.data.company) {
+                        setCompany({
+                            symbol: res.data.fundamental.ticker,
+                            name: res.data.fundamental.company_name,
+                            sector: res.data.fundamental.sector,
+                            status: 'Active'
+                        });
+                    }
+                } else if (!res.data.company) {
                     setCompany({
                         symbol: ticker,
                         name: 'Unknown Company',
@@ -76,53 +79,24 @@ export default function AdminTickerPage({ params }: { params: Promise<{ ticker: 
     }
 
     return (
-        <DashboardLayout title={`Manage ${ticker}`}>
-            <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
-                {/* Header Section */}
-                <div className="flex items-start justify-between pb-2">
-                    <div>
-                        <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2 flex items-center gap-3">
-                            <Building2 className="w-8 h-8 text-blue-500" />
-                            {company?.symbol}
-                        </h1>
-                        <p className="text-lg text-gray-600 font-medium pl-11">{company?.name}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                        <Badge variant="secondary" className="text-xs font-bold px-3 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100">
-                            {company?.sector}
-                        </Badge>
-                    </div>
+        <DashboardLayout
+            title={
+                <div className="flex items-center gap-3">
+                    {company?.symbol}
+                    <Badge variant="secondary" className="text-xs font-bold px-2 py-0.5 bg-blue-50 text-blue-700 border-none">
+                        {company?.sector}
+                    </Badge>
                 </div>
-
-                {/* Company Stats Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 py-2">
-                    <div className="space-y-1">
-                        <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Listed Date</p>
-                        <p className="font-semibold text-gray-900">Jan 1st, 2019</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Market Cap</p>
-                        <p className="font-semibold text-gray-900">NPR 3.34B</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Free-Float M.Cap</p>
-                        <p className="font-semibold text-gray-900">NPR 1.33B</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Shares Outstanding</p>
-                        <p className="font-semibold text-gray-900">3,671,434</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Public Shares</p>
-                        <p className="font-semibold text-gray-900">1,468,574</p>
-                    </div>
-                </div>
+            }
+            subtitle={company?.name}
+        >
+            <div className="max-w-[1600px] mx-auto space-y-6">
 
                 {/* Vertical Stack Layout */}
                 <div className="space-y-6">
                     {/* Section 1: Fundamentals */}
                     <div id="fundamentals" className="scroll-mt-6">
-                        <AdminFundamentals ticker={ticker} />
+                        <AdminFundamentals ticker={ticker} data={fundamental} />
                     </div>
 
                     {/* Section 2: Financial Reports */}
