@@ -161,46 +161,46 @@ export default function DashboardPage() {
     );
 
     return (
-        <DashboardLayout>
+        <DashboardLayout title={
+            <div className="flex items-center gap-3">
+                <span>Market Overview</span>
+                <div className="h-4 w-[1px] bg-gray-300"></div>
+                <span className="text-sm text-gray-500 font-normal">{market_summary.date}</span>
+            </div>
+        }>
             <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-3xl font-bold text-gray-900">Market Overview</h1>
-                    <div className="text-sm text-gray-500">
-                        Date: {market_summary.date}
-                    </div>
-                </div>
 
                 {/* Stats Grid - Now 6 columns (responsive) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                     {/* 1. Total Turnover */}
-                    <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow">
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow py-2 gap-0 px-4">
+                        <CardHeader className="flex flex-row items-center justify-between pb-0 p-0 space-y-0">
                             <CardTitle className="text-sm font-medium text-gray-600">Turnover (Rs.)</CardTitle>
-                            <div className="p-2 bg-purple-100 rounded-lg">
+                            <div className="p-1 bg-purple-100 rounded-lg">
                                 <Activity className="h-4 w-4 text-purple-600" />
                             </div>
                         </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-gray-900">
+                        <CardContent className="pt-0 pb-0 p-0">
+                            <div className="text-xl font-bold text-gray-900">
                                 {(market_summary.total_turnover / 1_000_000).toFixed(2)}M
                             </div>
                         </CardContent>
                     </Card>
 
                     {/* 2. Market Points */}
-                    <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow">
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow py-2 gap-0 px-4">
+                        <CardHeader className="flex flex-row items-center justify-between pb-0 p-0 space-y-0">
                             <CardTitle className="text-sm font-medium text-gray-600">Market</CardTitle>
-                            <div className={`p-2 rounded-lg ${isPositive ? 'bg-green-100' : 'bg-red-100'}`}>
+                            <div className={`p-1 rounded-lg ${isPositive ? 'bg-green-100' : 'bg-red-100'}`}>
                                 {isPositive ? <TrendingUp className="h-4 w-4 text-green-600" /> : <TrendingDown className="h-4 w-4 text-red-600" />}
                             </div>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="pt-0 pb-0 p-0">
                             <div className="flex flex-col">
-                                <div className="text-2xl font-bold text-gray-900">
+                                <div className="text-xl font-bold text-gray-900">
                                     {market_summary.total_points.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </div>
-                                <div className={`text-xs font-semibold mt-1 ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                                <div className={`text-xs font-semibold mt-0 ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
                                     {isPositive ? '+' : ''}{market_summary.points_change.toFixed(2)}
                                 </div>
                             </div>
@@ -208,19 +208,19 @@ export default function DashboardPage() {
                     </Card>
 
                     {/* 3. Gainers */}
-                    <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow">
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow py-2 gap-0 px-4">
+                        <CardHeader className="flex flex-row items-center justify-between pb-0 p-0 space-y-0">
                             <CardTitle className="text-sm font-medium text-gray-600">Gainers</CardTitle>
-                            <div className="p-2 bg-green-100 rounded-lg">
+                            <div className="p-1 bg-green-100 rounded-lg">
                                 <TrendingUp className="h-4 w-4 text-green-600" />
                             </div>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="pt-0 pb-0 p-0">
                             <div className="flex flex-col">
-                                <div className="text-2xl font-bold text-gray-900">
+                                <div className="text-xl font-bold text-gray-900">
                                     {market_summary.advancers}
                                 </div>
-                                <div className="text-xs font-semibold mt-1 text-green-600">
+                                <div className="text-xs font-semibold text-green-600 mt-0">
                                     {Number(market_summary.advancers_percent).toFixed(1)}%
                                 </div>
                             </div>
@@ -228,19 +228,19 @@ export default function DashboardPage() {
                     </Card>
 
                     {/* 4. Losers */}
-                    <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow">
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow py-2 gap-0 px-4">
+                        <CardHeader className="flex flex-row items-center justify-between pb-0 p-0 space-y-0">
                             <CardTitle className="text-sm font-medium text-gray-600">Losers</CardTitle>
-                            <div className="p-2 bg-red-100 rounded-lg">
+                            <div className="p-1 bg-red-100 rounded-lg">
                                 <TrendingDown className="h-4 w-4 text-red-600" />
                             </div>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="pt-0 pb-0 p-0">
                             <div className="flex flex-col">
-                                <div className="text-2xl font-bold text-gray-900">
+                                <div className="text-xl font-bold text-gray-900">
                                     {market_summary.decliners}
                                 </div>
-                                <div className="text-xs font-semibold mt-1 text-red-600">
+                                <div className="text-xs font-semibold text-red-600 mt-0">
                                     {Number(market_summary.decliners_percent).toFixed(1)}%
                                 </div>
                             </div>
@@ -248,30 +248,30 @@ export default function DashboardPage() {
                     </Card>
 
                     {/* 5. Portfolio Investment */}
-                    <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow">
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow py-2 gap-0 px-4">
+                        <CardHeader className="flex flex-row items-center justify-between pb-0 p-0 space-y-0">
                             <CardTitle className="text-sm font-medium text-gray-600">My Investment (Rs.)</CardTitle>
-                            <div className="p-2 bg-blue-100 rounded-lg">
+                            <div className="p-1 bg-blue-100 rounded-lg">
                                 <DollarSign className="h-4 w-4 text-blue-600" />
                             </div>
                         </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-gray-900">
+                        <CardContent className="pt-0 pb-0 p-0">
+                            <div className="text-xl font-bold text-gray-900">
                                 {portfolioStats.investment.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </div>
                         </CardContent>
                     </Card>
 
                     {/* 6. Today's P/L */}
-                    <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow">
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow py-2 gap-0 px-4">
+                        <CardHeader className="flex flex-row items-center justify-between pb-0 p-0 space-y-0">
                             <CardTitle className="text-sm font-medium text-gray-600">Today's P/L (Rs.)</CardTitle>
-                            <div className={`p-2 rounded-lg ${portfolioStats.dailyPLPositive ? 'bg-green-100' : 'bg-red-100'}`}>
+                            <div className={`p-1 rounded-lg ${portfolioStats.dailyPLPositive ? 'bg-green-100' : 'bg-red-100'}`}>
                                 {portfolioStats.dailyPLPositive ? <TrendingUp className="h-4 w-4 text-green-600" /> : <TrendingDown className="h-4 w-4 text-red-600" />}
                             </div>
                         </CardHeader>
-                        <CardContent>
-                            <div className={`text-2xl font-bold ${portfolioStats.dailyPLPositive ? "text-green-600" : "text-red-600"}`}>
+                        <CardContent className="pt-0 pb-0 p-0">
+                            <div className={`text-xl font-bold ${portfolioStats.dailyPLPositive ? "text-green-600" : "text-red-600"}`}>
                                 {portfolioStats.dailyPLPositive ? '+' : ''}{portfolioStats.dayPL.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                             </div>
                         </CardContent>

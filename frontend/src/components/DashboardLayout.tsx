@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home } from 'lucide-react';
 import { SearchBar } from './SearchBar';
 import { ChatSidebar } from './ChatSidebar';
 import { AlertsDropdown } from './AlertsDropdown';
@@ -18,7 +19,7 @@ import {
 import Cookies from 'js-cookie';
 
 const navItems = [
-    { name: 'Dashboard', href: '/home', icon: LayoutDashboard },
+    { name: 'Home', href: '/home', icon: Home },
     { name: 'Chat', href: '/chat', icon: MessageSquare },
     { name: 'Stocks', href: '/stock/NABIL', icon: TrendingUp },
     {
@@ -57,7 +58,7 @@ const stocks = [
     { symbol: 'MSFT', name: 'Microsoft Corporation' }
 ];
 
-export default function DashboardLayout({ children, title, subtitle, noPadding, showBack }: { children: React.ReactNode; title?: string; subtitle?: string; noPadding?: boolean; showBack?: boolean }) {
+export default function DashboardLayout({ children, title, subtitle, noPadding, showBack }: { children: React.ReactNode; title?: React.ReactNode; subtitle?: string; noPadding?: boolean; showBack?: boolean }) {
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -173,9 +174,18 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
             >
                 <div className={`p-4 border-b border-gray-200 flex items-center justify-between ${isSidebarCollapsed ? 'flex-col gap-4' : ''}`}>
                     {!isSidebarCollapsed && (
-                        <h1 className="font-bold text-gray-900 text-2xl transition-all duration-300">
-                            Stockastic
-                        </h1>
+                        <div className="w-full flex justify-center py-0">
+                            <Link href="/home">
+                                <Image
+                                    src="/stockastic-logo-v3.png"
+                                    alt="Stockastic Logo"
+                                    width={144}
+                                    height={108}
+                                    className="object-contain"
+                                    priority
+                                />
+                            </Link>
+                        </div>
                     )}
                     <button
                         onClick={toggleSidebar}
@@ -258,8 +268,8 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
                 </nav>
                 <div className="p-3 border-t border-gray-200">
                     <div className={`flex flex-col gap-1 ${isSidebarCollapsed ? 'items-center' : ''}`}>
-                        <p className={`text-[10px] uppercase font-bold text-gray-400 mb-1 px-4 ${isSidebarCollapsed ? 'hidden' : ''}`}>System</p>
-                        {/* Help or other items could go here */}
+
+
                     </div>
                 </div>
             </aside>
