@@ -408,7 +408,7 @@ export default function PortfolioPage() {
                                 <div className="text-2xl font-bold text-gray-900">
                                     Rs. {totalInvestment.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </div>
-                                <div className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-wider">
+                                <div className="text-xs text-gray-400 mt-1 uppercase font-bold tracking-wider">
                                     Across {displayedItems.length} Holdings
                                 </div>
                             </CardContent>
@@ -423,7 +423,7 @@ export default function PortfolioPage() {
                                 <div className="text-2xl font-bold text-gray-900">
                                     Rs. {totalCurrentValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </div>
-                                <div className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-wider italic">
+                                <div className="text-xs text-gray-400 mt-1 uppercase font-bold tracking-wider italic">
                                     Real-time Valuation
                                 </div>
                             </CardContent>
@@ -462,7 +462,7 @@ export default function PortfolioPage() {
                                 <div className={`text-2xl font-bold ${totalDayGainLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                     Rs. {Math.abs(totalDayGainLoss).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </div>
-                                <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
+                                <div className="text-xs text-gray-400 mt-1 flex items-center gap-1">
                                     <Activity className="h-3 w-3" /> Intraday Movement
                                 </div>
                             </CardContent>
@@ -568,7 +568,7 @@ export default function PortfolioPage() {
                                                                 setIsExitPlanDialogOpen(true);
                                                             }}
                                                         >
-                                                            <TableCell className="text-center font-bold text-gray-400 text-xs py-4 px-6">
+                                                            <TableCell className="text-center font-bold text-gray-400 text-sm py-4 px-6">
                                                                 {(currentPage - 1) * pageSize + idx + 1}
                                                             </TableCell>
                                                             <TableCell className="font-semibold py-4">
@@ -588,9 +588,9 @@ export default function PortfolioPage() {
                                                                     </div>
                                                                     {(item.stop_loss_price || item.target_price) && (
                                                                         <div className="flex flex-wrap gap-1">
-                                                                            {item.stop_loss_price && <span className="text-[10px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-100 font-bold uppercase tracking-tighter shadow-sm">SL: {Number(item.stop_loss_price).toFixed(0)}</span>}
-                                                                            {item.target_price && <span className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100 font-bold uppercase tracking-tighter shadow-sm">TP: {Number(item.target_price).toFixed(0)}</span>}
-                                                                            {rrRatio !== 'N/A' && <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 font-bold uppercase tracking-tighter shadow-sm">R/R: {rrRatio}</span>}
+                                                                            {item.stop_loss_price && <span className="text-xs bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-100 font-bold uppercase tracking-tighter shadow-sm">SL: {Number(item.stop_loss_price).toFixed(0)}</span>}
+                                                                            {item.target_price && <span className="text-xs bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100 font-bold uppercase tracking-tighter shadow-sm">TP: {Number(item.target_price).toFixed(0)}</span>}
+                                                                            {rrRatio !== 'N/A' && <span className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 font-bold uppercase tracking-tighter shadow-sm">R/R: {rrRatio}</span>}
                                                                         </div>
                                                                     )}
                                                                 </div>
@@ -600,15 +600,15 @@ export default function PortfolioPage() {
                                                             <TableCell className="text-right text-gray-900 font-bold py-4">{item.current_price}</TableCell>
                                                             <TableCell className="text-right font-black text-gray-900 py-4">{Number(item.current_value).toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
                                                             <TableCell className={`text-right ${isPos ? 'text-green-600' : 'text-red-600'} py-4`}>
-                                                                <div className="font-black text-sm">
+                                                                <div className="font-black text-base">
                                                                     {isPos ? '+' : ''}{pl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                                                 </div>
-                                                                <div className={`text-[10px] font-black uppercase tracking-tighter ${isPos ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'} px-1 rounded inline-block mt-0.5`}>
+                                                                <div className={`text-xs font-black uppercase tracking-tighter ${isPos ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'} px-1 rounded inline-block mt-0.5`}>
                                                                     {Number(item.gain_loss_percent).toFixed(2)}%
                                                                 </div>
                                                             </TableCell>
                                                             <TableCell className="text-right py-4">
-                                                                <div className="font-bold text-gray-600 text-xs text-right">
+                                                                <div className="font-bold text-gray-600 text-sm text-right">
                                                                     {(item.value_yield || 0).toFixed(1)}%
                                                                 </div>
                                                             </TableCell>
@@ -701,7 +701,7 @@ export default function PortfolioPage() {
                                     {/* Pie Chart: Allocation */}
                                     <div className="relative">
                                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                            <span className="text-[10px] text-gray-400 font-bold uppercase">Diversification</span>
+                                            <span className="text-xs text-gray-400 font-bold uppercase">Diversification</span>
                                             <span className="text-lg font-black text-gray-800">{sectorData.length} Sectors</span>
                                         </div>
                                         <ResponsiveContainer width="100%" height="100%">
@@ -733,7 +733,7 @@ export default function PortfolioPage() {
                                                 type="category"
                                                 axisLine={false}
                                                 tickLine={false}
-                                                tick={{ fontSize: 10, fontWeight: 700, fill: '#6B7280' }}
+                                                tick={{ fontSize: 13, fontWeight: 700, fill: '#6B7280' }}
                                                 width={80}
                                             />
                                             <RechartsTooltip
@@ -761,7 +761,7 @@ export default function PortfolioPage() {
                                     {sectorData.map((s, i) => (
                                         <div key={s.name} className="flex items-center gap-2">
                                             <div className="h-2 w-2 rounded-full" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
-                                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">
+                                            <span className="text-sm font-bold text-gray-500 uppercase tracking-tighter">
                                                 {s.name} ({((s.value / totalCurrentValue) * 100).toFixed(0)}%)
                                             </span>
                                         </div>
@@ -795,11 +795,11 @@ export default function PortfolioPage() {
                                                 key={item.ticker}
                                                 className={`aspect-square ${bgColor} rounded-md flex flex-col items-center justify-center text-white shadow-inner group relative cursor-help transition-transform hover:scale-105 hover:z-20`}
                                             >
-                                                <span className="text-[10px] font-black">{item.ticker}</span>
-                                                <span className="text-[8px] font-bold opacity-80">{Number(pnlP).toFixed(0)}%</span>
+                                                <span className="text-sm font-black">{item.ticker}</span>
+                                                <span className="text-xs font-bold opacity-80">{Number(pnlP).toFixed(0)}%</span>
 
                                                 {/* Tooltip on Hover */}
-                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-gray-900 text-white p-2 rounded text-[9px] opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-2xl z-30">
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-gray-900 text-white p-2 rounded text-xs opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-2xl z-30">
                                                     <p className="font-black border-b border-gray-700 pb-1 mb-1">{item.ticker}</p>
                                                     <p className="flex justify-between">Profit: <span>Rs. {Number(item.gain_loss).toFixed(0)}</span></p>
                                                     <p className="flex justify-between">Value: <span>Rs. {Number(item.current_value).toFixed(0)}</span></p>
@@ -808,7 +808,7 @@ export default function PortfolioPage() {
                                         );
                                     })}
                                 </div>
-                                <div className="mt-6 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                <div className="mt-6 flex items-center justify-between text-xs font-black uppercase tracking-widest text-gray-400">
                                     <span>Bearish</span>
                                     <div className="flex gap-1">
                                         {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className={`h-2 w-2 rounded-sm ${i <= 3 ? 'bg-red-' + (i * 200) : 'bg-green-' + ((7 - i) * 200)}`} />)}
@@ -833,7 +833,7 @@ export default function PortfolioPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 {/* Sector Concentration Risk List */}
                                 <div>
-                                    <h4 className="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
+                                    <h4 className="text-xs font-black text-slate-400 mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
                                         Allocation Alerts
                                     </h4>
                                     <div className="space-y-2">
@@ -852,7 +852,7 @@ export default function PortfolioPage() {
                                                         <div className="flex justify-between text-xs mb-1.5 p-2 bg-white rounded border border-slate-100">
                                                             <span className="font-bold text-slate-600">{sector}</span>
                                                             <div className="flex items-center gap-2">
-                                                                <span className={`text-[10px] font-black ${percent > 40 ? "text-red-500" : "text-slate-400"}`}>
+                                                                <span className={`text-xs font-black ${percent > 40 ? "text-red-500" : "text-slate-400"}`}>
                                                                     {percent.toFixed(1)}%
                                                                 </span>
                                                                 <div className="w-16 h-1 bg-slate-100 rounded-full overflow-hidden">
@@ -863,7 +863,7 @@ export default function PortfolioPage() {
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        {percent > 40 && <p className="text-[10px] font-bold text-red-500 pl-2">⚠️ Diversification alert: Overexposed to {sector}.</p>}
+                                                        {percent > 40 && <p className="text-xs font-bold text-red-500 pl-2">⚠️ Diversification alert: Overexposed to {sector}.</p>}
                                                     </div>
                                                 );
                                             })}
@@ -873,12 +873,12 @@ export default function PortfolioPage() {
                                 {/* Concentration & Volatility Risks */}
                                 <div className="space-y-6">
                                     <div>
-                                        <h4 className="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-[0.2em]">Holdings Concentration</h4>
+                                        <h4 className="text-xs font-black text-slate-400 mb-4 uppercase tracking-[0.2em]">Holdings Concentration</h4>
                                         <ul className="space-y-2">
                                             {displayedItems
                                                 .filter(item => (Number(item.current_value) / totalCurrentValue) > 0.20)
                                                 .map(item => (
-                                                    <li key={item.ticker} className="flex items-center justify-between text-[11px] bg-red-50/50 p-2.5 rounded-lg border border-red-100 text-red-800">
+                                                    <li key={item.ticker} className="flex items-center justify-between text-xs bg-red-50/50 p-2.5 rounded-lg border border-red-100 text-red-800">
                                                         <span className="flex items-center gap-2 font-bold uppercase tracking-tight">
                                                             <ShieldAlert className="h-3.5 w-3.5" />
                                                             {item.ticker} Oversized
@@ -887,7 +887,7 @@ export default function PortfolioPage() {
                                                     </li>
                                                 ))}
                                             {displayedItems.every(item => (Number(item.current_value) / totalCurrentValue) <= 0.20) && (
-                                                <li className="text-[11px] font-bold text-emerald-600 bg-emerald-50/50 p-3 rounded-lg border border-emerald-100 flex items-center gap-2">
+                                                <li className="text-xs font-bold text-emerald-600 bg-emerald-50/50 p-3 rounded-lg border border-emerald-100 flex items-center gap-2">
                                                     <CheckCircle2 className="h-4 w-4" />
                                                     Portfolio capital is healthy and well-distributed.
                                                 </li>
@@ -896,13 +896,13 @@ export default function PortfolioPage() {
                                     </div>
 
                                     <div>
-                                        <h4 className="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-[0.2em]">Volatility Monitoring</h4>
+                                        <h4 className="text-xs font-black text-slate-400 mb-4 uppercase tracking-[0.2em]">Volatility Monitoring</h4>
                                         <div className="flex flex-wrap gap-2">
                                             {displayedItems
                                                 .filter(item => (item.volatility || 0) > 40)
                                                 .sort((a, b) => (b.volatility || 0) - (a.volatility || 0))
                                                 .map(item => (
-                                                    <div key={item.ticker} className="flex items-center gap-1.5 bg-white text-slate-700 px-3 py-1.5 rounded-lg text-[10px] font-black border border-slate-200 shadow-sm">
+                                                    <div key={item.ticker} className="flex items-center gap-1.5 bg-white text-slate-700 px-3 py-1.5 rounded-lg text-xs font-black border border-slate-200 shadow-sm">
                                                         <Activity className="h-3 w-3" />
                                                         {item.ticker} <span className="text-slate-400 opacity-60">/</span> {item.volatility?.toFixed(1)}% VOL
                                                     </div>
@@ -1240,6 +1240,6 @@ export default function PortfolioPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </DashboardLayout>
+        </DashboardLayout >
     );
 }
