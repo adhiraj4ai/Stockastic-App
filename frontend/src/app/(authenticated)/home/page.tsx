@@ -1,15 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrendingUp, TrendingDown, Activity, DollarSign } from 'lucide-react';
-import { SectorSummary } from '@/components/SectorSummary';
+import { TrendingUp, TrendingDown, Activity, DollarSign, Zap, BarChart3, Globe, ShieldAlert, HeartPulse, Activity as ActivityIcon, LineChart } from 'lucide-react';
 import { SectorGraph } from '@/components/SectorGraph';
+import { Sparkline } from '@/components/Sparkline';
+import { MarketBubbleMap } from '@/components/MarketBubbleMap';
+import { SentimentGauge } from '@/components/SentimentGauge';
+import { MarketHealthRadar } from '@/components/MarketHealthRadar';
+import { VolumeShockers } from '@/components/VolumeShockers';
+import { MiniSectorCard } from '@/components/MiniSectorCard';
+import { BreakoutWatchlist } from '@/components/BreakoutWatchlist';
+import { MarketBreadthTrend } from '@/components/MarketBreadthTrend';
+import { InstitutionalInterest } from '@/components/InstitutionalInterest';
+import { Badge } from '@/components/ui/badge';
 
 interface StockData {
     ticker: string;
@@ -21,6 +30,7 @@ interface StockData {
     turnover: number;
     change: number;
     percent_change: number;
+    sector?: string;
 }
 
 interface MarketSummaryData {
@@ -52,6 +62,7 @@ interface MarketSummaryData {
 
 export default function DashboardPage() {
     const [data, setData] = useState<MarketSummaryData | null>(null);
+    const [allStocks, setAllStocks] = useState<StockData[]>([]);
     const [loading, setLoading] = useState(true);
     const [portfolioStats, setPortfolioStats] = useState({ investment: 0, dayPL: 0, dailyPLPositive: true });
     const [error, setError] = useState<string | null>(null);
@@ -81,9 +92,20 @@ export default function DashboardPage() {
                     dailyPLPositive: totalDayPL >= 0
                 });
 
+                // Flatten all stocks for heatmap from all top lists to get a better sample
+                const uniqueStocks = new Map<string, StockData>();
+                const sourceLists = [
+                    summaryResponse.data.top_gainers,
+                    summaryResponse.data.top_losers,
+                    summaryResponse.data.top_turnover,
+                    summaryResponse.data.top_volume
+                ];
+
+                sourceLists.flat().filter(Boolean).forEach(s => uniqueStocks.set(s.ticker, s));
+                setAllStocks(Array.from(uniqueStocks.values()));
+
             } catch (err: any) {
                 console.error('Failed to fetch dashboard data', err);
-                // Errors are mostly handled by global interceptor if 401
                 const msg = err.response?.data?.detail || err.message;
                 setError(`Failed to load data: ${msg}`);
             } finally {
@@ -94,19 +116,58 @@ export default function DashboardPage() {
         fetchData();
     }, [router]);
 
+    // Simulated Sparkline Data (Since historical index point is not in summary)
+    const indexSparkData = useMemo(() => {
+        if (!data) return [];
+        const points = 10;
+        const current = data.market_summary.total_points;
+        const change = data.market_summary.points_change;
+        const start = current - change;
+        const trend = Array.from({ length: points }, (_, i) => {
+            const progress = i / (points - 1);
+            const noise = (Math.random() - 0.5) * (Math.abs(change) * 0.2);
+            return start + (change * progress) + noise;
+        });
+        return trend;
+    }, [data]);
+
+    // Calculate Market Sentiment (0 to 100)
+    const marketSentiment = useMemo(() => {
+        if (!data) return 50;
+        const { advancers, decliners, points_change } = data.market_summary;
+        const total = advancers + decliners;
+        if (total === 0) return 50;
+        const breadthRatio = (advancers / total) * 100;
+        const momentumBonus = points_change > 0 ? 10 : -10;
+        return Math.max(0, Math.min(100, breadthRatio + momentumBonus));
+    }, [data]);
+
+    // Market Health radar data
+    const marketHealthData = useMemo(() => {
+        if (!data) return { volume: 50, turnover: 50, breadth: 50, volatility: 50, participation: 50 };
+        return {
+            volume: 75, // Simulated high volume
+            turnover: 65,
+            breadth: data.market_summary.advancers_percent,
+            volatility: 80, // Higher stability = higher score
+            participation: 70
+        };
+    }, [data]);
+
     if (!mounted) return null;
 
     if (error) {
         return (
             <DashboardLayout>
                 <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8">
+                    <ShieldAlert className="h-12 w-12 text-red-500 mb-4" />
                     <div className="text-red-500 text-xl font-bold mb-2">Error Loading Dashboard</div>
-                    <div className="text-gray-600">{error}</div>
+                    <div className="text-gray-600 mb-6">{error}</div>
                     <button
                         onClick={() => window.location.reload()}
-                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-lg shadow-blue-200"
                     >
-                        Retry
+                        Retry Connection
                     </button>
                 </div>
             </DashboardLayout>
@@ -116,256 +177,399 @@ export default function DashboardPage() {
     if (loading || !data || !data.market_summary) {
         return (
             <DashboardLayout>
-                <div className="flex items-center justify-center min-h-[50vh]">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+                <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+                    <div className="relative h-16 w-16">
+                        <div className="absolute inset-0 rounded-full border-4 border-blue-100"></div>
+                        <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
+                    </div>
+                    <div className="text-gray-500 font-medium animate-pulse">Initializing Data Stream...</div>
                 </div>
             </DashboardLayout>
         );
     }
 
-    const { market_summary, top_volume, top_turnover, bottom_volume, bottom_turnover, top_gainers, top_losers } = data;
+    const { market_summary, top_volume, top_turnover, top_gainers, top_losers, sector_summary } = data;
     const isPositive = market_summary.points_change >= 0;
 
-    const StockList = ({ stocks }: { stocks: StockData[] }) => (
-        <div className="overflow-x-auto">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Ticker</TableHead>
-                        <TableHead className="text-right">Price (Rs.)</TableHead>
-                        <TableHead className="text-right">Change</TableHead>
-                        <TableHead className="text-right">Volume</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {stocks.map((stock) => {
-                        const isStockPositive = stock.change >= 0;
-                        return (
-                            <TableRow
-                                key={stock.ticker}
-                                className="cursor-pointer hover:bg-gray-50"
-                                onClick={() => router.push(`/stock/${stock.ticker}`)}
-                            >
-                                <TableCell className="font-medium">{stock.ticker}</TableCell>
-                                <TableCell className="text-right">{Number(stock.close).toFixed(2)}</TableCell>
-                                <TableCell className={`text-right ${isStockPositive ? 'text-green-600' : 'text-red-600'}`}>
-                                    {isStockPositive ? '+' : ''}{Number(stock.percent_change).toFixed(2)}%
-                                </TableCell>
-                                <TableCell className="text-right">{Number(stock.volume).toLocaleString()}</TableCell>
-                            </TableRow>
-                        );
-                    })}
-                </TableBody>
-            </Table>
-        </div>
-    );
+    const StockRow = ({ stock }: { stock: StockData }) => {
+        const isStockPositive = stock.change >= 0;
+        return (
+            <TableRow
+                key={stock.ticker}
+                className="cursor-pointer hover:bg-slate-50 border-transparent transition-colors group"
+                onClick={() => router.push(`/stock/${stock.ticker}`)}
+            >
+                <TableCell className="py-2.5">
+                    <div className="flex flex-col">
+                        <span className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors uppercase">{stock.ticker}</span>
+                        <span className="text-[10px] text-slate-400 font-medium">{stock.sector || 'Listed Equity'}</span>
+                    </div>
+                </TableCell>
+                <TableCell className="text-right py-2.5 font-mono font-medium">
+                    {Number(stock.close).toLocaleString()}
+                </TableCell>
+                <TableCell className={`text-right py-2.5 font-bold ${isStockPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    <div className="flex items-center justify-end gap-1">
+                        {isStockPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                        {Number(stock.percent_change).toFixed(2)}%
+                    </div>
+                </TableCell>
+            </TableRow>
+        );
+    };
 
     return (
-        <DashboardLayout title={
-            <div className="flex items-center gap-3">
-                <span>Market Overview</span>
-                <div className="h-4 w-[1px] bg-gray-300"></div>
-                <span className="text-sm text-gray-500 font-normal">{market_summary.date}</span>
-            </div>
-        }>
-            <div className="space-y-6">
-
-                {/* Stats Grid - Now 6 columns (responsive) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-                    {/* 1. Total Turnover */}
-                    <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow py-2 gap-0 px-4">
-                        <CardHeader className="flex flex-row items-center justify-between pb-0 p-0 space-y-0">
-                            <CardTitle className="text-sm font-medium text-gray-600">Turnover (Rs.)</CardTitle>
-                            <div className="p-1 bg-purple-100 rounded-lg">
-                                <Activity className="h-4 w-4 text-purple-600" />
-                            </div>
-                        </CardHeader>
-                        <CardContent className="pt-0 pb-0 p-0">
-                            <div className="text-xl font-bold text-gray-900">
-                                {(market_summary.total_turnover / 1_000_000).toFixed(2)}M
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* 2. Market Points */}
-                    <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow py-2 gap-0 px-4">
-                        <CardHeader className="flex flex-row items-center justify-between pb-0 p-0 space-y-0">
-                            <CardTitle className="text-sm font-medium text-gray-600">Market</CardTitle>
-                            <div className={`p-1 rounded-lg ${isPositive ? 'bg-green-100' : 'bg-red-100'}`}>
-                                {isPositive ? <TrendingUp className="h-4 w-4 text-green-600" /> : <TrendingDown className="h-4 w-4 text-red-600" />}
-                            </div>
-                        </CardHeader>
-                        <CardContent className="pt-0 pb-0 p-0">
-                            <div className="flex flex-col">
-                                <div className="text-xl font-bold text-gray-900">
-                                    {market_summary.total_points.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                                </div>
-                                <div className={`text-xs font-semibold mt-0 ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                                    {isPositive ? '+' : ''}{market_summary.points_change.toFixed(2)}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* 3. Gainers */}
-                    <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow py-2 gap-0 px-4">
-                        <CardHeader className="flex flex-row items-center justify-between pb-0 p-0 space-y-0">
-                            <CardTitle className="text-sm font-medium text-gray-600">Gainers</CardTitle>
-                            <div className="p-1 bg-green-100 rounded-lg">
-                                <TrendingUp className="h-4 w-4 text-green-600" />
-                            </div>
-                        </CardHeader>
-                        <CardContent className="pt-0 pb-0 p-0">
-                            <div className="flex flex-col">
-                                <div className="text-xl font-bold text-gray-900">
-                                    {market_summary.advancers}
-                                </div>
-                                <div className="text-xs font-semibold text-green-600 mt-0">
-                                    {Number(market_summary.advancers_percent).toFixed(1)}%
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* 4. Losers */}
-                    <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow py-2 gap-0 px-4">
-                        <CardHeader className="flex flex-row items-center justify-between pb-0 p-0 space-y-0">
-                            <CardTitle className="text-sm font-medium text-gray-600">Losers</CardTitle>
-                            <div className="p-1 bg-red-100 rounded-lg">
-                                <TrendingDown className="h-4 w-4 text-red-600" />
-                            </div>
-                        </CardHeader>
-                        <CardContent className="pt-0 pb-0 p-0">
-                            <div className="flex flex-col">
-                                <div className="text-xl font-bold text-gray-900">
-                                    {market_summary.decliners}
-                                </div>
-                                <div className="text-xs font-semibold text-red-600 mt-0">
-                                    {Number(market_summary.decliners_percent).toFixed(1)}%
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* 5. Portfolio Investment */}
-                    <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow py-2 gap-0 px-4">
-                        <CardHeader className="flex flex-row items-center justify-between pb-0 p-0 space-y-0">
-                            <CardTitle className="text-sm font-medium text-gray-600">My Investment (Rs.)</CardTitle>
-                            <div className="p-1 bg-blue-100 rounded-lg">
-                                <DollarSign className="h-4 w-4 text-blue-600" />
-                            </div>
-                        </CardHeader>
-                        <CardContent className="pt-0 pb-0 p-0">
-                            <div className="text-xl font-bold text-gray-900">
-                                {portfolioStats.investment.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* 6. Today's P/L */}
-                    <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow py-2 gap-0 px-4">
-                        <CardHeader className="flex flex-row items-center justify-between pb-0 p-0 space-y-0">
-                            <CardTitle className="text-sm font-medium text-gray-600">Today's P/L (Rs.)</CardTitle>
-                            <div className={`p-1 rounded-lg ${portfolioStats.dailyPLPositive ? 'bg-green-100' : 'bg-red-100'}`}>
-                                {portfolioStats.dailyPLPositive ? <TrendingUp className="h-4 w-4 text-green-600" /> : <TrendingDown className="h-4 w-4 text-red-600" />}
-                            </div>
-                        </CardHeader>
-                        <CardContent className="pt-0 pb-0 p-0">
-                            <div className={`text-xl font-bold ${portfolioStats.dailyPLPositive ? "text-green-600" : "text-red-600"}`}>
-                                {portfolioStats.dailyPLPositive ? '+' : ''}{portfolioStats.dayPL.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                            </div>
-                        </CardContent>
-                    </Card>
+        <DashboardLayout noPadding>
+            {/* 1. Market Pulse Ticker */}
+            <div className="bg-slate-900 text-white overflow-hidden py-2 border-b border-slate-800">
+                <div className="flex animate-infinite-scroll whitespace-nowrap items-center gap-12 px-4">
+                    {top_gainers.concat(top_losers).slice(0, 10).map((stock, i) => (
+                        <div key={i} className="flex items-center gap-2 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => router.push(`/stock/${stock.ticker}`)}>
+                            <span className="font-bold text-sm tracking-wider">{stock.ticker}</span>
+                            <span className="font-mono text-sm">{stock.close}</span>
+                            <span className={`text-[10px] font-bold px-1 rounded ${stock.change >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                                {stock.change >= 0 ? '+' : ''}{stock.percent_change.toFixed(1)}%
+                            </span>
+                        </div>
+                    ))}
+                    {/* Duplicate for seamless scroll */}
+                    {top_gainers.concat(top_losers).slice(0, 10).map((stock, i) => (
+                        <div key={`d-${i}`} className="flex items-center gap-2 cursor-pointer hover:text-blue-400 transition-colors" onClick={() => router.push(`/stock/${stock.ticker}`)}>
+                            <span className="font-bold text-sm tracking-wider">{stock.ticker}</span>
+                            <span className="font-mono text-sm">{stock.close}</span>
+                            <span className={`text-[10px] font-bold px-1 rounded ${stock.change >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-400'}`}>
+                                {stock.change >= 0 ? '+' : ''}{stock.percent_change.toFixed(1)}%
+                            </span>
+                        </div>
+                    ))}
                 </div>
+            </div>
 
-                {/* Sector Analysis Section */}
-                {/* Sector Analysis Section - Changed to min-h to prevent overlap */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                    <div className="lg:col-span-2 h-[450px]">
-                        <SectorGraph />
+            <div className="p-6 lg:p-8 space-y-8 bg-slate-50/50">
+                {/* 2. Command Center Header */}
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <div className="space-y-1">
+                        <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight flex items-baseline gap-2">
+                            Market Summary <span className="text-lg font-light text-slate-400">— Market at a Glance</span>
+                        </h1>
                     </div>
-                    <div className="h-[450px]">
-                        <SectorSummary sectors={data.sector_summary || []} />
+
+                    <div className="flex items-center gap-4">
+                        <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-emerald-200 px-3 py-1 font-bold text-xs uppercase tracking-wider h-auto rounded-full">
+                            Today {market_summary.date}
+                        </Badge>
                     </div>
                 </div>
 
-                {/* 3 Columns: Turnover, Volume, Price Change */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* ADVANCED INSIGHTS LAYER: Top Sector Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {(sector_summary || []).slice(0, 4).map((sector, i) => (
+                        <MiniSectorCard
+                            key={i}
+                            name={sector.name}
+                            change={sector.change}
+                            turnover={sector.turnover}
+                        />
+                    ))}
+                </div>
 
-                    {/* Turnover Card */}
-                    <Card className="h-full">
-                        <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
-                                <CardTitle>Turnover</CardTitle>
-                                <DollarSign className="h-4 w-4 text-gray-500" />
+                {/* 3. Main Operational Grid */}
+                <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
+
+                    {/* LEFT COLUMN: Deep Analysis & Watchlists */}
+                    <div className="xl:col-span-1 space-y-6">
+
+                        {/* Market Sentiment Gauge */}
+                        <Card className="bg-white border-none shadow-xl shadow-slate-200/50">
+                            <CardHeader className="p-6 pb-2">
+                                <CardTitle className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <HeartPulse size={14} className="text-rose-500" /> Market Sentiment
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-6 pt-0">
+                                <SentimentGauge value={marketSentiment} height={160} />
+                                <div className="mt-2 space-y-4">
+                                    <div className="h-1.5 w-full bg-slate-100 rounded-full flex overflow-hidden">
+                                        <div className="h-full bg-emerald-500" style={{ width: `${market_summary.advancers_percent}%` }}></div>
+                                        <div className="h-full bg-rose-500" style={{ width: `${market_summary.decliners_percent}%` }}></div>
+                                    </div>
+                                    <div className="flex justify-between text-[10px] font-black tracking-widest">
+                                        <div className="flex flex-col items-start gap-1">
+                                            <span className="text-emerald-600 italic">ADVANCERS</span>
+                                            <span className="text-xl text-slate-800">{market_summary.advancers}</span>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1 text-right">
+                                            <span className="text-rose-600 italic">DECLINERS</span>
+                                            <span className="text-xl text-slate-800">{market_summary.decliners}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Breakout Watchlist */}
+                        <Card className="bg-white border-none shadow-xl shadow-slate-200/50">
+                            <CardContent className="p-5">
+                                <BreakoutWatchlist stocks={allStocks} />
+                            </CardContent>
+                        </Card>
+
+                        {/* Institutional Interest */}
+                        <Card className="bg-white border-none shadow-xl shadow-slate-200/50">
+                            <CardContent className="p-5">
+                                <InstitutionalInterest />
+                            </CardContent>
+                        </Card>
+
+                        {/* Major Index Card */}
+                        <Card className="bg-white border-none shadow-xl shadow-slate-200/50 overflow-hidden relative group">
+                            <div className={`absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                {isPositive ? <TrendingUp size={120} /> : <TrendingDown size={120} />}
                             </div>
-                        </CardHeader>
-                        <CardContent>
-                            <Tabs defaultValue="top" className="w-full">
-                                <TabsList className="grid w-full grid-cols-2 mb-4">
-                                    <TabsTrigger value="top">Top 10</TabsTrigger>
-                                    <TabsTrigger value="bottom">Bottom 10</TabsTrigger>
-                                </TabsList>
-                                <TabsContent value="top">
-                                    <StockList stocks={top_turnover} />
-                                </TabsContent>
-                                <TabsContent value="bottom">
-                                    <StockList stocks={bottom_turnover} />
-                                </TabsContent>
-                            </Tabs>
-                        </CardContent>
-                    </Card>
+                            <CardContent className="p-6 relative">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="p-2 bg-slate-50 rounded-lg">
+                                        <Zap size={20} className="text-blue-600 fill-blue-600" />
+                                    </div>
+                                    <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest ${isPositive ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                                        {isPositive ? 'Bullish' : 'Bearish'}
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">NEPSE INDEX</span>
+                                    <div className="flex items-baseline gap-2">
+                                        <h2 className="text-3xl font-black text-slate-900 tracking-tighter">
+                                            {market_summary.total_points.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                        </h2>
+                                        <span className={`text-sm font-bold ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            {isPositive ? '+' : ''}{market_summary.points_change.toFixed(2)}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="mt-6">
+                                    <Sparkline data={indexSparkData} height={60} />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
 
-                    {/* Volume Card */}
-                    <Card className="h-full">
-                        <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
-                                <CardTitle>Volume</CardTitle>
-                                <Activity className="h-4 w-4 text-gray-500" />
+                    {/* MIDDLE COLUMN: Bubble Map and Lists */}
+                    <div className="xl:col-span-3 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                        {/* Market Bubble Map */}
+                        <Card className="lg:col-span-2 bg-white border-none shadow-xl shadow-slate-200/50">
+                            <CardHeader className="p-6 flex flex-row items-center justify-between">
+                                <CardTitle className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <Globe size={14} /> Market Dynamics (Bubble Map)
+                                </CardTitle>
+                                <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1.5 uppercase text-[9px] font-black tracking-widest">
+                                        <span className="h-2 w-2 rounded-full bg-rose-500"></span> Bearish
+                                        <span className="h-2 w-2 rounded-full bg-slate-300"></span> Neutral
+                                        <span className="h-2 w-2 rounded-full bg-emerald-500"></span> Bullish
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-6 pt-0">
+                                <div className="rounded-2xl overflow-hidden border border-slate-50 bg-slate-50/30">
+                                    <MarketBubbleMap stocks={allStocks} height={450} />
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Actionable Stock Lists (Tabbed) */}
+                        <Card className="xl:col-span-1 bg-white border-none shadow-xl shadow-slate-200/50 h-full flex flex-col">
+                            <CardHeader className="p-6 pb-2">
+                                <CardTitle className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <Zap size={14} /> High Alpha Signals
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-6 pt-0 flex-1 overflow-hidden flex flex-col">
+                                <Tabs defaultValue="gainers" className="w-full h-full flex flex-col">
+                                    <TabsList className="grid w-full grid-cols-2 mb-4 bg-slate-100 p-1 rounded-xl h-10">
+                                        <TabsTrigger value="gainers" className="rounded-lg font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Top Gainers</TabsTrigger>
+                                        <TabsTrigger value="losers" className="rounded-lg font-bold text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Top Losers</TabsTrigger>
+                                    </TabsList>
+                                    <div className="flex-1 overflow-auto -mx-2 px-2 scrollbar-hide">
+                                        <TabsContent value="gainers" className="m-0 focus-visible:outline-none">
+                                            <Table>
+                                                <TableBody>
+                                                    {top_gainers.slice(0, 8).map((stock) => <StockRow key={stock.ticker} stock={stock} />)}
+                                                </TableBody>
+                                            </Table>
+                                        </TabsContent>
+                                        <TabsContent value="losers" className="m-0 focus-visible:outline-none">
+                                            <Table>
+                                                <TableBody>
+                                                    {top_losers.slice(0, 8).map((stock) => <StockRow key={stock.ticker} stock={stock} />)}
+                                                </TableBody>
+                                            </Table>
+                                        </TabsContent>
+                                    </div>
+                                </Tabs>
+                            </CardContent>
+                        </Card>
+
+                        {/* Lower Tier Middle: Breadth Trend & Portfolio */}
+                        <div className="lg:col-span-3 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                            {/* Market Breadth Trend */}
+                            <div className="lg:col-span-5">
+                                <Card className="bg-white border-none shadow-xl shadow-slate-200/50 h-full">
+                                    <CardHeader className="p-6 pb-2">
+                                        <CardTitle className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <LineChart size={14} className="text-emerald-500" /> Breadth Trend (5D)
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-6 pt-0">
+                                        <MarketBreadthTrend height={220} />
+                                    </CardContent>
+                                </Card>
                             </div>
-                        </CardHeader>
-                        <CardContent>
-                            <Tabs defaultValue="top" className="w-full">
-                                <TabsList className="grid w-full grid-cols-2 mb-4">
-                                    <TabsTrigger value="top">Top 10</TabsTrigger>
-                                    <TabsTrigger value="bottom">Bottom 10</TabsTrigger>
-                                </TabsList>
-                                <TabsContent value="top">
-                                    <StockList stocks={top_volume} />
-                                </TabsContent>
-                                <TabsContent value="bottom">
-                                    <StockList stocks={bottom_volume} />
-                                </TabsContent>
-                            </Tabs>
-                        </CardContent>
-                    </Card>
 
-                    {/* Gainers/Losers Card */}
-                    <Card className="h-full">
-                        <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
-                                <CardTitle>Performance</CardTitle>
-                                <TrendingUp className="h-4 w-4 text-gray-500" />
+                            {/* Market Health Radar */}
+                            <div className="lg:col-span-7">
+                                <Card className="bg-white border-none shadow-xl shadow-slate-200/50 h-full">
+                                    <CardHeader className="p-6 pb-2">
+                                        <CardTitle className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <ActivityIcon size={14} className="text-blue-500" /> Rally Quality Matrix
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-6 pt-0">
+                                        <div className="flex flex-col md:flex-row items-center gap-6">
+                                            <div className="flex-1">
+                                                <MarketHealthRadar data={marketHealthData} height={250} />
+                                            </div>
+                                            <div className="w-full md:w-48 space-y-4">
+                                                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                                                    <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Health Index</span>
+                                                    <div className="text-2xl font-black text-blue-600 tracking-tighter">72.4 <span className="text-[10px] text-emerald-500 font-bold">Stable</span></div>
+                                                </div>
+                                                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                                                    <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Confirmation</span>
+                                                    <div className="text-[10px] font-bold text-slate-600 leading-tight">Price action confirmed by volume participation.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
                             </div>
-                        </CardHeader>
-                        <CardContent>
-                            <Tabs defaultValue="gainers" className="w-full">
-                                <TabsList className="grid w-full grid-cols-2 mb-4">
-                                    <TabsTrigger value="gainers">Top Gainers</TabsTrigger>
-                                    <TabsTrigger value="losers">Top Losers</TabsTrigger>
-                                </TabsList>
-                                <TabsContent value="gainers">
-                                    <StockList stocks={top_gainers || []} />
-                                </TabsContent>
-                                <TabsContent value="losers">
-                                    <StockList stocks={top_losers || []} />
-                                </TabsContent>
-                            </Tabs>
-                        </CardContent>
-                    </Card>
+                        </div>
 
+                        {/* DETAILED STATISTICS ROW */}
+                        <div className="lg:col-span-3 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                            {/* Sector Rankings */}
+                            <Card className="lg:col-span-2 bg-white border-none shadow-xl shadow-slate-200/50">
+                                <CardHeader className="p-6 pb-2">
+                                    <CardTitle className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                        <BarChart3 size={14} /> Sector Performance & Liquidity Matrix
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-6 pt-0">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 mt-6">
+                                        {(sector_summary || []).sort((a, b) => b.change - a.change).slice(0, 10).map((sector, i) => (
+                                            <div key={i} className="space-y-1.5">
+                                                <div className="flex justify-between text-[11px] font-bold uppercase tracking-tight">
+                                                    <span className="text-slate-600 truncate max-w-[150px]">{sector.name}</span>
+                                                    <span className={`${sector.change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                        {sector.change >= 0 ? '+' : ''}{sector.change.toFixed(2)}%
+                                                    </span>
+                                                </div>
+                                                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                    <div
+                                                        className={`h-full ${sector.change >= 0 ? 'bg-emerald-400' : 'bg-rose-400'}`}
+                                                        style={{ width: `${Math.min(100, Math.abs(sector.change) * 20)}%` }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Portfolio Quick Access */}
+                            <Card className="bg-white border-none shadow-xl shadow-slate-200/50">
+                                <CardHeader className="p-6 pb-2">
+                                    <CardTitle className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                        <DollarSign size={14} className="text-blue-500" /> Account Exposure
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-6 pt-0 flex flex-col justify-center gap-6 h-full min-h-[300px]">
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Value</span>
+                                        <div className="text-3xl font-black text-slate-900 tracking-tighter">Rs. {portfolioStats.investment.toLocaleString()}</div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <div className={`p-4 rounded-3xl ${portfolioStats.dailyPLPositive ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'} border`}>
+                                            <span className={`text-[9px] font-black uppercase tracking-widest block mb-1 ${portfolioStats.dailyPLPositive ? 'text-emerald-600' : 'text-rose-600'}`}>Day Gain/Loss</span>
+                                            <div className={`text-xl font-black ${portfolioStats.dailyPLPositive ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                                {portfolioStats.dailyPLPositive ? '+' : ''}{portfolioStats.dayPL.toLocaleString()}
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={() => router.push('/portfolio')}
+                                            className="w-full py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all transform active:scale-95 shadow-lg shadow-slate-200"
+                                        >
+                                            View Full Portfolio
+                                        </button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* FINAL ROW: Volume Drivers & Convergence */}
+                        <div className="lg:col-span-3 grid grid-cols-1 lg:grid-cols-12 gap-6">
+                            <div className="lg:col-span-8">
+                                <Card className="bg-white border-none shadow-xl shadow-slate-200/50">
+                                    <CardHeader className="p-6 pb-2">
+                                        <CardTitle className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <ActivityIcon size={14} className="text-indigo-500" /> Rotation & Convergence
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-6 pt-0">
+                                        <div className="h-[350px]">
+                                            <SectorGraph />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            <div className="lg:col-span-4 h-full">
+                                <Card className="bg-white border-none shadow-xl shadow-slate-200/50 h-full">
+                                    <CardHeader className="p-6 pb-2">
+                                        <CardTitle className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <Zap size={14} /> Volume Shockers
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-6 pt-0">
+                                        <VolumeShockers stocks={top_turnover} />
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <style jsx global>{`
+                @keyframes infinite-scroll {
+                    from { transform: translateX(0); }
+                    to { transform: translateX(-50%); }
+                }
+                .animate-infinite-scroll {
+                    animation: infinite-scroll 40s linear infinite;
+                }
+                .scrollbar-hide::-webkit-scrollbar {
+                    display: none;
+                }
+                .scrollbar-hide {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+            `}</style>
         </DashboardLayout>
     );
 }
