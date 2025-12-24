@@ -11,3 +11,4 @@ urlpatterns = [
     path("dashboard/", views.dashboard, name="dashboard"),
     path("users/me/", views.get_current_user, name="user_me"),
 ]
+
