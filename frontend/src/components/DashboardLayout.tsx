@@ -43,6 +43,7 @@ const navItems = [
             { name: 'Accumulators', href: '/accumulation?tab=accumulators' },
         ]
     },
+    { name: 'Financials', href: '/financials', icon: FileText },
     { name: 'Strategies', href: '/strategies', icon: Lightbulb },
     { name: 'Pipeline', href: '/pipeline', icon: Settings },
 ];
