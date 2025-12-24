@@ -34,6 +34,7 @@ export const FINANCIAL_TEMPLATES: Record<string, FinancialTemplate> = {
                         { label: 'Due From Nepal Rastra Bank', key: 'due_from_nrb' },
                         { label: 'Placement With BFIs', key: 'placement_bfis' },
                         { label: 'Derivate Financial Instruments', key: 'derivative_assets' },
+                        { label: 'Other Trading Assets', key: 'trading_assets' },
                         { label: 'Loan and Advances To BFIs', key: 'loans_bfis' },
                         { label: 'Loans and Advances To Customers', key: 'loans_customers' },
                         { label: 'Investment Securities', key: 'investment_securities' },
@@ -45,6 +46,7 @@ export const FINANCIAL_TEMPLATES: Record<string, FinancialTemplate> = {
                         { label: 'Goodwill and Intangible Assets', key: 'intangible_assets' },
                         { label: 'Deferred Tax Assets', key: 'deferred_tax_assets' },
                         { label: 'Other Assets', key: 'other_assets' },
+                        { label: 'Total Assets', key: 'total_assets' },
                     ]
                 },
                 {
@@ -62,6 +64,7 @@ export const FINANCIAL_TEMPLATES: Record<string, FinancialTemplate> = {
                         { label: 'Other Liabilities', key: 'other_liabilities' },
                         { label: 'Debt Securities Issued', key: 'debt_securities' },
                         { label: 'Subordinated Liabilities', key: 'subordinated_liabilities' },
+                        { label: 'Total Liabilities', key: 'total_liabilities' },
                     ]
                 },
                 {
@@ -71,15 +74,16 @@ export const FINANCIAL_TEMPLATES: Record<string, FinancialTemplate> = {
                         { label: 'Share Capital', key: 'share_capital' },
                         { label: 'Share Premium', key: 'share_premium' },
                         { label: 'Retained Earnings', key: 'retained_earnings' },
-                        { label: 'Reserves', key: 'reserves' },
-                        { label: 'Non- Controlling Interest', key: 'non_controlling_interest' },
+                        { label: 'Reserves', key: 'reserves_reserves' },
+                        { label: 'Total Equity', key: 'total_equity' },
+                        { label: 'Total Liabilities & Equity', key: 'total_liabilities_equity' },
                     ]
                 }
             ],
             profit_loss: [
                 {
-                    label: 'PROFIT/LOSS STATEMENT',
-                    key: 'PL',
+                    label: 'INCOME',
+                    key: 'INCOME',
                     particulars: [
                         { label: 'Interest Income', key: 'interest_income' },
                         { label: 'Interest Expense', key: 'interest_expense' },
@@ -87,20 +91,39 @@ export const FINANCIAL_TEMPLATES: Record<string, FinancialTemplate> = {
                         { label: 'Fee and Commission Income', key: 'fee_income' },
                         { label: 'Fee and Commission Expense', key: 'fee_expense' },
                         { label: 'Net Fee and Commission Income', key: 'net_fee_income' },
+                        { label: 'Net Interest, Fee & Commission Income', key: 'net_int_fee_income' },
                         { label: 'Net Trading Income', key: 'trading_income' },
-                        { label: 'Other Operating Income', key: 'other_operating_income' },
+                        { label: 'Other Operating Income', key: 'other_access_income' },
                         { label: 'Total Operating Income', key: 'total_operating_income' },
-                        { label: 'Impairment Charge/(Reversal)', key: 'impairment_charge' },
+                    ]
+                },
+                {
+                    label: 'EXPENSES & LOSSES',
+                    key: 'EXPENSES',
+                    particulars: [
+                        { label: 'Impairment Charge/(Reversal) for Loans', key: 'impairment_charge' },
                         { label: 'Net Operating Income', key: 'net_operating_income' },
                         { label: 'Personnel Expenses', key: 'personnel_expenses' },
-                        { label: 'Other Operating Expenses', key: 'other_expenses' },
+                        { label: 'Other Operating Expenses', key: 'other_operating_expenses' },
                         { label: 'Depreciation & Amortisation', key: 'depreciation' },
                         { label: 'Operating Profit', key: 'operating_profit' },
                         { label: 'Non Operating Income', key: 'non_operating_income' },
                         { label: 'Non Operating Expense', key: 'non_operating_expense' },
                         { label: 'Profit Before Income Tax', key: 'pbt' },
                         { label: 'Income Tax Expenses', key: 'tax' },
-                        { label: 'Profit/ Loss For The Period', key: 'net_profit' },
+                        { label: 'Profit/Loss For The Period', key: 'net_profit' },
+                    ]
+                },
+                {
+                    label: 'REGULATORY & OTHERS',
+                    key: 'REGULATORY',
+                    particulars: [
+                        { label: 'Credit To Deposit Ratio', key: 'cd_ratio' },
+                        { label: 'NPL to Total Loans', key: 'npl_ratio' },
+                        { label: 'Base Rate', key: 'base_rate' },
+                        { label: 'Interest Rate Spread', key: 'spread' },
+                        { label: 'Core Capital (Tier 1)', key: 'core_capital' },
+                        { label: 'Total Capital Fund', key: 'capital_fund' },
                     ]
                 }
             ]
@@ -112,43 +135,47 @@ export const FINANCIAL_TEMPLATES: Record<string, FinancialTemplate> = {
         sections: {
             balance_sheet: [
                 {
-                    label: 'ASSETS',
-                    key: 'ASSETS',
+                    label: 'QUARTERLY SUMMARY',
+                    key: 'SUMMARY',
                     particulars: [
-                        { label: 'Total Assets', key: 'total_assets' },
-                        { label: 'Loans and Advances to Customers', key: 'loans_customers' },
-                        { label: 'Loans and Advances to BFIs', key: 'loans_bfis' },
+                        { label: 'Placements with BFIs', key: 'placement_bfis' },
+                        { label: 'Loans to Customers', key: 'loans_customers' },
                         { label: 'Investment Securities', key: 'investment_securities' },
-                    ]
-                },
-                {
-                    label: 'LIABILITIES',
-                    key: 'LIABILITIES',
-                    particulars: [
+                        { label: 'Total Assets', key: 'total_assets' },
                         { label: 'Deposits from Customers', key: 'deposits_customers' },
                         { label: 'Borrowings', key: 'borrowings' },
-                    ]
-                },
-                {
-                    label: 'EQUITY',
-                    key: 'EQUITY',
-                    particulars: [
                         { label: 'Paid Up Capital', key: 'paid_up_capital' },
-                        { label: 'Reserve and Surplus', key: 'reserves' },
+                        { label: 'Reserves and Surplus', key: 'reserves' },
                         { label: 'Total Equity', key: 'total_equity' },
                     ]
                 }
             ],
             profit_loss: [
                 {
-                    label: 'PROFIT & LOSS',
+                    label: 'QUARTERLY P&L',
                     key: 'PL',
                     particulars: [
                         { label: 'Interest Income', key: 'interest_income' },
                         { label: 'Net Interest Income', key: 'net_interest_income' },
+                        { label: 'Net Fee & Commission Income', key: 'net_fee_income' },
                         { label: 'Total Operating Income', key: 'total_operating_income' },
+                        { label: 'Impairment Charges', key: 'impairment_charges' },
                         { label: 'Operating Profit', key: 'operating_profit' },
                         { label: 'Net Profit', key: 'net_profit' },
+                        { label: 'Distributable Profit', key: 'distributable_profit' },
+                    ]
+                },
+                {
+                    label: 'KEY RATIOS',
+                    key: 'RATIOS',
+                    particulars: [
+                        { label: 'Annualized EPS', key: 'eps_annualized' },
+                        { label: 'Non-Performing Loan (NPL)', key: 'npl' },
+                        { label: 'Cost of Funds', key: 'cost_of_funds' },
+                        { label: 'Credit to Deposit Ratio (CD)', key: 'cd_ratio' },
+                        { label: 'Base Rate', key: 'base_rate' },
+                        { label: 'Interest Spread', key: 'spread' },
+                        { label: 'Net Worth Per Share', key: 'book_value' },
                     ]
                 }
             ]
@@ -474,6 +501,116 @@ export const FINANCIAL_TEMPLATES: Record<string, FinancialTemplate> = {
                         { label: 'Gross Profit', key: 'gross_profit' },
                         { label: 'Operating Expenses', key: 'operating_expenses' },
                         { label: 'Net Profit After Tax', key: 'net_profit' },
+                    ]
+                }
+            ]
+        }
+    },
+    HYDRO_QUARTERLY: {
+        id: 'HYDRO_QUARTERLY',
+        label: 'Hydropower (Quarterly)',
+        sections: {
+            balance_sheet: [
+                {
+                    label: 'QUARTERLY FINANCIAL SUMMARY',
+                    key: 'SUMMARY',
+                    particulars: [
+                        { label: 'Paid Up Capital', key: 'paid_up_capital' },
+                        { label: 'Reserve and Surplus', key: 'reserves' },
+                        { label: 'Long Term Loans', key: 'long_term_loans' },
+                        { label: 'Total Equity', key: 'total_equity' },
+                        { label: 'Total Liabilities', key: 'total_liabilities' },
+                        { label: 'Net Fixed Assets', key: 'fixed_assets' },
+                        { label: 'Total Assets', key: 'total_assets' },
+                    ]
+                }
+            ],
+            profit_loss: [
+                {
+                    label: 'QUARTERLY PROFIT/LOSS',
+                    key: 'PL',
+                    particulars: [
+                        { label: 'Revenue from Power Sales', key: 'revenue' },
+                        { label: 'Cost of Sales', key: 'cost_of_sales' },
+                        { label: 'Gross Profit', key: 'gross_profit' },
+                        { label: 'Operating Expenses', key: 'operating_expenses' },
+                        { label: 'Operating Profit', key: 'operating_profit' },
+                        { label: 'Financial Costs', key: 'finance_costs' },
+                        { label: 'Net Profit', key: 'net_profit' },
+                        { label: 'EPS Reported', key: 'eps_reported' },
+                        { label: 'Book Value Reported', key: 'book_value_reported' },
+                    ]
+                }
+            ]
+        }
+    },
+    INSURANCE_QUARTERLY: {
+        id: 'INSURANCE_QUARTERLY',
+        label: 'Insurance (Quarterly)',
+        sections: {
+            balance_sheet: [
+                {
+                    label: 'QUARTERLY FINANCIAL SUMMARY',
+                    key: 'SUMMARY',
+                    particulars: [
+                        { label: 'Paid Up Capital', key: 'paid_up_capital' },
+                        { label: 'Reserves and Surplus', key: 'reserves' },
+                        { label: 'Insurance Fund', key: 'insurance_fund' },
+                        { label: 'Total Equity', key: 'total_equity' },
+                        { label: 'Total Investments', key: 'investments' },
+                        { label: 'Total Assets', key: 'total_assets' },
+                    ]
+                }
+            ],
+            profit_loss: [
+                {
+                    label: 'QUARTERLY PROFIT/LOSS',
+                    key: 'PL',
+                    particulars: [
+                        { label: 'Net Premium', key: 'net_premium' },
+                        { label: 'Claims Paid', key: 'claims_paid' },
+                        { label: 'Investment Income', key: 'investment_income' },
+                        { label: 'Management Expenses', key: 'expenses' },
+                        { label: 'Net Profit', key: 'net_profit' },
+                        { label: 'Number of Policies', key: 'policies_count' },
+                        { label: 'EPS Reported', key: 'eps_reported' },
+                        { label: 'Book Value Reported', key: 'book_value_reported' },
+                    ]
+                }
+            ]
+        }
+    },
+    MANUFACTURING_QUARTERLY: {
+        id: 'MANUFACTURING_QUARTERLY',
+        label: 'Manufacturing (Quarterly)',
+        sections: {
+            balance_sheet: [
+                {
+                    label: 'QUARTERLY FINANCIAL SUMMARY',
+                    key: 'SUMMARY',
+                    particulars: [
+                        { label: 'Paid Up Capital', key: 'paid_up_capital' },
+                        { label: 'Reserve and Surplus', key: 'reserves' },
+                        { label: 'Long Term Loans', key: 'long_term_loans' },
+                        { label: 'Total Equity', key: 'total_equity' },
+                        { label: 'Net Fixed Assets', key: 'fixed_assets' },
+                        { label: 'Total Assets', key: 'total_assets' },
+                    ]
+                }
+            ],
+            profit_loss: [
+                {
+                    label: 'QUARTERLY PROFIT/LOSS',
+                    key: 'PL',
+                    particulars: [
+                        { label: 'Sales Revenue', key: 'revenue' },
+                        { label: 'Cost of Sales', key: 'cost_of_sales' },
+                        { label: 'Gross Profit', key: 'gross_profit' },
+                        { label: 'Operating Expenses', key: 'operating_expenses' },
+                        { label: 'Operating Profit', key: 'operating_profit' },
+                        { label: 'Net Profit', key: 'net_profit' },
+                        { label: 'EPS Reported', key: 'eps_reported' },
+                        { label: 'Book Value Reported', key: 'book_value_reported' },
                     ]
                 }
             ]

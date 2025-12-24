@@ -95,23 +95,23 @@ export default function AdminFundamentals({ ticker, data }: AdminFundamentalsPro
             <div className="bg-gray-50/50 border-b px-8 py-6">
                 <div className="flex flex-wrap items-center justify-between gap-y-6">
                     <div className="flex flex-col gap-1 min-w-[140px]">
-                        <Label className="text-[10px] font-black uppercase tracking-wider text-gray-400">Listed Date</Label>
+                        <Label className="text-xs font-black uppercase tracking-wider text-gray-400">Listed Date</Label>
                         <span className="text-sm font-bold text-gray-900">{fundamental?.listed_date || '2019-01-01'}</span>
                     </div>
                     <div className="flex flex-col gap-1 min-w-[160px]">
-                        <Label className="text-[10px] font-black uppercase tracking-wider text-gray-400">Market Capitalization</Label>
+                        <Label className="text-xs font-black uppercase tracking-wider text-gray-400">Market Capitalization</Label>
                         <span className="text-sm font-bold text-gray-900">{formatCurrencyShort(fundamental?.market_cap)}</span>
                     </div>
                     <div className="flex flex-col gap-1 min-w-[160px]">
-                        <Label className="text-[10px] font-black uppercase tracking-wider text-gray-400">Free Float Market Capitalization</Label>
+                        <Label className="text-xs font-black uppercase tracking-wider text-gray-400">Free Float Market Capitalization</Label>
                         <span className="text-sm font-bold text-gray-900">{formatCurrencyShort(fundamental?.free_float_market_cap)}</span>
                     </div>
                     <div className="flex flex-col gap-1 min-w-[160px]">
-                        <Label className="text-[10px] font-black uppercase tracking-wider text-gray-400">Shares Outstanding</Label>
+                        <Label className="text-xs font-black uppercase tracking-wider text-gray-400">Shares Outstanding</Label>
                         <span className="text-sm font-bold text-gray-900">{formatQuantity(fundamental?.shares_outstanding)}</span>
                     </div>
                     <div className="flex flex-col gap-1 min-w-[160px]">
-                        <Label className="text-[10px] font-black uppercase tracking-wider text-gray-400">Public Shares</Label>
+                        <Label className="text-xs font-black uppercase tracking-wider text-gray-400">Public Shares</Label>
                         <span className="text-sm font-bold text-gray-900">{formatQuantity(fundamental?.public_shares)}</span>
                     </div>
                 </div>
@@ -135,7 +135,7 @@ export default function AdminFundamentals({ ticker, data }: AdminFundamentalsPro
                                 { label: 'Graham Diff', value: fundamental?.graham_number_diff, suffix: '%' },
                             ].map((item, idx) => (
                                 <div key={idx} className="flex justify-between items-center group py-0.5">
-                                    <Label className="text-[11px] font-semibold text-gray-400 group-hover:text-gray-600 transition-colors uppercase tracking-tight">{item.label}</Label>
+                                    <Label className="text-xs font-semibold text-gray-400 group-hover:text-gray-600 transition-colors uppercase tracking-tight">{item.label}</Label>
                                     <span className="text-sm font-bold text-gray-900 tabular-nums">
                                         {item.value || '-'}{item.value && item.suffix}
                                     </span>
@@ -158,7 +158,7 @@ export default function AdminFundamentals({ ticker, data }: AdminFundamentalsPro
                                 { label: 'Payout Ratio', value: fundamental?.dividend_payout_ratio },
                             ].map((item, idx) => (
                                 <div key={idx} className="flex justify-between items-center group py-0.5">
-                                    <Label className="text-[11px] font-semibold text-gray-400 group-hover:text-gray-600 transition-colors uppercase tracking-tight">{item.label}</Label>
+                                    <Label className="text-xs font-semibold text-gray-400 group-hover:text-gray-600 transition-colors uppercase tracking-tight">{item.label}</Label>
                                     <span className={`text-sm font-bold tabular-nums ${item.color || 'text-gray-900'}`}>
                                         {item.value ? `${item.value}%` : '-'}
                                     </span>
@@ -175,27 +175,27 @@ export default function AdminFundamentals({ ticker, data }: AdminFundamentalsPro
                         </div>
                         <div className="space-y-4">
                             <div className="flex justify-between items-center group py-0.5">
-                                <Label className="text-[11px] font-semibold text-gray-400 uppercase tracking-tight">EPS (TTM)</Label>
+                                <Label className="text-xs font-semibold text-gray-400 uppercase tracking-tight">EPS (TTM)</Label>
                                 <span className="text-sm font-bold text-gray-900 tabular-nums">{fundamental?.eps || '-'}</span>
                             </div>
                             <div className="flex justify-between items-center group py-0.5">
-                                <Label className="text-[11px] font-semibold text-gray-400 uppercase tracking-tight">Book Value</Label>
+                                <Label className="text-xs font-semibold text-gray-400 uppercase tracking-tight">Book Value</Label>
                                 <span className="text-sm font-bold text-gray-900 tabular-nums">{fundamental?.book_value || '-'}</span>
                             </div>
                             <div className="flex justify-between items-center group py-0.5">
-                                <Label className="text-[11px] font-semibold text-gray-400 uppercase tracking-tight">EPS Growth (QoQ)</Label>
+                                <Label className="text-xs font-semibold text-gray-400 uppercase tracking-tight">EPS Growth (QoQ)</Label>
                                 <span className={`text-sm font-bold tabular-nums ${fundamental?.qoq_earnings_growth >= 0 ? 'text-green-600' : 'text-red-500'}`}>
                                     {fundamental?.qoq_earnings_growth ? `${fundamental.qoq_earnings_growth}%` : '-'}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center group py-0.5">
-                                <Label className="text-[11px] font-semibold text-gray-400 uppercase tracking-tight">EPS Growth (YoY)</Label>
+                                <Label className="text-xs font-semibold text-gray-400 uppercase tracking-tight">EPS Growth (YoY)</Label>
                                 <span className={`text-sm font-bold tabular-nums ${fundamental?.yoy_earnings_growth >= 0 ? 'text-green-600' : 'text-red-500'}`}>
                                     {fundamental?.yoy_earnings_growth ? `${fundamental.yoy_earnings_growth}%` : '-'}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center group py-0.5">
-                                <Label className="text-[11px] font-semibold text-gray-400 uppercase tracking-tight">Debt to Equity</Label>
+                                <Label className="text-xs font-semibold text-gray-400 uppercase tracking-tight">Debt to Equity</Label>
                                 <span className="text-sm font-bold text-gray-900 tabular-nums">{fundamental?.debt_to_equity || '-'}</span>
                             </div>
                         </div>
@@ -208,7 +208,7 @@ export default function AdminFundamentals({ ticker, data }: AdminFundamentalsPro
                             <h3 className="text-xs font-black uppercase text-gray-900 tracking-wider">Insights</h3>
                         </div>
                         <div className="bg-gray-50/50 rounded-xl p-5 border border-dashed border-gray-200">
-                            <p className="text-[11px] text-gray-500 leading-relaxed font-medium mb-4">
+                            <p className="text-xs text-gray-500 leading-relaxed font-medium mb-4">
                                 {fundamental
                                     ? "Fundamentals are automatically derived from the latest verified financial reports and market prices."
                                     : "Global fundamental data not yet calculated. It will be derived automatically when financial reports are added."

@@ -200,7 +200,7 @@ export default function AdminFinancials({ ticker }: AdminFinancialsProps) {
                                     onClick={() => handleEdit(report!.id)}
                                 >
                                     {report.is_audited ? <CheckCircle2 className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
-                                    <span className="text-[10px] font-bold">
+                                    <span className="text-xs font-bold">
                                         {report.net_profit ? (Number(report.net_profit) / 1000000).toFixed(1) + 'M' : 'View'}
                                     </span>
                                 </Button>
@@ -257,12 +257,12 @@ export default function AdminFinancials({ ticker }: AdminFinancialsProps) {
                     <Table>
                         <TableHeader>
                             <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
-                                <TableHead className="w-[150px] font-bold text-xs uppercase tracking-widest text-gray-500 py-4 px-6">Fiscal Year</TableHead>
-                                <TableHead className="text-center font-bold text-xs uppercase tracking-widest text-gray-500 py-4 w-[100px]">Q1</TableHead>
-                                <TableHead className="text-center font-bold text-xs uppercase tracking-widest text-gray-500 py-4 w-[100px]">Q2</TableHead>
-                                <TableHead className="text-center font-bold text-xs uppercase tracking-widest text-gray-500 py-4 w-[100px]">Q3</TableHead>
-                                <TableHead className="text-center font-bold text-xs uppercase tracking-widest text-gray-500 py-4 w-[100px]">Q4</TableHead>
-                                <TableHead className="text-center font-bold text-xs uppercase tracking-widest text-gray-500 py-4 w-[120px] bg-blue-50/50 text-blue-600">Annual</TableHead>
+                                <TableHead className="w-[150px] font-bold text-sm uppercase tracking-widest text-gray-500 py-4 px-6">Fiscal Year</TableHead>
+                                <TableHead className="text-center font-bold text-sm uppercase tracking-widest text-gray-500 py-4 w-[100px]">Q1</TableHead>
+                                <TableHead className="text-center font-bold text-sm uppercase tracking-widest text-gray-500 py-4 w-[100px]">Q2</TableHead>
+                                <TableHead className="text-center font-bold text-sm uppercase tracking-widest text-gray-500 py-4 w-[100px]">Q3</TableHead>
+                                <TableHead className="text-center font-bold text-sm uppercase tracking-widest text-gray-500 py-4 w-[100px]">Q4</TableHead>
+                                <TableHead className="text-center font-bold text-sm uppercase tracking-widest text-gray-500 py-4 w-[120px] bg-blue-50/50 text-blue-600">Annual</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>

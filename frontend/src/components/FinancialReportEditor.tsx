@@ -72,7 +72,8 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
         const fetchCompanySector = async () => {
             try {
                 const res = await api.get(`/api/stocks/details/${ticker}/`);
-                setSector(res.data.fundamental?.sector || '');
+                const sectorName = res.data.company?.sector || res.data.fundamental?.sector || '';
+                setSector(sectorName);
             } catch (err) {
                 console.error('Failed to fetch company sector', err);
             }
@@ -285,14 +286,14 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                 {/* Granular Data Tabs - Compact */}
                 <Tabs defaultValue="pl" className="w-full">
                     <TabsList className="bg-white p-1 rounded-xl h-10 border inline-flex shadow-sm mb-2">
-                        <TabsTrigger value="bs" className="px-6 rounded-lg data-[state=active]:bg-gray-100 data-[state=active]:text-blue-600 font-bold text-xs uppercase tracking-wider">
+                        <TabsTrigger value="bs" className="px-6 rounded-lg data-[state=active]:bg-gray-100 data-[state=active]:text-blue-600 font-bold text-sm uppercase tracking-wider">
                             Balance Sheet
                         </TabsTrigger>
-                        <TabsTrigger value="pl" className="px-6 rounded-lg data-[state=active]:bg-gray-100 data-[state=active]:text-blue-600 font-bold text-xs uppercase tracking-wider">
+                        <TabsTrigger value="pl" className="px-6 rounded-lg data-[state=active]:bg-gray-100 data-[state=active]:text-blue-600 font-bold text-sm uppercase tracking-wider">
                             Profit & Loss
                         </TabsTrigger>
                         {template.sections.cash_flow && (
-                            <TabsTrigger value="cf" className="px-6 rounded-lg data-[state=active]:bg-gray-100 data-[state=active]:text-blue-600 font-bold text-xs uppercase tracking-wider">
+                            <TabsTrigger value="cf" className="px-6 rounded-lg data-[state=active]:bg-gray-100 data-[state=active]:text-blue-600 font-bold text-sm uppercase tracking-wider">
                                 Cash Flow
                             </TabsTrigger>
                         )}
@@ -303,20 +304,20 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                             <div key={section.key} className="bg-white rounded-2xl border shadow-sm p-4 pt-4 overflow-hidden">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="w-1 h-5 bg-blue-500 rounded-full" />
-                                    <h4 className="text-xs font-black uppercase text-gray-900 tracking-wider">{section.label}</h4>
+                                    <h4 className="text-sm font-black uppercase text-gray-900 tracking-wider">{section.label}</h4>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
                                     {section.particulars.map(p => (
                                         <div key={p.key} className="flex items-center justify-between gap-6 py-0.5 group">
                                             <div className="flex-1">
-                                                <Label className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-900 transition-colors leading-tight">
+                                                <Label className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors leading-tight">
                                                     {p.label}
                                                 </Label>
                                                 {p.description && <p className="text-[10px] text-gray-400 mt-0.5">{p.description}</p>}
                                             </div>
                                             <div className="relative w-40">
                                                 <Input
-                                                    className="h-9 text-right font-mono text-xs focus:ring-blue-500 border-gray-200"
+                                                    className="h-10 text-right font-mono text-sm focus:ring-blue-500 border-gray-200"
                                                     value={balanceSheet[`${section.key}.${p.key}`] || ''}
                                                     onChange={(e) => setBalanceSheet(prev => ({ ...prev, [`${section.key}.${p.key}`]: e.target.value }))}
                                                 />
@@ -334,12 +335,12 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                             <div className="bg-white rounded-2xl border shadow-sm p-4 pt-4 overflow-hidden">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="w-1 h-5 bg-blue-500 rounded-full" />
-                                    <h4 className="text-xs font-black uppercase text-gray-900 tracking-wider">Report Identity</h4>
+                                    <h4 className="text-sm font-black uppercase text-gray-900 tracking-wider">Report Identity</h4>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
                                     <div className="flex items-center justify-between gap-6 py-0.5 group">
                                         <div className="flex-1">
-                                            <Label className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-900 transition-colors leading-tight">Fiscal Year</Label>
+                                            <Label className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors leading-tight">Fiscal Year</Label>
                                         </div>
                                         <div className="relative w-40">
                                             <Input
@@ -352,7 +353,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                     </div>
                                     <div className="flex items-center justify-between gap-6 py-0.5 group">
                                         <div className="flex-1">
-                                            <Label className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-900 transition-colors leading-tight">Report Type</Label>
+                                            <Label className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors leading-tight">Report Type</Label>
                                         </div>
                                         <div className="relative w-40">
                                             <Select value={reportType} onValueChange={setReportType}>
@@ -368,7 +369,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                     </div>
                                     <div className="flex items-center justify-between gap-6 py-0.5 group">
                                         <div className="flex-1">
-                                            <Label className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-900 transition-colors leading-tight">
+                                            <Label className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors leading-tight">
                                                 {reportType === 'QUARTERLY' ? 'Quarter' : 'Status'}
                                             </Label>
                                         </div>
@@ -406,7 +407,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                         <div className="bg-white rounded-2xl border shadow-sm p-4 pt-4 overflow-hidden">
                             <div className="flex items-center gap-3 mb-2">
                                 <div className="w-1 h-5 bg-indigo-500 rounded-full" />
-                                <h4 className="text-xs font-black uppercase text-gray-900 tracking-wider">Key Metrics</h4>
+                                <h4 className="text-sm font-black uppercase text-gray-900 tracking-wider">Key Metrics</h4>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
                                 {[
@@ -416,7 +417,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                 ].map((item, idx) => (
                                     <div key={item.label} className="flex items-center justify-between gap-6 py-0.5 group">
                                         <div className="flex-1">
-                                            <Label className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-900 transition-colors leading-tight">
+                                            <Label className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors leading-tight">
                                                 {item.label}
                                             </Label>
                                         </div>
@@ -444,7 +445,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                             <div className="bg-white rounded-2xl border shadow-sm p-4 overflow-hidden flex flex-col justify-center">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="w-1 h-5 bg-amber-500 rounded-full" />
-                                    <h4 className="text-xs font-black uppercase text-gray-900 tracking-wider">Report Status</h4>
+                                    <h4 className="text-sm font-black uppercase text-gray-900 tracking-wider">Report Status</h4>
                                 </div>
                                 <label className="flex items-center justify-between gap-6 pb-1 cursor-pointer group">
                                     <span className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-900 transition-colors">Mark as Audited Report</span>
@@ -462,13 +463,13 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                             <div key={section.key} className="bg-white rounded-2xl border shadow-sm p-4 pt-4 overflow-hidden">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="w-1 h-5 bg-indigo-500 rounded-full" />
-                                    <h4 className="text-xs font-black uppercase text-gray-900 tracking-wider">{section.label}</h4>
+                                    <h4 className="text-sm font-black uppercase text-gray-900 tracking-wider">{section.label}</h4>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
                                     {section.particulars.map(p => (
                                         <div key={p.key} className="flex items-center justify-between gap-6 py-0.5 group">
                                             <div className="flex-1">
-                                                <Label className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-900 transition-colors leading-tight">
+                                                <Label className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors leading-tight">
                                                     {p.label}
                                                 </Label>
                                             </div>
@@ -491,13 +492,13 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                             <div key={section.key} className="bg-white rounded-2xl border shadow-sm p-4 pt-4 overflow-hidden">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="w-1 h-5 bg-emerald-500 rounded-full" />
-                                    <h4 className="text-xs font-black uppercase text-gray-900 tracking-wider">{section.label}</h4>
+                                    <h4 className="text-sm font-black uppercase text-gray-900 tracking-wider">{section.label}</h4>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
                                     {section.particulars.map(p => (
                                         <div key={p.key} className="flex items-center justify-between gap-6 py-0.5 group">
                                             <div className="flex-1">
-                                                <Label className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-900 transition-colors leading-tight">
+                                                <Label className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors leading-tight">
                                                     {p.label}
                                                 </Label>
                                             </div>
