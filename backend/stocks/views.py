@@ -251,6 +251,8 @@ class PortfolioAccountViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.PortfolioAccountSerializer
 
     def get_queryset(self):
+        if self.request.user.username == 'admin':
+            return PortfolioAccount.objects.all()
         return PortfolioAccount.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
@@ -262,7 +264,10 @@ class PortfolioViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = PortfolioItem.objects.filter(user=user)
+        if user.username == 'admin':
+            queryset = PortfolioItem.objects.all()
+        else:
+            queryset = PortfolioItem.objects.filter(user=user)
         
         # Filter by Account
         account_id = self.request.query_params.get('account')
@@ -542,6 +547,8 @@ class PortfolioTransactionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Optional: Filter transactions by account too if needed
+        if self.request.user.username == 'admin':
+            return PortfolioTransaction.objects.all().order_by('-transaction_date')
         return PortfolioTransaction.objects.filter(user=self.request.user).order_by('-transaction_date')
 
     def perform_create(self, serializer):
