@@ -40,6 +40,32 @@ export default function TransactionModal({
     });
     const [loading, setLoading] = useState(false);
     const [estimates, setEstimates] = useState<{ commission: number; sebon: number; dp: number; cgt: number; total: number } | null>(null);
+    const [isAshmi, setIsAshmi] = useState(false);
+
+    useEffect(() => {
+        const checkUser = async () => {
+            try {
+                const token = localStorage.getItem('access_token');
+                if (token) {
+                    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+                    const res = await axios.get(`${apiUrl}/api/users/me/`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (res.data.username === 'ashmi') {
+                        setIsAshmi(true);
+                        // Auto-select first account if not already selected
+                        if (accounts.length > 0) {
+                            setFormData(prev => ({ ...prev, account: accounts[0].id.toString() }));
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to check user:", error);
+            }
+        };
+        checkUser();
+    }, [accounts]);
+
 
     // NEPSE Fee Logic Reuse (Client-side usage for estimation)
     const calculateEstimates = () => {
@@ -184,20 +210,23 @@ export default function TransactionModal({
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     {/* Account Selector */}
+                    {/* Account Selector */}
                     {accounts.length > 0 ? (
-                        <div className="space-y-2">
-                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Portfolio Account</label>
-                            <select
-                                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                                value={formData.account}
-                                onChange={(e) => setFormData({ ...formData, account: e.target.value })}
-                            >
-                                <option value="">Select Account (Default)</option>
-                                {accounts.map(acc => (
-                                    <option key={acc.id} value={acc.id}>{acc.name}</option>
-                                ))}
-                            </select>
-                        </div>
+                        !isAshmi && (
+                            <div className="space-y-2">
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Portfolio Account</label>
+                                <select
+                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                    value={formData.account}
+                                    onChange={(e) => setFormData({ ...formData, account: e.target.value })}
+                                >
+                                    <option value="">Select Account (Default)</option>
+                                    {accounts.map(acc => (
+                                        <option key={acc.id} value={acc.id}>{acc.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )
                     ) : (
                         <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm mb-4">
                             <strong>No Account Found!</strong>

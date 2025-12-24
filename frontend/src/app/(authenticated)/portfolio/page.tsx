@@ -12,7 +12,7 @@ import TransactionModal, { PortfolioAccount } from '@/components/TransactionModa
 import { CreateAccountDialog } from '@/components/CreateAccountDialog';
 import StockLink from '@/components/StockLink';
 import { Wand2, Target, Check, ChevronDown, ChevronUp, Radio, PieChart as PieIcon, BarChart as BarIcon, Grid3X3, Zap, Search, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
-import { InlineExitPlan } from '@/components/InlineExitPlan';
+import { ExitStrategyDialog } from '@/components/ExitStrategyDialog';
 import { CompanySelect } from '@/components/CompanySelect';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -64,7 +64,8 @@ export default function PortfolioPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [promoteTicker, setPromoteTicker] = useState<string>('');
     const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
-    const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
+    const [isExitPlanDialogOpen, setIsExitPlanDialogOpen] = useState(false);
+    const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<PortfolioItem | null>(null);
     const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
     const [isWatchlistModalOpen, setIsWatchlistModalOpen] = useState(false);
     const [selectedWatchlistItem, setSelectedWatchlistItem] = useState<WatchlistItem | null>(null);
@@ -239,6 +240,12 @@ export default function PortfolioPage() {
     const totalGainLoss = totalCurrentValue - totalInvestment;
     const totalGainLossPercent = totalInvestment ? (totalGainLoss / totalInvestment * 100) : 0;
     const totalDayGainLoss = displayedItems.reduce((acc, item) => acc + Number(item.day_gain_loss), 0);
+
+    const stats = useMemo(() => {
+        const profit = displayedItems.filter(i => Number(i.gain_loss) > 0).length;
+        const loss = displayedItems.filter(i => Number(i.gain_loss) < 0).length;
+        return { profit, loss };
+    }, [displayedItems]);
 
     const bestPerformer = useMemo(() => {
         if (displayedItems.length === 0) return null;
@@ -466,11 +473,20 @@ export default function PortfolioPage() {
                 {/* Holdings Table - MOVED UP - Only for Holdings */}
                 {activeTab === 'holdings' && (
                     <Card className="shadow-lg border-blue-50/50">
-                        <CardHeader className="border-b border-gray-50">
+                        <CardHeader className="py-4 px-6 border-b border-gray-50">
                             <CardTitle className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                 <div className="flex items-center gap-2">
                                     <Grid3X3 className="h-5 w-5 text-gray-400" />
-                                    <span>Strategic Holdings {selectedAccount !== 'all' && <span className="text-gray-400 ml-2 text-sm font-normal">(Account: {accounts.find(a => a.id.toString() == selectedAccount)?.name})</span>}</span>
+                                    <span>Strategic Holdings</span>
+                                    <div className="flex items-center gap-1.5">
+                                        <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-50 text-[10px] px-2 py-0 h-5 font-black">
+                                            #{stats.profit} PROFIT
+                                        </Badge>
+                                        <Badge className="bg-rose-50 text-rose-700 border-rose-100 hover:bg-rose-50 text-[10px] px-2 py-0 h-5 font-black">
+                                            #{stats.loss} LOSS
+                                        </Badge>
+                                    </div>
+                                    {selectedAccount !== 'all' && <span className="text-gray-400 ml-2 text-sm font-normal">(Account: {accounts.find(a => a.id.toString() == selectedAccount)?.name})</span>}
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <div className="relative">
@@ -486,7 +502,7 @@ export default function PortfolioPage() {
                                 </div>
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-0">
+                        <CardContent className="p-0">
                             {displayedItems.length === 0 && !loading ? (
                                 <div className="text-center py-10 text-gray-500 flex flex-col items-center gap-2">
                                     <Wallet className="h-10 w-10 text-gray-200" />
@@ -497,31 +513,32 @@ export default function PortfolioPage() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
-                                                <TableHead className="font-bold text-gray-900 cursor-pointer select-none" onClick={() => handleSort('ticker')}>
+                                                <TableHead className="w-[50px] font-bold text-gray-900 py-4 px-6 text-center">SN</TableHead>
+                                                <TableHead className="font-bold text-gray-900 cursor-pointer select-none py-4" onClick={() => handleSort('ticker')}>
                                                     <div className="flex items-center gap-1">Ticker <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none" onClick={() => handleSort('quantity')}>
+                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none py-4" onClick={() => handleSort('quantity')}>
                                                     <div className="flex items-center justify-end gap-1">Quantity <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none" onClick={() => handleSort('wacc')}>
+                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none py-4" onClick={() => handleSort('wacc')}>
                                                     <div className="flex items-center justify-end gap-1">WACC (Rs.) <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none" onClick={() => handleSort('current_price')}>
+                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none py-4" onClick={() => handleSort('current_price')}>
                                                     <div className="flex items-center justify-end gap-1">LTP (Rs.) <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none" onClick={() => handleSort('current_value')}>
+                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none py-4" onClick={() => handleSort('current_value')}>
                                                     <div className="flex items-center justify-end gap-1">Total Value (Rs.) <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none" onClick={() => handleSort('gain_loss')}>
+                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none py-4" onClick={() => handleSort('gain_loss')}>
                                                     <div className="flex items-center justify-end gap-1">Profit/Loss <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none" onClick={() => handleSort('value_yield')}>
+                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none py-4" onClick={() => handleSort('value_yield')}>
                                                     <div className="flex items-center justify-end gap-1" title="Profit to Total Value Ratio">Value Yield <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none" onClick={() => handleSort('day_gain_loss')}>
+                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none py-4" onClick={() => handleSort('day_gain_loss')}>
                                                     <div className="flex items-center justify-end gap-1">Today's P/L <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
-                                                <TableHead className="w-[80px]"></TableHead>
+                                                <TableHead className="w-[80px] py-4 pr-6"></TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -531,27 +548,38 @@ export default function PortfolioPage() {
                                                 const dayPl = Number(item.day_gain_loss);
                                                 const isDayPos = dayPl >= 0;
 
-                                                const isExpanded = expandedTicker === item.ticker;
                                                 const hasStrategy = !!item.stop_loss_price;
+                                                const isUnderwater = Number(item.current_price) < Number(item.wacc || item.buy_price);
 
                                                 // Calculate R/R for row display
                                                 let rrRatio = 'N/A';
                                                 if (item.stop_loss_price && item.target_price && item.current_price) {
                                                     const risk = Number(item.current_price) - Number(item.stop_loss_price);
                                                     const reward = Number(item.target_price) - Number(item.current_price);
-                                                    if (risk > 0) rrRatio = (reward / risk).toFixed(1);
+                                                    if (risk > 0) rrRatio = `1:${(reward / risk).toFixed(1)}`;
                                                 }
 
                                                 return (
                                                     <React.Fragment key={`${item.ticker}-${idx}`}>
                                                         <TableRow
-                                                            className={`transition-all duration-300 cursor-pointer border-l-4 ${isExpanded ? 'bg-blue-50/30 border-l-blue-500' : hasStrategy ? 'border-l-green-500/50 hover:bg-gray-50' : 'border-l-transparent hover:bg-gray-50'}`}
-                                                            onClick={() => setExpandedTicker(isExpanded ? null : item.ticker)}
+                                                            className={`transition-all duration-300 cursor-pointer border-l-4 ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-blue-50/30 border-l-blue-500' : isUnderwater ? 'border-l-red-500/50 hover:bg-red-50/10' : hasStrategy ? 'border-l-green-500/50 hover:bg-gray-50' : 'border-l-transparent hover:bg-gray-50'}`}
+                                                            onClick={() => {
+                                                                setSelectedPortfolioItem(item);
+                                                                setIsExitPlanDialogOpen(true);
+                                                            }}
                                                         >
-                                                            <TableCell className="font-semibold py-5">
+                                                            <TableCell className="text-center font-bold text-gray-400 text-xs py-4 px-6">
+                                                                {(currentPage - 1) * pageSize + idx + 1}
+                                                            </TableCell>
+                                                            <TableCell className="font-semibold py-4">
                                                                 <div className="flex flex-col gap-1.5">
                                                                     <div className="flex items-center gap-2">
                                                                         <StockLink ticker={item.ticker} />
+                                                                        {isUnderwater && (
+                                                                            <Badge variant="secondary" className="bg-red-50 text-red-600 border-red-100 text-[9px] px-1.5 h-4 flex items-center gap-1">
+                                                                                UNDERWATER
+                                                                            </Badge>
+                                                                        )}
                                                                         {hasStrategy && (
                                                                             <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] px-1.5 h-4 flex items-center gap-1 animate-pulse">
                                                                                 <Radio className="h-2 w-2" /> ACTIVE
@@ -567,11 +595,11 @@ export default function PortfolioPage() {
                                                                     )}
                                                                 </div>
                                                             </TableCell>
-                                                            <TableCell className="text-right text-gray-600 font-medium">{item.quantity}</TableCell>
-                                                            <TableCell className="text-right text-gray-600 font-medium">{Number(item.wacc || item.buy_price).toFixed(2)}</TableCell>
-                                                            <TableCell className="text-right text-gray-900 font-bold">{item.current_price}</TableCell>
-                                                            <TableCell className="text-right font-black text-gray-900">{Number(item.current_value).toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
-                                                            <TableCell className={`text-right ${isPos ? 'text-green-600' : 'text-red-600'}`}>
+                                                            <TableCell className="text-right text-gray-600 font-medium py-4">{item.quantity}</TableCell>
+                                                            <TableCell className="text-right text-gray-600 font-medium py-4">{Number(item.wacc || item.buy_price).toFixed(2)}</TableCell>
+                                                            <TableCell className="text-right text-gray-900 font-bold py-4">{item.current_price}</TableCell>
+                                                            <TableCell className="text-right font-black text-gray-900 py-4">{Number(item.current_value).toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
+                                                            <TableCell className={`text-right ${isPos ? 'text-green-600' : 'text-red-600'} py-4`}>
                                                                 <div className="font-black text-sm">
                                                                     {isPos ? '+' : ''}{pl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                                                 </div>
@@ -579,39 +607,24 @@ export default function PortfolioPage() {
                                                                     {Number(item.gain_loss_percent).toFixed(2)}%
                                                                 </div>
                                                             </TableCell>
-                                                            <TableCell className="text-right">
+                                                            <TableCell className="text-right py-4">
                                                                 <div className="font-bold text-gray-600 text-xs text-right">
                                                                     {(item.value_yield || 0).toFixed(1)}%
                                                                 </div>
                                                             </TableCell>
-                                                            <TableCell className={`text-right font-black ${isDayPos ? 'text-green-600' : 'text-red-600'}`}>
+                                                            <TableCell className={`text-right font-black ${isDayPos ? 'text-green-600' : 'text-red-600'} py-4`}>
                                                                 {isDayPos ? '+' : ''}{dayPl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                                             </TableCell>
-                                                            <TableCell className="text-right">
+                                                            <TableCell className="text-right py-4 pr-6">
                                                                 <div className="flex justify-end">
                                                                     <button
-                                                                        className={`p-2 rounded-lg transition-all ${isExpanded ? 'bg-blue-600 text-white shadow-xl rotate-0' : 'text-gray-300 hover:text-blue-600 hover:bg-blue-50 rotate-[-45deg] hover:rotate-0'}`}
+                                                                        className={`p-2 rounded-lg transition-all ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-blue-600 text-white shadow-xl rotate-0' : 'text-gray-300 hover:text-blue-600 hover:bg-blue-50 rotate-[-45deg] hover:rotate-0'}`}
                                                                     >
-                                                                        {isExpanded ? <X size={18} /> : <Target size={18} />}
+                                                                        <Target size={18} />
                                                                     </button>
                                                                 </div>
                                                             </TableCell>
                                                         </TableRow>
-                                                        {isExpanded && (
-                                                            <TableRow className="bg-blue-50/5 border-none hover:bg-blue-50/5">
-                                                                <TableCell colSpan={8} className="p-0 border-none">
-                                                                    <div className="p-6 pt-0 animate-in fade-in slide-in-from-top-2 duration-300">
-                                                                        <div className="bg-white border-x border-b border-blue-100 rounded-b-2xl p-6 shadow-xl relative z-10 mx-2 mb-4">
-                                                                            <InlineExitPlan
-                                                                                portfolioItem={item}
-                                                                                onSave={fetchPortfolio}
-                                                                                onClose={() => setExpandedTicker(null)}
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        )}
                                                     </React.Fragment>
                                                 );
                                             })}
@@ -620,9 +633,20 @@ export default function PortfolioPage() {
                                 </div>
                             )}
 
+                            {/* Exit Strategy Dialog */}
+                            <ExitStrategyDialog
+                                open={isExitPlanDialogOpen}
+                                onOpenChange={setIsExitPlanDialogOpen}
+                                portfolioItem={selectedPortfolioItem}
+                                onSave={() => {
+                                    fetchPortfolio();
+                                    setIsExitPlanDialogOpen(false);
+                                }}
+                            />
+
                             {/* Pagination Controls */}
                             {totalPages > 1 && (
-                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-gray-50">
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6 px-6 border-t border-gray-50">
                                     <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
                                         Displaying <span className="text-gray-900">{(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, sortedAndFilteredItems.length)}</span> of <span className="text-gray-900">{sortedAndFilteredItems.length}</span> holdings
                                     </div>

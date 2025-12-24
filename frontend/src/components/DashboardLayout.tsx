@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home } from 'lucide-react';
 import { SearchBar } from './SearchBar';
 import { ChatSidebar } from './ChatSidebar';
 import { AlertsDropdown } from './AlertsDropdown';
@@ -15,9 +16,10 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import Cookies from 'js-cookie';
 
 const navItems = [
-    { name: 'Dashboard', href: '/home', icon: LayoutDashboard },
+    { name: 'Home', href: '/home', icon: Home },
     { name: 'Chat', href: '/chat', icon: MessageSquare },
     { name: 'Stocks', href: '/stock/NABIL', icon: TrendingUp },
     {
@@ -56,15 +58,34 @@ const stocks = [
     { symbol: 'MSFT', name: 'Microsoft Corporation' }
 ];
 
-export default function DashboardLayout({ children, title, subtitle, noPadding, showBack }: { children: React.ReactNode; title?: string; subtitle?: string; noPadding?: boolean; showBack?: boolean }) {
+export default function DashboardLayout({ children, title, subtitle, noPadding, showBack }: { children: React.ReactNode; title?: React.ReactNode; subtitle?: string; noPadding?: boolean; showBack?: boolean }) {
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
     const [isChatPinned, setIsChatPinned] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+    const [currentUser, setCurrentUser] = useState<{ id: number; username: string; email: string } | null>(null);
 
     const isChatPage = pathname === '/chat';
+
+    useEffect(() => {
+        // Fetch current user
+        import('@/lib/api').then(({ default: api }) => {
+            api.get('/api/users/me/')
+                .then(res => setCurrentUser(res.data))
+                .catch(err => console.error("Failed to load user profile", err));
+        });
+    }, []);
+
+    // Filter Navigation Items based on User
+    const filteredNavItems = navItems.filter(item => {
+        if (!currentUser) return true; // Show all while loading/default
+        if (currentUser.username === 'ashmi') {
+            return !['Chat', 'Pipeline'].includes(item.name);
+        }
+        return true;
+    });
 
     useEffect(() => {
         setIsSidebarCollapsed(isChatPinned || isChatPage);
@@ -133,10 +154,15 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
 
-        // Clear Cookies (set expiration to past)
-        document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-        document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        // Clear Cookies
+        Cookies.remove('access_token');
+        Cookies.remove('refresh_token');
+
+        // Redirect
+        router.push('/login');
     };
+
+
 
     return (
         <div className="min-h-screen bg-gray-50 flex">
@@ -148,9 +174,18 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
             >
                 <div className={`p-4 border-b border-gray-200 flex items-center justify-between ${isSidebarCollapsed ? 'flex-col gap-4' : ''}`}>
                     {!isSidebarCollapsed && (
-                        <h1 className="font-bold text-gray-900 text-2xl transition-all duration-300">
-                            Stockastic
-                        </h1>
+                        <div className="w-full flex justify-center py-0">
+                            <Link href="/home">
+                                <Image
+                                    src="/stockastic-logo-v3.png"
+                                    alt="Stockastic Logo"
+                                    width={144}
+                                    height={108}
+                                    className="object-contain"
+                                    priority
+                                />
+                            </Link>
+                        </div>
                     )}
                     <button
                         onClick={toggleSidebar}
@@ -161,7 +196,7 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
                     </button>
                 </div>
                 <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-                    {navItems.map((item) => {
+                    {filteredNavItems.map((item) => {
                         const hasSubItems = 'subItems' in item && item.subItems && item.subItems.length > 0;
                         const isExpanded = expandedMenus.includes(item.name);
                         const isActive = 'href' in item && item.href ? (pathname.startsWith(item.href) && item.href !== '/home' || pathname === item.href) : false;
@@ -233,8 +268,8 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
                 </nav>
                 <div className="p-3 border-t border-gray-200">
                     <div className={`flex flex-col gap-1 ${isSidebarCollapsed ? 'items-center' : ''}`}>
-                        <p className={`text-[10px] uppercase font-bold text-gray-400 mb-1 px-4 ${isSidebarCollapsed ? 'hidden' : ''}`}>System</p>
-                        {/* Help or other items could go here */}
+
+
                     </div>
                 </div>
             </aside>
@@ -274,7 +309,7 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
                     <div className="w-1/3 flex justify-end gap-4 items-center">
                         <AlertsDropdown />
                         <div className="flex flex-col items-end mr-2">
-                            <span className="text-sm font-semibold text-gray-800">Hi Jugal</span>
+                            <span className="text-sm font-semibold text-gray-800">Hi {currentUser?.username === 'admin' ? 'Jugal' : currentUser?.username === 'ashmi' ? 'Ashmi' : 'Guest'}</span>
                             <span className="text-[10px] text-green-500 font-medium flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
                                 Online
@@ -282,8 +317,8 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
                         </div>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <button className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shadow-sm hover:ring-2 hover:ring-blue-400 transition-all outline-none">
-                                    J
+                                <button className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shadow-sm hover:ring-2 hover:ring-blue-400 transition-all outline-none uppercase">
+                                    {currentUser?.username?.[0] || 'G'}
                                 </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-56">

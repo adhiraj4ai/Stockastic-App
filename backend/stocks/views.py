@@ -251,6 +251,8 @@ class PortfolioAccountViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.PortfolioAccountSerializer
 
     def get_queryset(self):
+        if self.request.user.username == 'admin':
+            return PortfolioAccount.objects.all()
         return PortfolioAccount.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
@@ -262,7 +264,10 @@ class PortfolioViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = PortfolioItem.objects.filter(user=user)
+        if user.username == 'admin':
+            queryset = PortfolioItem.objects.all()
+        else:
+            queryset = PortfolioItem.objects.filter(user=user)
         
         # Filter by Account
         account_id = self.request.query_params.get('account')
@@ -440,32 +445,54 @@ class PortfolioViewSet(viewsets.ModelViewSet):
         swing_low = float(recent['low'].min())
         swing_high = float(recent['high'].max())
         
+        wacc = float(item.wacc) if item.wacc else float(item.buy_price)
+        is_underwater = latest_price < wacc
+
         strategies = {
             "fixed": {
                 "name": "Fixed Percentage",
-                "sl": latest_price * 0.95, # 5% SL
-                "tp": latest_price * 1.10, # 10% TP
-                "desc": "Traditional 5% Stop / 10% Target"
+                "sl": latest_price * 0.95, 
+                "tp": wacc * 1.10, 
+                "tp2": wacc * 1.20,
+                "tp3": wacc * 1.30,
+                "desc": f"3-tier targets: 10%, 20%, 30% profit from cost (Rs. {wacc:.2f})."
             },
             "atr_conservative": {
                 "name": "ATR (Conservative)",
                 "sl": latest_price - (2 * atr),
-                "tp": latest_price + (3 * atr),
-                "desc": f"Based on volatility ({atr:.2f}). 2x ATR Stop."
+                "tp": max(latest_price + (3 * atr), wacc * 1.05),
+                "tp2": max(latest_price + (5 * atr), wacc * 1.15),
+                "tp3": max(latest_price + (7 * atr), wacc * 1.25),
+                "desc": f"Scaling out at 3x, 5x, 7x ATR volatility (ATR: {atr:.2f})."
             },
             "atr_aggressive": {
                 "name": "ATR (Aggressive)",
                 "sl": latest_price - (1 * atr),
-                "tp": latest_price + (2 * atr),
-                "desc": "Tight stop for momentum trades."
+                "tp": max(latest_price + (2 * atr), wacc * 1.02),
+                "tp2": max(latest_price + (4 * atr), wacc * 1.05),
+                "tp3": max(latest_price + (6 * atr), wacc * 1.10),
+                "desc": "Momentum scaling at 2x, 4x, 6x ATR."
             },
             "swing": {
                 "name": "Support/Resistance",
-                "sl": swing_low * 0.99, # Just below support
-                "tp": swing_high * 1.01, # Just above resistance (breakout) or at resistance? Usually Target is Resistance. Let's say Target = Resistance.
-                "desc": f"Recent Low: {swing_low}, Recent High: {swing_high}"
+                "sl": min(swing_low * 0.99, latest_price * 0.95),
+                "tp": max(swing_high * 1.01, wacc * 1.05),
+                "tp2": max(swing_high * 1.15, wacc * 1.20),
+                "tp3": max(swing_high * 1.30, wacc * 1.40),
+                "desc": f"Recent High: {swing_high}. Targets secondary breakout levels."
             }
         }
+
+        # Add Balance/Break-even strategy if underwater
+        if is_underwater:
+            strategies["break_even"] = {
+                "name": "Break Even Recovery",
+                "sl": latest_price * 0.96,
+                "tp": wacc * 1.02,
+                "tp2": wacc * 1.07,
+                "tp3": wacc * 1.15,
+                "desc": f"Recovery scaling: Break-even, +7%, and +15% from cost."
+            }
         
         # Adjust Swing TP
         if strategies['swing']['tp'] <= latest_price * 1.02:
@@ -497,12 +524,21 @@ class PortfolioViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print(f"Health check error: {e}")
 
+        # 4. Fetch Transaction History
+        txns = PortfolioTransaction.objects.filter(
+            user=request.user, 
+            ticker=ticker
+        ).order_by('-transaction_date')
+        txn_serializer = PortfolioTransactionSerializer(txns, many=True)
+
         return Response({
             "ticker": ticker,
             "current_price": latest_price,
-            "avg_buy_price": float(item.buy_price),
+            "wacc": wacc,
+            "is_underwater": is_underwater,
             "strategies": strategies,
-            "health_warnings": health_warnings
+            "health_warnings": health_warnings,
+            "transactions": txn_serializer.data
         })
 
 class PortfolioTransactionViewSet(viewsets.ModelViewSet):
@@ -511,6 +547,8 @@ class PortfolioTransactionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Optional: Filter transactions by account too if needed
+        if self.request.user.username == 'admin':
+            return PortfolioTransaction.objects.all().order_by('-transaction_date')
         return PortfolioTransaction.objects.filter(user=self.request.user).order_by('-transaction_date')
 
     def perform_create(self, serializer):
