@@ -190,7 +190,7 @@ def sector_history(request, sector_name):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def stock_floorsheet(request, ticker):
-    data = DailyFloorsheet.objects.filter(ticker=ticker).order_by('-date')[:50] # Last 50 txns
+    data = DailyFloorsheet.objects.filter(symbol=ticker).order_by('-transaction_date')[:50] # Last 50 txns
     serializer = DailyFloorsheetSerializer(data, many=True)
     return Response(serializer.data)
 
@@ -216,27 +216,33 @@ def stock_financials(request, ticker):
 @permission_classes([AllowAny])
 def stock_detail(request, ticker):
     # 1. Fundamentals
+    fundamental = None
     try:
         fundamental = StockFundamental.objects.get(ticker=ticker)
-        fundamental_data = StockFundamentalSerializer(fundamental).data
+        fundamental_data = dict(StockFundamentalSerializer(fundamental).data)
     except StockFundamental.DoesNotExist:
         fundamental_data = None
         
     # 2. Latest Price Summary (reuse stock_summary logic partially or fetch fresh)
     latest_price = DailyStockPrice.objects.filter(ticker=ticker).order_by('-date').first()
     prev_price_obj = DailyStockPrice.objects.filter(ticker=ticker).order_by('-date')[1:2] # Get 2nd latest
-    prev_close = prev_price_obj[0].close if prev_price_obj else (latest_price.open if latest_price else 0)
-    
+    prev_close = 0
+    if prev_price_obj and prev_price_obj[0].close is not None:
+        prev_close = prev_price_obj[0].close
+    elif latest_price and latest_price.open is not None:
+        prev_close = latest_price.open
+
     price_data = {}
     if latest_price:
-        change = latest_price.close - prev_close
+        current_close = latest_price.close if latest_price.close is not None else 0
+        change = current_close - prev_close
         percent_change = (change / prev_close * 100) if prev_close else 0
         price_data = {
-            'close': latest_price.close,
-            'open': latest_price.open,
-            'high': latest_price.high,
-            'low': latest_price.low,
-            'volume': latest_price.volume,
+            'close': current_close,
+            'open': latest_price.open if latest_price.open is not None else 0,
+            'high': latest_price.high if latest_price.high is not None else 0,
+            'low': latest_price.low if latest_price.low is not None else 0,
+            'volume': latest_price.volume if latest_price.volume is not None else 0,
             'change': change,
             'percent_change': percent_change,
             'date': latest_price.date
@@ -256,9 +262,64 @@ def stock_detail(request, ticker):
 
     return Response({
         'company': company_data,
-        'fundamental': fundamental_data,
+        'fundamental': _enrich_fundamental_data(fundamental_data, fundamental),
         'price': price_data
     })
+
+
+def _enrich_fundamental_data(data, fundamental_obj):
+    if not data or not fundamental_obj:
+        return data
+        
+    # Define metrics to display
+    metrics = [
+        {'key': 'eps', 'name': 'EPS (TTM)'},
+        {'key': 'pe_ratio', 'name': 'P/E Ratio'},
+        {'key': 'price_to_book', 'name': 'P/B Ratio'}, # Frontend expects PBV as value name potentially? Check frontend map. Frontend uses name 'PBV' in card, but 'indicator' table just lists name.
+        {'key': 'book_value', 'name': 'Book Value'},
+        {'key': 'ro_equity', 'name': 'ROE'},
+        {'key': 'dividend_yield', 'name': 'Dividend Yield'},
+    ]
+    
+    # Fetch Sector Peers
+    from django.db.models import Max, Min
+    peers = StockFundamental.objects.filter(sector=fundamental_obj.sector)
+    
+    indicators = []
+    
+    for m in metrics:
+        key = m['key']
+        val = getattr(fundamental_obj, key, None)
+        
+        # Calculate Sector Stats
+        # Optimization: We could do one aggregate query, but this is cleaner for readability and N is small (5-6 metrics)
+        # For a high traffic site, optimize to single aggregate.
+        
+        # Find Max
+        max_obj = peers.order_by(f'-{key}').first()
+        min_obj = peers.order_by(f'{key}').first()
+        
+        # Safely get values
+        max_val = getattr(max_obj, key, None) if max_obj else None
+        min_val = getattr(min_obj, key, None) if min_obj else None
+        
+        # Format values
+        formatted_val = f"{val:.2f}" if val is not None else "-"
+        
+        if (key == 'dividend_yield' or key == 'ro_equity') and val is not None:
+            formatted_val += "%"
+            
+        indicators.append({
+            'name': m['name'],
+            'value': formatted_val,
+            'sector_high': f"{max_val:.2f}" if max_val is not None else "-",
+            'sector_high_ticker': max_obj.ticker if max_obj else "-",
+            'sector_low': f"{min_val:.2f}" if min_val is not None else "-",
+            'sector_low_ticker': min_obj.ticker if min_obj else "-"
+        })
+        
+    data['fundamental_indicators'] = indicators
+    return data
 
 class PortfolioAccountViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -2536,15 +2597,15 @@ def floorsheet_list(request):
         queryset = DailyFloorsheet.objects.all()
 
         if symbol:
-            queryset = queryset.filter(ticker=symbol)
+            queryset = queryset.filter(symbol=symbol)
         
         if broker:
             # Filter where broker is either buyer or seller
             from django.db.models import Q
-            queryset = queryset.filter(Q(buyer_broker=broker) | Q(seller_broker=broker))
+            queryset = queryset.filter(Q(buyer_id=broker) | Q(seller_id=broker))
 
         # Order by date descending
-        queryset = queryset.order_by('-date')[:limit]
+        queryset = queryset.order_by('-transaction_date')[:limit]
         
         serializer = DailyFloorsheetSerializer(queryset, many=True)
         return Response(serializer.data)
