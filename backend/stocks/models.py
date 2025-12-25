@@ -251,6 +251,11 @@ class FinancialReport(models.Model):
             return f"{self.ticker} - {self.fiscal_year} (Annual)"
         return f"{self.ticker} - {self.fiscal_year} Q{self.quarter}"
 
+class ScopeType(models.TextChoices):
+    SYMBOL = 'SYMBOL', 'Single Symbol'
+    SECTOR = 'SECTOR', 'Sector'
+    ALL = 'ALL', 'All Market'
+
 class Strategy(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField()
@@ -268,6 +273,16 @@ class Strategy(models.Model):
     sharpe_ratio = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
     win_rate = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
 
+    # Recommendation / Publishing
+    is_published_for_recommendation = models.BooleanField(default=False)
+    published_parameters = models.JSONField(default=dict, blank=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+    published_scope_type = models.CharField(max_length=20, choices=ScopeType.choices, default=ScopeType.ALL)
+    published_scope_value = models.CharField(max_length=255, blank=True, null=True)
+
+    published_location = models.CharField(max_length=255, blank=True, null=True) # Deprecated or future use?
+    published_experiment = models.ForeignKey('stocks.StrategyExperiment', on_delete=models.SET_NULL, null=True, blank=True, related_name='published_strategy')
+
     def __str__(self):
         return self.name
 
@@ -275,11 +290,6 @@ class StrategyExperiment(models.Model):
     class RunType(models.TextChoices):
         BACKTEST = 'BACKTEST', 'Backtest'
         OPTIMIZATION = 'OPTIMIZATION', 'Optimization'
-
-    class ScopeType(models.TextChoices):
-        SYMBOL = 'SYMBOL', 'Single Symbol'
-        SECTOR = 'SECTOR', 'Sector'
-        ALL = 'ALL', 'All Market'
 
     class Status(models.TextChoices):
         SUCCESS = 'SUCCESS', 'Success'
@@ -297,6 +307,9 @@ class StrategyExperiment(models.Model):
     
     parameters = models.JSONField(default=dict)
     metrics = models.JSONField(default=dict) # Return, Sharpe, Win Rate etc.
+    
+    batch_id = models.UUIDField(null=True, blank=True, db_index=True)
+    plot_html = models.TextField(null=True, blank=True)
     
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.SUCCESS)
     error_log = models.TextField(blank=True, null=True)
@@ -457,44 +470,4 @@ class Notification(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.title}"
 
-class StrategyExperiment(models.Model):
-    class RunType(models.TextChoices):
-        BACKTEST = 'BACKTEST', 'Backtest'
-        OPTIMIZATION = 'OPTIMIZATION', 'Optimization'
 
-    class ScopeType(models.TextChoices):
-        SYMBOL = 'SYMBOL', 'Symbol'
-        SECTOR = 'SECTOR', 'Sector'
-        ALL = 'ALL', 'All Market'
-
-    class Status(models.TextChoices):
-        SUCCESS = 'SUCCESS', 'Success'
-        FAILED = 'FAILED', 'Failed'
-
-    strategy = models.ForeignKey(Strategy, on_delete=models.CASCADE, related_name='experiments')
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    
-    run_type = models.CharField(max_length=20, choices=RunType.choices)
-    scope_type = models.CharField(max_length=20, choices=ScopeType.choices)
-    scope_value = models.CharField(max_length=50) # Ticker, Sector Name, or 'ALL'
-    
-    start_date = models.DateField()
-    end_date = models.DateField()
-    
-    parameters = models.JSONField(default=dict)
-    metrics = models.JSONField(default=dict)
-    
-    batch_id = models.UUIDField(null=True, blank=True, db_index=True)
-    plot_html = models.TextField(null=True, blank=True)
-    
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.SUCCESS)
-    error_log = models.TextField(null=True, blank=True)
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = 'strategy_experiments'
-        ordering = ['-created_at']
-
-    def __str__(self):
-        return f"{self.strategy.name} - {self.run_type} ({self.created_at.date()})"

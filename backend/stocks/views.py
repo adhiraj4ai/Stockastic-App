@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
-from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, TransactionType, StockFundamental, PortfolioAccount, Strategy, Company, WatchlistItem, Notification, StrategyExperiment
+from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, TransactionType, StockFundamental, PortfolioAccount, Strategy, Company, WatchlistItem, Notification, StrategyExperiment, ScopeType
 from .serializers import (
     DailyStockPriceSerializer, DailyFloorsheetSerializer, PortfolioItemSerializer, 
     PortfolioTransactionSerializer, StockFundamentalSerializer, StrategySerializer, CompanySerializer, WatchlistItemSerializer, NotificationSerializer, StrategyExperimentSerializer,
@@ -769,6 +769,51 @@ class StrategyViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    def perform_update(self, serializer):
+        strategy = self.get_object()
+        if strategy.is_published_for_recommendation:
+            if 'code' in serializer.validated_data:
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied("This strategy is published for recommendation and cannot be edited. Unpublish it first.")
+        serializer.save()
+
+    @action(detail=True, methods=['post'])
+    def publish(self, request, pk=None):
+        """
+        Publish strategy for recommendations. Requires 'parameters' in body.
+        """
+        strategy = self.get_object()
+        parameters = request.data.get('parameters', {})
+        
+        if not parameters:
+             return Response({"error": "Parameters are required to publish."}, status=status.HTTP_400_BAD_REQUEST)
+
+        strategy.is_published_for_recommendation = True
+        strategy.published_parameters = parameters
+        strategy.published_scope_type = request.data.get('scope_type', ScopeType.ALL)
+        strategy.published_scope_value = request.data.get('scope_value', '')
+        
+        experiment_id = request.data.get('experiment_id')
+        if experiment_id:
+            strategy.published_experiment_id = experiment_id
+            
+        from django.utils import timezone
+        strategy.published_at = timezone.now()
+        strategy.save()
+        return Response({"status": "published", "parameters": parameters})
+
+    @action(detail=True, methods=['post'])
+    def unpublish(self, request, pk=None):
+        strategy = self.get_object()
+        strategy.is_published_for_recommendation = False
+        strategy.published_parameters = {}
+        strategy.published_at = None
+        strategy.published_scope_type = ScopeType.ALL # Added
+        strategy.published_scope_value = '' # Added
+        strategy.published_experiment = None # Clear link
+        strategy.save()
+        return Response({"status": "unpublished"})
+
     @action(detail=False, methods=['get'])
     def all_experiments(self, request):
         """
@@ -776,8 +821,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
         """
         # Global history should show everything ordered by latest
         # Exclude batch children (Symbol scope with a batch_id) to avoid clutter
-        experiments = StrategyExperiment.objects.all().order_by('-created_at') \
-            .exclude(batch_id__isnull=False, scope_type=StrategyExperiment.ScopeType.SYMBOL)
+        experiments = StrategyExperiment.objects.select_related('strategy').all().order_by('-created_at') \
+            .exclude(batch_id__isnull=False, scope_type=ScopeType.SYMBOL)
             
         page = self.paginate_queryset(experiments)
         if page is not None:
@@ -843,11 +888,164 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 elif 'return' in exp.metrics: # some old format maybe
                      ret = exp.metrics.get('return', 0)
             
+            
             all_exps.append({
                 'experiment': exp,
                 'return': float(ret or 0)
             })
             
+        all_exps.sort(key=lambda x: x['return'], reverse=True)
+        # Just return the top 5 for now as per original intent
+        result = []
+        for item in all_exps[:5]:
+             result.append(StrategyExperimentSerializer(item['experiment']).data)
+             
+        return Response(result)
+
+    @action(detail=False, methods=['get'])
+    def recommendations(self, request):
+        """
+        Get buy/sell recommendations based on published strategies.
+        Runs strategies on the latest data for active companies.
+        """
+        published_strategies = Strategy.objects.filter(is_published_for_recommendation=True)
+        if not published_strategies.exists():
+             return Response([])
+
+        # Limit company scope for performance (e.g. top 20 by turnover or just 20 random)
+        # Ideally this should be an async task or cached.
+        # For now, let's scan a small subset of stocks to show functionality.
+        # Check if 'symbol' or 'sector' is passed to filter scan
+        symbol_query = request.query_params.get('symbol')
+        sector_query = request.query_params.get('sector')
+        
+        companies = Company.objects.filter(status='A')
+        if symbol_query:
+            companies = companies.filter(symbol=symbol_query)
+        elif sector_query:
+             companies = companies.filter(sector=sector_query)
+        else:
+             # If no user filter, we start with ALL active companies
+             # We will limit per-strategy to avoid timeouts
+             pass
+
+        recommendations = []
+        
+        import datetime
+        end_date = datetime.date.today()
+        start_date = end_date - datetime.timedelta(days=400) # Ensure enough data for indicators
+
+        for strategy in published_strategies:
+            # Determine applicable companies based on Strategy scope AND user query
+            strategy_companies = companies # Start with the Base Filtered list (Active companies or Query Filter)
+
+            # Apply Strategy Scope Constraints
+            if strategy.published_scope_type == ScopeType.SYMBOL:
+                symbols = [s.strip() for s in (strategy.published_scope_value or "").split(',')]
+                strategy_companies = strategy_companies.filter(symbol__in=symbols)
+            elif strategy.published_scope_type == ScopeType.SECTOR:
+                strategy_companies = strategy_companies.filter(sector=strategy.published_scope_value)
+            
+            # Limit the number of companies processed per strategy to avoid 50s timeout
+            # If User queried specific symbol/sector, usually it's small enough.
+            # If Global scan (No user query), limit 'ALL' or 'SECTOR' scopes.
+            if not symbol_query and not sector_query:
+                 strategy_companies = strategy_companies[:5]
+
+            # If after filtering we have candidates, run signal check
+            for company in strategy_companies:
+                try:
+                    signal = self._get_signal(strategy.code, company.symbol, start_date, end_date, strategy.published_parameters)
+                    if signal:
+                        recommendations.append({
+                            'strategy_id': strategy.id,
+                            'strategy_name': strategy.name,
+                            'symbol': company.symbol,
+                            'company_name': company.name,
+                            'signal': signal['type'], # BUY/SELL
+                            'date': signal['date'],
+                            'price': signal['price'],
+                            'published_parameters': strategy.published_parameters
+                        })
+                except Exception as e:
+                    print(f"Error generating recommendation for {strategy.name} on {company.symbol}: {e}")
+                    continue
+        
+        return Response(recommendations)
+
+    def _get_signal(self, code, symbol, start_date, end_date, params=None):
+        """
+        Run a quick backtest to check for signals on the last day.
+        """
+        queryset = DailyStockPrice.objects.filter(
+            ticker=symbol, 
+            date__range=[start_date, end_date]
+        ).order_by('date')
+        
+        ticks_data = list(queryset.values('date', 'open', 'high', 'low', 'close', 'volume'))
+        if len(ticks_data) < 50:
+            return None
+
+        try:
+            import pandas as pd
+            from backtesting import Backtest, Strategy
+            from backtesting.lib import crossover
+            from backtesting.test import SMA
+            import inspect
+            
+            df = pd.DataFrame(ticks_data)
+            df.rename(columns={
+                'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'volume': 'Volume'
+            }, inplace=True)
+            numeric_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
+            df[numeric_cols] = df[numeric_cols].astype(float)
+            df['date'] = pd.to_datetime(df['date'])
+            df.set_index('date', inplace=True)
+
+            # Execution Environment
+            local_scope = {
+                'Backtest': Backtest, 'Strategy': Strategy, 'crossover': crossover, 
+                'SMA': SMA, 'pd': pd, 'params': params or {}
+            }
+            exec(code, local_scope)
+            
+            strategy_class = None
+            for name, obj in local_scope.items():
+                if inspect.isclass(obj) and issubclass(obj, Strategy) and obj is not Strategy:
+                    strategy_class = obj
+                    break
+            
+            if not strategy_class:
+                return None
+
+            # Run Backtest
+            bt = Backtest(df, strategy_class, cash=100000, commission=.004)
+            stats = bt.run()
+            
+            # Check for trades
+            trades = stats['_trades']
+            if trades.empty:
+                return None
+                
+            last_date = df.index[-1]
+            last_trade = trades.iloc[-1]
+            
+            # entry_time and exit_time are usually timestamps or indices depending on backtesting ver
+            # In backtesting.py, EntryTime is the index value.
+            
+            # Signal logic:
+            # If EntryTime == last_date -> BUY Signal
+            # If ExitTime == last_date -> SELL Signal
+            
+            if last_trade['EntryTime'] == last_date:
+                return {'type': 'BUY', 'date': last_date, 'price': last_trade['EntryPrice']}
+            elif last_trade['ExitTime'] == last_date:
+                return {'type': 'SELL', 'date': last_date, 'price': last_trade['ExitPrice']}
+                
+            return None
+
+        except Exception as e:
+            return None
         all_exps.sort(key=lambda x: x['return'], reverse=True)
         
         # Deduplicate by scope to show "Best for Nabil", "Best for Banking", "Best for All"
@@ -1004,7 +1202,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
                                 strategy=strategy,
                                 user=request.user,
                                 run_type=StrategyExperiment.RunType.BACKTEST,
-                                scope_type=StrategyExperiment.ScopeType.SYMBOL,
+                                scope_type=ScopeType.SYMBOL,
                                 scope_value=stock_symbol,
                                 start_date=start_date,
                                 end_date=end_date,
@@ -1037,7 +1235,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
                                 strategy=strategy,
                                 user=request.user,
                                 run_type=StrategyExperiment.RunType.BACKTEST,
-                                scope_type=StrategyExperiment.ScopeType.SYMBOL,
+                                scope_type=ScopeType.SYMBOL,
                                 scope_value=stock_symbol,
                                 start_date=start_date,
                                 end_date=end_date,
@@ -1072,7 +1270,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     strategy=strategy,
                     user=request.user,
                     run_type=StrategyExperiment.RunType.BACKTEST,
-                    scope_type=StrategyExperiment.ScopeType.ALL if sector.upper() == 'ALL' else StrategyExperiment.ScopeType.SECTOR,
+
+                    scope_type=ScopeType.ALL if sector.upper() == 'ALL' else ScopeType.SECTOR,
                     scope_value=sector,
                     start_date=start_date,
                     end_date=end_date,
@@ -1169,7 +1368,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 strategy=strategy,
                 user=request.user,
                 run_type=data.get('run_type', StrategyExperiment.RunType.BACKTEST),
-                scope_type=data.get('scope_type', StrategyExperiment.ScopeType.SYMBOL),
+                scope_type=data.get('scope_type', ScopeType.SYMBOL),
                 scope_value=data.get('scope_value'),
                 start_date=data.get('start_date'),
                 end_date=data.get('end_date'),
@@ -1611,14 +1810,14 @@ class StrategyViewSet(viewsets.ModelViewSet):
             
             # Log Optimization Experiment
             try:
-                scope_type = StrategyExperiment.ScopeType.SYMBOL
+                scope_type = ScopeType.SYMBOL
                 scope_val = symbol
                 
                 if symbol == 'ALL':
-                    scope_type = StrategyExperiment.ScopeType.ALL
+                    scope_type = ScopeType.ALL
                     scope_val = 'ALL'
                 elif sector:
-                    scope_type = StrategyExperiment.ScopeType.SECTOR
+                    scope_type = ScopeType.SECTOR
                     scope_val = sector
                 
                 StrategyExperiment.objects.create(

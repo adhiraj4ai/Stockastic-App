@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import api from '@/lib/api';
 import { Plus, Lightbulb, ExternalLink, Play, Edit, Trash2, Info, LayoutGrid, List, Search, MoreVertical, TrendingUp, TrendingDown, Target, Zap, Filter, Beaker } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import CreateStrategyModal from '@/components/CreateStrategyModal';
 import ExperimentsTab from './[id]/tabs/ExperimentsTab';
+import RecommendationsTab from './RecommendationsTab';
 
 interface Strategy {
     id: number;
@@ -27,6 +29,7 @@ interface Strategy {
     description: string;
     created_at: string;
     is_public: boolean;
+    is_published_for_recommendation?: boolean;
     pnl_amount?: number;
     pnl_percent?: number;
     max_drawdown?: number;
@@ -132,6 +135,14 @@ export default function StrategiesPage() {
                                 <Beaker className="w-4 h-4 mr-2" />
                                 Experiment Logs
                             </TabsTrigger>
+
+                            <TabsTrigger
+                                value="recommendations"
+                                className="bg-transparent p-0 pb-3 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none text-gray-500 font-medium"
+                            >
+                                <Target className="w-4 h-4 mr-2" />
+                                Recommendations
+                            </TabsTrigger>
                         </TabsList>
 
                         {/* Actions Area - Context aware */}
@@ -142,8 +153,11 @@ export default function StrategiesPage() {
                         )}
                     </div>
 
+                    {/* Recommendations Content */}
+                    <TabsContent value="recommendations" className="m-0">
+                        <RecommendationsTab />
+                    </TabsContent>
 
-                    {/* MY STRATEGIES TAB */}
                     <TabsContent value="my-strategies" className="space-y-6 m-0">
                         {/* Search and Filter Bar */}
                         <div className="flex items-center gap-2">
@@ -197,7 +211,11 @@ export default function StrategiesPage() {
                             viewMode === 'grid' ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                                     {filteredStrategies.map((strategy) => (
-                                        <Card key={strategy.id} className="hover:shadow-md transition-shadow duration-200 border-gray-200 flex flex-col">
+                                        <Card
+                                            key={strategy.id}
+                                            className="hover:shadow-md transition-shadow duration-200 border-gray-200 flex flex-col cursor-pointer hover:border-blue-300"
+                                            onClick={() => router.push(`/strategies/${strategy.id}/run`)}
+                                        >
                                             <div className="p-2 border-b border-gray-100 bg-white rounded-t-xl">
                                                 <div className="flex items-start gap-2.5">
                                                     <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0 mt-0.5">
@@ -206,16 +224,21 @@ export default function StrategiesPage() {
                                                     <div className="min-w-0 flex-1">
                                                         <div className="flex items-center justify-between gap-2 mb-0.5">
                                                             <div className="flex items-center gap-1.5 min-w-0">
-                                                                <span className="text-[15px] font-bold text-gray-900 leading-none truncate">{strategy.name}</span>
-                                                                {strategy.is_public && (
-                                                                    <span className="bg-green-50 text-green-700 text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0">
-                                                                        Public
+                                                                <span className="text-[15px] font-bold text-gray-900 leading-none truncate hover:text-blue-600 hover:underline">
+                                                                    {strategy.name}
+                                                                </span>
+                                                                {strategy.is_published_for_recommendation && (
+                                                                    <span className="bg-blue-50 text-blue-700 text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0">
+                                                                        Published
                                                                     </span>
                                                                 )}
                                                             </div>
                                                             <DropdownMenu>
                                                                 <DropdownMenuTrigger asChild>
-                                                                    <button className="h-6 w-6 rounded-md hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-700 flex-shrink-0">
+                                                                    <button
+                                                                        className="h-6 w-6 rounded-md hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-700 flex-shrink-0"
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                    >
                                                                         <MoreVertical size={14} />
                                                                     </button>
                                                                 </DropdownMenuTrigger>
@@ -262,14 +285,20 @@ export default function StrategiesPage() {
 
                                             <div className="flex bg-gray-50/50 border-t border-gray-100 rounded-b-xl mt-auto">
                                                 <button
-                                                    onClick={() => router.push(`/strategies/${strategy.id}/run`)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        router.push(`/strategies/${strategy.id}/run`);
+                                                    }}
                                                     className="flex-1 py-1.5 flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-blue-600 hover:bg-white transition-colors"
                                                 >
                                                     <Play size={14} /> Run
                                                 </button>
                                                 <div className="w-px bg-gray-200 my-1"></div>
                                                 <button
-                                                    onClick={() => router.push(`/strategies/${strategy.id}/edit`)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        router.push(`/strategies/${strategy.id}/edit`);
+                                                    }}
                                                     className="flex-1 py-1.5 flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-green-600 hover:bg-white transition-colors"
                                                 >
                                                     <Edit size={14} /> Edit
@@ -294,14 +323,20 @@ export default function StrategiesPage() {
                                             </thead>
                                             <tbody className="divide-y divide-gray-100">
                                                 {filteredStrategies.map((strategy) => (
-                                                    <tr key={strategy.id} className="hover:bg-gray-50 group">
+                                                    <tr
+                                                        key={strategy.id}
+                                                        className="hover:bg-gray-50 group cursor-pointer"
+                                                        onClick={() => router.push(`/strategies/${strategy.id}/run`)}
+                                                    >
                                                         <td className="px-4 py-3">
                                                             <div className="flex items-center gap-3">
                                                                 <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
                                                                     <Lightbulb size={16} />
                                                                 </div>
                                                                 <div>
-                                                                    <div className="font-semibold text-gray-900">{strategy.name}</div>
+                                                                    <div className="font-semibold text-gray-900 hover:text-blue-600 hover:underline block">
+                                                                        {strategy.name}
+                                                                    </div>
                                                                     <div className="text-xs text-gray-500 truncate max-w-[200px]">{strategy.description}</div>
                                                                 </div>
                                                             </div>
@@ -320,7 +355,10 @@ export default function StrategiesPage() {
                                                                     variant="ghost"
                                                                     size="icon"
                                                                     className="h-8 w-8 text-blue-600"
-                                                                    onClick={() => router.push(`/strategies/${strategy.id}/run`)}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        router.push(`/strategies/${strategy.id}/run`);
+                                                                    }}
                                                                 >
                                                                     <Play size={14} />
                                                                 </Button>
@@ -328,7 +366,10 @@ export default function StrategiesPage() {
                                                                     variant="ghost"
                                                                     size="icon"
                                                                     className="h-8 w-8 text-green-600"
-                                                                    onClick={() => router.push(`/strategies/${strategy.id}/edit`)}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        router.push(`/strategies/${strategy.id}/edit`);
+                                                                    }}
                                                                 >
                                                                     <Edit size={14} />
                                                                 </Button>
@@ -338,6 +379,7 @@ export default function StrategiesPage() {
                                                                             variant="ghost"
                                                                             size="icon"
                                                                             className="h-8 w-8 text-gray-600"
+                                                                            onClick={(e) => e.stopPropagation()}
                                                                         >
                                                                             <MoreVertical size={14} />
                                                                         </Button>
@@ -368,6 +410,7 @@ export default function StrategiesPage() {
                             onSuccess={handleCreateSuccess}
                         />
                     </TabsContent>
+
                     <TabsContent value="experiment-logs" className="m-0">
                         <Card className="border-none shadow-sm bg-white/50 backdrop-blur-sm p-0">
                             <ExperimentsTab />
@@ -375,6 +418,6 @@ export default function StrategiesPage() {
                     </TabsContent>
                 </Tabs>
             </div>
-        </DashboardLayout>
+        </DashboardLayout >
     );
 }

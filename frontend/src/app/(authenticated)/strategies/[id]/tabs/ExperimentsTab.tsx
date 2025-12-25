@@ -14,8 +14,20 @@ import {
     ChevronDown,
     ChevronUp,
     Search,
-    ExternalLink
+    ExternalLink,
+    AlertTriangle
 } from "lucide-react";
+
+import { toast } from 'sonner';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface Experiment {
     id: number;
@@ -33,6 +45,7 @@ interface Experiment {
     created_at: string;
     plot_html?: string;
     batch_id?: string;
+    is_published?: boolean;
 }
 
 interface ExperimentsTabProps {
@@ -42,6 +55,12 @@ interface ExperimentsTabProps {
 export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
     const [experiments, setExperiments] = useState<Experiment[]>([]);
     const [bestParams, setBestParams] = useState<any[]>([]);
+    const [publishModalOpen, setPublishModalOpen] = useState(false);
+    const [unpublishModalOpen, setUnpublishModalOpen] = useState(false);
+    const [experimentToPublish, setExperimentToPublish] = useState<Experiment | null>(null);
+    const [publishScopeType, setPublishScopeType] = useState<'ALL' | 'SECTOR' | 'SYMBOL'>('ALL');
+    const [publishScopeValue, setPublishScopeValue] = useState('');
+    const [publishedConfig, setPublishedConfig] = useState<{ is_published: boolean, parameters: any } | null>(null);
     const [loading, setLoading] = useState(true);
     const [expandedId, setExpandedId] = useState<number | null>(null);
     const [batchResults, setBatchResults] = useState<Record<string, Experiment[]>>({});
@@ -62,10 +81,18 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
 
             if (strategyId) {
                 // Strategy Specific
-                const [expRes, bestRes] = await Promise.all([
+                const [expRes, bestRes, stratRes] = await Promise.all([
                     api.get(`/api/stocks/strategies/${strategyId}/experiments/`, { params }),
-                    api.get(`/api/stocks/strategies/${strategyId}/best_parameters/`)
+                    api.get(`/api/stocks/strategies/${strategyId}/best_parameters/`),
+                    api.get(`/api/stocks/strategies/${strategyId}/`)
                 ]);
+
+                if (stratRes.data) {
+                    setPublishedConfig({
+                        is_published: stratRes.data.is_published_for_recommendation,
+                        parameters: stratRes.data.published_parameters
+                    });
+                }
 
                 if (expRes.data.results) {
                     setExperiments(expRes.data.results);
@@ -149,9 +176,9 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                         <span className={m.aggregated.avg_return >= 0 ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
                             Avg: {m.aggregated.avg_return?.toFixed(2)}%
                         </span>
-                        <span className="text-gray-500">
+                        <div className="text-xs text-gray-400">
                             Best: {m.aggregated.best_stock?.symbol} ({m.aggregated.best_stock?.return?.toFixed(2)}%)
-                        </span>
+                        </div>
                     </div>
                 );
             }
@@ -167,6 +194,70 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
         }
 
         return <span>-</span>;
+    };
+
+    const handlePublish = (exp: Experiment) => {
+        // Allow publishing if strategyId exists OR if experiment has strategy ID
+        if (!strategyId && !exp.strategy) return;
+        setExperimentToPublish(exp);
+        // Default to experiment scope
+        setPublishScopeType(exp.scope_type);
+        setPublishScopeValue(exp.scope_value);
+        setPublishModalOpen(true);
+    };
+
+    const handleUnpublish = (exp?: Experiment) => {
+        // If passed an experiment (global view), we need to track it to unpublish its strategy
+        if (exp) {
+            setExperimentToPublish(exp); // Reuse this state as 'active experiment context' or create new state 'experimentToUnpublish'
+            // Actually, handlePublish uses 'experimentToPublish'. Let's reuse it for context, or just rely on 'exp' passed to a new state?
+            // To be safe and clean, let's use 'experimentToPublish' as 'selectedExperiment' generally
+            setExperimentToPublish(exp);
+        } else if (!strategyId) {
+            return;
+        }
+        setUnpublishModalOpen(true);
+    };
+
+    const confirmUnpublish = async () => {
+        const targetStratId = strategyId || experimentToPublish?.strategy;
+        if (!targetStratId) return;
+
+        try {
+            await api.post(`/api/stocks/strategies/${targetStratId}/unpublish/`);
+            toast.success("Strategy unpublished successfully.");
+            // Refresh
+            fetchExperiments(page);
+            setPublishedConfig(prev => prev ? { ...prev, is_published: false } : null);
+            setUnpublishModalOpen(false);
+        } catch (err) {
+            toast.error("Failed to unpublish strategy.");
+        }
+    };
+
+    const confirmPublish = async () => {
+        if (!experimentToPublish) return;
+        const targetStrategyId = strategyId || experimentToPublish.strategy;
+        if (!targetStrategyId) return;
+
+        try {
+            await api.post(`/api/stocks/strategies/${targetStrategyId}/publish/`, {
+                parameters: experimentToPublish.parameters,
+                scope_type: publishScopeType, // Send selected scope
+                scope_value: publishScopeValue, // Send selected value
+                experiment_id: experimentToPublish.id // Link explicitly
+            });
+            toast.success("Strategy published successfully!");
+            // Refresh experiments to update 'is_published' flags
+            fetchExperiments(page);
+            setPublishedConfig({
+                is_published: true,
+                parameters: experimentToPublish.parameters
+            });
+            setPublishModalOpen(false);
+        } catch (err) {
+            toast.error("Failed to publish strategy.");
+        }
     };
 
     if (loading) {
@@ -194,7 +285,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                     </span>
                                 </div>
                                 <div className="text-xs text-gray-500 mb-2">
-                                    {format(new Date(item.date), 'MMM d, yyyy')} • {item.run_type}
+                                    {format(new Date(item.created_at), 'MMM d, yyyy')} • {item.run_type}
                                 </div>
                                 <div className="bg-gray-50 p-2 rounded text-xs font-mono text-gray-700 overflow-x-auto">
                                     {JSON.stringify(item.parameters, null, 2)}
@@ -223,6 +314,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                 {!strategyId && (
@@ -232,7 +324,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scope</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Range</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Outcome</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                                 <th className="px-6 py-3"></th>
                             </tr>
                         </thead>
@@ -251,6 +343,13 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                 className="hover:bg-gray-50 cursor-pointer"
                                                 onClick={() => toggleExpand(exp.id)}
                                             >
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {exp.status === 'SUCCESS' ? (
+                                                        <CheckCircle size={16} className="text-green-500" />
+                                                    ) : (
+                                                        <XCircle size={16} className="text-red-500" />
+                                                    )}
+                                                </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-gray-500 font-mono text-xs">
                                                     <a
                                                         href={`/strategies/${exp.strategy}/experiments/${exp.id}`}
@@ -282,27 +381,41 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                     {exp.start_date}<br />{exp.end_date}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {exp.metrics && (exp.metrics.aggregated ? (
-                                                        <div>
-                                                            <div className={`text-sm font-black ${(exp.metrics.aggregated.avg_return || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                                Avg: {(exp.metrics.aggregated.avg_return || 0).toFixed(2)}%
-                                                            </div>
-                                                            <div className="text-xs text-gray-400">
-                                                                Best: {exp.metrics.aggregated.best_stock?.symbol} ({(exp.metrics.aggregated.best_stock?.return || 0).toFixed(2)}%)
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        <span className={`font-black ${(exp.metrics.pnl_percent || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                            {(exp.metrics.pnl_percent || 0).toFixed(2)}%
-                                                        </span>
-                                                    ))}
+                                                    {renderMetrics(exp)}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {exp.status === 'SUCCESS' ? (
-                                                        <CheckCircle size={16} className="text-green-500" />
-                                                    ) : (
-                                                        <XCircle size={16} className="text-red-500" />
-                                                    )}
+                                                    <div className="flex items-center gap-2">
+                                                        <a
+                                                            href={`/strategies/${strategyId || exp.strategy}/experiments/${exp.id}`}
+                                                            className="text-[10px] font-bold uppercase tracking-wider text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            View
+                                                        </a>
+                                                        {exp.is_published ? (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleUnpublish(exp);
+                                                                }}
+                                                                className="text-[10px] font-bold uppercase tracking-wider text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-2 py-1 rounded transition-colors"
+                                                            >
+                                                                Unpublish
+                                                            </button>
+                                                        ) : (
+                                                            (strategyId || exp.strategy) && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handlePublish(exp);
+                                                                    }}
+                                                                    className="text-[10px] font-bold uppercase tracking-wider text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2 py-1 rounded transition-colors"
+                                                                >
+                                                                    Publish
+                                                                </button>
+                                                            )
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-gray-400">
                                                     {expandedId === exp.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -393,9 +506,11 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
 
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                                 <div>
-                                                                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-1">
-                                                                        <Zap size={14} className="text-amber-500" /> Parameters
-                                                                    </h4>
+                                                                    <div className="flex justify-between items-center mb-3">
+                                                                        <h4 className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1">
+                                                                            <Zap size={14} className="text-amber-500" /> Parameters
+                                                                        </h4>
+                                                                    </div>
                                                                     <div className="flex flex-wrap gap-2">
                                                                         {Object.entries(exp.parameters || {}).map(([key, value]: [string, any]) => (
                                                                             <div key={key} className="bg-white border border-gray-200 px-3 py-2 rounded-lg shadow-sm flex flex-col min-w-[120px]">
@@ -549,6 +664,166 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                     </div>
                 </div>
             </section>
-        </div>
+
+            <Dialog open={publishModalOpen} onOpenChange={setPublishModalOpen}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Publish Strategy Configuration</DialogTitle>
+                        <DialogDescription>
+                            Review the configuration and performance metrics below. Publishing this will set these parameters as the active configuration for generating buy/sell recommendations.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {experimentToPublish && (
+                        <div className="space-y-6 py-4">
+                            {/* Scope Selection Section */}
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                                    <Filter size={14} className="text-blue-500" /> Recommendation Scope
+                                </h4>
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="radio"
+                                            id="scope_all"
+                                            name="scope"
+                                            checked={publishScopeType === 'ALL'}
+                                            onChange={() => { setPublishScopeType('ALL'); setPublishScopeValue('ALL'); }}
+                                            disabled={experimentToPublish.scope_type !== 'ALL'} // Can only publish ALL if tested on ALL (safest assumption)
+                                            className="accent-purple-600"
+                                        />
+                                        <label htmlFor="scope_all" className={`text-sm font-medium ${experimentToPublish.scope_type !== 'ALL' ? 'text-gray-400' : 'text-gray-900'}`}>
+                                            All Market <span className="text-gray-400 font-normal text-xs ml-1">(Requires global backtest)</span>
+                                        </label>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="radio"
+                                            id="scope_sector"
+                                            name="scope"
+                                            checked={publishScopeType === 'SECTOR'}
+                                            onChange={() => { setPublishScopeType('SECTOR'); setPublishScopeValue(experimentToPublish.scope_type === 'SECTOR' ? experimentToPublish.scope_value : ''); }}
+                                            disabled={experimentToPublish.scope_type === 'SYMBOL'} // Can't publish Sector if only tested on Symbol
+                                            className="accent-purple-600"
+                                        />
+                                        <label htmlFor="scope_sector" className={`text-sm font-medium ${experimentToPublish.scope_type === 'SYMBOL' ? 'text-gray-400' : 'text-gray-900'}`}>
+                                            Specific Sector
+                                        </label>
+                                        {publishScopeType === 'SECTOR' && (
+                                            <input
+                                                type="text"
+                                                value={publishScopeValue}
+                                                onChange={(e) => setPublishScopeValue(e.target.value)}
+                                                placeholder="e.g. Commercial Banks"
+                                                className="ml-2 border border-gray-300 rounded px-2 py-1 text-xs w-48"
+                                            />
+                                        )}
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="radio"
+                                            id="scope_symbol"
+                                            name="scope"
+                                            checked={publishScopeType === 'SYMBOL'}
+                                            onChange={() => { setPublishScopeType('SYMBOL'); setPublishScopeValue(experimentToPublish.scope_type === 'SYMBOL' ? experimentToPublish.scope_value : ''); }}
+                                            className="accent-purple-600"
+                                        />
+                                        <label htmlFor="scope_symbol" className="text-sm font-medium text-gray-900">
+                                            Specific Symbol(s)
+                                        </label>
+                                        {publishScopeType === 'SYMBOL' && (
+                                            <input
+                                                type="text"
+                                                value={publishScopeValue}
+                                                onChange={(e) => setPublishScopeValue(e.target.value)}
+                                                placeholder="e.g. NABIL, NICA"
+                                                className="ml-2 border border-gray-300 rounded px-2 py-1 text-xs w-48"
+                                            />
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Parameters Section */}
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                                    <Zap size={14} className="text-amber-500" /> Configuration Parameters
+                                </h4>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                    {Object.entries(experimentToPublish.parameters || {}).map(([key, value]) => (
+                                        <div key={key} className="bg-gray-50 border border-gray-100 p-2 rounded">
+                                            <span className="text-[10px] text-gray-500 uppercase font-bold block mb-0.5">{key.replace(/_/g, ' ')}</span>
+                                            <span className="text-sm font-mono font-bold text-gray-900 break-all">{String(value)}</span>
+                                        </div>
+                                    ))}
+                                    {Object.keys(experimentToPublish.parameters || {}).length === 0 && (
+                                        <span className="text-sm text-gray-500 italic">No parameters defined</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Metrics Section */}
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                                    <Activity size={14} className="text-blue-500" /> Performance Metrics
+                                </h4>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                                        <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Return</span>
+                                        <span className={`text-xl font-black ${experimentToPublish.metrics.pnl_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {experimentToPublish.metrics.pnl_percent?.toFixed(2)}%
+                                        </span>
+                                    </div>
+                                    <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                                        <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Win Rate</span>
+                                        <span className="text-xl font-bold text-gray-900">
+                                            {experimentToPublish.metrics.win_rate?.toFixed(1)}%
+                                        </span>
+                                    </div>
+                                    <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                                        <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Drawdown</span>
+                                        <span className="text-xl font-bold text-red-600">
+                                            {experimentToPublish.metrics.max_drawdown?.toFixed(2)}%
+                                        </span>
+                                    </div>
+                                    <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                                        <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Sharpe</span>
+                                        <span className="text-xl font-bold text-gray-900">
+                                            {experimentToPublish.metrics.sharpe_ratio?.toFixed(2)}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setPublishModalOpen(false)}>Cancel</Button>
+                        <Button onClick={confirmPublish} className="bg-purple-600 hover:bg-purple-700">Confirm & Publish</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={unpublishModalOpen} onOpenChange={setUnpublishModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="text-red-600 flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5" /> Unpublish Strategy
+                        </DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to unpublish this strategy?
+                            <br /><br />
+                            This will <strong>stop generating new recommendations</strong> and allow you to edit the strategy code again.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setUnpublishModalOpen(false)}>Cancel</Button>
+                        <Button onClick={confirmUnpublish} variant="destructive">Unpublish Strategy</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div >
     );
 }
