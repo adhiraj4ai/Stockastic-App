@@ -59,6 +59,7 @@ export default function ExperimentDetailPage() {
     const expId = params.expId;
 
     const [experiment, setExperiment] = useState<Experiment | null>(null);
+    const [batchChildren, setBatchChildren] = useState<Experiment[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -71,7 +72,20 @@ export default function ExperimentDetailPage() {
         setLoading(true);
         try {
             const response = await api.get(`/api/stocks/strategies/experiment_detail/`, { params: { id: expId } });
-            setExperiment(response.data);
+            const data = response.data;
+            setExperiment(data);
+
+            // If this represents a Batch (Sector/All) run, fetch children details
+            if (data.batch_id && (data.scope_type === 'SECTOR' || data.scope_type === 'ALL')) {
+                try {
+                    const batchRes = await api.get(`/api/stocks/strategies/experiment_detail/`, { params: { batch_id: data.batch_id } });
+                    // Filter out the parent itself and ensure only SYMBOL scopes
+                    const children = batchRes.data.filter((e: Experiment) => e.scope_type === 'SYMBOL');
+                    setBatchChildren(children);
+                } catch (err) {
+                    console.error("Failed to fetch batch children", err);
+                }
+            }
         } catch (error) {
             console.error("Failed to fetch experiment detail", error);
         } finally {
@@ -371,32 +385,93 @@ export default function ExperimentDetailPage() {
 
                     {/* Right Column: immersive Chart & Categorized Metrics */}
                     <div className="xl:col-span-3 space-y-6">
-                        <Card className="border-none shadow-2xl shadow-gray-900/10 overflow-hidden h-[850px] flex flex-col bg-white rounded-3xl">
-                            <div className="px-6 py-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/20">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                                    <h3 className="text-sm font-black text-gray-700 uppercase tracking-widest">Interactive Equity Curve & Signal Visualization</h3>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Badge variant="outline" className="text-[10px] font-black tracking-widest bg-white border-gray-100 px-3 py-1">FULL IMMERSION</Badge>
-                                </div>
-                            </div>
-                            <div className="flex-1 relative">
-                                {experiment.plot_html ? (
-                                    <iframe
-                                        title={`Backtest Analysis Plot`}
-                                        srcDoc={experiment.plot_html}
-                                        className="w-full h-full border-0 absolute inset-0"
-                                        sandbox="allow-scripts"
-                                    />
-                                ) : (
-                                    <div className="h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50/50">
-                                        <Activity size={64} className="mb-4 opacity-5" />
-                                        <p className="font-medium">Visualization not available for this run</p>
+                        {/* Interactive Equity Curve or Batch Table */}
+                        {batchChildren.length > 0 ? (
+                            <Card className="border-none shadow-2xl shadow-gray-900/10 overflow-hidden bg-white rounded-3xl">
+                                <div className="px-6 py-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/20">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                                        <h3 className="text-sm font-black text-gray-700 uppercase tracking-widest">Individual Symbol Breakdown</h3>
                                     </div>
-                                )}
-                            </div>
-                        </Card>
+                                    <Badge variant="outline" className="text-[10px] font-black tracking-widest bg-white border-gray-100 px-3 py-1">
+                                        {batchChildren.length} SYMBOLS
+                                    </Badge>
+                                </div>
+                                <div className="p-0 overflow-x-auto">
+                                    <Table>
+                                        <thead className="bg-gray-50/50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Symbol</th>
+                                                <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Return</th>
+                                                <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Win Rate</th>
+                                                <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Trades</th>
+                                                <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100">
+                                            {batchChildren
+                                                .sort((a, b) => b.metrics.pnl_percent - a.metrics.pnl_percent)
+                                                .map((child) => (
+                                                    <TableRow key={child.id} className="hover:bg-blue-50/30 transition-colors group">
+                                                        <TableCell className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="font-bold text-gray-900">{child.scope_value}</div>
+                                                            <div className="text-[10px] text-gray-400 font-mono">#{child.id}</div>
+                                                        </TableCell>
+                                                        <TableCell className="px-6 py-4 whitespace-nowrap text-right">
+                                                            <span className={`font-mono font-bold ${(child.metrics.pnl_percent || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                {(child.metrics.pnl_percent || 0).toFixed(2)}%
+                                                            </span>
+                                                        </TableCell>
+                                                        <TableCell className="px-6 py-4 whitespace-nowrap text-right font-mono font-bold text-gray-700">
+                                                            {(child.metrics.win_rate || 0).toFixed(1)}%
+                                                        </TableCell>
+                                                        <TableCell className="px-6 py-4 whitespace-nowrap text-right font-mono font-bold text-gray-700">
+                                                            {child.metrics.total_trades || 0}
+                                                        </TableCell>
+                                                        <TableCell className="px-6 py-4 whitespace-nowrap text-right">
+                                                            <a
+                                                                href={`/strategies/${strategyId}/experiments/${child.id}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-blue-600 hover:text-blue-800 text-xs font-bold uppercase tracking-wide hover:underline"
+                                                            >
+                                                                View Analysis &rarr;
+                                                            </a>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                        </tbody>
+                                    </Table>
+                                </div>
+                            </Card>
+                        ) : (
+                            <Card className="border-none shadow-2xl shadow-gray-900/10 overflow-hidden h-[850px] flex flex-col bg-white rounded-3xl">
+                                <div className="px-6 py-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/20">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                                        <h3 className="text-sm font-black text-gray-700 uppercase tracking-widest">Interactive Equity Curve & Signal Visualization</h3>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="outline" className="text-[10px] font-black tracking-widest bg-white border-gray-100 px-3 py-1">FULL IMMERSION</Badge>
+                                    </div>
+                                </div>
+                                <div className="flex-1 relative">
+                                    {experiment.plot_html ? (
+                                        <iframe
+                                            title={`Backtest Analysis Plot`}
+                                            srcDoc={experiment.plot_html}
+                                            className="w-full h-full border-0 absolute inset-0"
+                                            sandbox="allow-scripts"
+                                        />
+                                    ) : (
+                                        <div className="h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50/50">
+                                            <Activity size={64} className="mb-4 opacity-5" />
+                                            <p className="font-medium">Visualization not available for this run</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </Card>
+                        )}
 
                         {/* Categorized Metrics Display */}
                         <div className="space-y-6">
