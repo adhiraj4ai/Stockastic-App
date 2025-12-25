@@ -75,15 +75,14 @@ class PortfolioTransactionSerializer(serializers.ModelSerializer):
 
 class StrategySerializer(serializers.ModelSerializer):
     default_parameters = serializers.SerializerMethodField()
+    published_experiments = serializers.SerializerMethodField()
 
     class Meta:
         model = Strategy
         fields = ['id', 'name', 'description', 'code', 'created_at', 'is_public', 
                   'pnl_amount', 'pnl_percent', 'max_drawdown', 'sharpe_ratio', 'win_rate', 'default_parameters',
-                  'is_published_for_recommendation', 'published_parameters', 'published_at',
-                  'published_scope_type', 'published_scope_value', 'published_experiment']
-        read_only_fields = ['id', 'created_at', 'published_at', 'is_published_for_recommendation', 'published_parameters',
-                            'published_scope_type', 'published_scope_value', 'published_experiment']
+                  'published_experiments']
+        read_only_fields = ['id', 'created_at', 'published_experiments']
 
     def get_default_parameters(self, obj):
         if not obj.code:
@@ -121,6 +120,10 @@ class StrategySerializer(serializers.ModelSerializer):
             return params
         except Exception:
             return {}
+
+    def get_published_experiments(self, obj):
+        experiments = obj.experiments.filter(is_published=True)
+        return StrategyExperimentSerializer(experiments, many=True).data
 
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
@@ -164,19 +167,15 @@ class NotificationSerializer(serializers.ModelSerializer):
 
 class StrategyExperimentSerializer(serializers.ModelSerializer):
     strategy_name = serializers.CharField(source='strategy.name', read_only=True)
-    is_published = serializers.SerializerMethodField()
+    is_published = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = StrategyExperiment
         fields = ['id', 'strategy', 'strategy_name', 'run_type', 'scope_type', 'scope_value', 
                   'start_date', 'end_date', 'parameters', 'metrics', 'batch_id', 'status', 'error_log', 'created_at', 'is_published']
 
-    def get_is_published(self, obj):
-        # Check if this experiment is the currently published one for its strategy
-        try:
-            return obj.id == obj.strategy.published_experiment_id
-        except Exception:
-            return False
+    def get_strategy_name(self, obj):
+        return obj.strategy.name
 
 class StrategyExperimentDetailSerializer(serializers.ModelSerializer):
     strategy_name = serializers.CharField(source='strategy.name', read_only=True)

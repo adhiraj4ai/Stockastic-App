@@ -274,14 +274,8 @@ class Strategy(models.Model):
     win_rate = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
 
     # Recommendation / Publishing
-    is_published_for_recommendation = models.BooleanField(default=False)
-    published_parameters = models.JSONField(default=dict, blank=True)
-    published_at = models.DateTimeField(null=True, blank=True)
-    published_scope_type = models.CharField(max_length=20, choices=ScopeType.choices, default=ScopeType.ALL)
-    published_scope_value = models.CharField(max_length=255, blank=True, null=True)
-
-    published_location = models.CharField(max_length=255, blank=True, null=True) # Deprecated or future use?
-    published_experiment = models.ForeignKey('stocks.StrategyExperiment', on_delete=models.SET_NULL, null=True, blank=True, related_name='published_strategy')
+    # Published status is now tracked on individual StrategyExperiment models (is_published=True)
+    # Allows multiple published configurations (e.g. per symbol)
 
     def __str__(self):
         return self.name
@@ -304,7 +298,9 @@ class StrategyExperiment(models.Model):
     
     start_date = models.DateField()
     end_date = models.DateField()
+    is_published = models.BooleanField(default=False)
     
+    # Input
     parameters = models.JSONField(default=dict)
     metrics = models.JSONField(default=dict) # Return, Sharpe, Win Rate etc.
     

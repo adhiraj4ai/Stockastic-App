@@ -29,7 +29,7 @@ interface Strategy {
     description: string;
     created_at: string;
     is_public: boolean;
-    is_published_for_recommendation?: boolean;
+    published_experiments?: any[];
     pnl_amount?: number;
     pnl_percent?: number;
     max_drawdown?: number;
@@ -214,7 +214,7 @@ export default function StrategiesPage() {
                                         <Card
                                             key={strategy.id}
                                             className="hover:shadow-md transition-shadow duration-200 border-gray-200 flex flex-col cursor-pointer hover:border-blue-300"
-                                            onClick={() => router.push(`/strategies/${strategy.id}/run`)}
+                                            onClick={() => router.push(`/strategies/${strategy.id}`)}
                                         >
                                             <div className="p-2 border-b border-gray-100 bg-white rounded-t-xl">
                                                 <div className="flex items-start gap-2.5">
@@ -227,9 +227,9 @@ export default function StrategiesPage() {
                                                                 <span className="text-[15px] font-bold text-gray-900 leading-none truncate hover:text-blue-600 hover:underline">
                                                                     {strategy.name}
                                                                 </span>
-                                                                {strategy.is_published_for_recommendation && (
+                                                                {strategy.published_experiments && strategy.published_experiments.length > 0 && (
                                                                     <span className="bg-blue-50 text-blue-700 text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0">
-                                                                        Published
+                                                                        Published ({strategy.published_experiments.length})
                                                                     </span>
                                                                 )}
                                                             </div>
@@ -326,7 +326,7 @@ export default function StrategiesPage() {
                                                     <tr
                                                         key={strategy.id}
                                                         className="hover:bg-gray-50 group cursor-pointer"
-                                                        onClick={() => router.push(`/strategies/${strategy.id}/run`)}
+                                                        onClick={() => router.push(`/strategies/${strategy.id}`)}
                                                     >
                                                         <td className="px-4 py-3">
                                                             <div className="flex items-center gap-3">

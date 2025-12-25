@@ -60,7 +60,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
     const [experimentToPublish, setExperimentToPublish] = useState<Experiment | null>(null);
     const [publishScopeType, setPublishScopeType] = useState<'ALL' | 'SECTOR' | 'SYMBOL'>('ALL');
     const [publishScopeValue, setPublishScopeValue] = useState('');
-    const [publishedConfig, setPublishedConfig] = useState<{ is_published: boolean, parameters: any } | null>(null);
+    // publishedConfig state removed: Logic moved to per-experiment flag
     const [loading, setLoading] = useState(true);
     const [expandedId, setExpandedId] = useState<number | null>(null);
     const [batchResults, setBatchResults] = useState<Record<string, Experiment[]>>({});
@@ -88,10 +88,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                 ]);
 
                 if (stratRes.data) {
-                    setPublishedConfig({
-                        is_published: stratRes.data.is_published_for_recommendation,
-                        parameters: stratRes.data.published_parameters
-                    });
+                    // Strategy data fetched for context, but published state is now on experiments
                 }
 
                 if (expRes.data.results) {
@@ -228,7 +225,6 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
             toast.success("Strategy unpublished successfully.");
             // Refresh
             fetchExperiments(page);
-            setPublishedConfig(prev => prev ? { ...prev, is_published: false } : null);
             setUnpublishModalOpen(false);
         } catch (err) {
             toast.error("Failed to unpublish strategy.");
@@ -249,11 +245,8 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
             });
             toast.success("Strategy published successfully!");
             // Refresh experiments to update 'is_published' flags
+            // Refresh experiments to update 'is_published' flags
             fetchExperiments(page);
-            setPublishedConfig({
-                is_published: true,
-                parameters: experimentToPublish.parameters
-            });
             setPublishModalOpen(false);
         } catch (err) {
             toast.error("Failed to publish strategy.");

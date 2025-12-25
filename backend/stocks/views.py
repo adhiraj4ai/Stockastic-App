@@ -771,47 +771,59 @@ class StrategyViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         strategy = self.get_object()
-        if strategy.is_published_for_recommendation:
+        # Check if ANY experiment is published for this strategy
+        if strategy.experiments.filter(is_published=True).exists():
             if 'code' in serializer.validated_data:
                 from rest_framework.exceptions import PermissionDenied
-                raise PermissionDenied("This strategy is published for recommendation and cannot be edited. Unpublish it first.")
+                raise PermissionDenied("This strategy has published configurations and cannot be edited. Unpublish all configurations first.")
         serializer.save()
 
     @action(detail=True, methods=['post'])
     def publish(self, request, pk=None):
         """
-        Publish strategy for recommendations. Requires 'parameters' in body.
+        Publish strategy experiment for recommendations. Requires 'experiment_id'.
         """
         strategy = self.get_object()
-        parameters = request.data.get('parameters', {})
-        
-        if not parameters:
-             return Response({"error": "Parameters are required to publish."}, status=status.HTTP_400_BAD_REQUEST)
-
-        strategy.is_published_for_recommendation = True
-        strategy.published_parameters = parameters
-        strategy.published_scope_type = request.data.get('scope_type', ScopeType.ALL)
-        strategy.published_scope_value = request.data.get('scope_value', '')
-        
         experiment_id = request.data.get('experiment_id')
-        if experiment_id:
-            strategy.published_experiment_id = experiment_id
+        
+        if not experiment_id:
+             return Response({"error": "Experiment ID is required to publish."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            exp = StrategyExperiment.objects.get(id=experiment_id, strategy=strategy)
             
-        from django.utils import timezone
-        strategy.published_at = timezone.now()
-        strategy.save()
-        return Response({"status": "published", "parameters": parameters})
+            # Unpublish any existing experiment with same scope type and value for this strategy
+            # strictly enforced to avoid duplicate signals for same scope
+            StrategyExperiment.objects.filter(
+                strategy=strategy,
+                scope_type=exp.scope_type,
+                scope_value=exp.scope_value,
+                is_published=True
+            ).exclude(id=exp.id).update(is_published=False)
+            
+            exp.is_published = True
+            exp.save()
+            
+            return Response({"status": "published", "id": exp.id, "scope": f"{exp.scope_type}:{exp.scope_value}"})
+        except StrategyExperiment.DoesNotExist:
+             return Response({"error": "Experiment not found."}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=True, methods=['post'])
     def unpublish(self, request, pk=None):
         strategy = self.get_object()
-        strategy.is_published_for_recommendation = False
-        strategy.published_parameters = {}
-        strategy.published_at = None
-        strategy.published_scope_type = ScopeType.ALL # Added
-        strategy.published_scope_value = '' # Added
-        strategy.published_experiment = None # Clear link
-        strategy.save()
+        experiment_id = request.data.get('experiment_id')
+        
+        if experiment_id:
+            try:
+                exp = StrategyExperiment.objects.get(id=experiment_id, strategy=strategy)
+                exp.is_published = False
+                exp.save()
+            except StrategyExperiment.DoesNotExist:
+                return Response({"error": "Experiment not found."}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            # Unpublish ALL for this strategy (cleanup)
+            StrategyExperiment.objects.filter(strategy=strategy, is_published=True).update(is_published=False)
+
         return Response({"status": "unpublished"})
 
     @action(detail=False, methods=['get'])
@@ -836,7 +848,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
     def experiments(self, request, pk=None):
         strategy = self.get_object()
         experiments = StrategyExperiment.objects.filter(strategy=strategy).order_by('-created_at') \
-            .exclude(batch_id__isnull=False, scope_type=StrategyExperiment.ScopeType.SYMBOL)
+            .exclude(batch_id__isnull=False, scope_type=ScopeType.SYMBOL)
         
         page = self.paginate_queryset(experiments)
         if page is not None:
@@ -908,8 +920,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
         Get buy/sell recommendations based on published strategies.
         Runs strategies on the latest data for active companies.
         """
-        published_strategies = Strategy.objects.filter(is_published_for_recommendation=True)
-        if not published_strategies.exists():
+        published_experiments = StrategyExperiment.objects.filter(is_published=True).select_related('strategy')
+        if not published_experiments.exists():
              return Response([])
 
         # Limit company scope for performance (e.g. top 20 by turnover or just 20 random)
@@ -935,16 +947,17 @@ class StrategyViewSet(viewsets.ModelViewSet):
         end_date = datetime.date.today()
         start_date = end_date - datetime.timedelta(days=400) # Ensure enough data for indicators
 
-        for strategy in published_strategies:
+        for exp in published_experiments:
+            strategy = exp.strategy
             # Determine applicable companies based on Strategy scope AND user query
             strategy_companies = companies # Start with the Base Filtered list (Active companies or Query Filter)
 
             # Apply Strategy Scope Constraints
-            if strategy.published_scope_type == ScopeType.SYMBOL:
-                symbols = [s.strip() for s in (strategy.published_scope_value or "").split(',')]
+            if exp.scope_type == ScopeType.SYMBOL:
+                symbols = [s.strip() for s in (exp.scope_value or "").split(',')]
                 strategy_companies = strategy_companies.filter(symbol__in=symbols)
-            elif strategy.published_scope_type == ScopeType.SECTOR:
-                strategy_companies = strategy_companies.filter(sector=strategy.published_scope_value)
+            elif exp.scope_type == ScopeType.SECTOR:
+                strategy_companies = strategy_companies.filter(sector=exp.scope_value)
             
             # Limit the number of companies processed per strategy to avoid 50s timeout
             # If User queried specific symbol/sector, usually it's small enough.
@@ -953,9 +966,11 @@ class StrategyViewSet(viewsets.ModelViewSet):
                  strategy_companies = strategy_companies[:5]
 
             # If after filtering we have candidates, run signal check
+            # If after filtering we have candidates, run signal check
             for company in strategy_companies:
                 try:
-                    signal = self._get_signal(strategy.code, company.symbol, start_date, end_date, strategy.published_parameters)
+                    # Use experiment parameters, NOT strategy.published_parameters (removed)
+                    signal = self._get_signal(strategy.code, company.symbol, start_date, end_date, exp.parameters)
                     if signal:
                         recommendations.append({
                             'strategy_id': strategy.id,
@@ -965,7 +980,9 @@ class StrategyViewSet(viewsets.ModelViewSet):
                             'signal': signal['type'], # BUY/SELL
                             'date': signal['date'],
                             'price': signal['price'],
-                            'published_parameters': strategy.published_parameters
+                            'published_parameters': exp.parameters,
+                            'scope_type': exp.scope_type,
+                            'scope_value': exp.scope_value
                         })
                 except Exception as e:
                     print(f"Error generating recommendation for {strategy.name} on {company.symbol}: {e}")
@@ -1852,13 +1869,13 @@ class StrategyViewSet(viewsets.ModelViewSet):
             tb = traceback.format_exc()
             # Log Failed Optimization
             try:
-                scope_type = StrategyExperiment.ScopeType.SYMBOL
+                scope_type = ScopeType.SYMBOL
                 scope_val = symbol
                 if symbol == 'ALL':
-                    scope_type = StrategyExperiment.ScopeType.ALL
+                    scope_type = ScopeType.ALL
                     scope_val = 'ALL'
                 elif sector:
-                    scope_type = StrategyExperiment.ScopeType.SECTOR
+                    scope_type = ScopeType.SECTOR
                     scope_val = sector
 
                 StrategyExperiment.objects.create(
@@ -1896,7 +1913,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
             experiments = StrategyExperiment.objects.filter(batch_id=batch_id)
             if symbol:
                 try:
-                    experiment = experiments.get(scope_value=symbol, scope_type=StrategyExperiment.ScopeType.SYMBOL)
+                    experiment = experiments.get(scope_value=symbol, scope_type=ScopeType.SYMBOL)
                     return Response(StrategyExperimentDetailSerializer(experiment).data)
                 except StrategyExperiment.DoesNotExist:
                     return Response({'error': 'Experiment for this symbol in batch not found'}, status=404)
