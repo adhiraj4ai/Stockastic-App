@@ -951,6 +951,9 @@ class StrategyViewSet(viewsets.ModelViewSet):
 
         # If sector is provided, run backtest for all stocks in sector
         if sector:
+            import uuid
+            batch_id = uuid.uuid4()
+            
             # Note: case-insensitive match for sector
             if sector.upper() == 'ALL':
                 companies = Company.objects.filter(status='A').values_list('symbol', flat=True)
@@ -967,8 +970,33 @@ class StrategyViewSet(viewsets.ModelViewSet):
             for stock_symbol in companies:
                 try:
                     # Run backtest for this stock
-                    result, error, _ = self._run_single_backtest(code, stock_symbol, start_date, end_date, params=strategy_params)
+                    result, error, exp_data = self._run_single_backtest(code, stock_symbol, start_date, end_date, params=strategy_params)
                     if result:
+                        # Log Individual Experiment
+                        final_params = strategy_params.copy()
+                        if exp_data.get('params'): final_params.update(exp_data['params'])
+                        
+                        final_metrics = {**result['stats']}
+                        if exp_data.get('metrics'): final_metrics.update(exp_data['metrics'])
+                        
+                        try:
+                            StrategyExperiment.objects.create(
+                                strategy=strategy,
+                                user=request.user,
+                                run_type=StrategyExperiment.RunType.BACKTEST,
+                                scope_type=StrategyExperiment.ScopeType.SYMBOL,
+                                scope_value=stock_symbol,
+                                start_date=start_date,
+                                end_date=end_date,
+                                parameters=final_params,
+                                metrics=final_metrics,
+                                batch_id=batch_id,
+                                plot_html=result.get('plot_html'),
+                                status=StrategyExperiment.Status.SUCCESS
+                            )
+                        except Exception as e:
+                            print(f"Failed to log individual experiment for {stock_symbol}: {e}")
+
                         sector_results.append({
                             'symbol': stock_symbol,
                             'return': result['stats']['pnl_percent'], # Consistent key
@@ -980,6 +1008,23 @@ class StrategyViewSet(viewsets.ModelViewSet):
                         successful_backtests += 1
                     else:
                         failed_stocks.append({'symbol': stock_symbol, 'error': error or 'No data'})
+                        # Log Failed Individual Experiment
+                        try:
+                            StrategyExperiment.objects.create(
+                                strategy=strategy,
+                                user=request.user,
+                                run_type=StrategyExperiment.RunType.BACKTEST,
+                                scope_type=StrategyExperiment.ScopeType.SYMBOL,
+                                scope_value=stock_symbol,
+                                start_date=start_date,
+                                end_date=end_date,
+                                parameters=strategy_params,
+                                metrics={},
+                                batch_id=batch_id,
+                                status=StrategyExperiment.Status.FAILED,
+                                error_log=error or 'No data'
+                            )
+                        except: pass
                 except Exception as e:
                     failed_stocks.append({'symbol': stock_symbol, 'error': str(e)})
                     continue
@@ -998,9 +1043,6 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 best_stock = max(sector_results, key=lambda x: x.get('return', 0) or 0)
                 worst_stock = min(sector_results, key=lambda x: x.get('return', 0) or 0)
             
-            
-
-
             # Log Aggregated Experiment
             try:
                 StrategyExperiment.objects.create(
@@ -1020,8 +1062,9 @@ class StrategyViewSet(viewsets.ModelViewSet):
                             'best_stock': best_stock,
                             'worst_stock': worst_stock
                         },
-                        'individual': sorted(sector_results, key=lambda x: x.get('return', 0) or 0, reverse=True)[:50] # Store top 50
+                        'individual': sorted(sector_results, key=lambda x: x.get('return', 0) or 0, reverse=True)[:50] # Store top 50 in summary
                     },
+                    batch_id=batch_id,
                     status=StrategyExperiment.Status.SUCCESS,
                     error_log=f"Failed: {len(failed_stocks)} stocks" if failed_stocks else None
                 )
@@ -1030,6 +1073,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
 
             return Response({
                 'sector': sector,
+                'batch_id': batch_id,
                 'total_companies': len(companies),
                 'successful_backtests': successful_backtests,
                 'aggregated': {
@@ -1086,6 +1130,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 end_date=end_date,
                 parameters=final_params, 
                 metrics={**final_metrics, **result['stats']}, 
+                plot_html=result.get('plot_html'),
                 status=StrategyExperiment.Status.SUCCESS
             )
         except Exception as e:
@@ -1551,6 +1596,28 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 pass 
 
             return Response({'error': f"Optimization Error: {str(e)}", 'traceback': tb}, status=400)
+
+    @action(detail=False, methods=['get'])
+    def experiment_detail(self, request):
+        experiment_id = request.query_params.get('id')
+        batch_id = request.query_params.get('batch_id')
+        symbol = request.query_params.get('symbol')
+        
+        if experiment_id:
+            try:
+                experiment = StrategyExperiment.objects.get(id=experiment_id)
+                return Response(StrategyExperimentDetailSerializer(experiment).data)
+            except StrategyExperiment.DoesNotExist:
+                return Response({'error': 'Experiment not found'}, status=404)
+        
+        if batch_id and symbol:
+            try:
+                experiment = StrategyExperiment.objects.get(batch_id=batch_id, scope_value=symbol, scope_type=StrategyExperiment.ScopeType.SYMBOL)
+                return Response(StrategyExperimentDetailSerializer(experiment).data)
+            except StrategyExperiment.DoesNotExist:
+                return Response({'error': 'Experiment for this symbol in batch not found'}, status=404)
+                
+        return Response({'error': 'id or (batch_id and symbol) required'}, status=400)
 
 
 class CompanyViewSet(viewsets.ReadOnlyModelViewSet):

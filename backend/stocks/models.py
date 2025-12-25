@@ -484,6 +484,9 @@ class StrategyExperiment(models.Model):
     parameters = models.JSONField(default=dict)
     metrics = models.JSONField(default=dict)
     
+    batch_id = models.UUIDField(null=True, blank=True, db_index=True)
+    plot_html = models.TextField(null=True, blank=True)
+    
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.SUCCESS)
     error_log = models.TextField(null=True, blank=True)
     

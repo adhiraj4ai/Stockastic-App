@@ -181,6 +181,10 @@ export default function RunStrategyPage() {
             console.log('Backtest request:', requestData);
             const response = await api.post(`/api/stocks/strategies/${strategy.id}/backtest/`, requestData);
             setResults(response.data);
+
+            // If single symbol, we have the full result with plot_html
+            // If sector, we have aggregated results
+
             toast.success(mode === 'sector' ? 'Sector backtest complete' : 'Backtest complete');
         } catch (error: any) {
             console.error('Backtest failed', error);
@@ -484,7 +488,7 @@ export default function RunStrategyPage() {
                                         </div>
                                         <div className="flex-1 overflow-auto p-4">
                                             {results.stats ? (
-                                                <MetricsView stats={results.stats} />
+                                                <MetricsView stats={results.stats} plotHtml={results.plot_html} />
                                             ) : (
                                                 <div className="flex flex-col h-full space-y-6">
                                                     {/* Aggregated Stats Cards */}
@@ -531,7 +535,23 @@ export default function RunStrategyPage() {
                                                                         <TableRow
                                                                             key={res.symbol}
                                                                             className="cursor-pointer hover:bg-gray-50"
-                                                                            onClick={() => setSelectedResult(res)}
+                                                                            onClick={async () => {
+                                                                                setSelectedResult(res);
+                                                                                // Fetch detailed experiment for this symbol in batch
+                                                                                if (results.batch_id) {
+                                                                                    try {
+                                                                                        const detailResp = await api.get(`/api/stocks/strategies/experiment_detail/`, {
+                                                                                            params: {
+                                                                                                batch_id: results.batch_id,
+                                                                                                symbol: res.symbol
+                                                                                            }
+                                                                                        });
+                                                                                        setSelectedResult({ ...res, ...detailResp.data });
+                                                                                    } catch (err) {
+                                                                                        console.error("Failed to fetch detail", err);
+                                                                                    }
+                                                                                }
+                                                                            }}
                                                                         >
                                                                             <TableCell className="font-medium">{res.symbol}</TableCell>
                                                                             <TableCell className={`text-right ${res.return >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -626,7 +646,7 @@ export default function RunStrategyPage() {
                     </DialogHeader>
 
                     {selectedResult?.stats ? (
-                        <MetricsView stats={selectedResult.stats} />
+                        <MetricsView stats={selectedResult.stats} plotHtml={selectedResult.plot_html} />
                     ) : (
                         <div className="py-8 text-center text-gray-500">
                             No detailed stats available for this run.
@@ -639,9 +659,20 @@ export default function RunStrategyPage() {
 }
 
 // Reusable Metrics View Component
-function MetricsView({ stats }: { stats: any }) {
+function MetricsView({ stats, plotHtml }: { stats: any, plotHtml?: string }) {
     return (
         <div className="space-y-6">
+            {/* Chart Section */}
+            {plotHtml && (
+                <div className="w-full bg-white border rounded-xl overflow-hidden mb-6 shadow-inner" style={{ height: '500px' }}>
+                    <iframe
+                        title="Backtest Plot"
+                        srcDoc={plotHtml}
+                        className="w-full h-full border-0"
+                        sandbox="allow-scripts"
+                    />
+                </div>
+            )}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-gray-50 p-3 rounded-lg">
                     <p className="text-xs text-gray-500">Total Trades</p>

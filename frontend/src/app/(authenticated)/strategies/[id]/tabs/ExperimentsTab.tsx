@@ -30,6 +30,7 @@ interface Experiment {
     status: 'SUCCESS' | 'FAILED';
     error_log: string;
     created_at: string;
+    plot_html?: string;
 }
 
 interface ExperimentsTabProps {
@@ -70,11 +71,21 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
         }
     };
 
-    const toggleExpand = (id: number) => {
+    const toggleExpand = async (id: number) => {
         if (expandedId === id) {
             setExpandedId(null);
         } else {
             setExpandedId(id);
+            // Fetch detail if not already present (e.g., if we only have the summary from the list)
+            const exp = experiments.find(e => e.id === id);
+            if (exp && !exp.plot_html && exp.run_type === 'BACKTEST') {
+                try {
+                    const response = await api.get(`/api/stocks/strategies/experiment_detail/`, { params: { id } });
+                    setExperiments(prev => prev.map(e => e.id === id ? { ...e, ...response.data } : e));
+                } catch (error) {
+                    console.error("Failed to fetch experiment detail", error);
+                }
+            }
         }
     };
 
@@ -244,26 +255,40 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                         {expandedId === exp.id && (
                                             <tr className="bg-gray-50">
                                                 <td colSpan={strategyId ? 7 : 8} className="px-6 py-4">
-                                                    <div className="grid grid-cols-2 gap-6">
-                                                        <div>
-                                                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Parameters</h4>
-                                                            <pre className="bg-white p-3 rounded border border-gray-200 text-xs overflow-x-auto">
-                                                                {JSON.stringify(exp.parameters, null, 2)}
-                                                            </pre>
-                                                        </div>
-                                                        <div>
-                                                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Detailed Metrics</h4>
-                                                            <pre className="bg-white p-3 rounded border border-gray-200 text-xs overflow-x-auto max-h-60 overflow-y-auto">
-                                                                {JSON.stringify(exp.run_type === 'BACKTEST' && exp.metrics.individual
-                                                                    ? { ...exp.metrics, individual: '[Truncated list of ' + exp.metrics.individual.length + ']' }
-                                                                    : exp.metrics,
-                                                                    null, 2)}
-                                                            </pre>
-                                                            {exp.error_log && (
-                                                                <div className="mt-2 text-red-600 text-xs">
-                                                                    <strong>Error:</strong> {exp.error_log}
-                                                                </div>
-                                                            )}
+                                                    <div className="flex flex-col gap-6">
+                                                        {/* Chart Section */}
+                                                        {exp.plot_html && (
+                                                            <div className="w-full bg-white border rounded-xl overflow-hidden shadow-inner" style={{ height: '400px' }}>
+                                                                <iframe
+                                                                    title={`Backtest Plot ${exp.id}`}
+                                                                    srcDoc={exp.plot_html}
+                                                                    className="w-full h-full border-0"
+                                                                    sandbox="allow-scripts"
+                                                                />
+                                                            </div>
+                                                        )}
+
+                                                        <div className="grid grid-cols-2 gap-6">
+                                                            <div>
+                                                                <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Parameters</h4>
+                                                                <pre className="bg-white p-3 rounded border border-gray-200 text-xs overflow-x-auto">
+                                                                    {JSON.stringify(exp.parameters, null, 2)}
+                                                                </pre>
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Detailed Metrics</h4>
+                                                                <pre className="bg-white p-3 rounded border border-gray-200 text-xs overflow-x-auto max-h-60 overflow-y-auto">
+                                                                    {JSON.stringify(exp.run_type === 'BACKTEST' && exp.metrics.individual
+                                                                        ? { ...exp.metrics, individual: '[Truncated list of ' + exp.metrics.individual.length + ']' }
+                                                                        : exp.metrics,
+                                                                        null, 2)}
+                                                                </pre>
+                                                                {exp.error_log && (
+                                                                    <div className="mt-2 text-red-600 text-xs">
+                                                                        <strong>Error:</strong> {exp.error_log}
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </td>

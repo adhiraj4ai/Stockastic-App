@@ -124,4 +124,12 @@ class StrategyExperimentSerializer(serializers.ModelSerializer):
     class Meta:
         model = StrategyExperiment
         fields = ['id', 'strategy', 'strategy_name', 'run_type', 'scope_type', 'scope_value', 
-                  'start_date', 'end_date', 'parameters', 'metrics', 'status', 'error_log', 'created_at']
+                  'start_date', 'end_date', 'parameters', 'metrics', 'batch_id', 'status', 'error_log', 'created_at']
+
+class StrategyExperimentDetailSerializer(serializers.ModelSerializer):
+    strategy_name = serializers.CharField(source='strategy.name', read_only=True)
+
+    class Meta:
+        model = StrategyExperiment
+        fields = ['id', 'strategy', 'strategy_name', 'run_type', 'scope_type', 'scope_value', 
+                  'start_date', 'end_date', 'parameters', 'metrics', 'batch_id', 'plot_html', 'status', 'error_log', 'created_at']
