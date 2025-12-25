@@ -7,7 +7,8 @@ from rest_framework.response import Response
 from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, TransactionType, StockFundamental, PortfolioAccount, Strategy, Company, WatchlistItem, Notification, StrategyExperiment
 from .serializers import (
     DailyStockPriceSerializer, DailyFloorsheetSerializer, PortfolioItemSerializer, 
-    PortfolioTransactionSerializer, StockFundamentalSerializer, StrategySerializer, CompanySerializer, WatchlistItemSerializer, NotificationSerializer, StrategyExperimentSerializer
+    PortfolioTransactionSerializer, StockFundamentalSerializer, StrategySerializer, CompanySerializer, WatchlistItemSerializer, NotificationSerializer, StrategyExperimentSerializer,
+    StrategyExperimentDetailSerializer
 )
 from . import serializers # For PortfolioAccountSerializer which was added differently in replacement
 from .utils import calculate_broker_commission, calculate_sebon_fee, calculate_dp_charge, calculate_cgt
@@ -954,11 +955,13 @@ class StrategyViewSet(viewsets.ModelViewSet):
             import uuid
             batch_id = uuid.uuid4()
             
+            excluded_types = ['Mutual Funds', 'Non-Convertible Debentures']
+            
             # Note: case-insensitive match for sector
             if sector.upper() == 'ALL':
-                companies = Company.objects.filter(status='A').values_list('symbol', flat=True)
+                companies = Company.objects.filter(status='A').exclude(instrument_type__in=excluded_types).values_list('symbol', flat=True)
             else:
-                companies = Company.objects.filter(sector__iexact=sector, status='A').values_list('symbol', flat=True)
+                companies = Company.objects.filter(sector__iexact=sector, status='A').exclude(instrument_type__in=excluded_types).values_list('symbol', flat=True)
                 
             if not companies:
                 return Response({'error': f'No active companies found in sector: {sector}'}, status=404)
@@ -980,7 +983,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
                         if exp_data.get('metrics'): final_metrics.update(exp_data['metrics'])
                         
                         try:
-                            StrategyExperiment.objects.create(
+                            exp = StrategyExperiment.objects.create(
                                 strategy=strategy,
                                 user=request.user,
                                 run_type=StrategyExperiment.RunType.BACKTEST,
@@ -994,10 +997,13 @@ class StrategyViewSet(viewsets.ModelViewSet):
                                 plot_html=result.get('plot_html'),
                                 status=StrategyExperiment.Status.SUCCESS
                             )
+                            experiment_id = exp.id
                         except Exception as e:
                             print(f"Failed to log individual experiment for {stock_symbol}: {e}")
+                            experiment_id = None
 
                         sector_results.append({
+                            'id': experiment_id,
                             'symbol': stock_symbol,
                             'return': result['stats']['pnl_percent'], # Consistent key
                             'total_pnl': result['stats']['total_pnl'],
@@ -1099,47 +1105,50 @@ class StrategyViewSet(viewsets.ModelViewSet):
             if exp_data.get('metrics'): final_metrics.update(exp_data['metrics'])
 
         if result is None:
-             # Log Failed Experiment (Single)
-            try:
-                StrategyExperiment.objects.create(
-                    strategy=strategy,
-                    user=request.user,
-                    run_type=StrategyExperiment.RunType.BACKTEST,
-                    scope_type=StrategyExperiment.ScopeType.SYMBOL,
-                    scope_value=symbol,
-                    start_date=start_date,
-                    end_date=end_date,
-                    parameters=final_params,
-                    metrics=final_metrics,
-                    status=StrategyExperiment.Status.FAILED,
-                    error_log=error or 'No data'
-                )
-            except Exception as e:
-                print(f"Failed to log experiment: {e}")
             return Response({'error': error or 'No data found for symbol/dates'}, status=400)
             
-        # Log Success Experiment (Single)
-        try:
-            StrategyExperiment.objects.create(
-                strategy=strategy,
-                user=request.user,
-                run_type=StrategyExperiment.RunType.BACKTEST,
-                scope_type=StrategyExperiment.ScopeType.SYMBOL,
-                scope_value=symbol,
-                start_date=start_date,
-                end_date=end_date,
-                parameters=final_params, 
-                metrics={**final_metrics, **result['stats']}, 
-                plot_html=result.get('plot_html'),
-                status=StrategyExperiment.Status.SUCCESS
-            )
-        except Exception as e:
-            print(f"Failed to log experiment: {e}")
+        # Return result with all data needed for manual saving
+        result['metadata'] = {
+            'symbol': symbol,
+            'start_date': start_date,
+            'end_date': end_date,
+            'parameters': final_params,
+            'metrics': final_metrics
+        }
 
         return Response(result)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def save_experiment(self, request, pk=None):
+        """Manually save a backtest experiment to history."""
+        strategy = self.get_object()
+        data = request.data
+        
+        try:
+            # Basic validation
+            if not data.get('scope_value') or not data.get('metrics'):
+                return Response({'error': 'Missing required experiment data'}, status=400)
+
+            exp = StrategyExperiment.objects.create(
+                strategy=strategy,
+                user=request.user,
+                run_type=data.get('run_type', StrategyExperiment.RunType.BACKTEST),
+                scope_type=data.get('scope_type', StrategyExperiment.ScopeType.SYMBOL),
+                scope_value=data.get('scope_value'),
+                start_date=data.get('start_date'),
+                end_date=data.get('end_date'),
+                parameters=data.get('parameters', {}),
+                metrics=data.get('metrics', {}),
+                plot_html=data.get('plot_html'),
+                status=StrategyExperiment.Status.SUCCESS
+            )
+            return Response({'id': exp.id, 'status': 'success'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=400)
     
     def _run_single_backtest(self, code, symbol, start_date, end_date, params=None):
         """Helper method to run backtest for a single stock. Returns (result_dict, error_msg, experiment_data)."""
+        experiment = ExperimentLogger()
         # 1. Fetch Data
         queryset = DailyStockPrice.objects.filter(
             ticker=symbol, 
@@ -1189,7 +1198,6 @@ class StrategyViewSet(viewsets.ModelViewSet):
             df.set_index('date', inplace=True)
             
             # 2. Execution Environment
-            experiment = ExperimentLogger()
             local_scope = {
                 'Backtest': Backtest,
                 'Strategy': Strategy,
@@ -1252,7 +1260,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
             # Helper to safely convert numbers
             def safe_num(val, default=0.0):
                 if val is None: return default
-                if isinstance(val, (int, float)):
+                if isinstance(val, (int, float, np.integer, np.floating)):
                     return float(val) if not np.isnan(val) else default
                 return default
 
@@ -1298,6 +1306,44 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 else:
                     clean_stats[k] = str(v)
             
+            categorized = {
+                'Performance Metrics': {
+                    'PNL': f"{safe_num(clean_stats.get('total_pnl')):.2f} ({safe_num(clean_stats.get('pnl_percent')):.2f}%)",
+                    'Win rate': f"{safe_num(clean_stats.get('win_rate')):.2f}%",
+                    'Sharpe ratio': f"{safe_num(clean_stats.get('Sharpe Ratio')):.2f}",
+                    'Smart Sharpe': f"{safe_num(clean_stats.get('Smart Sharpe')):.2f}",
+                    'Sortino ratio': f"{safe_num(clean_stats.get('Sortino Ratio')):.2f}",
+                    'Smart Sortino': f"{safe_num(clean_stats.get('Smart Sortino')):.2f}",
+                    'Calmar ratio': f"{safe_num(clean_stats.get('Calmar Ratio')):.2f}",
+                    'Omega ratio': f"{safe_num(clean_stats.get('Omega Ratio')):.2f}",
+                    'Serenity index': f"{safe_num(clean_stats.get('Serenity Index')):.2f}",
+                    'Average win/loss': f"{safe_num(clean_stats.get('Average Win/Loss')):.2f}",
+                    'Average win': f"{safe_num(clean_stats.get('Average Win')):.2f}",
+                    'Average loss': f"{safe_num(clean_stats.get('Average Loss')):.2f}",
+                },
+                'Risk Metrics': {
+                    'Largest losing trade': f"{safe_num(clean_stats.get('Worst Trade [%]')):.2f}",
+                    'Largest winning trade': f"{safe_num(clean_stats.get('Best Trade [%]')):.2f}",
+                    'Max drawdown': f"{safe_num(clean_stats.get('Max. Drawdown [%]')):.2f}%",
+                    'Profit Factor': f"{safe_num(clean_stats.get('Profit Factor')):.2f}",
+                    'Expectancy': f"{safe_num(clean_stats.get('Expectancy [%]')):.2f}%",
+                    'Volatility (Ann.) [%]': f"{safe_num(clean_stats.get('Volatility (Ann.) [%]')):.2f}%",
+                    'Max Drawdown Duration': str(clean_stats.get('Max. Drawdown Duration', '0 days')),
+                    'Avg Drawdown Duration': str(clean_stats.get('Avg. Drawdown Duration', '0 days')),
+                },
+                'Trade Metrics': {
+                    'Total trades': int(safe_num(clean_stats.get('total_trades'))),
+                    'Total winning trades': int(safe_num(clean_stats.get('Total Winning Trades'))),
+                    'Total losing trades': int(safe_num(clean_stats.get('Total Losing Trades'))),
+                    'Starting balance': f"{1000000.0:.2f}",
+                    'Finishing balance': f"{safe_num(clean_stats.get('Equity Final [$]'), 1000000.0):.2f}",
+                    'Gross profit': f"{safe_num(clean_stats.get('Gross Profit')):.2f}",
+                    'Gross loss': f"{safe_num(clean_stats.get('Gross Loss')):.2f}",
+                    'Max Trade Duration': str(clean_stats.get('Max. Trade Duration', '0 days')),
+                    'Avg Trade Duration': str(clean_stats.get('Avg. Trade Duration', '0 days')),
+                }
+            }
+
             formatted_stats = {
                 'total_pnl': clean_stats.get('total_pnl', 0.0),
                 'pnl_percent': clean_stats.get('pnl_percent', 0.0),
@@ -1306,6 +1352,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 'total_trades': clean_stats.get('total_trades', 0),
                 'sharpe_ratio': clean_stats.get('Sharpe Ratio', 0.0),
                 'max_drawdown': clean_stats.get('Max. Drawdown [%]', 0.0),
+                'categorized': categorized,
                 'raw': clean_stats
             }
 
@@ -1315,7 +1362,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
             }, None, {'params': experiment.params, 'metrics': experiment.metrics}
 
         except Exception as e:
-            return None, str(e)
+            return None, str(e), {}
 
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def optimize(self, request):
@@ -1610,14 +1657,19 @@ class StrategyViewSet(viewsets.ModelViewSet):
             except StrategyExperiment.DoesNotExist:
                 return Response({'error': 'Experiment not found'}, status=404)
         
-        if batch_id and symbol:
-            try:
-                experiment = StrategyExperiment.objects.get(batch_id=batch_id, scope_value=symbol, scope_type=StrategyExperiment.ScopeType.SYMBOL)
-                return Response(StrategyExperimentDetailSerializer(experiment).data)
-            except StrategyExperiment.DoesNotExist:
-                return Response({'error': 'Experiment for this symbol in batch not found'}, status=404)
+        if batch_id:
+            experiments = StrategyExperiment.objects.filter(batch_id=batch_id)
+            if symbol:
+                try:
+                    experiment = experiments.get(scope_value=symbol, scope_type=StrategyExperiment.ScopeType.SYMBOL)
+                    return Response(StrategyExperimentDetailSerializer(experiment).data)
+                except StrategyExperiment.DoesNotExist:
+                    return Response({'error': 'Experiment for this symbol in batch not found'}, status=404)
+            else:
+                # Return all experiments in batch
+                return Response(StrategyExperimentSerializer(experiments, many=True).data)
                 
-        return Response({'error': 'id or (batch_id and symbol) required'}, status=400)
+        return Response({'error': 'id or batch_id required'}, status=400)
 
 
 class CompanyViewSet(viewsets.ReadOnlyModelViewSet):

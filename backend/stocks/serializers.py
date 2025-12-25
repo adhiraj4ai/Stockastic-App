@@ -128,8 +128,17 @@ class StrategyExperimentSerializer(serializers.ModelSerializer):
 
 class StrategyExperimentDetailSerializer(serializers.ModelSerializer):
     strategy_name = serializers.CharField(source='strategy.name', read_only=True)
+    siblings = serializers.SerializerMethodField()
 
     class Meta:
         model = StrategyExperiment
         fields = ['id', 'strategy', 'strategy_name', 'run_type', 'scope_type', 'scope_value', 
-                  'start_date', 'end_date', 'parameters', 'metrics', 'batch_id', 'plot_html', 'status', 'error_log', 'created_at']
+                  'start_date', 'end_date', 'parameters', 'metrics', 'batch_id', 'plot_html', 'status', 'error_log', 'created_at', 'siblings']
+
+    def get_siblings(self, obj):
+        if not obj.batch_id:
+            return []
+        
+        # Return list of siblings (id and symbol/value) to allow switching
+        siblings = StrategyExperiment.objects.filter(batch_id=obj.batch_id).exclude(id=obj.id).only('id', 'scope_value')
+        return [{'id': s.id, 'symbol': s.scope_value} for s in siblings]
