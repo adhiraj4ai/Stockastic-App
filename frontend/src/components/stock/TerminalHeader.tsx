@@ -27,7 +27,7 @@ export function TerminalHeader({
     const isPositive = change >= 0;
 
     return (
-        <div className="sticky top-[73px] z-10 glass-surface-light border-b border-slate-200/50 py-4 transition-all duration-300">
+        <div className="sticky top-0 z-50 glass-surface-light border-b border-slate-200/50 py-4">
             <div className="max-w-[1700px] mx-auto px-8 flex flex-col md:flex-row items-center justify-between gap-6">
                 {/* Identity Area */}
                 <div className="flex items-center gap-6">

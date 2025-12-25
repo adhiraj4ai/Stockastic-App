@@ -450,7 +450,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
 
     return (
         <DashboardLayout noPadding>
-            <div className="min-h-screen bg-slate-50 text-slate-900 terminal-grid-light selection:bg-blue-500/10 font-sans relative">
+            <div className="bg-slate-50 text-slate-900 terminal-grid-light selection:bg-blue-500/10 font-sans relative">
                 {/* Immersive Blur Backgrounds (Light Mode) */}
                 <div className="absolute inset-0 overflow-hidden pointer-events-none">
                     <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/5 rounded-full blur-[120px]" />
@@ -470,7 +470,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                     }}
                 />
 
-                <main className="max-w-[1700px] mx-auto px-8 py-10 space-y-10 relative z-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+                <div className="max-w-[1700px] mx-auto px-8 py-10 space-y-10 relative z-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">
                     {/* 1. TOP INTELLIGENCE ROW */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
                         <div className="lg:col-span-4">
@@ -496,8 +496,6 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                         >
                             <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-4 mb-8">
                                 <div className="flex items-center gap-6">
-                                    <h3 className="text-slate-400 font-bold text-xs uppercase tracking-[0.2em]">Execution Stream</h3>
-                                    <div className="h-4 w-px bg-slate-200" />
                                     <TabsList className="bg-slate-100 border border-slate-200 p-1 h-9 rounded-xl">
                                         <TabsTrigger value="indicators" className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Indicators</TabsTrigger>
                                         <TabsTrigger value="floorsheet" className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Floorsheet</TabsTrigger>
@@ -506,9 +504,6 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                         <TabsTrigger value="history" className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">History</TabsTrigger>
                                     </TabsList>
                                 </div>
-                                <Badge variant="outline" className="border-slate-200 bg-white text-slate-400 font-mono text-[9px] px-3 py-1 shadow-sm">
-                                    STK_00491_TICKER_{ticker}_LX
-                                </Badge>
                             </div>
 
                             <div className="animate-in fade-in zoom-in-95 duration-700">
@@ -782,125 +777,132 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
 
                                 <TabsContent value="indicators" className="mt-0">
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                        {/* Fundamental Indicators Card */}
+                                        {/* Fundamental Benchmarks */}
                                         <div className="glass-card-light rounded-3xl p-8 border-slate-200">
-                                            <div className="flex items-center gap-3 mb-8">
+                                            <div className="flex items-center gap-3 mb-10">
                                                 <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
                                                     <BarChart2 size={18} />
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-bold text-slate-800">Fundamental Benchmarks</h4>
+                                                    <h4 className="font-bold text-slate-800 text-lg">Fundamental Benchmarks</h4>
                                                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Sector-wide comparison</p>
                                                 </div>
                                             </div>
-                                            <div className="space-y-4">
-                                                {[
-                                                    { name: 'P/E Ratio', key: 'pe_ratio', label: 'P/E' },
-                                                    { name: 'P/B Ratio', key: 'pb_ratio', label: 'P/B' },
-                                                    { name: 'ROE (%)', key: 'roe', label: 'ROE' },
-                                                    { name: 'EPS', key: 'eps', label: 'EPS' },
-                                                    { name: 'Dividend Yield', key: 'dividend_yield', label: 'Div Yield' },
-                                                    { name: 'Book Value', key: 'book_value', label: 'Book Value' },
-                                                    { name: 'Market Cap', key: 'market_cap', label: 'Mkt Cap' }
-                                                ].map((metric, i) => {
-                                                    const indicator = data.fundamental?.fundamental_indicators?.find(ind => ind.name.toLowerCase().includes(metric.label.toLowerCase())) ||
-                                                        data.fundamental?.fundamental_indicators?.find(ind => ind.name === metric.name);
 
-                                                    // Fallback to top-level fundamental data if not in indicators array
-                                                    const rawValue = (data.fundamental as any)?.[metric.key];
-                                                    const displayValue = indicator?.value || (rawValue ? (typeof rawValue === 'number' && rawValue > 10000000 ? (rawValue / 10000000).toFixed(2) + ' Cr' : rawValue.toString()) : '-');
+                                            <div className="overflow-hidden rounded-2xl border border-slate-100">
+                                                <table className="w-full text-sm">
+                                                    <thead className="bg-slate-50 border-b border-slate-100">
+                                                        <tr>
+                                                            <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[9px]">Metric</th>
+                                                            <th className="px-6 py-4 text-center font-bold text-slate-400 uppercase tracking-widest text-[9px]">Value</th>
+                                                            <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[9px]">Sector Range (Low - High)</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100 bg-white/50">
+                                                        {[
+                                                            { name: 'P/E Ratio', key: 'pe_ratio', label: 'P/E' },
+                                                            { name: 'P/B Ratio', key: 'pb_ratio', label: 'P/B' },
+                                                            { name: 'ROE (%)', key: 'roe', label: 'ROE' },
+                                                            { name: 'EPS', key: 'eps', label: 'EPS' },
+                                                            { name: 'Dividend Yield', key: 'dividend_yield', label: 'Div Yield' },
+                                                            { name: 'Book Value', key: 'book_value', label: 'Book Value' },
+                                                            { name: 'Market Cap', key: 'market_cap', label: 'Mkt Cap' }
+                                                        ].map((metric, i) => {
+                                                            const indicator = data.fundamental?.fundamental_indicators?.find(ind => ind.name.toLowerCase().includes(metric.label.toLowerCase())) ||
+                                                                data.fundamental?.fundamental_indicators?.find(ind => ind.name === metric.name);
+                                                            const rawValue = (data.fundamental as any)?.[metric.key];
+                                                            const displayValue = indicator?.value || (rawValue ? (typeof rawValue === 'number' && rawValue > 10000000 ? (rawValue / 10000000).toFixed(2) + ' Cr' : rawValue.toString()) : '-');
 
-                                                    return (
-                                                        <div key={i} className="p-6 rounded-2xl bg-white border border-slate-100 shadow-sm space-y-4">
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="font-bold text-slate-800">{metric.name}</span>
-                                                                <Badge variant="outline" className="border-blue-100 bg-blue-50 text-blue-600 font-bold">
-                                                                    {displayValue}
-                                                                </Badge>
-                                                            </div>
-                                                            <div className="grid grid-cols-2 gap-4">
-                                                                <div className="p-3 rounded-xl bg-slate-50 border border-slate-50 space-y-1">
-                                                                    <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest">Sector High</p>
-                                                                    <div className="flex items-center justify-between">
-                                                                        <span className="text-xs font-bold text-slate-800">{indicator?.sector_high || '-'}</span>
-                                                                        {indicator?.sector_high_ticker && (
-                                                                            <StockLink ticker={indicator.sector_high_ticker} className="text-[8px] font-bold text-blue-500 hover:underline">{indicator.sector_high_ticker}</StockLink>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                                <div className="p-3 rounded-xl bg-slate-50 border border-slate-50 space-y-1">
-                                                                    <p className="text-[8px] font-bold text-rose-600 uppercase tracking-widest">Sector Low</p>
-                                                                    <div className="flex items-center justify-between">
-                                                                        <span className="text-xs font-bold text-slate-800">{indicator?.sector_low || '-'}</span>
-                                                                        {indicator?.sector_low_ticker && (
-                                                                            <StockLink ticker={indicator.sector_low_ticker} className="text-[8px] font-bold text-blue-500 hover:underline">{indicator.sector_low_ticker}</StockLink>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
+                                                            return (
+                                                                <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
+                                                                    <td className="px-6 py-4 font-bold text-slate-700 whitespace-nowrap">{metric.name}</td>
+                                                                    <td className="px-6 py-4 text-center">
+                                                                        <span className="px-2.5 py-1 rounded bg-blue-50 text-blue-600 font-bold text-xs ring-1 ring-blue-100">{displayValue}</span>
+                                                                    </td>
+                                                                    <td className="px-6 py-4">
+                                                                        <div className="flex items-center gap-4">
+                                                                            <div className="flex flex-col min-w-[40px]">
+                                                                                <span className="text-xs text-rose-500 font-bold uppercase">{indicator?.sector_low || '-'}</span>
+                                                                                <span className="text-[8px] text-slate-400 font-mono leading-tight">{indicator?.sector_low_ticker || ''}</span>
+                                                                            </div>
+                                                                            <div className="flex-1 h-1 bg-slate-100 rounded-full relative">
+                                                                                <div className="absolute top-1/2 left-1/4 w-1.5 h-1.5 -translate-y-1/2 bg-blue-500 rounded-full shadow-sm" />
+                                                                            </div>
+                                                                            <div className="flex flex-col items-end min-w-[40px]">
+                                                                                <span className="text-xs text-emerald-500 font-bold uppercase">{indicator?.sector_high || '-'}</span>
+                                                                                <span className="text-[8px] text-slate-400 font-mono leading-tight">{indicator?.sector_high_ticker || ''}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                </table>
                                             </div>
                                         </div>
 
-                                        {/* Technical Indicators Card */}
+                                        {/* Technical Divergence */}
                                         <div className="glass-card-light rounded-3xl p-8 border-slate-200">
-                                            <div className="flex items-center gap-3 mb-8">
+                                            <div className="flex items-center gap-3 mb-10">
                                                 <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100">
                                                     <TrendingUp size={18} />
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-bold text-slate-800">Technical Divergence</h4>
+                                                    <h4 className="font-bold text-slate-800 text-lg">Technical Divergence</h4>
                                                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Relative strength mapping</p>
                                                 </div>
                                             </div>
-                                            <div className="space-y-4">
-                                                {[
-                                                    { name: 'RSI (14)', label: 'RSI' },
-                                                    { name: 'MACD (12, 26, 9)', label: 'MACD' },
-                                                    { name: 'ADX (14)', label: 'ADX' },
-                                                    { name: '20-Day SMA', label: '20 SMA' },
-                                                    { name: '50-Day SMA', label: '50 SMA' },
-                                                    { name: '200-Day SMA', label: '200 SMA' },
-                                                    { name: 'Bollinger Bands', label: 'BB' }
-                                                ].map((metric, i) => {
-                                                    const indicator = data.fundamental?.technical_indicators?.find(ind => ind.name.toLowerCase().includes(metric.label.toLowerCase())) ||
-                                                        data.fundamental?.technical_indicators?.find(ind => ind.name === metric.name);
 
-                                                    const displayValue = indicator?.value || '-';
+                                            <div className="overflow-hidden rounded-2xl border border-slate-100">
+                                                <table className="w-full text-sm">
+                                                    <thead className="bg-slate-50 border-b border-slate-100">
+                                                        <tr>
+                                                            <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[9px]">Indicator</th>
+                                                            <th className="px-6 py-4 text-center font-bold text-slate-400 uppercase tracking-widest text-[9px]">Signal</th>
+                                                            <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[9px]">Sector Range (Low - High)</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100 bg-white/50">
+                                                        {[
+                                                            { name: 'RSI (14)', label: 'RSI' },
+                                                            { name: 'MACD (12, 26, 9)', label: 'MACD' },
+                                                            { name: 'ADX (14)', label: 'ADX' },
+                                                            { name: '20-Day SMA', label: '20 SMA' },
+                                                            { name: '50-Day SMA', label: '50 SMA' },
+                                                            { name: '200-Day SMA', label: '200 SMA' },
+                                                            { name: 'Bollinger Bands', label: 'BB' }
+                                                        ].map((metric, i) => {
+                                                            const indicator = data.fundamental?.technical_indicators?.find(ind => ind.name.toLowerCase().includes(metric.label.toLowerCase())) ||
+                                                                data.fundamental?.technical_indicators?.find(ind => ind.name === metric.name);
+                                                            const displayValue = indicator?.value || '-';
 
-                                                    return (
-                                                        <div key={i} className="p-6 rounded-2xl bg-white border border-slate-100 shadow-sm space-y-4">
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="font-bold text-slate-800">{metric.name}</span>
-                                                                <Badge variant="outline" className="border-emerald-100 bg-emerald-50 text-emerald-600 font-bold">
-                                                                    {displayValue}
-                                                                </Badge>
-                                                            </div>
-                                                            <div className="grid grid-cols-2 gap-4">
-                                                                <div className="p-3 rounded-xl bg-slate-50 border border-slate-50 space-y-1">
-                                                                    <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest">Sector High</p>
-                                                                    <div className="flex items-center justify-between">
-                                                                        <span className="text-xs font-bold text-slate-800">{indicator?.sector_high || '-'}</span>
-                                                                        {indicator?.sector_high_ticker && (
-                                                                            <StockLink ticker={indicator.sector_high_ticker} className="text-[8px] font-bold text-blue-500 hover:underline">{indicator.sector_high_ticker}</StockLink>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                                <div className="p-3 rounded-xl bg-slate-50 border border-slate-50 space-y-1">
-                                                                    <p className="text-[8px] font-bold text-rose-600 uppercase tracking-widest">Sector Low</p>
-                                                                    <div className="flex items-center justify-between">
-                                                                        <span className="text-xs font-bold text-slate-800">{indicator?.sector_low || '-'}</span>
-                                                                        {indicator?.sector_low_ticker && (
-                                                                            <StockLink ticker={indicator.sector_low_ticker} className="text-[8px] font-bold text-blue-500 hover:underline">{indicator.sector_low_ticker}</StockLink>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
+                                                            return (
+                                                                <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
+                                                                    <td className="px-6 py-4 font-bold text-slate-700 whitespace-nowrap">{metric.name}</td>
+                                                                    <td className="px-6 py-4 text-center">
+                                                                        <span className="px-2.5 py-1 rounded bg-emerald-50 text-emerald-600 font-bold text-xs ring-1 ring-emerald-100">{displayValue}</span>
+                                                                    </td>
+                                                                    <td className="px-6 py-4">
+                                                                        <div className="flex items-center gap-4">
+                                                                            <div className="flex flex-col min-w-[40px]">
+                                                                                <span className="text-xs text-rose-500 font-bold uppercase">{indicator?.sector_low || '-'}</span>
+                                                                                <span className="text-[8px] text-slate-400 font-mono leading-tight">{indicator?.sector_low_ticker || ''}</span>
+                                                                            </div>
+                                                                            <div className="flex-1 h-1 bg-slate-100 rounded-full relative">
+                                                                                <div className="absolute top-1/2 left-3/4 w-1.5 h-1.5 -translate-y-1/2 bg-emerald-500 rounded-full shadow-sm" />
+                                                                            </div>
+                                                                            <div className="flex flex-col items-end min-w-[40px]">
+                                                                                <span className="text-xs text-emerald-500 font-bold uppercase">{indicator?.sector_high || '-'}</span>
+                                                                                <span className="text-[8px] text-slate-400 font-mono leading-tight">{indicator?.sector_high_ticker || ''}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                </table>
                                             </div>
                                         </div>
                                     </div>
@@ -948,7 +950,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                             </div>
                         </Tabs>
                     </div>
-                </main>
+                </div>
 
                 <TransactionModal
                     isOpen={modalOpen}
