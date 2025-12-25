@@ -840,7 +840,11 @@ class StrategyViewSet(viewsets.ModelViewSet):
         # If sector is provided, run backtest for all stocks in sector
         if sector:
             # Note: case-insensitive match for sector
-            companies = Company.objects.filter(sector__iexact=sector, status='A').values_list('symbol', flat=True)
+            if sector.upper() == 'ALL':
+                companies = Company.objects.filter(status='A').values_list('symbol', flat=True)
+            else:
+                companies = Company.objects.filter(sector__iexact=sector, status='A').values_list('symbol', flat=True)
+                
             if not companies:
                 return Response({'error': f'No active companies found in sector: {sector}'}, status=404)
             
@@ -1086,6 +1090,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
         
         code_template = request.data.get('code', '')
         symbol = request.data.get('symbol', 'NABIL')
+        sector = request.data.get('sector')
         start_date = request.data.get('start_date')
         end_date = request.data.get('end_date')
         n_trials = request.data.get('n_trials', 50)
@@ -1104,40 +1109,91 @@ class StrategyViewSet(viewsets.ModelViewSet):
             from backtesting.test import SMA
             import inspect
             
-            # Fetch data once
-            queryset = DailyStockPrice.objects.filter(
-                ticker=symbol,
-                date__range=[start_date, end_date]
-            ).order_by('date')
+            # Fetch data
+            data_map = {} # ticker -> DataFrame
             
-            ticks_data = list(queryset.values('date', 'open', 'high', 'low', 'close', 'volume'))
-            if not ticks_data:
-                return Response({'error': 'No data found for symbol/dates'}, status=404)
+            if symbol == 'ALL' or (sector and sector.upper() == 'ALL'):
+                # Fetch all active companies
+                companies = Company.objects.filter(status='A').values_list('symbol', flat=True)
+                queryset = DailyStockPrice.objects.filter(
+                    ticker__in=companies,
+                    date__range=[start_date, end_date]
+                ).order_by('date')
+                all_data = list(queryset.values('ticker', 'date', 'open', 'high', 'low', 'close', 'volume'))
+
+            elif sector:
+                 # Fetch companies in specific sector
+                companies = Company.objects.filter(sector__iexact=sector, status='A').values_list('symbol', flat=True)
+                if not companies:
+                    return Response({'error': f'No active companies found in sector: {sector}'}, status=404)
+                
+                queryset = DailyStockPrice.objects.filter(
+                    ticker__in=companies,
+                    date__range=[start_date, end_date]
+                ).order_by('date')
+                all_data = list(queryset.values('ticker', 'date', 'open', 'high', 'low', 'close', 'volume'))
+
+            else:
+                # Single symbol logic
+                all_data = [] # Placeholder to skip the list logic below
+                
+                queryset = DailyStockPrice.objects.filter(
+                    ticker=symbol,
+                    date__range=[start_date, end_date]
+                ).order_by('date')
+                
+                ticks_data = list(queryset.values('date', 'open', 'high', 'low', 'close', 'volume'))
+                if not ticks_data:
+                    return Response({'error': 'No data found for symbol/dates'}, status=404)
+                
+                df = pd.DataFrame(ticks_data)
+                df.rename(columns={
+                    'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'volume': 'Volume'
+                }, inplace=True)
+                
+                numeric_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
+                df[numeric_cols] = df[numeric_cols].astype(float)
+                
+                # Filter bad data
+                df = df[
+                    (df['High'] / df['Open'] <= 2.0) & (df['Low'] / df['Open'] >= 0.5) & (df['Close'] > 0)
+                ].copy()
+                
+                if df.empty:
+                    return Response({'error': 'No valid data after filtering'}, status=400)
+                
+                df['date'] = pd.to_datetime(df['date'])
+                df.set_index('date', inplace=True)
+                data_map[symbol] = df
+
+            # Common processing for list-based data (ALL or SECTOR)
+            if not data_map and (symbol == 'ALL' or sector):
+                if not all_data:
+                     return Response({'error': 'No data found for any active company in range'}, status=404)
+
+                master_df = pd.DataFrame(all_data)
+                master_df.rename(columns={
+                    'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'volume': 'Volume'
+                }, inplace=True)
+                numeric_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
+                master_df[numeric_cols] = master_df[numeric_cols].astype(float)
+                master_df['date'] = pd.to_datetime(master_df['date'])
+                
+                # Split into dict
+                for ticker, group in master_df.groupby('ticker'):
+                    sub_df = group.copy()
+                    # Filter bad data
+                    sub_df = sub_df[
+                        (sub_df['High'] / sub_df['Open'] <= 2.0) &
+                        (sub_df['Low'] / sub_df['Open'] >= 0.5) &
+                        (sub_df['Close'] > 0)
+                    ]
+                    if not sub_df.empty:
+                        sub_df.set_index('date', inplace=True)
+                        data_map[ticker] = sub_df
             
-            df = pd.DataFrame(ticks_data)
-            df.rename(columns={
-                'open': 'Open',
-                'high': 'High',
-                'low': 'Low',
-                'close': 'Close',
-                'volume': 'Volume'
-            }, inplace=True)
-            
-            numeric_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
-            df[numeric_cols] = df[numeric_cols].astype(float)
-            
-            # Filter bad data
-            df = df[
-                (df['High'] / df['Open'] <= 2.0) &
-                (df['Low'] / df['Open'] >= 0.5) &
-                (df['Close'] > 0)
-            ].copy()
-            
-            if df.empty:
-                return Response({'error': 'No valid data after filtering'}, status=400)
-            
-            df['date'] = pd.to_datetime(df['date'])
-            df.set_index('date', inplace=True)
+            if not data_map:
+                 return Response({'error': 'No valid data found for any symbol'}, status=400)
             
             # Validate that all parameters exist in the code
             for param_name in param_ranges.keys():
@@ -1192,12 +1248,21 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 if not strategy_class:
                     raise ValueError('No Strategy class found')
                 
-                # Run backtest
-                bt = Backtest(df, strategy_class, cash=1000000, commission=.002, exclusive_orders=True)
-                stats = bt.run()
+                # Run backtest for ALL dataframes
+                returns = []
+                for ticker, df_data in data_map.items():
+                    try:
+                        bt = Backtest(df_data, strategy_class, cash=1000000, commission=.002, exclusive_orders=True)
+                        stats = bt.run()
+                        returns.append(stats['Return [%]'])
+                    except Exception as bt_err:
+                        continue # Skip failed backtests
                 
-                # Return metric to optimize (Return %)
-                return stats['Return [%]']
+                if not returns:
+                    return -9999 # Penalty for failing all
+                
+                # Optimize for Mean Return
+                return sum(returns) / len(returns)
             
             # Run optimization
             study = optuna.create_study(direction='maximize', study_name='strategy_optimization')

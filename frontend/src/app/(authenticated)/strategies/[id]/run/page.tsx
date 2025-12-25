@@ -72,7 +72,7 @@ export default function RunStrategyPage() {
     const [optimizationResults, setOptimizationResults] = useState<any>(null);
 
     // Param State
-    const [mode, setMode] = useState<'symbol' | 'sector'>('symbol');
+    const [mode, setMode] = useState<'symbol' | 'sector' | 'all'>('symbol');
     const [symbol, setSymbol] = useState('');
     const [sector, setSector] = useState('');
     const [sectors, setSectors] = useState<{ name: string; count: number }[]>([]);
@@ -131,9 +131,15 @@ export default function RunStrategyPage() {
         setRunning(true);
         setResults(null);
         try {
-            const requestData = mode === 'symbol'
-                ? { code: strategy.code, symbol, start_date: startDate, end_date: endDate }
-                : { code: strategy.code, sector, start_date: startDate, end_date: endDate };
+            let requestData: any = { code: strategy.code, start_date: startDate, end_date: endDate };
+
+            if (mode === 'symbol') {
+                requestData.symbol = symbol;
+            } else if (mode === 'sector') {
+                requestData.sector = sector;
+            } else if (mode === 'all') {
+                requestData.sector = 'ALL';
+            }
             console.log('Backtest request:', requestData);
             const response = await api.post('/api/stocks/strategies/backtest/', requestData);
             setResults(response.data);
@@ -173,7 +179,7 @@ export default function RunStrategyPage() {
         }
         setOptimizing(true);
         try {
-            const requestData = {
+            const requestData: any = {
                 code: strategy.code,
                 symbol,
                 start_date: startDate,
@@ -181,6 +187,19 @@ export default function RunStrategyPage() {
                 param_ranges: paramRanges,
                 n_trials: nTrials
             };
+
+            // Handle Scopes
+            if (paramRanges._scope === 'ALL') {
+                requestData.symbol = 'ALL';
+                delete paramRanges._scope;
+            } else if (paramRanges._scope === 'SECTOR') {
+                requestData.sector = paramRanges._sector; // Pass sector name
+                delete paramRanges._scope;
+                delete paramRanges._sector;
+            } else {
+                delete paramRanges._scope; // Just clean up if single
+            }
+
             console.log('Optimization request:', requestData);
             const response = await api.post('/api/stocks/strategies/optimize/', requestData);
             setOptimizationResults(response.data);
@@ -253,16 +272,26 @@ export default function RunStrategyPage() {
                                 >
                                     Sector
                                 </Button>
+                                <Button
+                                    variant={mode === 'all' ? 'default' : 'outline'}
+                                    onClick={() => setMode('all')}
+                                    className="flex-1"
+                                    size="sm"
+                                >
+                                    All
+                                </Button>
                             </div>
                         </div>
 
                         {/* Symbol or Sector Selection */}
-                        {mode === 'symbol' ? (
+                        {mode === 'symbol' && (
                             <div className="space-y-2">
                                 <Label>Ticker Symbol</Label>
                                 <CompanySelect value={symbol} onChange={(val) => setSymbol(val)} />
                             </div>
-                        ) : (
+                        )}
+
+                        {mode === 'sector' && (
                             <div className="space-y-2">
                                 <Label>Sector</Label>
                                 <select
@@ -277,6 +306,14 @@ export default function RunStrategyPage() {
                                         </option>
                                     ))}
                                 </select>
+                            </div>
+                        )}
+
+                        {mode === 'all' && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                                <p className="text-sm text-blue-800">
+                                    Runs backtest on <strong>all active companies</strong>. This may take a while and produce a large result set.
+                                </p>
                             </div>
                         )}
 
@@ -301,7 +338,7 @@ export default function RunStrategyPage() {
                     <div className="space-y-3 pt-6 border-t border-gray-200 mt-6">
                         <Button
                             onClick={handleRun}
-                            disabled={running || (mode === 'symbol' ? !symbol : !sector)}
+                            disabled={running || (mode === 'symbol' && !symbol) || (mode === 'sector' && !sector)}
                             className="w-full bg-blue-600 hover:bg-blue-700"
                         >
                             {running ? 'Running...' : <><Play size={16} className="mr-2" /> Run Backtest</>}
@@ -309,7 +346,7 @@ export default function RunStrategyPage() {
                         <Button
                             variant="outline"
                             onClick={() => setShowOptimizeDialog(true)}
-                            disabled={optimizing || (mode === 'symbol' ? !symbol : !sector)}
+                            disabled={optimizing}
                             className="w-full border-purple-200 text-purple-700 hover:bg-purple-50"
                         >
                             {optimizing ? 'Optimizing...' : <><Zap size={16} className="mr-2" /> Optimize Parameters</>}
@@ -548,6 +585,7 @@ export default function RunStrategyPage() {
                                 onCancel={() => setShowOptimizeDialog(false)}
                                 optimizing={optimizing}
                                 strategyCode={strategy?.code || ""}
+                                sectors={sectors}
                             />
                         ) : (
                             <OptimizationResults
@@ -568,8 +606,10 @@ export default function RunStrategyPage() {
 }
 
 // Optimization Form Component
-function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode }: any) {
+function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, sectors }: any) {
     const [nTrials, setNTrials] = useState(50);
+    const [scope, setScope] = useState<'SINGLE' | 'SECTOR' | 'ALL'>('SINGLE');
+    const [selectedSector, setSelectedSector] = useState('');
 
     // Extract parameters from strategy code
     const extractParameters = (code: string) => {
@@ -618,7 +658,16 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode }: any) {
             }
 
             setJsonError('');
-            onOptimize(paramRanges, nTrials);
+
+            // Inject scope into params temporarily
+            const finalParams = { ...paramRanges, _scope: scope, _sector: selectedSector };
+
+            if (scope === 'SECTOR' && !selectedSector) {
+                toast.error('Please select a sector for optimization');
+                return;
+            }
+
+            onOptimize(finalParams, nTrials);
         } catch (error) {
             setJsonError('Invalid JSON format. Please check your syntax.');
         }
@@ -637,6 +686,68 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode }: any) {
                     className="w-full"
                 />
                 <p className="text-xs text-gray-500 mt-1">More trials = better results but slower (recommended: 50-100)</p>
+            </div>
+
+            <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700 block">Optimization Scope</Label>
+                <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="scope"
+                            value="SINGLE"
+                            checked={scope === 'SINGLE'}
+                            onChange={() => setScope('SINGLE')}
+                            className="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300"
+                        />
+                        <span className="text-sm text-gray-700">Current Symbol Only</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="scope"
+                            value="SECTOR"
+                            checked={scope === 'SECTOR'}
+                            onChange={() => setScope('SECTOR')}
+                            className="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300"
+                        />
+                        <span className="text-sm text-gray-700">Specific Sector</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="scope"
+                            value="ALL"
+                            checked={scope === 'ALL'}
+                            onChange={() => setScope('ALL')}
+                            className="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300"
+                        />
+                        <span className="text-sm text-gray-700">All Symbols (Market-wide)</span>
+                    </label>
+                </div>
+
+                {scope === 'SECTOR' && (
+                    <div className="mt-2">
+                        <select
+                            value={selectedSector}
+                            onChange={(e) => setSelectedSector(e.target.value)}
+                            className="w-full h-9 px-3 rounded-md border border-gray-300 bg-white text-sm"
+                        >
+                            <option value="">Select a sector...</option>
+                            {sectors?.map((s: any) => (
+                                <option key={s.name} value={s.name}>
+                                    {s.name} ({s.count})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
+                {scope === 'ALL' && (
+                    <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+                        Warning: Optimizing across all symbols is computationally intensive and may take significantly longer.
+                    </p>
+                )}
             </div>
 
 
