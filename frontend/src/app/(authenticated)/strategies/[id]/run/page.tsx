@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '@/lib/api';
 import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -59,6 +59,16 @@ export default function RunStrategyPage() {
 
     // Param State
     const [mode, setMode] = useState<'symbol' | 'sector' | 'all'>('symbol');
+    const abortControllerRef = useRef<AbortController | null>(null);
+
+    const handleCancel = () => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+            toast.info('Operation cancelled');
+        }
+    };
+
     const [symbol, setSymbol] = useState('');
     const [sector, setSector] = useState('');
     const [sectors, setSectors] = useState<{ name: string; count: number }[]>([]);
@@ -152,11 +162,21 @@ export default function RunStrategyPage() {
             } else if (mode === 'all') {
                 requestData.sector = 'ALL';
             }
-            const response = await api.post(`/api/stocks/strategies/${strategy.id}/backtest/`, requestData);
+            // Create new controller
+            if (abortControllerRef.current) abortControllerRef.current.abort();
+            abortControllerRef.current = new AbortController();
+
+            const response = await api.post(`/api/stocks/strategies/${strategy.id}/backtest/`, requestData, {
+                signal: abortControllerRef.current.signal
+            });
             setResults(response.data);
 
             toast.success(mode === 'sector' ? 'Sector backtest complete' : 'Backtest complete');
         } catch (error: any) {
+            if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
+                console.log('Request canceled');
+                return;
+            }
             console.error('Backtest failed', error);
             let errorMsg = 'Backtest failed';
             if (error.response?.data?.error) {
@@ -207,30 +227,43 @@ export default function RunStrategyPage() {
         }
         setOptimizing(true);
         try {
+            // Clone paramRanges to avoid reference issues and side-effects
+            const requestParams = JSON.parse(JSON.stringify(paramRanges));
+
             const requestData: any = {
                 code: strategy.code,
                 symbol,
                 start_date: startDate,
                 end_date: endDate,
-                param_ranges: paramRanges,
+                param_ranges: requestParams,
                 n_trials: nTrials
             };
 
-            if (paramRanges._scope === 'ALL') {
+            if (requestParams._scope === 'ALL') {
                 requestData.symbol = 'ALL';
-                delete paramRanges._scope;
-            } else if (paramRanges._scope === 'SECTOR') {
-                requestData.sector = paramRanges._sector;
-                delete paramRanges._scope;
-                delete paramRanges._sector;
+                delete requestParams._scope;
+            } else if (requestParams._scope === 'SECTOR') {
+                requestData.sector = requestParams._sector;
+                delete requestParams._scope;
+                delete requestParams._sector;
             } else {
-                delete paramRanges._scope;
+                delete requestParams._scope;
             }
 
-            const response = await api.post('/api/stocks/strategies/optimize/', requestData);
+            // Create new controller
+            if (abortControllerRef.current) abortControllerRef.current.abort();
+            abortControllerRef.current = new AbortController();
+
+            const response = await api.post('/api/stocks/strategies/optimize/', requestData, {
+                signal: abortControllerRef.current.signal
+            });
             setOptimizationResults(response.data);
             toast.success(`Optimization complete! Best return: ${response.data.best_value.toFixed(2)}%`);
         } catch (error: any) {
+            if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
+                console.log('Request canceled');
+                return;
+            }
             toast.error(error.response?.data?.error || 'Optimization failed');
         } finally {
             setOptimizing(false);
@@ -410,12 +443,12 @@ export default function RunStrategyPage() {
 
                                         <div className="space-y-2 pt-6">
                                             <Button
-                                                onClick={handleRun}
-                                                disabled={running || (mode === 'symbol' && !symbol) || (mode === 'sector' && !sector)}
-                                                className="w-full bg-blue-600 hover:bg-blue-700 h-10 font-bold uppercase tracking-wider text-xs shadow-md shadow-blue-200 group"
+                                                onClick={running ? handleCancel : handleRun}
+                                                disabled={(mode === 'symbol' && !symbol) || (mode === 'sector' && !sector)}
+                                                className={`w-full h-10 font-bold uppercase tracking-wider text-xs shadow-md group border-0 ${running ? 'bg-red-500 hover:bg-red-600 shadow-red-200 text-white' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200 text-white'}`}
                                             >
                                                 {running ? (
-                                                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" /> Running...</>
+                                                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" /> Cancel Run</>
                                                 ) : (
                                                     <><Play size={14} className="mr-2 group-hover:scale-110 transition-transform" /> Run Backtest</>
                                                 )}
@@ -651,6 +684,7 @@ export default function RunStrategyPage() {
                                 sectors={sectors}
                                 initialMode={mode}
                                 initialSector={sector}
+                                onAbort={handleCancel}
                             />
                         ) : (
                             <OptimizationResults
@@ -826,7 +860,7 @@ function MetricsView({ stats, plotHtml, strategyId }: { stats: any, plotHtml?: s
 }
 
 // Optimization Form Component
-function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, sectors, initialMode, initialSector }: any) {
+function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, sectors, initialMode, initialSector, onAbort }: any) {
     const [nTrials, setNTrials] = useState(50);
     const [scope, setScope] = useState<'SINGLE' | 'SECTOR' | 'ALL'>(
         initialMode === 'sector' ? 'SECTOR' : initialMode === 'all' ? 'ALL' : 'SINGLE'
@@ -880,8 +914,11 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, sectors,
                 <Label className="text-sm font-medium text-gray-700 mb-2 block">Number of Trials</Label>
                 <Input
                     type="number"
-                    value={nTrials}
-                    onChange={(e) => setNTrials(parseInt(e.target.value))}
+                    value={isNaN(nTrials) ? '' : nTrials}
+                    onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        setNTrials(isNaN(val) ? 0 : val);
+                    }}
                     min={10}
                     max={200}
                     className="w-full"
@@ -965,8 +1002,15 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, sectors,
                 <Button variant="outline" onClick={onCancel} disabled={optimizing}>
                     Cancel
                 </Button>
-                <Button onClick={handleSubmit} disabled={optimizing} className="bg-purple-600 hover:bg-purple-700">
-                    {optimizing ? 'Optimizing...' : 'Start Optimization'}
+                <Button
+                    onClick={optimizing ? onAbort : handleSubmit}
+                    className={`${optimizing ? 'bg-red-600 hover:bg-red-700' : 'bg-purple-600 hover:bg-purple-700'}`}
+                >
+                    {optimizing ? (
+                        <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" /> Stop Optimization</>
+                    ) : (
+                        'Start Optimization'
+                    )}
                 </Button>
             </div>
         </div>
