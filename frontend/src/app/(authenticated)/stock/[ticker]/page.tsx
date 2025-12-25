@@ -732,8 +732,8 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                                                     <th className="text-left py-2 font-bold text-slate-400 text-[10px] uppercase tracking-widest">Metadata/Metric</th>
                                                                                     {financials.filter(f => f.report_type === reportType)
                                                                                         .sort((a, b) => b.fiscal_year.localeCompare(a.fiscal_year))
-                                                                                        .map(f => (
-                                                                                            <th key={f.fiscal_year} className="text-right px-4 font-bold text-slate-800">{f.fiscal_year}</th>
+                                                                                        .map((f, idx) => (
+                                                                                            <th key={`${f.fiscal_year}-${idx}`} className="text-right px-4 font-bold text-slate-800">{f.fiscal_year}</th>
                                                                                         ))}
                                                                                 </tr>
                                                                             </thead>
@@ -748,10 +748,10 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                                                                 <td className="py-3 px-2 font-medium text-slate-600 group-hover:text-slate-900">{key}</td>
                                                                                                 {financials.filter(f => f.report_type === reportType)
                                                                                                     .sort((a, b) => b.fiscal_year.localeCompare(a.fiscal_year))
-                                                                                                    .map(f => {
+                                                                                                    .map((f, idx) => {
                                                                                                         const v = f[section]?.[category]?.[key];
                                                                                                         return (
-                                                                                                            <td key={f.fiscal_year} className="text-right px-4 font-mono text-slate-700">
+                                                                                                            <td key={`${f.fiscal_year}-${idx}`} className="text-right px-4 font-mono text-slate-700">
                                                                                                                 {typeof v === 'number' ? (v >= 10000000 ? (v / 10000000).toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' Cr' : v.toLocaleString()) : (v || '-')}
                                                                                                             </td>
                                                                                                         );
