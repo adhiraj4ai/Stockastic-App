@@ -8,7 +8,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, TrendingUp, TrendingDown, DollarSign, Activity, BarChart2 } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, DollarSign, Activity, BarChart2, Clock } from 'lucide-react';
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
 import TransactionModal from '@/components/TransactionModal';
@@ -16,9 +16,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import StockLink from '@/components/StockLink';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Check, ChevronDown, Search, X } from 'lucide-react';
+import { Check, ChevronDown, Search, X, PieChart, BarChart, Globe } from 'lucide-react';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
+
+// Terminal Suite Components
+import { TerminalHeader } from '@/components/stock/TerminalHeader';
+import { IntelligenceGlass } from '@/components/stock/IntelligenceGlass';
+import { BentoMetrics } from '@/components/stock/BentoMetrics';
 
 interface StockDetailData {
     company: {
@@ -89,7 +94,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
     const router = useRouter();
     const [data, setData] = useState<StockDetailData | null>(null);
     const [floorsheet, setFloorsheet] = useState<FloorsheetItem[]>([]);
-    const [activeTab, setActiveTab] = useState('overview');
+    const [activeTab, setActiveTab] = useState('indicators');
     const [reportType, setReportType] = useState<'ANNUAL' | 'QUARTERLY'>('ANNUAL');
     const [visibleMetrics, setVisibleMetrics] = useState<string[]>(['net_profit', 'revenue']);
     const [dividends, setDividends] = useState<any[]>([]);
@@ -441,738 +446,519 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
 
     const isPositive = (data.price?.change ?? 0) >= 0;
 
-    return (
-        <DashboardLayout
-            showBack
-            title={
-                <div className="flex items-center gap-3">
-                    {data.company?.symbol || data.fundamental?.ticker || ticker}
-                    <Badge variant="secondary" className="text-xs font-bold px-2 py-0.5 bg-blue-50 text-blue-700 border-none">
-                        {data.company?.sector || data.fundamental?.sector || 'Unknown'}
-                    </Badge>
-                </div>
-            }
-            subtitle={data.company?.name || data.fundamental?.company_name}
-        >
-            <div className="space-y-6 animate-in fade-in duration-500">
-                {/* Real-time Price Info */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b">
-                    <div></div>
+    // ... (inside the component return)
 
-                    <div className="flex items-end gap-6">
-                        <div className="text-right">
-                            <p className="text-3xl font-mono font-bold">
-                                Rs. {data.price.close}
-                            </p>
-                            <p className={`flex items-center justify-end gap-1 ${(data.price?.change ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {(data.price?.change ?? 0) >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                                {data.price?.change ?? 0} ({(data.price?.percent_change ?? 0).toFixed(2)}%)
-                            </p>
+    return (
+        <DashboardLayout noPadding>
+            <div className="min-h-screen bg-slate-50 text-slate-900 terminal-grid-light selection:bg-blue-500/10 font-sans relative">
+                {/* Immersive Blur Backgrounds (Light Mode) */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/5 rounded-full blur-[120px]" />
+                    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/5 rounded-full blur-[120px]" />
+                </div>
+
+                <TerminalHeader
+                    symbol={data.company?.symbol || data.fundamental?.ticker || ticker}
+                    name={data.company?.name || data.fundamental?.company_name || 'N/A'}
+                    sector={data.company?.sector || data.fundamental?.sector || 'Unknown'}
+                    price={data.price.close}
+                    change={data.price.change}
+                    percentChange={data.price.percent_change}
+                    onTrade={(type) => {
+                        setTxnType(type);
+                        setModalOpen(true);
+                    }}
+                />
+
+                <main className="max-w-[1700px] mx-auto px-8 py-10 space-y-10 relative z-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+                    {/* 1. TOP INTELLIGENCE ROW */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+                        <div className="lg:col-span-4">
+                            <IntelligenceGlass
+                                fundamentalScore={68}
+                                technicalScore={72}
+                                riskLevel="MEDIUM"
+                                macd="BULLISH"
+                            />
                         </div>
-                        <div className="flex gap-2">
-                            <Button
-                                className="bg-green-600 hover:bg-green-700 text-white"
-                                onClick={() => { setTxnType('BUY'); setModalOpen(true); }}
-                            >
-                                Buy
-                            </Button>
-                            <Button
-                                variant="destructive"
-                                onClick={() => { setTxnType('SELL'); setModalOpen(true); }}
-                            >
-                                Sell
-                            </Button>
+                        <div className="lg:col-span-8">
+                            <BentoMetrics fundamental={data.fundamental} />
                         </div>
                     </div>
-                </div>
 
-                {/* Fundamentals Grid - Expanded */}
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <Card className="bg-blue-50 border-blue-200 hover:shadow-md transition-shadow">
-                        <CardContent className="pt-6">
-                            <div className="text-sm text-blue-600 font-medium">Market Cap</div>
-                            <div className="text-xl font-bold text-gray-900">
-                                {data.fundamental?.market_cap ? `Rs. ${(data.fundamental.market_cap / 10000000).toFixed(2)} Cr` : 'N/A'}
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-green-50 border-green-200 hover:shadow-md transition-shadow">
-                        <CardContent className="pt-6">
-                            <div className="text-sm text-green-600 font-medium">EPS</div>
-                            <div className="text-xl font-bold text-gray-900">Rs. {data.fundamental?.eps || 'N/A'}</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-purple-50 border-purple-200 hover:shadow-md transition-shadow">
-                        <CardContent className="pt-6">
-                            <div className="text-sm text-purple-600 font-medium">PBV</div>
-                            <div className="text-xl font-bold text-gray-900">{data.fundamental?.fundamental_indicators?.find(i => i.name === 'PBV')?.value || 'N/A'}</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-orange-50 border-orange-200 hover:shadow-md transition-shadow">
-                        <CardContent className="pt-6">
-                            <div className="text-sm text-orange-600 font-medium">Book Value</div>
-                            <div className="text-xl font-bold text-gray-900">Rs. {data.fundamental?.book_value || 'N/A'}</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-pink-50 border-pink-200 hover:shadow-md transition-shadow">
-                        <CardContent className="pt-6">
-                            <div className="text-sm text-pink-600 font-medium">Div. Yield</div>
-                            <div className="text-xl font-bold text-gray-900">{data.fundamental?.dividend_yield || '0'}%</div>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-teal-50 border-teal-200 hover:shadow-md transition-shadow">
-                        <CardContent className="pt-6">
-                            <div className="text-sm text-teal-600 font-medium">52 Week High/Low</div>
-                            <div className="text-xl font-bold text-gray-900">
-                                {data.fundamental?.fifty_two_week_high} / {data.fundamental?.fifty_two_week_low}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                <Tabs defaultValue="overview" className="w-full">
-                    <TabsList className="grid w-full grid-cols-5 mb-4">
-                        <TabsTrigger value="overview" className="hover:bg-gray-100 hover:text-gray-900 transition-colors">Overview</TabsTrigger>
-                        <TabsTrigger value="indicators" className="hover:bg-gray-100 hover:text-gray-900 transition-colors">Indicators</TabsTrigger>
-                        <TabsTrigger value="floorsheet" className="hover:bg-gray-100 hover:text-gray-900 transition-colors">Accumulation/Distribution</TabsTrigger>
-                        <TabsTrigger value="dividends" className="hover:bg-gray-100 hover:text-gray-900 transition-colors">Dividends</TabsTrigger>
-                        <TabsTrigger value="financials" className="hover:bg-gray-100 hover:text-gray-900 transition-colors">Financials</TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="overview" className="space-y-6">
-                        {/* Company Details Card */}
-                        <Card>
-                            <CardContent className="pt-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                    <div className="space-y-1">
-                                        <div className="text-sm text-gray-500">Sector</div>
-                                        <div className="font-semibold">{data.fundamental?.sector}</div>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <div className="text-sm text-gray-500">Listed Date</div>
-                                        <div className="font-semibold">{data.fundamental?.listed_date || 'N/A'}</div>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <div className="text-sm text-gray-500">Latest Date</div>
-                                        <div className="font-semibold">{data.price.date}</div>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <div className="text-sm text-gray-500">Market Price</div>
-                                        <div className={`font-semibold text-lg flex items-center gap-2 ${(data.price?.change ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                            Rs. {data.price.close}
-                                            <span className="text-sm font-normal">
-                                                ({data.price?.change} / {data.price?.percent_change?.toFixed(2)}%)
-                                            </span>
-                                        </div>
-                                    </div>
-                                    {/* Volume removed as per request */}
-                                    <div className="space-y-1">
-                                        <div className="text-sm text-gray-500">Shares Outstanding</div>
-                                        <div className="font-semibold">{data.fundamental?.shares_outstanding?.toLocaleString() || 'N/A'} Nos</div>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <div className="text-sm text-gray-500">Public Shares</div>
-                                        <div className="font-semibold">{data.fundamental?.public_shares?.toLocaleString() || 'N/A'} Nos</div>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <div className="text-sm text-gray-500">Free-Float Market Cap</div>
-                                        <div className="font-semibold">
-                                            {data.fundamental?.free_float_market_cap ? `Rs. ${(data.fundamental.free_float_market_cap / 10000000).toFixed(2)} Cr` : 'N/A'}
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <div className="text-sm text-gray-500">Market Capitalization</div>
-                                        <div className="font-semibold">
-                                            {data.fundamental?.market_cap ? `Rs. ${(data.fundamental.market_cap / 10000000).toFixed(2)} Cr` : 'N/A'}
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Technical Chart */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm font-medium text-gray-500 flex items-center gap-2">
-                                    <Activity className="h-4 w-4" /> Technical Chart
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <ReactECharts option={getChartOption()} style={{ height: '500px' }} />
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    <TabsContent value="indicators" className="space-y-6">
-                        {/* Indicators Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Fundamental Indicators */}
-                            {data.fundamental?.fundamental_indicators && data.fundamental.fundamental_indicators.length > 0 && (
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="text-lg flex items-center gap-2">
-                                            <Activity className="h-4 w-4" /> Fundamental Indicators
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="rounded-md border overflow-x-auto">
-                                            <table className="w-full text-sm text-left">
-                                                <thead className="bg-gray-50 text-gray-700 font-medium border-b">
-                                                    <tr>
-                                                        <th className="px-4 py-3">Indicator</th>
-                                                        <th className="px-4 py-3 bg-blue-50/50">{data.fundamental.ticker}</th>
-                                                        <th className="px-4 py-3">Sector High</th>
-                                                        <th className="px-4 py-3">Sector Low</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y">
-                                                    {data.fundamental.fundamental_indicators.map((item, i) => (
-                                                        <tr key={i} className="hover:bg-gray-50">
-                                                            <td className="px-4 py-3 font-medium text-gray-900">{item.name}</td>
-                                                            <td className="px-4 py-3 font-bold bg-blue-50/30 text-blue-700">{item.value}</td>
-                                                            <td className="px-4 py-3">
-                                                                <div className="flex flex-col">
-                                                                    <span className="font-semibold">{item.sector_high}</span>
-                                                                    <StockLink ticker={item.sector_high_ticker} className="text-xs text-gray-500">
-                                                                        {item.sector_high_ticker}
-                                                                    </StockLink>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-4 py-3">
-                                                                <div className="flex flex-col">
-                                                                    <span className="font-semibold">{item.sector_low}</span>
-                                                                    <StockLink ticker={item.sector_low_ticker} className="text-xs text-gray-500">
-                                                                        {item.sector_low_ticker}
-                                                                    </StockLink>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            )}
-
-                            {/* Technical Indicators */}
-                            {data.fundamental?.technical_indicators && data.fundamental.technical_indicators.length > 0 && (
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="text-lg flex items-center gap-2">
-                                            <BarChart2 className="h-4 w-4" /> Technical Indicators
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="rounded-md border overflow-x-auto">
-                                            <table className="w-full text-sm text-left">
-                                                <thead className="bg-gray-50 text-gray-700 font-medium border-b">
-                                                    <tr>
-                                                        <th className="px-4 py-3">Indicator</th>
-                                                        <th className="px-4 py-3 bg-blue-50/50">{data.fundamental.ticker}</th>
-                                                        <th className="px-4 py-3">Sector High</th>
-                                                        <th className="px-4 py-3">Sector Low</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y">
-                                                    {data.fundamental.technical_indicators.map((item, i) => (
-                                                        <tr key={i} className="hover:bg-gray-50">
-                                                            <td className="px-4 py-3 font-medium text-gray-900">{item.name}</td>
-                                                            <td className="px-4 py-3 font-bold bg-blue-50/30 text-blue-700">{item.value}</td>
-                                                            <td className="px-4 py-3">
-                                                                <div className="flex flex-col">
-                                                                    <span className="font-semibold">{item.sector_high}</span>
-                                                                    <StockLink ticker={item.sector_high_ticker} className="text-xs text-gray-500">
-                                                                        {item.sector_high_ticker}
-                                                                    </StockLink>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-4 py-3">
-                                                                <div className="flex flex-col">
-                                                                    <span className="font-semibold">{item.sector_low}</span>
-                                                                    <StockLink ticker={item.sector_low_ticker} className="text-xs text-gray-500">
-                                                                        {item.sector_low_ticker}
-                                                                    </StockLink>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            )}
-                        </div>
-
-                        {/* Broker Accumulation - Moved to Floorsheet/Accumulation Tab */}
-                    </TabsContent>
-
-                    <TabsContent value="floorsheet" className="space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg flex items-center gap-2">
-                                    <Activity className="h-4 w-4" /> Accumulation / Distribution
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <Tabs defaultValue="1D" className="w-full">
-                                    <TabsList className="mb-4">
-                                        {['2Y', '1Y', '6M', '3M', '1W', '1D'].map((range) => (
-                                            <TabsTrigger
-                                                key={range}
-                                                value={range}
-                                                className="hover:bg-gray-100 hover:text-gray-900 transition-colors"
-                                            >
-                                                {range}
-                                            </TabsTrigger>
-                                        ))}
+                    {/* 2. CORE ANALYTICS HUB */}
+                    <div className="space-y-8">
+                        <Tabs
+                            defaultValue="indicators"
+                            className="w-full"
+                            value={activeTab}
+                            onValueChange={setActiveTab}
+                        >
+                            <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-4 mb-8">
+                                <div className="flex items-center gap-6">
+                                    <h3 className="text-slate-400 font-bold text-xs uppercase tracking-[0.2em]">Execution Stream</h3>
+                                    <div className="h-4 w-px bg-slate-200" />
+                                    <TabsList className="bg-slate-100 border border-slate-200 p-1 h-9 rounded-xl">
+                                        <TabsTrigger value="indicators" className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Indicators</TabsTrigger>
+                                        <TabsTrigger value="floorsheet" className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Floorsheet</TabsTrigger>
+                                        <TabsTrigger value="financials" className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Financials</TabsTrigger>
+                                        <TabsTrigger value="dividends" className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Dividends</TabsTrigger>
+                                        <TabsTrigger value="history" className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">History</TabsTrigger>
                                     </TabsList>
-                                    {['2Y', '1Y', '6M', '3M', '1W', '1D'].map((range) => {
-                                        const rangeData = data.fundamental?.broker_accumulation?.[range] || [];
-                                        const buyers = rangeData.filter(d => d.type === 'BUY').sort((a, b) => b.qty - a.qty);
-                                        const sellers = rangeData.filter(d => d.type === 'SELL').sort((a, b) => b.qty - a.qty);
+                                </div>
+                                <Badge variant="outline" className="border-slate-200 bg-white text-slate-400 font-mono text-[9px] px-3 py-1 shadow-sm">
+                                    STK_00491_TICKER_{ticker}_LX
+                                </Badge>
+                            </div>
 
-                                        return (
-                                            <TabsContent key={range} value={range}>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                    {/* Accumulation (Buyers) */}
-                                                    <div className="space-y-3">
-                                                        <h3 className="font-semibold text-center text-blue-700 bg-blue-50 py-2 rounded">Accumulation (Top Buyers)</h3>
-                                                        <div className="rounded-md border">
-                                                            <table className="w-full text-sm text-left">
-                                                                <thead className="bg-gray-50 text-gray-700 font-medium border-b">
-                                                                    <tr>
-                                                                        <th className="px-4 py-3">Broker</th>
-                                                                        <th className="px-4 py-3 text-right">Quantity</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody className="divide-y">
-                                                                    {buyers.map((item, idx) => (
-                                                                        <tr key={idx} className="hover:bg-gray-50">
-                                                                            <td className="px-4 py-3 font-semibold text-blue-600">
-                                                                                Broker No. {item.broker}
-                                                                            </td>
-                                                                            <td className="px-4 py-3 text-right">{item.qty.toLocaleString()}</td>
-                                                                        </tr>
-                                                                    ))}
-                                                                    {buyers.length === 0 && <tr><td colSpan={2} className="px-4 py-3 text-center text-gray-500">No buyers found</td></tr>}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Distribution (Sellers) */}
-                                                    <div className="space-y-3">
-                                                        <h3 className="font-semibold text-center text-red-700 bg-red-50 py-2 rounded">Distribution (Top Sellers)</h3>
-                                                        <div className="rounded-md border">
-                                                            <table className="w-full text-sm text-left">
-                                                                <thead className="bg-gray-50 text-gray-700 font-medium border-b">
-                                                                    <tr>
-                                                                        <th className="px-4 py-3">Broker</th>
-                                                                        <th className="px-4 py-3 text-right">Quantity</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody className="divide-y">
-                                                                    {sellers.map((item, idx) => (
-                                                                        <tr key={idx} className="hover:bg-gray-50">
-                                                                            <td className="px-4 py-3 font-semibold text-red-600">
-                                                                                Broker No. {item.broker}
-                                                                            </td>
-                                                                            <td className="px-4 py-3 text-right">{item.qty.toLocaleString()}</td>
-                                                                        </tr>
-                                                                    ))}
-                                                                    {sellers.length === 0 && <tr><td colSpan={2} className="px-4 py-3 text-center text-gray-500">No sellers found</td></tr>}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    </div>
+                            <div className="animate-in fade-in zoom-in-95 duration-700">
+                                <TabsContent value="floorsheet" className="mt-0 space-y-8">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                        {/* Accumulation (Top Buyers) */}
+                                        <div className="glass-card-light rounded-3xl p-8 border-slate-200">
+                                            <div className="flex items-center gap-3 mb-6">
+                                                <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
+                                                    <TrendingUp size={18} />
                                                 </div>
-                                            </TabsContent>
-                                        );
-                                    })}
-                                </Tabs>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-
-
-                    <TabsContent value="dividends">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Dividend History</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="rounded-md border">
-                                    <table className="w-full text-sm text-left">
-                                        <thead className="bg-gray-50 text-gray-700 font-medium border-b">
-                                            <tr>
-                                                <th className="px-4 py-3">Fiscal Year</th>
-                                                <th className="px-4 py-3">Bonus (%)</th>
-                                                <th className="px-4 py-3">Cash (%)</th>
-                                                <th className="px-4 py-3">Total (%)</th>
-                                                <th className="px-4 py-3">Date</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y">
-                                            {dividends.map((div: any, i: number) => (
-                                                <tr key={i} className="hover:bg-gray-50">
-                                                    <td className="px-4 py-3">{div.fiscal_year}</td>
-                                                    <td className="px-4 py-3">{div.bonus_percent}</td>
-                                                    <td className="px-4 py-3">{div.cash_percent}</td>
-                                                    <td className="px-4 py-3 font-bold">{div.total_percent}</td>
-                                                    <td className="px-4 py-3">{div.date}</td>
-                                                </tr>
-                                            ))}
-                                            {dividends.length === 0 && (
-                                                <tr><td colSpan={5} className="px-4 py-3 text-center text-gray-500">No dividends found.</td></tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    <TabsContent value="financials">
-                        <Card>
-                            <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0 pb-6">
-                                <div>
-                                    <CardTitle className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                                        <BarChart2 className="h-7 w-7 text-blue-600" />
-                                        Financial Statements
-                                    </CardTitle>
-                                    <p className="text-sm text-gray-500 mt-1 font-medium">Detailed multi-year comparative analysis</p>
-                                </div>
-                                <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
-                                    <Button
-                                        variant={reportType === 'ANNUAL' ? 'secondary' : 'ghost'}
-                                        size="sm"
-                                        onClick={() => setReportType('ANNUAL')}
-                                        className={`rounded-md px-4 font-bold transition-all ${reportType === 'ANNUAL' ? 'shadow-sm text-blue-700 bg-white' : 'text-gray-500 hover:text-gray-700'}`}
-                                    >
-                                        Annual
-                                    </Button>
-                                    <Button
-                                        variant={reportType === 'QUARTERLY' ? 'secondary' : 'ghost'}
-                                        size="sm"
-                                        onClick={() => setReportType('QUARTERLY')}
-                                        className={`rounded-md px-4 font-bold transition-all ${reportType === 'QUARTERLY' ? 'shadow-sm text-blue-700 bg-white' : 'text-gray-500 hover:text-gray-700'}`}
-                                    >
-                                        Quarterly
-                                    </Button>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                {(() => {
-                                    const filteredFinByReport = financials.filter(f => f.report_type === reportType);
-                                    const finWithData = filteredFinByReport.filter(f => f.balance_sheet || f.profit_loss);
-
-                                    if (finWithData.length === 0) {
-                                        return (
-                                            <div className="flex flex-col items-center justify-center py-20 text-gray-400 bg-gray-50/50 rounded-2xl border-2 border-dashed">
-                                                <div className="bg-gray-100 p-4 rounded-full mb-4">
-                                                    <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                    </svg>
-                                                </div>
-                                                <p className="font-medium">No granular {reportType.toLowerCase()} reports available for this stock.</p>
+                                                <h4 className="font-bold text-slate-800">Top Buyers (Accumulation)</h4>
                                             </div>
-                                        );
-                                    }
+                                            <div className="overflow-hidden rounded-2xl border border-slate-100">
+                                                <table className="w-full text-sm">
+                                                    <thead className="bg-slate-50 border-b border-slate-100">
+                                                        <tr>
+                                                            <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[10px]">Broker</th>
+                                                            <th className="px-6 py-4 text-right font-bold text-slate-400 uppercase tracking-widest text-[10px]">Quantity</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-50">
+                                                        {(data.fundamental?.broker_accumulation?.['1D'] || [])
+                                                            .filter(d => d.type === 'BUY')
+                                                            .sort((a, b) => b.qty - a.qty)
+                                                            .slice(0, 5)
+                                                            .map((item, idx) => (
+                                                                <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                                                    <td className="px-6 py-4 font-bold text-blue-600">Broker {item.broker}</td>
+                                                                    <td className="px-6 py-4 text-right font-mono font-bold text-slate-700">{item.qty.toLocaleString()}</td>
+                                                                </tr>
+                                                            ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
 
-                                    const metrics = [
-                                        { key: 'revenue', label: 'Revenue', color: '#3b82f6' },
-                                        { key: 'net_profit', label: 'Net Profit', color: '#10b981' },
-                                        { key: 'operating_profit', label: 'Operating Profit', color: '#6366f1' },
-                                        { key: 'paid_up_capital', label: 'Paid-up Capital', color: '#f59e0b' },
-                                        { key: 'reserves_and_surplus', label: 'Reserves', color: '#ec4899' },
-                                        { key: 'eps', label: 'EPS', color: '#8b5cf6' },
-                                        { key: 'book_value', label: 'Book Value', color: '#f97316' },
-                                    ];
+                                        {/* Distribution (Top Sellers) */}
+                                        <div className="glass-card-light rounded-3xl p-8 border-slate-200">
+                                            <div className="flex items-center gap-3 mb-6">
+                                                <div className="p-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-100">
+                                                    <TrendingDown size={18} />
+                                                </div>
+                                                <h4 className="font-bold text-slate-800">Top Sellers (Distribution)</h4>
+                                            </div>
+                                            <div className="overflow-hidden rounded-2xl border border-slate-100">
+                                                <table className="w-full text-sm">
+                                                    <thead className="bg-slate-50 border-b border-slate-100">
+                                                        <tr>
+                                                            <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[10px]">Broker</th>
+                                                            <th className="px-6 py-4 text-right font-bold text-slate-400 uppercase tracking-widest text-[10px]">Quantity</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-50">
+                                                        {(data.fundamental?.broker_accumulation?.['1D'] || [])
+                                                            .filter(d => d.type === 'SELL')
+                                                            .sort((a, b) => b.qty - a.qty)
+                                                            .slice(0, 5)
+                                                            .map((item, idx) => (
+                                                                <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                                                    <td className="px-6 py-4 font-bold text-rose-600">Broker {item.broker}</td>
+                                                                    <td className="px-6 py-4 text-right font-mono font-bold text-slate-700">{item.qty.toLocaleString()}</td>
+                                                                </tr>
+                                                            ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                    const sampleReport = finWithData[0];
-                                    const template = sampleReport.report_template || 'GENERAL';
+                                    {/* Raw Floorsheet Table */}
+                                    <div className="glass-card-light rounded-3xl p-8 border-slate-200">
+                                        <div className="flex items-center justify-between mb-8">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100">
+                                                    <Activity size={18} />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-slate-800">Live Transaction Stream</h4>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Real-time market depth</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-none px-3">Live Feed</Badge>
+                                            </div>
+                                        </div>
+                                        <div className="overflow-x-auto no-scrollbar rounded-2xl border border-slate-100">
+                                            <table className="w-full text-sm text-left">
+                                                <thead className="bg-slate-50 text-slate-400 border-b border-slate-100">
+                                                    <tr>
+                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Trans #</th>
+                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Buyer</th>
+                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Seller</th>
+                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Qty</th>
+                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Rate</th>
+                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px] text-right">Total</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-50">
+                                                    {floorsheet.slice(0, 20).map((row, i) => (
+                                                        <tr key={i} className="hover:bg-slate-50/50 transition-all group">
+                                                            <td className="px-6 py-4 font-mono text-xs text-slate-400">#{row.transaction_no}</td>
+                                                            <td className="px-6 py-4"><span className="px-2 py-0.5 rounded bg-blue-50 text-blue-600 font-bold text-xs">{row.buyer_broker}</span></td>
+                                                            <td className="px-6 py-4"><span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-bold text-xs">{row.seller_broker}</span></td>
+                                                            <td className="px-6 py-4 font-bold text-slate-700">{row.quantity.toLocaleString()}</td>
+                                                            <td className="px-6 py-4 font-mono text-slate-600">Rs. {row.rate}</td>
+                                                            <td className="px-6 py-4 text-right font-bold text-slate-900">Rs. {row.amount.toLocaleString()}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </TabsContent>
 
-                                    const sections = [
-                                        { title: 'Statement of Financial Position (Balance Sheet)', key: 'balance_sheet' },
-                                        { title: 'Statement of Profit or Loss', key: 'profit_loss' },
-                                        { title: 'Statement of Cash Flows', key: 'cash_flow' },
-                                        { title: 'Key Regulatory Ratios & Metrics', key: 'key_ratios' }
-                                    ];
-
-                                    return (
-                                        <div className="space-y-12">
-                                            {/* Trends Visualization */}
-                                            <div className="space-y-6">
-                                                <div
-                                                    className="flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer group/sec"
-                                                    onClick={() => toggleCollapse('trends-visualization')}
-                                                >
-                                                    <h3 className="text-lg font-bold text-gray-800 flex items-center">
-                                                        <span className="w-1.5 h-6 bg-blue-600 rounded-full mr-3"></span>
-                                                        Financial Trends over Time
-                                                        <ChevronDown className={cn("ml-2 w-5 h-5 text-gray-400 transition-transform duration-300", collapsedItems.has('trends-visualization') ? "-rotate-90" : "")} />
-                                                    </h3>
-                                                    {!collapsedItems.has('trends-visualization') && (
-                                                        <div className="flex flex-wrap gap-2 items-center" onClick={(e) => e.stopPropagation()}>
-                                                            <Popover>
-                                                                <PopoverTrigger asChild>
-                                                                    <Button variant="outline" size="sm" className="h-9 px-3 gap-2 border-gray-200 bg-white hover:bg-gray-50 text-gray-700 shadow-sm rounded-xl">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <BarChart2 className="w-4 h-4 text-blue-500" />
-                                                                            <span className="font-bold">Select Metrics</span>
-                                                                            <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-xs font-black">{visibleMetrics.length}</span>
-                                                                        </div>
-                                                                        <ChevronDown className="w-4 h-4 text-gray-400" />
-                                                                    </Button>
-                                                                </PopoverTrigger>
-                                                                <PopoverContent className="w-80 p-0 rounded-2xl shadow-2xl border-gray-100 overflow-hidden" align="end">
-                                                                    <Command className="border-none">
-                                                                        <CommandInput placeholder="Search financials..." className="h-12" />
-                                                                        <CommandList className="max-h-[400px]">
-                                                                            <CommandEmpty>No metrics found.</CommandEmpty>
-                                                                            {['Standard', 'Profit & Loss', 'Balance Sheet', 'Cash Flow', 'Key Ratios'].map(sec => {
-                                                                                const secMetrics = allAvailableMetrics.filter(m => m.section === sec);
-                                                                                if (secMetrics.length === 0) return null;
-                                                                                return (
-                                                                                    <CommandGroup key={sec} heading={sec} className="px-2">
-                                                                                        {secMetrics.map(m => (
-                                                                                            <CommandItem
-                                                                                                key={m.key}
-                                                                                                onSelect={() => {
-                                                                                                    setVisibleMetrics(prev =>
-                                                                                                        prev.includes(m.key)
-                                                                                                            ? prev.filter(k => k !== m.key)
-                                                                                                            : [...prev, m.key]
-                                                                                                    );
-                                                                                                }}
-                                                                                                className="flex items-center gap-2 rounded-lg cursor-pointer py-2"
-                                                                                            >
-                                                                                                <div className={cn(
-                                                                                                    "flex h-4 w-4 items-center justify-center rounded border transition-all",
-                                                                                                    visibleMetrics.includes(m.key) ? "bg-blue-600 border-blue-600" : "border-gray-300"
-                                                                                                )}>
-                                                                                                    {visibleMetrics.includes(m.key) && <Check className="h-3 w-3 text-white" />}
-                                                                                                </div>
-                                                                                                <span className="flex-1 text-sm font-medium text-gray-700">{m.label}</span>
-                                                                                                {m.category && <span className="text-xs text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">{m.category}</span>}
-                                                                                            </CommandItem>
-                                                                                        ))}
-                                                                                    </CommandGroup>
-                                                                                );
-                                                                            })}
-                                                                        </CommandList>
-                                                                        <div className="p-2 border-t bg-gray-50/50 flex items-center justify-between">
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="sm"
-                                                                                className="h-8 text-xs font-bold text-gray-500 hover:text-red-600"
-                                                                                onClick={() => setVisibleMetrics([])}
-                                                                            >
-                                                                                Clear All
-                                                                            </Button>
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="sm"
-                                                                                className="h-8 text-xs font-bold text-blue-600 hover:bg-blue-50"
-                                                                                onClick={() => setVisibleMetrics(['net_profit', 'revenue'])}
-                                                                            >
-                                                                                Reset Defaults
-                                                                            </Button>
-                                                                        </div>
-                                                                    </Command>
-                                                                </PopoverContent>
-                                                            </Popover>
-
-                                                            {/* Selected Pills (Scrollable row) */}
-                                                            <div className="flex gap-2 overflow-x-auto no-scrollbar max-w-[500px] py-1">
-                                                                {allAvailableMetrics.filter(m => visibleMetrics.includes(m.key)).map(m => (
-                                                                    <button
-                                                                        key={m.key}
-                                                                        onClick={() => setVisibleMetrics(prev => prev.filter(k => k !== m.key))}
-                                                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-100 text-blue-700 text-xs font-bold hover:bg-blue-100 transition-colors shrink-0"
-                                                                    >
-                                                                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: m.color }} />
-                                                                        {m.label}
-                                                                        <X className="w-3 h-3 ml-0.5 opacity-50" />
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                        </div>
+                                <TabsContent value="dividends" className="mt-0">
+                                    <div className="glass-card-light rounded-3xl p-8 border-slate-200">
+                                        <div className="flex items-center gap-3 mb-8">
+                                            <div className="p-2 rounded-xl bg-amber-50 text-amber-600 border border-amber-100">
+                                                <PieChart size={18} />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-800">Dividend Distribution History</h4>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Shareholder rewards timeline</p>
+                                            </div>
+                                        </div>
+                                        <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
+                                            <table className="w-full text-sm text-left">
+                                                <thead className="bg-slate-50 text-slate-400 border-b border-slate-100">
+                                                    <tr>
+                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Fiscal Year</th>
+                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Bonus (%)</th>
+                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Cash (%)</th>
+                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Total (%)</th>
+                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px] text-right">Declaration Date</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-50">
+                                                    {dividends.map((div, i) => (
+                                                        <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                                            <td className="px-6 py-4 font-bold text-slate-800">{div.fiscal_year}</td>
+                                                            <td className="px-6 py-4"><Badge variant="outline" className="text-emerald-600 border-emerald-100 bg-emerald-50/30">{div.bonus_percent}%</Badge></td>
+                                                            <td className="px-6 py-4 text-slate-600">{div.cash_percent}%</td>
+                                                            <td className="px-6 py-4 font-bold text-blue-600">{div.total_percent}%</td>
+                                                            <td className="px-6 py-4 text-right text-slate-400 text-xs font-mono">{div.date}</td>
+                                                        </tr>
+                                                    ))}
+                                                    {dividends.length === 0 && (
+                                                        <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-400 italic">No distribution records found</td></tr>
                                                     )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </TabsContent>
+
+                                <TabsContent value="financials" className="mt-0 space-y-8">
+                                    <div className="glass-card-light rounded-3xl p-8 border-slate-200">
+                                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
+                                                    <BarChart size={18} />
                                                 </div>
-
-                                                {!collapsedItems.has('trends-visualization') && (
-                                                    <div className="bg-white rounded-3xl border border-gray-100 p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-gray-200/50 relative overflow-hidden group">
-                                                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/30 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-blue-100/40 transition-colors"></div>
-                                                        <div className="h-[400px] w-full relative z-10">
-                                                            <ReactECharts
-                                                                key={`${reportType}-${visibleMetrics.join('-')}`}
-                                                                option={getFinancialsTrendOption()}
-                                                                style={{ height: '100%', width: '100%' }}
-                                                                theme="light"
-                                                                notMerge={true}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                )}
+                                                <div>
+                                                    <h4 className="font-bold text-slate-800">Financial Performance Matrix</h4>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Multi-year trend analysis</p>
+                                                </div>
                                             </div>
+                                            <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-inner">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => setReportType('ANNUAL')}
+                                                    className={cn("rounded-lg px-4 font-bold text-[10px] uppercase transition-all", reportType === 'ANNUAL' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400")}
+                                                >
+                                                    Annual
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => setReportType('QUARTERLY')}
+                                                    className={cn("rounded-lg px-4 font-bold text-[10px] uppercase transition-all", reportType === 'QUARTERLY' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400")}
+                                                >
+                                                    Quarterly
+                                                </Button>
+                                            </div>
+                                        </div>
 
-                                            {/* Financial Tables */}
-                                            {sections.map((section, sIdx) => {
-                                                if (!sampleReport[section.key]) return null;
-                                                const sectionId = `section-${section.key}`;
+                                        {/* Financial Summary Chart */}
+                                        <div className="bg-white rounded-2xl border border-slate-100 p-6 mb-8 shadow-sm">
+                                            <div className="h-[400px]">
+                                                <ReactECharts
+                                                    key={`${reportType}-${visibleMetrics.join('-')}`}
+                                                    option={getFinancialsTrendOption()}
+                                                    style={{ height: '100%', width: '100%' }}
+                                                    theme="light"
+                                                />
+                                            </div>
+                                        </div>
 
-                                                return (
-                                                    <div key={sIdx} className="space-y-6">
-                                                        <div
-                                                            className="flex items-center justify-between cursor-pointer group/sec"
-                                                            onClick={() => toggleCollapse(sectionId)}
-                                                        >
-                                                            <h3 className="text-lg font-bold text-gray-800 flex items-center">
-                                                                <span className="w-1.5 h-6 bg-blue-600 rounded-full mr-3"></span>
-                                                                {section.title}
-                                                                <ChevronDown className={cn("ml-2 w-5 h-5 text-gray-400 transition-transform duration-300", collapsedItems.has(sectionId) ? "-rotate-90" : "")} />
-                                                            </h3>
-                                                        </div>
+                                        {/* Financial Data Grid */}
+                                        <div className="space-y-4">
+                                            {financials.filter(f => f.report_type === reportType).length > 0 ? (
+                                                <div className="space-y-6">
+                                                    {['balance_sheet', 'profit_loss', 'cash_flow', 'key_ratios'].map((section) => {
+                                                        const report = financials.filter(f => f.report_type === reportType).sort((a, b) => b.fiscal_year.localeCompare(a.fiscal_year))[0];
+                                                        const sectionData = report[section];
+                                                        if (!sectionData) return null;
 
-                                                        {!collapsedItems.has(sectionId) && (
-                                                            <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-gray-200/50 overflow-hidden">
-                                                                <div className="overflow-x-auto no-scrollbar">
-                                                                    <table className="w-full text-left border-collapse min-w-[1000px]">
-                                                                        <thead>
-                                                                            <tr className="bg-gray-50/80 backdrop-blur-md">
-                                                                                <th className="px-6 py-4 text-sm font-bold text-gray-600 uppercase tracking-wider sticky left-0 z-20 bg-gray-50/95 border-r border-b border-gray-200 w-80">
-                                                                                    Particulars
-                                                                                </th>
-                                                                                {finWithData.map((fin: any, idx) => (
-                                                                                    <th key={idx} className="px-6 py-4 text-center border-b border-gray-200 bg-gray-50/50">
-                                                                                        <div className="text-sm font-bold text-gray-900 mb-1">FY {fin.fiscal_year}</div>
-                                                                                        <div className="text-xs font-semibold text-blue-600">
-                                                                                            {fin.report_type === 'QUARTERLY' ? `Q${fin.quarter}` : 'ANNUAL'}
-                                                                                        </div>
-                                                                                    </th>
-                                                                                ))}
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody className="divide-y divide-gray-100 text-gray-700">
-                                                                            {Object.entries(sampleReport[section.key]).map(([category, items]: [string, any], catIdx) => {
-                                                                                const categoryId = `${sectionId}-cat-${category}`;
-                                                                                const renderRows = (obj: any, depth = 0, pathPrefix: string[] = []) => {
-                                                                                    return Object.entries(obj).map(([key, val], idx) => {
-                                                                                        const isGroup = val && typeof val === 'object' && !Array.isArray(val);
-                                                                                        const isTotal = key.toLowerCase().includes('total') || key.toLowerCase().includes('profit');
-                                                                                        const isCollapsed = collapsedItems.has(`${categoryId}-${pathPrefix.join('-')}-${key}`);
-
-                                                                                        return (
-                                                                                            <Fragment key={`${depth}-${key}`}>
-                                                                                                <tr
-                                                                                                    className={cn(
-                                                                                                        "hover:bg-gray-50/80 transition-colors group border-b border-gray-50",
-                                                                                                        isTotal && "bg-gray-50/40",
-                                                                                                        isGroup ? "bg-gray-50/20 cursor-pointer" : ""
-                                                                                                    )}
-                                                                                                    onClick={() => isGroup && toggleCollapse(`${categoryId}-${pathPrefix.join('-')}-${key}`)}
-                                                                                                >
-                                                                                                    <td className={cn(
-                                                                                                        "px-6 py-3 sticky left-0 z-10 border-r border-gray-200 transition-colors",
-                                                                                                        isTotal ? "bg-gray-50 font-bold text-gray-900" : "bg-white font-medium text-gray-600"
-                                                                                                    )}>
-                                                                                                        <div style={{ paddingLeft: `${depth * 24}px` }} className={cn("flex items-center gap-2 text-sm", isGroup ? "text-blue-700 font-bold" : "")}>
-                                                                                                            {isGroup ? (
-                                                                                                                <ChevronDown className={cn("w-4 h-4 transition-transform text-blue-500", isCollapsed ? "-rotate-90" : "")} />
-                                                                                                            ) : null}
-                                                                                                            {key}
-                                                                                                        </div>
-                                                                                                    </td>
-                                                                                                    {finWithData.map((fin: any, fIdx) => {
-                                                                                                        let current = fin[section.key]?.[category];
-                                                                                                        pathPrefix.forEach(p => current = current?.[p]);
-                                                                                                        const cellVal = current?.[key];
-
-                                                                                                        if (isGroup) return <td key={fIdx} className="px-6 py-3 border-gray-100 bg-gray-50/20" />;
-
+                                                        return (
+                                                            <div key={section} className="border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
+                                                                <button
+                                                                    onClick={() => toggleCollapse(`section-${section}`)}
+                                                                    className="w-full flex items-center justify-between px-6 py-4 bg-slate-50 hover:bg-slate-100/50 transition-colors"
+                                                                >
+                                                                    <span className="font-bold text-slate-800 flex items-center gap-2">
+                                                                        {section.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                                                                    </span>
+                                                                    <ChevronDown size={16} className={cn("text-slate-400 transition-transform", !collapsedItems.has(`section-${section}`) && "rotate-180")} />
+                                                                </button>
+                                                                {!collapsedItems.has(`section-${section}`) && (
+                                                                    <div className="p-6 bg-white overflow-x-auto no-scrollbar">
+                                                                        <table className="w-full text-sm">
+                                                                            <thead>
+                                                                                <tr className="border-b border-slate-50">
+                                                                                    <th className="text-left py-2 font-bold text-slate-400 text-[10px] uppercase tracking-widest">Metadata/Metric</th>
+                                                                                    {financials.filter(f => f.report_type === reportType)
+                                                                                        .sort((a, b) => b.fiscal_year.localeCompare(a.fiscal_year))
+                                                                                        .map(f => (
+                                                                                            <th key={f.fiscal_year} className="text-right px-4 font-bold text-slate-800">{f.fiscal_year}</th>
+                                                                                        ))}
+                                                                                </tr>
+                                                                            </thead>
+                                                                            <tbody>
+                                                                                {Object.entries(sectionData).map(([category, items]: [string, any]) => (
+                                                                                    <React.Fragment key={category}>
+                                                                                        <tr className="bg-slate-50/30">
+                                                                                            <td colSpan={100} className="py-2 px-2 font-bold text-blue-600/70 text-[10px] uppercase tracking-widest">{category}</td>
+                                                                                        </tr>
+                                                                                        {Object.entries(items).map(([key, val]: [string, any]) => (
+                                                                                            <tr key={key} className="hover:bg-slate-50/30 border-b border-slate-50 last:border-0 transition-colors group">
+                                                                                                <td className="py-3 px-2 font-medium text-slate-600 group-hover:text-slate-900">{key}</td>
+                                                                                                {financials.filter(f => f.report_type === reportType)
+                                                                                                    .sort((a, b) => b.fiscal_year.localeCompare(a.fiscal_year))
+                                                                                                    .map(f => {
+                                                                                                        const v = f[section]?.[category]?.[key];
                                                                                                         return (
-                                                                                                            <td key={fIdx} className={cn(
-                                                                                                                "px-6 py-3 text-right font-mono text-sm",
-                                                                                                                isTotal ? "font-bold text-gray-900 bg-gray-50/40" : "text-gray-700",
-                                                                                                                (cellVal === null || cellVal === undefined) ? "text-gray-300" : ""
-                                                                                                            )}>
-                                                                                                                {cellVal !== null && cellVal !== undefined ? (cellVal as any).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}
+                                                                                                            <td key={f.fiscal_year} className="text-right px-4 font-mono text-slate-700">
+                                                                                                                {typeof v === 'number' ? (v >= 10000000 ? (v / 10000000).toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' Cr' : v.toLocaleString()) : (v || '-')}
                                                                                                             </td>
                                                                                                         );
                                                                                                     })}
-                                                                                                </tr>
-                                                                                                {isGroup && !isCollapsed ? renderRows(val, depth + 1, [...pathPrefix, key]) : null}
-                                                                                            </Fragment>
-                                                                                        );
-                                                                                    });
-                                                                                };
-
-                                                                                const isCatCollapsed = collapsedItems.has(categoryId);
-
-                                                                                return (
-                                                                                    <Fragment key={catIdx}>
-                                                                                        <tr
-                                                                                            className="bg-blue-50/30 cursor-pointer hover:bg-blue-50/50 transition-colors border-y border-blue-100"
-                                                                                            onClick={() => toggleCollapse(categoryId)}
-                                                                                        >
-                                                                                            <td colSpan={finWithData.length + 1} className="px-6 py-3 font-bold text-blue-800 uppercase tracking-wide text-sm flex items-center gap-2 sticky left-0 z-10 bg-blue-50/30 backdrop-blur-sm">
-                                                                                                <ChevronDown className={cn("w-5 h-5 transition-transform text-blue-600", isCatCollapsed && "-rotate-90")} />
-                                                                                                {category}
-                                                                                            </td>
-                                                                                        </tr>
-                                                                                        {isCatCollapsed ? null : renderRows(items)}
-                                                                                    </Fragment>
-                                                                                );
-                                                                            })}
-                                                                        </tbody>
-                                                                    </table>
-                                                                </div>
+                                                                                            </tr>
+                                                                                        ))}
+                                                                                    </React.Fragment>
+                                                                                ))}
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <div className="text-center p-12 text-slate-400 italic">No financial statements available for this period.</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </TabsContent>
 
-                                            {/* Legend/Info */}
-                                            <div className="flex items-center space-x-6 px-2 border-t pt-8">
-                                                <div className="flex items-center text-xs text-gray-500">
-                                                    <div className="w-2.5 h-2.5 bg-emerald-100 border border-emerald-200 rounded-sm mr-2"></div>
-                                                    <span>Audited Figures</span>
+                                <TabsContent value="indicators" className="mt-0">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                        {/* Fundamental Indicators Card */}
+                                        <div className="glass-card-light rounded-3xl p-8 border-slate-200">
+                                            <div className="flex items-center gap-3 mb-8">
+                                                <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
+                                                    <BarChart2 size={18} />
                                                 </div>
-                                                <div className="flex items-center text-xs text-gray-500">
-                                                    <div className="w-2.5 h-2.5 bg-blue-100 border border-blue-200 rounded-sm mr-2"></div>
-                                                    <span>Regulatory Ratios Verified</span>
-                                                </div>
-                                                <div className="flex items-center text-xs text-gray-400 italic ml-auto">
-                                                    Showing data mapped to {template} template structure.
+                                                <div>
+                                                    <h4 className="font-bold text-slate-800">Fundamental Benchmarks</h4>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Sector-wide comparison</p>
                                                 </div>
                                             </div>
+                                            <div className="space-y-4">
+                                                {[
+                                                    { name: 'P/E Ratio', key: 'pe_ratio', label: 'P/E' },
+                                                    { name: 'P/B Ratio', key: 'pb_ratio', label: 'P/B' },
+                                                    { name: 'ROE (%)', key: 'roe', label: 'ROE' },
+                                                    { name: 'EPS', key: 'eps', label: 'EPS' },
+                                                    { name: 'Dividend Yield', key: 'dividend_yield', label: 'Div Yield' },
+                                                    { name: 'Book Value', key: 'book_value', label: 'Book Value' },
+                                                    { name: 'Market Cap', key: 'market_cap', label: 'Mkt Cap' }
+                                                ].map((metric, i) => {
+                                                    const indicator = data.fundamental?.fundamental_indicators?.find(ind => ind.name.toLowerCase().includes(metric.label.toLowerCase())) ||
+                                                        data.fundamental?.fundamental_indicators?.find(ind => ind.name === metric.name);
+
+                                                    // Fallback to top-level fundamental data if not in indicators array
+                                                    const rawValue = (data.fundamental as any)?.[metric.key];
+                                                    const displayValue = indicator?.value || (rawValue ? (typeof rawValue === 'number' && rawValue > 10000000 ? (rawValue / 10000000).toFixed(2) + ' Cr' : rawValue.toString()) : '-');
+
+                                                    return (
+                                                        <div key={i} className="p-6 rounded-2xl bg-white border border-slate-100 shadow-sm space-y-4">
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="font-bold text-slate-800">{metric.name}</span>
+                                                                <Badge variant="outline" className="border-blue-100 bg-blue-50 text-blue-600 font-bold">
+                                                                    {displayValue}
+                                                                </Badge>
+                                                            </div>
+                                                            <div className="grid grid-cols-2 gap-4">
+                                                                <div className="p-3 rounded-xl bg-slate-50 border border-slate-50 space-y-1">
+                                                                    <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest">Sector High</p>
+                                                                    <div className="flex items-center justify-between">
+                                                                        <span className="text-xs font-bold text-slate-800">{indicator?.sector_high || '-'}</span>
+                                                                        {indicator?.sector_high_ticker && (
+                                                                            <StockLink ticker={indicator.sector_high_ticker} className="text-[8px] font-bold text-blue-500 hover:underline">{indicator.sector_high_ticker}</StockLink>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="p-3 rounded-xl bg-slate-50 border border-slate-50 space-y-1">
+                                                                    <p className="text-[8px] font-bold text-rose-600 uppercase tracking-widest">Sector Low</p>
+                                                                    <div className="flex items-center justify-between">
+                                                                        <span className="text-xs font-bold text-slate-800">{indicator?.sector_low || '-'}</span>
+                                                                        {indicator?.sector_low_ticker && (
+                                                                            <StockLink ticker={indicator.sector_low_ticker} className="text-[8px] font-bold text-blue-500 hover:underline">{indicator.sector_low_ticker}</StockLink>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
-                                    );
-                                })()}
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                </Tabs>
 
+                                        {/* Technical Indicators Card */}
+                                        <div className="glass-card-light rounded-3xl p-8 border-slate-200">
+                                            <div className="flex items-center gap-3 mb-8">
+                                                <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                                    <TrendingUp size={18} />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-slate-800">Technical Divergence</h4>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Relative strength mapping</p>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-4">
+                                                {[
+                                                    { name: 'RSI (14)', label: 'RSI' },
+                                                    { name: 'MACD (12, 26, 9)', label: 'MACD' },
+                                                    { name: 'ADX (14)', label: 'ADX' },
+                                                    { name: '20-Day SMA', label: '20 SMA' },
+                                                    { name: '50-Day SMA', label: '50 SMA' },
+                                                    { name: '200-Day SMA', label: '200 SMA' },
+                                                    { name: 'Bollinger Bands', label: 'BB' }
+                                                ].map((metric, i) => {
+                                                    const indicator = data.fundamental?.technical_indicators?.find(ind => ind.name.toLowerCase().includes(metric.label.toLowerCase())) ||
+                                                        data.fundamental?.technical_indicators?.find(ind => ind.name === metric.name);
 
+                                                    const displayValue = indicator?.value || '-';
+
+                                                    return (
+                                                        <div key={i} className="p-6 rounded-2xl bg-white border border-slate-100 shadow-sm space-y-4">
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="font-bold text-slate-800">{metric.name}</span>
+                                                                <Badge variant="outline" className="border-emerald-100 bg-emerald-50 text-emerald-600 font-bold">
+                                                                    {displayValue}
+                                                                </Badge>
+                                                            </div>
+                                                            <div className="grid grid-cols-2 gap-4">
+                                                                <div className="p-3 rounded-xl bg-slate-50 border border-slate-50 space-y-1">
+                                                                    <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest">Sector High</p>
+                                                                    <div className="flex items-center justify-between">
+                                                                        <span className="text-xs font-bold text-slate-800">{indicator?.sector_high || '-'}</span>
+                                                                        {indicator?.sector_high_ticker && (
+                                                                            <StockLink ticker={indicator.sector_high_ticker} className="text-[8px] font-bold text-blue-500 hover:underline">{indicator.sector_high_ticker}</StockLink>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="p-3 rounded-xl bg-slate-50 border border-slate-50 space-y-1">
+                                                                    <p className="text-[8px] font-bold text-rose-600 uppercase tracking-widest">Sector Low</p>
+                                                                    <div className="flex items-center justify-between">
+                                                                        <span className="text-xs font-bold text-slate-800">{indicator?.sector_low || '-'}</span>
+                                                                        {indicator?.sector_low_ticker && (
+                                                                            <StockLink ticker={indicator.sector_low_ticker} className="text-[8px] font-bold text-blue-500 hover:underline">{indicator.sector_low_ticker}</StockLink>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </TabsContent>
+
+                                <TabsContent value="history" className="mt-0">
+                                    <div className="glass-card-light rounded-3xl p-8 border-slate-200">
+                                        <div className="flex items-center gap-3 mb-8">
+                                            <div className="p-2 rounded-xl bg-slate-50 text-slate-600 border border-slate-100">
+                                                <Clock size={18} />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-800">Historical Price Action</h4>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Ohlcv historical logs</p>
+                                            </div>
+                                        </div>
+                                        <div className="overflow-x-auto no-scrollbar rounded-2xl border border-slate-100">
+                                            <table className="w-full text-sm text-left">
+                                                <thead className="bg-slate-50 text-slate-400 border-b border-slate-100">
+                                                    <tr>
+                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Date</th>
+                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Open</th>
+                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">High</th>
+                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Low</th>
+                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Close</th>
+                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px] text-right">Volume</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-50">
+                                                    {history.slice(0, 30).map((row, i) => (
+                                                        <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                                            <td className="px-6 py-4 font-bold text-slate-800">{row.date}</td>
+                                                            <td className="px-6 py-4 text-slate-600">{row.open}</td>
+                                                            <td className="px-6 py-4 text-emerald-600 font-medium">{row.high}</td>
+                                                            <td className="px-6 py-4 text-rose-600 font-medium">{row.low}</td>
+                                                            <td className="px-6 py-4 font-bold text-slate-900">{row.close}</td>
+                                                            <td className="px-6 py-4 text-right font-mono text-xs text-slate-400">{row.volume.toLocaleString()}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </TabsContent>
+                            </div>
+                        </Tabs>
+                    </div>
+                </main>
 
                 <TransactionModal
                     isOpen={modalOpen}
                     onClose={() => setModalOpen(false)}
-                    defaultTicker={ticker}
+                    onSuccess={() => setModalOpen(false)}
                     defaultType={txnType}
-                    onSuccess={() => {
-                        // re-fetch data?
-                        setModalOpen(false);
-                    }}
+                    defaultTicker={ticker}
                     accounts={accounts}
                 />
             </div>
-        </DashboardLayout >
+        </DashboardLayout>
     );
 }

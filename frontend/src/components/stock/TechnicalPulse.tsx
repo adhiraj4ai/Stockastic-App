@@ -1,0 +1,107 @@
+'use client';
+
+import { Card, CardContent } from '@/components/ui/card';
+import { Activity, Zap, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+
+interface TechnicalPulseProps {
+    rsi: number;
+    mfi: number;
+    macd: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
+    movingAverages: {
+        sma50: number;
+        sma200: number;
+    };
+    currentPrice: number;
+}
+
+export function TechnicalPulse({
+    rsi,
+    mfi,
+    macd,
+    movingAverages,
+    currentPrice
+}: TechnicalPulseProps) {
+    const getStatus = (val: number) => {
+        if (val > 70) return { label: 'Overbought', color: 'text-rose-600', bg: 'bg-rose-50' };
+        if (val < 30) return { label: 'Oversold', color: 'text-emerald-600', bg: 'bg-emerald-50' };
+        return { label: 'Neutral', color: 'text-slate-600', bg: 'bg-slate-50' };
+    };
+
+    const getMacdStyle = () => {
+        if (macd === 'BULLISH') return { label: 'Bullish Momentum', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200', icon: TrendingUp };
+        if (macd === 'BEARISH') return { label: 'Bearish Momentum', color: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-200', icon: TrendingDown };
+        return { label: 'Neutral Momentum', color: 'text-slate-700', bg: 'bg-slate-50', border: 'border-slate-200', icon: Minus };
+    };
+
+    const rsiStatus = getStatus(rsi);
+    const mStyle = getMacdStyle();
+
+    return (
+        <Card className="bg-white border-slate-200 shadow-sm overflow-hidden">
+            <div className={cn("px-6 py-4 border-b flex items-center justify-between", mStyle.bg, mStyle.border)}>
+                <div className="flex items-center gap-3">
+                    <div className={cn("p-2 rounded-lg bg-white shadow-sm", mStyle.color)}>
+                        <mStyle.icon size={18} />
+                    </div>
+                    <div className="space-y-0.5">
+                        <p className="text-[10px] font-bold opacity-60 uppercase">Technical Pulse & Momentum</p>
+                        <p className={cn("text-base font-bold uppercase", mStyle.color)}>{mStyle.label}</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="font-bold text-[9px] px-2 py-0.5 rounded-md border-slate-200 text-slate-500 bg-white">
+                        <Zap size={10} className="mr-1 inline text-amber-500" />
+                        LIVE SIGNAL
+                    </Badge>
+                </div>
+            </div>
+
+            <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* RSI Gauge */}
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Relative Strength (RSI)</span>
+                        <span className={cn("text-[9px] font-bold px-2 py-0.5 rounded uppercase", rsiStatus.bg, rsiStatus.color)}>
+                            {rsiStatus.label}
+                        </span>
+                    </div>
+                    <div className="text-3xl font-bold text-slate-900 tabular-nums">{rsi.toFixed(1)}</div>
+                    <div className="relative h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="absolute inset-y-0 left-[30%] right-[30%] bg-slate-200 opacity-50" />
+                        <div
+                            className={cn("h-full transition-all duration-1000", rsi > 70 ? "bg-rose-500" : rsi < 30 ? "bg-emerald-500" : "bg-slate-900")}
+                            style={{ width: `${rsi}%` }}
+                        />
+                    </div>
+                </div>
+
+                {/* Moving Averages */}
+                <div className="space-y-4 border-l border-slate-100 pl-8">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Trend Alignment</span>
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase">50-Day Avg.</span>
+                            <span className={cn(
+                                "text-xs font-bold tabular-nums",
+                                currentPrice > movingAverages.sma50 ? "text-emerald-600" : "text-rose-600"
+                            )}>
+                                {movingAverages.sma50.toLocaleString()}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase">200-Day Avg.</span>
+                            <span className={cn(
+                                "text-xs font-bold tabular-nums",
+                                currentPrice > movingAverages.sma200 ? "text-emerald-600" : "text-rose-600"
+                            )}>
+                                {movingAverages.sma200.toLocaleString()}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}

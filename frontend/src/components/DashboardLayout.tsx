@@ -59,7 +59,21 @@ const stocks = [
     { symbol: 'MSFT', name: 'Microsoft Corporation' }
 ];
 
-export default function DashboardLayout({ children, title, subtitle, noPadding, showBack }: { children: React.ReactNode; title?: React.ReactNode; subtitle?: string; noPadding?: boolean; showBack?: boolean }) {
+export default function DashboardLayout({
+    children,
+    title,
+    subtitle,
+    noPadding,
+    showBack,
+    hideHeader = false
+}: {
+    children: React.ReactNode;
+    title?: React.ReactNode;
+    subtitle?: string;
+    noPadding?: boolean;
+    showBack?: boolean;
+    hideHeader?: boolean;
+}) {
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -281,70 +295,72 @@ export default function DashboardLayout({ children, title, subtitle, noPadding, 
                     } ${isChatPinned && !isChatPage ? 'mr-96' : ''}`}
             >
                 {/* Top Navigation Bar */}
-                <header className="bg-white border-b border-gray-200 sticky top-0 z-20 px-8 py-4 flex justify-between items-center shadow-sm">
-                    {/* Header content unchanged */}
-                    <div className="w-1/3 flex items-center gap-3">
-                        {showBack && (
-                            <button
-                                onClick={() => router.back()}
-                                className="p-1.5 rounded-full hover:bg-gray-100 text-gray-600 transition-colors"
-                                title="Go Back"
-                            >
-                                <ArrowLeft size={20} />
-                            </button>
-                        )}
-                        <div className="flex flex-col min-w-0">
-                            <h2 className="text-xl font-semibold text-gray-800 capitalize truncate">
-                                {title || (pathname.includes('/stock/') ? 'Stock Details' : pathname.split('/').pop())}
-                            </h2>
-                            {subtitle && (
-                                <p className="text-xs text-gray-500 truncate">{subtitle}</p>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="w-1/3 flex justify-center">
-                        <SearchBar />
-                    </div>
-
-                    <div className="w-1/3 flex justify-end gap-4 items-center">
-                        <AlertsDropdown />
-                        <div className="flex flex-col items-end mr-2">
-                            <span className="text-sm font-semibold text-gray-800">Hi {currentUser?.username === 'admin' ? 'Jugal' : currentUser?.username === 'ashmi' ? 'Ashmi' : 'Guest'}</span>
-                            <span className="text-[10px] text-green-500 font-medium flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                                Online
-                            </span>
-                        </div>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <button className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shadow-sm hover:ring-2 hover:ring-blue-400 transition-all outline-none uppercase">
-                                    {currentUser?.username?.[0] || 'G'}
-                                </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56">
-                                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem className="cursor-pointer gap-2">
-                                    <User size={16} />
-                                    <span>Profile</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="cursor-pointer gap-2">
-                                    <Settings size={16} />
-                                    <span>Settings</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                    onClick={handleLogout}
-                                    className="cursor-pointer gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
+                {!hideHeader && (
+                    <header className="bg-white border-b border-gray-200 sticky top-0 z-20 px-8 py-4 flex justify-between items-center shadow-sm">
+                        {/* Header content unchanged */}
+                        <div className="w-1/3 flex items-center gap-3">
+                            {showBack && (
+                                <button
+                                    onClick={() => router.back()}
+                                    className="p-1.5 rounded-full hover:bg-gray-100 text-gray-600 transition-colors"
+                                    title="Go Back"
                                 >
-                                    <LogOut size={16} />
-                                    <span>Logout</span>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </header>
+                                    <ArrowLeft size={20} />
+                                </button>
+                            )}
+                            <div className="flex flex-col min-w-0">
+                                <h2 className="text-xl font-semibold text-gray-800 capitalize truncate">
+                                    {title || (pathname.includes('/stock/') ? 'Stock Details' : pathname.split('/').pop())}
+                                </h2>
+                                {subtitle && (
+                                    <p className="text-xs text-gray-500 truncate">{subtitle}</p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="w-1/3 flex justify-center">
+                            <SearchBar />
+                        </div>
+
+                        <div className="w-1/3 flex justify-end gap-4 items-center">
+                            <AlertsDropdown />
+                            <div className="flex flex-col items-end mr-2">
+                                <span className="text-sm font-semibold text-gray-800">Hi {currentUser?.username === 'admin' ? 'Jugal' : currentUser?.username === 'ashmi' ? 'Ashmi' : 'Guest'}</span>
+                                <span className="text-[10px] text-green-500 font-medium flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                                    Online
+                                </span>
+                            </div>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shadow-sm hover:ring-2 hover:ring-blue-400 transition-all outline-none uppercase">
+                                        {currentUser?.username?.[0] || 'G'}
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56">
+                                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem className="cursor-pointer gap-2">
+                                        <User size={16} />
+                                        <span>Profile</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem className="cursor-pointer gap-2">
+                                        <Settings size={16} />
+                                        <span>Settings</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                        onClick={handleLogout}
+                                        className="cursor-pointer gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
+                                    >
+                                        <LogOut size={16} />
+                                        <span>Logout</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </header>
+                )}
 
                 <div className={noPadding ? '' : 'p-8'}>
                     {children}
