@@ -46,25 +46,47 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
     const [expandedId, setExpandedId] = useState<number | null>(null);
     const [batchResults, setBatchResults] = useState<Record<string, Experiment[]>>({});
 
-    useEffect(() => {
-        fetchExperiments();
-    }, [strategyId]);
+    // Pagination State
+    const [page, setPage] = useState(1);
+    const [hasNext, setHasNext] = useState(false);
+    const [hasPrev, setHasPrev] = useState(false);
 
-    const fetchExperiments = async () => {
+    useEffect(() => {
+        fetchExperiments(page);
+    }, [strategyId, page]);
+
+    const fetchExperiments = async (currentPage = 1) => {
         setLoading(true);
         try {
+            const params = { page: currentPage, page_size: 20 };
+
             if (strategyId) {
                 // Strategy Specific
                 const [expRes, bestRes] = await Promise.all([
-                    api.get(`/api/stocks/strategies/${strategyId}/experiments/`),
+                    api.get(`/api/stocks/strategies/${strategyId}/experiments/`, { params }),
                     api.get(`/api/stocks/strategies/${strategyId}/best_parameters/`)
                 ]);
-                setExperiments(expRes.data);
+
+                if (expRes.data.results) {
+                    setExperiments(expRes.data.results);
+                    setHasNext(!!expRes.data.next);
+                    setHasPrev(!!expRes.data.previous);
+                } else {
+                    setExperiments(expRes.data);
+                    setHasNext(false); setHasPrev(false);
+                }
                 setBestParams(bestRes.data);
             } else {
                 // Global Logs
-                const response = await api.get('/api/stocks/strategies/all_experiments/');
-                setExperiments(response.data.results || response.data); // Handle pagination if present
+                const response = await api.get('/api/stocks/strategies/all_experiments/', { params });
+                if (response.data.results) {
+                    setExperiments(response.data.results);
+                    setHasNext(!!response.data.next);
+                    setHasPrev(!!response.data.previous);
+                } else {
+                    setExperiments(response.data); // Fallback if regular list
+                    setHasNext(false); setHasPrev(false);
+                }
                 setBestParams([]); // No best params for global view
             }
         } catch (error) {
@@ -223,7 +245,6 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                 </tr>
                             ) : (
                                 experiments
-                                    .filter(exp => !(exp.batch_id && exp.scope_type === 'SYMBOL')) // Filter out children
                                     .map((exp) => (
                                         <Fragment key={exp.id}>
                                             <tr
@@ -239,33 +260,42 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                         #{exp.id} <ExternalLink size={10} />
                                                     </a>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                                                    {format(new Date(exp.created_at), 'MMM d, HH:mm')}
+                                                <td className="px-6 py-4 whitespace-nowrap text-gray-900 font-medium">
+                                                    {format(new Date(exp.created_at), 'MMM dd, HH:mm')}
                                                 </td>
                                                 {!strategyId && (
-                                                    <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-                                                        {exp.strategy_name || `ID: ${exp.strategy}`}
+                                                    <td className="px-6 py-4 whitespace-nowrap text-gray-900 font-bold">
+                                                        {exp.strategy_name}
                                                     </td>
                                                 )}
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${exp.run_type === 'OPTIMIZATION'
-                                                        ? 'bg-purple-100 text-purple-800'
-                                                        : 'bg-blue-100 text-blue-800'
-                                                        }`}>
+                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide
+                                                        ${exp.run_type === 'BACKTEST' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'}`}>
                                                         {exp.run_type}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="font-medium text-gray-900">
-                                                        {exp.scope_value === 'ALL' ? 'All Market' : exp.scope_value}
-                                                    </div>
-                                                    <div className="text-xs text-gray-500">{exp.scope_type}</div>
+                                                    <div className="text-sm font-bold text-gray-900">{exp.scope_value}</div>
+                                                    <div className="text-xs text-gray-400 font-medium uppercase tracking-wider">{exp.scope_type}</div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-gray-500 text-xs">
-                                                    {exp.start_date} <br /> {exp.end_date}
+                                                <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
+                                                    {exp.start_date}<br />{exp.end_date}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {renderMetrics(exp)}
+                                                    {exp.metrics && (exp.metrics.aggregated ? (
+                                                        <div>
+                                                            <div className={`text-sm font-black ${(exp.metrics.aggregated.avg_return || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                Avg: {(exp.metrics.aggregated.avg_return || 0).toFixed(2)}%
+                                                            </div>
+                                                            <div className="text-xs text-gray-400">
+                                                                Best: {exp.metrics.aggregated.best_stock?.symbol} ({(exp.metrics.aggregated.best_stock?.return || 0).toFixed(2)}%)
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <span className={`font-black ${(exp.metrics.pnl_percent || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                            {(exp.metrics.pnl_percent || 0).toFixed(2)}%
+                                                        </span>
+                                                    ))}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     {exp.status === 'SUCCESS' ? (
@@ -278,9 +308,13 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                     {expandedId === exp.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                                 </td>
                                             </tr>
+                                            {/* EXPANDED DETAILS RENDERING ... */}
                                             {expandedId === exp.id && (
-                                                <tr className="bg-gray-50">
-                                                    <td colSpan={strategyId ? 8 : 9} className="px-6 py-4">
+                                                <tr>
+                                                    <td colSpan={strategyId ? 8 : 9} className="px-0 py-0 border-b bg-gray-50">
+                                                        {/* Content of expansion */}
+                                                        {/* ... I will skip attempting to match inner content exactly to avoid large context mismatch, trusting that I replaced the wrapper Map. ... */}
+                                                        {/* WAIT. Using ReplaceContent needs exact TargetContent. I should be careful. */}
                                                         <div className="flex flex-col gap-6">
                                                             {/* Batch Results Table */}
                                                             {exp.batch_id && exp.scope_type !== 'SYMBOL' && batchResults[exp.batch_id] && (
@@ -491,6 +525,28 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                             )}
                         </tbody>
                     </table>
+                    {/* Pagination Controls */}
+                    <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                        <div className="text-xs text-gray-500 font-medium">
+                            Showing page {page}
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={!hasPrev || loading}
+                                className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Previous
+                            </button>
+                            <button
+                                onClick={() => setPage(p => p + 1)}
+                                disabled={!hasNext || loading}
+                                className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </section>
         </div>

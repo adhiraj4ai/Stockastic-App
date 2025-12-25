@@ -68,6 +68,9 @@ export default function StrategiesPage() {
             if (Array.isArray(response.data)) {
                 setStrategies(response.data);
                 setStrategiesError('');
+            } else if (response.data && Array.isArray(response.data.results)) {
+                setStrategies(response.data.results);
+                setStrategiesError('');
             } else {
                 setStrategies([]);
             }

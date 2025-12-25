@@ -4,6 +4,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, TransactionType, StockFundamental, PortfolioAccount, Strategy, Company, WatchlistItem, Notification, StrategyExperiment
 from .serializers import (
     DailyStockPriceSerializer, DailyFloorsheetSerializer, PortfolioItemSerializer, 
@@ -751,9 +752,15 @@ class FinancialReportViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(quarter=quarter)
         return queryset
 
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 class StrategyViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = StrategySerializer
+    pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
         # Return user's own strategies and public ones
@@ -768,7 +775,10 @@ class StrategyViewSet(viewsets.ModelViewSet):
         Get all experiments across all strategies.
         """
         # Global history should show everything ordered by latest
-        experiments = StrategyExperiment.objects.all().order_by('-created_at')
+        # Exclude batch children (Symbol scope with a batch_id) to avoid clutter
+        experiments = StrategyExperiment.objects.all().order_by('-created_at') \
+            .exclude(batch_id__isnull=False, scope_type=StrategyExperiment.ScopeType.SYMBOL)
+            
         page = self.paginate_queryset(experiments)
         if page is not None:
              serializer = StrategyExperimentSerializer(page, many=True)
@@ -780,8 +790,14 @@ class StrategyViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def experiments(self, request, pk=None):
         strategy = self.get_object()
-        experiments = StrategyExperiment.objects.filter(strategy=strategy).order_by('-created_at')
+        experiments = StrategyExperiment.objects.filter(strategy=strategy).order_by('-created_at') \
+            .exclude(batch_id__isnull=False, scope_type=StrategyExperiment.ScopeType.SYMBOL)
         
+        page = self.paginate_queryset(experiments)
+        if page is not None:
+             serializer = StrategyExperimentSerializer(page, many=True)
+             return self.get_paginated_response(serializer.data)
+
         serializer = StrategyExperimentSerializer(experiments, many=True)
         return Response(serializer.data)
 
