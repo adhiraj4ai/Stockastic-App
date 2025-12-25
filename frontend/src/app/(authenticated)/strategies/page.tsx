@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
-import { Plus, Lightbulb, ExternalLink, Play, Edit, Trash2, Info, LayoutGrid, List, Search, MoreVertical, TrendingUp, TrendingDown, Target, Zap, Filter, Beaker } from 'lucide-react';
+import { Plus, Lightbulb, ExternalLink, Play, Edit, Trash2, Info, LayoutGrid, List, Search, MoreVertical, TrendingUp, TrendingDown, Target, Zap, Filter, Beaker, FileCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
@@ -126,7 +127,14 @@ export default function StrategiesPage() {
                                 className="bg-transparent p-0 pb-3 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none text-gray-500 font-medium"
                             >
                                 <Zap className="w-4 h-4 mr-2" />
-                                My Strategies
+                                All Strategies
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="published"
+                                className="bg-transparent p-0 pb-3 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none text-gray-500 font-medium"
+                            >
+                                <FileCheck className="w-4 h-4 mr-2" />
+                                Published
                             </TabsTrigger>
                             <TabsTrigger
                                 value="experiment-logs"
@@ -409,6 +417,119 @@ export default function StrategiesPage() {
                             onClose={() => setIsCreateModalOpen(false)}
                             onSuccess={handleCreateSuccess}
                         />
+                    </TabsContent>
+
+                    <TabsContent value="published" className="m-0">
+                        <Card className="border-gray-200 shadow-sm">
+                            <CardHeader>
+                                <CardTitle>Published Strategies</CardTitle>
+                                <CardDescription>All active configurations used for generating market recommendations</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {loadingStrategies ? (
+                                    <div className="p-8 text-center text-gray-500 animate-pulse">Loading published strategies...</div>
+                                ) : strategies.filter(s => s.published_experiments && s.published_experiments.length > 0).length > 0 ? (
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead className="bg-gray-50 border-b border-gray-200">
+                                                <tr>
+                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Strategy</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Scope</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Config ID</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Return</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Sharpe</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Win Rate</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Published</th>
+                                                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-100">
+                                                {strategies
+                                                    .filter(s => s.published_experiments && s.published_experiments.length > 0)
+                                                    .flatMap((strategy) =>
+                                                        strategy.published_experiments?.map((exp: any) => (
+                                                            <tr key={`${strategy.id}-${exp.id}`} className="hover:bg-gray-50 transition-colors">
+                                                                <td className="px-4 py-3">
+                                                                    <div className="flex flex-col">
+                                                                        <span className="font-medium text-gray-900">{strategy.name}</span>
+                                                                        <span className="text-xs text-gray-500 truncate max-w-xs">{strategy.description}</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-4 py-3">
+                                                                    <Badge
+                                                                        variant="outline"
+                                                                        className={
+                                                                            exp.scope_type === 'ALL' ? 'bg-purple-50 text-purple-700 border-purple-200 font-semibold' :
+                                                                                exp.scope_type === 'SECTOR' ? 'bg-blue-50 text-blue-700 border-blue-200 font-semibold' :
+                                                                                    'bg-green-50 text-green-700 border-green-200 font-semibold'
+                                                                        }
+                                                                    >
+                                                                        {exp.scope_type === 'ALL' ? '🌐 ALL MARKET' :
+                                                                            exp.scope_type === 'SECTOR' ? `📊 ${exp.scope_value}` :
+                                                                                `📈 ${exp.scope_value}`}
+                                                                    </Badge>
+                                                                </td>
+                                                                <td className="px-4 py-3">
+                                                                    <span className="text-xs font-mono text-gray-500">#{exp.id}</span>
+                                                                </td>
+                                                                <td className="px-4 py-3">
+                                                                    {exp.metrics?.pnl_percent !== undefined ? (
+                                                                        <span className={`font-semibold ${exp.metrics.pnl_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                            {exp.metrics.pnl_percent.toFixed(2)}%
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="text-gray-400">-</span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="px-4 py-3">
+                                                                    {exp.metrics?.sharpe_ratio !== undefined ? (
+                                                                        <span className="font-semibold text-gray-900">
+                                                                            {exp.metrics.sharpe_ratio.toFixed(2)}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="text-gray-400">-</span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="px-4 py-3">
+                                                                    {exp.metrics?.win_rate !== undefined ? (
+                                                                        <span className="font-semibold text-gray-900">
+                                                                            {exp.metrics.win_rate.toFixed(0)}%
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="text-gray-400">-</span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="px-4 py-3">
+                                                                    <span className="text-xs text-gray-500">
+                                                                        {new Date(exp.created_at).toLocaleDateString()}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-4 py-3 text-right">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() => router.push(`/strategies/${strategy.id}`)}
+                                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                                                    >
+                                                                        View
+                                                                    </Button>
+                                                                </td>
+                                                            </tr>
+                                                        )) || []
+                                                    )
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12">
+                                        <FileCheck className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+                                        <p className="text-gray-500 font-medium mb-1">No Published Strategies</p>
+                                        <p className="text-sm text-gray-400">Publish a strategy from the Experiment Logs to see it here.</p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
                     </TabsContent>
 
                     <TabsContent value="experiment-logs" className="m-0">
