@@ -171,22 +171,22 @@ export default function StrategyDetailPage() {
 
                 {/* Tabs for Details */}
                 <Tabs defaultValue="history" className="space-y-6">
-                    <TabsList className="bg-white border border-gray-200 p-0 h-auto gap-6 w-full justify-start rounded-lg px-2">
+                    <TabsList className="bg-gray-50 border-b border-gray-200 p-0 h-auto w-full justify-start rounded-none">
                         <TabsTrigger
                             value="history"
-                            className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none bg-transparent py-3 px-1 text-gray-500"
+                            className="data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none bg-transparent py-3 px-4 text-gray-600 font-medium transition-all"
                         >
                             <History size={16} className="mr-2" /> Execution History
                         </TabsTrigger>
                         <TabsTrigger
                             value="implementation"
-                            className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none bg-transparent py-3 px-1 text-gray-500"
+                            className="data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none bg-transparent py-3 px-4 text-gray-600 font-medium transition-all"
                         >
                             <Code size={16} className="mr-2" /> Implementation
                         </TabsTrigger>
                         <TabsTrigger
                             value="parameters"
-                            className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none bg-transparent py-3 px-1 text-gray-500"
+                            className="data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none bg-transparent py-3 px-4 text-gray-600 font-medium transition-all"
                         >
                             <FileJson size={16} className="mr-2" /> Published Config
                         </TabsTrigger>
