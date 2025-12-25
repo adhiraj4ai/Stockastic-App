@@ -237,6 +237,10 @@ class FinancialReport(models.Model):
     cash_flow = models.JSONField(null=True, blank=True)
     key_ratios = models.JSONField(null=True, blank=True)
 
+    # Granular Report Data
+    balance_sheet = models.JSONField(null=True, blank=True)
+    profit_loss = models.JSONField(null=True, blank=True)
+
     class Meta:
         unique_together = ('ticker', 'fiscal_year', 'report_type', 'quarter')
         ordering = ['-fiscal_year', '-report_type', '-quarter']

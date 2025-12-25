@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { TerminalHeader } from '@/components/stock/TerminalHeader';
 import { IntelligenceGlass } from '@/components/stock/IntelligenceGlass';
 import { BentoMetrics } from '@/components/stock/BentoMetrics';
+import { AdvancedCharting } from '@/components/stock/AdvancedCharting';
 
 interface StockDetailData {
     company: {
@@ -246,25 +247,53 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
         const currentPrice = data.price.close;
 
         // Helper: Simple Moving Average
-        const getSMA = (days: number) => {
-            if (closes.length < days) return closes[closes.length - 1];
-            return closes.slice(-days).reduce((a, b) => a + b, 0) / days;
+        const getSMA = (data: number[], days: number) => {
+            if (data.length < days) return data[data.length - 1];
+            return data.slice(-days).reduce((a, b) => a + b, 0) / days;
         };
 
-        const sma20 = getSMA(20);
-        const sma50 = getSMA(50);
-        const sma200 = getSMA(200);
+        // Helper: Exponential Moving Average
+        const getEMA = (data: number[], days: number) => {
+            if (data.length < days) return getSMA(data, days);
+            const k = 2 / (days + 1);
+            let ema = data[0];
+            for (let i = 1; i < data.length; i++) {
+                ema = data[i] * k + ema * (1 - k);
+            }
+            return ema;
+        };
+
+        const sma20 = getSMA(closes, 20);
+        const sma50 = getSMA(closes, 50);
+        const sma200 = getSMA(closes, 200);
+        const ema20 = getEMA(closes, 20);
+        const ema50 = getEMA(closes, 50);
+        const ema200 = getEMA(closes, 200);
 
         // 1. Technical Score (0-100)
         let techScore = 0;
 
-        // Trend Alignment (40%)
-        if (currentPrice > sma20) techScore += 10;
-        if (currentPrice > sma50) techScore += 15;
-        if (sma20 > sma50) techScore += 10;
-        if (currentPrice > sma200) techScore += 5;
+        // Trend Alignment (Max 35)
+        // EMA Stack: Price > EMA20 > EMA50 > EMA200 (Signs of strong trend)
+        if (currentPrice > ema20 && ema20 > ema50 && ema50 > ema200) techScore += 25;
+        else if (currentPrice > sma20 && sma20 > sma50) techScore += 15;
+        else if (currentPrice > sma200) techScore += 10;
 
-        // RSI Momentum (30%)
+        // ADX Trend Strength Approximation (Max 15)
+        const getTR = (i: number) => {
+            if (i === 0) return sortedHistory[i].high - sortedHistory[i].low;
+            const high = sortedHistory[i].high;
+            const low = sortedHistory[i].low;
+            const prevClose = sortedHistory[i - 1].close;
+            return Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose));
+        };
+        // Simplified ADX-like volatility check
+        const atr14 = sortedHistory.slice(-14).reduce((acc, _, i) => acc + getTR(sortedHistory.length - 14 + i), 0) / 14;
+        const trendStrength = (atr14 / currentPrice) * 100; // Volatility % as proxy for trend potential
+        if (trendStrength > 2) techScore += 10; // High volatility/momentum
+        if (currentPrice > sortedHistory[sortedHistory.length - 5].close) techScore += 5; // 5-day momentum
+
+        // RSI Momentum (Max 25)
         const getRSI = (period = 14) => {
             if (closes.length <= period) return 50;
             let gains = 0, losses = 0;
@@ -276,26 +305,22 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
             return 100 - (100 / (1 + avgGain / avgLoss));
         };
         const rsi = getRSI();
-        if (rsi > 45 && rsi < 65) techScore += 30; // Strong bullish momentum
-        else if (rsi >= 65 && rsi < 75) techScore += 20; // Entering overbought
-        else if (rsi <= 45 && rsi > 35) techScore += 20; // Consolidation
-        else if (rsi >= 75) techScore += 10; // Extreme overbought
-        else if (rsi <= 35) techScore += 10; // Oversold
+        if (rsi > 50 && rsi < 70) techScore += 25; // Sweet spot
+        else if (rsi >= 70) techScore += 15; // Strong but overbought
+        else if (rsi <= 30) techScore += 20; // Oversold bounce potential
+        else if (rsi > 40) techScore += 10;
 
-        // MACD Direction (30%)
-        const ema12 = getSMA(12);
-        const ema26 = getSMA(26);
+        // Volume Confirmation (Max 15)
+        const avgVol20 = getSMA(sortedHistory.map(h => h.volume), 20);
+        const currentVol = sortedHistory[sortedHistory.length - 1].volume;
+        if (currentVol > avgVol20 * 1.5 && currentPrice > sortedHistory[sortedHistory.length - 2].close) techScore += 15;
+        else if (currentVol > avgVol20) techScore += 5;
+
+        // MACD Direction (Max 10)
+        const ema12 = getEMA(closes, 12);
+        const ema26 = getEMA(closes, 26);
         const macdLine = ema12 - ema26;
-        const prevEma12 = getSMA(13); // approximation
-        const prevEma26 = getSMA(27);
-        const prevMacd = prevEma12 - prevEma26;
-
-        if (macdLine > 0) {
-            techScore += 15;
-            if (macdLine > prevMacd) techScore += 15; // Histogram expansion
-        } else if (macdLine > prevMacd) {
-            techScore += 10; // Histogram contracting (Bullish)
-        }
+        if (macdLine > 0) techScore += 10;
 
         // 2. Fundamental Score (0-100)
         let funScore = 0;
@@ -325,11 +350,26 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
         if (dlyVol > 4.5 || pbv > 5 || pe > 45) risk = 'HIGH';
         else if (dlyVol < 1.8 && pbv < 2 && pe < 18) risk = 'LOW';
 
+        // Determine Primary Driver for Reason
+        let reason = 'Neutral Structure';
+        if (techScore > 75) {
+            if (trendStrength > 2) reason = 'Strong Trend Structure';
+            else if (currentVol > avgVol20 * 1.5) reason = 'High Volume Breakout';
+            else if (rsi > 50 && rsi < 70) reason = 'Healthy Momentum';
+        } else if (techScore > 50) {
+            if (macdLine > 0) reason = 'MACD Crossover';
+            else if (currentPrice > sma50) reason = 'Trend Support';
+        } else {
+            if (rsi < 30) reason = 'Oversold Opportunity';
+            else if (currentPrice < sma200) reason = 'Bearish Trend';
+        }
+
         return {
             fundamentalScore: Math.min(Math.round(funScore), 100),
             technicalScore: Math.min(Math.round(techScore), 100),
             riskLevel: risk,
-            macd: (macdLine > 0 ? 'BULLISH' : 'BEARISH') as 'BULLISH' | 'BEARISH' | 'NEUTRAL'
+            macd: (macdLine > 0 ? 'BULLISH' : 'BEARISH') as 'BULLISH' | 'BEARISH' | 'NEUTRAL',
+            reason
         };
     }, [data, history]);
 
@@ -574,6 +614,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                 technicalScore={intelligence.technicalScore}
                                 riskLevel={intelligence.riskLevel}
                                 macd={intelligence.macd}
+                                reason={intelligence.reason}
                             />
                         </div>
                         <div className="lg:col-span-8">
@@ -870,6 +911,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                     </div>
                                 </TabsContent>
 
+
                                 <TabsContent value="indicators" className="mt-0">
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                         {/* Fundamental Benchmarks */}
@@ -1027,7 +1069,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-50">
-                                                    {history.slice(0, 30).map((row, i) => (
+                                                    {[...history].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 30).map((row, i) => (
                                                         <tr key={i} className="hover:bg-slate-50 transition-colors">
                                                             <td className="px-6 py-4 font-bold text-slate-800">{row.date}</td>
                                                             <td className="px-6 py-4 text-slate-600">{row.open}</td>

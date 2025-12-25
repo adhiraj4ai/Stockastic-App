@@ -8,13 +8,15 @@ interface IntelligenceGlassProps {
     technicalScore: number;
     riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
     macd: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
+    reason?: string;
 }
 
 export function IntelligenceGlass({
     fundamentalScore,
     technicalScore,
     riskLevel,
-    macd
+    macd,
+    reason
 }: IntelligenceGlassProps) {
     const combinedScore = (fundamentalScore + technicalScore) / 2;
 
@@ -42,6 +44,7 @@ export function IntelligenceGlass({
                     <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cognitive Intelligence</p>
                         <h2 className={cn("text-2xl font-bold tracking-tight uppercase", verdict.color)}>{verdict.label}</h2>
+                        {reason && <p className="text-[10px] font-bold text-slate-500 mt-1 flex items-center gap-1"><Zap size={10} className="text-amber-500" /> {reason}</p>}
                     </div>
                 </div>
             </div>
