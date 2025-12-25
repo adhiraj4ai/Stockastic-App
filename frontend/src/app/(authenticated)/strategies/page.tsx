@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import { Plus, Lightbulb, ExternalLink, Play, Edit, Trash2, Info, LayoutGrid, List, Search, MoreVertical, TrendingUp, TrendingDown, Target, Zap, Filter } from 'lucide-react';
+import { Plus, Lightbulb, ExternalLink, Play, Edit, Trash2, Info, LayoutGrid, List, Search, MoreVertical, TrendingUp, TrendingDown, Target, Zap, Filter, Beaker } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -19,6 +19,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import CreateStrategyModal from '@/components/CreateStrategyModal';
+import ExperimentsTab from './[id]/tabs/ExperimentsTab';
 
 interface Strategy {
     id: number;
@@ -177,6 +178,13 @@ export default function StrategiesPage() {
                             >
                                 <Zap className="w-4 h-4 mr-2" />
                                 My Strategies
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="experiment-logs"
+                                className="bg-transparent p-0 pb-3 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none text-gray-500 font-medium"
+                            >
+                                <Beaker className="w-4 h-4 mr-2" />
+                                Experiment Logs
                             </TabsTrigger>
                         </TabsList>
 
@@ -522,6 +530,11 @@ export default function StrategiesPage() {
                             onClose={() => setIsCreateModalOpen(false)}
                             onSuccess={handleCreateSuccess}
                         />
+                    </TabsContent>
+                    <TabsContent value="experiment-logs" className="m-0">
+                        <Card className="border-none shadow-sm bg-white/50 backdrop-blur-sm p-0">
+                            <ExperimentsTab />
+                        </Card>
                     </TabsContent>
                 </Tabs>
             </div>

@@ -4,10 +4,10 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, TransactionType, StockFundamental, PortfolioAccount, Strategy, Company, WatchlistItem, Notification
+from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, TransactionType, StockFundamental, PortfolioAccount, Strategy, Company, WatchlistItem, Notification, StrategyExperiment
 from .serializers import (
     DailyStockPriceSerializer, DailyFloorsheetSerializer, PortfolioItemSerializer, 
-    PortfolioTransactionSerializer, StockFundamentalSerializer, StrategySerializer, CompanySerializer, WatchlistItemSerializer, NotificationSerializer
+    PortfolioTransactionSerializer, StockFundamentalSerializer, StrategySerializer, CompanySerializer, WatchlistItemSerializer, NotificationSerializer, StrategyExperimentSerializer
 )
 from . import serializers # For PortfolioAccountSerializer which was added differently in replacement
 from .utils import calculate_broker_commission, calculate_sebon_fee, calculate_dp_charge, calculate_cgt
@@ -21,14 +21,30 @@ import json
 from .optimization import perform_portfolio_optimization
 # rest_framework imports are already at the top
 
+class ExperimentLogger:
+    def __init__(self):
+        self.params = {}
+        self.metrics = {}
+    
+    def log_param(self, key, value):
+        self.params[key] = value
+
+    def log_metric(self, key, value):
+        self.metrics[key] = value
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def search_stocks(request):
     query = request.GET.get('q', '')
+    
+    companies = Company.objects.filter(status='A').exclude(
+        instrument_type__in=['Mutual Funds', 'Non-Convertible Debentures', 'Corporate Debentures', 'Debentures']
+    )
+    
     if query:
-        tickers = DailyStockPrice.objects.filter(ticker__icontains=query).values_list('ticker', flat=True).distinct()[:10]
-    else:
-        tickers = DailyStockPrice.objects.values_list('ticker', flat=True).distinct()[:10]
+        companies = companies.filter(symbol__icontains=query)
+        
+    tickers = companies.values_list('symbol', flat=True).distinct()[:10]
     return Response(tickers)
 
 @api_view(['GET'])
@@ -745,8 +761,96 @@ class StrategyViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-    @action(detail=False, methods=['post'])
-    def validate_code(self, request):
+    @action(detail=False, methods=['get'])
+    def all_experiments(self, request):
+        """
+        Get all experiments across all strategies.
+        """
+        # Global history should show everything ordered by latest
+        experiments = StrategyExperiment.objects.all().order_by('-created_at')
+        page = self.paginate_queryset(experiments)
+        if page is not None:
+             serializer = StrategyExperimentSerializer(page, many=True)
+             return self.get_paginated_response(serializer.data)
+
+        serializer = StrategyExperimentSerializer(experiments, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def experiments(self, request, pk=None):
+        strategy = self.get_object()
+        experiments = StrategyExperiment.objects.filter(strategy=strategy).order_by('-created_at')
+        
+        serializer = StrategyExperimentSerializer(experiments, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def best_parameters(self, request, pk=None):
+        """
+        Get best parameters for each scope (Symbol, Sector, All) based on historical experiments.
+        """
+        strategy = self.get_object()
+        
+        # We want to find the best experiment for each unique scope selection
+        # For now, let's just return the single best run for:
+        # 1. The specific symbol requested (if any)
+        # 2. Each sector
+        # 3. All Market
+        
+        # Simple implementation: Return top 5 runs by return %
+        experiments = StrategyExperiment.objects.filter(
+            strategy=strategy, 
+            status=StrategyExperiment.Status.SUCCESS,
+            run_type__in=['BACKTEST', 'OPTIMIZATION']
+        )
+        
+        best_runs = []
+        # This acts as a cache of "what works best"
+        # We can group by scope_value
+        from django.db.models import Max
+        
+        # It's hard to group by JSON field metrics['return'], so we might have to do it in python
+        # or store the primary metric in a separate column. for now, python.
+        
+        all_exps = []
+        for exp in experiments:
+            # Extract primary metric (Return %)
+            ret = 0.0
+            if exp.metrics:
+                if 'aggregated' in exp.metrics:
+                     ret = exp.metrics['aggregated'].get('avg_return', 0)
+                elif 'best_return' in exp.metrics:
+                    ret = exp.metrics.get('best_return', 0)
+                elif 'pnl_percent' in exp.metrics:
+                    ret = exp.metrics.get('pnl_percent', 0)
+                elif 'return' in exp.metrics: # some old format maybe
+                     ret = exp.metrics.get('return', 0)
+            
+            all_exps.append({
+                'experiment': exp,
+                'return': float(ret or 0)
+            })
+            
+        all_exps.sort(key=lambda x: x['return'], reverse=True)
+        
+        # Deduplicate by scope to show "Best for Nabil", "Best for Banking", "Best for All"
+        seen_scopes = set()
+        unique_best = []
+        for item in all_exps:
+            scope_key = f"{item['experiment'].scope_type}:{item['experiment'].scope_value}"
+            if scope_key not in seen_scopes:
+                seen_scopes.add(scope_key)
+                exp = item['experiment']
+                unique_best.append({
+                    'scope_type': exp.scope_type,
+                    'scope_value': exp.scope_value,
+                    'return': item['return'],
+                    'parameters': exp.metrics.get('best_params') if exp.run_type == 'OPTIMIZATION' else exp.parameters,
+                    'run_type': exp.run_type,
+                    'date': exp.created_at
+                })
+        
+        return Response(unique_best[:10]) # Return top 10 unique scopes
         code = request.data.get('code', '')
         
         # 1. Basic Syntax Check (AST)
@@ -823,8 +927,9 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     'symbol': 'internal-error'
                 }]
             })
-    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-    def backtest(self, request):
+    @action(detail=True, methods=['post'], permission_classes=[AllowAny])
+    def backtest(self, request, pk=None):
+        strategy = self.get_object()
         code = request.data.get('code', '')
         symbol = request.data.get('symbol')
         sector = request.data.get('sector')
@@ -836,6 +941,13 @@ class StrategyViewSet(viewsets.ModelViewSet):
         
         if not symbol and not sector:
             return Response({'error': 'Either symbol or sector is required'}, status=400)
+
+        # Extract Strategy Parameters
+        strategy_params = request.data.get('parameters', {})
+        if not isinstance(strategy_params, dict):
+             # Fallback: extract from top level excluding reserved
+             reserved_keys = ['code', 'symbol', 'sector', 'start_date', 'end_date', 'parameters']
+             strategy_params = {k: v for k, v in request.data.items() if k not in reserved_keys}
 
         # If sector is provided, run backtest for all stocks in sector
         if sector:
@@ -855,14 +967,15 @@ class StrategyViewSet(viewsets.ModelViewSet):
             for stock_symbol in companies:
                 try:
                     # Run backtest for this stock
-                    result, error = self._run_single_backtest(code, stock_symbol, start_date, end_date)
+                    result, error, _ = self._run_single_backtest(code, stock_symbol, start_date, end_date, params=strategy_params)
                     if result:
                         sector_results.append({
                             'symbol': stock_symbol,
                             'return': result['stats']['pnl_percent'], # Consistent key
                             'total_pnl': result['stats']['total_pnl'],
                             'win_rate': result['stats']['win_rate'],
-                            'total_trades': result['stats']['total_trades']
+                            'total_trades': result['stats']['total_trades'],
+                            'stats': result['stats'] # Include full stats for detailed view
                         })
                         successful_backtests += 1
                     else:
@@ -885,11 +998,41 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 best_stock = max(sector_results, key=lambda x: x.get('return', 0) or 0)
                 worst_stock = min(sector_results, key=lambda x: x.get('return', 0) or 0)
             
+            
+
+
+            # Log Aggregated Experiment
+            try:
+                StrategyExperiment.objects.create(
+                    strategy=strategy, # Handle viewset context
+                    user=request.user,
+                    run_type=StrategyExperiment.RunType.BACKTEST,
+                    scope_type=StrategyExperiment.ScopeType.ALL if sector.upper() == 'ALL' else StrategyExperiment.ScopeType.SECTOR,
+                    scope_value=sector,
+                    start_date=start_date,
+                    end_date=end_date,
+                    parameters=strategy_params,
+                    metrics={
+                        'aggregated': {
+                            'avg_return': avg_return,
+                            'avg_win_rate': avg_win_rate,
+                            'total_trades': total_trades,
+                            'best_stock': best_stock,
+                            'worst_stock': worst_stock
+                        },
+                        'individual': sorted(sector_results, key=lambda x: x.get('return', 0) or 0, reverse=True)[:50] # Store top 50
+                    },
+                    status=StrategyExperiment.Status.SUCCESS,
+                    error_log=f"Failed: {len(failed_stocks)} stocks" if failed_stocks else None
+                )
+            except Exception as e:
+                print(f"Failed to log aggregated experiment: {e}")
+
             return Response({
                 'sector': sector,
                 'total_companies': len(companies),
                 'successful_backtests': successful_backtests,
-                'aggregated_stats': {
+                'aggregated': {
                     'avg_return': avg_return,
                     'avg_win_rate': avg_win_rate,
                     'total_trades': total_trades,
@@ -900,14 +1043,58 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 'failed_stocks': failed_stocks
             })
         
+
         # Single stock backtest
-        result, error = self._run_single_backtest(code, symbol, start_date, end_date)
+        result, error, exp_data = self._run_single_backtest(code, symbol, start_date, end_date, params=strategy_params)
+        
+        # Merge returned params/metrics
+        final_params = strategy_params.copy()
+        final_metrics = {}
+        if exp_data:
+            if exp_data.get('params'): final_params.update(exp_data['params'])
+            if exp_data.get('metrics'): final_metrics.update(exp_data['metrics'])
+
         if result is None:
+             # Log Failed Experiment (Single)
+            try:
+                StrategyExperiment.objects.create(
+                    strategy=strategy,
+                    user=request.user,
+                    run_type=StrategyExperiment.RunType.BACKTEST,
+                    scope_type=StrategyExperiment.ScopeType.SYMBOL,
+                    scope_value=symbol,
+                    start_date=start_date,
+                    end_date=end_date,
+                    parameters=final_params,
+                    metrics=final_metrics,
+                    status=StrategyExperiment.Status.FAILED,
+                    error_log=error or 'No data'
+                )
+            except Exception as e:
+                print(f"Failed to log experiment: {e}")
             return Response({'error': error or 'No data found for symbol/dates'}, status=400)
+            
+        # Log Success Experiment (Single)
+        try:
+            StrategyExperiment.objects.create(
+                strategy=strategy,
+                user=request.user,
+                run_type=StrategyExperiment.RunType.BACKTEST,
+                scope_type=StrategyExperiment.ScopeType.SYMBOL,
+                scope_value=symbol,
+                start_date=start_date,
+                end_date=end_date,
+                parameters=final_params, 
+                metrics={**final_metrics, **result['stats']}, 
+                status=StrategyExperiment.Status.SUCCESS
+            )
+        except Exception as e:
+            print(f"Failed to log experiment: {e}")
+
         return Response(result)
     
-    def _run_single_backtest(self, code, symbol, start_date, end_date):
-        """Helper method to run backtest for a single stock. Returns (result_dict, error_msg)."""
+    def _run_single_backtest(self, code, symbol, start_date, end_date, params=None):
+        """Helper method to run backtest for a single stock. Returns (result_dict, error_msg, experiment_data)."""
         # 1. Fetch Data
         queryset = DailyStockPrice.objects.filter(
             ticker=symbol, 
@@ -916,7 +1103,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
         
         ticks_data = list(queryset.values('date', 'open', 'high', 'low', 'close', 'volume'))
         if not ticks_data:
-            return None, "No historical data found for this symbol/date range."
+            return None, "No historical data found for this symbol/date range.", {}
 
         try:
             import pandas as pd
@@ -951,25 +1138,28 @@ class StrategyViewSet(viewsets.ModelViewSet):
             ].copy()
             
             if len(df) < 10: # Need minimum amount of data to run signals
-                return None, f"Insufficient data points ({len(df)}) after filtering."
+                return None, f"Insufficient data points ({len(df)}) after filtering.", {}
             
             df['date'] = pd.to_datetime(df['date'])
             df.set_index('date', inplace=True)
             
             # 2. Execution Environment
+            experiment = ExperimentLogger()
             local_scope = {
                 'Backtest': Backtest,
                 'Strategy': Strategy,
                 'crossover': crossover,
                 'SMA': SMA,
                 'pd': pd,
+                'experiment': experiment,
+                'params': params or {}
             }
             
             # Execute User Code
             try:
                 exec(code, local_scope)
             except Exception as code_err:
-                return None, f"Code Execution Error: {str(code_err)}"
+                return None, f"Code Execution Error: {str(code_err)}", {}
             
             # Find the Strategy Class
             strategy_class = None
@@ -979,9 +1169,10 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     break
             
             if not strategy_class:
-                return None, "No Strategy class found in code."
+                return None, "No Strategy class found in code.", {}
 
             # 3. Run Backtest
+
             bt = Backtest(df, strategy_class,
                           cash=1000000, commission=.002,
                           exclusive_orders=True)
@@ -989,7 +1180,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
             try:
                 stats = bt.run()
             except Exception as bt_err:
-                return None, f"Backtest Engine Error: {str(bt_err)}"
+                return None, f"Backtest Engine Error: {str(bt_err)}", {'params': experiment.params, 'metrics': experiment.metrics}
             
             # 4. Generate Plot (Optional for Sector)
             plot_html = None
@@ -1076,7 +1267,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
             return {
                 'stats': formatted_stats,
                 'plot_html': plot_html
-            }, None
+            }, None, {'params': experiment.params, 'metrics': experiment.metrics}
 
         except Exception as e:
             return None, str(e)
@@ -1290,6 +1481,37 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 pattern = rf'(\s{param_name}\s*=\s*)\d+'
                 optimized_code = re.sub(pattern, rf'\g<1>{param_value}', optimized_code)
             
+            # Log Optimization Experiment
+            try:
+                scope_type = StrategyExperiment.ScopeType.SYMBOL
+                scope_val = symbol
+                
+                if symbol == 'ALL':
+                    scope_type = StrategyExperiment.ScopeType.ALL
+                    scope_val = 'ALL'
+                elif sector:
+                    scope_type = StrategyExperiment.ScopeType.SECTOR
+                    scope_val = sector
+                
+                StrategyExperiment.objects.create(
+                    strategy=strategy,
+                    user=request.user,
+                    run_type=StrategyExperiment.RunType.OPTIMIZATION,
+                    scope_type=scope_type,
+                    scope_value=scope_val,
+                    start_date=start_date,
+                    end_date=end_date,
+                    parameters=param_ranges, # Input ranges
+                    metrics={
+                        'best_return': best_value,
+                        'best_params': best_params,
+                        'n_trials': len(study.trials)
+                    },
+                    status=StrategyExperiment.Status.SUCCESS
+                )
+            except Exception as e:
+                print(f"Failed to log optimization experiment: {e}")
+
             return Response({
                 'best_params': best_params,
                 'best_value': best_value,
@@ -1301,6 +1523,33 @@ class StrategyViewSet(viewsets.ModelViewSet):
         except Exception as e:
             import traceback
             tb = traceback.format_exc()
+            # Log Failed Optimization
+            try:
+                scope_type = StrategyExperiment.ScopeType.SYMBOL
+                scope_val = symbol
+                if symbol == 'ALL':
+                    scope_type = StrategyExperiment.ScopeType.ALL
+                    scope_val = 'ALL'
+                elif sector:
+                    scope_type = StrategyExperiment.ScopeType.SECTOR
+                    scope_val = sector
+
+                StrategyExperiment.objects.create(
+                    strategy=strategy,
+                    user=request.user,
+                    run_type=StrategyExperiment.RunType.OPTIMIZATION,
+                    scope_type=scope_type,
+                    scope_value=scope_val,
+                    start_date=start_date, # These might be None if request failed early, handle with care? 
+                    end_date=end_date,
+                    parameters=param_ranges,
+                    metrics={},
+                    status=StrategyExperiment.Status.FAILED,
+                    error_log=str(e)
+                )
+            except:
+                pass 
+
             return Response({'error': f"Optimization Error: {str(e)}", 'traceback': tb}, status=400)
 
 
@@ -2110,10 +2359,11 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
         # 1. Fetch relevant stocks
         companies = Company.objects.all()
         if sector != 'All':
-            companies = companies.filter(sectorName=sector)
+            # Fix: use 'sector' field name not 'sectorName' (which is db_column)
+            companies = companies.filter(sector=sector)
         
-        # Exclude funds
-        companies = companies.exclude(instrumentType__in=['Mutual Funds', 'Non-Convertible Debentures'])
+        # Exclude funds (Commented out as instrumentType missing in model)
+        # companies = companies.exclude(instrumentType__in=['Mutual Funds', 'Non-Convertible Debentures'])
         
         active_tickers = list(companies.values_list('symbol', flat=True))
         

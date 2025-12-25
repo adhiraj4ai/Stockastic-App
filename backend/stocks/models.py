@@ -5,6 +5,7 @@ class Company(models.Model):
     symbol = models.CharField(max_length=20, primary_key=True, db_index=True)
     name = models.CharField(max_length=255, db_column='companyName')
     sector = models.CharField(max_length=100, db_column='sectorName')
+    instrument_type = models.CharField(max_length=100, db_column='instrumentType', null=True, blank=True)
     status = models.CharField(max_length=1, default='A')
 
     class Meta:
@@ -270,6 +271,48 @@ class Strategy(models.Model):
     def __str__(self):
         return self.name
 
+class StrategyExperiment(models.Model):
+    class RunType(models.TextChoices):
+        BACKTEST = 'BACKTEST', 'Backtest'
+        OPTIMIZATION = 'OPTIMIZATION', 'Optimization'
+
+    class ScopeType(models.TextChoices):
+        SYMBOL = 'SYMBOL', 'Single Symbol'
+        SECTOR = 'SECTOR', 'Sector'
+        ALL = 'ALL', 'All Market'
+
+    class Status(models.TextChoices):
+        SUCCESS = 'SUCCESS', 'Success'
+        FAILED = 'FAILED', 'Failed'
+
+    strategy = models.ForeignKey(Strategy, on_delete=models.CASCADE, related_name='experiments')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    
+    run_type = models.CharField(max_length=20, choices=RunType.choices)
+    scope_type = models.CharField(max_length=20, choices=ScopeType.choices)
+    scope_value = models.CharField(max_length=255) # "NABIL", "Banking", "ALL"
+    
+    start_date = models.DateField()
+    end_date = models.DateField()
+    
+    parameters = models.JSONField(default=dict)
+    metrics = models.JSONField(default=dict) # Return, Sharpe, Win Rate etc.
+    
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.SUCCESS)
+    error_log = models.TextField(blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['strategy', 'scope_type', 'scope_value']),
+            models.Index(fields=['created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.strategy.name} - {self.run_type} ({self.scope_value})"
+
 class DailyBuyerFloorsheet(models.Model):
     transaction_date = models.DateField(primary_key=True) # Fake PK for Django
     symbol = models.CharField(max_length=20)
@@ -413,3 +456,42 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.title}"
+
+class StrategyExperiment(models.Model):
+    class RunType(models.TextChoices):
+        BACKTEST = 'BACKTEST', 'Backtest'
+        OPTIMIZATION = 'OPTIMIZATION', 'Optimization'
+
+    class ScopeType(models.TextChoices):
+        SYMBOL = 'SYMBOL', 'Symbol'
+        SECTOR = 'SECTOR', 'Sector'
+        ALL = 'ALL', 'All Market'
+
+    class Status(models.TextChoices):
+        SUCCESS = 'SUCCESS', 'Success'
+        FAILED = 'FAILED', 'Failed'
+
+    strategy = models.ForeignKey(Strategy, on_delete=models.CASCADE, related_name='experiments')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    
+    run_type = models.CharField(max_length=20, choices=RunType.choices)
+    scope_type = models.CharField(max_length=20, choices=ScopeType.choices)
+    scope_value = models.CharField(max_length=50) # Ticker, Sector Name, or 'ALL'
+    
+    start_date = models.DateField()
+    end_date = models.DateField()
+    
+    parameters = models.JSONField(default=dict)
+    metrics = models.JSONField(default=dict)
+    
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.SUCCESS)
+    error_log = models.TextField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'strategy_experiments'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.strategy.name} - {self.run_type} ({self.created_at.date()})"

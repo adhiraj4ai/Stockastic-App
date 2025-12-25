@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, StockFundamental, PortfolioAccount, Dividend, FinancialReport, Strategy, Company, WatchlistItem, Notification
+from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, StockFundamental, PortfolioAccount, Dividend, FinancialReport, Strategy, Company, WatchlistItem, Notification, StrategyExperiment
 
 class DailyStockPriceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -117,3 +117,11 @@ class NotificationSerializer(serializers.ModelSerializer):
         model = Notification
         fields = ['id', 'title', 'message', 'type', 'ticker', 'read', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+class StrategyExperimentSerializer(serializers.ModelSerializer):
+    strategy_name = serializers.CharField(source='strategy.name', read_only=True)
+
+    class Meta:
+        model = StrategyExperiment
+        fields = ['id', 'strategy', 'strategy_name', 'run_type', 'scope_type', 'scope_value', 
+                  'start_date', 'end_date', 'parameters', 'metrics', 'status', 'error_log', 'created_at']
