@@ -401,11 +401,11 @@ export default function ExperimentDetailPage() {
                                     <Table>
                                         <thead className="bg-gray-50/50">
                                             <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Symbol</th>
-                                                <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Return</th>
-                                                <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Win Rate</th>
-                                                <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Trades</th>
-                                                <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Action</th>
+                                                <th className="px-6 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Symbol</th>
+                                                <th className="px-6 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Return</th>
+                                                <th className="px-6 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Win Rate</th>
+                                                <th className="px-6 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Trades</th>
+                                                <th className="px-6 py-3 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-100">
@@ -414,18 +414,18 @@ export default function ExperimentDetailPage() {
                                                 .map((child) => (
                                                     <TableRow key={child.id} className="hover:bg-blue-50/30 transition-colors group">
                                                         <TableCell className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="font-bold text-gray-900">{child.scope_value}</div>
-                                                            <div className="text-[10px] text-gray-400 font-mono">#{child.id}</div>
+                                                            <div className="font-black text-gray-900">{child.scope_value}</div>
+                                                            <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">#{child.id}</div>
                                                         </TableCell>
                                                         <TableCell className="px-6 py-4 whitespace-nowrap text-right">
-                                                            <span className={`font-mono font-bold ${(child.metrics.pnl_percent || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                            <span className={`font-black text-sm ${(child.metrics.pnl_percent || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                                                 {(child.metrics.pnl_percent || 0).toFixed(2)}%
                                                             </span>
                                                         </TableCell>
-                                                        <TableCell className="px-6 py-4 whitespace-nowrap text-right font-mono font-bold text-gray-700">
+                                                        <TableCell className="px-6 py-4 whitespace-nowrap text-right font-bold text-gray-700 text-sm">
                                                             {(child.metrics.win_rate || 0).toFixed(1)}%
                                                         </TableCell>
-                                                        <TableCell className="px-6 py-4 whitespace-nowrap text-right font-mono font-bold text-gray-700">
+                                                        <TableCell className="px-6 py-4 whitespace-nowrap text-right font-bold text-gray-700 text-sm">
                                                             {child.metrics.total_trades || 0}
                                                         </TableCell>
                                                         <TableCell className="px-6 py-4 whitespace-nowrap text-right">
@@ -433,7 +433,7 @@ export default function ExperimentDetailPage() {
                                                                 href={`/strategies/${strategyId}/experiments/${child.id}`}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="text-blue-600 hover:text-blue-800 text-xs font-bold uppercase tracking-wide hover:underline"
+                                                                className="text-blue-600 hover:text-blue-800 text-[10px] font-black uppercase tracking-widest hover:underline"
                                                             >
                                                                 View Analysis &rarr;
                                                             </a>
