@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Flame, Users, BarChart3, History, Star, TrendingDown } from 'lucide-react';
 import { SearchBar } from './SearchBar';
 import { ChatSidebar } from './ChatSidebar';
 import { AlertsDropdown } from './AlertsDropdown';
@@ -26,21 +26,21 @@ const navItems = [
         name: 'Finfolio',
         icon: Wallet,
         subItems: [
-            { name: 'My Portfolio', href: '/portfolio?tab=holdings' },
-            { name: 'Watchlist', href: '/portfolio?tab=watchlist' },
+            { name: 'My Portfolio', href: '/portfolio?tab=holdings', icon: Briefcase },
+            { name: 'Watchlist', href: '/portfolio?tab=watchlist', icon: Eye },
         ]
     },
     {
         name: 'Accumulation',
         icon: Activity,
         subItems: [
-            { name: 'Accumulation Overview', href: '/accumulation?tab=overview' },
-            { name: 'Aggressive Patterns', href: '/accumulation?tab=aggressive' },
-            { name: 'Aggressive Trader', href: '/accumulation?tab=aggressive-trader' },
-            { name: 'Broker Trends', href: '/accumulation?tab=trends' },
-            { name: 'Accumulation History', href: '/accumulation?tab=history' },
-            { name: 'Broker Favorites', href: '/accumulation?tab=favorites' },
-            { name: 'Accumulators', href: '/accumulation?tab=accumulators' },
+            { name: 'Accumulation Overview', href: '/accumulation?tab=overview', icon: LayoutDashboard },
+            { name: 'Aggressive Patterns', href: '/accumulation?tab=aggressive', icon: Flame },
+            { name: 'Aggressive Trader', href: '/accumulation?tab=aggressive-trader', icon: TrendingDown },
+            { name: 'Broker Trends', href: '/accumulation?tab=trends', icon: BarChart3 },
+            { name: 'Accumulation History', href: '/accumulation?tab=history', icon: History },
+            { name: 'Broker Favorites', href: '/accumulation?tab=favorites', icon: Star },
+            { name: 'Accumulators', href: '/accumulation?tab=accumulators', icon: Users },
         ]
     },
     { name: 'Financials', href: '/financials', icon: FileText },
@@ -221,8 +221,6 @@ export default function DashboardLayout({
                             <div
                                 key={item.name}
                                 className="space-y-1"
-                                onMouseEnter={() => hasSubItems && openMenu(item.name)}
-                                onMouseLeave={() => hasSubItems && closeMenu(item)}
                             >
                                 {hasSubItems ? (
                                     <button
@@ -231,7 +229,18 @@ export default function DashboardLayout({
                                         title={isSidebarCollapsed ? item.name : ''}
                                     >
                                         <div className="flex items-center gap-3">
-                                            <item.icon size={18} className="text-gray-400" />
+                                            <item.icon size={18} className={
+                                                item.name === 'Home' ? 'text-blue-500' :
+                                                    item.name === 'Chat' ? 'text-purple-500' :
+                                                        item.name === 'Stocks' ? 'text-green-500' :
+                                                            item.name === 'Finfolio' ? 'text-emerald-500' :
+                                                                item.name === 'Accumulation' ? 'text-orange-500' :
+                                                                    item.name === 'Financials' ? 'text-cyan-500' :
+                                                                        item.name === 'Strategies' ? 'text-yellow-500' :
+                                                                            item.name === 'Recommendations' ? 'text-red-500' :
+                                                                                item.name === 'Pipeline' ? 'text-gray-500' :
+                                                                                    'text-gray-400'
+                                            } />
                                             {!isSidebarCollapsed && <span className="text-sm font-medium whitespace-nowrap">{item.name}</span>}
                                         </div>
                                         {!isSidebarCollapsed && (
@@ -247,7 +256,17 @@ export default function DashboardLayout({
                                             } ${isSidebarCollapsed ? 'justify-center' : ''}`}
                                         title={isSidebarCollapsed ? item.name : ''}
                                     >
-                                        <item.icon size={18} className={isActive ? 'text-blue-400' : 'text-gray-400'} />
+                                        <item.icon size={18} className={
+                                            isActive ? 'text-white' :
+                                                item.name === 'Home' ? 'text-blue-500' :
+                                                    item.name === 'Chat' ? 'text-purple-500' :
+                                                        item.name === 'Stocks' ? 'text-green-500' :
+                                                            item.name === 'Financials' ? 'text-cyan-500' :
+                                                                item.name === 'Strategies' ? 'text-yellow-500' :
+                                                                    item.name === 'Recommendations' ? 'text-red-500' :
+                                                                        item.name === 'Pipeline' ? 'text-gray-500' :
+                                                                            'text-gray-400'
+                                        } />
                                         {!isSidebarCollapsed && <span className="text-sm font-medium whitespace-nowrap">{item.name}</span>}
                                     </Link>
                                 )}
@@ -267,11 +286,12 @@ export default function DashboardLayout({
                                                 <Link
                                                     key={subItem.name}
                                                     href={subItem.href}
-                                                    className={`block px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${isActiveLink
+                                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${isActiveLink
                                                         ? 'bg-blue-50 text-blue-700'
                                                         : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                                                         }`}
                                                 >
+                                                    {subItem.icon && <subItem.icon size={14} className={isActiveLink ? 'text-blue-600' : 'text-gray-400'} />}
                                                     {subItem.name}
                                                 </Link>
                                             );
