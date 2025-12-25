@@ -190,7 +190,7 @@ def sector_history(request, sector_name):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def stock_floorsheet(request, ticker):
-    data = DailyFloorsheet.objects.filter(ticker=ticker).order_by('-date')[:50] # Last 50 txns
+    data = DailyFloorsheet.objects.filter(symbol=ticker).order_by('-transaction_date')[:50] # Last 50 txns
     serializer = DailyFloorsheetSerializer(data, many=True)
     return Response(serializer.data)
 
@@ -211,40 +211,115 @@ def stock_financials(request, ticker):
     serializer = FinancialReportSerializer(data, many=True)
     return Response(serializer.data)
 
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def stock_detail(request, ticker):
     # 1. Fundamentals
+    fundamental = None
     try:
         fundamental = StockFundamental.objects.get(ticker=ticker)
-        fundamental_data = StockFundamentalSerializer(fundamental).data
+        fundamental_data = dict(StockFundamentalSerializer(fundamental).data)
     except StockFundamental.DoesNotExist:
         fundamental_data = None
         
     # 2. Latest Price Summary (reuse stock_summary logic partially or fetch fresh)
     latest_price = DailyStockPrice.objects.filter(ticker=ticker).order_by('-date').first()
     prev_price_obj = DailyStockPrice.objects.filter(ticker=ticker).order_by('-date')[1:2] # Get 2nd latest
-    prev_close = prev_price_obj[0].close if prev_price_obj else (latest_price.open if latest_price else 0)
-    
+    prev_close = 0
+    if prev_price_obj and prev_price_obj[0].close is not None:
+        prev_close = prev_price_obj[0].close
+    elif latest_price and latest_price.open is not None:
+        prev_close = latest_price.open
+
     price_data = {}
     if latest_price:
-        change = latest_price.close - prev_close
+        current_close = latest_price.close if latest_price.close is not None else 0
+        change = current_close - prev_close
         percent_change = (change / prev_close * 100) if prev_close else 0
         price_data = {
-            'close': latest_price.close,
-            'open': latest_price.open,
-            'high': latest_price.high,
-            'low': latest_price.low,
-            'volume': latest_price.volume,
+            'close': current_close,
+            'open': latest_price.open if latest_price.open is not None else 0,
+            'high': latest_price.high if latest_price.high is not None else 0,
+            'low': latest_price.low if latest_price.low is not None else 0,
+            'volume': latest_price.volume if latest_price.volume is not None else 0,
             'change': change,
             'percent_change': percent_change,
             'date': latest_price.date
         }
         
+    # 3. Company Details
+    try:
+        company = Company.objects.get(symbol=ticker)
+        company_data = {
+            'symbol': company.symbol,
+            'name': company.name,
+            'sector': company.sector,
+            'status': company.status
+        }
+    except Company.DoesNotExist:
+        company_data = None
+
     return Response({
-        'fundamental': fundamental_data,
+        'company': company_data,
+        'fundamental': _enrich_fundamental_data(fundamental_data, fundamental),
         'price': price_data
     })
+
+
+def _enrich_fundamental_data(data, fundamental_obj):
+    if not data or not fundamental_obj:
+        return data
+        
+    # Define metrics to display
+    metrics = [
+        {'key': 'eps', 'name': 'EPS (TTM)'},
+        {'key': 'pe_ratio', 'name': 'P/E Ratio'},
+        {'key': 'price_to_book', 'name': 'P/B Ratio'}, # Frontend expects PBV as value name potentially? Check frontend map. Frontend uses name 'PBV' in card, but 'indicator' table just lists name.
+        {'key': 'book_value', 'name': 'Book Value'},
+        {'key': 'ro_equity', 'name': 'ROE'},
+        {'key': 'dividend_yield', 'name': 'Dividend Yield'},
+    ]
+    
+    # Fetch Sector Peers
+    from django.db.models import Max, Min
+    peers = StockFundamental.objects.filter(sector=fundamental_obj.sector)
+    
+    indicators = []
+    
+    for m in metrics:
+        key = m['key']
+        val = getattr(fundamental_obj, key, None)
+        
+        # Calculate Sector Stats
+        # Optimization: We could do one aggregate query, but this is cleaner for readability and N is small (5-6 metrics)
+        # For a high traffic site, optimize to single aggregate.
+        
+        # Find Max
+        max_obj = peers.order_by(f'-{key}').first()
+        min_obj = peers.order_by(f'{key}').first()
+        
+        # Safely get values
+        max_val = getattr(max_obj, key, None) if max_obj else None
+        min_val = getattr(min_obj, key, None) if min_obj else None
+        
+        # Format values
+        formatted_val = f"{val:.2f}" if val is not None else "-"
+        
+        if (key == 'dividend_yield' or key == 'ro_equity') and val is not None:
+            formatted_val += "%"
+            
+        indicators.append({
+            'name': m['name'],
+            'value': formatted_val,
+            'sector_high': f"{max_val:.2f}" if max_val is not None else "-",
+            'sector_high_ticker': max_obj.ticker if max_obj else "-",
+            'sector_low': f"{min_val:.2f}" if min_val is not None else "-",
+            'sector_low_ticker': min_obj.ticker if min_obj else "-"
+        })
+        
+    data['fundamental_indicators'] = indicators
+    return data
 
 class PortfolioAccountViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -636,6 +711,28 @@ class PortfolioTransactionViewSet(viewsets.ModelViewSet):
             cgt=cgt,
             receivable_amount=receivable_amount
         )
+
+class FinancialReportViewSet(viewsets.ModelViewSet):
+    queryset = FinancialReport.objects.all().order_by('-fiscal_year', '-quarter')
+    serializer_class = FinancialReportSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        queryset = FinancialReport.objects.all().order_by('-fiscal_year', '-quarter')
+        ticker = self.request.query_params.get('ticker')
+        fiscal_year = self.request.query_params.get('fiscal_year')
+        report_type = self.request.query_params.get('report_type')
+        quarter = self.request.query_params.get('quarter')
+
+        if ticker:
+            queryset = queryset.filter(ticker=ticker)
+        if fiscal_year:
+            queryset = queryset.filter(fiscal_year=fiscal_year)
+        if report_type:
+            queryset = queryset.filter(report_type=report_type)
+        if quarter:
+            queryset = queryset.filter(quarter=quarter)
+        return queryset
 
 class StrategyViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -1148,6 +1245,215 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [AllowAny]
     search_fields = ['symbol', 'name']
     
+    
+    @action(detail=True, methods=['post'], permission_classes=[AllowAny])
+    def refresh_fundamentals(self, request, pk=None):
+        """
+        Recalculates fundamental metrics based on the latest financial reports and market price.
+        Comprehensive: PE, PBV, PS, ROE, ROA, Debt/Equity, PEG, Market Cap.
+        """
+        ticker = pk
+        try:
+            # 1. Fetch Latest Price
+            latest_price_obj = DailyStockPrice.objects.filter(ticker=ticker).order_by('-date').first()
+            if not latest_price_obj:
+                return Response({'error': 'No market price data found'}, status=404)
+            
+            # Safe Float Helper
+            def safe_float(val, default=0.0):
+                try:
+                    if val is None: return default
+                    return float(val)
+                except:
+                    return default
+
+            market_price = safe_float(latest_price_obj.close)
+            
+            # 2. Fetch Latest Reports
+            latest_annual = FinancialReport.objects.filter(ticker=ticker, report_type='ANNUAL').order_by('-fiscal_year').first()
+            latest_quarterly = FinancialReport.objects.filter(ticker=ticker, report_type='QUARTERLY').order_by('-fiscal_year', '-quarter').first()
+            
+            # Decide which report to use for "Current Status"
+            report = latest_quarterly if latest_quarterly else latest_annual
+            if not report:
+                return Response({'error': 'No financial reports found'}, status=404)
+
+            # Fetch Company Metadata
+            company = Company.objects.get(symbol=ticker)
+            
+            # --- HELPER: Extract values safely from JSON ---
+            def get_val(data, keys):
+                if not data: return 0.0
+                for k in keys:
+                    if k in data and data[k] is not None:
+                        try:
+                            return float(data[k])
+                        except:
+                            continue
+                return 0.0
+
+            bs = report.balance_sheet or {}
+            pl = report.profit_loss or {}
+            
+            # --- EXTRACT RAW METRICS ---
+            
+            # 1. Net Profit
+            net_profit = get_val(pl, ['net_profit', 'net_profit_after_tax', 'profit_for_period'])
+            
+            # 2. Revenue / Sales
+            revenue = get_val(pl, ['revenue', 'total_operating_income', 'total_income', 'sales', 'gross_income', 'net_premium'])
+            
+            # 3. Total Assets
+            total_assets = get_val(bs, ['total_assets', 'assets_total'])
+            if total_assets == 0:
+                # Try summing components if total not found (basic fallback)
+                cur = get_val(bs, ['current_assets', 'total_current_assets'])
+                non_cur = get_val(bs, ['non_current_assets', 'total_non_current_assets', 'fixed_assets'])
+                total_assets = cur + non_cur
+
+            # 4. Total Equity
+            total_equity = get_val(bs, ['total_equity', 'equity_total'])
+            paid_up_capital = get_val(bs, ['paid_up_capital', 'share_capital'])
+            reserves = get_val(bs, ['reserves', 'reserves_and_surplus', 'retained_earnings'])
+            
+            if total_equity == 0 and paid_up_capital > 0:
+                total_equity = paid_up_capital + reserves
+
+            # 5. Total Debt
+            long_term_debt = get_val(bs, ['long_term_loans', 'non_current_borrowings', 'borrowings', 'debt_securities'])
+            short_term_debt = get_val(bs, ['short_term_loans', 'current_borrowings', 'overdraft'])
+            total_debt = long_term_debt + short_term_debt
+
+            # --- ANNUALIZATION ---
+            is_quarterly = report.report_type == 'QUARTERLY'
+            quarter_val = report.quarter if (is_quarterly and report.quarter) else 4
+            if not quarter_val: quarter_val = 4 # Fallback safety
+            
+            factor = (12 / (quarter_val * 3)) if (is_quarterly and quarter_val) else 1.0 
+            
+            # EPS logic
+            eps = 0.0
+            if report.eps:
+                eps = safe_float(report.eps)
+            else:
+                shares_est = paid_up_capital / 100 if paid_up_capital else 0
+                if shares_est > 0:
+                    eps = (net_profit * factor) / shares_est
+
+            annualized_net_profit = net_profit * factor
+            annualized_revenue = revenue * factor
+
+            # --- DERIVED RATIOS ---
+
+            shares_outstanding = paid_up_capital / 100 if paid_up_capital else 0
+            market_cap = shares_outstanding * market_price
+
+            pe_ratio = 0.0
+            if eps > 0:
+                pe_ratio = market_price / eps
+
+            bvps = 0.0
+            if shares_outstanding > 0:
+                bvps = total_equity / shares_outstanding
+            
+            pbv = 0.0
+            if bvps > 0:
+                pbv = market_price / bvps
+
+            ps_ratio = 0.0
+            if annualized_revenue > 0:
+                ps_ratio = market_cap / annualized_revenue
+
+            roa = 0.0
+            if total_assets > 0:
+                roa = (annualized_net_profit / total_assets) * 100 
+
+            roe = 0.0
+            if total_equity > 0:
+                roe = (annualized_net_profit / total_equity) * 100 
+                
+            debt_to_equity = 0.0
+            if total_equity > 0:
+                debt_to_equity = total_debt / total_equity
+
+            peg_ratio = 0.0
+            
+            # Get Previous Year EPS for Growth
+            try:
+                prev_report = None
+                if is_quarterly:
+                     prev_report = FinancialReport.objects.filter(
+                         ticker=ticker, 
+                         fiscal_year__lt=report.fiscal_year, 
+                         quarter=quarter_val
+                     ).order_by('-fiscal_year').first()
+                else:
+                    prev_report = FinancialReport.objects.filter(ticker=ticker, report_type='ANNUAL', fiscal_year__lt=report.fiscal_year).first()
+                
+                yoy_growth = 0.0
+                if prev_report and prev_report.eps:
+                    prev_eps = safe_float(prev_report.eps)
+                    if prev_eps > 0:
+                        yoy_growth = ((eps - prev_eps) / prev_eps) * 100
+                        
+                if yoy_growth > 0 and pe_ratio > 0:
+                    peg_ratio = pe_ratio / yoy_growth
+            except Exception as e:
+                # Ignore previous year lookup failures
+                yoy_growth = 0.0
+
+            # 9. Dividend Metrics
+            dividend_yield = 0.0
+            payout_ratio = 0.0
+            
+            latest_dividend = Dividend.objects.filter(ticker=ticker).order_by('-fiscal_year').first()
+            if latest_dividend and latest_dividend.cash_percent:
+                dps = safe_float(latest_dividend.cash_percent)
+                
+                if market_price > 0:
+                    dividend_yield = (dps / market_price) * 100
+                
+                if eps > 0:
+                    payout_ratio = (dps / eps) * 100
+
+            # --- UPDATE DATABASE ---
+            fund_obj, created = StockFundamental.objects.update_or_create(
+                ticker=ticker,
+                defaults={
+                    'company_name': company.name,
+                    'sector': company.sector,
+                    
+                    'market_cap': market_cap,
+                    'paid_up_capital': paid_up_capital,
+                    'shares_outstanding': shares_outstanding,
+                    'public_shares': shares_outstanding * 0.49, 
+                    
+                    'eps': eps,
+                    'pe_ratio': pe_ratio,
+                    'book_value': bvps,
+                    'price_to_book': pbv, 
+                    'price_to_sales': ps_ratio,
+                    'peg_ratio': peg_ratio,
+                    'peg_ratio': peg_ratio,
+                    
+                    'ro_equity': roe,
+                    'ro_assets': roa,
+                    'debt_to_equity': debt_to_equity,
+                    
+                    'yoy_earnings_growth': yoy_growth,
+                    'dividend_yield': dividend_yield,
+                    'dividend_payout_ratio': payout_ratio,
+                }
+            )
+            
+            serializer = StockFundamentalSerializer(fund_obj)
+            return Response(serializer.data)
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response({'error': str(e)}, status=500)
+
     def get_queryset(self):
         queryset = Company.objects.filter(status='A').order_by('symbol')
         search = self.request.query_params.get('search', None)
@@ -2291,15 +2597,15 @@ def floorsheet_list(request):
         queryset = DailyFloorsheet.objects.all()
 
         if symbol:
-            queryset = queryset.filter(ticker=symbol)
+            queryset = queryset.filter(symbol=symbol)
         
         if broker:
             # Filter where broker is either buyer or seller
             from django.db.models import Q
-            queryset = queryset.filter(Q(buyer_broker=broker) | Q(seller_broker=broker))
+            queryset = queryset.filter(Q(buyer_id=broker) | Q(seller_id=broker))
 
         # Order by date descending
-        queryset = queryset.order_by('-date')[:limit]
+        queryset = queryset.order_by('-transaction_date')[:limit]
         
         serializer = DailyFloorsheetSerializer(queryset, many=True)
         return Response(serializer.data)

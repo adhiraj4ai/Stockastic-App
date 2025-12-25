@@ -1,14 +1,218 @@
 from django.core.management.base import BaseCommand
-from stocks.models import FinancialReport
+from stocks.models import FinancialReport, Company, StockFundamental
 import decimal
 
 class Command(BaseCommand):
     help = 'Seeds detailed financial data for NABIL (Bank) and UPPER (Hydro)'
 
-    def handle(self, *args, **options):
+    def seed_aclbsl_fundamentals(self):
+        """Seeds static fundamental data for ACLBSL"""
+        ticker = "ACLBSL"
+        # Listed Date: Jan 1st, 2019
+        listed_date = "2019-01-01"
+        
+        defaults = {
+            "company_name": "Aarambha Chautari Laghubitta",
+            "sector": "Microfinance",
+            "market_cap": 3344676465.10,
+            "free_float_market_cap": 1337870586.04,
+            "shares_outstanding": 3671434,
+            "public_shares": 1468574,
+            "listed_date": listed_date,
+            "pe_ratio": 67.18, # From user prompt example (or placeholder)
+            "book_value": 157.43, # From latest Q1 report
+            "eps": 8.94, # From latest Q1 report
+            "dividend_yield": 0.0,
+            "price_to_book": 5.8, # Placeholder/Calc
+            "peg_ratio": 0,
+        }
+        
+        StockFundamental.objects.update_or_create(
+            ticker=ticker,
+            defaults=defaults
+        )
+        self.stdout.write(f"Seeded Fundamentals for {ticker}")
+
+    def seed_aclbsl_quarterly(self):
+        ticker = "ACLBSL"
+        company, _ = Company.objects.get_or_create(symbol=ticker, defaults={"name": "Aarambha Chautari Laghubitta", "sector": "Microfinance"})
+        
+        # Quarter mappings: 082-083Q1, 081-082Q4, 081-082Q3, 081-082Q2, 081-082Q1
+        reports_data = [
+            {
+                "fiscal_year": "2082/83",
+                "quarter": 1,
+                "data": {
+                    "paid_up_capital": 367143.41,
+                    "reserves_and_surplus": 210858.72,
+                    "customer_deposits": 1894461.42,
+                    "borrowings": 3601971.72,
+                    "loans_to_customers": 5601620.58,
+                    "interest_income": 203534.78,
+                    "net_interest_income": 111339.65,
+                    "total_operating_income": 124465.18,
+                    "operating_profit": 11723.62,
+                    "net_profit": 8206.54,
+                    "reported_eps": 8.94,
+                    "book_value": 157.43,
+                    "npl": 4.22,
+                    "cost_of_funds": 6.61,
+                    "cd_ratio": 226.49,
+                }
+            },
+            {
+                "fiscal_year": "2081/82",
+                "quarter": 4,
+                "data": {
+                    "paid_up_capital": 367143.41,
+                    "reserves_and_surplus": 206250.92,
+                    "customer_deposits": 1894900.28,
+                    "borrowings": 3359277.08,
+                    "loans_to_customers": 5315265.49,
+                    "interest_income": 717998.03,
+                    "net_interest_income": 370265.61,
+                    "total_operating_income": 429969.24,
+                    "operating_profit": 134883.72,
+                    "net_profit": 94418.61,
+                    "reported_eps": 25.72,
+                    "book_value": 156.18,
+                    "npl": 2.13,
+                    "cost_of_funds": 7.39,
+                    "cd_ratio": 215.90,
+                }
+            },
+             {
+                "fiscal_year": "2081/82",
+                "quarter": 3,
+                "data": {
+                    "paid_up_capital": 367143.41,
+                    "reserves_and_surplus": 173576.62,
+                    "customer_deposits": 1824321.82,
+                    "borrowings": 3131439.44,
+                    "loans_to_customers": 5322341.14,
+                    "interest_income": 508756.78,
+                    "net_interest_income": 261145.69,
+                    "total_operating_income": 307851.11,
+                    "operating_profit": 87608.90,
+                    "net_profit": 61326.23,
+                    "reported_eps": 22.27,
+                    "book_value": 147.28,
+                    "npl": 3.70,
+                    "cost_of_funds": 7.01,
+                    "cd_ratio": 225.04,
+                }
+            },
+             {
+                "fiscal_year": "2081/82",
+                "quarter": 2,
+                "data": {
+                    "paid_up_capital": 367143.41,
+                    "reserves_and_surplus": 146550.64,
+                    "customer_deposits": 1772848.45,
+                    "borrowings": 2944489.22,
+                    "loans_to_customers": 4799218.95,
+                    "interest_income": 321556.72,
+                    "net_interest_income": 161744.73,
+                    "total_operating_income": 186725.91,
+                    "operating_profit": 46649.60,
+                    "net_profit": 32654.72,
+                    "reported_eps": 17.79,
+                    "book_value": 139.92,
+                    "npl": 2.91,
+                    "cost_of_funds": 7.64,
+                    "cd_ratio": 208.36,
+                }
+            },
+            {
+                "fiscal_year": "2081/82",
+                "quarter": 1,
+                "data": {
+                    "paid_up_capital": 367143.41,
+                    "reserves_and_surplus": 155243.83,
+                    "customer_deposits": 1512031.54,
+                    "borrowings": 2861828.65,
+                    "loans_to_customers": 4394176.72,
+                    "interest_income": 162139.31,
+                    "net_interest_income": 85589.73,
+                    "total_operating_income": 95768.39,
+                    "operating_profit": 30734.86,
+                    "net_profit": 21514.40,
+                    "reported_eps": 23.44,
+                    "book_value": 142.28,
+                    "npl": 2.14,
+                    "cost_of_funds": 6.88,
+                    "cd_ratio": 216.02,
+                }
+            }
+        ]
+
+        self.stdout.write(f"Seeding ACLBSL Data...")
+        for report in reports_data:
+            financial_data = report['data']
+            
+            # Construct nested JSON objects for correct model fields
+            balance_sheet = {
+                "Capital Fund": {
+                    "Paid Up Capital": financial_data["paid_up_capital"],
+                    "Reserves and Surplus": financial_data["reserves_and_surplus"],
+                },
+                "Liabilities": {
+                    "Deposits": financial_data["customer_deposits"],
+                    "Borrowings": financial_data["borrowings"],
+                },
+                "Assets": {
+                    "Loans and Advances": financial_data["loans_to_customers"],
+                }
+            }
+            
+            profit_loss = {
+                "Income": {
+                    "Interest Income": financial_data["interest_income"],
+                    "Net Interest Income": financial_data["net_interest_income"],
+                    "Total Operating Income": financial_data["total_operating_income"],
+                },
+                "Profit": {
+                    "Operating Profit": financial_data["operating_profit"],
+                    "Net Profit": financial_data["net_profit"],
+                }
+            }
+            
+            key_ratios = {
+                "Per Share": {
+                    "EPS": financial_data["reported_eps"],
+                    "Book Value": financial_data["book_value"],
+                },
+                "Performance": {
+                    "NPL": financial_data["npl"],
+                    "Cost of Funds": financial_data["cost_of_funds"],
+                    "CD Ratio": financial_data["cd_ratio"],
+                }
+            }
+            
+            FinancialReport.objects.update_or_create(
+                ticker=ticker,
+                fiscal_year=report["fiscal_year"],
+                quarter=report["quarter"],
+                defaults={
+                    "report_type": FinancialReport.ReportType.QUARTERLY,
+                    "report_template": "BANK_QUARTERLY",
+                    "balance_sheet": balance_sheet,
+                    "profit_loss": profit_loss,
+                    "key_ratios": key_ratios,
+                    "net_profit": financial_data["net_profit"],
+                    "revenue": financial_data["total_operating_income"],
+                    "eps": financial_data["reported_eps"],
+                    "is_audited": False
+                }
+            )
+        self.stdout.write(self.style.SUCCESS(f"Successfully seeded {len(reports_data)} quarters for {ticker}"))
+
+    def handle(self, *args, **kwargs):
         self.seed_nabil()
         self.seed_upper()
         self.seed_shpc()
+        self.seed_aclbsl_quarterly()
+        self.seed_aclbsl_fundamentals()
         self.stdout.write(self.style.SUCCESS('Successfully seeded multi-sector financials'))
 
     def seed_nabil(self):

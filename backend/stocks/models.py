@@ -68,6 +68,16 @@ class StockFundamental(models.Model):
     eps = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     book_value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     dividend_yield = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    peg_ratio = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    price_to_book = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    price_to_sales = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    ro_equity = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    ro_assets = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    dividend_payout_ratio = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    qoq_earnings_growth = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    yoy_earnings_growth = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    graham_number_diff = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    debt_to_equity = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
     # 52 Week
     fifty_two_week_high = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -226,6 +236,10 @@ class FinancialReport(models.Model):
     profit_loss = models.JSONField(null=True, blank=True)
     cash_flow = models.JSONField(null=True, blank=True)
     key_ratios = models.JSONField(null=True, blank=True)
+
+    # Granular Report Data
+    balance_sheet = models.JSONField(null=True, blank=True)
+    profit_loss = models.JSONField(null=True, blank=True)
 
     class Meta:
         unique_together = ('ticker', 'fiscal_year', 'report_type', 'quarter')
