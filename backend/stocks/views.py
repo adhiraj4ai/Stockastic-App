@@ -930,6 +930,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
             })
     @action(detail=True, methods=['post'], permission_classes=[AllowAny])
     def backtest(self, request, pk=None):
+        print("DEBUG: Backtest Request Data:", request.data)
         strategy = self.get_object()
         code = request.data.get('code', '')
         symbol = request.data.get('symbol')
@@ -1049,34 +1050,6 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 best_stock = max(sector_results, key=lambda x: x.get('return', 0) or 0)
                 worst_stock = min(sector_results, key=lambda x: x.get('return', 0) or 0)
             
-            # Log Aggregated Experiment
-            try:
-                StrategyExperiment.objects.create(
-                    strategy=strategy, # Handle viewset context
-                    user=request.user,
-                    run_type=StrategyExperiment.RunType.BACKTEST,
-                    scope_type=StrategyExperiment.ScopeType.ALL if sector.upper() == 'ALL' else StrategyExperiment.ScopeType.SECTOR,
-                    scope_value=sector,
-                    start_date=start_date,
-                    end_date=end_date,
-                    parameters=strategy_params,
-                    metrics={
-                        'aggregated': {
-                            'avg_return': avg_return,
-                            'avg_win_rate': avg_win_rate,
-                            'total_trades': total_trades,
-                            'best_stock': best_stock,
-                            'worst_stock': worst_stock
-                        },
-                        'individual': sorted(sector_results, key=lambda x: x.get('return', 0) or 0, reverse=True)[:50] # Store top 50 in summary
-                    },
-                    batch_id=batch_id,
-                    status=StrategyExperiment.Status.SUCCESS,
-                    error_log=f"Failed: {len(failed_stocks)} stocks" if failed_stocks else None
-                )
-            except Exception as e:
-                print(f"Failed to log aggregated experiment: {e}")
-
             return Response({
                 'sector': sector,
                 'batch_id': batch_id,
@@ -1090,7 +1063,25 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     'worst_stock': worst_stock
                 },
                 'individual_results': sorted(sector_results, key=lambda x: x.get('return', 0) or 0, reverse=True),
-                'failed_stocks': failed_stocks
+                'failed_stocks': failed_stocks,
+                'metadata': {
+                    'scope_type': 'ALL' if sector.upper() == 'ALL' else 'SECTOR',
+                    'scope_value': sector,
+                    'start_date': start_date,
+                    'end_date': end_date,
+                    'parameters': strategy_params,
+                    'metrics': {
+                        'aggregated': {
+                            'avg_return': avg_return,
+                            'avg_win_rate': avg_win_rate,
+                            'total_trades': total_trades,
+                            'best_stock': best_stock,
+                            'worst_stock': worst_stock
+                        },
+                        'successful_backtests': successful_backtests,
+                        'total_companies': len(companies)
+                    }
+                }
             })
         
 
@@ -1107,13 +1098,14 @@ class StrategyViewSet(viewsets.ModelViewSet):
         if result is None:
             return Response({'error': error or 'No data found for symbol/dates'}, status=400)
             
-        # Return result with all data needed for manual saving
+        # Meta data for frontend (manual saving)
         result['metadata'] = {
-            'symbol': symbol,
+            'scope_type': 'SYMBOL',
+            'scope_value': symbol,
             'start_date': start_date,
             'end_date': end_date,
             'parameters': final_params,
-            'metrics': final_metrics
+            'metrics': {**final_metrics, **result.get('stats', {})}
         }
 
         return Response(result)

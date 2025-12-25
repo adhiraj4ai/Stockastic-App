@@ -176,7 +176,95 @@ export default function ExperimentDetailPage() {
                     )}
                 </div>
 
-                {/* Main Grid */}
+                {/* High-Level Stat Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card className="border-none shadow-lg shadow-blue-900/5 bg-white rounded-3xl overflow-hidden group hover:shadow-xl transition-all duration-300">
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="p-2 bg-green-50 text-green-600 rounded-xl group-hover:scale-110 transition-transform">
+                                    <TrendingUp size={20} />
+                                </div>
+                                <Badge variant="outline" className="text-[10px] font-bold text-green-600 border-green-100 bg-green-50/50">
+                                    {experiment.metrics?.aggregated ? 'BATCH PERFORMANCE' : 'PERFORMANCE'}
+                                </Badge>
+                            </div>
+                            <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">
+                                {experiment.metrics?.aggregated ? 'Avg. Batch Return' : 'Total Return'}
+                            </p>
+                            <h3 className={`text-2xl font-black ${(experiment.metrics?.aggregated ? experiment.metrics.aggregated.avg_return : experiment.metrics.pnl_percent) >= 0 ? 'text-green-600' : 'text-red-600'} tracking-tight`}>
+                                {experiment.metrics?.aggregated
+                                    ? `${experiment.metrics.aggregated.avg_return?.toFixed(2)}%`
+                                    : `${experiment.metrics.pnl_percent?.toFixed(2)}%`
+                                }
+                            </h3>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-none shadow-lg shadow-blue-900/5 bg-white rounded-3xl overflow-hidden group hover:shadow-xl transition-all duration-300">
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl group-hover:scale-110 transition-transform">
+                                    <CheckCircle size={20} />
+                                </div>
+                                <Badge variant="outline" className="text-[10px] font-bold text-blue-600 border-blue-100 bg-blue-50/50">
+                                    {experiment.metrics?.aggregated ? 'BATCH SCOPE' : 'RELIABILITY'}
+                                </Badge>
+                            </div>
+                            <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">
+                                {experiment.metrics?.aggregated ? 'Success Rate' : 'Win Rate'}
+                            </p>
+                            <h3 className="text-2xl font-black text-gray-900 tracking-tight">
+                                {experiment.metrics?.aggregated
+                                    ? `${((experiment.metrics.successful_backtests / experiment.metrics.total_companies) * 100).toFixed(0)}%`
+                                    : `${experiment.metrics.win_rate?.toFixed(1)}%`
+                                }
+                            </h3>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-none shadow-lg shadow-blue-900/5 bg-white rounded-3xl overflow-hidden group hover:shadow-xl transition-all duration-300">
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="p-2 bg-purple-50 text-purple-600 rounded-xl group-hover:scale-110 transition-transform">
+                                    <Zap size={20} />
+                                </div>
+                                <Badge variant="outline" className="text-[10px] font-bold text-purple-600 border-purple-100 bg-purple-50/50">
+                                    {experiment.metrics?.aggregated ? 'BATCH AVG' : 'EFFICIENCY'}
+                                </Badge>
+                            </div>
+                            <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">
+                                {experiment.metrics?.aggregated ? 'Avg. Win Rate' : 'Sharpe Ratio'}
+                            </p>
+                            <h3 className="text-2xl font-black text-gray-900 tracking-tight">
+                                {experiment.metrics?.aggregated
+                                    ? `${experiment.metrics.aggregated.avg_win_rate?.toFixed(1)}%`
+                                    : (experiment.metrics.sharpe_ratio?.toFixed(2) || 'N/A')
+                                }
+                            </h3>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-none shadow-lg shadow-blue-900/5 bg-white rounded-3xl overflow-hidden group hover:shadow-xl transition-all duration-300">
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="p-2 bg-amber-50 text-amber-600 rounded-xl group-hover:scale-110 transition-transform">
+                                    <Activity size={20} />
+                                </div>
+                                <Badge variant="outline" className="text-[10px] font-bold text-amber-600 border-amber-100 bg-amber-50/50">VOLUME</Badge>
+                            </div>
+                            <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">
+                                {experiment.metrics?.aggregated ? 'Total Batch Trades' : 'Total Trades'}
+                            </p>
+                            <h3 className="text-2xl font-black text-gray-900 tracking-tight">
+                                {experiment.metrics?.aggregated
+                                    ? experiment.metrics.aggregated.total_trades
+                                    : experiment.metrics.total_trades
+                                }
+                            </h3>
+                        </CardContent>
+                    </Card>
+                </div>
+
                 <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
                     {/* Left Column: Stats & Params */}
                     <div className="xl:col-span-1 space-y-6">
@@ -251,6 +339,29 @@ export default function ExperimentDetailPage() {
                                             <p className="text-sm font-bold">{experiment.scope_type}</p>
                                         </div>
                                     </div>
+                                    {experiment.metrics?.aggregated && (
+                                        <div className="pt-4 mt-4 border-t border-white/10 space-y-3">
+                                            <p className="text-[10px] text-white/40 uppercase font-bold tracking-widest">Batch Averages</p>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <p className="text-[10px] text-white/60 font-medium">Avg Win Rate</p>
+                                                    <p className="text-sm font-bold">{experiment.metrics.aggregated.avg_win_rate?.toFixed(1)}%</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] text-white/60 font-medium">Total Trades</p>
+                                                    <p className="text-sm font-bold">{experiment.metrics.aggregated.total_trades}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] text-white/60 font-medium">Best Performer</p>
+                                                    <p className="text-sm font-bold text-green-300">{experiment.metrics.aggregated.best_stock?.symbol}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] text-white/60 font-medium">Worst Performer</p>
+                                                    <p className="text-sm font-bold text-red-300">{experiment.metrics.aggregated.worst_stock?.symbol}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             {/* Decoration */}

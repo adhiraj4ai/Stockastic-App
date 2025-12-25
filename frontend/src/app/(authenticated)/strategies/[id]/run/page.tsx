@@ -36,6 +36,7 @@ interface Strategy {
     name: string;
     description: string;
     code: string;
+    default_parameters?: Record<string, any>;
 }
 
 export default function RunStrategyPage() {
@@ -83,6 +84,16 @@ export default function RunStrategyPage() {
         try {
             const response = await api.get(`/api/stocks/strategies/${strategyId}/`);
             setStrategy(response.data);
+
+            // Auto-update params only if we have defaults
+            if (response.data.default_parameters) {
+                const defaults = response.data.default_parameters;
+                if (Object.keys(defaults).length > 0) {
+                    // Force update logic
+                    setParamsJson(JSON.stringify(defaults, null, 2));
+                    toast.success('Configuration loaded from strategy code');
+                }
+            }
         } catch (error: any) {
             // 401 handled by global interceptor
             toast.error('Failed to load strategy');
@@ -141,7 +152,6 @@ export default function RunStrategyPage() {
             } else if (mode === 'all') {
                 requestData.sector = 'ALL';
             }
-            console.log('Backtest request:', requestData);
             const response = await api.post(`/api/stocks/strategies/${strategy.id}/backtest/`, requestData);
             setResults(response.data);
 
@@ -170,11 +180,12 @@ export default function RunStrategyPage() {
         setIsSaving(true);
         try {
             const saveData = {
-                scope_value: results.metadata.symbol,
+                scope_type: results.metadata.scope_type,
+                scope_value: results.metadata.scope_value,
                 start_date: results.metadata.start_date,
                 end_date: results.metadata.end_date,
                 parameters: results.metadata.parameters,
-                metrics: { ...results.metadata.metrics, ...results.stats },
+                metrics: results.metadata.metrics,
                 plot_html: results.plot_html
             };
             const response = await api.post(`/api/stocks/strategies/${strategy.id}/save_experiment/`, saveData);
@@ -258,6 +269,7 @@ export default function RunStrategyPage() {
                         <ArrowLeft size={14} /> Back to Strategies
                     </Button>
                 </div>
+
 
                 <Tabs defaultValue="run" className="space-y-6">
                     <div className="flex items-center justify-between">

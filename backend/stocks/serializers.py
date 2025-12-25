@@ -1,4 +1,5 @@
 from rest_framework import serializers
+import ast
 from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, StockFundamental, PortfolioAccount, Dividend, FinancialReport, Strategy, Company, WatchlistItem, Notification, StrategyExperiment
 
 class DailyStockPriceSerializer(serializers.ModelSerializer):
@@ -73,10 +74,49 @@ class PortfolioTransactionSerializer(serializers.ModelSerializer):
 
 
 class StrategySerializer(serializers.ModelSerializer):
+    default_parameters = serializers.SerializerMethodField()
+
     class Meta:
         model = Strategy
-        fields = ['id', 'name', 'description', 'code', 'created_at', 'is_public', 'pnl_amount', 'pnl_percent', 'max_drawdown', 'sharpe_ratio', 'win_rate']
+        fields = ['id', 'name', 'description', 'code', 'created_at', 'is_public', 'pnl_amount', 'pnl_percent', 'max_drawdown', 'sharpe_ratio', 'win_rate', 'default_parameters']
         read_only_fields = ['id', 'created_at']
+
+    def get_default_parameters(self, obj):
+        if not obj.code:
+            return {}
+        
+        try:
+            tree = ast.parse(obj.code)
+            params = {}
+            
+            # Find the Strategy class definition
+            for node in tree.body:
+                if isinstance(node, ast.ClassDef):
+                    # Check if it inherits from Strategy (simple check)
+                    is_strategy = any(
+                        (isinstance(b, ast.Name) and b.id == 'Strategy') 
+                        for b in node.bases
+                    )
+                    
+                    if is_strategy:
+                        # Extract class-level assignments
+                        for item in node.body:
+                            if isinstance(item, ast.Assign):
+                                # Check targets (variables being assigned)
+                                for target in item.targets:
+                                    if isinstance(target, ast.Name):
+                                        key = target.id
+                                        # only extract simple literals
+                                        if isinstance(item.value, ast.Constant):
+                                            params[key] = item.value.value
+                                        # for older python < 3.8
+                                        elif isinstance(item.value, ast.Num):
+                                            params[key] = item.value.n
+                                        elif isinstance(item.value, ast.Str):
+                                            params[key] = item.value.s
+            return params
+        except Exception:
+            return {}
 
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
