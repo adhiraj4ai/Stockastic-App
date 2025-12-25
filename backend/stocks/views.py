@@ -1049,6 +1049,34 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 total_trades = sum(r.get('total_trades', 0) or 0 for r in sector_results)
                 best_stock = max(sector_results, key=lambda x: x.get('return', 0) or 0)
                 worst_stock = min(sector_results, key=lambda x: x.get('return', 0) or 0)
+
+            # Log Parent Experiment for Aggregation
+            try:
+                StrategyExperiment.objects.create(
+                    strategy=strategy,
+                    user=request.user,
+                    run_type=StrategyExperiment.RunType.BACKTEST,
+                    scope_type=StrategyExperiment.ScopeType.ALL if sector.upper() == 'ALL' else StrategyExperiment.ScopeType.SECTOR,
+                    scope_value=sector,
+                    start_date=start_date,
+                    end_date=end_date,
+                    parameters=strategy_params,
+                    metrics={
+                        'aggregated': {
+                            'avg_return': avg_return,
+                            'avg_win_rate': avg_win_rate,
+                            'total_trades': total_trades,
+                            'best_stock': best_stock,
+                            'worst_stock': worst_stock
+                        },
+                        'successful_backtests': successful_backtests,
+                        'total_companies': len(companies)
+                    },
+                    batch_id=batch_id,
+                    status=StrategyExperiment.Status.SUCCESS
+                )
+            except Exception as e:
+                print(f"Failed to log parent experiment: {e}")
             
             return Response({
                 'sector': sector,

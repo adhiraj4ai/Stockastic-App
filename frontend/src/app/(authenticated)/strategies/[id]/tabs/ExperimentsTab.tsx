@@ -201,6 +201,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                 {!strategyId && (
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Strategy</th>
@@ -216,7 +217,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                         <tbody className="bg-white divide-y divide-gray-200 text-sm">
                             {experiments.length === 0 ? (
                                 <tr>
-                                    <td colSpan={strategyId ? 7 : 8} className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan={strategyId ? 8 : 9} className="px-6 py-12 text-center text-gray-500">
                                         No experiments run yet. Run backtests or optimizations to populate this list.
                                     </td>
                                 </tr>
@@ -229,6 +230,15 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                 className="hover:bg-gray-50 cursor-pointer"
                                                 onClick={() => toggleExpand(exp.id)}
                                             >
+                                                <td className="px-6 py-4 whitespace-nowrap text-gray-500 font-mono text-xs">
+                                                    <a
+                                                        href={`/strategies/${exp.strategy}/experiments/${exp.id}`}
+                                                        className="text-blue-600 hover:underline flex items-center gap-1"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        #{exp.id} <ExternalLink size={10} />
+                                                    </a>
+                                                </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-gray-500">
                                                     {format(new Date(exp.created_at), 'MMM d, HH:mm')}
                                                 </td>
@@ -270,7 +280,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                             </tr>
                                             {expandedId === exp.id && (
                                                 <tr className="bg-gray-50">
-                                                    <td colSpan={strategyId ? 7 : 8} className="px-6 py-4">
+                                                    <td colSpan={strategyId ? 8 : 9} className="px-6 py-4">
                                                         <div className="flex flex-col gap-6">
                                                             {/* Batch Results Table */}
                                                             {exp.batch_id && exp.scope_type !== 'SYMBOL' && batchResults[exp.batch_id] && (
@@ -282,6 +292,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                                         <table className="min-w-full divide-y divide-gray-200 text-xs text-left">
                                                                             <thead className="bg-gray-50/50 sticky top-0">
                                                                                 <tr>
+                                                                                    <th className="px-4 py-2">ID</th>
                                                                                     <th className="px-4 py-2">Symbol</th>
                                                                                     <th className="px-4 py-2">Return</th>
                                                                                     <th className="px-4 py-2">Win Rate</th>
@@ -302,6 +313,15 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                                                                 window.open(`/strategies/${strategyId || child.strategy}/experiments/${child.id}`, '_blank');
                                                                                             }}
                                                                                         >
+                                                                                            <td className="px-4 py-2 font-mono text-xs text-gray-500">
+                                                                                                <a
+                                                                                                    href={`/strategies/${strategyId || child.strategy}/experiments/${child.id}`}
+                                                                                                    className="hover:underline flex items-center gap-1"
+                                                                                                    onClick={(e) => e.stopPropagation()}
+                                                                                                >
+                                                                                                    #{child.id}
+                                                                                                </a>
+                                                                                            </td>
                                                                                             <td className="px-4 py-2 font-bold group-hover:text-blue-600 flex items-center gap-2">
                                                                                                 {child.scope_value}
                                                                                                 <ExternalLink size={12} className="opacity-0 group-hover:opacity-100" />
