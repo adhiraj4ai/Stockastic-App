@@ -238,6 +238,101 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
         return Array.from(metricMap.values());
     }, [financials]);
 
+    const intelligence = useMemo(() => {
+        if (!data || !history?.length) return { fundamentalScore: 0, technicalScore: 0, riskLevel: 'MEDIUM' as const, macd: 'NEUTRAL' as const };
+
+        const sortedHistory = [...history].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        const closes = sortedHistory.map(h => h.close);
+        const currentPrice = data.price.close;
+
+        // Helper: Simple Moving Average
+        const getSMA = (days: number) => {
+            if (closes.length < days) return closes[closes.length - 1];
+            return closes.slice(-days).reduce((a, b) => a + b, 0) / days;
+        };
+
+        const sma20 = getSMA(20);
+        const sma50 = getSMA(50);
+        const sma200 = getSMA(200);
+
+        // 1. Technical Score (0-100)
+        let techScore = 0;
+
+        // Trend Alignment (40%)
+        if (currentPrice > sma20) techScore += 10;
+        if (currentPrice > sma50) techScore += 15;
+        if (sma20 > sma50) techScore += 10;
+        if (currentPrice > sma200) techScore += 5;
+
+        // RSI Momentum (30%)
+        const getRSI = (period = 14) => {
+            if (closes.length <= period) return 50;
+            let gains = 0, losses = 0;
+            for (let i = 1; i <= period; i++) {
+                const diff = closes[closes.length - i] - closes[closes.length - i - 1];
+                if (diff > 0) gains += diff; else losses -= diff;
+            }
+            const avgGain = gains / period; const avgLoss = losses / period || 1;
+            return 100 - (100 / (1 + avgGain / avgLoss));
+        };
+        const rsi = getRSI();
+        if (rsi > 45 && rsi < 65) techScore += 30; // Strong bullish momentum
+        else if (rsi >= 65 && rsi < 75) techScore += 20; // Entering overbought
+        else if (rsi <= 45 && rsi > 35) techScore += 20; // Consolidation
+        else if (rsi >= 75) techScore += 10; // Extreme overbought
+        else if (rsi <= 35) techScore += 10; // Oversold
+
+        // MACD Direction (30%)
+        const ema12 = getSMA(12);
+        const ema26 = getSMA(26);
+        const macdLine = ema12 - ema26;
+        const prevEma12 = getSMA(13); // approximation
+        const prevEma26 = getSMA(27);
+        const prevMacd = prevEma12 - prevEma26;
+
+        if (macdLine > 0) {
+            techScore += 15;
+            if (macdLine > prevMacd) techScore += 15; // Histogram expansion
+        } else if (macdLine > prevMacd) {
+            techScore += 10; // Histogram contracting (Bullish)
+        }
+
+        // 2. Fundamental Score (0-100)
+        let funScore = 0;
+        const pe = data.fundamental?.pe_ratio || 0;
+        const pbv = data.fundamental?.book_value ? currentPrice / data.fundamental.book_value : 0;
+        const roeItem = data.fundamental?.fundamental_indicators?.find(i => i.name.toLowerCase().includes('roe'));
+        const roeNum = roeItem ? parseFloat(roeItem.value.replace(/[^0-9.-]/g, '')) : 0;
+
+        // PE Value (35%)
+        if (pe > 0 && pe < 15) funScore += 35;
+        else if (pe >= 15 && pe < 25) funScore += 25;
+        else if (pe >= 25 && pe < 40) funScore += 15;
+
+        // PBV Value (30%)
+        if (pbv > 0 && pbv < 1.5) funScore += 30;
+        else if (pbv >= 1.5 && pbv < 3) funScore += 20;
+        else if (pbv >= 3 && pbv < 5) funScore += 10;
+
+        // Quality/ROE (35%)
+        if (roeNum > 15) funScore += 35;
+        else if (roeNum > 10) funScore += 25;
+        else if (roeNum > 5) funScore += 15;
+
+        // 3. Risk Level
+        let risk: 'LOW' | 'MEDIUM' | 'HIGH' = 'MEDIUM';
+        const dlyVol = Math.abs(data.price.percent_change);
+        if (dlyVol > 4.5 || pbv > 5 || pe > 45) risk = 'HIGH';
+        else if (dlyVol < 1.8 && pbv < 2 && pe < 18) risk = 'LOW';
+
+        return {
+            fundamentalScore: Math.min(Math.round(funScore), 100),
+            technicalScore: Math.min(Math.round(techScore), 100),
+            riskLevel: risk,
+            macd: (macdLine > 0 ? 'BULLISH' : 'BEARISH') as 'BULLISH' | 'BEARISH' | 'NEUTRAL'
+        };
+    }, [data, history]);
+
     const getFinancialsTrendOption = () => {
         const filteredFin = financials
             .filter(f => f.report_type === reportType)
@@ -475,10 +570,10 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
                         <div className="lg:col-span-4">
                             <IntelligenceGlass
-                                fundamentalScore={68}
-                                technicalScore={72}
-                                riskLevel="MEDIUM"
-                                macd="BULLISH"
+                                fundamentalScore={intelligence.fundamentalScore}
+                                technicalScore={intelligence.technicalScore}
+                                riskLevel={intelligence.riskLevel}
+                                macd={intelligence.macd}
                             />
                         </div>
                         <div className="lg:col-span-8">
