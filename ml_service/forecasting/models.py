@@ -27,6 +27,7 @@ class ForecastModel(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     
     class Meta:
+        db_table = 'ml_forecastmodel'  # Use existing table from backend
         ordering = ['-trained_at']
         indexes = [
             models.Index(fields=['symbol', 'model_type', 'is_active']),
@@ -63,6 +64,7 @@ class TrainingJob(models.Model):
                                       related_name='training_jobs', help_text="Resulting model if successful")
     
     class Meta:
+        db_table = 'ml_trainingjob'
         ordering = ['-started_at']
         indexes = [
             models.Index(fields=['status', '-started_at']),
@@ -100,6 +102,7 @@ class Forecast(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
+        db_table = 'ml_forecast'
         ordering = ['forecast_date']
         unique_together = ['model', 'forecast_date']
         indexes = [
@@ -139,6 +142,7 @@ class ForecastBacktest(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
+        db_table = 'ml_forecastbacktest'
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['strategy', 'symbol']),
@@ -160,6 +164,7 @@ class ForecastAccuracy(models.Model):
     recorded_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
+        db_table = 'ml_forecastaccuracy'
         ordering = ['-recorded_at']
     
     def __str__(self):

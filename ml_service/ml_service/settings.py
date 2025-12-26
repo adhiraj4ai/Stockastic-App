@@ -69,6 +69,14 @@ if os.environ.get("DB_HOST"):
             "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
             "HOST": os.environ.get("DB_HOST", "db"),
             "PORT": os.environ.get("DB_PORT", "5432"),
+        },
+        "stock_market": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "stock_market",
+            "USER": os.environ.get("POSTGRES_USER", "postgres"),
+            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
+            "HOST": os.environ.get("DB_HOST", "db"),
+            "PORT": os.environ.get("DB_PORT", "5432"),
         }
     }
 else:
@@ -80,8 +88,18 @@ else:
             "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
             "HOST": os.environ.get("DB_HOST", "localhost"),
             "PORT": os.environ.get("DB_PORT", "5434"),
+        },
+        "stock_market": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "stock_market",
+            "USER": os.environ.get("POSTGRES_USER", "postgres"),
+            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
+            "HOST": os.environ.get("DB_HOST", "localhost"),
+            "PORT": os.environ.get("DB_PORT", "5434"),
         }
     }
+
+DATABASE_ROUTERS = ['forecasting.routers.MLRouter']
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -115,11 +133,6 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",
 ]
 CORS_ALLOW_CREDENTIALS = True
-from corsheaders.defaults import default_headers
-CORS_ALLOW_HEADERS = list(default_headers) + [
-    'authorization',
-    'x-csrftoken',
-]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
@@ -137,13 +150,11 @@ from datetime import timedelta
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
-    # Use same secret as main backend for JWT validation
-    "SIGNING_KEY": os.environ.get("JWT_SECRET_KEY", SECRET_KEY),
 }
 
-# Celery Configuration - Use Redis DB 1 for ML service
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/1')
-CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/1')
+# Celery Configuration - Use Redis DB 0 (same as main backend for task compatibility)
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
