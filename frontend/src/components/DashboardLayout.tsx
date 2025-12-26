@@ -350,7 +350,7 @@ export default function DashboardLayout({
                         )}
 
                         <div className="w-1/3 flex justify-center">
-                            <SearchBar />
+                            {/* SearchBar removed as per request */}
                         </div>
 
                         <div className="w-1/3 flex justify-end gap-4 items-center">
