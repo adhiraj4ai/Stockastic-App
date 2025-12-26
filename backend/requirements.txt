@@ -13,11 +13,11 @@ gunicorn==23.0.0
 idna==3.11
 multitasking==0.0.12
 numpy==2.3.5
-packaging==25.0
+packaging>=23.2,<25.0
 pandas==2.3.3
 peewee==3.18.3
 platformdirs==4.5.1
-protobuf==6.33.2
+protobuf>=3.20.2,<6.0.0dev
 psycopg2-binary==2.9.11
 pycparser==2.23
 PyJWT==2.10.1

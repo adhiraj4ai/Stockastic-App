@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Flame, Users, BarChart3, History, Star, TrendingDown } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Flame, Users, BarChart3, History, Star, TrendingDown, Brain } from 'lucide-react';
 import { SearchBar } from './SearchBar';
 import { ChatSidebar } from './ChatSidebar';
 import { AlertsDropdown } from './AlertsDropdown';
@@ -45,6 +45,7 @@ const navItems = [
     },
     { name: 'Financials', href: '/financials', icon: FileText },
     { name: 'Strategies', href: '/strategies', icon: Lightbulb },
+    { name: 'Forecasts', href: '/forecasts', icon: Brain },
     { name: 'Recommendations', href: '/recommendations', icon: Target },
     { name: 'Pipeline', href: '/pipeline', icon: Settings },
 ];
@@ -237,9 +238,10 @@ export default function DashboardLayout({
                                                                 item.name === 'Accumulation' ? 'text-orange-500' :
                                                                     item.name === 'Financials' ? 'text-cyan-500' :
                                                                         item.name === 'Strategies' ? 'text-yellow-500' :
-                                                                            item.name === 'Recommendations' ? 'text-red-500' :
-                                                                                item.name === 'Pipeline' ? 'text-gray-500' :
-                                                                                    'text-gray-400'
+                                                                            item.name === 'Forecasts' ? 'text-pink-500' :
+                                                                                item.name === 'Recommendations' ? 'text-red-500' :
+                                                                                    item.name === 'Pipeline' ? 'text-gray-500' :
+                                                                                        'text-gray-400'
                                             } />
                                             {!isSidebarCollapsed && <span className="text-sm font-medium whitespace-nowrap">{item.name}</span>}
                                         </div>
@@ -263,9 +265,10 @@ export default function DashboardLayout({
                                                         item.name === 'Stocks' ? 'text-green-500' :
                                                             item.name === 'Financials' ? 'text-cyan-500' :
                                                                 item.name === 'Strategies' ? 'text-yellow-500' :
-                                                                    item.name === 'Recommendations' ? 'text-red-500' :
-                                                                        item.name === 'Pipeline' ? 'text-gray-500' :
-                                                                            'text-gray-400'
+                                                                    item.name === 'Forecasts' ? 'text-pink-500' :
+                                                                        item.name === 'Recommendations' ? 'text-red-500' :
+                                                                            item.name === 'Pipeline' ? 'text-gray-500' :
+                                                                                'text-gray-400'
                                         } />
                                         {!isSidebarCollapsed && <span className="text-sm font-medium whitespace-nowrap">{item.name}</span>}
                                     </Link>
