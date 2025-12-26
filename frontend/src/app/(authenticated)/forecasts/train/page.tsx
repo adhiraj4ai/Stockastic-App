@@ -12,10 +12,37 @@ import { Play, Settings, Calendar, Activity, BrainCircuit, ArrowLeft, CheckCircl
 import api, { mlApi } from '@/lib/api';
 import { toast } from 'sonner';
 import ForecastResultView from '@/components/forecasts/ForecastResultView';
+import { CompanySelect } from '@/components/CompanySelect';
+import { Badge } from '@/components/ui/badge';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow
+} from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function TrainModelPage() {
     const router = useRouter();
     const [symbol, setSymbol] = useState('');
+    const [trainMode, setTrainMode] = useState<'SYMBOL' | 'SECTOR'>('SYMBOL');
+    const [selectedSector, setSelectedSector] = useState('');
+    const [sectors, setSectors] = useState<string[]>([]);
     const [selectedModels, setSelectedModels] = useState<string[]>(['PROPHET']);
     const [optimize, setOptimize] = useState(false);
     const [nTrials, setNTrials] = useState(50);
@@ -41,7 +68,23 @@ export default function TrainModelPage() {
     const [patience, setPatience] = useState(10);
 
     const [training, setTraining] = useState(false);
-    const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+    const [sessionJobIds, setSessionJobIds] = useState<number[]>([]);
+    const [batchJobs, setBatchJobs] = useState<any[]>([]);
+    const [showLogDialog, setShowLogDialog] = useState(false);
+    const [activeJobId, setActiveJobId] = useState<number | null>(null);
+
+    useEffect(() => {
+        const fetchSectors = async () => {
+            try {
+                // Fetch distinct sectors from companies API
+                const sectorList = ['Finance', 'Manufacturing And Processing', 'Mutual Fund', 'Life Insurance', 'Hotels And Tourism', 'Tradings', 'Investment', 'Hydro Power', 'Commercial Banks', 'Others', 'Non Life Insurance', 'Development Banks', 'Microfinance'];
+                setSectors(sectorList.sort());
+            } catch (error) {
+                console.error('Error fetching sectors:', error);
+            }
+        };
+        fetchSectors();
+    }, []);
 
     // Calculate date ranges for splits
     const calculateDateRanges = () => {
@@ -85,63 +128,86 @@ export default function TrainModelPage() {
 
     // Poll for job results when we have a completedJobId (which acts as "current job being watched")
     // Poll for job results when we have a completedJobId (which acts as "current job being watched")
+    // Poll for batch results or single job results
+    // Poll for jobs in the current session
     useEffect(() => {
-        if (!completedJobId) return;
+        if (sessionJobIds.length === 0) return;
 
         let isSubscribed = true;
         const intervalId = setInterval(async () => {
             try {
-                const response = await mlApi.get(`/api/training-jobs/${completedJobId}/details/`);
+                // Fetch all jobs in the current session
+                const response = await mlApi.get(`/api/ml/training-jobs/?ids=${sessionJobIds.join(',')}`);
+
                 if (isSubscribed) {
-                    const jobData = response.data;
-                    setJobResult(jobData); // LIVE UPDATE: Show progress immediately
+                    const jobs = response.data.results || response.data;
+                    // Sort to maintain order (optional, backend usually orders by started_at)
+                    setBatchJobs(jobs);
 
-                    // Cumulative Logs Logic
-                    if (jobData.progress_message) {
-                        setLogs(prevLogs => {
-                            const lastLog = prevLogs[prevLogs.length - 1];
-                            // Only add if it's different from the last log to avoid duplicates from polling
-                            // Also check if the new message is just a prefix of the old one (rare race condition)
-                            if (lastLog !== jobData.progress_message) {
-                                return [...prevLogs, jobData.progress_message];
-                            }
-                            return prevLogs;
-                        });
-                    }
+                    // Check if all jobs are finished
+                    const allFinished = jobs.every((job: any) =>
+                        ['SUCCESS', 'FAILED', 'HALTED'].includes(job.status)
+                    );
 
-                    if (jobData.status !== 'PENDING' && jobData.status !== 'RUNNING' && jobData.status !== 'PROGRESS') {
-                        // Small delay to ensure we catch the final log update if it came in slightly out of order
-                        // or just to let the user see "100%" for a split second before showing success
-                        setTraining(false); // Stop the spinner
-
-                        // Clear logs on success/fail so next time it starts fresh? 
-                        // No, keep them for review until user leaves/starts new.
-
-                        if (jobData.status === 'SUCCESS') {
-                            toast.success('Training Model Completed Successfully!');
-                            setCompletedJobId(null); // Stop polling
-                        } else if (jobData.status === 'FAILED') {
-                            toast.error(`Training Failed: ${jobData.error_message || 'Unknown error'}`);
-                            setCompletedJobId(null); // Stop polling
-                        }
+                    if (allFinished && jobs.length > 0 && training) {
+                        setTraining(false);
+                        toast.success(`Training completed for ${jobs.length} model(s)!`);
                     }
                 }
             } catch (error) {
-                console.error('Error polling job:', error);
+                console.error('Error polling jobs:', error);
             }
-        }, 1000); // Poll every second for better responsiveness
+        }, 2000);
 
         return () => {
             isSubscribed = false;
             clearInterval(intervalId);
         };
-    }, [completedJobId]);
+    }, [sessionJobIds, training]);
+
+    // Separate effect for active log polling (Dialog/Live view)
+    useEffect(() => {
+        if (!activeJobId || !showLogDialog) return;
+
+        let isSubscribed = true;
+        const intervalId = setInterval(async () => {
+            try {
+                const response = await mlApi.get(`/api/training-jobs/${activeJobId}/details/`);
+                if (isSubscribed) {
+                    const jobData = response.data;
+                    if (jobData.progress_message) {
+                        setLogs(prev => {
+                            const last = prev[prev.length - 1];
+                            if (last !== jobData.progress_message) return [...prev, jobData.progress_message];
+                            return prev;
+                        });
+                    }
+                    if (['SUCCESS', 'FAILED', 'HALTED'].includes(jobData.status)) {
+                        // Keep the log open but stop polling
+                        setActiveJobId(null);
+                    }
+                }
+            } catch (error) {
+                console.error('Error polling active logs:', error);
+            }
+        }, 1500);
+
+        return () => {
+            isSubscribed = false;
+            clearInterval(intervalId);
+        };
+    }, [activeJobId, showLogDialog]);
 
     const handleTrain = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!symbol) {
-            toast.error('Please enter a stock symbol');
+        if (trainMode === 'SYMBOL' && !symbol) {
+            toast.error('Please select a stock symbol');
+            return;
+        }
+
+        if (trainMode === 'SECTOR' && !selectedSector) {
+            toast.error('Please select a sector');
             return;
         }
 
@@ -150,18 +216,18 @@ export default function TrainModelPage() {
             return;
         }
 
-        if (startDate && endDate && new Date(startDate) >= new Date(endDate)) {
-            toast.error('Start date must be before end date');
-            return;
-        }
-
         setTraining(true);
-        setJobResult(null); // Clear previous results
-        setLogs([]); // Clear logs
-        const toastId = toast.loading('Initiating training job...');
+        setTraining(true);
+        // Do NOT clear batchJobs here if we want to accumulate sessions? 
+        // Or clear them to start fresh? User says "When two models are trained", likely in one go.
+        // Let's clear for a new "training run" to avoid confusion.
+        setSessionJobIds([]);
+        setBatchJobs([]);
+        setLogs([]);
+
+        const toastId = toast.loading(trainMode === 'SECTOR' ? `Initiating training for ${selectedSector} sector...` : 'Initiating training job...');
 
         try {
-            // Build hyperparameters object
             const hyperparameters: any = {
                 train_split: trainSplit / 100,
                 val_split: valSplit / 100,
@@ -184,43 +250,46 @@ export default function TrainModelPage() {
                 hyperparameters.patience = patience;
             }
 
-            // Train each selected model
-            const jobIds: number[] = [];
+            // In the new API, we can send multiple models if supported or loop.
+            // Our backend currently handles one model_type per request.
+            // But we can now send sector instead of symbol.
 
             for (const modelType of selectedModels) {
-                const response = await api.post('/api/ml/forecasts/train/', {
-                    symbol: symbol.toUpperCase(),
+                const payload: any = {
                     model_type: modelType,
-                    hyperparameters: Object.keys(hyperparameters).length > 0 ? hyperparameters : undefined,
+                    hyperparameters: hyperparameters,
                     optimize: optimize,
                     n_trials: optimize ? nTrials : undefined
-                });
+                };
 
-                if (response.data.job_id) {
-                    jobIds.push(response.data.job_id);
+                if (trainMode === 'SECTOR') {
+                    payload.sector = selectedSector;
+                } else {
+                    payload.symbol = symbol;
+                }
+
+                // Use mlApi instead of api to ensure correct base URL
+                const response = await mlApi.post('/api/forecasts/train/', payload);
+
+                // Collect IDs
+                if (response.data.job_ids) {
+                    // Batch/Sector response
+                    setSessionJobIds(prev => [...prev, ...response.data.job_ids]);
+                } else if (response.data.job_ids) {
+                    // handling potential different response structure
+                    setSessionJobIds(prev => [...prev, ...response.data.job_ids]);
+                } else {
+                    // Fallback using single job detection if needed, though train endpoint returns lists usually
+                    // But if it's a single job for single symbol:
+                    // The backend train endpoint shown returns: job_ids: [...], task_ids: [...]
+                    if (response.data.job_ids) {
+                        setSessionJobIds(prev => [...prev, ...response.data.job_ids]);
+                    }
                 }
             }
 
             toast.dismiss(toastId);
-
-            if (jobIds.length === 1) {
-                // Single job: Poll inline
-                setCompletedJobId(jobIds[0]);
-                toast.success('Training started! Analyzing market data...');
-            } else if (jobIds.length > 1) {
-                // Multiple jobs: Redirect to dashboard as inline view can't show multiple easily yet
-                toast.success(`${jobIds.length} training jobs started!`, {
-                    action: {
-                        label: 'View Dashboard',
-                        onClick: () => router.push('/forecasts')
-                    },
-                    duration: 5000,
-                });
-                setTraining(false);
-            } else {
-                toast.error('Failed to start training job');
-                setTraining(false);
-            }
+            toast.success('Training sequence initiated successfully!');
 
         } catch (error: any) {
             toast.dismiss(toastId);
@@ -276,350 +345,431 @@ export default function TrainModelPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     {/* Configuration Panel - Sticky Sidebar */}
-                    {!training && (
-                        <div className="lg:col-span-4 xl:col-span-3">
-                            <Card className="border-gray-200 shadow-sm overflow-hidden sticky top-6">
-                                <CardHeader className="py-4 px-6 bg-gray-50/50 border-b border-gray-100">
-                                    <div className="flex items-center gap-2">
-                                        <div className="p-1.5 bg-blue-100 text-blue-600 rounded-lg">
-                                            <Settings size={16} />
-                                        </div>
-                                        <div>
-                                            <CardTitle className="text-sm font-bold uppercase tracking-wider text-gray-700">Configuration</CardTitle>
-                                            <CardDescription className="text-[10px]">Set your training parameters</CardDescription>
+                    <div className="lg:col-span-4 xl:col-span-3">
+                        <Card className="border-gray-200 shadow-sm overflow-hidden sticky top-6">
+                            <CardHeader className="py-3 px-5 bg-gray-50/50 border-b border-gray-100">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-1.5 bg-blue-100 text-blue-600 rounded-lg">
+                                        <Settings size={14} />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-sm font-bold uppercase tracking-wider text-gray-700">Configuration</CardTitle>
+                                        <CardDescription className="text-[10px]">Set your training parameters</CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-4 space-y-4">
+                                <form onSubmit={handleTrain} className="space-y-4">
+                                    {/* Training Mode Selection */}
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-bold uppercase text-gray-500">Training Scope</Label>
+                                        <Tabs value={trainMode} onValueChange={(v) => setTrainMode(v as any)} className="w-full">
+                                            <TabsList className="grid grid-cols-2 w-full h-8 bg-gray-100">
+                                                <TabsTrigger value="SYMBOL" className="text-[10px] uppercase font-bold data-[state=active]:bg-white data-[state=active]:text-blue-600 h-7">Single Symbol</TabsTrigger>
+                                                <TabsTrigger value="SECTOR" className="text-[10px] uppercase font-bold data-[state=active]:bg-white data-[state=active]:text-blue-600 h-7">By Sector</TabsTrigger>
+                                            </TabsList>
+                                        </Tabs>
+                                    </div>
+
+                                    {/* Symbol/Sector Input */}
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="target" className="text-[10px] font-bold uppercase text-gray-500">
+                                            {trainMode === 'SYMBOL' ? 'Stock Symbol' : 'Select Sector'}
+                                        </Label>
+
+                                        {trainMode === 'SYMBOL' ? (
+                                            <div className="scale-95 origin-left w-[105%]">
+                                                <CompanySelect
+                                                    value={symbol}
+                                                    onChange={(val) => setSymbol(val)}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <Select value={selectedSector} onValueChange={setSelectedSector}>
+                                                <SelectTrigger className="w-full h-8 text-xs border-gray-300 focus:ring-blue-500">
+                                                    <SelectValue placeholder="Select a sector..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {sectors.map(sector => (
+                                                        <SelectItem key={sector} value={sector} className="text-xs">{sector}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    </div>
+
+                                    {/* Model Selection */}
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-bold uppercase text-gray-500">Model Architecture</Label>
+                                        <div className="grid grid-cols-1 gap-1.5">
+                                            {[
+                                                { id: 'PROPHET', name: 'Prophet', desc: 'Robust time-series stats model' },
+                                                { id: 'LSTM', name: 'LSTM RNN', desc: 'Long-term memory deep learning' },
+                                                { id: 'GRU', name: 'GRU RNN', desc: 'Efficient recurrent architecture' }
+                                            ].map((model) => (
+                                                <div
+                                                    key={model.id}
+                                                    onClick={() => toggleModel(model.id)}
+                                                    className={`p-2.5 rounded-md border cursor-pointer transition-all ${selectedModels.includes(model.id)
+                                                        ? 'border-blue-500 bg-blue-50/50 ring-1 ring-blue-500'
+                                                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center justify-between mb-0.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <BrainCircuit size={12} className={selectedModels.includes(model.id) ? 'text-blue-600' : 'text-gray-400'} />
+                                                            <span className={`text-[11px] font-bold ${selectedModels.includes(model.id) ? 'text-blue-900' : 'text-gray-700'}`}>{model.name}</span>
+                                                        </div>
+                                                        {selectedModels.includes(model.id) && <CheckCircle size={10} className="text-blue-600" />}
+                                                    </div>
+                                                    <p className="text-[9px] text-gray-500 leading-tight">{model.desc}</p>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
-                                </CardHeader>
-                                <CardContent className="p-6 space-y-6">
-                                    <form onSubmit={handleTrain} className="space-y-6">
-                                        {/* Symbol Input */}
-                                        <div className="space-y-2">
-                                            <Label htmlFor="symbol" className="text-xs font-bold uppercase text-gray-500">Stock Symbol</Label>
-                                            <div className="relative">
+
+                                    {/* Date Range */}
+                                    <div className="space-y-2 pt-3 border-t border-gray-100">
+                                        <Label className="text-[10px] font-bold text-gray-500 uppercase">Date Range (Optional)</Label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div className="space-y-1">
+                                                <Label className="text-[9px] text-gray-400 uppercase">Start</Label>
+                                                <div className="relative">
+                                                    <Input
+                                                        type="date"
+                                                        value={startDate}
+                                                        onChange={(e) => setStartDate(e.target.value)}
+                                                        className="h-7 bg-white text-[10px] pl-6"
+                                                        disabled={training}
+                                                    />
+                                                    <Calendar className="absolute left-1.5 top-1.5 text-gray-400" size={10} />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-[9px] text-gray-400 uppercase">End</Label>
+                                                <div className="relative">
+                                                    <Input
+                                                        type="date"
+                                                        value={endDate}
+                                                        onChange={(e) => setEndDate(e.target.value)}
+                                                        className="h-7 bg-white text-[10px] pl-6"
+                                                        disabled={training}
+                                                    />
+                                                    <Calendar className="absolute left-1.5 top-1.5 text-gray-400" size={10} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Data Splits */}
+                                    <div className="space-y-2 pt-3 border-t border-gray-100">
+                                        <Label className="text-[10px] font-bold text-gray-500 uppercase">Data Split (%)</Label>
+                                        <div className="grid grid-cols-3 gap-1.5">
+                                            <div className="space-y-1">
+                                                <Label className="text-[9px] text-gray-400">Train</Label>
                                                 <Input
-                                                    id="symbol"
-                                                    placeholder="e.g. NABIL"
-                                                    value={symbol}
-                                                    onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                                                    className="uppercase font-mono tracking-wider border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                                    type="number"
+                                                    value={trainSplit}
+                                                    onChange={(e) => setTrainSplit(parseInt(e.target.value))}
+                                                    min="50"
+                                                    max="85"
+                                                    className="h-7 text-[10px] px-1 text-center"
                                                     disabled={training}
-                                                    required
                                                 />
-                                                {symbol && (
-                                                    <div className="absolute right-3 top-2.5">
-                                                        {training ? (
-                                                            <Activity className="h-4 w-4 text-blue-500 animate-pulse" />
-                                                        ) : (
-                                                            <CheckCircle className="h-4 w-4 text-green-500" />
-                                                        )}
-                                                    </div>
-                                                )}
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-[9px] text-gray-400">Val</Label>
+                                                <Input
+                                                    type="number"
+                                                    value={valSplit}
+                                                    onChange={(e) => setValSplit(parseInt(e.target.value))}
+                                                    min="5"
+                                                    max="30"
+                                                    className="h-7 text-[10px] px-1 text-center"
+                                                    disabled={training}
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-[9px] text-gray-400">Test</Label>
+                                                <Input
+                                                    type="number"
+                                                    value={100 - trainSplit - valSplit}
+                                                    className="h-7 text-[10px] px-1 text-center bg-gray-50"
+                                                    disabled
+                                                />
                                             </div>
                                         </div>
+                                    </div>
 
-                                        {/* Model Selection */}
-                                        <div className="space-y-2">
-                                            <Label className="text-xs font-bold uppercase text-gray-500">Model Architecture</Label>
-                                            <div className="relative">
-                                                <div
-                                                    className={`border border-gray-300 rounded-md p-2 flex justify-between items-center bg-white cursor-pointer hover:border-blue-400 transition-colors ${training ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                    onClick={() => !training && setIsModelDropdownOpen(!isModelDropdownOpen)}
-                                                >
-                                                    <span className="text-sm font-medium">
-                                                        {selectedModels.length > 0
-                                                            ? `${selectedModels.join(', ')}`
-                                                            : 'Select Models'}
-                                                    </span>
-                                                    <ChevronDown size={16} className={`text-gray-500 transition-transform ${isModelDropdownOpen ? 'rotate-180' : ''}`} />
-                                                </div>
+                                    {/* Advanced Hyperparameters */}
+                                    {selectedModels.some(m => m === 'LSTM' || m === 'GRU') && (
+                                        <div className="space-y-2 pt-3 border-t border-gray-100">
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowAdvanced(!showAdvanced)}
+                                                className="flex items-center justify-between w-full text-[10px] font-bold text-gray-500 uppercase hover:text-blue-600 transition-colors"
+                                            >
+                                                <span>Advanced Settings</span>
+                                                <span className="text-blue-600 text-[9px]">{showAdvanced ? '▼ Hide' : '▶ Show'}</span>
+                                            </button>
 
-                                                {isModelDropdownOpen && (
-                                                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                                                        {['PROPHET', 'LSTM', 'GRU'].map((model) => (
-                                                            <div
-                                                                key={model}
-                                                                className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between border-b border-gray-50 last:border-0"
-                                                                onClick={() => toggleModel(model)}
-                                                            >
-                                                                <div className="flex items-center gap-3">
-                                                                    <BrainCircuit size={16} className={selectedModels.includes(model) ? 'text-blue-600' : 'text-gray-400'} />
-                                                                    <span className={`text-sm ${selectedModels.includes(model) ? 'font-bold text-gray-900' : 'text-gray-600'}`}>{model}</span>
-                                                                </div>
-                                                                {selectedModels.includes(model) && <CheckCircle size={14} className="text-blue-600" />}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Date Range */}
-                                        <div className="space-y-3 pt-4 border-t border-gray-100">
-                                            <Label className="text-xs font-bold text-gray-500 uppercase">Date Range (Optional)</Label>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div className="space-y-1.5">
-                                                    <Label className="text-[10px] text-gray-400 uppercase">Start</Label>
-                                                    <div className="relative">
-                                                        <Input
-                                                            type="date"
-                                                            value={startDate}
-                                                            onChange={(e) => setStartDate(e.target.value)}
-                                                            className="h-8 bg-white text-xs pl-7"
-                                                            disabled={training}
-                                                        />
-                                                        <Calendar className="absolute left-2 top-2 text-gray-400" size={12} />
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <Label className="text-[10px] text-gray-400 uppercase">End</Label>
-                                                    <div className="relative">
-                                                        <Input
-                                                            type="date"
-                                                            value={endDate}
-                                                            onChange={(e) => setEndDate(e.target.value)}
-                                                            className="h-8 bg-white text-xs pl-7"
-                                                            disabled={training}
-                                                        />
-                                                        <Calendar className="absolute left-2 top-2 text-gray-400" size={12} />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Data Splits */}
-                                        <div className="space-y-3 pt-4 border-t border-gray-100">
-                                            <Label className="text-xs font-bold text-gray-500 uppercase">Data Split (%)</Label>
-                                            <div className="grid grid-cols-3 gap-2">
-                                                <div className="space-y-1.5">
-                                                    <Label className="text-[10px] text-gray-400">Train</Label>
-                                                    <Input
-                                                        type="number"
-                                                        value={trainSplit}
-                                                        onChange={(e) => setTrainSplit(parseInt(e.target.value))}
-                                                        min="50"
-                                                        max="85"
-                                                        className="h-8 text-xs"
-                                                        disabled={training}
-                                                    />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <Label className="text-[10px] text-gray-400">Val</Label>
-                                                    <Input
-                                                        type="number"
-                                                        value={valSplit}
-                                                        onChange={(e) => setValSplit(parseInt(e.target.value))}
-                                                        min="5"
-                                                        max="30"
-                                                        className="h-8 text-xs"
-                                                        disabled={training}
-                                                    />
-                                                </div>
-                                                <div className="space-y-1.5">
-                                                    <Label className="text-[10px] text-gray-400">Test</Label>
-                                                    <Input
-                                                        type="number"
-                                                        value={100 - trainSplit - valSplit}
-                                                        className="h-8 text-xs bg-gray-50"
-                                                        disabled
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Advanced Hyperparameters */}
-                                        {selectedModels.some(m => m === 'LSTM' || m === 'GRU') && (
-                                            <div className="space-y-3 pt-4 border-t border-gray-100">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowAdvanced(!showAdvanced)}
-                                                    className="flex items-center justify-between w-full text-xs font-bold text-gray-500 uppercase"
-                                                >
-                                                    <span>Advanced Settings</span>
-                                                    <span className="text-blue-600 text-[10px]">{showAdvanced ? '▼ Hide' : '▶ Show'}</span>
-                                                </button>
-
-                                                {showAdvanced && (
-                                                    <div className="space-y-3 bg-gray-50 p-3 rounded-lg">
-                                                        <div className="grid grid-cols-2 gap-3">
-                                                            <div className="space-y-1.5">
-                                                                <Label className="text-[10px] text-gray-500">Learning Rate</Label>
-                                                                <Input
-                                                                    type="number"
-                                                                    value={learningRate}
-                                                                    onChange={(e) => setLearningRate(parseFloat(e.target.value))}
-                                                                    step="0.0001"
-                                                                    className="h-7 text-xs"
-                                                                    disabled={training}
-                                                                />
-                                                            </div>
-                                                            <div className="space-y-1.5">
-                                                                <Label className="text-[10px] text-gray-500">Epochs</Label>
-                                                                <Input
-                                                                    type="number"
-                                                                    value={epochs}
-                                                                    onChange={(e) => setEpochs(parseInt(e.target.value))}
-                                                                    className="h-7 text-xs"
-                                                                    disabled={training}
-                                                                />
-                                                            </div>
-                                                            <div className="space-y-1.5">
-                                                                <Label className="text-[10px] text-gray-500">Batch Size</Label>
-                                                                <Input
-                                                                    type="number"
-                                                                    value={batchSize}
-                                                                    onChange={(e) => setBatchSize(parseInt(e.target.value))}
-                                                                    className="h-7 text-xs"
-                                                                    disabled={training}
-                                                                />
-                                                            </div>
-                                                            <div className="space-y-1.5">
-                                                                <Label className="text-[10px] text-gray-500">Hidden Units</Label>
-                                                                <Input
-                                                                    type="number"
-                                                                    value={hiddenUnits}
-                                                                    onChange={(e) => setHiddenUnits(parseInt(e.target.value))}
-                                                                    className="h-7 text-xs"
-                                                                    disabled={training}
-                                                                />
-                                                            </div>
+                                            {showAdvanced && (
+                                                <div className="space-y-2 bg-gray-50 p-2 rounded-md border border-gray-100">
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <div className="space-y-1">
+                                                            <Label className="text-[9px] text-gray-500">Learning Rate</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={learningRate}
+                                                                onChange={(e) => setLearningRate(parseFloat(e.target.value))}
+                                                                step="0.0001"
+                                                                className="h-6 text-[10px]"
+                                                                disabled={training}
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <Label className="text-[9px] text-gray-500">Epochs</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={epochs}
+                                                                onChange={(e) => setEpochs(parseInt(e.target.value))}
+                                                                className="h-6 text-[10px]"
+                                                                disabled={training}
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <Label className="text-[9px] text-gray-500">Batch Size</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={batchSize}
+                                                                onChange={(e) => setBatchSize(parseInt(e.target.value))}
+                                                                className="h-6 text-[10px]"
+                                                                disabled={training}
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <Label className="text-[9px] text-gray-500">Hidden Units</Label>
+                                                            <Input
+                                                                type="number"
+                                                                value={hiddenUnits}
+                                                                onChange={(e) => setHiddenUnits(parseInt(e.target.value))}
+                                                                className="h-6 text-[10px]"
+                                                                disabled={training}
+                                                            />
                                                         </div>
                                                     </div>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {/* Optimization Section */}
-                                        <div className="space-y-3 pt-4 border-t border-gray-100">
-                                            <div className="flex items-center justify-between">
-                                                <Label className="text-xs font-bold text-gray-500 uppercase">Hyperparameter Optimization</Label>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={optimize}
-                                                    onChange={(e) => setOptimize(e.target.checked)}
-                                                    className="h-3.5 w-3.5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                                    disabled={training}
-                                                />
-                                            </div>
-                                            <p className="text-[10px] text-gray-500">
-                                                Auto-tune parameters using Optuna. This significantly increases training time.
-                                            </p>
-
-                                            {optimize && (
-                                                <div className="space-y-1.5 bg-blue-50 p-2.5 rounded-md">
-                                                    <Label className="text-[10px] text-blue-700 uppercase font-bold">Number of Trials</Label>
-                                                    <Input
-                                                        type="number"
-                                                        value={nTrials}
-                                                        onChange={(e) => setNTrials(parseInt(e.target.value))}
-                                                        min="5"
-                                                        max="500"
-                                                        className="h-8 text-xs border-blue-200"
-                                                        disabled={training}
-                                                    />
                                                 </div>
                                             )}
                                         </div>
+                                    )}
 
-                                        {/* Submit Button */}
-                                        <div className="space-y-2 pt-6">
-                                            <Button
-                                                type="submit"
+                                    {/* Optimization Section */}
+                                    <div className="space-y-2 pt-3 border-t border-gray-100">
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-[10px] font-bold text-gray-500 uppercase">Hyperparameter Optimization</Label>
+                                            <input
+                                                type="checkbox"
+                                                checked={optimize}
+                                                onChange={(e) => setOptimize(e.target.checked)}
+                                                className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                                 disabled={training}
-                                                className={`w-full h-10 font-bold uppercase tracking-wider text-xs shadow-md border-0 ${!symbol || selectedModels.length === 0
-                                                    ? 'bg-gray-400 cursor-not-allowed hover:bg-gray-400'
-                                                    : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200'
-                                                    } text-white transition-colors duration-200`}
-                                            >
-                                                {training ? (
-                                                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" /> Training...</>
-                                                ) : (
-                                                    <><Play size={14} className="mr-2" /> Start Training ({selectedModels.length})</>
-                                                )}
-                                            </Button>
+                                            />
                                         </div>
-                                    </form>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    )}
 
-                    {/* Right Panel - Results & Logs */}
-                    <div className={`${training ? 'lg:col-span-12 xl:col-span-12 h-[calc(100vh-10rem)]' : 'lg:col-span-8 xl:col-span-9 min-h-[700px]'} bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col p-6 transition-all duration-300`}>
-                        {training ? (
-                            <div className="h-full flex flex-col">
-                                {/* Compact Header & Controls */}
-                                <div className="flex items-center justify-between mb-4 px-1">
-                                    <div className="flex items-center gap-3">
-                                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
-                                        <div>
-                                            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                                                Training {symbol} Model...
-                                                <span className="text-xs font-normal text-gray-500 hidden sm:inline-block">({nTrials} trials)</span>
-                                            </h3>
-                                        </div>
+                                        {optimize && (
+                                            <div className="space-y-1 bg-blue-50 p-2 rounded-md">
+                                                <Label className="text-[9px] text-blue-700 uppercase font-bold">Number of Trials</Label>
+                                                <Input
+                                                    type="number"
+                                                    value={nTrials}
+                                                    onChange={(e) => setNTrials(parseInt(e.target.value))}
+                                                    min="5"
+                                                    max="500"
+                                                    className="h-7 text-[10px] border-blue-200"
+                                                    disabled={training}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
-                                    <Button
-                                        onClick={handleStop}
-                                        variant="destructive"
-                                        size="sm"
-                                        className="h-8 text-xs font-bold uppercase tracking-wider"
-                                    >
-                                        <X size={14} className="mr-1.5" /> Stop Training
-                                    </Button>
+
+                                    {/* Submit Button */}
+                                    <div className="pt-4">
+                                        <Button
+                                            type="submit"
+                                            disabled={training || (trainMode === 'SYMBOL' && !symbol) || (trainMode === 'SECTOR' && !selectedSector) || selectedModels.length === 0}
+                                            className={`w-full h-9 font-bold uppercase tracking-wider text-[10px] shadow-md border-0 ${training || (trainMode === 'SYMBOL' && !symbol) || (trainMode === 'SECTOR' && !selectedSector) || selectedModels.length === 0
+                                                ? 'bg-gray-400 cursor-not-allowed'
+                                                : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200'
+                                                } text-white transition-all`}
+                                        >
+                                            {training ? (
+                                                <><div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" /> Training...</>
+                                            ) : (
+                                                <><Play size={12} className="mr-2" /> Start Training</>
+                                            )}
+                                        </Button>
+                                    </div>
+                                </form>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Right Panel - Results & Progress */}
+                    <div className="lg:col-span-8 xl:col-span-9 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col transition-all min-h-[600px]">
+                        {batchJobs.length > 0 || training ? (
+                            <div className="p-6 h-full flex flex-col">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                            <Activity className={`${training ? 'animate-pulse text-blue-500' : 'text-gray-400'}`} size={20} />
+                                            {training ? 'Training in Progress' : 'Training Sequence Results'}
+                                        </h3>
+                                        <p className="text-xs text-gray-500">
+                                            {batchJobs.length} models being processed {trainMode === 'SECTOR' ? `for ${selectedSector}` : ''}
+                                        </p>
+                                    </div>
+                                    {training && (
+                                        <Button variant="destructive" size="sm" onClick={() => setTraining(false)} className="h-8 text-[10px] font-bold uppercase">
+                                            Stop All
+                                        </Button>
+                                    )}
                                 </div>
 
-                                {/* Full Height Log Terminal */}
-                                <div className="flex-1 bg-slate-950 rounded-xl overflow-hidden flex flex-col shadow-inner border border-slate-800">
-                                    <div className="bg-slate-900 px-4 py-2.5 flex items-center justify-between border-b border-slate-800">
-                                        <div className="flex items-center gap-2">
-                                            <Activity size={14} className="text-green-400 animate-pulse" />
-                                            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Live Training Log</span>
-                                        </div>
-                                        <span className="text-[10px] text-slate-500 font-mono">{completedJobId ? `JOB ID: ${completedJobId}` : 'INITIALIZING...'}</span>
-                                    </div>
-                                    <div className="flex-1 p-4 overflow-y-auto font-mono text-xs space-y-1.5 custom-scrollbar bg-slate-950">
-                                        {logs.length > 0 ? (
-                                            logs.map((line: string, idx: number) => (
-                                                <div key={idx} className="flex gap-3 font-mono text-[11px] leading-relaxed animate-in fade-in slide-in-from-left-1 duration-100">
-                                                    <span className="text-slate-700 select-none w-6 text-right">{String(idx + 1).padStart(2, '0')}</span>
-                                                    <span className="text-green-400/90">{line}</span>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="text-slate-600 italic px-9">Initializing training sequence...</div>
-                                        )}
-                                        <div ref={logEndRef} />
-                                        <div className="animate-pulse text-blue-500 px-9 mt-2">_</div>
-                                    </div>
+                                <div className="border rounded-lg overflow-hidden border-gray-100 shadow-sm transition-all duration-500">
+                                    <Table>
+                                        <TableHeader className="bg-gray-50/50">
+                                            <TableRow>
+                                                <TableHead className="text-[10px] uppercase font-bold text-gray-500 w-[100px]">Symbol</TableHead>
+                                                <TableHead className="text-[10px] uppercase font-bold text-gray-500">Model</TableHead>
+                                                <TableHead className="text-[10px] uppercase font-bold text-gray-500">Status</TableHead>
+                                                <TableHead className="text-[10px] uppercase font-bold text-gray-500">Progress</TableHead>
+                                                <TableHead className="text-[10px] uppercase font-bold text-gray-500 text-right">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {batchJobs.map((job) => (
+                                                <TableRow key={job.id} className="hover:bg-blue-50/30 transition-colors group">
+                                                    <TableCell className="font-mono font-bold text-blue-600">{job.symbol}</TableCell>
+                                                    <TableCell>
+                                                        <Badge variant="outline" className="text-[10px] bg-blue-50/50 border-blue-100 text-blue-700">
+                                                            {job.model_type}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div className={`w-2 h-2 rounded-full ${job.status === 'SUCCESS' ? 'bg-emerald-500' :
+                                                                job.status === 'FAILED' ? 'bg-rose-500' :
+                                                                    'bg-amber-500 animate-pulse'
+                                                                }`} />
+                                                            <span className="text-xs font-medium text-gray-700">{job.status}</span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="max-w-[200px]">
+                                                        <div className="space-y-1">
+                                                            <p className="text-[10px] text-gray-500 truncate">{job.progress_message || 'Waiting...'}</p>
+                                                            <div className="w-full bg-gray-100 h-1 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className={`h-full transition-all duration-500 ${job.status === 'SUCCESS' ? 'bg-emerald-500 w-full' :
+                                                                        job.status === 'FAILED' ? 'bg-rose-500 w-full' :
+                                                                            'bg-blue-500 w-1/2 animate-pulse'
+                                                                        }`}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-7 text-[10px] font-bold text-blue-600 hover:text-blue-700 hover:bg-blue-100"
+                                                            onClick={() => {
+                                                                setActiveJobId(job.id);
+                                                                setLogs([]);
+                                                                setShowLogDialog(true);
+                                                            }}
+                                                        >
+                                                            View Logs
+                                                        </Button>
+                                                        {job.status === 'SUCCESS' && (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="h-7 text-[10px] font-bold text-gray-700 hover:bg-gray-50 ml-1"
+                                                                onClick={() => router.push(`/forecasts/train/${job.id}`)}
+                                                            >
+                                                                View Results
+                                                            </Button>
+                                                        )}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                            {batchJobs.length === 0 && training && (
+                                                <TableRow>
+                                                    <TableCell colSpan={5} className="h-32 text-center">
+                                                        <div className="flex flex-col items-center justify-center text-gray-400 gap-2">
+                                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
+                                                            <p className="text-xs">Initializing batch training...</p>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
                                 </div>
                             </div>
                         ) : jobResult ? (
-                            <div className="animate-in fade-in duration-500">
+                            <div className="p-6 animate-in fade-in duration-500 h-full">
                                 <div className="mb-6 flex justify-between items-center">
-                                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                        <CheckCircle className="text-emerald-500 w-5 h-5" />
-                                        Training Result: {jobResult.symbol}
-                                    </h3>
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => setJobResult(null)}
-                                    >
-                                        New Forecast
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                            <CheckCircle className="text-emerald-500 w-5 h-5" />
+                                            Training Result: {jobResult.symbol}
+                                        </h3>
+                                        <p className="text-xs text-gray-500">Model trained and validated successfully</p>
+                                    </div>
+                                    <Button size="sm" variant="outline" onClick={() => setJobResult(null)} className="h-8 text-xs">
+                                        New Training
                                     </Button>
                                 </div>
                                 <ForecastResultView job={jobResult} />
                             </div>
                         ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                                <Activity size={48} className="mb-4 opacity-20" />
-                                <p className="text-lg font-medium">Ready to Train</p>
-                                <p className="text-sm">Configure parameters and click "Start Training" to begin.</p>
+                            <div className="h-full flex flex-col items-center justify-center text-gray-400 p-12 text-center">
+                                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+                                    <Activity size={32} className="opacity-20" />
+                                </div>
+                                <h3 className="text-lg font-bold text-gray-900 mb-1">Ready for Intelligence</h3>
+                                <p className="text-sm max-w-md">
+                                    Select a stock or sector on the left to begin training advanced forecasting models.
+                                    Our LSTM, GRU, and Prophet architectures will analyze historical patterns to predict future performance.
+                                </p>
                             </div>
                         )}
                     </div>
                 </div>
+
+                {/* Log Dialog */}
+                <Dialog open={showLogDialog} onOpenChange={setShowLogDialog}>
+                    <DialogContent className="max-w-3xl h-[600px] flex flex-col p-0 bg-slate-950 border-slate-800">
+                        <DialogHeader className="p-4 border-b border-slate-800 bg-slate-900 shrink-0">
+                            <DialogTitle className="text-slate-200 flex items-center gap-2 text-sm font-bold uppercase">
+                                <Activity size={16} className="text-blue-500" />
+                                Training Logs
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="flex-1 p-4 overflow-y-auto font-mono text-[11px] leading-relaxed space-y-1 custom-scrollbar">
+                            {logs.map((line, idx) => (
+                                <div key={idx} className="flex gap-3 animate-in fade-in slide-in-from-left-1 duration-100">
+                                    <span className="text-slate-700 select-none w-6 text-right">{String(idx + 1).padStart(2, '0')}</span>
+                                    <span className="text-green-400/90 whitespace-pre-wrap">{line}</span>
+                                </div>
+                            ))}
+                            {logs.length === 0 && <div className="text-slate-600 italic">Connecting to worker logs...</div>}
+                            <div ref={logEndRef} />
+                        </div>
+                    </DialogContent>
+                </Dialog>
             </div>
-        </DashboardLayout>
+        </DashboardLayout >
     );
 }

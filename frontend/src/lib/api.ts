@@ -7,11 +7,13 @@ const ML_SERVICE_URL = process.env.NEXT_PUBLIC_ML_SERVICE_URL || 'http://localho
 // Main backend API client
 const api = axios.create({
     baseURL: API_BASE_URL,
+    withCredentials: true,
 });
 
 // ML service API client
 export const mlApi = axios.create({
     baseURL: ML_SERVICE_URL,
+    withCredentials: true,
 });
 
 // Helper to clear session

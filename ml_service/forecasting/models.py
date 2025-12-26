@@ -59,6 +59,8 @@ class TrainingJob(models.Model):
     error_message = models.TextField(blank=True, help_text="Error details if failed")
     hyperparameters = models.JSONField(default=dict)
     optimize = models.BooleanField(default=False)
+    batch_id = models.UUIDField(null=True, blank=True, db_index=True, help_text="Group ID for batch training (e.g. sectors)")
+    sector = models.CharField(max_length=100, null=True, blank=True, db_index=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     forecast_model = models.ForeignKey(ForecastModel, on_delete=models.SET_NULL, null=True, blank=True, 
                                       related_name='training_jobs', help_text="Resulting model if successful")

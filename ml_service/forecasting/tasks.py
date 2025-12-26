@@ -2,7 +2,8 @@ from celery import shared_task
 from django.contrib.auth.models import User
 import os
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import timedelta
+from django.utils import timezone
 
 from .models import ForecastModel, Forecast, TrainingJob
 from .data_preprocessor import DataPreprocessor
@@ -211,12 +212,17 @@ def train_model_task(self, symbol, model_type, hyperparameters, user_id=None, op
         job.save(update_fields=['progress_message'])
         self.update_state(state='PROGRESS', meta={'status': 'Evaluating model...'})
         
+        # Calculate test dates for correct evaluation (Prophet needs them)
+        test_size = len(data_splits['X_test'])
+        test_start_idx = len(original_df) - test_size
+        test_dates = original_df.index[test_start_idx:]
+
         # Evaluate on test set
-        test_metrics = forecaster.evaluate(data_splits['X_test'], data_splits['y_test'])
+        test_metrics = forecaster.evaluate(data_splits['X_test'], data_splits['y_test'], dates=test_dates)
         
         # Calculate R² score
         from sklearn.metrics import r2_score
-        test_predictions = forecaster.predict(data_splits['X_test'])
+        test_predictions = forecaster.predict(data_splits['X_test'], dates=test_dates)
         r2 = r2_score(data_splits['y_test'], test_predictions)
         test_metrics['r2'] = float(r2)
         
@@ -237,7 +243,7 @@ def train_model_task(self, symbol, model_type, hyperparameters, user_id=None, op
         # Save model
         model_dir = os.path.join('ml_models', symbol)
         os.makedirs(model_dir, exist_ok=True)
-        model_filename = f"{model_type.lower()}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        model_filename = f"{model_type.lower()}_{timezone.now().strftime('%Y%m%d_%H%M%S')}"
         model_path = os.path.join(model_dir, model_filename)
         forecaster.save(model_path)
         
@@ -356,7 +362,7 @@ def train_model_task(self, symbol, model_type, hyperparameters, user_id=None, op
             # Generate test set predictions for visualization (last 90 trading days)
             self.update_state(state='PROGRESS', meta={'status': 'Generating test set predictions for validation...'}
 )
-            test_predictions = forecaster.predict(data_splits['X_test'])
+            test_predictions = forecaster.predict(data_splits['X_test'], dates=test_dates)
             test_predictions_unscaled = preprocessor.inverse_transform_predictions(test_predictions)
             
             # Get test set dates (last 90 days of historical data)
@@ -382,7 +388,7 @@ def train_model_task(self, symbol, model_type, hyperparameters, user_id=None, op
             try:
                 job = TrainingJob.objects.get(task_id=self.request.id)
                 job.status = 'SUCCESS'
-                job.completed_at = datetime.now()
+                job.completed_at = timezone.now()
                 job.progress_message = (job.progress_message or '') + '\n✅ Training completed successfully'
                 job.result_data = {
                     'model_id': forecast_model.id,
@@ -422,7 +428,7 @@ def train_model_task(self, symbol, model_type, hyperparameters, user_id=None, op
             try:
                 job = TrainingJob.objects.get(task_id=self.request.id)
                 job.status = 'SUCCESS'
-                job.completed_at = datetime.now()
+                job.completed_at = timezone.now()
                 job.progress_message = f'✅ Training complete!\n⚠️ Forecast generation skipped: {str(forecast_error)}'
                 job.result_data = {
                     'model_id': forecast_model.id,
@@ -458,7 +464,7 @@ def train_model_task(self, symbol, model_type, hyperparameters, user_id=None, op
         try:
             job = TrainingJob.objects.get(task_id=self.request.id)
             job.status = 'FAILED'
-            job.completed_at = datetime.now()
+            job.completed_at = timezone.now()
             job.error_message = str(e)
             job.progress_message = 'Failed: ' + str(e)
             job.save()

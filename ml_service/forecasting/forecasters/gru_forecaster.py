@@ -130,7 +130,7 @@ class GRUForecaster(BaseForecaster):
             'epochs_trained': len(history.history['loss'])
         }
     
-    def predict(self, X: np.ndarray) -> np.ndarray:
+    def predict(self, X: np.ndarray, dates: Optional[pd.Index] = None) -> np.ndarray:
         if not self.is_trained:
             raise ValueError("Model must be trained before prediction")
         return self.model.predict(X, verbose=0).flatten()
@@ -139,12 +139,12 @@ class GRUForecaster(BaseForecaster):
         if not self.is_trained:
             raise ValueError("Cannot save untrained model")
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        self.model.save(f"{file_path}.h5")
+        self.model.save(f"{file_path}.keras")
         with open(f"{file_path}_metadata.pkl", 'wb') as f:
             pickle.dump({'scaler': self.scaler, 'hyperparameters': self.hyperparameters, 'symbol': self.symbol}, f)
     
     def load(self, file_path: str):
-        self.model = keras.models.load_model(f"{file_path}.h5")
+        self.model = keras.models.load_model(f"{file_path}.keras")
         with open(f"{file_path}_metadata.pkl", 'rb') as f:
             metadata = pickle.load(f)
         self.scaler = metadata['scaler']

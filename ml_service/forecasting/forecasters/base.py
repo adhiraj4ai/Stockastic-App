@@ -58,7 +58,7 @@ class BaseForecaster(ABC):
         pass
     
     @abstractmethod
-    def predict(self, X: np.ndarray) -> np.ndarray:
+    def predict(self, X: np.ndarray, dates: Optional[pd.Index] = None) -> np.ndarray:
         """
         Generate predictions for the given input.
         
@@ -70,7 +70,7 @@ class BaseForecaster(ABC):
         """
         pass
     
-    def evaluate(self, X_test: np.ndarray, y_test: np.ndarray) -> Dict:
+    def evaluate(self, X_test: np.ndarray, y_test: np.ndarray, dates: Optional[pd.Index] = None) -> Dict:
         """
         Evaluate the model on test data.
         Calculates metrics on ORIGINAL valid scale (inverse transformed).
@@ -78,6 +78,7 @@ class BaseForecaster(ABC):
         Args:
             X_test: Test features
             y_test: Test targets (scaled)
+            dates: Optional test dates (for Prophet)
             
         Returns:
             Dictionary containing evaluation metrics (MAPE, RMSE, MAE)
@@ -86,7 +87,7 @@ class BaseForecaster(ABC):
             raise ValueError("Model must be trained before evaluation")
         
         # Get scaled predictions
-        predictions_scaled = self.predict(X_test)
+        predictions_scaled = self.predict(X_test, dates=dates)
         
         # Check if we have a scaler to inverse transform
         if hasattr(self, 'scaler') and self.scaler is not None:

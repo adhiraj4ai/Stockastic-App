@@ -5,14 +5,21 @@ from .models import ForecastModel, Forecast, ForecastBacktest, ForecastAccuracy,
 class ForecastModelSerializer(serializers.ModelSerializer):
     """Serializer for ForecastModel"""
     
+    training_job_id = serializers.SerializerMethodField()
+    
     class Meta:
         model = ForecastModel
         fields = [
             'id', 'symbol', 'model_type', 'trained_at', 'training_samples',
             'validation_loss', 'test_mape', 'test_rmse', 'file_path',
-            'hyperparameters', 'is_active', 'created_by'
+            'hyperparameters', 'is_active', 'created_by', 'training_job_id'
         ]
         read_only_fields = ['id', 'trained_at', 'file_path', 'created_by']
+
+
+    def get_training_job_id(self, obj):
+        job = obj.training_jobs.order_by('-started_at').first()
+        return job.id if job else None
 
 
 class TrainingJobSerializer(serializers.ModelSerializer):
@@ -24,10 +31,9 @@ class TrainingJobSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'task_id', 'symbol', 'model_type', 'status', 'started_at',
             'completed_at', 'duration', 'progress_message', 'result_data',
-            'error_message', 'hyperparameters', 'optimize', 'created_by',
-            'forecast_model'
+            'error_message', 'hyperparameters', 'optimize', 'batch_id', 'sector'
         ]
-        read_only_fields = ['id', 'started_at', 'completed_at', 'duration']
+        read_only_fields = ['id', 'task_id', 'started_at', 'completed_at', 'duration']
     
     def get_duration(self, obj):
         return obj.duration
@@ -75,11 +81,17 @@ class ForecastAccuracySerializer(serializers.ModelSerializer):
 
 class TrainModelRequestSerializer(serializers.Serializer):
     """Serializer for model training requests"""
-    symbol = serializers.CharField(max_length=20)
+    symbol = serializers.CharField(max_length=20, required=False)
+    sector = serializers.CharField(max_length=100, required=False)
     model_type = serializers.ChoiceField(choices=['LSTM', 'GRU', 'PROPHET'])
     hyperparameters = serializers.JSONField(required=False, default=dict)
     optimize = serializers.BooleanField(required=False, default=False)
-    n_trials = serializers.IntegerField(required=False, default=50, min_value=10, max_value=200)
+    n_trials = serializers.IntegerField(required=False, default=50, min_value=5, max_value=500)
+
+    def validate(self, data):
+        if not data.get('symbol') and not data.get('sector'):
+            raise serializers.ValidationError("Either symbol or sector must be provided.")
+        return data
 
 
 class GenerateForecastRequestSerializer(serializers.Serializer):

@@ -39,3 +39,7 @@ venv_ml312/
 # OS
 .DS_Store
 Thumbs.db
+
+*.pkl
+*.h5
+*.keras

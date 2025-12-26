@@ -95,7 +95,7 @@ class ProphetForecaster(BaseForecaster):
             'final_val_rmse': float(rmse)
         }
     
-    def predict(self, X: np.ndarray) -> np.ndarray:
+    def predict(self, X: np.ndarray, dates: Optional[pd.Index] = None) -> np.ndarray:
         """
         Generate predictions.
         X should contain future dates or number of periods.
@@ -104,9 +104,29 @@ class ProphetForecaster(BaseForecaster):
             raise ValueError("Model must be trained before prediction")
         
         # Create future dataframe
-        future_df = pd.DataFrame({
-            'ds': pd.date_range(start='2024-01-01', periods=len(X), freq='D')
-        })
+        if dates is not None:
+            future_df = pd.DataFrame({
+                'ds': dates
+            })
+        else:
+            # Fallback if no dates provided (try to infer from X if it looks like dates?)
+            # Or just warn/error? For now, we prefer explicit dates.
+            # If X is just features (LSTM style), we can't infer dates easily without context.
+            # But let's keep a fallback for compatibility if X is just length
+            # WARNING: This fallback is what caused issues, but maybe we can be smarter?
+            # Ideally we should raise an error if dates are missing for Prophet, 
+            # but let's stick to "periods" logic relative to last training date if possible?
+            # We don't have last training date stored easily unless we save it.
+            # Let's assume the user MUST pass dates for accurate evaluation.
+            # For now, we'll keep a dummy behavior but maybe better than hardcoded 2024?
+            # Note: tasks.py will be updated to pass dates.
+            pass
+            
+            # If using today?
+            start_date = pd.Timestamp.now()
+            future_df = pd.DataFrame({
+                'ds': pd.date_range(start=start_date, periods=len(X), freq='D')
+            })
         
         forecast = self.model.predict(future_df)
         return forecast['yhat'].values

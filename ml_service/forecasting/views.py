@@ -1,16 +1,17 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.utils import timezone
-from .external_models import DailyStockPrice
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 import os
+import uuid
 from datetime import datetime, timedelta
 import pandas as pd
 
 from .models import ForecastModel, Forecast, ForecastBacktest, TrainingJob
+from .external_models import DailyStockPrice, Company
 from .serializers import (
     ForecastModelSerializer, ForecastSerializer, ForecastBacktestSerializer,
     TrainModelRequestSerializer, GenerateForecastRequestSerializer, TrainingJobSerializer
@@ -49,59 +50,80 @@ class ForecastViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(model_type=model_type)
         if is_active is not None:
             queryset = queryset.filter(is_active=is_active.lower() == 'true')
+            
+        is_published = self.request.query_params.get('is_published')
+        if is_published is not None:
+            queryset = queryset.filter(is_published=is_published.lower() == 'true')
         
         return queryset
     
     @action(detail=False, methods=['post'])
     def train(self, request):
         """
-        Train a new forecasting model (async).
+        Train a new forecasting model or batch of models by sector (async).
         POST /api/ml/forecasts/train/
-        Body: {symbol, model_type, hyperparameters}
-        Returns: task_id for tracking progress
+        Body: {symbol?, sector?, model_type, hyperparameters, optimize, n_trials}
         """
         from .tasks import train_model_task
         
         serializer = TrainModelRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        symbol = serializer.validated_data['symbol']
+        symbol = serializer.validated_data.get('symbol')
+        sector = serializer.validated_data.get('sector')
         model_type = serializer.validated_data['model_type']
         hyperparameters = serializer.validated_data.get('hyperparameters', {})
         optimize = serializer.validated_data.get('optimize', False)
         n_trials = serializer.validated_data.get('n_trials', 50)
         
+        symbols_to_train = []
+        if sector:
+            symbols_to_train = list(Company.objects.filter(sector=sector).values_list('symbol', flat=True))
+            if not symbols_to_train:
+                return Response({'error': f'No companies found in sector: {sector}'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            symbols_to_train = [symbol.upper()]
+
+        batch_id = uuid.uuid4() if len(symbols_to_train) > 1 or sector else None
+        job_ids = []
+        task_ids = []
+
         try:
-            # Dispatch async task
-            task = train_model_task.delay(
-                symbol=symbol,
-                model_type=model_type,
-                hyperparameters=hyperparameters,
-                user_id=request.user.id,
-                optimize=optimize,
-                n_trials=n_trials
-            )
-            
-            # Create TrainingJob record
-            training_job = TrainingJob.objects.create(
-                task_id=task.id,
-                symbol=symbol,
-                model_type=model_type,
-                status='PENDING',
-                hyperparameters=hyperparameters,
-                optimize=optimize,
-                created_by=request.user
-            )
+            for sym in symbols_to_train:
+                # Dispatch async task
+                task = train_model_task.delay(
+                    symbol=sym,
+                    model_type=model_type,
+                    hyperparameters=hyperparameters,
+                    user_id=request.user.id,
+                    optimize=optimize,
+                    n_trials=n_trials
+                )
+                
+                # Create TrainingJob record
+                training_job = TrainingJob.objects.create(
+                    task_id=task.id,
+                    symbol=sym,
+                    model_type=model_type,
+                    status='PENDING',
+                    hyperparameters=hyperparameters,
+                    optimize=optimize,
+                    batch_id=batch_id,
+                    sector=sector,
+                    created_by=request.user
+                )
+                job_ids.append(training_job.id)
+                task_ids.append(task.id)
             
             return Response({
-                'message': 'Model training started' + (' with hyperparameter optimization' if optimize else ''),
-                'task_id': task.id,
-                'job_id': training_job.id,
-                'symbol': symbol,
+                'message': f'Training started for {len(symbols_to_train)} symbols' + (' with optimization' if optimize else ''),
+                'batch_id': batch_id,
+                'job_ids': job_ids,
+                'task_ids': task_ids,
+                'symbols': symbols_to_train,
                 'model_type': model_type,
-                'optimize': optimize,
-                'n_trials': n_trials if optimize else None,
-                'status_url': f'/api/ml/forecasts/task_status/{task.id}/'
+                'sector': sector,
+                'optimize': optimize
             }, status=status.HTTP_202_ACCEPTED)
             
         except Exception as e:
@@ -223,11 +245,19 @@ class TrainingJobViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = super().get_queryset()
         status_filter = self.request.query_params.get('status')
         symbol = self.request.query_params.get('symbol')
+        batch_id = self.request.query_params.get('batch_id')
         
         if status_filter:
             queryset = queryset.filter(status=status_filter.upper())
         if symbol:
             queryset = queryset.filter(symbol=symbol)
+        if batch_id:
+            queryset = queryset.filter(batch_id=batch_id)
+        
+        ids = self.request.query_params.get('ids')
+        if ids:
+            ids_list = [int(id) for id in ids.split(',') if id.isdigit()]
+            queryset = queryset.filter(id__in=ids_list)
         
         # Filter by user if not staff
         if not self.request.user.is_staff:

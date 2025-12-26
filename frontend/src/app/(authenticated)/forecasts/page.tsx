@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -20,6 +20,7 @@ interface ForecastModel {
     test_mape: number;
     test_rmse: number;
     is_active: boolean;
+    training_job_id?: number | null;
 }
 
 interface TrainingJob {
@@ -58,26 +59,10 @@ export default function ForecastsPage() {
     const [recentJobsTotalPages, setRecentJobsTotalPages] = useState(1);
     const [recentJobsTotalCount, setRecentJobsTotalCount] = useState(0);
 
-    useEffect(() => {
-        fetchModels();
-        fetchJobs();
-
-        // Poll for job updates every 5 seconds
-        const interval = setInterval(fetchJobs, 5000);
-        return () => clearInterval(interval);
-    }, []);
-
-    // Poll for running jobs every 5 seconds
-    useEffect(() => {
-        const interval = setInterval(() => {
-            fetchJobs();
-        }, 5000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const fetchModels = async () => {
+    const fetchModels = useCallback(async () => {
         try {
-            const response = await mlApi.get(`/api/forecasts/?page=${modelsPage}&page_size=${modelsPageSize}`);
+            // Only fetch published models for this list
+            const response = await mlApi.get(`/api/forecasts/?is_published=true&page=${modelsPage}&page_size=${modelsPageSize}`);
             setModels(response.data.results || response.data);
             if (response.data.count) {
                 setModelsTotalCount(response.data.count);
@@ -88,17 +73,34 @@ export default function ForecastsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [modelsPage, modelsPageSize]);
 
-    const fetchJobs = async () => {
+    const fetchJobs = useCallback(async () => {
         try {
-            // Fetch all jobs sorted by started_at descending
-            const response = await api.get('/api/ml/training-jobs/');
+            // Fetch jobs with pagination
+            const response = await api.get(`/api/ml/training-jobs/?page=${recentJobsPage}&page_size=${recentJobsPageSize}`);
             setAllJobs(response.data.results || response.data);
+            if (response.data.count) {
+                setRecentJobsTotalCount(response.data.count);
+                setRecentJobsTotalPages(Math.ceil(response.data.count / recentJobsPageSize));
+            }
         } catch (error) {
             console.error('Failed to fetch jobs:', error);
         }
-    };
+    }, [recentJobsPage, recentJobsPageSize]);
+
+    // Fetch models when pagination changes
+    useEffect(() => {
+        fetchModels();
+    }, [fetchModels]);
+
+    // Fetch jobs when pagination changes + polling
+    useEffect(() => {
+        fetchJobs(); // Initial fetch
+
+        const interval = setInterval(fetchJobs, 5000);
+        return () => clearInterval(interval);
+    }, [fetchJobs]);
 
     const handleDeleteModel = async (modelId: number) => {
         if (!confirm('Are you sure you want to delete this model?')) return;
@@ -177,45 +179,45 @@ export default function ForecastsPage() {
         onPageChange: (page: number) => void;
         onPageSizeChange: (size: number) => void;
     }) => (
-        <div className="flex items-center justify-between px-5 py-3 bg-slate-50/30 border-t border-slate-100/50 backdrop-blur-sm">
-            <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Show</span>
+        <div className="flex items-center justify-between px-6 py-4 bg-slate-50/30 border-t border-slate-100/50 backdrop-blur-sm">
+            <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-slate-500">Show</span>
                 <select
                     value={pageSize}
                     onChange={(e) => {
                         onPageSizeChange(Number(e.target.value));
                         onPageChange(1);
                     }}
-                    className="bg-white border border-slate-200 rounded-md px-1.5 py-0.5 text-[10px] font-bold text-slate-600 focus:ring-1 focus:ring-blue-100 outline-none transition-all cursor-pointer"
+                    className="bg-white border border-slate-200 rounded-md px-2 py-1 text-sm font-medium text-slate-700 focus:ring-2 focus:ring-blue-100 outline-none transition-all cursor-pointer shadow-sm"
                 >
                     {[10, 20, 50, 75, 100].map(size => (
                         <option key={size} value={size}>{size}</option>
                     ))}
                 </select>
-                <span className="text-[10px] font-bold text-slate-300 ml-1">
-                    of {totalCount} records
+                <span className="text-sm font-medium text-slate-500 ml-1">
+                    of <span className="text-slate-900 font-semibold">{totalCount}</span> records
                 </span>
             </div>
-            <div className="flex items-center gap-3">
-                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter tabular-nums">
-                    <span className="text-blue-600">{page}</span> / {totalPages}
+            <div className="flex items-center gap-4">
+                <div className="text-sm font-medium text-slate-600 tabular-nums">
+                    Page <span className="text-slate-900 font-bold">{page}</span> of {totalPages}
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-2">
                     <Button
                         size="sm"
-                        variant="ghost"
+                        variant="outline"
                         onClick={() => onPageChange(page - 1)}
                         disabled={page === 1}
-                        className="h-7 px-2 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-30 text-[10px] font-bold"
+                        className="h-9 px-3 hover:bg-white hover:border-slate-300 text-slate-600 disabled:opacity-40 transition-all shadow-sm"
                     >
-                        Prev
+                        Previous
                     </Button>
                     <Button
                         size="sm"
-                        variant="ghost"
+                        variant="outline"
                         onClick={() => onPageChange(page + 1)}
                         disabled={page >= totalPages}
-                        className="h-7 px-2 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-30 text-[10px] font-bold"
+                        className="h-9 px-3 hover:bg-white hover:border-slate-300 text-slate-600 disabled:opacity-40 transition-all shadow-sm"
                     >
                         Next
                     </Button>
@@ -261,8 +263,7 @@ export default function ForecastsPage() {
                                 onClick={() => router.push('/forecasts/train')}
                                 className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors px-4 py-2 text-sm font-semibold rounded-lg"
                             >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Train New Model
+                                Train Model
                             </Button>
                         </div>
 
@@ -282,9 +283,8 @@ export default function ForecastsPage() {
                                         <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
                                             <Brain className="w-10 h-10 text-slate-400" />
                                         </div>
-                                        <h3 className="text-xl font-bold text-slate-900 mb-2">No active models</h3>
-                                        <p className="text-slate-500 mb-8 max-w-sm mx-auto font-medium">Start training a machine learning model to begin forecasting stock movements.</p>
-                                        <Button
+                                        <h3 className="text-xl font-bold text-slate-900 mb-2">No any published models</h3>
+                                        <p className="text-slate-500 mb-8 max-w-sm mx-auto font-medium">Published model appears here.</p>                                        <Button
                                             onClick={() => router.push('/forecasts/train')}
                                             variant="outline"
                                             className="rounded-xl px-8 border-slate-200 hover:bg-slate-50 text-slate-600"
@@ -298,6 +298,7 @@ export default function ForecastsPage() {
                                     <table className="min-w-full divide-y divide-gray-200">
                                         <thead className="bg-gray-50">
                                             <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trained</th>
@@ -309,6 +310,15 @@ export default function ForecastsPage() {
                                         <tbody className="bg-white divide-y divide-gray-200 text-sm">
                                             {models.map((model) => (
                                                 <tr key={model.id} className="hover:bg-gray-50">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-gray-500 font-mono text-xs">
+                                                        {model.training_job_id ? (
+                                                            <a href={`/forecasts/train/${model.training_job_id}`} className="text-blue-600 hover:underline">
+                                                                #{model.id}
+                                                            </a>
+                                                        ) : (
+                                                            <span>#{model.id}</span>
+                                                        )}
+                                                    </td>
                                                     <td className="px-6 py-4 whitespace-nowrap font-bold text-gray-900">{model.symbol}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide bg-blue-50 text-blue-700">
@@ -346,6 +356,14 @@ export default function ForecastsPage() {
                                             ))}
                                         </tbody>
                                     </table>
+                                    <PaginationControls
+                                        page={modelsPage}
+                                        pageSize={modelsPageSize}
+                                        totalPages={modelsTotalPages}
+                                        totalCount={modelsTotalCount}
+                                        onPageChange={setModelsPage}
+                                        onPageSizeChange={setModelsPageSize}
+                                    />
                                 </div>
                             )}
                         </TabsContent>
@@ -354,7 +372,6 @@ export default function ForecastsPage() {
                         <TabsContent value="monitoring" className="space-y-6">
                             {/* All Jobs - Unified Table */}
                             <div>
-                                <h3 className="text-lg font-semibold mb-4">Training Jobs</h3>
                                 {allJobs.length === 0 ? (
                                     <Card>
                                         <CardContent className="py-8 text-center text-gray-600">
@@ -433,6 +450,14 @@ export default function ForecastsPage() {
                                                 ))}
                                             </tbody>
                                         </table>
+                                        <PaginationControls
+                                            page={recentJobsPage}
+                                            pageSize={recentJobsPageSize}
+                                            totalPages={recentJobsTotalPages}
+                                            totalCount={recentJobsTotalCount}
+                                            onPageChange={setRecentJobsPage}
+                                            onPageSizeChange={setRecentJobsPageSize}
+                                        />
                                     </div>
                                 )}
                             </div>

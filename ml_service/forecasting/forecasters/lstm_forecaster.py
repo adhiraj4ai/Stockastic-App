@@ -178,7 +178,7 @@ class LSTMForecaster(BaseForecaster):
             'history': history.history
         }
     
-    def predict(self, X: np.ndarray) -> np.ndarray:
+    def predict(self, X: np.ndarray, dates: Optional[pd.Index] = None) -> np.ndarray:
         """
         Generate predictions.
         
@@ -208,7 +208,7 @@ class LSTMForecaster(BaseForecaster):
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         
         # Save Keras model
-        self.model.save(f"{file_path}.h5")
+        self.model.save(f"{file_path}.keras")
         
         # Save scaler and metadata
         metadata = {
@@ -227,7 +227,7 @@ class LSTMForecaster(BaseForecaster):
             file_path: Path to the saved model (without extension)
         """
         # Load Keras model
-        self.model = keras.models.load_model(f"{file_path}.h5")
+        self.model = keras.models.load_model(f"{file_path}.keras")
         
         # Load scaler and metadata
         with open(f"{file_path}_metadata.pkl", 'rb') as f:

@@ -8,7 +8,7 @@ class DailyStockPrice(models.Model):
     """
     Proxy model for daily stock prices from main backend.
     """
-    ticker = models.CharField(max_length=20, db_index=True, db_column='symbol')
+    ticker = models.CharField(max_length=20, primary_key=True, db_column='symbol')
     date = models.DateField(db_index=True, db_column='transaction_date')
     open = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     high = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
@@ -24,6 +24,22 @@ class DailyStockPrice(models.Model):
 
     def __str__(self):
         return f"{self.ticker} - {self.date}"
+
+
+class Company(models.Model):
+    """
+    Proxy model for companies from main backend.
+    """
+    symbol = models.CharField(max_length=20, primary_key=True)
+    name = models.CharField(max_length=255, db_column='companyName')
+    sector = models.CharField(max_length=100, db_column='sectorName')
+    
+    class Meta:
+        managed = False
+        db_table = 'companies'
+
+    def __str__(self):
+        return f"{self.symbol} - {self.name}"
 
 
 class Strategy(models.Model):
