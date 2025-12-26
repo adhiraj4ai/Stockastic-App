@@ -264,21 +264,10 @@ export default function JobDetailPage() {
 
             <div className="flex items-center gap-3">
                 <h1 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
-                    {job.symbol} Analysis
+                    {job.symbol}
                 </h1>
 
-                {/* Status Badge */}
-                {getStatusBadge(job.status)}
-
-                {/* Divider */}
-                <span className="h-4 w-px bg-gray-300 mx-1"></span>
-
-                {/* Metadata */}
-                <div className="flex items-center gap-3 text-xs font-semibold text-slate-500 uppercase tracking-widest">
-                    <span className="font-mono text-slate-400">ID: <span className="text-slate-700">{job.task_id.substring(0, 8)}</span></span>
-
-                    <span className="text-slate-300">•</span>
-
+                <div className="flex items-center gap-3 text-xs font-semibold text-slate-500 uppercase tracking-widest pl-2 border-l border-slate-200 ml-2">
                     <span>{new Date(job.started_at).toLocaleString()}</span>
 
                     {job.status === 'SUCCESS' && (
@@ -297,7 +286,7 @@ export default function JobDetailPage() {
 
     return (
         <DashboardLayout headerContent={headerContent}>
-            <div className="p-4 lg:p-6 bg-slate-50/50 min-h-screen">
+            <div className="px-4 py-2 lg:px-6 lg:py-4 bg-slate-50/50 min-h-screen">
                 {/* Content */}
                 <ForecastResultView job={job} />
             </div>
