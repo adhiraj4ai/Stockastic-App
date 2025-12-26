@@ -16,7 +16,9 @@ import {
     LineChart as LineChartIcon,
     Settings2,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    Globe,
+    Lock
 } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
@@ -39,6 +41,7 @@ interface JobDetails {
     actual_test_data: Array<{ date: string; price: number }>;
     test_predictions: Array<{ date: string; price: number }>;
     future_forecasts: Array<{ date: string; price: number; upper?: number; lower?: number }>;
+    is_published?: boolean;
     split_dates: {
         train_start?: string;
         train_end?: string;
@@ -92,6 +95,22 @@ export default function JobDetailPage() {
             clearInterval(intervalId);
         };
     }, [jobId, job?.status]);
+
+    const handlePublishToggle = async () => {
+        if (!job) return;
+
+        const action = job.is_published ? 'unpublish' : 'publish';
+        try {
+            const response = await api.post(`/api/ml/training-jobs/${jobId}/${action}/`);
+            if (response.data) {
+                setJob(prev => prev ? { ...prev, is_published: response.data.is_published } : null);
+                toast.success(`Model ${action === 'publish' ? 'published' : 'unpublished'} successfully!`);
+            }
+        } catch (error) {
+            console.error(`Error ${action}ing model:`, error);
+            toast.error(`Failed to ${action} model.`);
+        }
+    };
 
     const chartOption = useMemo(() => {
         if (!job) return {};
@@ -250,6 +269,7 @@ export default function JobDetailPage() {
         return isNaN(num) ? String(val) : num.toFixed(2);
     };
 
+    // Create headerContent based on loading state
     const headerContent = (
         <div className="flex items-center gap-4">
             <Button
@@ -262,25 +282,71 @@ export default function JobDetailPage() {
                 <ChevronLeft className="w-5 h-5" />
             </Button>
 
-            <div className="flex items-center gap-3">
-                <h1 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
-                    {job.symbol}
-                </h1>
-
-                <div className="flex items-center gap-3 text-xs font-semibold text-slate-500 uppercase tracking-widest pl-2 border-l border-slate-200 ml-2">
-                    <span>{new Date(job.started_at).toLocaleString()}</span>
-
-                    {job.status === 'SUCCESS' && (
-                        <>
-                            <span className="text-slate-300">•</span>
-                            <span className="text-emerald-600 flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {job.duration?.toFixed(1)}s
-                            </span>
-                        </>
-                    )}
+            {loading || !job?.symbol ? (
+                // Loading skeleton
+                <div className="flex items-center gap-3">
+                    <div className="h-6 w-20 bg-slate-200 rounded animate-pulse"></div>
+                    <div className="flex items-center gap-2 text-xs text-slate-400 pl-2 border-l border-slate-200 ml-2">
+                        <div className="h-4 w-32 bg-slate-200 rounded animate-pulse"></div>
+                    </div>
                 </div>
-            </div>
+            ) : (
+                // Actual content when loaded
+                <>
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                            {job.symbol}
+                        </h1>
+
+                        <div className="flex items-center gap-3 text-xs font-semibold text-slate-500 uppercase tracking-widest pl-2 border-l border-slate-200 ml-2">
+                            <span>{new Date(job.started_at).toLocaleString()}</span>
+
+                            {job.status === 'SUCCESS' && (
+                                <>
+                                    <span className="text-slate-300">•</span>
+                                    <span className="text-emerald-600 flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        {job.duration?.toFixed(1)}s
+                                    </span>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Right side actions */}
+                    <div className="flex items-center gap-2 ml-auto">
+                        {job.status === 'SUCCESS' && (
+                            <Button
+                                size="sm"
+                                variant={job.is_published ? "outline" : "default"}
+                                onClick={handlePublishToggle}
+                                className={`text-[10px] h-7 px-3 font-bold tracking-widest uppercase flex items-center gap-1.5 transition-all
+                                    ${job.is_published
+                                        ? "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100 hover:text-slate-700"
+                                        : "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"}`}
+                            >
+                                {job.is_published ? (
+                                    <>
+                                        <Lock className="w-3 h-3" />
+                                        Unpublish
+                                    </>
+                                ) : (
+                                    <>
+                                        <Globe className="w-3 h-3" />
+                                        Publish
+                                    </>
+                                )}
+                            </Button>
+                        )}
+
+                        {job.is_published && (
+                            <Badge className="bg-emerald-500 text-white border-0 px-2 py-0.5 rounded text-[9px] font-black tracking-tighter uppercase shadow-sm">
+                                PUBLISHED
+                            </Badge>
+                        )}
+                    </div>
+                </>
+            )}
         </div>
     );
 

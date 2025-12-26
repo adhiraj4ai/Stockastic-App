@@ -235,17 +235,17 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
     };
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-2">
             {/* Analytics Chart - First */}
-            <Card className="border-0 shadow-[0_4px_20px_rgb(0,0,0,0.02)] bg-white rounded-2xl overflow-hidden">
-                <CardHeader className="bg-slate-50/50 border-b border-slate-100/50 px-6 py-4">
-                    <CardTitle className="text-sm font-bold text-slate-500 flex items-center gap-2">
+            <Card className="border-0 shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-white rounded-xl overflow-hidden">
+                <CardHeader className="bg-slate-50/50 border-b border-slate-100/50 px-4 py-2">
+                    <CardTitle className="text-lg font-bold text-slate-700 flex items-center gap-2">
                         <LineChartIcon className="w-5 h-5 text-blue-600" />
                         Performance & Forecast
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6">
-                    <div className="h-[450px] w-full">
+                <CardContent className="p-3">
+                    <div className="h-[320px] w-full">
                         <ReactECharts
                             option={chartOption}
                             style={{ height: '100%', width: '100%' }}
@@ -257,15 +257,15 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
             </Card>
 
             {/* Training Configuration - Second */}
-            <Card className="border-0 shadow-[0_4px_20px_rgb(0,0,0,0.03)] bg-white rounded-2xl overflow-hidden">
-                <CardHeader className="bg-slate-50/50 border-b border-slate-100/50 px-6 py-4">
-                    <CardTitle className="text-xs font-bold text-slate-500 flex items-center gap-2">
+            <Card className="border-0 shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-white rounded-xl overflow-hidden">
+                <CardHeader className="bg-slate-50/50 border-b border-slate-100/50 px-4 py-2">
+                    <CardTitle className="text-base font-bold text-slate-700 flex items-center gap-2">
                         <Settings2 className="w-4 h-4 text-blue-600" />
                         Training Configuration
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="px-6 py-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-3">
+                <CardContent className="px-4 py-2">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-x-3 gap-y-1.5">
                         <div>
                             <div className="text-[10px] text-slate-400 mb-0.5 font-medium uppercase tracking-wider">Model</div>
                             <div className="text-xs font-bold text-slate-900">{job.model_type}</div>
@@ -296,12 +296,12 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
                 </CardContent>
             </Card>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {/* Metrics Table */}
-                <Card className="border-0 shadow-[0_4px_20px_rgb(0,0,0,0.02)] bg-white rounded-2xl overflow-hidden h-full">
-                    <CardHeader className="bg-slate-50/50 border-b border-slate-100/50 px-6 py-4">
-                        <CardTitle className="text-sm font-bold text-slate-500 flex items-center gap-2">
-                            <Target className="w-5 h-5 text-blue-600" />
+                <Card className="border-0 shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-white rounded-xl overflow-hidden h-full">
+                    <CardHeader className="bg-slate-50/50 border-b border-slate-100/50 px-4 py-2">
+                        <CardTitle className="text-base font-bold text-slate-700 flex items-center gap-2">
+                            <Target className="w-4 h-4 text-blue-600" />
                             Evaluation Metrics
                         </CardTitle>
                     </CardHeader>
@@ -310,8 +310,8 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
                             <table className="w-full">
                                 <thead className="bg-slate-50/50 border-b border-slate-100">
                                     <tr>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-600">Metric</th>
-                                        <th className="px-6 py-4 text-right text-xs font-bold text-slate-600">Value</th>
+                                        <th className="px-4 py-2 text-left text-[10px] font-bold text-slate-600">Metric</th>
+                                        <th className="px-4 py-2 text-right text-[10px] font-bold text-slate-600">Value</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
@@ -321,25 +321,25 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
                                         { label: 'Test MAE', value: job.result_data?.test_mae, unit: '', desc: 'Mean Absolute Error - Lower is better', color: 'text-slate-900' },
                                         { label: 'R² Score', value: job.result_data?.test_r2, unit: '', desc: 'Coefficient of Determination - Higher is better', color: 'text-emerald-600' },
                                         { label: 'Training Samples', value: job.result_data?.training_samples, unit: '', desc: 'Number of samples used for training', color: 'text-slate-900' },
-                                        { label: 'Validation Samples', value: job.result_data?.validation_samples, unit: '', desc: 'Number of samples used for validation', color: 'text-slate-900' },
+                                        { label: 'Val Samples', value: job.result_data?.validation_samples, unit: '', desc: 'Number of samples used for validation', color: 'text-slate-900' },
                                         { label: 'Test Samples', value: job.result_data?.test_samples, unit: '', desc: 'Number of samples used for testing', color: 'text-slate-900' },
-                                        { label: 'Forecast Horizon', value: job.result_data?.forecast_days || '30', unit: ' Days', desc: 'Number of days forecasted into the future', color: 'text-emerald-600' }
+                                        { label: 'Horizon', value: job.result_data?.forecast_days || '30', unit: ' d', desc: 'Number of days forecasted into the future', color: 'text-emerald-600' }
                                     ].map((metric, idx) => (
                                         <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-6 py-4 text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                            <td className="px-4 py-1.5 text-[11px] font-semibold text-slate-700 flex items-center gap-1.5">
                                                 {metric.label}
                                                 <TooltipProvider>
                                                     <Tooltip delayDuration={0}>
                                                         <TooltipTrigger>
-                                                            <Info className="w-3.5 h-3.5 text-slate-400 hover:text-blue-500 transition-colors" />
+                                                            <Info className="w-3 h-3 text-slate-400 hover:text-blue-500 transition-colors" />
                                                         </TooltipTrigger>
                                                         <TooltipContent>
-                                                            <p className="text-xs">{metric.desc}</p>
+                                                            <p className="text-[10px]">{metric.desc}</p>
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 </TooltipProvider>
                                             </td>
-                                            <td className={`px-6 py-3 text-sm font-bold text-right tabular-nums ${metric.color}`}>
+                                            <td className={`px-4 py-1.5 text-[11px] font-bold text-right tabular-nums ${metric.color}`}>
                                                 {formatMetric(metric.value)}{metric.unit}
                                             </td>
                                         </tr>
@@ -351,41 +351,41 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
                 </Card>
 
                 {/* Forecast Data Table */}
-                <Card className="border-0 shadow-[0_4px_20px_rgb(0,0,0,0.02)] bg-white rounded-2xl overflow-hidden h-full">
-                    <CardHeader className="bg-slate-50/30 border-b border-slate-100/50 px-6 py-4">
-                        <CardTitle className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                <Card className="border-0 shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-white rounded-xl overflow-hidden h-full">
+                    <CardHeader className="bg-slate-50/30 border-b border-slate-100/50 px-4 py-2">
+                        <CardTitle className="text-base font-bold text-slate-700 flex items-center gap-2">
                             <Database className="w-4 h-4 text-blue-600" />
-                            Forecast Data Points
+                            Forecast Points
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
+                        <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
                             <table className="w-full text-left">
                                 <thead className="bg-slate-50 sticky top-0 z-10">
                                     <tr>
-                                        <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
-                                        <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Price (NPR)</th>
-                                        <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Range</th>
+                                        <th className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                                        <th className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Price</th>
+                                        <th className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Range</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {job.future_forecasts && job.future_forecasts.length > 0 ? (
                                         job.future_forecasts.map((point, idx) => (
                                             <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                                                <td className="px-6 py-3 text-sm font-medium text-slate-700">
+                                                <td className="px-4 py-1.5 text-[11px] font-medium text-slate-700">
                                                     {new Date(point.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                                 </td>
-                                                <td className="px-6 py-3 text-sm font-bold text-blue-600 tabular-nums">
+                                                <td className="px-4 py-1.5 text-[11px] font-bold text-blue-600 tabular-nums">
                                                     {formatCurrency(point.price)}
                                                 </td>
-                                                <td className="px-6 py-3 text-xs text-slate-500 text-right tabular-nums">
+                                                <td className="px-4 py-1.5 text-[10px] text-slate-50 text-right tabular-nums">
                                                     {point.lower ? `${Math.round(point.lower)} - ${Math.round(point.upper || 0)}` : '-'}
                                                 </td>
                                             </tr>
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={3} className="px-6 py-8 text-center text-slate-400 italic">
+                                            <td colSpan={3} className="px-4 py-4 text-center text-[10px] text-slate-400 italic">
                                                 No forecast data available.
                                             </td>
                                         </tr>

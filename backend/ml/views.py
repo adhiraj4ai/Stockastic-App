@@ -295,12 +295,44 @@ class TrainingJobViewSet(viewsets.ReadOnlyModelViewSet):
             return Response(serializer.data)
         except Exception as e:
             # Catch backend errors (e.g. Redis down)
-            print(f"Error stopping job {pk}: {e}") # helpful for server logs
+            print(f"Error stopping job {pk}: {e}")  # helpful for server logs
             return Response(
                 {'error': f'Failed to stop job: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
+    @action(detail=True, methods=['post'])
+    def publish(self, request, pk=None):
+        """Publish the model associated with this job."""
+        job = self.get_object()
+        if job.status != 'SUCCESS' or not job.forecast_model:
+            return Response(
+                {"error": "Only successful jobs with a generated model can be published."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Publish this model
+        job.forecast_model.is_published = True
+        job.forecast_model.save()
+        
+        return Response({"status": "Model published", "is_published": True})
+
+    @action(detail=True, methods=['post'])
+    def unpublish(self, request, pk=None):
+        """Unpublish the model associated with this job."""
+        job = self.get_object()
+        if not job.forecast_model:
+            return Response(
+                {"error": "No model found to unpublish."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Unpublish this model
+        job.forecast_model.is_published = False
+        job.forecast_model.save()
+        
+        return Response({"status": "Model unpublished", "is_published": False})
+
     @action(detail=True, methods=['get'])
     def details(self, request, pk=None):
         """
@@ -311,39 +343,45 @@ class TrainingJobViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(job)
         data = serializer.data
         
+        # Inject publishing status
+        if job.forecast_model:
+            data['is_published'] = job.forecast_model.is_published
+            data['model_id'] = job.forecast_model.id
+
         # If job is successful and has a forecast model, fetch charting data
         if job.status == 'SUCCESS' and job.forecast_model:
             model = job.forecast_model
             
-            # 2. Fetch test predictions to anchor the timeline
+            # 1. Fetch test predictions to anchor the timeline
             test_predictions = Forecast.objects.filter(model=model, is_test_prediction=True).order_by('forecast_date')
             test_preds_list = [
-                {'date': f.forecast_date, 'price': float(f.predicted_price)} for f in test_predictions
+                {'date': f.forecast_date.isoformat(), 'price': float(f.predicted_price)} for f in test_predictions
             ]
             data['test_predictions'] = test_preds_list
             
-            # 2b. Fetch ACTUAL test set prices (ground truth) for comparison
+            # 2. Fetch ACTUAL test set prices (ground truth) for comparison
             if test_preds_list:
-                test_start = test_preds_list[0]['date']
-                test_end = test_preds_list[-1]['date']
+                test_start = test_predictions.first().forecast_date
+                test_end = test_predictions.last().forecast_date
                 actual_test_prices = DailyStockPrice.objects.filter(
                     ticker=job.symbol,
                     date__gte=test_start,
                     date__lte=test_end
                 ).order_by('date')
                 data['actual_test_data'] = [
-                    {'date': p.date, 'price': float(p.close)} for p in actual_test_prices
+                    {'date': p.date.isoformat(), 'price': float(p.close)} for p in actual_test_prices
                 ]
             
+            # Add is_published status to the response
+            data['is_published'] = model.is_published
+            
             # 3. Calculate Split Ranges (Train / Val / Test)
-            # We work backwards from the Test set start date
             split_info = {}
             if test_preds_list and job.result_data:
-                test_start_date = test_preds_list[0]['date']
+                test_start_date = test_predictions.first().forecast_date
                 
                 t_samples = job.result_data.get('training_samples', 0)
                 v_samples = job.result_data.get('validation_samples', 0)
-                # s_len = int(job.hyperparameters.get('sequence_length', 60)) # Context before training
                 
                 # Fetch predecessors
                 predecessors = DailyStockPrice.objects.filter(
@@ -353,29 +391,27 @@ class TrainingJobViewSet(viewsets.ReadOnlyModelViewSet):
                 
                 # Val Set: The V samples immediately before test start
                 if v_samples > 0:
-                    val_segment = predecessors[:v_samples]
+                    val_segment = list(predecessors[:v_samples])
                     if val_segment:
-                        split_info['val_start'] = val_segment[len(val_segment)-1].date
-                        split_info['val_end'] = val_segment[0].date
+                        split_info['val_start'] = val_segment[-1].date.isoformat()
+                        split_info['val_end'] = val_segment[0].date.isoformat()
 
                 # Train Set: The T samples before Val
                 if t_samples > 0:
-                    train_segment = predecessors[v_samples : v_samples + t_samples]
+                    train_segment = list(predecessors[v_samples : v_samples + t_samples])
                     if train_segment:
-                        split_info['train_start'] = train_segment[len(train_segment)-1].date
-                        split_info['train_end'] = train_segment[0].date
+                        split_info['train_start'] = train_segment[-1].date.isoformat()
+                        split_info['train_end'] = train_segment[0].date.isoformat()
                 
-                split_info['test_start'] = test_start_date
-                if test_preds_list:
-                     split_info['test_end'] = test_preds_list[-1]['date']
+                split_info['test_start'] = test_start_date.isoformat()
+                if test_predictions.exists():
+                     split_info['test_end'] = test_predictions.last().forecast_date.isoformat()
 
             data['split_dates'] = split_info
 
             # 4. Fetch historical prices (Covering the whole relevant period + buffer)
-            # Default to 365, but if we have split info, ensure we cover from train_start
             fetch_limit = 365
             if 'train_start' in split_info:
-                # Approximate days needed (trading days * 1.5 to cover weekends)
                 total_samples = (job.result_data.get('training_samples', 0) + 
                                job.result_data.get('validation_samples', 0) + 
                                job.result_data.get('test_samples', 0) + 
@@ -384,14 +420,14 @@ class TrainingJobViewSet(viewsets.ReadOnlyModelViewSet):
 
             historical_prices = DailyStockPrice.objects.filter(ticker=job.symbol).order_by('-date')[:fetch_limit]
             data['historical_prices'] = [
-                {'date': p.date, 'price': float(p.close)} for p in reversed(historical_prices)
+                {'date': p.date.isoformat(), 'price': float(p.close)} for p in reversed(historical_prices)
             ]
             
             # 5. Fetch future forecasts
             future_forecasts = Forecast.objects.filter(model=model, is_test_prediction=False).order_by('forecast_date')
             data['future_forecasts'] = [
                 {
-                    'date': f.forecast_date, 
+                    'date': f.forecast_date.isoformat(), 
                     'price': float(f.predicted_price),
                     'upper': float(f.confidence_upper) if f.confidence_upper else None,
                     'lower': float(f.confidence_lower) if f.confidence_lower else None

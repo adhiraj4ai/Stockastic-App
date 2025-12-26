@@ -22,6 +22,7 @@ class ForecastModel(models.Model):
     test_rmse = models.FloatField(null=True, blank=True, help_text="Root Mean Square Error on test set")
     file_path = models.CharField(max_length=500, help_text="Path to saved model file")
     hyperparameters = models.JSONField(default=dict, help_text="Model configuration and hyperparameters")
+    is_published = models.BooleanField(default=False, help_text="Whether this model is published for strategy application")
     is_active = models.BooleanField(default=True, help_text="Whether this model is currently active for predictions")
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     
