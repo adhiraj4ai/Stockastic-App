@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Brain, Trash2, Eye, Plus, Activity, CheckCircle, XCircle, Clock, BrainCircuit, ExternalLink, StopCircle } from 'lucide-react';
-import api from '@/lib/api';
+import api, { mlApi } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface ForecastModel {
@@ -77,7 +77,7 @@ export default function ForecastsPage() {
 
     const fetchModels = async () => {
         try {
-            const response = await api.get(`/api/ml/forecasts/?page=${modelsPage}&page_size=${modelsPageSize}`);
+            const response = await mlApi.get(`/api/forecasts/?page=${modelsPage}&page_size=${modelsPageSize}`);
             setModels(response.data.results || response.data);
             if (response.data.count) {
                 setModelsTotalCount(response.data.count);
@@ -104,7 +104,7 @@ export default function ForecastsPage() {
         if (!confirm('Are you sure you want to delete this model?')) return;
 
         try {
-            await api.delete(`/api/ml/forecasts/${modelId}/`);
+            await mlApi.delete(`/api/forecasts/${modelId}/`);
             fetchModels();
         } catch (error) {
             console.error('Failed to delete model:', error);
@@ -123,7 +123,7 @@ export default function ForecastsPage() {
         if (!jobToStop) return;
 
         try {
-            await api.post(`/api/ml/training-jobs/${jobToStop}/stop/`);
+            await mlApi.post(`/api/training-jobs/${jobToStop}/stop/`);
             setJobToStop(null);
             fetchJobs(); // Refresh the jobs list
             // Optimization: Optimistically update local state to feel instant

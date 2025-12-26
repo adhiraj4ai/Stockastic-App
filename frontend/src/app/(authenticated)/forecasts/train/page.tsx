@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Play, Settings, Calendar, Activity, BrainCircuit, ArrowLeft, CheckCircle, ChevronDown, X } from 'lucide-react';
-import api from '@/lib/api';
+import api, { mlApi } from '@/lib/api';
 import { toast } from 'sonner';
 import ForecastResultView from '@/components/forecasts/ForecastResultView';
 
@@ -91,7 +91,7 @@ export default function TrainModelPage() {
         let isSubscribed = true;
         const intervalId = setInterval(async () => {
             try {
-                const response = await api.get(`/api/ml/training-jobs/${completedJobId}/details/`);
+                const response = await mlApi.get(`/api/training-jobs/${completedJobId}/details/`);
                 if (isSubscribed) {
                     const jobData = response.data;
                     setJobResult(jobData); // LIVE UPDATE: Show progress immediately
@@ -236,7 +236,7 @@ export default function TrainModelPage() {
 
         try {
             toast.loading('Stopping training job...');
-            await api.post(`/api/ml/training-jobs/${completedJobId}/stop/`);
+            await mlApi.post(`/api/training-jobs/${completedJobId}/stop/`);
             toast.dismiss();
             toast.success('Training stopped successfully');
             // The polling will pick up 'HALTED' or 'FAILED' shortly

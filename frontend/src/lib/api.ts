@@ -1,7 +1,17 @@
 import axios from 'axios';
+import Cookies from 'js-cookie';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const ML_SERVICE_URL = process.env.NEXT_PUBLIC_ML_SERVICE_URL || 'http://localhost:8001';
+
+// Main backend API client
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+    baseURL: API_BASE_URL,
+});
+
+// ML service API client
+export const mlApi = axios.create({
+    baseURL: ML_SERVICE_URL,
 });
 
 // Helper to clear session
@@ -17,16 +27,23 @@ const logoutAndRedirect = () => {
     window.location.href = '/login';
 };
 
-// Request interceptor for auth token
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-}, (error) => {
-    return Promise.reject(error);
-});
+// Request interceptor to add JWT token to both clients
+const addAuthInterceptor = (client: typeof api) => {
+    client.interceptors.request.use(
+        (config) => {
+            const token = Cookies.get('access_token') || localStorage.getItem('access_token');
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
+            }
+            return config;
+        },
+        (error) => Promise.reject(error)
+    );
+};
+
+// Apply interceptors to both API clients
+addAuthInterceptor(api);
+addAuthInterceptor(mlApi);
 
 // Response interceptor for global error handling
 api.interceptors.response.use(

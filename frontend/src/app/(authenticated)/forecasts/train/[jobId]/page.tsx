@@ -20,7 +20,7 @@ import {
     Globe,
     Lock
 } from 'lucide-react';
-import api from '@/lib/api';
+import api, { mlApi } from '@/lib/api';
 import { toast } from 'sonner';
 import ForecastResultView from '@/components/forecasts/ForecastResultView';
 
@@ -63,7 +63,7 @@ export default function JobDetailPage() {
 
         const fetchJobDetails = async () => {
             try {
-                const response = await api.get(`/api/ml/training-jobs/${jobId}/details/`);
+                const response = await mlApi.get(`/api/training-jobs/${jobId}/details/`);
                 if (isSubscribed) {
                     setJob(prev => {
                         const newData = response.data;
@@ -101,7 +101,7 @@ export default function JobDetailPage() {
 
         const action = job.is_published ? 'unpublish' : 'publish';
         try {
-            const response = await api.post(`/api/ml/training-jobs/${jobId}/${action}/`);
+            const response = await mlApi.post(`/api/training-jobs/${jobId}/${action}/`);
             if (response.data) {
                 setJob(prev => prev ? { ...prev, is_published: response.data.is_published } : null);
                 toast.success(`Model ${action === 'publish' ? 'published' : 'unpublished'} successfully!`);

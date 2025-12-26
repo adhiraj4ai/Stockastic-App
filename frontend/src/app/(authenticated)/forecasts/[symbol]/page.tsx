@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import api from '@/lib/api';
+import api, { mlApi } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import ForecastChart from '@/components/ForecastChart';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -47,13 +47,13 @@ export default function SymbolForecastPage() {
             setLoading(true);
 
             // Fetch model info
-            const modelsResponse = await api.get(`/api/ml/forecasts/?symbol=${symbol}&is_active=true`);
+            const modelsResponse = await mlApi.get(`/api/forecasts/?symbol=${symbol}&is_active=true`);
             if (modelsResponse.data.length > 0) {
                 setModel(modelsResponse.data[0]);
             }
 
             // Fetch forecasts
-            const forecastsResponse = await api.get(`/api/ml/forecasts/by_symbol/?symbol=${symbol}&limit=252`);
+            const forecastsResponse = await mlApi.get(`/api/forecasts/by_symbol/?symbol=${symbol}&limit=252`);
             setForecasts(forecastsResponse.data);
         } catch (error) {
             console.error('Failed to fetch forecast data:', error);
