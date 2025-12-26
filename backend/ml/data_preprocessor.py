@@ -75,11 +75,15 @@ class DataPreprocessor:
         """
         Calculate technical indicators to use as features.
         
+        NOTE: Simplified for Univariate Forecasting (Pure Price).
+        We are no longer using technical indicators to avoid "hallucination" issues
+        during long-term forecasting.
+        
         Args:
             df: DataFrame with OHLCV data
             
         Returns:
-            DataFrame with additional technical indicator columns
+            DataFrame with OHLCV data (passthrough)
         """
         df = df.copy()
         
@@ -87,44 +91,10 @@ class DataPreprocessor:
         for col in ['open', 'high', 'low', 'close', 'volume']:
             df[col] = pd.to_numeric(df[col], errors='coerce').astype('float64')
         
-        # Moving Averages
-        df['sma_20'] = ta.sma(df['close'], length=20)
-        df['sma_50'] = ta.sma(df['close'], length=50)
-        df['ema_12'] = ta.ema(df['close'], length=12)
-        df['ema_26'] = ta.ema(df['close'], length=26)
+        # We are intentionally NOT calculating indicators anymore.
+        # This keeps the model focused on pure price action.
         
-        # RSI
-        df['rsi'] = ta.rsi(df['close'], length=14)
-        
-        # MACD - handle different column naming conventions
-        macd = ta.macd(df['close'])
-        if macd is not None and not macd.empty:
-            # Try different possible column names
-            macd_cols = macd.columns.tolist()
-            df['macd'] = macd[macd_cols[0]] if len(macd_cols) > 0 else None
-            df['macd_signal'] = macd[macd_cols[1]] if len(macd_cols) > 1 else None
-            df['macd_hist'] = macd[macd_cols[2]] if len(macd_cols) > 2 else None
-        
-        # Bollinger Bands - handle different column naming conventions
-        bbands = ta.bbands(df['close'], length=20)
-        if bbands is not None and not bbands.empty:
-            # Try different possible column names
-            bb_cols = bbands.columns.tolist()
-            df['bb_lower'] = bbands[bb_cols[0]] if len(bb_cols) > 0 else None
-            df['bb_middle'] = bbands[bb_cols[1]] if len(bb_cols) > 1 else None
-            df['bb_upper'] = bbands[bb_cols[2]] if len(bb_cols) > 2 else None
-        
-        # ATR (Average True Range)
-        df['atr'] = ta.atr(df['high'], df['low'], df['close'], length=14)
-        
-        # Volume indicators
-        df['volume_sma'] = ta.sma(df['volume'], length=20)
-        
-        # Price changes
-        df['price_change'] = df['close'].pct_change()
-        df['high_low_pct'] = (df['high'] - df['low']) / df['close']
-        
-        # Drop NaN values created by indicators
+        # Drop NaN values (if any were created by pct_change etc, though we aren't doing that now)
         df.dropna(inplace=True)
         
         return df
@@ -134,18 +104,14 @@ class DataPreprocessor:
         Select and prepare features for modeling.
         
         Args:
-            df: DataFrame with OHLCV and technical indicators
+            df: DataFrame with OHLCV
             
         Returns:
             DataFrame with selected features
         """
-        # Define feature columns (excluding target)
+        # Define feature columns (Pure Price + Volume)
         self.feature_columns = [
-            'open', 'high', 'low', 'close', 'volume',
-            'sma_20', 'sma_50', 'ema_12', 'ema_26',
-            'rsi', 'macd', 'macd_signal', 'macd_hist',
-            'bb_upper', 'bb_middle', 'bb_lower', 'atr',
-            'volume_sma', 'price_change', 'high_low_pct'
+            'open', 'high', 'low', 'close', 'volume'
         ]
         
         # Filter to only include columns that exist

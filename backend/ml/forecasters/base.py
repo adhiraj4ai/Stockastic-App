@@ -140,11 +140,12 @@ class BaseForecaster(ABC):
             forecasts.append(next_pred)
             
             # Update sequence for next prediction
+            # Update sequence for next prediction
             # Roll the sequence forward by one timestep
             current_sequence = np.roll(current_sequence, -1, axis=0)
             
             # For the new timestep, we need to update OHLC context for the next iteration
-            # Indices: 0: open, 1: high, 2: low, 3: close, 4: volume, 5-19: indicators
+            # Indices: 0: open, 1: high, 2: low, 3: close, 4: volume
             prev_close = current_sequence[-2, 3]
             
             # Start with previous timestep as base
@@ -158,18 +159,15 @@ class BaseForecaster(ABC):
             current_sequence[-1, 0] = new_open
             current_sequence[-1, 1] = max(new_open, new_close) * 1.002  # Assume some wick
             current_sequence[-1, 2] = min(new_open, new_close) * 0.998  # Assume some wick
-            current_sequence[-1, 3] = new_close
             
-            # Smooth indicators toward neutral values to simulate uncertainty decay
-            # This prevents the "frozen indicator" problem that causes flat forecasts
-            # Features 5-19 are technical indicators (RSI, MACD, SMAs, etc.)
-            smoothing_factor = 0.95  # Keep 95% of previous value, drift 5% toward neutral
+            # Update Volume (Index 4)
+            # Add small random noise to volume so it doesn't look completely static
+            vol_noise = np.random.normal(0, 0.05) # 5% fluctuation
+            current_sequence[-1, 4] = np.clip(current_sequence[-1, 4] * (1 + vol_noise), 0, 1)
             
-            for feat_idx in range(5, current_sequence.shape[1]):
-                # Smooth toward 0.5 (neutral in scaled 0-1 space)
-                current_sequence[-1, feat_idx] = (
-                    smoothing_factor * current_sequence[-1, feat_idx] + 
-                    (1 - smoothing_factor) * 0.5
-                )
+            # Inject small random noise to Close price to simulate volatility
+            # Standard deviation 0.015 = 1.5% fluctuation in scaled space
+            noise = np.random.normal(0, 0.015) 
+            current_sequence[-1, 3] = np.clip(new_close + noise, 0, 1)        
         
         return np.array(forecasts)
