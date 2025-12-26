@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -8,7 +8,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Brain, Trash2, Eye, Plus, Activity, CheckCircle, XCircle, Clock, BrainCircuit, ExternalLink, StopCircle } from 'lucide-react';
+import {
+    Brain, Trash2, Eye, Plus, Activity, CheckCircle, XCircle, Clock,
+    BrainCircuit, ExternalLink, StopCircle, ChevronDown, ChevronUp,
+    AlertTriangle, Beaker, Zap
+} from 'lucide-react';
 import api, { mlApi } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -34,6 +38,8 @@ interface TrainingJob {
     duration: number | null;
     progress_message: string;
     error_message: string;
+    batch_id?: string | null;
+    sector?: string | null;
     result_data?: {
         test_mape?: number;
         test_rmse?: number;
@@ -47,6 +53,7 @@ export default function ForecastsPage() {
     const [allJobs, setAllJobs] = useState<TrainingJob[]>([]);
     const [loading, setLoading] = useState(true);
     const [jobToStop, setJobToStop] = useState<number | null>(null);
+    const [expandedId, setExpandedId] = useState<string | null>(null);
 
     // Pagination state
     const [modelsPage, setModelsPage] = useState(1);
@@ -368,99 +375,207 @@ export default function ForecastsPage() {
                             )}
                         </TabsContent>
 
-                        {/* Monitoring Tab */}
                         <TabsContent value="monitoring" className="space-y-6">
-                            {/* All Jobs - Unified Table */}
-                            <div>
-                                {allJobs.length === 0 ? (
-                                    <Card>
-                                        <CardContent className="py-8 text-center text-gray-600">
-                                            No training jobs found
-                                        </CardContent>
-                                    </Card>
-                                ) : (
-                                    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-                                        <table className="min-w-full divide-y divide-gray-200">
-                                            <thead className="bg-gray-50">
+                            <section>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                        <Beaker className="text-purple-500" size={20} />
+                                        Training Session Log
+                                    </h3>
+                                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                        Showing latest training runs
+                                    </span>
+                                </div>
+
+                                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">Status</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Session ID</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Started</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Outcome</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200 text-sm">
+                                            {allJobs.length === 0 ? (
                                                 <tr>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test MAPE</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Started</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                                    <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                                                        No training sessions found. Initiate training to see logs.
+                                                    </td>
                                                 </tr>
-                                            </thead>
-                                            <tbody className="bg-white divide-y divide-gray-200 text-sm">
-                                                {allJobs.map((job) => (
-                                                    <tr key={job.id} className="hover:bg-gray-50">
-                                                        <td className="px-6 py-4 whitespace-nowrap text-gray-500 font-mono text-xs">
-                                                            <a
-                                                                href={`/forecasts/train/${job.id}`}
-                                                                className="text-blue-600 hover:underline"
+                                            ) : (() => {
+                                                const sessions: Record<string, TrainingJob[]> = {};
+                                                allJobs.forEach(job => {
+                                                    const bid = job.batch_id?.toString() || 'standalone-' + job.id;
+                                                    if (!sessions[bid]) sessions[bid] = [];
+                                                    sessions[bid].push(job);
+                                                });
+
+                                                return Object.entries(sessions).map(([sessionId, sessionJobs]) => {
+                                                    const firstJob = sessionJobs[0];
+                                                    const isBatch = !sessionId.startsWith('standalone-');
+                                                    const statusOrder = ['RUNNING', 'PENDING', 'FAILED', 'HALTED', 'SUCCESS'];
+                                                    const overallStatus = sessionJobs.map(j => j.status).sort((a, b) => statusOrder.indexOf(a) - statusOrder.indexOf(b))[0];
+                                                    const startTime = new Date(Math.min(...sessionJobs.map(j => new Date(j.started_at).getTime())));
+                                                    const symbols = Array.from(new Set(sessionJobs.map(j => j.symbol)));
+                                                    const completedCount = sessionJobs.filter(j => ['SUCCESS', 'FAILED', 'HALTED'].includes(j.status)).length;
+                                                    const progressPct = Math.round((completedCount / sessionJobs.length) * 100);
+
+                                                    // Calculate session-wide MAPE if any success
+                                                    const successfulJobs = sessionJobs.filter(j => j.status === 'SUCCESS' && j.result_data?.test_mape);
+                                                    const avgMape = successfulJobs.length > 0
+                                                        ? successfulJobs.reduce((acc, curr) => acc + (curr.result_data?.test_mape || 0), 0) / successfulJobs.length
+                                                        : null;
+
+                                                    return (
+                                                        <Fragment key={sessionId}>
+                                                            <tr
+                                                                className="hover:bg-gray-50 cursor-pointer transition-colors"
+                                                                onClick={() => setExpandedId(expandedId === sessionId ? null : sessionId)}
                                                             >
-                                                                #{job.task_id?.substring(0, 4)}
-                                                            </a>
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap font-bold text-gray-900">{job.symbol}</td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide bg-blue-50 text-blue-700">
-                                                                {job.model_type}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(job.status)}</td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            {job.status === 'SUCCESS' && job.result_data?.test_mape ? (
-                                                                <span className="font-bold text-green-600">
-                                                                    {job.result_data.test_mape.toFixed(2)}%
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-gray-400">—</span>
+                                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                                    {overallStatus === 'SUCCESS' ? (
+                                                                        <CheckCircle size={18} className="text-emerald-500" />
+                                                                    ) : overallStatus === 'FAILED' ? (
+                                                                        <XCircle size={18} className="text-rose-500" />
+                                                                    ) : (overallStatus === 'RUNNING' || overallStatus === 'PENDING') ? (
+                                                                        <Activity size={18} className="text-blue-500 animate-pulse" />
+                                                                    ) : (
+                                                                        <AlertTriangle size={18} className="text-amber-500" />
+                                                                    )}
+                                                                </td>
+                                                                <td className="px-6 py-4 whitespace-nowrap text-gray-500 font-mono text-xs">
+                                                                    #{sessionId.substring(0, 8)}
+                                                                </td>
+                                                                <td className="px-6 py-4 whitespace-nowrap text-gray-900 font-medium">
+                                                                    {startTime.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                                </td>
+                                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
+                                                                        ${isBatch ? 'bg-purple-50 text-purple-700 border border-purple-100' : 'bg-blue-50 text-blue-700 border border-blue-100'}`}>
+                                                                        {isBatch ? 'BATCH' : 'SINGLE'}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                                    <div className="text-sm font-bold text-gray-900">
+                                                                        {firstJob.sector || (symbols.length === 1 ? symbols[0] : `${symbols.length} Assets`)}
+                                                                    </div>
+                                                                    <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                                                        {firstJob.sector ? 'SECTOR' : 'CUSTOM SELECTION'}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="w-16 bg-gray-100 h-1 rounded-full overflow-hidden">
+                                                                            <div
+                                                                                className={`h-full transition-all duration-500 ${overallStatus === 'SUCCESS' ? 'bg-emerald-500 w-full' :
+                                                                                    overallStatus === 'FAILED' ? 'bg-rose-500 w-full' :
+                                                                                        'bg-blue-500 w-1/2'
+                                                                                    }`}
+                                                                                style={{ width: `${progressPct}%` }}
+                                                                            />
+                                                                        </div>
+                                                                        <span className="text-[10px] font-bold text-gray-600">{progressPct}%</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                                    {avgMape !== null ? (
+                                                                        <span className="text-emerald-600 font-bold">{avgMape.toFixed(2)}% MAPE</span>
+                                                                    ) : (
+                                                                        <span className="text-gray-400 italic text-xs">In progress...</span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="px-6 py-4 whitespace-nowrap text-right text-gray-400">
+                                                                    {expandedId === sessionId ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                                                </td>
+                                                            </tr>
+                                                            {expandedId === sessionId && (
+                                                                <tr>
+                                                                    <td colSpan={8} className="px-0 py-0 border-b bg-gray-50/50">
+                                                                        <div className="p-6">
+                                                                            <div className="bg-white border border-gray-100 rounded-lg overflow-hidden shadow-sm">
+                                                                                <table className="min-w-full divide-y divide-gray-100">
+                                                                                    <thead className="bg-gray-50/50">
+                                                                                        <tr>
+                                                                                            <th className="px-4 py-2 text-left text-[10px] font-bold text-gray-400 uppercase">Symbol</th>
+                                                                                            <th className="px-4 py-2 text-left text-[10px] font-bold text-gray-400 uppercase">Model</th>
+                                                                                            <th className="px-4 py-2 text-left text-[10px] font-bold text-gray-400 uppercase">Status</th>
+                                                                                            <th className="px-4 py-2 text-left text-[10px] font-bold text-gray-400 uppercase">Message / Result</th>
+                                                                                            <th className="px-4 py-2 text-left text-[10px] font-bold text-gray-400 uppercase">Time</th>
+                                                                                            <th className="px-4 py-2 text-right text-[10px] font-bold text-gray-400 uppercase">Action</th>
+                                                                                        </tr>
+                                                                                    </thead>
+                                                                                    <tbody className="divide-y divide-gray-50 text-xs">
+                                                                                        {sessionJobs.map(job => (
+                                                                                            <tr key={job.id} className="hover:bg-gray-50 transition-colors group">
+                                                                                                <td className="px-4 py-2.5 font-bold text-gray-900">{job.symbol}</td>
+                                                                                                <td className="px-4 py-2.5">
+                                                                                                    <Badge variant="outline" className="text-[9px] bg-blue-50/50 border-blue-100 text-blue-600 font-bold uppercase">
+                                                                                                        {job.model_type}
+                                                                                                    </Badge>
+                                                                                                </td>
+                                                                                                <td className="px-4 py-2.5">{getStatusBadge(job.status)}</td>
+                                                                                                <td className="px-4 py-2.5 text-gray-600 truncate max-w-[250px]">
+                                                                                                    {job.status === 'SUCCESS' && job.result_data?.test_mape ? (
+                                                                                                        <span className="text-emerald-600 font-bold">{job.result_data.test_mape.toFixed(2)}% MAPE</span>
+                                                                                                    ) : (
+                                                                                                        <span className="opacity-70 italic">{job.progress_message || 'Initializing...'}</span>
+                                                                                                    )}
+                                                                                                </td>
+                                                                                                <td className="px-4 py-2.5 text-gray-400 tabular-nums">
+                                                                                                    {formatDuration(job.duration)}
+                                                                                                </td>
+                                                                                                <td className="px-4 py-2.5 text-right">
+                                                                                                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                                        {(job.status === 'RUNNING' || job.status === 'PENDING') && (
+                                                                                                            <button
+                                                                                                                onClick={() => handleStopJob(job.id)}
+                                                                                                                className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded transition-colors"
+                                                                                                                title="Stop Job"
+                                                                                                            >
+                                                                                                                <StopCircle className="w-3.5 h-3.5" />
+                                                                                                            </button>
+                                                                                                        )}
+                                                                                                        <button
+                                                                                                            onClick={() => router.push(`/forecasts/train/${job.id}`)}
+                                                                                                            className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-1 rounded transition-colors"
+                                                                                                            title="View Output"
+                                                                                                        >
+                                                                                                            <Eye className="w-3.5 h-3.5" />
+                                                                                                        </button>
+                                                                                                    </div>
+                                                                                                </td>
+                                                                                            </tr>
+                                                                                        ))}
+                                                                                    </tbody>
+                                                                                </table>
+                                                                            </div>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
                                                             )}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-gray-900 font-medium">
-                                                            {new Date(job.started_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-gray-600 text-sm">
-                                                            {formatDuration(job.duration)}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="flex items-center gap-1">
-                                                                {(job.status === 'RUNNING' || job.status === 'PENDING') && (
-                                                                    <button
-                                                                        onClick={() => handleStopJob(job.id)}
-                                                                        className="text-gray-600 hover:text-red-600 hover:bg-red-50 p-1.5 rounded transition-colors"
-                                                                        title="Stop Job"
-                                                                    >
-                                                                        <StopCircle className="w-4 h-4" />
-                                                                    </button>
-                                                                )}
-                                                                <button
-                                                                    onClick={() => router.push(`/forecasts/train/${job.id}`)}
-                                                                    className="text-gray-600 hover:text-blue-600 hover:bg-blue-50 p-1.5 rounded transition-colors"
-                                                                    title="View Details"
-                                                                >
-                                                                    <ExternalLink className="w-4 h-4" />
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                        <PaginationControls
-                                            page={recentJobsPage}
-                                            pageSize={recentJobsPageSize}
-                                            totalPages={recentJobsTotalPages}
-                                            totalCount={recentJobsTotalCount}
-                                            onPageChange={setRecentJobsPage}
-                                            onPageSizeChange={setRecentJobsPageSize}
-                                        />
-                                    </div>
-                                )}
-                            </div>
+                                                        </Fragment>
+                                                    );
+                                                });
+                                            })()}
+                                        </tbody>
+                                    </table>
+
+                                    <PaginationControls
+                                        page={recentJobsPage}
+                                        pageSize={recentJobsPageSize}
+                                        totalPages={recentJobsTotalPages}
+                                        totalCount={recentJobsTotalCount}
+                                        onPageChange={setRecentJobsPage}
+                                        onPageSizeChange={setRecentJobsPageSize}
+                                    />
+                                </div>
+                            </section>
                         </TabsContent>
                     </Tabs>
                 </div>

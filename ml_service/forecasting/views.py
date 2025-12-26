@@ -75,6 +75,7 @@ class ForecastViewSet(viewsets.ModelViewSet):
         hyperparameters = serializer.validated_data.get('hyperparameters', {})
         optimize = serializer.validated_data.get('optimize', False)
         n_trials = serializer.validated_data.get('n_trials', 50)
+        batch_id = serializer.validated_data.get('batch_id') or uuid.uuid4()
         
         symbols_to_train = []
         if sector:
@@ -84,7 +85,6 @@ class ForecastViewSet(viewsets.ModelViewSet):
         else:
             symbols_to_train = [symbol.upper()]
 
-        batch_id = uuid.uuid4() if len(symbols_to_train) > 1 or sector else None
         job_ids = []
         task_ids = []
 

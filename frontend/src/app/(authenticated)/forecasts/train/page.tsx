@@ -68,6 +68,7 @@ export default function TrainModelPage() {
     const [patience, setPatience] = useState(10);
 
     const [training, setTraining] = useState(false);
+    const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
     const [sessionJobIds, setSessionJobIds] = useState<number[]>([]);
     const [batchJobs, setBatchJobs] = useState<any[]>([]);
     const [showLogDialog, setShowLogDialog] = useState(false);
@@ -131,13 +132,13 @@ export default function TrainModelPage() {
     // Poll for batch results or single job results
     // Poll for jobs in the current session
     useEffect(() => {
-        if (sessionJobIds.length === 0) return;
+        if (!currentBatchId || !training) return;
 
         let isSubscribed = true;
         const intervalId = setInterval(async () => {
             try {
-                // Fetch all jobs in the current session
-                const response = await mlApi.get(`/api/ml/training-jobs/?ids=${sessionJobIds.join(',')}`);
+                // Fetch all jobs in the current session by batch_id
+                const response = await mlApi.get(`/api/training-jobs/?batch_id=${currentBatchId}`);
 
                 if (isSubscribed) {
                     const jobs = response.data.results || response.data;
@@ -163,7 +164,7 @@ export default function TrainModelPage() {
             isSubscribed = false;
             clearInterval(intervalId);
         };
-    }, [sessionJobIds, training]);
+    }, [currentBatchId, training]);
 
     // Separate effect for active log polling (Dialog/Live view)
     useEffect(() => {
@@ -217,13 +218,16 @@ export default function TrainModelPage() {
         }
 
         setTraining(true);
-        setTraining(true);
         // Do NOT clear batchJobs here if we want to accumulate sessions? 
         // Or clear them to start fresh? User says "When two models are trained", likely in one go.
         // Let's clear for a new "training run" to avoid confusion.
         setSessionJobIds([]);
         setBatchJobs([]);
         setLogs([]);
+
+        // Generate a unique batch/session ID for this training run
+        const batchId = crypto.randomUUID();
+        setCurrentBatchId(batchId);
 
         const toastId = toast.loading(trainMode === 'SECTOR' ? `Initiating training for ${selectedSector} sector...` : 'Initiating training job...');
 
@@ -259,7 +263,8 @@ export default function TrainModelPage() {
                     model_type: modelType,
                     hyperparameters: hyperparameters,
                     optimize: optimize,
-                    n_trials: optimize ? nTrials : undefined
+                    n_trials: optimize ? nTrials : undefined,
+                    batch_id: batchId
                 };
 
                 if (trainMode === 'SECTOR') {

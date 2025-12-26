@@ -86,6 +86,7 @@ class TrainModelRequestSerializer(serializers.Serializer):
     model_type = serializers.ChoiceField(choices=['LSTM', 'GRU', 'PROPHET'])
     hyperparameters = serializers.JSONField(required=False, default=dict)
     optimize = serializers.BooleanField(required=False, default=False)
+    batch_id = serializers.UUIDField(required=False)
     n_trials = serializers.IntegerField(required=False, default=50, min_value=5, max_value=500)
 
     def validate(self, data):
