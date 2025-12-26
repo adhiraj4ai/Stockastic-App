@@ -392,7 +392,7 @@ export default function ForecastsPage() {
                                         <thead className="bg-gray-50">
                                             <tr>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">Status</th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Session ID</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Training ID</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Started</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target</th>
@@ -411,14 +411,18 @@ export default function ForecastsPage() {
                                             ) : (() => {
                                                 const sessions: Record<string, TrainingJob[]> = {};
                                                 allJobs.forEach(job => {
-                                                    const bid = job.batch_id?.toString() || 'standalone-' + job.id;
+                                                    // Group by batch_id if available, otherwise by symbol + sector + minute-start
+                                                    // This helps consolidate jobs started together but missing a batch_id
+                                                    const timestamp = new Date(job.started_at).toISOString().substring(0, 16); // YYYY-MM-DDTHH:mm
+                                                    const bid = job.batch_id?.toString() || `legacy-${job.sector || job.symbol}-${timestamp}`;
+
                                                     if (!sessions[bid]) sessions[bid] = [];
                                                     sessions[bid].push(job);
                                                 });
 
                                                 return Object.entries(sessions).map(([sessionId, sessionJobs]) => {
                                                     const firstJob = sessionJobs[0];
-                                                    const isBatch = !sessionId.startsWith('standalone-');
+                                                    const isBatch = sessionJobs.length > 1 || !!firstJob.sector;
                                                     const statusOrder = ['RUNNING', 'PENDING', 'FAILED', 'HALTED', 'SUCCESS'];
                                                     const overallStatus = sessionJobs.map(j => j.status).sort((a, b) => statusOrder.indexOf(a) - statusOrder.indexOf(b))[0];
                                                     const startTime = new Date(Math.min(...sessionJobs.map(j => new Date(j.started_at).getTime())));
@@ -449,8 +453,8 @@ export default function ForecastsPage() {
                                                                         <AlertTriangle size={18} className="text-amber-500" />
                                                                     )}
                                                                 </td>
-                                                                <td className="px-6 py-4 whitespace-nowrap text-gray-500 font-mono text-xs">
-                                                                    #{sessionId.substring(0, 8)}
+                                                                <td className="px-6 py-4 whitespace-nowrap text-gray-500 font-mono text-xs font-bold">
+                                                                    {sessionId.startsWith('legacy-') ? '#GROUPED' : `#${sessionId.split('-')[0].toUpperCase()}`}
                                                                 </td>
                                                                 <td className="px-6 py-4 whitespace-nowrap text-gray-900 font-medium">
                                                                     {startTime.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
