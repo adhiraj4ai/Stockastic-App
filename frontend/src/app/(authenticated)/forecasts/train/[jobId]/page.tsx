@@ -36,6 +36,7 @@ interface JobDetails {
     hyperparameters: Record<string, string | number | boolean>;
     result_data: Record<string, number | string>;
     historical_prices: Array<{ date: string; price: number }>;
+    actual_test_data: Array<{ date: string; price: number }>;
     test_predictions: Array<{ date: string; price: number }>;
     future_forecasts: Array<{ date: string; price: number; upper?: number; lower?: number }>;
     split_dates: {
@@ -53,7 +54,6 @@ export default function JobDetailPage() {
     const router = useRouter();
     const [job, setJob] = useState<JobDetails | null>(null);
     const [loading, setLoading] = useState(true);
-    const [logsExpanded, setLogsExpanded] = useState(true);
 
     useEffect(() => {
         let isSubscribed = true;
@@ -67,11 +67,6 @@ export default function JobDetailPage() {
                         // Check for status change to SUCCESS
                         if (prev && prev.status !== 'SUCCESS' && newData.status === 'SUCCESS') {
                             toast.success('Training Model Completed Successfully!');
-                            setLogsExpanded(false); // Auto-collapse logs on completion
-                        }
-                        // Initial load: if success, collapse
-                        if (!prev && newData.status === 'SUCCESS') {
-                            setLogsExpanded(false);
                         }
                         return newData;
                     });
@@ -255,44 +250,54 @@ export default function JobDetailPage() {
         return isNaN(num) ? String(val) : num.toFixed(2);
     };
 
-    return (
-        <DashboardLayout>
-            <div className="space-y-8 p-6 lg:p-10 bg-slate-50/50 min-h-screen">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => router.back()}
-                            className="text-slate-400 hover:text-slate-600 -ml-2 mb-2 p-0 h-auto font-bold text-[10px] uppercase tracking-tighter"
-                        >
-                            <ChevronLeft className="w-4 h-4 mr-1" /> Back to Monitoring
-                        </Button>
-                        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-3">
-                            <Target className="w-8 h-8 text-blue-600" />
-                            Job Analysis: {job.symbol}
-                        </h1>
-                        <div className="flex items-center gap-3 mt-2 text-slate-500 font-bold text-xs uppercase tracking-widest">
-                            <span>ID: <span className="text-slate-900">{job.task_id.substring(0, 8)}...</span></span>
-                            <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-                            <span>{new Date(job.started_at).toLocaleString()}</span>
-                            {job.status === 'SUCCESS' && (
-                                <>
-                                    <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-                                    <span className="text-emerald-600 flex items-center">
-                                        <Clock className="w-3 h-3 mr-1" />
-                                        Took {job.duration?.toFixed(1)}s
-                                    </span>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        {getStatusBadge(job.status)}
-                    </div>
-                </div>
+    const headerContent = (
+        <div className="flex items-center gap-4">
+            <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.back()}
+                className="h-8 w-8 p-0 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-full transition-colors"
+                title="Back to Monitoring"
+            >
+                <ChevronLeft className="w-5 h-5" />
+            </Button>
 
+            <div className="flex items-center gap-3">
+                <h1 className="text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                    {job.symbol} Analysis
+                </h1>
+
+                {/* Status Badge */}
+                {getStatusBadge(job.status)}
+
+                {/* Divider */}
+                <span className="h-4 w-px bg-gray-300 mx-1"></span>
+
+                {/* Metadata */}
+                <div className="flex items-center gap-3 text-xs font-semibold text-slate-500 uppercase tracking-widest">
+                    <span className="font-mono text-slate-400">ID: <span className="text-slate-700">{job.task_id.substring(0, 8)}</span></span>
+
+                    <span className="text-slate-300">•</span>
+
+                    <span>{new Date(job.started_at).toLocaleString()}</span>
+
+                    {job.status === 'SUCCESS' && (
+                        <>
+                            <span className="text-slate-300">•</span>
+                            <span className="text-emerald-600 flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {job.duration?.toFixed(1)}s
+                            </span>
+                        </>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+
+    return (
+        <DashboardLayout headerContent={headerContent}>
+            <div className="p-4 lg:p-6 bg-slate-50/50 min-h-screen">
                 {/* Content */}
                 <ForecastResultView job={job} />
             </div>

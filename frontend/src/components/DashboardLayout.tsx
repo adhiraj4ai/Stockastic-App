@@ -67,7 +67,8 @@ export default function DashboardLayout({
     subtitle,
     noPadding,
     showBack,
-    hideHeader = false
+    hideHeader = false,
+    headerContent
 }: {
     children: React.ReactNode;
     title?: React.ReactNode;
@@ -75,6 +76,7 @@ export default function DashboardLayout({
     noPadding?: boolean;
     showBack?: boolean;
     hideHeader?: boolean;
+    headerContent?: React.ReactNode;
 }) {
     const pathname = usePathname();
     const router = useRouter();
@@ -321,26 +323,31 @@ export default function DashboardLayout({
                 {/* Top Navigation Bar */}
                 {!hideHeader && (
                     <header className="bg-white border-b border-gray-200 sticky top-0 z-20 px-8 py-4 flex justify-between items-center shadow-sm">
-                        {/* Header content unchanged */}
-                        <div className="w-1/3 flex items-center gap-3">
-                            {showBack && (
-                                <button
-                                    onClick={() => router.back()}
-                                    className="p-1.5 rounded-full hover:bg-gray-100 text-gray-600 transition-colors"
-                                    title="Go Back"
-                                >
-                                    <ArrowLeft size={20} />
-                                </button>
-                            )}
-                            <div className="flex flex-col min-w-0">
-                                <h2 className="text-xl font-semibold text-gray-800 capitalize truncate">
-                                    {title || (pathname.includes('/stock/') ? 'Stock Details' : pathname.split('/').pop())}
-                                </h2>
-                                {subtitle && (
-                                    <p className="text-xs text-gray-500 truncate">{subtitle}</p>
-                                )}
+                        {headerContent ? (
+                            <div className="flex-1 mr-4">
+                                {headerContent}
                             </div>
-                        </div>
+                        ) : (
+                            <div className="w-1/3 flex items-center gap-3">
+                                {showBack && (
+                                    <button
+                                        onClick={() => router.back()}
+                                        className="p-1.5 rounded-full hover:bg-gray-100 text-gray-600 transition-colors"
+                                        title="Go Back"
+                                    >
+                                        <ArrowLeft size={20} />
+                                    </button>
+                                )}
+                                <div className="flex flex-col min-w-0">
+                                    <h2 className="text-xl font-semibold text-gray-800 capitalize truncate">
+                                        {title || (pathname.includes('/stock/') ? 'Stock Details' : pathname.split('/').pop())}
+                                    </h2>
+                                    {subtitle && (
+                                        <p className="text-xs text-gray-500 truncate">{subtitle}</p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="w-1/3 flex justify-center">
                             <SearchBar />

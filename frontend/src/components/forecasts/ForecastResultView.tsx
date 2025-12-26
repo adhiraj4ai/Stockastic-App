@@ -45,8 +45,16 @@ interface ForecastResultViewProps {
     job: JobDetails;
 }
 
+const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'NPR',
+        maximumFractionDigits: 2
+    }).format(value);
+};
+
 export default function ForecastResultView({ job }: ForecastResultViewProps) {
-    const [logsExpanded, setLogsExpanded] = useState(false);
+    const [logsExpanded, setLogsExpanded] = useState(false); // Can be removed later if unused
 
     const chartOption = useMemo(() => {
         if (!job) return {};
@@ -343,51 +351,54 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
                 </CardContent>
             </Card>
 
-            {/* Collapsible Logs */}
-            <Card className={`border-0 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white rounded-3xl overflow-hidden transition-all duration-300 ${logsExpanded ? '' : 'h-fit'}`}>
-                <CardHeader
-                    className="bg-slate-50/30 border-b border-slate-100/50 px-8 py-5 cursor-pointer hover:bg-slate-50/80 transition-colors"
-                    onClick={() => setLogsExpanded(!logsExpanded)}
-                >
-                    <CardTitle className="text-xs font-bold text-slate-500 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Activity className="w-4 h-4 text-emerald-600" />
-                            Training Logs
-                        </div>
-                        <div className="flex items-center gap-2">
-                            {!logsExpanded && (
-                                <Badge variant={job.status === 'SUCCESS' ? 'default' : 'destructive'} className="text-[10px] h-5 px-2">
-                                    {job.status}
-                                </Badge>
-                            )}
-                            {logsExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </div>
+            {/* Forecast Data Table */}
+            <Card className="border-0 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white rounded-3xl overflow-hidden mt-6">
+                <CardHeader className="bg-slate-50/30 border-b border-slate-100/50 px-8 py-5">
+                    <CardTitle className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <Database className="w-4 h-4 text-blue-600" />
+                        Forecast Data Points
                     </CardTitle>
                 </CardHeader>
-
-                <div className={`transition-all duration-300 overflow-hidden ${logsExpanded ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                    <CardContent className="p-8">
-                        <div className="bg-slate-900 rounded-xl p-6 max-h-96 overflow-y-auto custom-scrollbar">
-                            <div className="font-mono text-xs space-y-2">
-                                {job.progress_message ? (
-                                    job.progress_message.split('\n').map((line, idx) => (
-                                        <div key={idx} className="flex gap-3">
-                                            <span className="text-slate-500 select-none">{String(idx + 1).padStart(3, '0')}</span>
-                                            <span className="text-green-400">{line || ' '}</span>
-                                        </div>
+                <CardContent className="p-0">
+                    <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
+                        <table className="w-full text-left">
+                            <thead className="bg-slate-50 sticky top-0 z-10">
+                                <tr>
+                                    <th className="px-8 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                                    <th className="px-8 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Predicted Price</th>
+                                    <th className="px-8 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Lower Bound</th>
+                                    <th className="px-8 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Upper Bound</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {job.future_forecasts && job.future_forecasts.length > 0 ? (
+                                    job.future_forecasts.map((point, idx) => (
+                                        <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="px-8 py-3 text-sm font-medium text-slate-700">
+                                                {new Date(point.date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                                            </td>
+                                            <td className="px-8 py-3 text-sm font-bold text-blue-600">
+                                                {formatCurrency(point.price)}
+                                            </td>
+                                            <td className="px-8 py-3 text-sm text-slate-500">
+                                                {point.lower ? formatCurrency(point.lower) : '-'}
+                                            </td>
+                                            <td className="px-8 py-3 text-sm text-slate-500">
+                                                {point.upper ? formatCurrency(point.upper) : '-'}
+                                            </td>
+                                        </tr>
                                     ))
                                 ) : (
-                                    <div className="text-slate-500 italic">No training logs available yet.</div>
+                                    <tr>
+                                        <td colSpan={4} className="px-8 py-8 text-center text-slate-400 italic">
+                                            No forecast data available.
+                                        </td>
+                                    </tr>
                                 )}
-                                {job.status === 'FAILURE' && job.error_message && (
-                                    <div className="text-red-400 mt-2 pt-2 border-t border-red-900/50">
-                                        ❌ {job.error_message}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </CardContent>
-                </div>
+                            </tbody>
+                        </table>
+                    </div>
+                </CardContent>
             </Card>
         </div >
     );

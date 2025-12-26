@@ -46,15 +46,29 @@ def train_model_task(self, symbol, model_type, hyperparameters, user_id=None, op
         if optimize:
             self.update_state(state='PROGRESS', meta={'status': f'Optimizing hyperparameters ({n_trials} trials)...'})
             
+            # Update DB to show optimization started
+            try:
+                job_ref = TrainingJob.objects.get(task_id=self.request.id)
+                job_ref.progress_message = f'Optimizing hyperparameters ({n_trials} trials)...'
+                job_ref.save()
+            except TrainingJob.DoesNotExist:
+                pass
+            
             from .hyperparameter_optimizer import HyperparameterOptimizer
             
-            optimizer = HyperparameterOptimizer(symbol, model_type, n_trials)
-            hyperparameters = optimizer.optimize()
+            # Callback to sync HPO logs to DB and Celery
+            def hpo_callback(msg):
+                # Update Celery
+                self.update_state(state='PROGRESS', meta={'status': msg})
+                # Update DB (using update to be atomic and faster)
+                TrainingJob.objects.filter(task_id=self.request.id).update(progress_message=msg)
             
-            self.update_state(state='PROGRESS', meta={
-                'status': 'Optimization complete. Training with best parameters...',
-                'best_params': hyperparameters
-            })
+            optimizer = HyperparameterOptimizer(symbol, model_type, n_trials)
+            hyperparameters = optimizer.optimize(callback=hpo_callback)
+            
+            completion_msg = 'Optimization complete. Training with best parameters...'
+            self.update_state(state='PROGRESS', meta={'status': completion_msg})
+            TrainingJob.objects.filter(task_id=self.request.id).update(progress_message=completion_msg)
         
         # Prepare data
         train_split = hyperparameters.get('train_split', 0.7)

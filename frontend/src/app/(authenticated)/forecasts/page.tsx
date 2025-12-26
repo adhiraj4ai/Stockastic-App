@@ -4,11 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Brain, Trash2, Eye, Plus, Activity, CheckCircle, XCircle, Clock, BrainCircuit, ExternalLink, StopCircle } from 'lucide-react';
 import api from '@/lib/api';
+import { toast } from 'sonner';
 
 interface ForecastModel {
     id: number;
@@ -43,6 +45,7 @@ export default function ForecastsPage() {
     const [models, setModels] = useState<ForecastModel[]>([]);
     const [allJobs, setAllJobs] = useState<TrainingJob[]>([]);
     const [loading, setLoading] = useState(true);
+    const [jobToStop, setJobToStop] = useState<number | null>(null);
 
     // Pagination state
     const [modelsPage, setModelsPage] = useState(1);
@@ -112,15 +115,25 @@ export default function ForecastsPage() {
         router.push(`/forecasts/${symbol}`);
     };
 
-    const handleStopJob = async (jobId: number) => {
-        if (!confirm('Are you sure you want to stop this training job?')) return;
+    const handleStopJob = (jobId: number) => {
+        setJobToStop(jobId);
+    };
+
+    const confirmStopJob = async () => {
+        if (!jobToStop) return;
 
         try {
-            await api.post(`/api/ml/training-jobs/${jobId}/stop/`);
+            await api.post(`/api/ml/training-jobs/${jobToStop}/stop/`);
+            setJobToStop(null);
             fetchJobs(); // Refresh the jobs list
-        } catch (error) {
+            // Optimization: Optimistically update local state to feel instant
+            setAllJobs(jobs => jobs.map(j => j.id === jobToStop ? { ...j, status: 'HALTED' } : j));
+            toast.success('Training job halted successfully');
+        } catch (error: any) {
             console.error('Failed to stop job:', error);
-            alert('Failed to stop the training job. It may have already completed.');
+            const errorMsg = error.response?.data?.error || 'Failed to stop the training job';
+            toast.error(errorMsg);
+            fetchJobs(); // Refresh to catch up with actual status
         }
     };
 
@@ -129,7 +142,8 @@ export default function ForecastsPage() {
             PENDING: { color: 'bg-yellow-100 text-yellow-800', icon: Clock },
             RUNNING: { color: 'bg-blue-100 text-blue-800', icon: Activity },
             SUCCESS: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
-            FAILED: { color: 'bg-red-100 text-red-800', icon: XCircle }
+            FAILED: { color: 'bg-red-100 text-red-800', icon: XCircle },
+            HALTED: { color: 'bg-orange-100 text-orange-800', icon: StopCircle }
         };
         const { color, icon: Icon } = variants[status] || variants.PENDING;
 
@@ -426,6 +440,22 @@ export default function ForecastsPage() {
                     </Tabs>
                 </div>
             </div>
-        </DashboardLayout>
+
+
+            <Dialog open={!!jobToStop} onOpenChange={(open) => !open && setJobToStop(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Stop Training Job?</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to stop this training job? This action cannot be undone and the job will be marked as halted.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setJobToStop(null)}>Cancel</Button>
+                        <Button variant="destructive" onClick={confirmStopJob}>Stop Training</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </DashboardLayout >
     );
 }

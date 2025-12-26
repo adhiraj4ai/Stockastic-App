@@ -269,22 +269,37 @@ class TrainingJobViewSet(viewsets.ReadOnlyModelViewSet):
         # Only allow stopping running or pending jobs
         if job.status not in ['PENDING', 'RUNNING']:
             return Response(
-                {'error': 'Can only stop pending or running jobs'},
+                {'error': f'Can only stop pending or running jobs. Current status: {job.status}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Revoke the Celery task
-        current_app.control.revoke(job.task_id, terminate=True, signal='SIGKILL')
-        
-        # Update job status
-        job.status = 'FAILED'
-        job.completed_at = datetime.now()
-        job.error_message = 'Job stopped by user'
-        job.progress_message = '⛔ Job stopped by user'
-        job.save()
-        
-        serializer = self.get_serializer(job)
-        return Response(serializer.data)
+        try:
+            # Check if task_id exists
+            if not job.task_id:
+                 # Just mark as halted if no task ID (e.g. stalled initialization)
+                job.status = 'HALTED'
+                job.save()
+                return Response(self.get_serializer(job).data)
+
+            # Revoke the Celery task
+            current_app.control.revoke(job.task_id, terminate=True, signal='SIGKILL')
+            
+            # Update job status
+            job.status = 'HALTED'
+            job.completed_at = datetime.now()
+            job.error_message = 'Job stopped by user'
+            job.progress_message = '⛔ Job stopped by user'
+            job.save()
+            
+            serializer = self.get_serializer(job)
+            return Response(serializer.data)
+        except Exception as e:
+            # Catch backend errors (e.g. Redis down)
+            print(f"Error stopping job {pk}: {e}") # helpful for server logs
+            return Response(
+                {'error': f'Failed to stop job: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
     
     @action(detail=True, methods=['get'])
     def details(self, request, pk=None):

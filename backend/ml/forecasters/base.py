@@ -73,10 +73,11 @@ class BaseForecaster(ABC):
     def evaluate(self, X_test: np.ndarray, y_test: np.ndarray) -> Dict:
         """
         Evaluate the model on test data.
+        Calculates metrics on ORIGINAL valid scale (inverse transformed).
         
         Args:
             X_test: Test features
-            y_test: Test targets
+            y_test: Test targets (scaled)
             
         Returns:
             Dictionary containing evaluation metrics (MAPE, RMSE, MAE)
@@ -84,17 +85,44 @@ class BaseForecaster(ABC):
         if not self.is_trained:
             raise ValueError("Model must be trained before evaluation")
         
-        predictions = self.predict(X_test)
+        # Get scaled predictions
+        predictions_scaled = self.predict(X_test)
         
-        # Calculate metrics
-        mape = np.mean(np.abs((y_test - predictions) / y_test)) * 100
-        rmse = np.sqrt(np.mean((y_test - predictions) ** 2))
-        mae = np.mean(np.abs(y_test - predictions))
+        # Check if we have a scaler to inverse transform
+        if hasattr(self, 'scaler') and self.scaler is not None:
+            # We need to inverse transform both predictions and y_test
+            # The scaler expects shape (n_samples, n_features)
+            # We need to act as if these are the target column (index 3 usually)
+            
+            # Helper to inverse transform single column array
+            def inverse_transform_col(col_data):
+                # Assume the scaler was fitted on 5 features (OHLCV)
+                # We place our data in the 'close' column (index 3)
+                n_features = self.scaler.n_features_in_
+                dummy = np.zeros((len(col_data), n_features))
+                dummy[:, 3] = col_data.flatten()
+                return self.scaler.inverse_transform(dummy)[:, 3]
+            
+            predictions = inverse_transform_col(predictions_scaled)
+            actuals = inverse_transform_col(y_test)
+        else:
+            # Fallback to scaled metrics if no scaler available (not ideal but safe)
+            predictions = predictions_scaled
+            actuals = y_test
+        
+        # Calculate metrics on REAL prices
+        # Avoid division by zero
+        epsilon = 1e-10
+        mape = np.mean(np.abs((actuals - predictions) / (actuals + epsilon))) * 100
+        rmse = np.sqrt(np.mean((actuals - predictions) ** 2))
+        mae = np.mean(np.abs(actuals - predictions))
+        r2 = 1 - (np.sum((actuals - predictions) ** 2) / np.sum((actuals - np.mean(actuals)) ** 2))
         
         return {
             'mape': float(mape),
             'rmse': float(rmse),
-            'mae': float(mae)
+            'mae': float(mae),
+            'r2': float(r2)
         }
     
     @abstractmethod

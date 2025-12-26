@@ -39,7 +39,7 @@ class HyperparameterOptimizer:
         self.preprocessor = DataPreprocessor(symbol=self.symbol)
         self.data_splits, _ = self.preprocessor.process()
         
-    def optimize_lstm(self) -> Dict[str, Any]:
+    def optimize_lstm(self, task=None, callback=None) -> Dict[str, Any]:
         """
         Optimize LSTM hyperparameters.
         
@@ -60,7 +60,7 @@ class HyperparameterOptimizer:
                 'dropout': dropout,
                 'learning_rate': learning_rate,
                 'batch_size': batch_size,
-                'epochs': 50  # Reduced for optimization speed
+                'epochs': 20  # Reduced for optimization speed to 20
             }
             
             try:
@@ -86,7 +86,16 @@ class HyperparameterOptimizer:
             except Exception as e:
                 logger.error(f"Trial failed: {e}")
                 return float('inf')
-        
+
+        # Optuna callback for logging
+        def logging_callback(study, trial):
+            if callback:
+                msg = f"Trial {trial.number} finished. Value: {trial.value:.4f}. Params: {trial.params}"
+                callback(msg)
+            elif task:
+                msg = f"Trial {trial.number} finished. Value: {trial.value:.4f}"
+                task.update_state(state='PROGRESS', meta={'status': msg})
+
         # Create study
         study = optuna.create_study(
             direction='minimize',
@@ -95,7 +104,7 @@ class HyperparameterOptimizer:
         )
         
         # Optimize
-        study.optimize(objective, n_trials=self.n_trials, show_progress_bar=True)
+        study.optimize(objective, n_trials=self.n_trials, callbacks=[logging_callback], show_progress_bar=True)
         
         logger.info(f"Best MAPE: {study.best_value:.4f}")
         logger.info(f"Best params: {study.best_params}")
@@ -114,7 +123,7 @@ class HyperparameterOptimizer:
             'epochs': 100  # Full training with best params
         }
     
-    def optimize_gru(self) -> Dict[str, Any]:
+    def optimize_gru(self, task=None, callback=None) -> Dict[str, Any]:
         """
         Optimize GRU hyperparameters.
         
@@ -135,7 +144,7 @@ class HyperparameterOptimizer:
                 'dropout': dropout,
                 'learning_rate': learning_rate,
                 'batch_size': batch_size,
-                'epochs': 50
+                'epochs': 20 # Reduced for optimization
             }
             
             try:
@@ -159,6 +168,14 @@ class HyperparameterOptimizer:
             except Exception as e:
                 logger.error(f"Trial failed: {e}")
                 return float('inf')
+
+        def logging_callback(study, trial):
+            if callback:
+                msg = f"Trial {trial.number} finished. Value: {trial.value:.4f}. Params: {trial.params}"
+                callback(msg)
+            elif task:
+                msg = f"Trial {trial.number} finished. Value: {trial.value:.4f}"
+                task.update_state(state='PROGRESS', meta={'status': msg})
         
         study = optuna.create_study(
             direction='minimize',
@@ -166,7 +183,7 @@ class HyperparameterOptimizer:
             pruner=MedianPruner(n_startup_trials=5, n_warmup_steps=10)
         )
         
-        study.optimize(objective, n_trials=self.n_trials, show_progress_bar=True)
+        study.optimize(objective, n_trials=self.n_trials, callbacks=[logging_callback], show_progress_bar=True)
         
         logger.info(f"Best MAPE: {study.best_value:.4f}")
         logger.info(f"Best params: {study.best_params}")
@@ -184,7 +201,7 @@ class HyperparameterOptimizer:
             'epochs': 100
         }
     
-    def optimize_prophet(self) -> Dict[str, Any]:
+    def optimize_prophet(self, task=None, callback=None) -> Dict[str, Any]:
         """
         Optimize Prophet hyperparameters.
         
@@ -209,31 +226,58 @@ class HyperparameterOptimizer:
                 forecaster = ProphetForecaster(self.symbol, hyperparameters)
                 
                 # Prophet uses different data format
-                # We'll use the original dataframe from preprocessor
-                from stocks.models import DailyPrice
+                # We'll use the original dataframe from preprocessor (which creates DailyStockPrice query)
+                from stocks.models import DailyStockPrice
                 import pandas as pd
                 
-                prices = DailyPrice.objects.filter(symbol=self.symbol).order_by('date')
+                # Fetch data manually since preprocessor splits differently for LSTM
+                prices = DailyStockPrice.objects.filter(ticker=self.symbol).order_by('date')
                 df = pd.DataFrame(list(prices.values('date', 'close')))
                 df.columns = ['ds', 'y']
                 
-                # Split for validation
+                # Split for validation (85/15)
                 train_size = int(len(df) * 0.85)
                 train_df = df[:train_size]
                 val_df = df[train_size:]
                 
-                # Train
-                forecaster.train(train_df, None, None, None)
+                # Extract arrays and dates
+                # X_train is not used by ProphetForecaster but needs to be passed
+                X_train_dummy = np.zeros((len(train_df), 1)) 
+                y_train = train_df['y'].values
+                train_dates = train_df['ds']
+                
+                X_val_dummy = np.zeros((len(val_df), 1))
+                y_val = val_df['y'].values
+                val_dates = val_df['ds']
+                
+                # Train with correct signature
+                forecaster.train(
+                    X_train_dummy, y_train,
+                    X_val_dummy, y_val,
+                    train_dates=train_dates,
+                    val_dates=val_dates
+                )
                 
                 # Predict on validation period
+                # Note: ProphetForecaster.train already runs validation and returns metrics
+                # But we can also manually verify or just use the returned metrics
+                # For HPO, using the forecaster's internal metric calculation is safest
+                
+                # Actually, forecaster.train returns Dict with 'final_val_mape'
+                # We should capture that instead of recalculating manually which is redundant
+                
+                # However, since train() returns a dict, we can't extract it easily if we didn't capture return.
+                # Let's check ProphetForecaster.train implementation again...
+                # It returns {'final_val_mape': float(mape), ...}
+                
+                # Let's rely on manual calculation here to be 100% sure we control the metric
                 future = forecaster.model.make_future_dataframe(periods=len(val_df))
                 forecast = forecaster.model.predict(future)
                 
                 # Calculate MAPE on validation set
                 val_predictions = forecast['yhat'].iloc[-len(val_df):].values
-                val_actual = val_df['y'].values
                 
-                mape = np.mean(np.abs((val_actual - val_predictions) / val_actual)) * 100
+                mape = np.mean(np.abs((y_val - val_predictions) / y_val)) * 100
                 
                 return mape
                 
@@ -241,19 +285,27 @@ class HyperparameterOptimizer:
                 logger.error(f"Trial failed: {e}")
                 return float('inf')
         
+        def logging_callback(study, trial):
+            if callback:
+                msg = f"Trial {trial.number} finished. Value: {trial.value:.4f}. Params: {trial.params}"
+                callback(msg)
+            elif task:
+                msg = f"Trial {trial.number} finished. Value: {trial.value:.4f}"
+                task.update_state(state='PROGRESS', meta={'status': msg})
+
         study = optuna.create_study(
             direction='minimize',
             sampler=TPESampler(seed=42)
         )
         
-        study.optimize(objective, n_trials=self.n_trials, show_progress_bar=True)
+        study.optimize(objective, n_trials=self.n_trials, callbacks=[logging_callback], show_progress_bar=True)
         
         logger.info(f"Best MAPE: {study.best_value:.4f}")
         logger.info(f"Best params: {study.best_params}")
         
         return study.best_params
     
-    def optimize(self) -> Dict[str, Any]:
+    def optimize(self, task=None, callback=None) -> Dict[str, Any]:
         """
         Run optimization for the specified model type.
         
@@ -269,10 +321,10 @@ class HyperparameterOptimizer:
         
         # Run optimization
         if self.model_type == 'LSTM':
-            return self.optimize_lstm()
+            return self.optimize_lstm(task=task, callback=callback)
         elif self.model_type == 'GRU':
-            return self.optimize_gru()
+            return self.optimize_gru(task=task, callback=callback)
         elif self.model_type == 'PROPHET':
-            return self.optimize_prophet()
+            return self.optimize_prophet(task=task, callback=callback)
         else:
             raise ValueError(f"Unknown model type: {self.model_type}")
