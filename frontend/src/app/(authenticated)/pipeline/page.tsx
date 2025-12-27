@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '@/lib/api';
 import {
     Play,
@@ -11,7 +11,10 @@ import {
     Server,
     Activity,
     UploadCloud,
-    FileJson
+    FileJson,
+    Cpu,
+    Zap,
+    History
 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from "@/components/ui/button";
@@ -29,11 +32,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import UploadHistoryTable from './components/UploadHistoryTable';
+import { PipelineStep } from './components/PipelineStep';
+
+interface LogEntry {
+    type: 'log' | 'status' | 'error';
+    message: string;
+    timestamp: Date;
+}
 
 export default function PipelinePage() {
     const [uploading, setUploading] = useState(false);
     const [logs, setLogs] = useState([]);
     const [logsLoading, setLogsLoading] = useState(false);
+
+    // Signal Generation State
+    const [signalStatus, setSignalStatus] = useState<'idle' | 'running' | 'completed' | 'error'>('idle');
+    const [signalLogs, setSignalLogs] = useState<LogEntry[]>([]);
+    const [showSignalLogs, setShowSignalLogs] = useState(false);
 
     const fetchHistory = async () => {
         setLogsLoading(true);
@@ -50,6 +65,96 @@ export default function PipelinePage() {
     useEffect(() => {
         fetchHistory();
     }, []);
+
+    const handleRunSignals = async () => {
+        if (signalStatus === 'running') return;
+
+        setSignalStatus('running');
+        setSignalLogs([]);
+        setShowSignalLogs(true);
+
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const url = `${apiUrl}/api/stocks/pipeline/generate_signals_stream/`;
+        const token = localStorage.getItem('access_token');
+
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    toast.error("Session expired. Please login again.");
+                    // Optionally redirect to login here
+                } else {
+                    toast.error(`Connection failed: ${response.statusText}`);
+                }
+                setSignalStatus('error');
+                return;
+            }
+
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+
+            if (!reader) {
+                toast.error("Failed to initialize stream reader");
+                setSignalStatus('error');
+                return;
+            }
+
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+
+                // Keep the last partial line in the buffer
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine || !trimmedLine.startsWith('data: ')) continue;
+
+                    try {
+                        const jsonStr = trimmedLine.substring(6); // Remove 'data: ' prefix
+                        const data = JSON.parse(jsonStr);
+
+                        if (data.type === 'done') {
+                            setSignalStatus('completed');
+                            toast.success("Signal generation complete!");
+                            return; // Stop reading
+                        }
+
+                        if (data.type === 'error') {
+                            setSignalStatus('error');
+                            toast.error(data.message || "Error during signal generation");
+                            return; // Stop reading
+                        }
+
+                        if (data.type === 'log' || data.type === 'status') {
+                            setSignalLogs(prev => [...prev, {
+                                type: data.type as any,
+                                message: data.message,
+                                timestamp: new Date()
+                            }]);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing stream line:', trimmedLine, e);
+                    }
+                }
+            }
+
+        } catch (error) {
+            console.error("Stream fetch failed:", error);
+            setSignalStatus('error');
+            toast.error("Connection to log stream lost");
+        }
+    };
 
     const onDrop = async (acceptedFiles: File[]) => {
         if (acceptedFiles.length === 0) return;
@@ -84,55 +189,127 @@ export default function PipelinePage() {
     });
 
     return (
-        <DashboardLayout title="Data Pipeline">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto animate-in fade-in duration-500">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-lg">
-                            <UploadCloud className="w-5 h-5 text-blue-600" />
-                            Upload Daily Floorsheet
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div
-                            {...getRootProps()}
-                            className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all duration-200
-                                ${isDragActive ? 'border-blue-500 bg-blue-50 scale-[1.01]' : 'border-gray-200 hover:border-blue-400 hover:bg-gray-50'}
-                                ${uploading ? 'opacity-50 pointer-events-none' : ''}
-                            `}
+        <DashboardLayout title="Market Pipeline">
+            <div className="max-w-6xl mx-auto space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+
+                {/* Header Section */}
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
+                    <div className="space-y-2">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold uppercase tracking-wider">
+                            <Zap className="w-3 h-3" />
+                            Data Ingestion Engine
+                        </div>
+                        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Market Data Pipeline</h1>
+                        <p className="text-gray-500 max-w-xl">
+                            Process floorsheets, daily prices, and generate strategic signals in a single, unified workflow.
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Button
+                            variant="outline"
+                            className="rounded-xl gap-2 border-gray-200 hover:bg-gray-50"
+                            onClick={fetchHistory}
                         >
-                            <input {...getInputProps()} />
-                            <div className="flex flex-col items-center gap-4">
-                                <div className={`p-4 rounded-full transition-colors ${isDragActive ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                                    <FileJson className={`w-10 h-10 ${isDragActive ? 'text-blue-600' : 'text-gray-500'}`} />
-                                </div>
-                                <div>
-                                    {uploading ? (
-                                        <p className="text-gray-600 font-medium animate-pulse">Processing floorsheet data...</p>
-                                    ) : isDragActive ? (
-                                        <p className="text-blue-600 font-bold text-lg">Drop JSON file here</p>
-                                    ) : (
-                                        <>
-                                            <p className="text-gray-900 font-semibold text-lg">Drag & drop Floorsheet JSON</p>
-                                            <p className="text-sm text-gray-500 mt-2 max-w-xs mx-auto">Supports standard floorsheet export format (.json)</p>
-                                        </>
-                                    )}
+                            <RefreshCw className={cn("w-4 h-4 text-gray-400", logsLoading && "animate-spin")} />
+                            Refresh History
+                        </Button>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Main Pipeline Steps */}
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="flex items-center gap-3 mb-2 px-2">
+                            <Activity className="w-5 h-5 text-blue-600" />
+                            <h2 className="font-bold text-gray-900 text-lg uppercase tracking-widest text-[11px]">Active Pipeline Steps</h2>
+                        </div>
+
+                        {/* Step 1: Floorsheet */}
+                        <Card className="overflow-hidden border-none shadow-none bg-transparent">
+                            <div
+                                {...getRootProps()}
+                                className={cn(
+                                    "group relative rounded-2xl border-2 border-dashed p-8 transition-all duration-300",
+                                    isDragActive ? "border-blue-500 bg-blue-50/50 scale-[1.01]" : "border-gray-100 bg-white hover:border-blue-200",
+                                    uploading && "opacity-50 pointer-events-none"
+                                )}
+                            >
+                                <input {...getInputProps()} />
+                                <div className="flex items-start gap-6">
+                                    <div className={cn(
+                                        "p-4 rounded-2xl transition-colors",
+                                        isDragActive ? "bg-blue-600 text-white" : "bg-gray-50 text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500"
+                                    )}>
+                                        <FileJson className="w-8 h-8" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <h3 className="text-lg font-bold text-gray-900">1. Upload Floorsheet</h3>
+                                        <p className="text-sm text-gray-500">Drag and drop the latest floorsheet JSON to update accumulation data.</p>
+                                        {uploading && (
+                                            <div className="flex items-center gap-2 mt-4 text-sm font-bold text-blue-600 animate-pulse">
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                PROCESSING JSON...
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
+                        </Card>
+
+                        {/* Step 2: Daily Prices (Simplified View) */}
+                        <div className="bg-white rounded-2xl border border-gray-100 p-8 space-y-6 shadow-sm">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 rounded-xl bg-violet-50 text-violet-600">
+                                    <Clock className="w-6 h-6" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-bold text-gray-900">2. Sync Daily Prices</h3>
+                                    <p className="text-sm text-gray-500">Ingest previous day market close data.</p>
+                                </div>
+                            </div>
+
+                            <DailyPriceUpload onSuccess={fetchHistory} />
                         </div>
-                    </CardContent>
-                </Card>
 
+                        {/* Step 3: Signal Generation (The new "Boot Process") */}
+                        <PipelineStep
+                            title="3. Generate Strategy Signals"
+                            description="Run backtests across all active strategies to generate fresh BUY/SELL signals."
+                            status={signalStatus}
+                            icon={<Cpu className="w-6 h-6" />}
+                            onRun={handleRunSignals}
+                            logs={signalLogs}
+                            showLogs={showSignalLogs}
+                            onToggleLogs={() => setShowSignalLogs(!showSignalLogs)}
+                        />
+                    </div>
 
+                    {/* Pipeline Stats/History Sidebar */}
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3 mb-2 px-2">
+                            <History className="w-5 h-5 text-blue-600" />
+                            <h2 className="font-bold text-gray-900 text-lg uppercase tracking-widest text-[11px]">System History</h2>
+                        </div>
 
-                <DailyPriceUpload onSuccess={fetchHistory} />
+                        <Card className="border-gray-100 shadow-sm overflow-hidden">
+                            <CardHeader className="bg-gray-50/50 border-b">
+                                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                    <Server className="w-4 h-4 text-blue-600" />
+                                    Recent Ingestions
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                <UploadHistoryTable logs={logs} loading={logsLoading} />
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
             </div>
-
-            <UploadHistoryTable logs={logs} loading={logsLoading} />
         </DashboardLayout >
     );
 }
 
+// Keeping the DailyPriceUpload component but making it cleaner
 function DailyPriceUpload({ onSuccess }: { onSuccess?: () => void }) {
     const [date, setDate] = useState<Date>();
     const [fetchingGithub, setFetchingGithub] = useState(false);
@@ -140,7 +317,7 @@ function DailyPriceUpload({ onSuccess }: { onSuccess?: () => void }) {
 
     const isTradingDay = (d: Date) => {
         const day = d.getDay();
-        return day !== 5 && day !== 6; // Friday and Saturday are weekends in Nepal
+        return day !== 5 && day !== 6;
     };
 
     const handleGithubFetch = async () => {
@@ -148,267 +325,57 @@ function DailyPriceUpload({ onSuccess }: { onSuccess?: () => void }) {
             toast.error("Please select a date first");
             return;
         }
-
-        if (!isTradingDay(date)) {
-            toast.error("Market is closed on Friday and Saturday");
-            return;
-        }
-
         const dateStr = format(date, 'yyyy-MM-dd');
         setFetchingGithub(true);
         try {
             const res = await api.post('/api/stocks/pipeline/fetch_daily_prices_from_github/', {
                 date: dateStr
             });
-            toast.success(res.data.message || 'Successfully fetched prices from GitHub');
+            toast.success(res.data.message || 'Successfully fetched prices');
             if (onSuccess) onSuccess();
         } catch (err: any) {
-            console.error(err);
-            toast.error(err.response?.data?.error || "Failed to fetch from GitHub");
+            toast.error(err.response?.data?.error || "Failed to fetch");
         } finally {
             setFetchingGithub(false);
         }
     };
 
-    const onDrop = async (acceptedFiles: File[]) => {
-        if (acceptedFiles.length === 0) return;
-
-        const file = acceptedFiles[0];
-
-        // Try to extract date from filename if not already set
-        let selectedDate = date;
-        if (!selectedDate) {
-            // Match YYYY-MM-DD or YYYY_MM_DD
-            const dateMatch = file.name.match(/(\d{4}[-_]\d{2}[-_]\d{2})/);
-            if (dateMatch) {
-                // Normalize to YYYY-MM-DD for Date parsing
-                const normalizedDateStr = dateMatch[1].replace(/_/g, '-');
-                const parsedDate = new Date(normalizedDateStr);
-                if (!isNaN(parsedDate.getTime())) {
-                    selectedDate = parsedDate;
-                    setDate(parsedDate);
-                    toast.info(`Date detected: ${normalizedDateStr}`);
-                }
-            }
-        }
-
-        if (!selectedDate) {
-            // If still no date, ask user to pick one.
-            // But we don't return here if we want to allow selecting date AFTER drop? 
-            // The current logic creates FormData immediately. 
-            // Better UX: If no date, just return and let the user pick it, stored file in state?
-            // For now, keeping original flow: Must pick date or have it in filename.
-            toast.error("Please select a date first (or use filename with YYYY-MM-DD)");
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('file', file);
-        const dateStr = format(selectedDate, 'yyyy-MM-dd');
-        formData.append('date', dateStr);
-
-        setUploading(true);
-        try {
-            const res = await api.post('/api/stocks/pipeline/upload_daily_prices/', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-            toast.success(res.data.message || 'Prices uploaded successfully');
-            if (onSuccess) onSuccess();
-        } catch (err: any) {
-            console.error(err);
-            toast.error(err.response?.data?.error || "Upload failed");
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({
-        onDrop,
-        accept: {
-            'text/csv': ['.csv']
-        },
-        maxFiles: 1
-    });
-
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                    <FileText className="w-5 h-5 text-blue-600" />
-                    Sync Daily Prices
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="flex flex-col gap-3 bg-blue-50/30 p-4 rounded-xl border border-blue-100/50">
-                    <div className="flex items-center justify-between">
-                        <label className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                            <CalendarIcon className="w-4 h-4 text-blue-600" />
-                            Trading Date
-                        </label>
-                        {date && !isTradingDay(date) && (
-                            <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded uppercase tracking-wider">
-                                Market Closed
-                            </span>
-                        )}
-                    </div>
-
+        <div className="space-y-4">
+            <div className="flex flex-col gap-3 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Trading Date</label>
+                </div>
+                <div className="flex gap-2">
                     <Popover>
                         <PopoverTrigger asChild>
-                            <Button
-                                variant={"outline"}
-                                className={cn(
-                                    "w-full justify-between text-left font-medium border-gray-200 bg-white shadow-sm ring-offset-background transition-all hover:bg-white hover:border-blue-400 hover:ring-2 hover:ring-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500",
-                                    !date && "text-muted-foreground",
-                                    date && isTradingDay(date) && "border-blue-200 text-blue-900"
-                                )}
-                            >
-                                <div className="flex items-center">
-                                    <Clock className="mr-2 h-4 w-4 text-blue-500 opacity-70" />
-                                    {date ? format(date, "EEEE, MMMM do, yyyy") : <span>Select trading date...</span>}
-                                </div>
-                                <RefreshCw className={cn("h-4 w-4 text-gray-400 transition-transform duration-500", fetchingGithub && "animate-spin")} />
+                            <Button variant="outline" className="flex-1 justify-start font-medium rounded-xl border-gray-200">
+                                <CalendarIcon className="mr-2 h-4 w-4 text-blue-500" />
+                                {date ? format(date, "PPP") : "Select date..."}
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="p-0 border-none shadow-2xl rounded-xl overflow-hidden bg-white" align="start">
-                            <div className="bg-blue-600 p-5 text-white">
-                                <p className="text-[10px] uppercase tracking-[0.2em] font-black opacity-60 mb-1">Market Session</p>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-xl font-bold">{date ? format(date, "MMMM do") : "Pick a Date"}</p>
-                                        <p className="text-sm opacity-80">{date ? format(date, "yyyy") : "Select a session"}</p>
-                                    </div>
-                                    <CalendarIcon className="w-8 h-8 opacity-20" />
-                                </div>
-                            </div>
-                            <div className="p-3 min-w-[300px]">
-                                <Calendar
-                                    mode="single"
-                                    selected={date}
-                                    onSelect={setDate}
-                                    initialFocus
-                                    disabled={(d) => d > new Date() || d.getDay() === 5 || d.getDay() === 6}
-                                    className="border-none"
-                                />
-                            </div>
-                            <div className="p-3 bg-gray-50 border-t flex justify-between gap-2">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-xs text-blue-600 hover:bg-blue-50"
-                                    onClick={() => {
-                                        const d = new Date();
-                                        // Find last trading day
-                                        while (!isTradingDay(d)) {
-                                            d.setDate(d.getDate() - 1);
-                                        }
-                                        setDate(d);
-                                    }}
-                                >
-                                    Last Trading Day
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-xs text-gray-500"
-                                    onClick={() => setDate(undefined)}
-                                >
-                                    Clear
-                                </Button>
-                            </div>
+                        <PopoverContent className="w-auto p-0 rounded-2xl overflow-hidden shadow-2xl">
+                            <Calendar
+                                mode="single"
+                                selected={date}
+                                onSelect={setDate}
+                                disabled={(d) => d > new Date() || d.getDay() === 5 || d.getDay() === 6}
+                            />
                         </PopoverContent>
                     </Popover>
+                    <Button
+                        onClick={handleGithubFetch}
+                        disabled={fetchingGithub || !date}
+                        className="bg-blue-600 hover:bg-blue-700 rounded-xl"
+                    >
+                        {fetchingGithub ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
+                    </Button>
                 </div>
-
-                <Tabs defaultValue="github" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 max-w-[400px] bg-gray-100 p-1 rounded-lg">
-                        <TabsTrigger
-                            value="github"
-                            className="data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm transition-all"
-                        >
-                            Fetch from GitHub
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="upload"
-                            className="data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm transition-all"
-                        >
-                            Upload CSV
-                        </TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="upload" className="mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <div
-                            {...getRootProps()}
-                            className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-all duration-200
-                                ${isDragActive ? 'border-blue-500 bg-blue-50 scale-[1.01]' : 'border-gray-200 hover:border-blue-400 hover:bg-gray-50'}
-                                ${uploading ? 'opacity-50 pointer-events-none' : ''}
-                            `}
-                        >
-                            <input {...getInputProps()} />
-                            <div className="flex flex-col items-center gap-4">
-                                <div className={`p-4 rounded-full transition-colors ${isDragActive ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                                    <FileText className={`w-10 h-10 ${isDragActive ? 'text-blue-600' : 'text-gray-500'}`} />
-                                </div>
-                                <div>
-                                    {uploading ? (
-                                        <p className="text-gray-600 font-medium animate-pulse">Uploading prices...</p>
-                                    ) : isDragActive ? (
-                                        <p className="text-blue-600 font-bold text-lg">Drop the price CSV here...</p>
-                                    ) : (
-                                        <>
-                                            <p className="text-gray-900 font-semibold text-lg">Drag & drop Price CSV here</p>
-                                            <p className="text-sm text-gray-500 mt-2">Requires 'Symbol', 'Close', etc.</p>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </TabsContent>
-
-                    <TabsContent value="github" className="mt-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <div className="border rounded-xl p-8 bg-gray-50/50 flex flex-col items-center text-center gap-6">
-                            <div className="p-4 rounded-full bg-blue-100">
-                                <UploadCloud className="w-10 h-10 text-blue-600" />
-                            </div>
-                            <div className="max-w-md space-y-2">
-                                <h4 className="font-bold text-gray-900 text-lg">Sync from GitHub Repository</h4>
-                                <p className="text-sm text-gray-500 leading-relaxed">
-                                    Automatically fetch and ingest the daily price CSV from the ShareSansarDataScrape repository for the selected date.
-                                </p>
-                            </div>
-
-                            <div className="space-y-4 w-full flex flex-col items-center">
-                                <Button
-                                    onClick={handleGithubFetch}
-                                    disabled={fetchingGithub || !date}
-                                    className="w-full max-w-[280px] h-11 gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm transition-all hover:scale-105 active:scale-95 disabled:opacity-70 disabled:hover:scale-100"
-                                >
-                                    {fetchingGithub ? (
-                                        <>
-                                            <RefreshCw className="w-4 h-4 animate-spin" />
-                                            <span>Syncing Prices...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <UploadCloud className="w-4 h-4" />
-                                            <span>Fetch Prices</span>
-                                        </>
-                                    )}
-                                </Button>
-
-                                {!date && (
-                                    <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200">
-                                        <AlertCircle className="w-3 h-3" />
-                                        Please select a date above to enable sync
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </TabsContent>
-                </Tabs>
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 }
+
+// Add some basic styles for the log viewer
+import { Loader2 } from 'lucide-react';
 

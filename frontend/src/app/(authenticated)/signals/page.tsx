@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { TrendingUp, TrendingDown, Minus, Search, BarChart3, Grid3x3, List, Info } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Search, BarChart3, Grid3x3, List, Info, RefreshCw, Zap, ChevronDown, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface StrategySignal {
     id: number;
@@ -24,6 +25,187 @@ interface StrategySignal {
 
 type ViewMode = 'all' | 'by-symbol';
 type SignalFilter = 'ALL' | 'BUY' | 'SELL' | 'HOLD';
+
+// Component to render the grouped table
+function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySignal[], getSignalBadge: (s: string) => React.ReactNode }) {
+    const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+    const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>({ key: 'symbol', direction: 'asc' });
+
+    const toggleGroup = (groupId: string) => {
+        const newExpanded = new Set(expandedGroups);
+        if (newExpanded.has(groupId)) {
+            newExpanded.delete(groupId);
+        } else {
+            newExpanded.add(groupId);
+        }
+        setExpandedGroups(newExpanded);
+    };
+
+    const handleSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const SortIcon = ({ columnKey }: { columnKey: string }) => {
+        if (sortConfig?.key !== columnKey) return <ArrowUpDown className="w-3 h-3 ml-1 text-slate-300" />;
+        if (sortConfig.direction === 'asc') return <ArrowUp className="w-3 h-3 ml-1 text-blue-500" />;
+        return <ArrowDown className="w-3 h-3 ml-1 text-blue-500" />;
+    };
+
+    // Group signals by Symbol + Signal Type
+    const groups = signals.reduce((acc, signal) => {
+        // Group NEUTRAL and HOLD_SHORT into HOLD broad category for grouping if desired, 
+        // but here we'll stick to strict signalType grouping for clarity
+        const key = `${signal.symbol}-${signal.signal}`;
+
+        if (!acc[key]) {
+            acc[key] = {
+                id: key,
+                symbol: signal.symbol,
+                signalType: signal.signal,
+                signals: [],
+                lastClose: signal.last_close,
+                date: signal.date
+            };
+        }
+        acc[key].signals.push(signal);
+        return acc;
+    }, {} as Record<string, { id: string, symbol: string, signalType: string, signals: StrategySignal[], lastClose: string, date: string }>);
+
+    const sortedGroups = Object.values(groups).sort((a, b) => {
+        if (!sortConfig) return 0;
+
+        const { key, direction } = sortConfig;
+        let valA: any = a[key as keyof typeof a];
+        let valB: any = b[key as keyof typeof b];
+
+        // Handle special cases
+        if (key === 'count') {
+            valA = a.signals.length;
+            valB = b.signals.length;
+        } else if (key === 'lastClose') {
+            valA = parseFloat(a.lastClose.replace(/Rs\. /g, '').replace(/,/g, ''));
+            valB = parseFloat(b.lastClose.replace(/Rs\. /g, '').replace(/,/g, ''));
+        }
+
+        if (valA < valB) return direction === 'asc' ? -1 : 1;
+        if (valA > valB) return direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    return (
+        <Card>
+            <CardContent className="p-6">
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="border-b border-slate-200">
+                                <th className="text-left p-3 font-bold text-slate-600 text-sm w-12"></th>
+                                <th
+                                    className="text-left p-3 font-bold text-slate-600 text-sm cursor-pointer hover:bg-slate-50 transition-colors"
+                                    onClick={() => handleSort('symbol')}
+                                >
+                                    <div className="flex items-center">
+                                        Symbol <SortIcon columnKey="symbol" />
+                                    </div>
+                                </th>
+                                <th
+                                    className="text-left p-3 font-bold text-slate-600 text-sm cursor-pointer hover:bg-slate-50 transition-colors"
+                                    onClick={() => handleSort('signalType')}
+                                >
+                                    <div className="flex items-center">
+                                        Signal Type <SortIcon columnKey="signalType" />
+                                    </div>
+                                </th>
+                                <th
+                                    className="text-left p-3 font-bold text-slate-600 text-sm cursor-pointer hover:bg-slate-50 transition-colors"
+                                    onClick={() => handleSort('count')}
+                                >
+                                    <div className="flex items-center">
+                                        Triggered By <SortIcon columnKey="count" />
+                                    </div>
+                                </th>
+                                <th
+                                    className="text-left p-3 font-bold text-slate-600 text-sm cursor-pointer hover:bg-slate-50 transition-colors"
+                                    onClick={() => handleSort('lastClose')}
+                                >
+                                    <div className="flex items-center">
+                                        Price <SortIcon columnKey="lastClose" />
+                                    </div>
+                                </th>
+                                <th
+                                    className="text-left p-3 font-bold text-slate-600 text-sm cursor-pointer hover:bg-slate-50 transition-colors"
+                                    onClick={() => handleSort('date')}
+                                >
+                                    <div className="flex items-center">
+                                        Date <SortIcon columnKey="date" />
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {sortedGroups.map(group => (
+                                <>
+                                    <tr
+                                        key={group.id}
+                                        onClick={() => toggleGroup(group.id)}
+                                        className="hover:bg-slate-50 transition-colors cursor-pointer group"
+                                    >
+                                        <td className="p-3 text-slate-400">
+                                            {expandedGroups.has(group.id) ?
+                                                <ChevronDown className="w-4 h-4 text-blue-500" /> :
+                                                <ChevronRight className="w-4 h-4 group-hover:text-blue-500 transition-colors" />
+                                            }
+                                        </td>
+                                        <td className="p-3 font-bold text-slate-800">{group.symbol}</td>
+                                        <td className="p-3">{getSignalBadge(group.signalType)}</td>
+                                        <td className="p-3">
+                                            <Badge variant="outline" className="bg-slate-50">
+                                                {group.signals.length} Strategies
+                                            </Badge>
+                                        </td>
+                                        <td className="p-3 text-slate-600">Rs. {group.lastClose}</td>
+                                        <td className="p-3 text-slate-500 text-sm">{group.date}</td>
+                                    </tr>
+
+                                    {/* Expanded Details Row */}
+                                    {expandedGroups.has(group.id) && (
+                                        <tr className="bg-slate-50/50">
+                                            <td colSpan={6} className="p-0">
+                                                <div className="px-12 py-4 space-y-2 border-l-4 border-l-slate-200 ml-6 my-2">
+                                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
+                                                        Contributing Strategies
+                                                    </p>
+                                                    {group.signals.map(sig => (
+                                                        <div key={sig.id} className="bg-white p-3 rounded-lg border border-slate-100 shadow-sm flex justify-between items-center">
+                                                            <div>
+                                                                <p className="font-bold text-sm text-slate-800">{sig.strategy_name}</p>
+                                                                <p className="text-xs text-slate-500">{sig.strategy_description}</p>
+                                                            </div>
+                                                            {sig.metadata && (
+                                                                <div className="text-xs font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded">
+                                                                    {/* Simplified metadata display */}
+                                                                    orders: {sig.metadata.orders ?? 0}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
 
 // Strategy Card Component with Info Dialog
 function StrategyCard({ signal }: { signal: StrategySignal }) {
@@ -110,6 +292,7 @@ export default function SignalsPage() {
     const [viewMode, setViewMode] = useState<ViewMode>('by-symbol');
     const [signalFilter, setSignalFilter] = useState<SignalFilter>('ALL');
     const [searchTerm, setSearchTerm] = useState('');
+    const [generating, setGenerating] = useState(false);
 
     useEffect(() => {
         fetchSignals();
@@ -132,6 +315,30 @@ export default function SignalsPage() {
     };
 
     // Filter signals
+    const handleGenerateSignals = async () => {
+        setGenerating(true);
+        try {
+            const response = await api.post('/api/stocks/pipeline/trigger_signals/');
+            toast.success(response.data.message || 'Signal generation started');
+
+            // Periodically refresh signals for the next minute? 
+            // Or just suggest user to refresh.
+            toast.info('Signals will update in a few moments. We will refresh automatically in 10 seconds.', {
+                duration: 5000,
+            });
+
+            setTimeout(() => {
+                fetchSignals();
+            }, 10000);
+
+        } catch (error: any) {
+            console.error("Failed to trigger signal generation", error);
+            toast.error(error.response?.data?.error || 'Failed to start signal generation');
+        } finally {
+            setGenerating(false);
+        }
+    };
+
     const filteredSignals = signals.filter(sig => {
         const matchesSignal = signalFilter === 'ALL' || sig.signal === signalFilter;
         const matchesSearch = searchTerm === '' ||
@@ -179,58 +386,77 @@ export default function SignalsPage() {
                 <Card className="mb-2">
                     <CardContent className="py-2 px-3">
                         <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-                            {/* Signal Type Filters */}
-                            <div className="flex flex-wrap gap-2">
-                                {(['ALL', 'BUY', 'SELL', 'HOLD'] as SignalFilter[]).map(type => (
+                            <div className="flex items-center gap-4">
+                                <h2 className="text-xl font-bold text-slate-800">Market Signals</h2>
+                                <Button
+                                    onClick={handleGenerateSignals}
+                                    disabled={generating}
+                                    size="sm"
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2"
+                                >
+                                    {generating ? (
+                                        <RefreshCw className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Zap className="w-4 h-4 fill-current" />
+                                    )}
+                                    {generating ? 'Generating...' : 'Generate Signals'}
+                                </Button>
+                            </div>
+
+                            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+                                {/* Signal Type Filters */}
+                                <div className="flex flex-wrap gap-2">
+                                    {(['ALL', 'BUY', 'SELL', 'HOLD'] as SignalFilter[]).map(type => (
+                                        <Button
+                                            key={type}
+                                            variant={signalFilter === type ? 'default' : 'outline'}
+                                            size="sm"
+                                            onClick={() => setSignalFilter(type)}
+                                            className={cn(
+                                                'font-bold',
+                                                signalFilter === type && type === 'BUY' && 'bg-emerald-600 hover:bg-emerald-700',
+                                                signalFilter === type && type === 'SELL' && 'bg-rose-600 hover:bg-rose-700',
+                                                signalFilter === type && type === 'HOLD' && 'bg-amber-600 hover:bg-amber-700'
+                                            )}
+                                        >
+                                            {type}
+                                        </Button>
+                                    ))}
+                                </div>
+
+                                {/* Search */}
+                                <div className="relative flex-1 max-w-xs">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search symbol or strategy..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+
+                                {/* View Mode Toggle */}
+                                <div className="flex gap-2 bg-slate-100 p-1 rounded-lg">
                                     <Button
-                                        key={type}
-                                        variant={signalFilter === type ? 'default' : 'outline'}
+                                        variant={viewMode === 'by-symbol' ? 'default' : 'ghost'}
                                         size="sm"
-                                        onClick={() => setSignalFilter(type)}
-                                        className={cn(
-                                            'font-bold',
-                                            signalFilter === type && type === 'BUY' && 'bg-emerald-600 hover:bg-emerald-700',
-                                            signalFilter === type && type === 'SELL' && 'bg-rose-600 hover:bg-rose-700',
-                                            signalFilter === type && type === 'HOLD' && 'bg-amber-600 hover:bg-amber-700'
-                                        )}
+                                        onClick={() => setViewMode('by-symbol')}
+                                        className="gap-2"
                                     >
-                                        {type}
+                                        <Grid3x3 className="w-4 h-4" />
+                                        By Symbol
                                     </Button>
-                                ))}
-                            </div>
-
-                            {/* Search */}
-                            <div className="relative flex-1 max-w-xs">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Search symbol or strategy..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
-
-                            {/* View Mode Toggle */}
-                            <div className="flex gap-2 bg-slate-100 p-1 rounded-lg">
-                                <Button
-                                    variant={viewMode === 'by-symbol' ? 'default' : 'ghost'}
-                                    size="sm"
-                                    onClick={() => setViewMode('by-symbol')}
-                                    className="gap-2"
-                                >
-                                    <Grid3x3 className="w-4 h-4" />
-                                    By Symbol
-                                </Button>
-                                <Button
-                                    variant={viewMode === 'all' ? 'default' : 'ghost'}
-                                    size="sm"
-                                    onClick={() => setViewMode('all')}
-                                    className="gap-2"
-                                >
-                                    <List className="w-4 h-4" />
-                                    All
-                                </Button>
+                                    <Button
+                                        variant={viewMode === 'all' ? 'default' : 'ghost'}
+                                        size="sm"
+                                        onClick={() => setViewMode('all')}
+                                        className="gap-2"
+                                    >
+                                        <List className="w-4 h-4" />
+                                        All
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </CardContent>
@@ -418,39 +644,7 @@ export default function SignalsPage() {
                         )}
 
                         {viewMode === 'all' && (
-                            <Card>
-                                <CardContent className="p-6">
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full">
-                                            <thead>
-                                                <tr className="border-b border-slate-200">
-                                                    <th className="text-left p-3 font-bold text-slate-600 text-sm">Symbol</th>
-                                                    <th className="text-left p-3 font-bold text-slate-600 text-sm">Strategy</th>
-                                                    <th className="text-left p-3 font-bold text-slate-600 text-sm">Signal</th>
-                                                    <th className="text-left p-3 font-bold text-slate-600 text-sm">Price</th>
-                                                    <th className="text-left p-3 font-bold text-slate-600 text-sm">Date</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                {filteredSignals.map(sig => (
-                                                    <tr key={sig.id} className="hover:bg-slate-50 transition-colors">
-                                                        <td className="p-3 font-bold text-slate-800">{sig.symbol}</td>
-                                                        <td className="p-3">
-                                                            <div className="max-w-xs">
-                                                                <p className="font-medium text-slate-700">{sig.strategy_name}</p>
-                                                                <p className="text-xs text-slate-500 truncate">{sig.strategy_description}</p>
-                                                            </div>
-                                                        </td>
-                                                        <td className="p-3">{getSignalBadge(sig.signal)}</td>
-                                                        <td className="p-3 text-slate-600">Rs. {sig.last_close}</td>
-                                                        <td className="p-3 text-slate-500 text-sm">{sig.date}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                            <GroupedSignalsTable signals={filteredSignals} getSignalBadge={getSignalBadge} />
                         )}
 
                         {filteredSignals.length === 0 && (

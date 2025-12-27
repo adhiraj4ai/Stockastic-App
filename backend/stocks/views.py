@@ -4,6 +4,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from django.http import StreamingHttpResponse as StreamingResponse
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
@@ -3383,6 +3384,7 @@ class PipelineViewSet(viewsets.ViewSet):
         'sync_prices': 'Sync Daily Prices',
         'sync_floorsheet': 'Sync Floorsheet Data',
         'update_indexes': 'Update DB Indexes',
+        'generate_signals': 'Generate Strategy Signals',
     }
 
     @action(detail=False, methods=['get'])
@@ -3446,6 +3448,84 @@ class PipelineViewSet(viewsets.ViewSet):
             })
             
         return Response(statuses)
+    
+    @action(detail=False, methods=['post'])
+    def trigger_signals(self, request):
+        """
+        Triggers the signal generation management command in a background thread.
+        """
+        from django.core.management import call_command
+        import threading
+
+        def run_signals():
+            try:
+                # We can pass specific symbol if requested, but default to all
+                symbol = request.data.get('symbol')
+                if symbol:
+                    call_command('generate_signals', symbol=symbol)
+                else:
+                    call_command('generate_signals')
+            except Exception as e:
+                print(f"ERROR: Signal generation failed: {e}")
+
+        # Run in thread to prevent blocking the HTTP response
+        thread = threading.Thread(target=run_signals)
+        thread.daemon = True
+        thread.start()
+
+        return Response({
+            'status': 'success',
+            'message': 'Signal generation process started in the background.'
+        })
+
+    @action(detail=False, methods=['get'])
+    def generate_signals_stream(self, request):
+        """
+        Streams logs from signal generation process.
+        """
+        import sys
+        from django.conf import settings
+
+        def event_stream():
+            symbol = request.query_params.get('symbol')
+            
+            # Get the base directory where manage.py is located
+            base_dir = settings.BASE_DIR
+            manage_py = os.path.join(base_dir, 'manage.py')
+            
+            cmd = [sys.executable, manage_py, 'generate_signals']
+            if symbol:
+                cmd.extend(['--symbol', symbol])
+
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                universal_newlines=True,
+                cwd=base_dir
+            )
+
+            yield "data: {\"type\": \"status\", \"message\": \"Initializing boot process...\"}\n\n"
+            
+            for line in process.stdout:
+                if line.strip():
+                    # Escape quotes in the message
+                    escaped_message = line.strip().replace('"', '\\"')
+                    yield f"data: {{\"type\": \"log\", \"message\": \"{escaped_message}\"}}\n\n"
+
+            process.wait()
+            if process.returncode == 0:
+                yield "data: {\"type\": \"status\", \"message\": \"Signal generation completed successfully.\"}\n\n"
+                yield "data: {\"type\": \"done\"}\n\n"
+            else:
+                yield f"data: {{\"type\": \"error\", \"message\": \"Process exited with code {process.returncode}\"}}\n\n"
+
+        response = StreamingResponse(event_stream(), content_type='text/event-stream')
+        response['Cache-Control'] = 'no-cache'
+        response['X-Accel-Buffering'] = 'no'  # Disable buffering for nginx
+        return response
 
     @action(detail=True, methods=['post'])
     def run(self, request, pk=None):
