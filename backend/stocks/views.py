@@ -673,7 +673,8 @@ class PortfolioViewSet(viewsets.ModelViewSet):
         # 4. Fetch Transaction History
         txns = PortfolioTransaction.objects.filter(
             user=request.user, 
-            ticker=ticker
+            ticker=ticker,
+            account=item.account
         ).order_by('-transaction_date')
         txn_serializer = PortfolioTransactionSerializer(txns, many=True)
 

@@ -815,7 +815,7 @@ function PortfolioContent() {
 
                                         return (
                                             <div
-                                                key={item.ticker}
+                                                key={item.id}
                                                 className={`aspect-square ${bgColor} rounded-md flex flex-col items-center justify-center text-white shadow-inner group relative cursor-help transition-transform hover:scale-105 hover:z-20`}
                                             >
                                                 <span className="text-sm font-black">{item.ticker}</span>
