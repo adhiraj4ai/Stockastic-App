@@ -183,12 +183,14 @@ def get_technical_indicators(ticker, days=365):
         
         if pivots is not None and not pivots.empty:
              last_p = pivots.iloc[-1]
-             if 'P' in pivots.columns:
-                 current_p = get_scalar(last_p['P'])
-                 current_r1 = get_scalar(last_p.get('R1'))
-                 current_s1 = get_scalar(last_p.get('S1'))
-                 current_r2 = get_scalar(last_p.get('R2'))
-                 current_s2 = get_scalar(last_p.get('S2'))
+             last_p = pivots.iloc[-1]
+             
+             # Try standard pandas_ta names (PIVOTS_CLAS_D_P) or short names
+             current_p = get_scalar(last_p.get('PIVOTS_CLAS_D_P')) or get_scalar(last_p.get('P'))
+             current_r1 = get_scalar(last_p.get('PIVOTS_CLAS_D_R1')) or get_scalar(last_p.get('R1'))
+             current_s1 = get_scalar(last_p.get('PIVOTS_CLAS_D_S1')) or get_scalar(last_p.get('S1'))
+             current_r2 = get_scalar(last_p.get('PIVOTS_CLAS_D_R2')) or get_scalar(last_p.get('R2'))
+             current_s2 = get_scalar(last_p.get('PIVOTS_CLAS_D_S2')) or get_scalar(last_p.get('S2'))
 
 
         indicators = []

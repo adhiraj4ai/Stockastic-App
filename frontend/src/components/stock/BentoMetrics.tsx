@@ -22,34 +22,54 @@ export function BentoMetrics({ fundamental }: BentoMetricsProps) {
         { label: 'Shares Out.', value: fundamental?.shares_outstanding?.toLocaleString() || 'N/A' },
     ];
 
+    // Extract Technical Levels
+    // console.log('Fundamental Data:', fundamental);
+    const indicators = fundamental?.technical_indicators || [];
+    const getPivot = (key: string) => indicators.find((i: any) => i.name.includes(key))?.value || '-';
+
+    const p = getPivot('Pivot (P)');
+    const r1 = getPivot('Resistance 1');
+    const r2 = getPivot('Resistance 2');
+    const s1 = getPivot('Support 1');
+    const s2 = getPivot('Support 2');
+
+    const mixedMetrics = [
+        ...metrics,
+        { label: 'Resistance 2', value: r2, icon: Activity, color: 'text-rose-600', sub: 'Major Ceiling' },
+        { label: 'Resistance 1', value: r1, icon: TrendingUp, color: 'text-rose-400', sub: 'Key Resistance' },
+        { label: 'Pivot Point', value: p, icon: BarChart3, color: 'text-blue-600', sub: 'Trend Anchor' },
+        { label: 'Support 1', value: s1, icon: TrendingUp, color: 'text-emerald-400', sub: 'Key Support' },
+        { label: 'Support 2', value: s2, icon: Activity, color: 'text-emerald-600', sub: 'Major Floor' },
+    ];
+
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
-            {/* Primary Metrics Grid */}
-            <div className="grid grid-cols-2 gap-4">
-                {metrics.map((m, i) => (
-                    <div key={i} className="glass-card-light rounded-2xl p-5 space-y-3 relative group overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-full">
+            {/* Primary Metrics 3x3 Grid */}
+            <div className="md:col-span-8 grid grid-cols-2 md:grid-cols-3 gap-4">
+                {mixedMetrics.map((m, i) => (
+                    <div key={i} className="glass-card-light rounded-2xl p-4 space-y-2 relative group overflow-hidden flex flex-col justify-between h-32 md:h-28">
                         <div className={cn("absolute -top-4 -right-4 w-12 h-12 rounded-full opacity-5 transition-transform group-hover:scale-150", m.color.replace('text', 'bg'))} />
-                        <m.icon size={18} className={m.color} />
+                        <m.icon size={16} className={m.color} />
                         <div>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{m.label}</p>
-                            <p className="text-xl font-bold text-slate-900 tabular-nums tracking-tight">{m.value}</p>
-                            <p className="text-[8px] font-medium text-slate-300 italic">{m.sub}</p>
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest truncate">{m.label}</p>
+                            <p className="text-xl font-bold text-slate-900 tabular-nums tracking-tight truncate">{m.value}</p>
+                            <p className="text-[10px] font-medium text-slate-400 italic truncate">{m.sub}</p>
                         </div>
                     </div>
                 ))}
             </div>
 
-            {/* Secondary Stats Pane */}
-            <div className="glass-card-light rounded-2xl p-6 flex flex-col justify-between">
-                <div className="flex items-center gap-2 mb-6">
-                    <Globe size={14} className="text-slate-300" />
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Network Benchmarks</span>
+            {/* Secondary Stats Pane (Narrower) */}
+            <div className="md:col-span-4 glass-card-light rounded-2xl p-6 flex flex-col justify-start space-y-6">
+                <div className="flex items-center gap-2 mb-2">
+                    <Globe size={14} className="text-slate-400" />
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Network Benchmarks</span>
                 </div>
                 <div className="grid grid-cols-1 gap-4">
                     {secondary.map((s, i) => (
                         <div key={i} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase">{s.label}</span>
-                            <span className="text-xs font-bold text-slate-800 tabular-nums tracking-wide">{s.value}</span>
+                            <span className="text-xs font-bold text-slate-500 uppercase">{s.label}</span>
+                            <span className="text-sm font-bold text-slate-800 tabular-nums tracking-wide">{s.value}</span>
                         </div>
                     ))}
                 </div>

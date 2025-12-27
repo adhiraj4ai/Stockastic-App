@@ -57,6 +57,7 @@ interface StockDetailData {
         technical_indicators?: Array<{
             name: string;
             value: string;
+            category?: string;
             sector_high: string;
             sector_high_ticker: string;
             sector_low: string;
@@ -999,8 +1000,8 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
 
                                             <div className="p-6">
                                                 <Tabs defaultValue="Momentum" className="w-full">
-                                                    <TabsList className="grid w-full grid-cols-5 mb-6 p-1 bg-slate-100/80 rounded-xl">
-                                                        {['Momentum', 'Trend', 'Volatility', 'Volume', 'Support & Resistance'].map(cat => (
+                                                    <TabsList className="grid w-full grid-cols-4 mb-6 p-1 bg-slate-100/80 rounded-xl">
+                                                        {['Momentum', 'Trend', 'Volatility', 'Volume'].map(cat => (
                                                             <TabsTrigger
                                                                 key={cat}
                                                                 value={cat}
@@ -1011,14 +1012,14 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                         ))}
                                                     </TabsList>
 
-                                                    {['Momentum', 'Trend', 'Volatility', 'Volume', 'Support & Resistance'].map(category => {
+                                                    {['Momentum', 'Trend', 'Volatility', 'Volume'].map(category => {
                                                         const indicators = data.fundamental?.technical_indicators?.filter((ind: any) => ind.category === category) || [];
 
                                                         return (
                                                             <TabsContent key={category} value={category} className="mt-0 focus-visible:outline-none ring-offset-background">
-                                                                <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
+                                                                <div className="overflow-hidden overflow-y-auto max-h-[500px] rounded-2xl border border-slate-100 shadow-sm relative no-scrollbar">
                                                                     <table className="w-full text-sm">
-                                                                        <thead className="bg-slate-50/80 border-b border-slate-100 backdrop-blur-sm">
+                                                                        <thead className="bg-slate-50 border-b border-slate-100 backdrop-blur-sm sticky top-0 z-10">
                                                                             <tr>
                                                                                 <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[9px]">Indicator</th>
                                                                                 <th className="px-6 py-4 text-center font-bold text-slate-400 uppercase tracking-widest text-[9px]">Value</th>
