@@ -1457,7 +1457,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 'SMA': SMA,
                 'pd': pd,
                 'experiment': experiment,
-                'params': params or {}
+                'params': params or {},
+                'symbol': symbol,
             }
             
             # Execute User Code

@@ -640,87 +640,113 @@ export default function TrainModelPage() {
                                     )}
                                 </div>
 
-                                <div className="border rounded-lg overflow-hidden border-gray-100 shadow-sm transition-all duration-500">
-                                    <Table>
-                                        <TableHeader className="bg-gray-50/50">
-                                            <TableRow>
-                                                <TableHead className="text-[10px] uppercase font-bold text-gray-500 w-[100px]">Symbol</TableHead>
-                                                <TableHead className="text-[10px] uppercase font-bold text-gray-500">Model</TableHead>
-                                                <TableHead className="text-[10px] uppercase font-bold text-gray-500">Status</TableHead>
-                                                <TableHead className="text-[10px] uppercase font-bold text-gray-500">Progress</TableHead>
-                                                <TableHead className="text-[10px] uppercase font-bold text-gray-500 text-right">Actions</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {batchJobs.map((job) => (
-                                                <TableRow key={job.id} className="hover:bg-blue-50/30 transition-colors group">
-                                                    <TableCell className="font-mono font-bold text-blue-600">{job.symbol}</TableCell>
-                                                    <TableCell>
-                                                        <Badge variant="outline" className="text-[10px] bg-blue-50/50 border-blue-100 text-blue-700">
-                                                            {job.model_type}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <div className={`w-2 h-2 rounded-full ${job.status === 'SUCCESS' ? 'bg-emerald-500' :
-                                                                job.status === 'FAILED' ? 'bg-rose-500' :
-                                                                    'bg-amber-500 animate-pulse'
-                                                                }`} />
-                                                            <span className="text-xs font-medium text-gray-700">{job.status}</span>
+                                <div className="grid grid-cols-1 gap-4 auto-rows-fr">
+                                    {batchJobs.map((job) => (
+                                        <div key={job.id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all group flex flex-col overflow-hidden">
+                                            {/* Card Header */}
+                                            <div className="px-5 py-4 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold text-sm pointer-events-none select-none shadow-sm">
+                                                        {job.symbol.substring(0, 2)}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-gray-900 text-base leading-none mb-1">{job.symbol}</h4>
+                                                        <span className="text-xs text-gray-500 font-medium bg-white px-2 py-0.5 rounded border border-gray-100">{job.model_type}</span>
+                                                    </div>
+                                                </div>
+                                                <Badge
+                                                    variant="outline"
+                                                    className={`px-3 py-1 text-xs font-bold border-0 ${job.status === 'SUCCESS' ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-500/20' :
+                                                        job.status === 'FAILED' ? 'bg-rose-50 text-rose-700 ring-1 ring-rose-500/20' :
+                                                            'bg-amber-50 text-amber-700 ring-1 ring-amber-500/20 animate-pulse'
+                                                        }`}
+                                                >
+                                                    {job.status}
+                                                </Badge>
+                                            </div>
+
+                                            {/* Card Content */}
+                                            <div className="p-5 flex-1 flex flex-col gap-4">
+                                                {/* Progress Section */}
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between text-xs text-gray-500 font-medium">
+                                                        <span>Progress</span>
+                                                        <span>{job.status === 'SUCCESS' ? '100%' : job.status === 'FAILED' ? 'Err' : 'Running...'}</span>
+                                                    </div>
+                                                    <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                                                        <div
+                                                            className={`h-full transition-all duration-500 ${job.status === 'SUCCESS' ? 'bg-emerald-500 w-full' :
+                                                                job.status === 'FAILED' ? 'bg-rose-500 w-full' :
+                                                                    'bg-blue-500 w-1/2 animate-[progress_1s_ease-in-out_infinite]'
+                                                                }`}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* Details Grid */}
+                                                <div className="grid grid-cols-2 gap-3 mt-auto">
+                                                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                                        <div className="text-[10px] text-gray-400 uppercase font-bold mb-1">Started</div>
+                                                        <div className="text-xs text-gray-700 font-mono font-medium">
+                                                            {new Date(job.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                         </div>
-                                                    </TableCell>
-                                                    <TableCell className="max-w-[200px]">
-                                                        <div className="space-y-1">
-                                                            <p className="text-[10px] text-gray-500 truncate">{job.progress_message || 'Waiting...'}</p>
-                                                            <div className="w-full bg-gray-100 h-1 rounded-full overflow-hidden">
-                                                                <div
-                                                                    className={`h-full transition-all duration-500 ${job.status === 'SUCCESS' ? 'bg-emerald-500 w-full' :
-                                                                        job.status === 'FAILED' ? 'bg-rose-500 w-full' :
-                                                                            'bg-blue-500 w-1/2 animate-pulse'
-                                                                        }`}
-                                                                />
-                                                            </div>
+                                                    </div>
+                                                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                                        <div className="text-[10px] text-gray-400 uppercase font-bold mb-1">Duration</div>
+                                                        <div className="text-xs text-gray-700 font-mono font-medium">
+                                                            {job.duration ? `${Math.round(job.duration)}s` : '-'}
                                                         </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="h-7 text-[10px] font-bold text-blue-600 hover:text-blue-700 hover:bg-blue-100"
-                                                            onClick={() => {
-                                                                setActiveJobId(job.id);
-                                                                setLogs([]);
-                                                                setShowLogDialog(true);
-                                                            }}
-                                                        >
-                                                            View Logs
-                                                        </Button>
-                                                        {job.status === 'SUCCESS' && (
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                className="h-7 text-[10px] font-bold text-gray-700 hover:bg-gray-50 ml-1"
-                                                                onClick={() => router.push(`/forecasts/train/${job.id}`)}
-                                                            >
-                                                                View Results
-                                                            </Button>
-                                                        )}
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                            {batchJobs.length === 0 && training && (
-                                                <TableRow>
-                                                    <TableCell colSpan={5} className="h-32 text-center">
-                                                        <div className="flex flex-col items-center justify-center text-gray-400 gap-2">
-                                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
-                                                            <p className="text-xs">Initializing batch training...</p>
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
+                                                    </div>
+                                                </div>
+
+                                                {/* Latest Log Message */}
+                                                <div className="bg-slate-950 rounded-lg p-3 border border-slate-800 shadow-inner">
+                                                    <div className="text-[9px] text-slate-500 uppercase font-bold mb-1.5 flex items-center gap-1.5">
+                                                        <Activity size={10} className="text-blue-500" /> Latest Log
+                                                    </div>
+                                                    <p className="text-xs text-green-400 font-mono line-clamp-2 leading-relaxed">
+                                                        {job.progress_message ? `> ${job.progress_message}` : '> Initializing worker...'}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Card Footer */}
+                                            <div className="p-3 border-t border-gray-100 bg-gray-50/50 flex gap-3">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="flex-1 h-8 text-xs font-bold text-gray-700 hover:text-blue-600 hover:bg-blue-50 border-gray-200 bg-white"
+                                                    onClick={() => {
+                                                        setActiveJobId(job.id);
+                                                        setLogs([]);
+                                                        setShowLogDialog(true);
+                                                    }}
+                                                >
+                                                    View Logs
+                                                </Button>
+                                                {job.status === 'SUCCESS' && (
+                                                    <Button
+                                                        variant="default"
+                                                        size="sm"
+                                                        className="flex-1 h-8 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm border-0"
+                                                        onClick={() => router.push(`/forecasts/train/${job.id}`)}
+                                                    >
+                                                        View Results
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {/* Loading State for Groups */}
+                                    {batchJobs.length === 0 && training && (
+                                        <div className="col-span-full h-48 flex flex-col items-center justify-center text-gray-400 bg-gray-50/50 rounded-xl border-2 border-dashed border-gray-200">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3" />
+                                            <p className="text-sm font-medium">Initializing batch training sequence...</p>
+                                        </div>
+                                    )}
                                 </div>
+
                             </div>
                         ) : jobResult ? (
                             <div className="p-6 animate-in fade-in duration-500 h-full">

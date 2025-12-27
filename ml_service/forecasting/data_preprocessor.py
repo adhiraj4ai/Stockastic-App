@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from typing import Tuple, Dict, List
 import pandas_ta as ta
 
@@ -10,9 +10,9 @@ class DataPreprocessor:
     Handles data fetching, feature engineering, and preprocessing for forecasting models.
     """
     
-    def __init__(self, symbol: str, sequence_length: int = 60, 
+    def __init__(self, symbol: str, sequence_length: int = 5, 
                  train_ratio: float = 0.7, val_ratio: float = 0.15, 
-                 test_window_size: int = 90):
+                 test_window_size: int = 90, scaler_type: str = 'minmax'):
         """
         Initialize the preprocessor.
         
@@ -28,7 +28,13 @@ class DataPreprocessor:
         self.train_ratio = train_ratio
         self.val_ratio = val_ratio
         self.test_window_size = test_window_size
-        self.scaler = MinMaxScaler(feature_range=(0, 1))
+        
+        # Initialize scaler based on type
+        if scaler_type.lower() == 'standard':
+            self.scaler = StandardScaler()
+        else:
+            self.scaler = MinMaxScaler(feature_range=(0, 1))
+            
         self.feature_columns = []
         
     def fetch_historical_data(self, min_samples: int = 500, start_date=None, end_date=None) -> pd.DataFrame:
@@ -109,23 +115,22 @@ class DataPreprocessor:
         Returns:
             DataFrame with selected features
         """
-        # Define feature columns (Pure Price + Volume)
-        self.feature_columns = [
-            'open', 'high', 'low', 'close', 'volume'
-        ]
+        # Define feature columns (Pure Price)
+        # Switching to Univariate (Close only) for recursive stability
+        self.feature_columns = ['close']
         
         # Filter to only include columns that exist
         available_features = [col for col in self.feature_columns if col in df.columns]
         
         return df[available_features]
     
-    def create_sequences(self, data: np.ndarray, target_col_idx: int = 3) -> Tuple[np.ndarray, np.ndarray]:
+    def create_sequences(self, data: np.ndarray, target_col_idx: int = 0) -> Tuple[np.ndarray, np.ndarray]:
         """
         Create sequences for LSTM/GRU models.
         
         Args:
             data: Scaled feature array
-            target_col_idx: Index of the target column (default: 3 for 'close')
+            target_col_idx: Index of the target column (default: 0 for 'close' in univariate)
             
         Returns:
             Tuple of (X, y) where X is sequences and y is targets
@@ -175,13 +180,14 @@ class DataPreprocessor:
             'y_test': y[test_start:]
         }
     
-    def process(self, start_date=None, end_date=None) -> Tuple[Dict, pd.DataFrame]:
+    def process(self, start_date=None, end_date=None, fitted_scaler=None) -> Tuple[Dict, pd.DataFrame]:
         """
         Complete preprocessing pipeline.
         
         Args:
             start_date: Optional start date filter
             end_date: Optional end date filter
+            fitted_scaler: Optional pre-fitted scaler to use instead of fitting a new one
             
         Returns:
             Tuple of (data_splits, original_dataframe)
@@ -196,7 +202,11 @@ class DataPreprocessor:
         features_df = self.prepare_features(df)
         
         # Scale features
-        scaled_data = self.scaler.fit_transform(features_df.values)
+        if fitted_scaler:
+            self.scaler = fitted_scaler
+            scaled_data = self.scaler.transform(features_df.values)
+        else:
+            scaled_data = self.scaler.fit_transform(features_df.values)
         
         # Create sequences
         X, y = self.create_sequences(scaled_data)
@@ -217,10 +227,14 @@ class DataPreprocessor:
             Predictions in original scale
         """
         # Create a dummy array with the same shape as the original features
-        dummy = np.zeros((len(predictions), len(self.feature_columns)))
-        # Place predictions in the 'close' column position (index 3)
-        dummy[:, 3] = predictions
+        n_features = len(self.feature_columns)
+        dummy = np.zeros((len(predictions), n_features))
+        
+        # In univariate mode, 'close' is at index 0
+        dummy[:, 0] = predictions.flatten()
+        
         # Inverse transform
         inversed = self.scaler.inverse_transform(dummy)
+        
         # Return only the close price column
-        return inversed[:, 3]
+        return inversed[:, 0]

@@ -77,16 +77,17 @@ def train_model_task(self, symbol, model_type, hyperparameters, user_id=None, op
         test_window_size = hyperparameters.get('test_window_size', 90)
         start_date = hyperparameters.get('start_date')
         end_date = hyperparameters.get('end_date')
-        sequence_length = hyperparameters.get('sequence_length', 60)
+        sequence_length = hyperparameters.get('sequence_length', 5)
         
         # Prepare data with granular logging
         try:
             preprocessor = DataPreprocessor(
                 symbol, 
-                sequence_length=hyperparameters.get('sequence_length', 60),
+                sequence_length=hyperparameters.get('sequence_length', 5),
                 train_ratio=hyperparameters.get('train_split', 0.7),
                 val_ratio=hyperparameters.get('val_split', 0.15),
-                test_window_size=hyperparameters.get('test_window_size', 90)
+                test_window_size=hyperparameters.get('test_window_size', 90),
+                scaler_type=hyperparameters.get('scaler_type', 'minmax')
             )
             
             job.progress_message = 'Fetching historical data from DB...'
@@ -270,8 +271,8 @@ def train_model_task(self, symbol, model_type, hyperparameters, user_id=None, op
         except TrainingJob.DoesNotExist:
             pass
         
-        # Auto-generate 6-month forecast (126 trading days)
-        self.update_state(state='PROGRESS', meta={'status': 'Generating 6-month forecast...'})
+        # Auto-generate 30-day forecast
+        self.update_state(state='PROGRESS', meta={'status': 'Generating 30-day forecast...'})
         
         try:
             # Prepare last sequence for forecasting
@@ -279,7 +280,7 @@ def train_model_task(self, symbol, model_type, hyperparameters, user_id=None, op
             df_with_indicators = preprocessor.calculate_technical_indicators(original_df)
             features_df = preprocessor.prepare_features(df_with_indicators)
             
-            # Generate 126-day forecast
+            # Generate 30-day forecast
             from datetime import timedelta
             last_date = original_df.index[-1]
             next_date = last_date + timedelta(days=1)
@@ -293,7 +294,7 @@ def train_model_task(self, symbol, model_type, hyperparameters, user_id=None, op
                 # but assuming that's handled in the wrapper (or tasks.py passed correct DFs).
                 # The wrapper showed: forecast_future(self, periods: int, start_date: pd.Timestamp)
                 
-                forecast_df = forecaster.forecast_future(126, start_date=next_date)
+                forecast_df = forecaster.forecast_future(30, start_date=next_date)
                 
                 # Prophet returns unscaled values if we used unscaled during training? 
                 # The wrapper doesn't seem to inverse transform explicitly for yhat if fit on raw y.
@@ -311,21 +312,20 @@ def train_model_task(self, symbol, model_type, hyperparameters, user_id=None, op
                 predictions_scaled = forecast_df[['yhat']].values
                 
                 # Inverse transform
-                # We need to reshape to match scaler expectation (20 columns)
-                # prepare dummy
+                # We need to reshape to match scaler expectation (1 column)
                 dummy = np.zeros((len(predictions_scaled), len(preprocessor.feature_columns)))
-                dummy[:, 3] = predictions_scaled.flatten() # 3 is close price index
+                dummy[:, 0] = predictions_scaled.flatten() # 0 is close price index in univariate
                 inversed = preprocessor.scaler.inverse_transform(dummy)
-                predictions = inversed[:, 3]
+                predictions = inversed[:, 0]
                 
                 # Confidence intervals (also scaled)
                 upper_scaled = forecast_df[['yhat_upper']].values
-                dummy[:, 3] = upper_scaled.flatten()
-                upper = preprocessor.scaler.inverse_transform(dummy)[:, 3]
+                dummy[:, 0] = upper_scaled.flatten()
+                upper = preprocessor.scaler.inverse_transform(dummy)[:, 0]
                 
                 lower_scaled = forecast_df[['yhat_lower']].values
-                dummy[:, 3] = lower_scaled.flatten()
-                lower = preprocessor.scaler.inverse_transform(dummy)[:, 3]
+                dummy[:, 0] = lower_scaled.flatten()
+                lower = preprocessor.scaler.inverse_transform(dummy)[:, 0]
                 
             else:
                 # LSTM / GRU logic (expecting sequence)
@@ -333,7 +333,7 @@ def train_model_task(self, symbol, model_type, hyperparameters, user_id=None, op
                 scaled_data = preprocessor.scaler.transform(features_df.values)
                 last_sequence = scaled_data[-preprocessor.sequence_length:]
                 
-                predictions_scaled = forecaster.forecast_future(last_sequence, 126)
+                predictions_scaled = forecaster.forecast_future(last_sequence, 30)
                 predictions = preprocessor.inverse_transform_predictions(predictions_scaled)
                 # Basic confidence intervals for DL (e.g. +/- 5%)
                 upper = predictions * 1.05
@@ -476,7 +476,7 @@ def train_model_task(self, symbol, model_type, hyperparameters, user_id=None, op
 
 
 @shared_task(bind=True, name='ml.generate_forecast')
-def generate_forecast_task(self, symbol, model_id=None, horizon_days=252):
+def generate_forecast_task(self, symbol, model_id=None, horizon_days=30):
     """
     Async task to generate price forecasts.
     
@@ -517,8 +517,11 @@ def generate_forecast_task(self, symbol, model_id=None, horizon_days=252):
         self.update_state(state='PROGRESS', meta={'status': 'Preparing data...'})
         
         # Prepare last sequence
-        preprocessor = DataPreprocessor(symbol=symbol)
-        _, original_df = preprocessor.process()
+        # Use the scaler type associated with the model's hyper-parameters if available
+        scaler_type = forecast_model.hyperparameters.get('scaler_type', 'minmax')
+        sequence_length = forecast_model.hyperparameters.get('sequence_length', 5)
+        preprocessor = DataPreprocessor(symbol=symbol, scaler_type=scaler_type, sequence_length=sequence_length)
+        _, original_df = preprocessor.process(fitted_scaler=forecaster.scaler)
         
         features_df = preprocessor.prepare_features(original_df)
         scaled_data = preprocessor.scaler.transform(features_df.values)

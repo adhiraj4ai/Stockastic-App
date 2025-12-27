@@ -395,8 +395,11 @@ class DailyCumulativeAccumulation(models.Model):
     transaction_date = models.DateField(db_index=True)
     entity_id = models.CharField(max_length=10, db_index=True) # Broker ID
     
-    daily_net = models.IntegerField(default=0) # Net change for the day
-    cumulative_net = models.IntegerField(default=0) # Running total
+    cumulative_buy = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    cumulative_sell = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    cumulative_buy_amount = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    cumulative_sell_amount = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    cumulative_net = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)

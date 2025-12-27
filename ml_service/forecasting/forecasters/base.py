@@ -92,17 +92,16 @@ class BaseForecaster(ABC):
         # Check if we have a scaler to inverse transform
         if hasattr(self, 'scaler') and self.scaler is not None:
             # We need to inverse transform both predictions and y_test
-            # The scaler expects shape (n_samples, n_features)
-            # We need to act as if these are the target column (index 3 usually)
+            # For univariate forecasting, we expect shape (n_samples, 1)
             
             # Helper to inverse transform single column array
             def inverse_transform_col(col_data):
-                # Assume the scaler was fitted on 5 features (OHLCV)
-                # We place our data in the 'close' column (index 3)
+                # Scaler fitted on 1 feature (Close only)
                 n_features = self.scaler.n_features_in_
                 dummy = np.zeros((len(col_data), n_features))
-                dummy[:, 3] = col_data.flatten()
-                return self.scaler.inverse_transform(dummy)[:, 3]
+                # Target is now at index 0 for univariate
+                dummy[:, 0] = col_data.flatten()
+                return self.scaler.inverse_transform(dummy)[:, 0]
             
             predictions = inverse_transform_col(predictions_scaled)
             actuals = inverse_transform_col(y_test)
@@ -151,7 +150,7 @@ class BaseForecaster(ABC):
         Generate iterative forecasts for future time steps.
         
         Args:
-            last_sequence: Most recent sequence of data (shape: [sequence_length, num_features])
+            last_sequence: Most recent sequence of data (shape: [sequence_length, 1] for univariate)
             horizon: Number of steps to forecast
             
         Returns:
@@ -165,38 +164,24 @@ class BaseForecaster(ABC):
         
         for _ in range(horizon):
             # Predict next close price
+            # Shape check for univariate: current_sequence should be [seq_len, 1]
             next_pred = self.predict(current_sequence.reshape(1, *current_sequence.shape))[0]
             forecasts.append(next_pred)
             
             # Update sequence for next prediction
-            # Update sequence for next prediction
             # Roll the sequence forward by one timestep
             current_sequence = np.roll(current_sequence, -1, axis=0)
             
-            # For the new timestep, we need to update OHLC context for the next iteration
-            # Indices: 0: open, 1: high, 2: low, 3: close, 4: volume
-            prev_close = current_sequence[-2, 3]
+            # Inject adaptive random noise
+            # We use 5% of the sequence standard deviation as a proxy for recent volatility
+            # This scales automatically whether using MinMaxScaler (0-1) or StandardScaler (Z-score)
+            seq_std = np.std(current_sequence)
+            noise_scale = max(seq_std * 0.05, 1e-4) # Avoid zero noise
+            noise = np.random.normal(0, noise_scale)
             
-            # Start with previous timestep as base
-            current_sequence[-1] = current_sequence[-2].copy()
-            
-            # Update OHLC based on the new prediction
-            new_close = next_pred
-            new_open = prev_close
-            
-            # Simulate high/low slightly around the open and close
-            current_sequence[-1, 0] = new_open
-            current_sequence[-1, 1] = max(new_open, new_close) * 1.002  # Assume some wick
-            current_sequence[-1, 2] = min(new_open, new_close) * 0.998  # Assume some wick
-            
-            # Update Volume (Index 4)
-            # Add small random noise to volume so it doesn't look completely static
-            vol_noise = np.random.normal(0, 0.05) # 5% fluctuation
-            current_sequence[-1, 4] = np.clip(current_sequence[-1, 4] * (1 + vol_noise), 0, 1)
-            
-            # Inject small random noise to Close price to simulate volatility
-            # Standard deviation 0.015 = 1.5% fluctuation in scaled space
-            noise = np.random.normal(0, 0.015) 
-            current_sequence[-1, 3] = np.clip(new_close + noise, 0, 1)        
+            # Update the last element with the new prediction
+            # In univariate forecasting, the entire feature vector is just the close price
+            # CRITICAL: Do NOT clip to [0,1]. Standard Scaler is unbounded, and even MinMax should allow trends to break out.
+            current_sequence[-1, 0] = next_pred + noise
         
         return np.array(forecasts)

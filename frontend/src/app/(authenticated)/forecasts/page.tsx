@@ -454,7 +454,9 @@ export default function ForecastsPage() {
                                                                     )}
                                                                 </td>
                                                                 <td className="px-6 py-4 whitespace-nowrap text-gray-500 font-mono text-xs font-bold">
-                                                                    {sessionId.startsWith('legacy-') ? '#GROUPED' : `#${sessionId.split('-')[0].toUpperCase()}`}
+                                                                    {sessionId.startsWith('legacy-') ? (
+                                                                        sessionJobs.length === 1 ? `#${firstJob.id}` : `#GROUPED (${sessionJobs.length})`
+                                                                    ) : `#${sessionId.split('-')[0].toUpperCase()}`}
                                                                 </td>
                                                                 <td className="px-6 py-4 whitespace-nowrap text-gray-900 font-medium">
                                                                     {startTime.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
