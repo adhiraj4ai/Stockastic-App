@@ -67,7 +67,10 @@ export default function StrategiesPage() {
         setLoadingStrategies(true);
         try {
             const response = await api.get('/api/stocks/strategies/', {
-                params: { _t: Date.now() }
+                params: {
+                    _t: Date.now(),
+                    page_size: 100
+                }
             });
             if (Array.isArray(response.data)) {
                 setStrategies(response.data);
@@ -112,12 +115,12 @@ export default function StrategiesPage() {
     if (!mounted) return null;
 
     return (
-        <DashboardLayout>
+        <DashboardLayout
+            title="Strategy Center"
+            subtitle="Automated market analysis and algorithmic trading strategies."
+        >
             <div className="space-y-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Strategy Center</h1>
-                    <p className="text-gray-500 text-sm mt-1">Automated market analysis and algorithmic trading strategies.</p>
-                </div>
+
 
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-1">
@@ -217,14 +220,14 @@ export default function StrategiesPage() {
                             </div>
                         ) : (
                             viewMode === 'grid' ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                                     {filteredStrategies.map((strategy) => (
                                         <Card
                                             key={strategy.id}
                                             className="hover:shadow-md transition-shadow duration-200 border-gray-200 flex flex-col cursor-pointer hover:border-blue-300"
                                             onClick={() => router.push(`/strategies/${strategy.id}`)}
                                         >
-                                            <div className="p-2 border-b border-gray-100 bg-white rounded-t-xl">
+                                            <div className="p-1 border-b border-gray-100 bg-white rounded-t-xl">
                                                 <div className="flex items-start gap-2.5">
                                                     <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0 mt-0.5">
                                                         <Lightbulb size={16} />
@@ -261,37 +264,17 @@ export default function StrategiesPage() {
                                                                 </DropdownMenuContent>
                                                             </DropdownMenu>
                                                         </div>
-                                                        <p className="text-[11px] text-gray-500 line-clamp-2 leading-tight">
-                                                            {strategy.description}
-                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div className="p-2 flex-1">
-                                                <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-                                                    <div className="flex items-center justify-center gap-1.5">
-                                                        <span className="text-[11px] text-gray-500 font-medium min-w-[36px] text-right">Profit/Loss:</span>
-                                                        <span className={`text-[13px] font-bold ${Number(strategy.pnl_amount || 0) >= 0 ? "text-green-600" : "text-red-600"}`}>
-                                                            {Number(strategy.pnl_percent || 0).toFixed(2)}%
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex items-center justify-center gap-1.5">
-                                                        <span className="text-[11px] text-gray-500 font-medium min-w-[36px] text-right">Drawdown:</span>
-                                                        <span className="text-[13px] font-bold text-red-600">{Number(strategy.max_drawdown || 0).toFixed(2)}%</span>
-                                                    </div>
-                                                    <div className="flex items-center justify-center gap-1.5">
-                                                        <span className="text-[11px] text-gray-500 font-medium min-w-[36px] text-right">Sharpe:</span>
-                                                        <span className="text-[13px] font-bold text-gray-900">{Number(strategy.sharpe_ratio || 0).toFixed(2)}</span>
-                                                    </div>
-                                                    <div className="flex items-center justify-center gap-1.5">
-                                                        <span className="text-[11px] text-gray-500 font-medium min-w-[36px] text-right">Win:</span>
-                                                        <span className="text-[13px] font-bold text-gray-900">{Number(strategy.win_rate || 0).toFixed(0)}%</span>
-                                                    </div>
-                                                </div>
+                                            <div className="p-1 flex-1 bg-white">
+                                                <p className="text-[11px] text-gray-500 line-clamp-6 leading-tight">
+                                                    {strategy.description}
+                                                </p>
                                             </div>
 
-                                            <div className="flex bg-gray-50/50 border-t border-gray-100 rounded-b-xl mt-auto">
+                                            <div className="flex bg-gray-50/50 border-t border-gray-100 rounded-b-xl">
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -322,10 +305,7 @@ export default function StrategiesPage() {
                                             <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">
                                                 <tr>
                                                     <th className="px-4 py-3">Strategy Name</th>
-                                                    <th className="px-4 py-3">P/L %</th>
-                                                    <th className="px-4 py-3">Drawdown</th>
-                                                    <th className="px-4 py-3">Sharpe</th>
-                                                    <th className="px-4 py-3">Win Rate</th>
+
                                                     <th className="px-4 py-3 text-right">Actions</th>
                                                 </tr>
                                             </thead>
@@ -349,14 +329,7 @@ export default function StrategiesPage() {
                                                                 </div>
                                                             </div>
                                                         </td>
-                                                        <td className="px-4 py-3">
-                                                            <span className={`font-bold ${Number(strategy.pnl_amount || 0) >= 0 ? "text-green-600" : "text-red-600"}`}>
-                                                                {Number(strategy.pnl_percent || 0).toFixed(2)}%
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-4 py-3 text-red-600">{Number(strategy.max_drawdown || 0).toFixed(2)}%</td>
-                                                        <td className="px-4 py-3">{Number(strategy.sharpe_ratio || 0).toFixed(2)}</td>
-                                                        <td className="px-4 py-3">{Number(strategy.win_rate || 0).toFixed(0)}%</td>
+
                                                         <td className="px-4 py-3 text-right">
                                                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                                 <Button

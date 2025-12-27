@@ -395,8 +395,11 @@ class DailyCumulativeAccumulation(models.Model):
     transaction_date = models.DateField(db_index=True)
     entity_id = models.CharField(max_length=10, db_index=True) # Broker ID
     
-    daily_net = models.IntegerField(default=0) # Net change for the day
-    cumulative_net = models.IntegerField(default=0) # Running total
+    cumulative_buy = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    cumulative_sell = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    cumulative_buy_amount = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    cumulative_sell_amount = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    cumulative_net = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
@@ -465,5 +468,33 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.title}"
+
+class StrategySignal(models.Model):
+    SIGNAL_CHOICES = (
+        ('BUY', 'Buy'),
+        ('SELL', 'Sell'),
+        ('HOLD', 'Hold'),
+        ('NEUTRAL', 'Neutral'),
+    )
+
+    strategy = models.ForeignKey(Strategy, on_delete=models.CASCADE)
+    symbol = models.CharField(max_length=20)
+    date = models.DateField(help_text="The date of the signal (usually today)")
+    signal = models.CharField(max_length=10, choices=SIGNAL_CHOICES)
+    
+    # Optional debug info
+    last_close = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    metadata = models.JSONField(default=dict, blank=True) # E.g., {'orders_count': 1, 'position': 100}
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'strategy_signals'
+        unique_together = ('strategy', 'symbol', 'date')
+        ordering = ['-date', 'strategy__name']
+
+    def __str__(self):
+        return f"{self.symbol} - {self.strategy.name}: {self.signal} ({self.date})"
 
 
