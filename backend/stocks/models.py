@@ -422,11 +422,15 @@ class DataUploadLog(models.Model):
         ('FLOORSHEET', 'Floorsheet'),
         ('PRICE', 'Daily Price'),
         ('GITHUB_SYNC', 'GitHub Sync'),
+        ('INDICATORS', 'Technical Indicators'),
+        ('OPTIMIZATION', 'Strategy Training'),
+        ('SIGNALS', 'Signal Generation'),
     )
     STATUS_CHOICES = (
         ('PENDING', 'Pending'),
         ('SUCCESS', 'Success'),
         ('FAILED', 'Failed'),
+        ('ABORTED', 'Aborted'),
     )
 
     file_name = models.CharField(max_length=255)

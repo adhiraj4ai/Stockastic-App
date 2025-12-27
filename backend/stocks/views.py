@@ -860,6 +860,12 @@ class StrategyViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         strategy = self.get_object()
+        
+        # Ownership check
+        if strategy.user != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You do not have permission to edit this strategy.")
+            
         # Check if ANY experiment is published for this strategy
         if strategy.experiments.filter(is_published=True).exists():
             if 'code' in serializer.validated_data:
@@ -867,12 +873,24 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 raise PermissionDenied("This strategy has published configurations and cannot be edited. Unpublish all configurations first.")
         serializer.save()
 
+    def perform_destroy(self, instance):
+        if instance.user != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You do not have permission to delete this strategy.")
+        instance.delete()
+
     @action(detail=True, methods=['post'])
     def publish(self, request, pk=None):
         """
         Publish strategy experiment for recommendations. Requires 'experiment_id'.
         """
         strategy = self.get_object()
+        
+        # Ownership check
+        if strategy.user != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You do not have permission to publish this strategy.")
+            
         experiment_id = request.data.get('experiment_id')
         
         if not experiment_id:
@@ -900,6 +918,12 @@ class StrategyViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def unpublish(self, request, pk=None):
         strategy = self.get_object()
+        
+        # Ownership check
+        if strategy.user != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You do not have permission to unpublish this strategy.")
+            
         experiment_id = request.data.get('experiment_id')
         
         if experiment_id:
@@ -1002,6 +1026,83 @@ class StrategyViewSet(viewsets.ModelViewSet):
              result.append(StrategyExperimentSerializer(item['experiment']).data)
              
         return Response(result)
+
+    @action(detail=True, methods=['get'])
+    def get_published_config(self, request, pk=None):
+        """
+        Get the best published configuration for a specific scope (Symbol, Sector, or All).
+        Follows hierarchy: Requested Symbol > Sector > Market (ALL)
+        """
+        strategy = self.get_object()
+        symbol = request.query_params.get('symbol')
+        sector = request.query_params.get('sector')
+        
+        # 1. Direct hierarchy lookup
+        exp = None
+        
+        # Try Symbol
+        if symbol:
+            exp = StrategyExperiment.objects.filter(
+                strategy=strategy,
+                scope_type=ScopeType.SYMBOL,
+                scope_value=symbol,
+                is_published=True
+            ).order_by('-created_at').first()
+            
+            if not exp:
+                # Get sector for this symbol
+                company = Company.objects.filter(symbol=symbol).first()
+                if company and company.sector:
+                    exp = StrategyExperiment.objects.filter(
+                        strategy=strategy,
+                        scope_type=ScopeType.SECTOR,
+                        scope_value=company.sector,
+                        is_published=True
+                    ).order_by('-created_at').first()
+                    
+        # Try Sector
+        if not exp and sector:
+            exp = StrategyExperiment.objects.filter(
+                strategy=strategy,
+                scope_type=ScopeType.SECTOR,
+                scope_value=sector,
+                is_published=True
+            ).order_by('-created_at').first()
+            
+        # Try Market (ALL)
+        if not exp:
+            exp = StrategyExperiment.objects.filter(
+                strategy=strategy,
+                scope_type=ScopeType.ALL,
+                is_published=True
+            ).order_by('-created_at').first()
+            
+        if exp:
+            params = exp.parameters
+            # Robustness: if optimization experiment has ranges in parameters, pick from metrics
+            if exp.run_type == StrategyExperiment.RunType.OPTIMIZATION and params:
+                # Check if any value looks like a range (list)
+                if any(isinstance(v, list) for v in params.values()):
+                    if exp.metrics and 'best_params' in exp.metrics:
+                        params = exp.metrics['best_params']
+            
+            return Response({
+                'id': exp.id,
+                'scope_type': exp.scope_type,
+                'scope_value': exp.scope_value,
+                'parameters': params,
+                'metrics': exp.metrics,
+                'created_at': exp.created_at
+            })
+        
+        # Fallback: Strategy default_parameters if they exist
+        if strategy.default_parameters:
+            return Response({
+                'parameters': strategy.default_parameters,
+                'source': 'strategy_default'
+            })
+        
+        return Response({'message': 'No published configuration found for this scope.'}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=False, methods=['get'])
     def recommendations(self, request):
@@ -1912,9 +2013,44 @@ class StrategyViewSet(viewsets.ModelViewSet):
             for param_name, param_value in best_params.items():
                 # Replace parameter values in code
                 import re
-                pattern = rf'(\s{param_name}\s*=\s*)\d+'
-                optimized_code = re.sub(pattern, rf'\g<1>{param_value}', optimized_code)
+                if isinstance(param_value, float):
+                    pattern = rf'(\s{param_name}\s*=\s*)[\d\.]+'
+                    optimized_code = re.sub(pattern, rf'\g<1>{param_value:.4f}', optimized_code)
+                else:
+                    pattern = rf'(\s{param_name}\s*=\s*)\d+'
+                    optimized_code = re.sub(pattern, rf'\g<1>{int(param_value)}', optimized_code)
             
+            # Run detailed backtests for "reinvestigation"
+            import uuid
+            batch_id = uuid.uuid4()
+            backtest_results = []
+            
+            for symbol_ticker, df_data in data_map.items():
+                res, err, exp_data = self._run_single_backtest(
+                    optimized_code, symbol_ticker, start_date, end_date, params=best_params
+                )
+                if res:
+                    # Create detailed BACKTEST experiment
+                    StrategyExperiment.objects.create(
+                        strategy=strategy,
+                        user=request.user,
+                        run_type=StrategyExperiment.RunType.BACKTEST,
+                        scope_type=ScopeType.SYMBOL,
+                        scope_value=symbol_ticker,
+                        start_date=start_date,
+                        end_date=end_date,
+                        parameters=best_params,
+                        metrics=res['stats'],
+                        plot_html=res['plot_html'],
+                        batch_id=batch_id,
+                        status=StrategyExperiment.Status.SUCCESS,
+                        is_published=True # Mark these detailed backtests as published too
+                    )
+                    backtest_results.append({
+                        'symbol': symbol_ticker,
+                        'pnl_percent': res['stats']['pnl_percent']
+                    })
+
             # Log Optimization Experiment
             try:
                 scope_type = ScopeType.SYMBOL
@@ -1935,13 +2071,16 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     scope_value=scope_val,
                     start_date=start_date,
                     end_date=end_date,
-                    parameters=param_ranges, # Input ranges
+                    parameters=best_params, # Store winning config
                     metrics={
                         'best_return': best_value,
-                        'best_params': best_params,
-                        'n_trials': len(study.trials)
+                        'search_ranges': param_ranges,
+                        'n_trials': len(study.trials),
+                        'batch_id': str(batch_id) # Link to backtests
                     },
-                    status=StrategyExperiment.Status.SUCCESS
+                    status=StrategyExperiment.Status.SUCCESS,
+                    is_published=True,
+                    batch_id=batch_id
                 )
             except Exception as e:
                 print(f"Failed to log optimization experiment: {e}")
@@ -1951,7 +2090,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 'best_value': best_value,
                 'n_trials': len(study.trials),
                 'trials': trials_data,
-                'optimized_code': optimized_code
+                'optimized_code': optimized_code,
+                'batch_id': str(batch_id)
             })
             
         except Exception as e:
@@ -3257,7 +3397,7 @@ class WatchlistViewSet(viewsets.ModelViewSet):
             if item.ticker in signals_map:
                 item_data['signals'] = signals_map[item.ticker]
             else:
-                 item_data['signals'] = None
+                item_data['signals'] = None
                 
             data.append(item_data)
             
@@ -3544,6 +3684,7 @@ class PipelineViewSet(viewsets.ViewSet):
         'update_indexes': 'Update DB Indexes',
         'generate_signals': 'Generate Strategy Signals',
         'update_indicators': 'Update Technical Indicators',
+        'optimize_strategies': 'Global Strategy Optimization',
     }
 
     @action(detail=False, methods=['get'])
@@ -3581,6 +3722,27 @@ class PipelineViewSet(viewsets.ViewSet):
             'page': current_page.number,
             'pages': paginator.num_pages
         })
+
+
+    @action(detail=False, methods=['post'])
+    def abort_log(self, request):
+        """
+        Mark a log entry as aborted.
+        """
+        from .models import DataUploadLog
+        
+        log_id = request.data.get('log_id')
+        if not log_id:
+            return Response({'error': 'log_id is required'}, status=400)
+        
+        try:
+            log_entry = DataUploadLog.objects.get(id=log_id)
+            log_entry.status = 'ABORTED'
+            log_entry.error_message = 'Process was manually stopped by user'
+            log_entry.save()
+            return Response({'message': 'Log marked as aborted'})
+        except DataUploadLog.DoesNotExist:
+            return Response({'error': 'Log not found'}, status=404)
 
     @action(detail=False, methods=['get'])
     def status(self, request):
@@ -3644,6 +3806,14 @@ class PipelineViewSet(viewsets.ViewSet):
         """
         import sys
         from django.conf import settings
+        from .models import DataUploadLog
+
+        # Create log entry
+        log_entry = DataUploadLog.objects.create(
+            file_name='Technical Indicators Update',
+            upload_type='INDICATORS',
+            status='PENDING'
+        )
 
         def event_stream():
             # Get the base directory where manage.py is located
@@ -3662,6 +3832,7 @@ class PipelineViewSet(viewsets.ViewSet):
                 cwd=base_dir
             )
 
+            yield f"data: {{\"type\": \"init\", \"log_id\": {log_entry.id}}}\n\n"
             yield "data: {\"type\": \"status\", \"message\": \"Initializing indicator update...\"}\n\n"
             
             for line in process.stdout:
@@ -3672,9 +3843,14 @@ class PipelineViewSet(viewsets.ViewSet):
 
             process.wait()
             if process.returncode == 0:
+                log_entry.status = 'SUCCESS'
+                log_entry.save()
                 yield "data: {\"type\": \"status\", \"message\": \"Technical indicators updated successfully.\"}\n\n"
                 yield "data: {\"type\": \"done\"}\n\n"
             else:
+                log_entry.status = 'FAILED'
+                log_entry.error_message = f"Process exited with code {process.returncode}"
+                log_entry.save()
                 yield f"data: {{\"type\": \"error\", \"message\": \"Process exited with code {process.returncode}\"}}\n\n"
 
         response = StreamingResponse(event_stream(), content_type='text/event-stream')
@@ -3689,6 +3865,14 @@ class PipelineViewSet(viewsets.ViewSet):
         """
         import sys
         from django.conf import settings
+        from .models import DataUploadLog
+
+        # Create log entry
+        log_entry = DataUploadLog.objects.create(
+            file_name='Signal Generation',
+            upload_type='SIGNALS',
+            status='PENDING'
+        )
 
         def event_stream():
             symbol = request.query_params.get('symbol')
@@ -3711,6 +3895,7 @@ class PipelineViewSet(viewsets.ViewSet):
                 cwd=base_dir
             )
 
+            yield f"data: {{\"type\": \"init\", \"log_id\": {log_entry.id}}}\n\n"
             yield "data: {\"type\": \"status\", \"message\": \"Initializing boot process...\"}\n\n"
             
             for line in process.stdout:
@@ -3721,15 +3906,86 @@ class PipelineViewSet(viewsets.ViewSet):
 
             process.wait()
             if process.returncode == 0:
+                log_entry.status = 'SUCCESS'
+                log_entry.save()
                 yield "data: {\"type\": \"status\", \"message\": \"Signal generation completed successfully.\"}\n\n"
                 yield "data: {\"type\": \"done\"}\n\n"
             else:
+                log_entry.status = 'FAILED'
+                log_entry.error_message = f"Process exited with code {process.returncode}"
+                log_entry.save()
                 yield f"data: {{\"type\": \"error\", \"message\": \"Process exited with code {process.returncode}\"}}\n\n"
 
         response = StreamingResponse(event_stream(), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         response['X-Accel-Buffering'] = 'no'  # Disable buffering for nginx
         return response
+
+    @action(detail=False, methods=['get'])
+    def optimize_strategies_stream(self, request):
+        """
+        Streams logs from strategy optimization process.
+        """
+        import sys
+        import subprocess
+        from django.conf import settings
+        from .models import DataUploadLog
+
+        # Create log entry
+        log_entry = DataUploadLog.objects.create(
+            file_name='Strategy Training',
+            upload_type='OPTIMIZATION',
+            status='PENDING'
+        )
+
+        def event_stream():
+            all_symbols = request.query_params.get('all_symbols') == 'true'
+            trials = request.query_params.get('trials', '30')
+            
+            # Get the base directory where manage.py is located
+            base_dir = settings.BASE_DIR
+            manage_py = os.path.join(base_dir, 'manage.py')
+            
+            cmd = [sys.executable, manage_py, 'optimize_strategies', '--trials', trials]
+            if all_symbols:
+                cmd.append('--all-symbols')
+
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                universal_newlines=True,
+                cwd=base_dir
+            )
+
+            yield f"data: {{\"type\": \"init\", \"log_id\": {log_entry.id}}}\n\n"
+            yield "data: {\"type\": \"status\", \"message\": \"Initializing optimization engine...\"}\n\n"
+            
+            for line in process.stdout:
+                if line.strip():
+                    # Escape quotes in the message
+                    escaped_message = line.strip().replace('"', '\\"')
+                    yield f"data: {{\"type\": \"log\", \"message\": \"{escaped_message}\"}}\n\n"
+
+            process.wait()
+            if process.returncode == 0:
+                log_entry.status = 'SUCCESS'
+                log_entry.save()
+                yield "data: {\"type\": \"status\", \"message\": \"Strategy optimization completed successfully.\"}\n\n"
+                yield "data: {\"type\": \"done\"}\n\n"
+            else:
+                log_entry.status = 'FAILED'
+                log_entry.error_message = f"Process exited with code {process.returncode}"
+                log_entry.save()
+                yield f"data: {{\"type\": \"error\", \"message\": \"Process exited with code {process.returncode}\"}}\n\n"
+
+        response = StreamingResponse(event_stream(), content_type='text/event-stream')
+        response['Cache-Control'] = 'no-cache'
+        response['X-Accel-Buffering'] = 'no'  # Disable buffering for nginx
+        return response
+
 
     @action(detail=True, methods=['post'])
     def run(self, request, pk=None):

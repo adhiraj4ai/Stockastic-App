@@ -147,7 +147,6 @@ class WatchlistItemSerializer(serializers.ModelSerializer):
     sector = serializers.SerializerMethodField()
     rsi = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
     roc = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
-    roc = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
 
     class Meta:
         model = WatchlistItem

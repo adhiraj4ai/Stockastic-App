@@ -71,8 +71,8 @@ def train_model_task(self, symbol, model_type, hyperparameters, user_id=None, op
             TrainingJob.objects.filter(task_id=self.request.id).update(progress_message=completion_msg)
         
         # Prepare data
-        train_split = hyperparameters.get('train_split', 0.7)
-        val_split = hyperparameters.get('val_split', 0.15)
+        train_split = hyperparameters.get('train_split', 0.8)
+        val_split = hyperparameters.get('val_split', 0.05)
         test_window_size = hyperparameters.get('test_window_size', 90)
         start_date = hyperparameters.get('start_date')
         end_date = hyperparameters.get('end_date')
@@ -83,8 +83,8 @@ def train_model_task(self, symbol, model_type, hyperparameters, user_id=None, op
             preprocessor = DataPreprocessor(
                 symbol, 
                 sequence_length=hyperparameters.get('sequence_length', 60),
-                train_ratio=hyperparameters.get('train_split', 0.7),
-                val_ratio=hyperparameters.get('val_split', 0.15),
+                train_ratio=hyperparameters.get('train_split', 0.8),
+                val_ratio=hyperparameters.get('val_split', 0.05),
                 test_window_size=hyperparameters.get('test_window_size', 90)
             )
             
@@ -411,7 +411,7 @@ def train_model_task(self, symbol, model_type, hyperparameters, user_id=None, op
                 'validation_samples': len(data_splits['X_val']),
                 'test_samples': len(data_splits['X_test']),
                 'total_samples': len(data_splits['X_train']) + len(data_splits['X_val']) + len(data_splits['X_test']),
-                'split_ratio': '70/15/15',
+                'split_ratio': '80/05/15',
                 'forecast_generated': True,
                 'forecast_days': len(forecast_records),
                 'test_predictions_generated': test_size
@@ -448,7 +448,7 @@ def train_model_task(self, symbol, model_type, hyperparameters, user_id=None, op
                 'validation_samples': len(data_splits['X_val']),
                 'test_samples': len(data_splits['X_test']),
                 'total_samples': len(data_splits['X_train']) + len(data_splits['X_val']) + len(data_splits['X_test']),
-                'split_ratio': '70/15/15',
+                'split_ratio': '80/05/15',
                 'forecast_generated': False,
                 'forecast_error': str(forecast_error)
             }
