@@ -8,6 +8,7 @@ import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activ
 import { SearchBar } from './SearchBar';
 import { ChatSidebar } from './ChatSidebar';
 import { AlertsDropdown } from './AlertsDropdown';
+import { SymbolSelector } from './SymbolSelector';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -45,6 +46,7 @@ const navItems = [
     },
     { name: 'Financials', href: '/financials', icon: FileText },
     { name: 'Strategies', href: '/strategies', icon: Lightbulb },
+    { name: 'Signals', href: '/signals', icon: Target },
     { name: 'Forecasts', href: '/forecasts', icon: Brain },
     { name: 'Recommendations', href: '/recommendations', icon: Target },
     { name: 'Pipeline', href: '/pipeline', icon: Settings },
@@ -338,19 +340,36 @@ export default function DashboardLayout({
                                         <ArrowLeft size={20} />
                                     </button>
                                 )}
-                                <div className="flex flex-col min-w-0">
-                                    <h2 className="text-xl font-semibold text-gray-800 capitalize truncate">
-                                        {title || (pathname.includes('/stock/') ? 'Stock Details' : pathname.split('/').pop())}
-                                    </h2>
-                                    {subtitle && (
-                                        <p className="text-xs text-gray-500 truncate">{subtitle}</p>
-                                    )}
-                                </div>
+                                {pathname === '/signals' ? (
+                                    <div className="flex flex-col min-w-0">
+                                        <h2 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                                            Strategy Signals Dashboard
+                                        </h2>
+                                        <p className="text-xs text-slate-500">Real-time trading signals from all active strategies</p>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col min-w-0">
+                                        <h2 className="text-xl font-semibold text-gray-800 capitalize truncate">
+                                            {title || (pathname.includes('/stock/') ? 'Stock Details' : pathname.split('/').pop())}
+                                        </h2>
+                                        {subtitle && (
+                                            <p className="text-xs text-gray-500 truncate">{subtitle}</p>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
 
                         <div className="w-1/3 flex justify-center">
-                            {/* SearchBar removed as per request */}
+                            {pathname.startsWith('/stock/') && (() => {
+                                const currentTicker = pathname.split('/stock/')[1]?.split('/')[0];
+                                return (
+                                    <SymbolSelector
+                                        value={currentTicker}
+                                        onChange={(symbol) => router.push(`/stock/${symbol}`)}
+                                    />
+                                );
+                            })()}
                         </div>
 
                         <div className="w-1/3 flex justify-end gap-4 items-center">

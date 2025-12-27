@@ -25,6 +25,7 @@ import { TerminalHeader } from '@/components/stock/TerminalHeader';
 import { IntelligenceGlass } from '@/components/stock/IntelligenceGlass';
 import { BentoMetrics } from '@/components/stock/BentoMetrics';
 import { AdvancedCharting } from '@/components/stock/AdvancedCharting';
+import SignalDashboard from '@/components/SignalDashboard';
 
 interface StockDetailData {
     company: {
@@ -634,6 +635,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                 <div className="flex items-center gap-6">
                                     <TabsList className="bg-slate-100 border border-slate-200 p-1 h-9 rounded-xl">
                                         <TabsTrigger value="indicators" className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Indicators</TabsTrigger>
+                                        <TabsTrigger value="signals" className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Signals</TabsTrigger>
                                         <TabsTrigger value="floorsheet" className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Floorsheet</TabsTrigger>
                                         <TabsTrigger value="financials" className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Financials</TabsTrigger>
                                         <TabsTrigger value="dividends" className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Dividends</TabsTrigger>
@@ -643,6 +645,10 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                             </div>
 
                             <div className="animate-in fade-in zoom-in-95 duration-700">
+                                <TabsContent value="signals" className="mt-0 space-y-8">
+                                    <SignalDashboard symbol={ticker} />
+                                </TabsContent>
+
                                 <TabsContent value="floorsheet" className="mt-0 space-y-8">
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                         {/* Accumulation (Top Buyers) */}

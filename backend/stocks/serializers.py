@@ -1,6 +1,14 @@
 from rest_framework import serializers
 import ast
-from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, StockFundamental, PortfolioAccount, Dividend, FinancialReport, Strategy, Company, WatchlistItem, Notification, StrategyExperiment
+from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, StockFundamental, PortfolioAccount, Dividend, FinancialReport, Strategy, Company, WatchlistItem, Notification, StrategyExperiment, StrategySignal
+
+class StrategySignalSerializer(serializers.ModelSerializer):
+    strategy_name = serializers.CharField(source='strategy.name', read_only=True)
+    strategy_description = serializers.CharField(source='strategy.description', read_only=True)
+
+    class Meta:
+        model = StrategySignal
+        fields = ['id', 'strategy', 'strategy_name', 'strategy_description', 'symbol', 'date', 'signal', 'last_close', 'metadata', 'created_at']
 
 class DailyStockPriceSerializer(serializers.ModelSerializer):
     class Meta:

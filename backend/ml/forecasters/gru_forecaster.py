@@ -1,10 +1,14 @@
 import numpy as np
 import pandas as pd
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import GRU, Dense, Dropout
-from tensorflow.keras.callbacks import EarlyStopping
+try:
+    import tensorflow as tf
+    from tensorflow import keras
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import GRU, Dense, Dropout
+    from tensorflow.keras.callbacks import EarlyStopping
+except ImportError:
+    tf = None
+    keras = None
 from typing import Dict, Optional
 import pickle
 import os

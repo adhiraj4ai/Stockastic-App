@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
-from prophet import Prophet
+try:
+    from prophet import Prophet
+except ImportError:
+    Prophet = None
 from typing import Dict, Optional
 import pickle
 import os

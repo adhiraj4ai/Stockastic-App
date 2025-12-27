@@ -5,11 +5,13 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
-from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, TransactionType, StockFundamental, PortfolioAccount, Strategy, Company, WatchlistItem, Notification, StrategyExperiment, ScopeType
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
+from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, TransactionType, StockFundamental, PortfolioAccount, Strategy, Company, WatchlistItem, Notification, StrategyExperiment, ScopeType, StrategySignal
 from .serializers import (
     DailyStockPriceSerializer, DailyFloorsheetSerializer, PortfolioItemSerializer, 
     PortfolioTransactionSerializer, StockFundamentalSerializer, StrategySerializer, CompanySerializer, WatchlistItemSerializer, NotificationSerializer, StrategyExperimentSerializer,
-    StrategyExperimentDetailSerializer
+    StrategyExperimentDetailSerializer, StrategySignalSerializer
 )
 from . import serializers # For PortfolioAccountSerializer which was added differently in replacement
 from .utils import calculate_broker_commission, calculate_sebon_fee, calculate_dp_charge, calculate_cgt
@@ -3684,4 +3686,18 @@ class PipelineViewSet(viewsets.ViewSet):
                 log.error_message = str(e)
                 log.save()
             return Response({'error': str(e)}, status=500)
+
+
+class SignalPagination(PageNumberPagination):
+    page_size = 100
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
+
+class StrategySignalViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = StrategySignal.objects.all().order_by('-date', 'strategy__name')
+    serializer_class = StrategySignalSerializer
+    pagination_class = SignalPagination
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['symbol', 'date', 'strategy', 'signal']
+    search_fields = ['symbol', 'strategy__name']
 
