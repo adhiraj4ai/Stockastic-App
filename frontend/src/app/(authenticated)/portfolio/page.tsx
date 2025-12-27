@@ -405,7 +405,7 @@ export default function PortfolioPage() {
                             <button
                                 onClick={() => router.push(`/portfolio/optimize?account=${selectedAccount}`)}
                                 disabled={displayedItems.length === 0}
-                                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Advanced Portfolio Optimization"
                             >
                                 <Wand2 className="h-5 w-5" />
@@ -443,13 +443,13 @@ export default function PortfolioPage() {
                                 <div className="text-2xl font-bold text-gray-900">
                                     Rs. {totalCurrentValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </div>
-                                <div className="text-xs text-gray-400 mt-1 uppercase font-bold tracking-wider italic">
+                                <div className="text-xs text-gray-400 mt-1 uppercase font-bold tracking-wider">
                                     Real-time Valuation
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Card className={totalGainLoss >= 0 ? "border-green-100 shadow-sm hover:shadow-md transition-shadow" : "border-red-100 shadow-sm hover:shadow-md transition-shadow"}>
+                        <Card className={`bg-white shadow-sm hover:shadow-md transition-shadow ${totalGainLoss >= 0 ? "border-green-100" : "border-red-100"}`}>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-sm font-medium text-gray-500">Total Returns</CardTitle>
                                 {totalGainLoss >= 0 ? <TrendingUp className="h-4 w-4 text-green-500" /> : <TrendingDown className="h-4 w-4 text-red-500" />}
@@ -465,7 +465,7 @@ export default function PortfolioPage() {
                                         </span>
                                         {bestPerformer && (
                                             <span className="text-[9px] text-gray-400 font-medium">
-                                                Top: <span className="text-green-600 font-bold">{bestPerformer.ticker}</span>
+                                                Top: <span className={totalGainLoss >= 0 ? "text-green-600 font-bold" : "text-red-600 font-bold"}>{bestPerformer.ticker}</span>
                                             </span>
                                         )}
                                     </div>
@@ -473,7 +473,7 @@ export default function PortfolioPage() {
                             </CardContent>
                         </Card>
 
-                        <Card className={totalDayGainLoss >= 0 ? "border-green-100 shadow-sm bg-green-50/20 hover:shadow-md transition-shadow" : "border-red-100 shadow-sm bg-red-50/20 hover:shadow-md transition-shadow"}>
+                        <Card className={`bg-white shadow-sm hover:shadow-md transition-shadow ${totalDayGainLoss >= 0 ? "border-green-100" : "border-red-100"}`}>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-sm font-medium text-gray-500">Session Swing</CardTitle>
                                 <Zap className={`h-4 w-4 ${totalDayGainLoss >= 0 ? 'text-amber-500' : 'text-red-400'}`} />
@@ -482,8 +482,8 @@ export default function PortfolioPage() {
                                 <div className={`text-2xl font-bold ${totalDayGainLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                     Rs. {Math.abs(totalDayGainLoss).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </div>
-                                <div className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-                                    <Activity className="h-3 w-3" /> Intraday Movement
+                                <div className="text-xs text-gray-400 mt-1 uppercase font-bold tracking-wider">
+                                    Intraday Movement
                                 </div>
                             </CardContent>
                         </Card>
