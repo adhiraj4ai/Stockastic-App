@@ -436,6 +436,55 @@ class PortfolioViewSet(viewsets.ModelViewSet):
             except Exception as e:
                 print(f"Volatility Calc Error: {e}")
 
+        # 4. Fetch Latest Signals (New)
+        signals_map = {}
+        if tickers:
+            from .models import StrategySignal
+            from django.db.models import Max
+            
+            # Find the latest signal date for each ticker
+            latest_dates = StrategySignal.objects.filter(
+                symbol__in=tickers
+            ).values('symbol').annotate(max_date=Max('date'))
+            
+            latest_date_map = {item['symbol']: item['max_date'] for item in latest_dates}
+            
+            for ticker, latest_date in latest_date_map.items():
+                if not latest_date:
+                    continue
+                    
+                signals = StrategySignal.objects.filter(
+                    symbol=ticker,
+                    date=latest_date
+                ).select_related('strategy')
+                
+                signal_list = []
+                for s in signals:
+                    signal_list.append({
+                        'signal': s.signal,
+                        'strategy_name': s.strategy.name,
+                        'strategy_description': s.strategy.description
+                    })
+                
+                buy_count = sum(1 for s in signal_list if 'BUY' in s['signal'])
+                sell_count = sum(1 for s in signal_list if 'SELL' in s['signal'])
+                
+                summary = 'NEUTRAL'
+                if buy_count > sell_count:
+                    summary = 'BUY'
+                elif sell_count > buy_count:
+                    summary = 'SELL'
+                elif buy_count > 0 and buy_count == sell_count:
+                    summary = 'MIXED'
+                elif any('HOLD' in s['signal'] for s in signal_list):
+                    summary = 'HOLD'
+                    
+                signals_map[ticker] = {
+                    'latest_date': latest_date,
+                    'summary': summary,
+                    'details': signal_list
+                }
+
         # Enrich data
         data = []
         for item in queryset:
@@ -462,6 +511,7 @@ class PortfolioViewSet(viewsets.ModelViewSet):
             # Risk Metrics
             item.sector = company_sectors.get(item.ticker, 'Unknown')
             item.volatility = volatilities.get(item.ticker, 0.0)
+            item.signals = signals_map.get(item.ticker) # Add signals here
             
             data.append(item)
 
@@ -3095,15 +3145,87 @@ class WatchlistViewSet(viewsets.ModelViewSet):
                             roc = ((curr_close - past_close) / past_close) * 100
                             roc_data[ticker] = float(roc)
 
+        # Fetch latest signals for these tickers
+        signals_map = {}
+        if tickers:
+            from .models import StrategySignal
+            from django.db.models import Max
+            
+            # Find the latest signal date for each ticker
+            latest_dates = StrategySignal.objects.filter(
+                symbol__in=tickers
+            ).values('symbol').annotate(max_date=Max('date'))
+            
+            latest_date_map = {item['symbol']: item['max_date'] for item in latest_dates}
+            
+            # Now fetch all signals for that latest date per ticker
+            # This is a bit tricky to do in one query efficiently for many tickers with different dates
+            # But we can filter by symbol + date
+            
+            # Optimization: If most signals are from "today" or "yesterday", we could just fetch all signals for tickers in the last X days and filter in python.
+            # But strict "latest available" per ticker is requested.
+            
+            for ticker, latest_date in latest_date_map.items():
+                if not latest_date:
+                    continue
+                    
+                signals = StrategySignal.objects.filter(
+                    symbol=ticker,
+                    date=latest_date
+                ).select_related('strategy')
+                
+                signal_list = []
+                for s in signals:
+                    signal_list.append({
+                        'signal': s.signal,
+                        'strategy_name': s.strategy.name,
+                        'strategy_description': s.strategy.description
+                    })
+                
+                # Determine aggregate signal (simplified logic: if any BUY -> BUY, else if any SELL -> SELL, else HOLD)
+                # Or just pass the list and let frontend decide/show summary.
+                # Let's provide a summary based on counts.
+                buy_count = sum(1 for s in signal_list if 'BUY' in s['signal'])
+                sell_count = sum(1 for s in signal_list if 'SELL' in s['signal'])
+                
+                summary = 'NEUTRAL'
+                if buy_count > sell_count:
+                    summary = 'BUY'
+                elif sell_count > buy_count:
+                    summary = 'SELL'
+                elif buy_count > 0 and buy_count == sell_count:
+                    summary = 'MIXED'
+                elif any('HOLD' in s['signal'] for s in signal_list):
+                    summary = 'HOLD'
+                    
+                signals_map[ticker] = {
+                    'latest_date': latest_date,
+                    'summary': summary,
+                    'details': signal_list
+                }
+
         data = []
         for item in queryset:
             # Attach calculated fields for the serializer
-            item.rsi = rsi_data.get(item.ticker)
-            item.roc = roc_data.get(item.ticker)
-            data.append(item)
+            # Note: Serializer expects model instance or dict. But since we are using 'list' we can return dicts.
+            # It's better to serialize first then add extra data.
+            serializer = self.get_serializer(item)
+            item_data = serializer.data
             
-        serializer = self.get_serializer(data, many=True)
-        return Response(serializer.data)
+            if item.ticker in rsi_data:
+                item_data['rsi'] = rsi_data[item.ticker]
+            if item.ticker in roc_data:
+                item_data['roc'] = roc_data[item.ticker]
+                
+            # Add signals data
+            if item.ticker in signals_map:
+                item_data['signals'] = signals_map[item.ticker]
+            else:
+                 item_data['signals'] = None
+                
+            data.append(item_data)
+            
+        return Response(data)
 
 class NotificationViewSet(viewsets.ModelViewSet):
     serializer_class = NotificationSerializer

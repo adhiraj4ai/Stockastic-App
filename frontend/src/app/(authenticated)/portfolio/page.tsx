@@ -11,7 +11,7 @@ import { Trash2, Plus, TrendingUp, TrendingDown, DollarSign, Wallet, Users, Fold
 import TransactionModal, { PortfolioAccount } from '@/components/TransactionModal';
 import { CreateAccountDialog } from '@/components/CreateAccountDialog';
 import StockLink from '@/components/StockLink';
-import { Wand2, Target, Check, ChevronDown, ChevronUp, Radio, PieChart as PieIcon, BarChart as BarIcon, Grid3X3, Zap, Search, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Wand2, Target, Check, ChevronDown, ChevronUp, Radio, PieChart as PieIcon, BarChart as BarIcon, Grid3X3, Zap, Search, ArrowUpDown, ChevronLeft, ChevronRight, ArrowUp } from 'lucide-react';
 import { ExitStrategyDialog } from '@/components/ExitStrategyDialog';
 import { CompanySelect } from '@/components/CompanySelect';
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +31,15 @@ interface WatchlistItem {
     sector?: string;
     rsi?: number;
     roc?: number;
+    signals?: {
+        latest_date: string;
+        summary: 'BUY' | 'SELL' | 'HOLD' | 'NEUTRAL' | 'MIXED';
+        details: Array<{
+            signal: string;
+            strategy_name: string;
+            strategy_description: string;
+        }>;
+    };
 }
 
 interface PortfolioItem {
@@ -47,6 +56,15 @@ interface PortfolioItem {
     day_gain_loss: number;
     sector?: string;
     volatility?: number;
+    signals?: {
+        latest_date: string;
+        summary: 'BUY' | 'SELL' | 'HOLD' | 'NEUTRAL' | 'MIXED';
+        details: Array<{
+            signal: string;
+            strategy_name: string;
+            strategy_description: string;
+        }>;
+    };
     stop_loss_price?: number;
     target_price?: number;
     target_price_2?: number;
@@ -100,6 +118,7 @@ export default function PortfolioPage() {
     const fetchWatchlist = async () => {
         try {
             const response = await api.get('/api/stocks/watchlist/');
+            console.log('Watchlist Data:', response.data);
             setWatchlist(response.data);
         } catch (err) {
             console.error('Failed to fetch watchlist', err);
@@ -173,6 +192,7 @@ export default function PortfolioPage() {
             }
 
             const response = await api.get(`/api/stocks/portfolio/${query}`);
+            console.log('Portfolio Data:', response.data);
             setItems(response.data);
         } catch (err) {
             console.error('Failed to fetch portfolio', err);
@@ -538,7 +558,8 @@ export default function PortfolioPage() {
                                                 <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none py-4" onClick={() => handleSort('day_gain_loss')}>
                                                     <div className="flex items-center justify-end gap-1">Today's P/L <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
-                                                <TableHead className="w-[80px] py-4 pr-6"></TableHead>
+                                                <TableHead className="text-right font-bold text-gray-900">Signal</TableHead>
+                                                <TableHead className="w-[50px]"></TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -647,7 +668,7 @@ export default function PortfolioPage() {
                             {/* Pagination Controls */}
                             {totalPages > 1 && (
                                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6 px-6 border-t border-gray-50">
-                                    <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+                                    <div className="text-xs font-semibold tracking-widest">
                                         Displaying <span className="text-gray-900">{(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, sortedAndFilteredItems.length)}</span> of <span className="text-gray-900">{sortedAndFilteredItems.length}</span> holdings
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -833,7 +854,7 @@ export default function PortfolioPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 {/* Sector Concentration Risk List */}
                                 <div>
-                                    <h4 className="text-xs font-black text-slate-400 mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
+                                    <h4 className="text-xs font-black mb-4 tracking-[0.2em] flex items-center gap-2">
                                         Allocation Alerts
                                     </h4>
                                     <div className="space-y-2">
@@ -873,7 +894,7 @@ export default function PortfolioPage() {
                                 {/* Concentration & Volatility Risks */}
                                 <div className="space-y-6">
                                     <div>
-                                        <h4 className="text-xs font-black text-slate-400 mb-4 uppercase tracking-[0.2em]">Holdings Concentration</h4>
+                                        <h4 className="text-xs font-black tracking-[0.2em]">Holdings Concentration</h4>
                                         <ul className="space-y-2">
                                             {displayedItems
                                                 .filter(item => (Number(item.current_value) / totalCurrentValue) > 0.20)
@@ -924,15 +945,6 @@ export default function PortfolioPage() {
                         <CardHeader className="border-b border-gray-50 pb-2">
                             <CardTitle className="text-xl font-black text-slate-900 tracking-tight flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-blue-50 rounded-lg">
-                                        <Eye className="h-5 w-5 text-blue-600" />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span>Strategic Watchlist</span>
-                                        <span className="text-[10px] font-bold text-blue-500/70 uppercase tracking-widest mt-1">High-Conviction Surveillance</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3">
                                     <div className="relative">
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
                                         <Input
@@ -974,6 +986,7 @@ export default function PortfolioPage() {
                                                 <TableHead className="text-right font-bold text-gray-900">Day Change</TableHead>
                                                 <TableHead className="text-right font-bold text-gray-900">RSI (14)</TableHead>
                                                 <TableHead className="text-right font-bold text-gray-900">ROC (14)</TableHead>
+                                                <TableHead className="text-right font-bold text-gray-900">Signal</TableHead>
                                                 <TableHead className="text-right font-bold text-gray-900">Signal Proximity</TableHead>
                                                 <TableHead className="text-right font-bold text-gray-900">Tracked Since</TableHead>
                                                 <TableHead className="w-[80px] pr-6"></TableHead>
@@ -1035,6 +1048,43 @@ export default function PortfolioPage() {
                                                             {item.roc !== null && item.roc !== undefined ? (
                                                                 <div className={`font-black ${Number(item.roc) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                                                     {Number(item.roc) >= 0 ? '+' : ''}{Number(item.roc).toFixed(1)}%
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-gray-300">--</span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="text-right py-4">
+                                                            {item.signals ? (
+                                                                <div className="flex justify-end group/signal relative">
+                                                                    <Badge
+                                                                        variant="outline"
+                                                                        className={`
+                                                                            ${item.signals.summary === 'BUY' ? 'bg-green-50 text-green-700 border-green-200' : ''}
+                                                                            ${item.signals.summary === 'SELL' ? 'bg-red-50 text-red-700 border-red-200' : ''}
+                                                                            ${item.signals.summary === 'HOLD' ? 'bg-slate-50 text-slate-700 border-slate-200' : ''}
+                                                                            ${item.signals.summary === 'NEUTRAL' ? 'bg-gray-50 text-gray-500 border-gray-200' : ''}
+                                                                            ${item.signals.summary === 'MIXED' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : ''}
+                                                                            cursor-help
+                                                                        `}
+                                                                    >
+                                                                        {item.signals.summary}
+                                                                    </Badge>
+                                                                    {/* Tooltip */}
+                                                                    <div className="absolute right-0 top-full mt-2 w-64 bg-slate-900 text-white text-xs rounded-lg p-3 opacity-0 group-hover/signal:opacity-100 pointer-events-none transition-opacity z-50 shadow-xl">
+                                                                        <div className="font-bold border-b border-slate-700 pb-1 mb-2 flex justify-between">
+                                                                            <span>Signals ({item.signals.latest_date})</span>
+                                                                        </div>
+                                                                        <div className="space-y-1.5">
+                                                                            {item.signals.details.map((s, i) => (
+                                                                                <div key={i} className="flex justify-between items-start gap-2">
+                                                                                    <span className="text-slate-300">{s.strategy_name}</span>
+                                                                                    <span className={`font-bold ${s.signal === 'BUY' ? 'text-green-400' :
+                                                                                        s.signal === 'SELL' ? 'text-red-400' : 'text-slate-400'
+                                                                                        }`}>{s.signal}</span>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                             ) : (
                                                                 <span className="text-gray-300">--</span>
@@ -1177,7 +1227,7 @@ export default function PortfolioPage() {
 
                     <div className="p-6 space-y-4">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Stock Ticker</label>
+                            <label className="text-[10px] font-black text-slate-400 tracking-widest ml-1">Symbol</label>
                             {selectedWatchlistItem ? (
                                 <div className="h-12 flex items-center px-4 bg-slate-50 border border-slate-100 rounded-xl font-medium text-lg text-slate-900">
                                     {selectedWatchlistItem.ticker}
@@ -1186,14 +1236,14 @@ export default function PortfolioPage() {
                                 <CompanySelect
                                     value={watchlistForm.ticker}
                                     onChange={(val) => setWatchlistForm({ ...watchlistForm, ticker: val })}
-                                    className="h-12 bg-white border-blue-100 uppercase font-medium text-lg"
+                                    className="h-12 bg-white border-blue-100 font-medium text-lg"
                                 />
                             )}
                         </div>
 
                         <div className="grid grid-cols-1 gap-4">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Target Entry Price (Rs.)</label>
+                                <label className="text-[10px] font-black text-slate-400 tracking-widest ml-1">Target Entry Price (Rs.)</label>
                                 <div className="relative">
                                     <Target className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-500" />
                                     <Input
@@ -1208,12 +1258,12 @@ export default function PortfolioPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Strategic Notes</label>
+                            <label className="text-[10px] font-black text-slate-400 tracking-widest ml-1">Strategic Notes</label>
                             <textarea
                                 placeholder="Why follow this? Entry thesis..."
                                 value={watchlistForm.notes}
                                 onChange={(e) => setWatchlistForm({ ...watchlistForm, notes: e.target.value })}
-                                className="w-full min-h-[100px] p-3 rounded-xl border border-blue-50 bg-white font-bold text-sm text-slate-900 uppercase placeholder:text-slate-300 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all"
+                                className="w-full min-h-[100px] p-3 rounded-xl border border-blue-50 bg-white font-bold text-sm text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all"
                             />
                         </div>
                     </div>

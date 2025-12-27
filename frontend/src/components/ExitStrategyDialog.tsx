@@ -131,10 +131,10 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent showCloseButton={false} className="max-w-[95vw] sm:max-w-7xl xl:max-w-[1400px] max-h-[95vh] overflow-y-auto p-0 border-none shadow-2xl rounded-[2.5rem] bg-white">
+            <DialogContent showCloseButton={false} className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0 border-none shadow-2xl rounded-[2rem] bg-white font-sans">
                 <div className="flex flex-col">
                     {/* Header Section */}
-                    <div className="bg-slate-50/50 p-5 px-8 border-b border-gray-100/80">
+                    <div className="bg-slate-50/50 p-5 px-6 border-b border-gray-100/80">
                         <DialogHeader>
                             <div className="flex items-center justify-between w-full">
                                 <div className="flex items-center gap-4">
@@ -142,10 +142,10 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
                                         <Target className="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <DialogTitle className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                                        <DialogTitle className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
                                             Master Exit Plan: {portfolioItem?.ticker}
                                             {isUnderwater ? (
-                                                <Badge className="ml-2 bg-red-600 text-white border-none text-[10px] px-2 py-0.5 font-black animate-pulse">
+                                                <Badge className="ml-2 bg-red-600 text-white border-none text-[10px] px-2 py-0.5 font-bold animate-pulse">
                                                     UNDERWATER
                                                 </Badge>
                                             ) : (
@@ -187,7 +187,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
                             <>
                                 {/* Transaction History Section */}
                                 {transactions.length > 0 && (
-                                    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden border-l-4 border-l-blue-500 animate-in fade-in slide-in-from-top-2 duration-500">
+                                    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-2 duration-500">
                                         <div className="bg-slate-50/50 px-6 py-3 border-b border-slate-100 flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <BookOpen className="h-4 w-4 text-blue-600" />
@@ -256,32 +256,32 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
                                         <div>
                                             <div className="flex items-center gap-2 mb-2">
                                                 <div className="h-4 w-1 bg-blue-500 rounded-full" />
-                                                <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Suggested AI Game Plans</Label>
+                                                <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Suggested AI Game Plans</Label>
                                             </div>
                                             <div className="flex flex-row gap-3">
                                                 {Object.entries(strategies).map(([key, option]) => (
                                                     <div
                                                         key={key}
                                                         onClick={() => handleApplyStrategy(key)}
-                                                        className={`flex-1 p-2.5 border-2 rounded-xl cursor-pointer transition-all duration-300 group relative min-w-0
+                                                        className={`flex-1 p-3 border-2 rounded-xl cursor-pointer transition-all duration-300 group relative min-w-0
                                                         ${selectedStrategy === key
                                                                 ? 'border-blue-500 bg-blue-50/30'
                                                                 : 'bg-white hover:border-blue-200 hover:bg-slate-50 border-slate-100'}`}
                                                     >
                                                         {selectedStrategy === key && (
-                                                            <div className="absolute top-[-8px] left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter">
+                                                            <div className="absolute top-[-8px] left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter">
                                                                 Active
                                                             </div>
                                                         )}
                                                         <div className="flex justify-between items-center mb-2">
-                                                            <span className={`font-black text-xs uppercase tracking-tight ${selectedStrategy === key ? 'text-blue-700' : 'text-slate-600'}`}>
+                                                            <span className={`font-bold text-xs uppercase tracking-tight ${selectedStrategy === key ? 'text-blue-700' : 'text-slate-600'}`}>
                                                                 {option.name}
                                                             </span>
                                                             {key === 'atr_conservative' && <Shield className="h-3.5 w-3.5 text-blue-600" />}
                                                             {key === 'swing' && <BarChart3 className="h-3.5 w-3.5 text-purple-600" />}
                                                             {key === 'fixed' && <Target className="h-3.5 w-3.5 text-green-600" />}
                                                         </div>
-                                                        <div className="grid grid-cols-2 gap-2 text-[10px] font-black mb-3">
+                                                        <div className="grid grid-cols-2 gap-2 text-[10px] font-bold mb-3">
                                                             <div className="bg-red-50 text-red-600 px-2 py-1 rounded-lg text-center border border-red-100/50">
                                                                 SL {option.sl.toFixed(0)}
                                                             </div>
@@ -289,7 +289,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
                                                                 TP {option.tp.toFixed(0)}
                                                             </div>
                                                         </div>
-                                                        <p className="text-[10px] leading-relaxed text-slate-400 font-medium group-hover:text-slate-500">
+                                                        <p className="text-[10px] leading-relaxed text-slate-400 font-medium group-hover:text-slate-500 line-clamp-2">
                                                             {option.desc}
                                                         </p>
                                                     </div>
@@ -303,19 +303,20 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
                                         <div className="p-5 bg-slate-50/40 rounded-3xl border border-slate-100 shadow-sm space-y-4">
                                             <div className="flex items-center gap-2">
                                                 <Zap className="h-4 w-4 text-blue-600 fill-blue-600" />
-                                                <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-600 block">Execution Parameters</Label>
+                                                <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-blue-600 block">Execution Parameters</Label>
                                             </div>
 
                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                                 <div className="space-y-1.5">
-                                                    <Label className="text-[11px] text-slate-500 font-black uppercase tracking-tighter">Target 1 (Primary)</Label>
+                                                    <Label className="text-[11px] text-slate-500 font-bold uppercase tracking-tighter">Target 1 (Primary)</Label>
                                                     <div className="relative group">
                                                         <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-green-500 group-hover:scale-110 transition-transform" />
                                                         <Input
+                                                            type="number"
                                                             value={tp}
                                                             onChange={(e) => { setTp(e.target.value); setSelectedStrategy('MANUAL'); }}
                                                             placeholder="Price"
-                                                            className="pl-9 text-sm font-black h-10 bg-white border-slate-200 rounded-xl shadow-sm focus-visible:ring-blue-500/20"
+                                                            className="pl-9 text-sm font-bold h-10 bg-white border-slate-200 rounded-xl shadow-sm focus-visible:ring-blue-500/20"
                                                         />
                                                     </div>
                                                 </div>
@@ -324,10 +325,11 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
                                                     <div className="relative opacity-80 hover:opacity-100 transition-opacity">
                                                         <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-green-400" />
                                                         <Input
+                                                            type="number"
                                                             value={tp2}
                                                             onChange={(e) => { setTp2(e.target.value); setSelectedStrategy('MANUAL'); }}
                                                             placeholder="Scale Out"
-                                                            className="pl-9 text-sm font-black h-10 bg-white border-slate-100 rounded-xl shadow-sm italic placeholder:text-slate-300"
+                                                            className="pl-9 text-sm font-bold h-10 bg-white border-slate-100 rounded-xl shadow-sm italic placeholder:text-slate-300"
                                                         />
                                                     </div>
                                                 </div>
@@ -336,10 +338,11 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
                                                     <div className="relative opacity-60 hover:opacity-100 transition-opacity">
                                                         <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-green-300" />
                                                         <Input
+                                                            type="number"
                                                             value={tp3}
                                                             onChange={(e) => { setTp3(e.target.value); setSelectedStrategy('MANUAL'); }}
                                                             placeholder="Moonbag"
-                                                            className="pl-9 text-sm font-black h-10 bg-white border-slate-100 rounded-xl shadow-sm italic placeholder:text-slate-300"
+                                                            className="pl-9 text-sm font-bold h-10 bg-white border-slate-100 rounded-xl shadow-sm italic placeholder:text-slate-300"
                                                         />
                                                     </div>
                                                 </div>
@@ -348,15 +351,16 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
                                             <div className="pt-3 border-t border-slate-200/50">
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between items-center">
-                                                        <Label className="text-[11px] text-red-500 font-black uppercase tracking-[0.2em]">Master Stop Loss</Label>
-                                                        <Badge className="bg-red-50 text-red-600 border-red-100 text-[10px] font-black">HARD STOP</Badge>
+                                                        <Label className="text-[11px] text-red-500 font-bold uppercase tracking-[0.2em]">Master Stop Loss</Label>
+                                                        <Badge className="bg-red-50 text-red-600 border-red-100 text-[10px] font-bold">HARD STOP</Badge>
                                                     </div>
                                                     <div className="relative">
                                                         <TrendingDown className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-red-500" />
                                                         <Input
+                                                            type="number"
                                                             value={sl}
                                                             onChange={(e) => { setSl(e.target.value); setSelectedStrategy('MANUAL'); }}
-                                                            className="pl-11 font-black text-red-600 h-12 text-xl bg-white border-slate-200 rounded-xl shadow-lg focus-visible:ring-red-500/20"
+                                                            className="pl-11 font-bold text-red-600 h-12 text-xl bg-white border-slate-200 rounded-xl shadow-lg focus-visible:ring-red-500/20"
                                                         />
                                                     </div>
                                                 </div>
@@ -369,7 +373,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
                                         <div className="p-5 bg-white rounded-3xl border border-slate-100 shadow-sm h-full flex flex-col">
                                             <div className="flex items-center gap-2 mb-3">
                                                 <Quote className="h-4 w-4 text-slate-400" />
-                                                <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Trade Thesis</Label>
+                                                <Label className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Trade Thesis</Label>
                                             </div>
                                             <Textarea
                                                 placeholder="Document your rationale for this exit plan..."
@@ -379,10 +383,10 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
                                             />
                                             <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
                                                 <div className="flex flex-col">
-                                                    <span className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Risk/Reward</span>
+                                                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Risk/Reward</span>
                                                     <div className="flex items-center gap-2 mt-0.5">
                                                         <BarChart3 className="h-4 w-4 text-blue-600" />
-                                                        <span className="text-lg font-black text-blue-700">{calculateRiskReward() || 'N/A'}</span>
+                                                        <span className="text-lg font-bold text-blue-700">{calculateRiskReward() || 'N/A'}</span>
                                                     </div>
                                                 </div>
                                                 <div className="p-2 bg-blue-50 rounded-xl">
@@ -400,14 +404,14 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
                         <Button
                             variant="ghost"
                             onClick={() => onOpenChange(false)}
-                            className="font-black text-slate-400 hover:text-slate-500 px-6 uppercase tracking-widest text-[10px] h-9 rounded-lg"
+                            className="font-bold text-slate-400 hover:text-slate-500 px-6 uppercase tracking-widest text-[10px] h-9 rounded-lg"
                         >
                             Discard Changes
                         </Button>
                         <Button
                             onClick={handleSave}
                             disabled={saving || loading}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 h-9 rounded-lg font-black shadow-md shadow-blue-500/10 transition-all hover:scale-[1.01] active:scale-[0.99]"
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 h-9 rounded-lg font-bold shadow-md shadow-blue-500/10 transition-all hover:scale-[1.01] active:scale-[0.99]"
                         >
                             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> : <Save className="h-3.5 w-3.5 mr-2" />}
                             <span className="uppercase tracking-widest text-[10px]">Commit Strategy</span>
