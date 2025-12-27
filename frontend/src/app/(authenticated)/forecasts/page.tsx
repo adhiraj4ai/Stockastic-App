@@ -13,7 +13,7 @@ import {
     BrainCircuit, ExternalLink, StopCircle, ChevronDown, ChevronUp,
     AlertTriangle, Beaker, Zap
 } from 'lucide-react';
-import api, { mlApi } from '@/lib/api';
+import api from '@/lib/api';
 import { toast } from 'sonner';
 
 interface ForecastModel {
@@ -69,7 +69,7 @@ export default function ForecastsPage() {
     const fetchModels = useCallback(async () => {
         try {
             // Only fetch published models for this list
-            const response = await mlApi.get(`/api/forecasts/?is_published=true&page=${modelsPage}&page_size=${modelsPageSize}`);
+            const response = await api.get(`/api/ml/forecasts/?is_published=true&page=${modelsPage}&page_size=${modelsPageSize}`);
             setModels(response.data.results || response.data);
             if (response.data.count) {
                 setModelsTotalCount(response.data.count);
@@ -113,7 +113,7 @@ export default function ForecastsPage() {
         if (!confirm('Are you sure you want to delete this model?')) return;
 
         try {
-            await mlApi.delete(`/api/forecasts/${modelId}/`);
+            await api.delete(`/api/ml/forecasts/${modelId}/`);
             fetchModels();
         } catch (error) {
             console.error('Failed to delete model:', error);
@@ -132,7 +132,7 @@ export default function ForecastsPage() {
         if (!jobToStop) return;
 
         try {
-            await mlApi.post(`/api/training-jobs/${jobToStop}/stop/`);
+            await api.post(`/api/ml/training-jobs/${jobToStop}/stop/`);
             setJobToStop(null);
             fetchJobs(); // Refresh the jobs list
             // Optimization: Optimistically update local state to feel instant

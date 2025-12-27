@@ -177,20 +177,49 @@ def get_technical_indicators(ticker, days=365):
 
 
         # --- 5. Support & Resistance ---
-        # Pivot Points (Classic)
-        pivots = df.ta.pivots(method='classic', anchor='D') 
-        current_p, current_r1, current_s1, current_r2, current_s2 = None, None, None, None, None
+        # Rolling Yearly Pivots (as requested: "Always consider a year of data")
+        current_p, current_r1, current_s1, current_r2, current_s2, current_r3, current_s3 = None, None, None, None, None, None, None
         
-        if pivots is not None and not pivots.empty:
-             last_p = pivots.iloc[-1]
-             last_p = pivots.iloc[-1]
-             
-             # Try standard pandas_ta names (PIVOTS_CLAS_D_P) or short names
-             current_p = get_scalar(last_p.get('PIVOTS_CLAS_D_P')) or get_scalar(last_p.get('P'))
-             current_r1 = get_scalar(last_p.get('PIVOTS_CLAS_D_R1')) or get_scalar(last_p.get('R1'))
-             current_s1 = get_scalar(last_p.get('PIVOTS_CLAS_D_S1')) or get_scalar(last_p.get('S1'))
-             current_r2 = get_scalar(last_p.get('PIVOTS_CLAS_D_R2')) or get_scalar(last_p.get('R2'))
-             current_s2 = get_scalar(last_p.get('PIVOTS_CLAS_D_S2')) or get_scalar(last_p.get('S2'))
+        if len(df) >= 1:
+            # Use strict 3-month window (90 calendar days) as requested
+            last_date = df.index[-1]
+            start_date = last_date - pd.Timedelta(days=90)
+            window = df[df.index > start_date]
+            
+            if not window.empty:
+                year_high = window['high'].max()
+                year_low = window['low'].min()
+                year_close = window['close'].iloc[-1]
+                
+                # Pivot Point Calculation (Classic) based on 1-year range
+                # P = (H + L + C) / 3
+                p = (year_high + year_low + year_close) / 3
+                
+                # R1 = 2*P - L
+                r1 = (2 * p) - year_low
+                
+                # S1 = 2*P - H
+                s1 = (2 * p) - year_high
+                
+                # R2 = P + (H - L)
+                r2 = p + (year_high - year_low)
+                
+                # S2 = P - (H - L)
+                s2 = p - (year_high - year_low)
+    
+                # R3 = P + 2*(H - L)
+                r3 = p + 2 * (year_high - year_low)
+                
+                # S3 = P - 2*(H - L)
+                s3 = p - 2 * (year_high - year_low)
+                
+                current_p = p
+                current_r1 = r1
+                current_s1 = s1
+                current_r2 = r2
+                current_s2 = s2
+                current_r3 = r3
+                current_s3 = s3
 
 
         indicators = []
@@ -279,6 +308,8 @@ def get_technical_indicators(ticker, days=365):
             add_ind('Support & Resistance', 'Support 1 (S1)', current_s1, current_s1)
             add_ind('Support & Resistance', 'Resistance 2 (R2)', current_r2, current_r2)
             add_ind('Support & Resistance', 'Support 2 (S2)', current_s2, current_s2)
+            add_ind('Support & Resistance', 'Resistance 3 (R3)', current_r3, current_r3)
+            add_ind('Support & Resistance', 'Support 3 (S3)', current_s3, current_s3)
 
         return indicators
 
