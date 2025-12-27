@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Fragment } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { TrendingUp, TrendingDown, Minus, Search, BarChart3, Grid3x3, List, Info, RefreshCw, Zap, ChevronDown, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Search, BarChart3, Grid3x3, List, Info, RefreshCw, Zap, ChevronDown, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -47,6 +47,21 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
             direction = 'desc';
         }
         setSortConfig({ key, direction });
+    };
+
+    const handleAddToWatchlist = async (ticker: string, e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent row expansion
+        try {
+            await api.post('/api/stocks/watchlist/', { ticker });
+            toast.success(`Added ${ticker} to watchlist`);
+        } catch (error: any) {
+            console.error('Failed to add to watchlist', error);
+            if (error.response?.data?.ticker) { // Backend validation error for duplicate
+                toast.error(`${ticker} is already in your watchlist`);
+            } else {
+                toast.error('Failed to add to watchlist');
+            }
+        }
     };
 
     const SortIcon = ({ columnKey }: { columnKey: string }) => {
@@ -144,13 +159,13 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                         Date <SortIcon columnKey="date" />
                                     </div>
                                 </th>
+                                <th className="text-left p-3 font-bold text-slate-600 text-sm w-32">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {sortedGroups.map(group => (
-                                <>
+                                <Fragment key={group.id}>
                                     <tr
-                                        key={group.id}
                                         onClick={() => toggleGroup(group.id)}
                                         className="hover:bg-slate-50 transition-colors cursor-pointer group"
                                     >
@@ -169,12 +184,26 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                         </td>
                                         <td className="p-3 text-slate-600">Rs. {group.lastClose}</td>
                                         <td className="p-3 text-slate-500 text-sm">{group.date}</td>
+                                        <td className="p-3">
+                                            {group.signalType === 'BUY' && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="h-8 text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-200 px-2 shadow-sm"
+                                                    onClick={(e) => handleAddToWatchlist(group.symbol, e)}
+                                                    title="Add to Watchlist"
+                                                >
+                                                    <PlusCircle className="w-3.5 h-3.5 mr-1.5" />
+                                                    Watchlist
+                                                </Button>
+                                            )}
+                                        </td>
                                     </tr>
 
                                     {/* Expanded Details Row */}
                                     {expandedGroups.has(group.id) && (
                                         <tr className="bg-slate-50/50">
-                                            <td colSpan={6} className="p-0">
+                                            <td colSpan={7} className="p-0">
                                                 <div className="px-12 py-4 space-y-2 border-l-4 border-l-slate-200 ml-6 my-2">
                                                     <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
                                                         Contributing Strategies
@@ -197,7 +226,7 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                             </td>
                                         </tr>
                                     )}
-                                </>
+                                </Fragment>
                             ))}
                         </tbody>
                     </table>
@@ -289,7 +318,7 @@ function StrategyCard({ signal }: { signal: StrategySignal }) {
 export default function SignalsPage() {
     const [signals, setSignals] = useState<StrategySignal[]>([]);
     const [loading, setLoading] = useState(true);
-    const [viewMode, setViewMode] = useState<ViewMode>('by-symbol');
+    const [viewMode, setViewMode] = useState<ViewMode>('all');
     const [signalFilter, setSignalFilter] = useState<SignalFilter>('ALL');
     const [searchTerm, setSearchTerm] = useState('');
     const [generating, setGenerating] = useState(false);
