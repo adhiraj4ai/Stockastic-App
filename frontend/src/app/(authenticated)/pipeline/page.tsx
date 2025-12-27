@@ -50,6 +50,11 @@ export default function PipelinePage() {
     const [signalLogs, setSignalLogs] = useState<LogEntry[]>([]);
     const [showSignalLogs, setShowSignalLogs] = useState(false);
 
+    // Technical Indicators State
+    const [indicatorStatus, setIndicatorStatus] = useState<'idle' | 'running' | 'completed' | 'error'>('idle');
+    const [indicatorLogs, setIndicatorLogs] = useState<LogEntry[]>([]);
+    const [showIndicatorLogs, setShowIndicatorLogs] = useState(false);
+
     const fetchHistory = async () => {
         setLogsLoading(true);
         try {
@@ -65,6 +70,93 @@ export default function PipelinePage() {
     useEffect(() => {
         fetchHistory();
     }, []);
+
+    const handleRunIndicators = async () => {
+        if (indicatorStatus === 'running') return;
+
+        setIndicatorStatus('running');
+        setIndicatorLogs([]);
+        setShowIndicatorLogs(true);
+
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const url = `${apiUrl}/api/stocks/pipeline/trigger_indicators_stream/`;
+        const token = localStorage.getItem('access_token');
+
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    toast.error("Session expired. Please login again.");
+                } else {
+                    toast.error(`Connection failed: ${response.statusText}`);
+                }
+                setIndicatorStatus('error');
+                return;
+            }
+
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+
+            if (!reader) {
+                toast.error("Failed to initialize stream reader");
+                setIndicatorStatus('error');
+                return;
+            }
+
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine || !trimmedLine.startsWith('data: ')) continue;
+
+                    try {
+                        const jsonStr = trimmedLine.substring(6);
+                        const data = JSON.parse(jsonStr);
+
+                        if (data.type === 'done') {
+                            setIndicatorStatus('completed');
+                            toast.success("Indicators updated successfully!");
+                            return;
+                        }
+
+                        if (data.type === 'error') {
+                            setIndicatorStatus('error');
+                            toast.error(data.message || "Error updating indicators");
+                            return;
+                        }
+
+                        if (data.type === 'log' || data.type === 'status') {
+                            setIndicatorLogs(prev => [...prev, {
+                                type: data.type as any,
+                                message: data.message,
+                                timestamp: new Date()
+                            }]);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing stream line:', trimmedLine, e);
+                    }
+                }
+            }
+
+        } catch (error) {
+            console.error("Stream fetch failed:", error);
+            setIndicatorStatus('error');
+            toast.error("Connection to log stream lost");
+        }
+    };
 
     const handleRunSignals = async () => {
         if (signalStatus === 'running') return;
@@ -271,9 +363,21 @@ export default function PipelinePage() {
                             <DailyPriceUpload onSuccess={fetchHistory} />
                         </div>
 
-                        {/* Step 3: Signal Generation (The new "Boot Process") */}
+                        {/* Step 3: Update Technical Indicators */}
                         <PipelineStep
-                            title="3. Generate Strategy Signals"
+                            title="3. Update Technical Indicators"
+                            description="Recalculate RSI, MACD, SMAs, and Sector stats for all stocks."
+                            status={indicatorStatus}
+                            icon={<Activity className="w-6 h-6" />}
+                            onRun={handleRunIndicators}
+                            logs={indicatorLogs}
+                            showLogs={showIndicatorLogs}
+                            onToggleLogs={() => setShowIndicatorLogs(!showIndicatorLogs)}
+                        />
+
+                        {/* Step 4: Signal Generation (The new "Boot Process") */}
+                        <PipelineStep
+                            title="4. Generate Strategy Signals"
                             description="Run backtests across all active strategies to generate fresh BUY/SELL signals."
                             status={signalStatus}
                             icon={<Cpu className="w-6 h-6" />}

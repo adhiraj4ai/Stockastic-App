@@ -997,55 +997,79 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                 </div>
                                             </div>
 
-                                            <div className="overflow-hidden rounded-2xl border border-slate-100">
-                                                <table className="w-full text-sm">
-                                                    <thead className="bg-slate-50 border-b border-slate-100">
-                                                        <tr>
-                                                            <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[9px]">Indicator</th>
-                                                            <th className="px-6 py-4 text-center font-bold text-slate-400 uppercase tracking-widest text-[9px]">Signal</th>
-                                                            <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[9px]">Sector Range (Low - High)</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-slate-100 bg-white/50">
-                                                        {[
-                                                            { name: 'RSI (14)', label: 'RSI' },
-                                                            { name: 'MACD (12, 26, 9)', label: 'MACD' },
-                                                            { name: 'ADX (14)', label: 'ADX' },
-                                                            { name: '20-Day SMA', label: '20 SMA' },
-                                                            { name: '50-Day SMA', label: '50 SMA' },
-                                                            { name: '200-Day SMA', label: '200 SMA' },
-                                                            { name: 'Bollinger Bands', label: 'BB' }
-                                                        ].map((metric, i) => {
-                                                            const indicator = data.fundamental?.technical_indicators?.find(ind => ind.name.toLowerCase().includes(metric.label.toLowerCase())) ||
-                                                                data.fundamental?.technical_indicators?.find(ind => ind.name === metric.name);
-                                                            const displayValue = indicator?.value || '-';
+                                            <div className="p-6">
+                                                <Tabs defaultValue="Momentum" className="w-full">
+                                                    <TabsList className="grid w-full grid-cols-5 mb-6 p-1 bg-slate-100/80 rounded-xl">
+                                                        {['Momentum', 'Trend', 'Volatility', 'Volume', 'Support & Resistance'].map(cat => (
+                                                            <TabsTrigger
+                                                                key={cat}
+                                                                value={cat}
+                                                                className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all duration-200 text-[10px] sm:text-xs"
+                                                            >
+                                                                {cat}
+                                                            </TabsTrigger>
+                                                        ))}
+                                                    </TabsList>
 
-                                                            return (
-                                                                <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
-                                                                    <td className="px-6 py-4 font-bold text-slate-700 whitespace-nowrap">{metric.name}</td>
-                                                                    <td className="px-6 py-4 text-center">
-                                                                        <span className="px-2.5 py-1 rounded bg-emerald-50 text-emerald-600 font-bold text-xs ring-1 ring-emerald-100">{displayValue}</span>
-                                                                    </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <div className="flex items-center gap-4">
-                                                                            <div className="flex flex-col min-w-[40px]">
-                                                                                <span className="text-xs text-rose-500 font-bold uppercase">{indicator?.sector_low || '-'}</span>
-                                                                                <span className="text-[8px] text-slate-400 font-mono leading-tight">{indicator?.sector_low_ticker || ''}</span>
-                                                                            </div>
-                                                                            <div className="flex-1 h-1 bg-slate-100 rounded-full relative">
-                                                                                <div className="absolute top-1/2 left-3/4 w-1.5 h-1.5 -translate-y-1/2 bg-emerald-500 rounded-full shadow-sm" />
-                                                                            </div>
-                                                                            <div className="flex flex-col items-end min-w-[40px]">
-                                                                                <span className="text-xs text-emerald-500 font-bold uppercase">{indicator?.sector_high || '-'}</span>
-                                                                                <span className="text-[8px] text-slate-400 font-mono leading-tight">{indicator?.sector_high_ticker || ''}</span>
-                                                                            </div>
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                            );
-                                                        })}
-                                                    </tbody>
-                                                </table>
+                                                    {['Momentum', 'Trend', 'Volatility', 'Volume', 'Support & Resistance'].map(category => {
+                                                        const indicators = data.fundamental?.technical_indicators?.filter((ind: any) => ind.category === category) || [];
+
+                                                        return (
+                                                            <TabsContent key={category} value={category} className="mt-0 focus-visible:outline-none ring-offset-background">
+                                                                <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
+                                                                    <table className="w-full text-sm">
+                                                                        <thead className="bg-slate-50/80 border-b border-slate-100 backdrop-blur-sm">
+                                                                            <tr>
+                                                                                <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[9px]">Indicator</th>
+                                                                                <th className="px-6 py-4 text-center font-bold text-slate-400 uppercase tracking-widest text-[9px]">Value</th>
+                                                                                <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[9px]">Sector Range (Low - High)</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody className="divide-y divide-slate-100 bg-white">
+                                                                            {indicators.length > 0 ? (
+                                                                                indicators.map((indicator: any, i: number) => (
+                                                                                    <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
+                                                                                        <td className="px-6 py-4 font-bold text-slate-700 whitespace-nowrap">{indicator.name}</td>
+                                                                                        <td className="px-6 py-4 text-center">
+                                                                                            <span className="px-2.5 py-1 rounded bg-slate-50 text-slate-700 font-bold text-xs ring-1 ring-slate-200 group-hover:bg-white group-hover:shadow-sm transition-all">{indicator.value}</span>
+                                                                                        </td>
+                                                                                        <td className="px-6 py-4">
+                                                                                            {indicator.sector_high !== '-' ? (
+                                                                                                <div className="flex items-center gap-4">
+                                                                                                    <div className="flex flex-col min-w-[40px]">
+                                                                                                        <span className="text-xs text-rose-500 font-bold uppercase">{indicator.sector_low}</span>
+                                                                                                        {/* <span className="text-[8px] text-slate-400 font-mono leading-tight">{indicator.sector_low_ticker}</span> */}
+                                                                                                    </div>
+                                                                                                    <div className="flex-1 h-1.5 bg-slate-100 rounded-full relative overflow-hidden">
+                                                                                                        <div className="absolute inset-0 bg-gradient-to-r from-rose-100 via-slate-100 to-emerald-100 opacity-50"></div>
+                                                                                                        {/* Calculate position based on math if possible, else center or use simplified visual */}
+                                                                                                        <div className="absolute top-0 bottom-0 w-1 bg-slate-400 rounded-full left-1/2 -translate-x-1/2 ring-2 ring-white"></div>
+                                                                                                    </div>
+                                                                                                    <div className="flex flex-col items-end min-w-[40px]">
+                                                                                                        <span className="text-xs text-emerald-500 font-bold uppercase">{indicator.sector_high}</span>
+                                                                                                        {/* <span className="text-[8px] text-slate-400 font-mono leading-tight">{indicator.sector_high_ticker}</span> */}
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            ) : (
+                                                                                                <span className="text-xs text-slate-400 italic">No Sector Data</span>
+                                                                                            )}
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                ))
+                                                                            ) : (
+                                                                                <tr>
+                                                                                    <td colSpan={3} className="px-6 py-8 text-center text-slate-400 italic">
+                                                                                        No indicators available for this category.
+                                                                                    </td>
+                                                                                </tr>
+                                                                            )}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </TabsContent>
+                                                        );
+                                                    })}
+                                                </Tabs>
                                             </div>
                                         </div>
                                     </div>

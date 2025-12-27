@@ -3543,6 +3543,7 @@ class PipelineViewSet(viewsets.ViewSet):
         'sync_floorsheet': 'Sync Floorsheet Data',
         'update_indexes': 'Update DB Indexes',
         'generate_signals': 'Generate Strategy Signals',
+        'update_indicators': 'Update Technical Indicators',
     }
 
     @action(detail=False, methods=['get'])
@@ -3635,6 +3636,51 @@ class PipelineViewSet(viewsets.ViewSet):
             'status': 'success',
             'message': 'Signal generation process started in the background.'
         })
+
+    @action(detail=False, methods=['get'])
+    def trigger_indicators_stream(self, request):
+        """
+        Streams logs from technical indicator update process.
+        """
+        import sys
+        from django.conf import settings
+
+        def event_stream():
+            # Get the base directory where manage.py is located
+            base_dir = settings.BASE_DIR
+            manage_py = os.path.join(base_dir, 'manage.py')
+            
+            cmd = [sys.executable, manage_py, 'update_technical_indicators']
+
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                universal_newlines=True,
+                cwd=base_dir
+            )
+
+            yield "data: {\"type\": \"status\", \"message\": \"Initializing indicator update...\"}\n\n"
+            
+            for line in process.stdout:
+                if line.strip():
+                    # Escape quotes in the message
+                    escaped_message = line.strip().replace('"', '\\"')
+                    yield f"data: {{\"type\": \"log\", \"message\": \"{escaped_message}\"}}\n\n"
+
+            process.wait()
+            if process.returncode == 0:
+                yield "data: {\"type\": \"status\", \"message\": \"Technical indicators updated successfully.\"}\n\n"
+                yield "data: {\"type\": \"done\"}\n\n"
+            else:
+                yield f"data: {{\"type\": \"error\", \"message\": \"Process exited with code {process.returncode}\"}}\n\n"
+
+        response = StreamingResponse(event_stream(), content_type='text/event-stream')
+        response['Cache-Control'] = 'no-cache'
+        response['X-Accel-Buffering'] = 'no'  # Disable buffering for nginx
+        return response
 
     @action(detail=False, methods=['get'])
     def generate_signals_stream(self, request):
