@@ -17,7 +17,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
-import axios from "axios"
+import api from "@/lib/api"
 
 interface Company {
     symbol: string;
@@ -40,8 +40,7 @@ export function CompanySelect({ value, onChange, className }: CompanySelectProps
         const fetchCompanies = async () => {
             setLoading(true);
             try {
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                const response = await axios.get(`${apiUrl}/api/stocks/companies/`, {
+                const response = await api.get('/api/stocks/companies/', {
                     params: { search: search }
                 });
                 setCompanies(response.data);

@@ -5,6 +5,7 @@ class Company(models.Model):
     symbol = models.CharField(max_length=20, primary_key=True, db_index=True)
     name = models.CharField(max_length=255, db_column='companyName')
     sector = models.CharField(max_length=100, db_column='sectorName')
+    instrument_type = models.CharField(max_length=100, db_column='instrumentType', null=True, blank=True)
     status = models.CharField(max_length=1, default='A')
 
     class Meta:
@@ -250,6 +251,11 @@ class FinancialReport(models.Model):
             return f"{self.ticker} - {self.fiscal_year} (Annual)"
         return f"{self.ticker} - {self.fiscal_year} Q{self.quarter}"
 
+class ScopeType(models.TextChoices):
+    SYMBOL = 'SYMBOL', 'Single Symbol'
+    SECTOR = 'SECTOR', 'Sector'
+    ALL = 'ALL', 'All Market'
+
 class Strategy(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField()
@@ -267,8 +273,54 @@ class Strategy(models.Model):
     sharpe_ratio = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
     win_rate = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
 
+    # Recommendation / Publishing
+    # Published status is now tracked on individual StrategyExperiment models (is_published=True)
+    # Allows multiple published configurations (e.g. per symbol)
+
     def __str__(self):
         return self.name
+
+class StrategyExperiment(models.Model):
+    class RunType(models.TextChoices):
+        BACKTEST = 'BACKTEST', 'Backtest'
+        OPTIMIZATION = 'OPTIMIZATION', 'Optimization'
+
+    class Status(models.TextChoices):
+        SUCCESS = 'SUCCESS', 'Success'
+        FAILED = 'FAILED', 'Failed'
+
+    strategy = models.ForeignKey(Strategy, on_delete=models.CASCADE, related_name='experiments')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    
+    run_type = models.CharField(max_length=20, choices=RunType.choices)
+    scope_type = models.CharField(max_length=20, choices=ScopeType.choices)
+    scope_value = models.CharField(max_length=255) # "NABIL", "Banking", "ALL"
+    
+    start_date = models.DateField()
+    end_date = models.DateField()
+    is_published = models.BooleanField(default=False)
+    
+    # Input
+    parameters = models.JSONField(default=dict)
+    metrics = models.JSONField(default=dict) # Return, Sharpe, Win Rate etc.
+    
+    batch_id = models.UUIDField(null=True, blank=True, db_index=True)
+    plot_html = models.TextField(null=True, blank=True)
+    
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.SUCCESS)
+    error_log = models.TextField(blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['strategy', 'scope_type', 'scope_value']),
+            models.Index(fields=['created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.strategy.name} - {self.run_type} ({self.scope_value})"
 
 class DailyBuyerFloorsheet(models.Model):
     transaction_date = models.DateField(primary_key=True) # Fake PK for Django
@@ -343,8 +395,11 @@ class DailyCumulativeAccumulation(models.Model):
     transaction_date = models.DateField(db_index=True)
     entity_id = models.CharField(max_length=10, db_index=True) # Broker ID
     
-    daily_net = models.IntegerField(default=0) # Net change for the day
-    cumulative_net = models.IntegerField(default=0) # Running total
+    cumulative_buy = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    cumulative_sell = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    cumulative_buy_amount = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    cumulative_sell_amount = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    cumulative_net = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
@@ -413,3 +468,33 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.title}"
+
+class StrategySignal(models.Model):
+    SIGNAL_CHOICES = (
+        ('BUY', 'Buy'),
+        ('SELL', 'Sell'),
+        ('HOLD', 'Hold'),
+        ('NEUTRAL', 'Neutral'),
+    )
+
+    strategy = models.ForeignKey(Strategy, on_delete=models.CASCADE)
+    symbol = models.CharField(max_length=20)
+    date = models.DateField(help_text="The date of the signal (usually today)")
+    signal = models.CharField(max_length=10, choices=SIGNAL_CHOICES)
+    
+    # Optional debug info
+    last_close = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    metadata = models.JSONField(default=dict, blank=True) # E.g., {'orders_count': 1, 'position': 100}
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'strategy_signals'
+        unique_together = ('strategy', 'symbol', 'date')
+        ordering = ['-date', 'strategy__name']
+
+    def __str__(self):
+        return f"{self.symbol} - {self.strategy.name}: {self.signal} ({self.date})"
+
+

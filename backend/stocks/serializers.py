@@ -1,5 +1,14 @@
 from rest_framework import serializers
-from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, StockFundamental, PortfolioAccount, Dividend, FinancialReport, Strategy, Company, WatchlistItem, Notification
+import ast
+from .models import DailyStockPrice, DailyFloorsheet, PortfolioItem, PortfolioTransaction, StockFundamental, PortfolioAccount, Dividend, FinancialReport, Strategy, Company, WatchlistItem, Notification, StrategyExperiment, StrategySignal
+
+class StrategySignalSerializer(serializers.ModelSerializer):
+    strategy_name = serializers.CharField(source='strategy.name', read_only=True)
+    strategy_description = serializers.CharField(source='strategy.description', read_only=True)
+
+    class Meta:
+        model = StrategySignal
+        fields = ['id', 'strategy', 'strategy_name', 'strategy_description', 'symbol', 'date', 'signal', 'last_close', 'metadata', 'created_at']
 
 class DailyStockPriceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -73,10 +82,56 @@ class PortfolioTransactionSerializer(serializers.ModelSerializer):
 
 
 class StrategySerializer(serializers.ModelSerializer):
+    default_parameters = serializers.SerializerMethodField()
+    published_experiments = serializers.SerializerMethodField()
+
     class Meta:
         model = Strategy
-        fields = ['id', 'name', 'description', 'code', 'created_at', 'is_public', 'pnl_amount', 'pnl_percent', 'max_drawdown', 'sharpe_ratio', 'win_rate']
-        read_only_fields = ['id', 'created_at']
+        fields = ['id', 'name', 'description', 'code', 'created_at', 'is_public', 
+                  'pnl_amount', 'pnl_percent', 'max_drawdown', 'sharpe_ratio', 'win_rate', 'default_parameters',
+                  'published_experiments']
+        read_only_fields = ['id', 'created_at', 'published_experiments']
+
+    def get_default_parameters(self, obj):
+        if not obj.code:
+            return {}
+        
+        try:
+            tree = ast.parse(obj.code)
+            params = {}
+            
+            # Find the Strategy class definition
+            for node in tree.body:
+                if isinstance(node, ast.ClassDef):
+                    # Check if it inherits from Strategy (simple check)
+                    is_strategy = any(
+                        (isinstance(b, ast.Name) and b.id == 'Strategy') 
+                        for b in node.bases
+                    )
+                    
+                    if is_strategy:
+                        # Extract class-level assignments
+                        for item in node.body:
+                            if isinstance(item, ast.Assign):
+                                # Check targets (variables being assigned)
+                                for target in item.targets:
+                                    if isinstance(target, ast.Name):
+                                        key = target.id
+                                        # only extract simple literals
+                                        if isinstance(item.value, ast.Constant):
+                                            params[key] = item.value.value
+                                        # for older python < 3.8
+                                        elif isinstance(item.value, ast.Num):
+                                            params[key] = item.value.n
+                                        elif isinstance(item.value, ast.Str):
+                                            params[key] = item.value.s
+            return params
+        except Exception:
+            return {}
+
+    def get_published_experiments(self, obj):
+        experiments = obj.experiments.filter(is_published=True)
+        return StrategyExperimentSerializer(experiments, many=True).data
 
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
@@ -117,3 +172,32 @@ class NotificationSerializer(serializers.ModelSerializer):
         model = Notification
         fields = ['id', 'title', 'message', 'type', 'ticker', 'read', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+class StrategyExperimentSerializer(serializers.ModelSerializer):
+    strategy_name = serializers.CharField(source='strategy.name', read_only=True)
+    is_published = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = StrategyExperiment
+        fields = ['id', 'strategy', 'strategy_name', 'run_type', 'scope_type', 'scope_value', 
+                  'start_date', 'end_date', 'parameters', 'metrics', 'batch_id', 'status', 'error_log', 'created_at', 'is_published']
+
+    def get_strategy_name(self, obj):
+        return obj.strategy.name
+
+class StrategyExperimentDetailSerializer(serializers.ModelSerializer):
+    strategy_name = serializers.CharField(source='strategy.name', read_only=True)
+    siblings = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StrategyExperiment
+        fields = ['id', 'strategy', 'strategy_name', 'run_type', 'scope_type', 'scope_value', 
+                  'start_date', 'end_date', 'parameters', 'metrics', 'batch_id', 'plot_html', 'status', 'error_log', 'created_at', 'siblings']
+
+    def get_siblings(self, obj):
+        if not obj.batch_id:
+            return []
+        
+        # Return list of siblings (id and symbol/value) to allow switching
+        siblings = StrategyExperiment.objects.filter(batch_id=obj.batch_id).exclude(id=obj.id).only('id', 'scope_value')
+        return [{'id': s.id, 'symbol': s.scope_value} for s in siblings]
