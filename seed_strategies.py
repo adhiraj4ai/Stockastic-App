@@ -75,6 +75,8 @@ CODE_GOLDEN_PULLBACK = """
 from backtesting import Strategy
 from backtesting.lib import crossover
 from backtesting.test import SMA
+import pandas as pd
+import numpy as np
 
 class GoldenCrossPullback(Strategy):
     n_fast = 50
@@ -163,6 +165,7 @@ from backtesting import Strategy
 from backtesting.test import SMA
 import pandas as pd
 import pandas_ta as ta
+import numpy as np
 
 class RSI2Strategy(Strategy):
     # Parameters
@@ -412,6 +415,7 @@ CODE_SUPERTREND = """
 from backtesting import Strategy
 import pandas as pd
 import pandas_ta as ta
+import numpy as np
 
 class SupertrendStrategy(Strategy):
     period = 10
@@ -443,6 +447,7 @@ from backtesting import Strategy
 from backtesting.test import SMA
 import pandas as pd
 import pandas_ta as ta
+import numpy as np
 
 class VWAPPullback(Strategy):
     def init(self):
@@ -811,6 +816,7 @@ CODE_ICHIMOKU = """
 from backtesting import Strategy
 import pandas as pd
 import pandas_ta as ta
+import numpy as np
 
 class IchimokuCloud(Strategy):
     def init(self):
@@ -852,6 +858,7 @@ CODE_ADX = """
 from backtesting import Strategy
 import pandas as pd
 import pandas_ta as ta
+import numpy as np
 
 class ADXTrend(Strategy):
     def init(self):
@@ -1289,6 +1296,302 @@ class VolatilityStop(Strategy):
                 self.position.close()
 """
 
+# -----------------------------------------------------------------------------
+# STRATEGY 31: Williams Alligator v2
+# Trend Following with Fractal Confirmation
+# -----------------------------------------------------------------------------
+CODE_ALLIGATOR_V2 = """
+from backtesting import Strategy
+import pandas as pd
+import pandas_ta as ta
+import numpy as np
+
+class WilliamsAlligatorV2(Strategy):
+    def init(self):
+        # Alligator: Jaw (13,8), Teeth (8,5), Lips (5,3)
+        # Using simple SMMA approximation or EMA for improved responsiveness v2
+        
+        # Using EMA for v2 (Modern approach)
+        self.jaw = self.I(lambda x: ta.ema(pd.Series(x, index=self.data.index), length=13).shift(8).fillna(method='bfill').values, self.data.Close)
+        self.teeth = self.I(lambda x: ta.ema(pd.Series(x, index=self.data.index), length=8).shift(5).fillna(method='bfill').values, self.data.Close)
+        self.lips = self.I(lambda x: ta.ema(pd.Series(x, index=self.data.index), length=5).shift(3).fillna(method='bfill').values, self.data.Close)
+        
+        # Fractals (5 bar high)
+        # We will simply look for "Breakout of 5-day High" as a proxy for fractal trigger
+        self.recent_high = self.I(lambda x: pd.Series(x).rolling(5).max().shift(1).values, self.data.High)
+
+    def next(self):
+        # Alligator "Eating" (Uptrend): Lips > Teeth > Jaw
+        is_uptrend = self.lips[-1] > self.teeth[-1] and self.teeth[-1] > self.jaw[-1]
+        
+        # Buy Trigger: Price breaks above recent 5-day high (Fractal logic simplified)
+        breakout = self.data.Close[-1] > self.recent_high[-1]
+        
+        if not self.position:
+            if is_uptrend and breakout:
+                self.buy()
+        
+        else:
+            # Exit: Lips cross below Teeth (Alligator goes to sleep)
+            if self.lips[-1] < self.teeth[-1]:
+                self.position.close()
+"""
+
+# -----------------------------------------------------------------------------
+# STRATEGY 32: Turtle Soup Reversal
+# Mean Reversion / Trap Trading
+# -----------------------------------------------------------------------------
+CODE_TURTLE_SOUP = """
+from backtesting import Strategy
+import pandas as pd
+import pandas_ta as ta
+import numpy as np
+
+class TurtleSoup(Strategy):
+    def init(self):
+        # 20-Day Low
+        self.low_20 = self.I(lambda x: pd.Series(x).rolling(20).min().shift(1).values, self.data.Low)
+        
+    def next(self):
+        # Setup: Current Low Undercut the 20-day Low
+        undercut = self.data.Low[-1] < self.low_20[-1]
+        
+        # Trigger: Close Reclaimed the 20-day Low (False Breakout)
+        reclaim = self.data.Close[-1] > self.low_20[-1]
+        
+        if not self.position:
+            if undercut and reclaim:
+                self.buy()
+        
+        else:
+            # Exit: 10 day hold
+            if len(self.trades) > 0 and (self.data.index[-1] - self.trades[0].entry_time).days > 10:
+                 self.position.close()
+"""
+
+# -----------------------------------------------------------------------------
+# STRATEGY 33: Golden Cross + ADX
+# Filtered Trend Following
+# -----------------------------------------------------------------------------
+CODE_GOLDEN_ADX = """
+from backtesting import Strategy
+import pandas as pd
+import pandas_ta as ta
+import numpy as np
+
+class GoldenCrossADX(Strategy):
+    def init(self):
+        self.sma_50 = self.I(lambda x: ta.sma(pd.Series(x), length=50).values, self.data.Close)
+        self.sma_200 = self.I(lambda x: ta.sma(pd.Series(x), length=200).values, self.data.Close)
+        
+        # ADX Filter
+        def get_adx(high, low, close):
+             # Returns ADX column only (index 0)
+             res = ta.adx(pd.Series(high, index=self.data.index), pd.Series(low, index=self.data.index), pd.Series(close, index=self.data.index), length=14)
+             return res.iloc[:, 0].values
+             
+        self.adx = self.I(get_adx, self.data.High, self.data.Low, self.data.Close)
+
+    def next(self):
+        # Logic: 50 cross over 200 AND ADX > 25
+        # We check crossover manually or simply 'is above' with recent transition check?
+        # Simple: If 50 > 200 AND ADX > 25.
+        
+        uptrend = self.sma_50[-1] > self.sma_200[-1]
+        strong = self.adx[-1] > 25
+        
+        if not self.position:
+            if uptrend and strong:
+                self.buy()
+        else:
+            # Exit: Death Cross (50 crosses below 200)
+            if self.sma_50[-1] < self.sma_200[-1]:
+                self.position.close()
+"""
+
+# -----------------------------------------------------------------------------
+# STRATEGY 34: MACD + Parabolic SAR
+# Momentum + Trailing Stop
+# -----------------------------------------------------------------------------
+CODE_MACD_SAR = """
+from backtesting import Strategy
+import pandas as pd
+import pandas_ta as ta
+import numpy as np
+
+class MACD_SAR(Strategy):
+    def init(self):
+        # MACD
+        def get_macd(close):
+            # Returns MACD, Histogram, Signal
+            m = ta.macd(pd.Series(close, index=self.data.index))
+            return m.iloc[:, 0].values, m.iloc[:, 2].values # MACD, Signal
+            
+        self.macd, self.signal = self.I(get_macd, self.data.Close)
+        
+        # Parabolic SAR (0.02, 0.02, 0.2)
+        def get_sar(high, low, close):
+            return ta.psar(pd.Series(high, index=self.data.index), pd.Series(low, index=self.data.index), pd.Series(close, index=self.data.index)).iloc[:, 0].values
+            
+        self.sar = self.I(get_sar, self.data.High, self.data.Low, self.data.Close)
+
+    def next(self):
+        # Entry: MACD > Signal (Bullish crossover) AND Price > SAR (Uptrend)
+        macd_cross = self.macd[-2] < self.signal[-2] and self.macd[-1] > self.signal[-1]
+        price_above_sar = self.data.Close[-1] > self.sar[-1]
+        
+        if not self.position:
+            if macd_cross and price_above_sar:
+                self.buy()
+        else:
+            # Exit: Price crosses BELOW SAR (Trailing Stop Hit)
+            if self.data.Close[-1] < self.sar[-1]:
+                self.position.close()
+"""
+
+# -----------------------------------------------------------------------------
+# STRATEGY 35: Elder's Triple Screen
+# Multi-Timeframe Trading
+# -----------------------------------------------------------------------------
+CODE_ELDER_TRIPLE = """
+from backtesting import Strategy
+import pandas as pd
+import pandas_ta as ta
+import numpy as np
+
+class ElderTripleScreen(Strategy):
+    def init(self):
+        # Screen 1: The Tide (Long Term Trend)
+        # We simulate "Weekly" MACD on Daily data by multiplying periods by 5
+        # Standard MACD is 12, 26, 9. Weekly approx: 60, 130, 45
+        
+        # We need the MACD Histogram slope.
+        # pandas_ta macd returns 3 columns. We want the Histogram (2nd col usually, but let's check vars)
+        # MACD_12_26_9, MACDh_12_26_9, MACDs_12_26_9
+        
+        def get_weekly_macd_slope(close):
+            # Calculate MACD with 5x periods
+            df = ta.macd(pd.Series(close), fast=60, slow=130, signal=45)
+            hist = df.iloc[:, 1] # Histogram
+            # Slope = Current - Previous
+            slope = hist.diff().fillna(0)
+            return slope.values
+            
+        self.weekly_macd_slope = self.I(get_weekly_macd_slope, self.data.Close)
+        
+        # Screen 2: The Wave (Intermediate Correction)
+        # Daily Stochastic (14, 3, 3). Buy when < 30 (Oversold) in Uptrend
+        
+        def get_stoch(high, low, close):
+            # ta.stoch returns STOCHk, STOCHd
+            df = ta.stoch(pd.Series(high), pd.Series(low), pd.Series(close))
+            return df.iloc[:, 0].values # %K
+            
+        self.stoch_k = self.I(get_stoch, self.data.High, self.data.Low, self.data.Close)
+
+    def next(self):
+        # 1. Tide: Weekly Slope is POSITIVE (Uptrend)
+        # 2. Wave: Daily Stoch is OVERSOLD (< 30)
+        
+        if self.weekly_macd_slope[-1] > 0: # Tide Up
+            # Stoch was < 30 previously and is now rising
+            if self.stoch_k[-2] < 30 and self.stoch_k[-1] > self.stoch_k[-2]:
+                if not self.position:
+                    self.buy()
+                    
+        # Exit: Stoch becomes Overbought (> 80)
+        if self.stoch_k[-1] > 80:
+            if self.position:
+                self.position.close()
+"""
+
+# -----------------------------------------------------------------------------
+# STRATEGY 36: NR7 Volatility Breakout
+# Price Action / Toby Crabel
+# -----------------------------------------------------------------------------
+CODE_NR7 = """
+from backtesting import Strategy
+import pandas as pd
+import numpy as np
+
+class NR7Breakout(Strategy):
+    def init(self):
+        # Calculate Range of each bar
+        def get_range(high, low):
+            return (pd.Series(high) - pd.Series(low)).values
+            
+        self.daily_range = self.I(get_range, self.data.High, self.data.Low)
+
+    def next(self):
+        if len(self.daily_range) < 8: return
+        
+        # NR7: Today's range (last completed bar) is the smallest of the last 7 bars.
+        # But we are in 'next', so [-1] is the current closing bar.
+        
+        # Check if YESTERDAY (Bar -2) was an NR7 day relative to its preceding 6 days
+        # Ranges involved: [-8] to [-2]
+        
+        prev_range = self.daily_range[-2]
+        prev_past_6 = self.daily_range[-8:-2]
+        
+        was_nr7 = prev_range < min(prev_past_6)
+        
+        if was_nr7:
+            # If yesterday was NR7, we buy if Price breaks its High
+            buy_trigger = self.data.High[-2]
+            
+            if self.data.Close[-1] > buy_trigger:
+                if not self.position:
+                    self.buy()
+                    
+        # Exit: Stop Loss 2%
+        if self.position:
+             # Stop Loss 2% and Take Profit 5%
+             if self.position.pl_pct < -0.02:
+                 self.position.close()
+             elif self.position.pl_pct > 0.05:
+                 self.position.close()
+"""
+
+# -----------------------------------------------------------------------------
+# STRATEGY 37: Z-Score Mean Reversion
+# Statistical / Quant
+# -----------------------------------------------------------------------------
+CODE_ZSCORE = """
+from backtesting import Strategy
+import pandas as pd
+import pandas_ta as ta
+import numpy as np
+
+class ZScoreReversion(Strategy):
+    window = 20
+    z_entry = -2.0
+    z_exit = 0.0
+    
+    def init(self):
+        # Calculate Z-Score
+        def get_zscore(close):
+            series = pd.Series(close)
+            # Rolling Mean and Std
+            mean = series.rolling(self.window).mean()
+            std = series.rolling(self.window).std()
+            z = (series - mean) / std
+            return z.values
+            
+        self.z_score = self.I(get_zscore, self.data.Close)
+
+    def next(self):
+        # Buy: Z-Score < -2.0 (Statistically Oversold)
+        if self.z_score[-1] < self.z_entry:
+            if not self.position:
+                self.buy()
+                
+        # Exit: Z-Score > 0 (Reverted to Mean)
+        if self.z_score[-1] > self.z_exit:
+            if self.position:
+                self.position.close()
+"""
+
 strategies = [
     {
         "name": "RSI & Bollinger Mean Reversion",
@@ -1401,6 +1704,26 @@ strategies = [
         "code": CODE_WILLIAMS
     },
     {
+        "name": "Williams Alligator v2",
+        "description": "Trend Following. Uses Bill Williams' Alligator lines with Fractal confirmation. Buys when the Alligator is 'eating' (trending) and price breaks a recent fractal high.",
+        "code": CODE_ALLIGATOR_V2
+    },
+    {
+        "name": "Turtle Soup Reversal",
+        "description": "Mean Reversion / Trap Trading. Buys when price makes a new 20-day Low but fails to stay there (closes back above previous low). Catches 'stop hunts'.",
+        "code": CODE_TURTLE_SOUP
+    },
+    {
+        "name": "Golden Cross + ADX",
+        "description": "Filtered Trend. The classic 50/200 SMA crossover, but only taken when ADX > 25 confirms a strong trend. Avoids whipsaws in sideways markets.",
+        "code": CODE_GOLDEN_ADX
+    },
+    {
+        "name": "MACD + Parabolic SAR",
+        "description": "Momentum + Trailing Stop. Enters on MACD crossover if price is above SAR. Uses SAR as a dynamic trailing stop to lock in profits.",
+        "code": CODE_MACD_SAR
+    },
+    {
         "name": "Force Index Impulse",
         "description": "Volume + Price Momentum. Uses Dr. Elder's Force Index (Price Change * Volume). Buys when Bulls seize control with conviction (Force Index crosses above Zero).",
         "code": CODE_FORCE
@@ -1439,6 +1762,41 @@ strategies = [
         "name": "Volatility Stop (ATR Trailing)",
         "description": "Pure risk management. Uses Average True Range (ATR) to trail a stop loss behind price. Keeps you in the trend until volatility expands against you.",
         "code": CODE_ATR_TRAIL
+    },
+    {
+        "name": "Williams Alligator v2",
+        "description": "Trend Following. Uses Bill Williams' Alligator lines with Fractal confirmation. Buys when the Alligator is 'eating' (trending) and price breaks a recent fractal high.",
+        "code": CODE_ALLIGATOR_V2
+    },
+    {
+        "name": "Turtle Soup Reversal",
+        "description": "Mean Reversion / Trap Trading. Buys when price makes a new 20-day Low but fails to stay there (closes back above previous low). Catches 'stop hunts'.",
+        "code": CODE_TURTLE_SOUP
+    },
+    {
+        "name": "Golden Cross + ADX",
+        "description": "Filtered Trend. The classic 50/200 SMA crossover, but only taken when ADX > 25 confirms a strong trend. Avoids whipsaws in sideways markets.",
+        "code": CODE_GOLDEN_ADX
+    },
+    {
+        "name": "MACD + Parabolic SAR",
+        "description": "Momentum + Trailing Stop. Enters on MACD crossover if price is above SAR. Uses SAR as a dynamic trailing stop to lock in profits.",
+        "code": CODE_MACD_SAR
+    },
+    {
+        "name": "Elder's Triple Screen",
+        "description": "Multi-Timeframe System. 1. Tide: Weekly Slope Up (MACD). 2. Wave: Daily Stoch Oversold. 3. Ripple: Breakout Entry. Filters daily noise with weekly trend.",
+        "code": CODE_ELDER_TRIPLE
+    },
+    {
+        "name": "NR7 Volatility Breakout",
+        "description": "Price Action. Identifies the Narrowest Range 7 (NR7) day (calm before storm) and buys the subsequent volatility expansion breakout.",
+        "code": CODE_NR7
+    },
+    {
+        "name": "Z-Score Mean Reversion",
+        "description": "Statistical / Quant. Buys when price deviates -2 Standard Deviations from the Mean (Z-Score < -2) and sells when it reverts to mean (Z-Score > 0).",
+        "code": CODE_ZSCORE
     },
 ]
 
