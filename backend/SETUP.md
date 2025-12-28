@@ -36,11 +36,10 @@ cp .env.example .env
 
 ### 4. Database Setup
 
-Make sure PostgreSQL is running and create the required databases:
+Make sure PostgreSQL is running and create the required database:
 
 ```sql
 CREATE DATABASE stockastic;
-CREATE DATABASE stock_market;
 ```
 
 Run migrations:

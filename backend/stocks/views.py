@@ -2456,7 +2456,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
         ORDER BY net_qty DESC;
         """
         
-        with connections['stock_market'].cursor() as cursor:
+        with connections['default'].cursor() as cursor:
             cursor.execute(query)
             columns = [col[0] for col in cursor.description]
             results = [dict(zip(columns, row)) for row in cursor.fetchall()]
@@ -2546,7 +2546,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
         ORDER BY ABS(intensity) DESC;
         """
         
-        with connections['stock_market'].cursor() as cursor:
+        with connections['default'].cursor() as cursor:
             cursor.execute(query)
             columns = [col[0] for col in cursor.description]
             results = [dict(zip(columns, row)) for row in cursor.fetchall()]
@@ -2603,7 +2603,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
         ORDER BY cumulative_net DESC;
         """
         
-        with connections['stock_market'].cursor() as cursor:
+        with connections['default'].cursor() as cursor:
             cursor.execute(query)
             # Fetch all rows and convert to list of dicts
             columns = [col[0] for col in cursor.description]
@@ -2619,7 +2619,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
         """Return unique broker IDs from accumulation data."""
         from django.db import connections
         query = "SELECT DISTINCT entity_id FROM daily_cumulative_accumulation"
-        with connections['stock_market'].cursor() as cursor:
+        with connections['default'].cursor() as cursor:
             cursor.execute(query)
             results = [row[0] for row in cursor.fetchall() if row[0]]
         # Sort as integers for numeric ordering
@@ -2630,7 +2630,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
         """Return unique symbols from accumulation data."""
         from django.db import connections
         query = "SELECT DISTINCT symbol FROM daily_cumulative_accumulation"
-        with connections['stock_market'].cursor() as cursor:
+        with connections['default'].cursor() as cursor:
             cursor.execute(query)
             results = [row[0] for row in cursor.fetchall() if row[0]]
         return Response(sorted(results))
@@ -2689,7 +2689,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
         ORDER BY b.cumulative_net DESC;
         """
         
-        with connections['stock_market'].cursor() as cursor:
+        with connections['default'].cursor() as cursor:
             cursor.execute(query, [broker])
             columns = [col[0] for col in cursor.description]
             results = [dict(zip(columns, row)) for row in cursor.fetchall()]
@@ -2737,7 +2737,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
         ORDER BY value DESC;
         """
         
-        with connections['stock_market'].cursor() as cursor:
+        with connections['default'].cursor() as cursor:
             cursor.execute(query, [broker_id])
             columns = [col[0] for col in cursor.description]
             results = [dict(zip(columns, row)) for row in cursor.fetchall()]
@@ -2777,7 +2777,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
         days = range_map.get(time_range, 365)
         start_date = today - timedelta(days=days)
         
-        with connections['stock_market'].cursor() as cursor:
+        with connections['default'].cursor() as cursor:
             # 1. Identify Top 5 Brokers by current holding
             cursor.execute("""
                 SELECT entity_id 
@@ -3560,7 +3560,7 @@ def get_broker_portfolio(request):
     ORDER BY value DESC;
     """
     
-    with connections['stock_market'].cursor() as cursor:
+    with connections['default'].cursor() as cursor:
         cursor.execute(query, [broker_id])
         columns = [col[0] for col in cursor.description]
         results = [dict(zip(columns, row)) for row in cursor.fetchall()]
@@ -3664,7 +3664,7 @@ def accumulation_history(request):
     LIMIT %s OFFSET %s;
     """
     
-    with connections['stock_market'].cursor() as cursor:
+    with connections['default'].cursor() as cursor:
         cursor.execute(query, [broker, symbol, page_size, offset])
         columns = [col[0] for col in cursor.description]
         results = [dict(zip(columns, row)) for row in cursor.fetchall()]

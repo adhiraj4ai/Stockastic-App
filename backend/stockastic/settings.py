@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "django_filters",
     "corsheaders",
     "users",
+    "companies",  # Added for company management
     "stocks",
     "chat",
     "ml",

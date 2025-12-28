@@ -157,7 +157,7 @@ class PortfolioTransaction(models.Model):
         return f"{self.user.username} - {self.transaction_type} {self.ticker}"
 
 class DailyFloorsheet(models.Model):
-    # Mapping to actual database schema in stock_market DB
+    # Mapping to actual database schema
     transaction_id = models.BigIntegerField(primary_key=True, db_column='transaction_id')
     symbol = models.CharField(max_length=20, db_index=True, db_column='symbol')
     buyer_id = models.IntegerField(db_index=True, db_column='buyer_id')

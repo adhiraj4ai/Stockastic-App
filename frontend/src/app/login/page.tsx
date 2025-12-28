@@ -48,10 +48,13 @@ export default function LoginPage() {
 
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            console.log('Attempting login to:', `${apiUrl}/api/token/`);
             const response = await axios.post(`${apiUrl}/api/token/`, {
                 username: selectedUser,
                 password: password.trim(),
             });
+
+            console.log('Login successful, setting cookies...');
 
             const { access, refresh } = response.data;
 
@@ -60,8 +63,12 @@ export default function LoginPage() {
             localStorage.setItem('refresh_token', refresh);
 
             // Store in Cookies (for Middleware authentication)
-            Cookies.set('access_token', access, { expires: 1, secure: true, sameSite: 'strict' });
-            Cookies.set('refresh_token', refresh, { expires: 7, secure: true, sameSite: 'strict' });
+            // secure: false for localhost development
+            const isSecure = window.location.protocol === 'https:';
+            Cookies.set('access_token', access, { expires: 1, secure: isSecure, sameSite: 'lax' });
+            Cookies.set('refresh_token', refresh, { expires: 7, secure: isSecure, sameSite: 'lax' });
+
+            console.log('Redirecting to portfolio...');
 
             router.push('/portfolio');
         } catch (err: any) {
