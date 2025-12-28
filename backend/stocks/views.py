@@ -2391,106 +2391,157 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def accumulation(self, request):
         """
-        Return accumulation data using accurate row-based offsets (LAG).
+        Return accumulation flows by aggregating daily_floorsheet.
+        This provides exact calendar-range flows and avoids sparse data issues.
         """
         time_range = request.query_params.get('range', '1D')
         sector = request.query_params.get('sector', 'All')
-        
-        # Map frontend range to row offset
+
         range_map = {
-            '1D': 1, '1W': 5, '2W': 10, '1M': 20, '3M': 60, '6M': 120, '1Y': 250, '2Y': 500
+            '1D': 1, '1W': 7, '2W': 14, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, '2Y': 730
         }
-        offset = range_map.get(time_range, 1) if time_range != 'ALL' else 1000000
+        days = range_map.get(time_range, 1) if time_range != 'ALL' else 36500
 
         from django.db import connections
+
+        # Strategy:
+        # 1. Calculate Start Date (Global Max - Days).
+        # 2. Aggregate Buys and Sells from Daily Floorsheet for the period.
+        # 3. Compute Net Flow per Symbol.
         
-        # Using LAG for accurate N-row lookback regardless of calendar dates
         query = f"""
-        WITH ranked_data AS (
-            SELECT 
-                ca.symbol, ca.entity_id, ca.transaction_date, ca.cumulative_net as pos_now,
-                LAG(ca.cumulative_net, {offset}) OVER (
-                    PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date
-                ) as pos_past,
-                MAX(ca.transaction_date) OVER () as latest_date
-            FROM daily_cumulative_accumulation ca
-            INNER JOIN companies c ON ca.symbol = c.symbol
-            WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
-            {"" if sector.lower() == 'all' else f"AND c.\\\"sectorName\\\" = '{sector}'"}
+        WITH ref_date AS (
+            SELECT MAX(transaction_date) as current_date FROM daily_floorsheet
         ),
-        institutional_flows AS (
+        target_range AS (
             SELECT 
-                symbol, entity_id, pos_now,
-                COALESCE(pos_past, 0) as pos_past,
-                (pos_now - COALESCE(pos_past, 0)) as net_volume
-            FROM ranked_data
-            WHERE transaction_date = latest_date
-            -- Define "Institutional" as having at least 100k shares at some point
-            AND (pos_now > 100000 OR pos_past > 100000)
+                current_date - INTERVAL '{days} days' as start_date
+            FROM ref_date
         ),
-        aggregated_accumulation AS (
+        floorsheet_activity AS (
+            -- Union Buys and Sells to normalize broker activity
+            SELECT 
+                buyer_id as broker, symbol, transaction_quantity as buy_qty, 0 as sell_qty
+            FROM daily_floorsheet, target_range
+            WHERE transaction_date > target_range.start_date
+            
+            UNION ALL
+            
+            SELECT 
+                seller_id as broker, symbol, 0 as buy_qty, transaction_quantity as sell_qty
+            FROM daily_floorsheet, target_range
+            WHERE transaction_date > target_range.start_date
+        ),
+        broker_symbol_summary AS (
+            -- Aggregate Net Flow per Broker-Symbol
+            SELECT 
+                broker, symbol,
+                SUM(buy_qty) as total_buy,
+                SUM(sell_qty) as total_sell,
+                (SUM(buy_qty) - SUM(sell_qty)) as net_flow
+            FROM floorsheet_activity
+            GROUP BY broker, symbol
+        ),
+        symbol_accumulation AS (
+            -- Aggregate to Symbol Level
             SELECT 
                 symbol,
-                SUM(CASE WHEN net_volume > 0 THEN net_volume ELSE 0 END) AS buy_qty,
-                SUM(CASE WHEN net_volume < 0 THEN ABS(net_volume) ELSE 0 END) AS sell_qty,
-                ARRAY_AGG(entity_id ORDER BY net_volume DESC) FILTER (WHERE net_volume > 0) AS buyers,
-                ARRAY_AGG(entity_id ORDER BY net_volume ASC) FILTER (WHERE net_volume < 0) AS sellers
-            FROM institutional_flows
+                SUM(total_buy) as buy_qty, -- Total Volume (Buy side)
+                SUM(total_sell) as sell_qty, -- Total Volume (Sell side) - Should equal Buy Qty globally but we want Institutional logic?
+                -- Wait, Total Buy = Total Sell in a closed system. 
+                -- We want "Net Accumulation" which implies identifying WHO is accumulating.
+                -- "Accumulation" usually means: Is the Smart Money buying?
+                -- The previous logic summed POSITIVE net flows of big players.
+                -- Let's replicate that: Sum of Net Positive Flows of Brokers vs Sum of Net Negative Flows.
+                SUM(CASE WHEN net_flow > 0 THEN net_flow ELSE 0 END) as institutional_buy,
+                SUM(CASE WHEN net_flow < 0 THEN ABS(net_flow) ELSE 0 END) as institutional_sell,
+                
+                ARRAY_AGG(broker ORDER BY net_flow DESC) FILTER (WHERE net_flow > 0) as buyers,
+                ARRAY_AGG(broker ORDER BY net_flow ASC) FILTER (WHERE net_flow < 0) as sellers
+            FROM broker_symbol_summary
             GROUP BY symbol
         )
         SELECT 
-            aa.symbol, c."companyName" as name, c."sectorName" as sector,
-            aa.buy_qty, aa.sell_qty, (aa.buy_qty - aa.sell_qty) as net_qty,
-            CASE WHEN (aa.buy_qty + aa.sell_qty) > 0 
-                THEN (CAST(aa.buy_qty AS NUMERIC) / (aa.buy_qty + aa.sell_qty)) * 100 
+            sa.symbol, c."companyName" as name, c."sectorName" as sector,
+            sa.institutional_buy as buy_qty, 
+            sa.institutional_sell as sell_qty, 
+            (sa.institutional_buy - sa.institutional_sell) as net_qty,
+            CASE WHEN (sa.institutional_buy + sa.institutional_sell) > 0 
+                THEN (CAST(sa.institutional_buy AS NUMERIC) / (sa.institutional_buy + sa.institutional_sell)) * 100 
                 ELSE 0 END as accumulation_ratio,
-            COALESCE(aa.buyers[1:3], ARRAY[]::text[]) as top_buyers,
-            COALESCE(aa.sellers[1:3], ARRAY[]::text[]) as top_sellers,
+            COALESCE(sa.buyers[1:3], ARRAY[]::text[]) as top_buyers,
+            COALESCE(sa.sellers[1:3], ARRAY[]::text[]) as top_sellers,
             dsp.close
-        FROM aggregated_accumulation aa
-        INNER JOIN companies c ON aa.symbol = c.symbol
+        FROM symbol_accumulation sa
+        INNER JOIN companies c ON sa.symbol = c.symbol
         LEFT JOIN (
             SELECT DISTINCT ON (symbol) symbol, close 
             FROM daily_stock_price ORDER BY symbol, transaction_date DESC
-        ) dsp ON aa.symbol = dsp.symbol
+        ) dsp ON sa.symbol = dsp.symbol
+        WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
+        {"" if sector.lower() == 'all' else f"AND c.\\\"sectorName\\\" = '{sector}'"}
         ORDER BY net_qty DESC;
         """
-        
+
         with connections['default'].cursor() as cursor:
             cursor.execute(query)
             columns = [col[0] for col in cursor.description]
             results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-            
+
         return Response(results)
 
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def aggressive(self, request):
         """
         Identify aggressive institutional activity relative to 20D average volume.
-        Uses accurate LAG-based row offsets for deltas.
+        Uses accurate daily_floorsheet aggregation for flows.
         """
         time_range = request.query_params.get('range', '1W')
         sector = request.query_params.get('sector', 'All')
         
         range_map = {
-            '1D': 1, '1W': 5, '2W': 10, '1M': 20, '3M': 60, '6M': 120, '1Y': 250, '2Y': 500
+            '1D': 1, '1W': 7, '2W': 14, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, '2Y': 730
         }
-        offset_val = range_map.get(time_range, 5)
+        days = range_map.get(time_range, 7)
         
         from django.db import connections
         
         query = f"""
-        WITH ranked_data AS (
+        WITH ref_date AS (
+            SELECT MAX(transaction_date) as current_date FROM daily_floorsheet
+        ),
+        target_range AS (
             SELECT 
-                ca.symbol, ca.entity_id, ca.transaction_date, ca.cumulative_net as pos_now,
-                LAG(ca.cumulative_net, {offset_val}) OVER (
-                    PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date
-                ) as pos_past,
-                MAX(ca.transaction_date) OVER () as latest_date
-            FROM daily_cumulative_accumulation ca
-            INNER JOIN companies c ON ca.symbol = c.symbol
-            WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
-            {"" if sector.lower() == 'all' else f"AND c.\\\"sectorName\\\" = '{sector}'"}
+                current_date - INTERVAL '{days} days' as start_date
+            FROM ref_date
+        ),
+        floorsheet_activity AS (
+            SELECT 
+                buyer_id as broker, symbol, transaction_quantity as buy_qty, 0 as sell_qty
+            FROM daily_floorsheet, target_range
+            WHERE transaction_date > target_range.start_date
+            UNION ALL
+            SELECT 
+                seller_id as broker, symbol, 0 as buy_qty, transaction_quantity as sell_qty
+            FROM daily_floorsheet, target_range
+            WHERE transaction_date > target_range.start_date
+        ),
+        broker_symbol_summary AS (
+            SELECT 
+                broker, symbol,
+                (SUM(buy_qty) - SUM(sell_qty)) as net_flow
+            FROM floorsheet_activity
+            GROUP BY broker, symbol
+        ),
+        symbol_accumulation AS (
+            SELECT 
+                symbol,
+                SUM(CASE WHEN net_flow > 0 THEN net_flow ELSE 0 END) as institutional_buy,
+                SUM(CASE WHEN net_flow < 0 THEN ABS(net_flow) ELSE 0 END) as institutional_sell,
+                ARRAY_AGG(broker ORDER BY net_flow DESC) FILTER (WHERE net_flow > 0) as top_buyers,
+                ARRAY_AGG(broker ORDER BY net_flow ASC) FILTER (WHERE net_flow < 0) as top_sellers
+            FROM broker_symbol_summary
+            GROUP BY symbol
         ),
         avg_volume_cte AS (
             SELECT 
@@ -2500,28 +2551,10 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
                 transaction_date,
                 ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY transaction_date DESC) as rn
             FROM daily_stock_price
-            WHERE transaction_date <= (SELECT MAX(transaction_date) FROM daily_cumulative_accumulation)
+            WHERE transaction_date <= (SELECT current_date FROM ref_date)
         ),
         latest_avg_vol AS (
             SELECT symbol, avg_vol_20d, close FROM avg_volume_cte WHERE rn = 1
-        ),
-        pos_change AS (
-            SELECT 
-                symbol, entity_id, pos_now,
-                (pos_now - COALESCE(pos_past, 0)) as net_volume
-            FROM ranked_data
-            WHERE transaction_date = latest_date
-            AND (pos_now > 100000 OR pos_past > 100000)
-        ),
-        symbol_summary AS (
-            SELECT 
-                symbol,
-                SUM(CASE WHEN net_volume > 0 THEN net_volume ELSE 0 END) as institutional_buy,
-                SUM(CASE WHEN net_volume < 0 THEN ABS(net_volume) ELSE 0 END) as institutional_sell,
-                ARRAY_AGG(entity_id ORDER BY net_volume DESC) FILTER (WHERE net_volume > 0) as top_buyers,
-                ARRAY_AGG(entity_id ORDER BY net_volume ASC) FILTER (WHERE net_volume < 0) as top_sellers
-            FROM pos_change
-            GROUP BY symbol
         ),
         intensity_cte AS (
             SELECT 
@@ -2537,9 +2570,11 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
                 END as intensity,
                 COALESCE(ss.top_buyers[1:3], ARRAY[]::text[]) as producers,
                 COALESCE(ss.top_sellers[1:3], ARRAY[]::text[]) as offloaders
-            FROM symbol_summary ss
+            FROM symbol_accumulation ss
             INNER JOIN companies c ON ss.symbol = c.symbol
             INNER JOIN latest_avg_vol lav ON ss.symbol = lav.symbol
+            WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
+            {"" if sector.lower() == 'all' else f"AND c.\\\"sectorName\\\" = '{sector}'"}
         )
         SELECT * FROM intensity_cte
         WHERE ABS(intensity) > 5 -- At least 5% of daily volume
@@ -2651,51 +2686,107 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
         if not broker:
             return Response({'error': 'broker ID is required'}, status=400)
 
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
+    def broker_favorites(self, request):
+        """
+        Calculate net accumulation for a specific broker across multiple time periods.
+        Uses daily_floorsheet aggregation for accuracy.
+        """
+        from django.db import connections
+        broker = request.query_params.get('broker')
+        
+        if not broker:
+            return Response({'error': 'broker ID is required'}, status=400)
+
+        # 1D, 2D, 3D, 1W, 1M, 3M, 6M, 1Y
+        # We need conditional sums based on Date > (Now - Interval)
+        
         query = """
-        WITH latest_date AS (
-            SELECT MAX(transaction_date) as mdate FROM daily_cumulative_accumulation
+        WITH ref_date AS (
+            SELECT MAX(transaction_date) as current_date FROM daily_floorsheet
         ),
-        base_data AS (
+        broker_activity AS (
             SELECT 
-                symbol,
-                cumulative_net,
-                cumulative_buy,
-                cumulative_buy_amount,
-                transaction_date,
-                LAG(cumulative_net, 1) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_1d,
-                LAG(cumulative_net, 2) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_2d,
-                LAG(cumulative_net, 3) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_3d,
-                LAG(cumulative_net, 7) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_1w,
-                LAG(cumulative_net, 30) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_1m,
-                LAG(cumulative_net, 90) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_3m,
-                LAG(cumulative_net, 180) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_6m,
-                LAG(cumulative_net, 365) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_1y,
-                FIRST_VALUE(cumulative_net) OVER (PARTITION BY symbol ORDER BY transaction_date) as initial_val
-            FROM daily_cumulative_accumulation
-            WHERE entity_id = %s
+                symbol, transaction_date, 
+                transaction_quantity as net_qty, -- Positive for Buy
+                (transaction_quantity * transaction_rate) as net_amt
+            FROM daily_floorsheet
+            WHERE buyer_id = %s
+            
+            UNION ALL
+            
+            SELECT 
+                symbol, transaction_date, 
+                -transaction_quantity as net_qty, -- Negative for Sell
+                -(transaction_quantity * transaction_rate) as net_amt
+            FROM daily_floorsheet
+            WHERE seller_id = %s
+        ),
+        aggregated_stats AS (
+            SELECT 
+                ba.symbol,
+                SUM(ba.net_qty) as total_net,
+                -- WAC only makes sense for current holding, which we can't easily get from just flows history without initial state.
+                -- Converting WAC to "Avg Price of Net Flow" or just omitting if complex.
+                -- Old query used cumulative_buy_amount / cumulative_buy.
+                -- We can calc "Avg Buy Price" from activity?
+                -- Let's stick to flows.
+                
+                SUM(CASE WHEN ba.transaction_date > (rd.current_date - INTERVAL '1 day') THEN ba.net_qty ELSE 0 END) as flow_1d,
+                SUM(CASE WHEN ba.transaction_date > (rd.current_date - INTERVAL '2 days') THEN ba.net_qty ELSE 0 END) as flow_2d,
+                SUM(CASE WHEN ba.transaction_date > (rd.current_date - INTERVAL '3 days') THEN ba.net_qty ELSE 0 END) as flow_3d,
+                SUM(CASE WHEN ba.transaction_date > (rd.current_date - INTERVAL '7 days') THEN ba.net_qty ELSE 0 END) as flow_1w,
+                SUM(CASE WHEN ba.transaction_date > (rd.current_date - INTERVAL '30 days') THEN ba.net_qty ELSE 0 END) as flow_1m,
+                SUM(CASE WHEN ba.transaction_date > (rd.current_date - INTERVAL '90 days') THEN ba.net_qty ELSE 0 END) as flow_3m,
+                SUM(CASE WHEN ba.transaction_date > (rd.current_date - INTERVAL '180 days') THEN ba.net_qty ELSE 0 END) as flow_6m,
+                SUM(CASE WHEN ba.transaction_date > (rd.current_date - INTERVAL '365 days') THEN ba.net_qty ELSE 0 END) as flow_1y,
+                
+                -- Calculate "Current Net" (Proxied by Total History from Floorsheet? Or use Cumulative table for that?)
+                -- Cumulative Accumulation table IS the "Current Net".
+                -- So we can join with `daily_cumulative_accumulation` for "Current Net" & "WAC".
+                -- But Flows come from floorsheet.
+                MAX(ba.transaction_date) as last_trade_date
+            FROM broker_activity ba, ref_date rd
+            GROUP BY ba.symbol
         )
         SELECT 
-            b.symbol,
+            ast.symbol,
             c."companyName" as name,
-            b.cumulative_net as current_net,
-            ROUND(b.cumulative_buy_amount / NULLIF(b.cumulative_buy, 0), 2) as wac,
-            (b.cumulative_net - COALESCE(b.prev_1d, b.cumulative_net)) as change_1d,
-            (b.cumulative_net - COALESCE(b.prev_2d, b.prev_1d, b.cumulative_net)) as change_2d,
-            (b.cumulative_net - COALESCE(b.prev_3d, b.prev_1d, b.cumulative_net)) as change_3d,
-            (b.cumulative_net - COALESCE(b.prev_1w, b.prev_1d, b.cumulative_net)) as change_1w,
-            (b.cumulative_net - COALESCE(b.prev_1m, b.prev_1d, b.cumulative_net)) as change_1m,
-            (b.cumulative_net - COALESCE(b.prev_3m, b.prev_1d, b.cumulative_net)) as change_3m,
-            (b.cumulative_net - COALESCE(b.prev_6m, b.prev_1d, b.cumulative_net)) as change_6m,
-            (b.cumulative_net - COALESCE(b.prev_1y, b.prev_1d, b.cumulative_net)) as change_1y,
-            (b.cumulative_net - b.initial_val) as change_all
-        FROM base_data b
-        JOIN companies c ON b.symbol = c.symbol
-        WHERE b.transaction_date = (SELECT mdate FROM latest_date)
-        ORDER BY b.cumulative_net DESC;
+            COALESCE(ca.cumulative_net, 0) as current_net,
+            CASE WHEN ca.cumulative_buy > 0 THEN ROUND(ca.cumulative_buy_amount / ca.cumulative_buy, 2) ELSE 0 END as wac,
+            
+            ast.flow_1d as change_1d,
+            ast.flow_2d as change_2d,
+            ast.flow_3d as change_3d,
+            ast.flow_1w as change_1w,
+            ast.flow_1m as change_1m,
+            ast.flow_3m as change_3m,
+            ast.flow_6m as change_6m,
+            ast.flow_1y as change_1y,
+            ast.total_net as change_all
+        FROM aggregated_stats ast
+        INNER JOIN companies c ON ast.symbol = c.symbol
+        -- Join latest cumulative for current position
+        LEFT JOIN LATERAL (
+            SELECT cumulative_net, cumulative_buy, cumulative_buy_amount 
+            FROM daily_cumulative_accumulation 
+            WHERE symbol = ast.symbol AND entity_id = %s
+            ORDER BY transaction_date DESC LIMIT 1
+        ) ca ON true
+        WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
+        ORDER BY ast.flow_1m DESC; 
+        -- Ordering by 1M flow as default or what? Old was by cumulative_net.
+        -- Let's order by current_net like before.
         """
         
+        # Modify ORDER BY to match old behavior if needed, or stick to accumulation focus.
+        # User goal is "Broker Favorites" -> usually means what they hold most.
+        # So ORDER BY current_net DESC is better.
+        
+        query = query.replace("ORDER BY ast.flow_1m DESC;", "ORDER BY current_net DESC;")
+
         with connections['default'].cursor() as cursor:
-            cursor.execute(query, [broker])
+            cursor.execute(query, [broker, broker, broker])
             columns = [col[0] for col in cursor.description]
             results = [dict(zip(columns, row)) for row in cursor.fetchall()]
             
