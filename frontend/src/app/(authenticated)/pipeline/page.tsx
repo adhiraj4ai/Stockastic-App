@@ -60,15 +60,22 @@ export default function PipelinePage() {
     const [optimizationLogs, setOptimizationLogs] = useState<LogEntry[]>([]);
     const [showOptimizationLogs, setShowOptimizationLogs] = useState(false);
 
+    // Broker Analysis State
+    const [brokerStatus, setBrokerStatus] = useState<'idle' | 'running' | 'completed' | 'error'>('idle');
+    const [brokerLogs, setBrokerLogs] = useState<LogEntry[]>([]);
+    const [showBrokerLogs, setShowBrokerLogs] = useState(false);
+
     // Abort controllers for stopping processes
     const indicatorAbortController = useRef<AbortController | null>(null);
     const optimizationAbortController = useRef<AbortController | null>(null);
     const signalAbortController = useRef<AbortController | null>(null);
+    const brokerAbortController = useRef<AbortController | null>(null);
 
     // Track log IDs for abort functionality
     const [indicatorLogId, setIndicatorLogId] = useState<number | null>(null);
     const [optimizationLogId, setOptimizationLogId] = useState<number | null>(null);
     const [signalLogId, setSignalLogId] = useState<number | null>(null);
+    const [brokerLogId, setBrokerLogId] = useState<number | null>(null);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -388,6 +395,90 @@ export default function PipelinePage() {
         }
     };
 
+    const handleRunBroker = async () => {
+        if (brokerStatus === 'running') return;
+
+        setBrokerStatus('running');
+        setBrokerLogs([]);
+        setShowBrokerLogs(true);
+
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const url = `${apiUrl}/api/stocks/pipeline/update_broker_analysis_stream/`;
+        const token = localStorage.getItem('access_token');
+
+        brokerAbortController.current = new AbortController();
+
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+                signal: brokerAbortController.current.signal,
+            });
+
+            if (!response.ok) {
+                setBrokerStatus('error');
+                toast.error(`Connection failed: ${response.statusText}`);
+                return;
+            }
+
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+
+            if (!reader) {
+                setBrokerStatus('error');
+                return;
+            }
+
+            let buffer = '';
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine || !trimmedLine.startsWith('data: ')) continue;
+
+                    try {
+                        const data = JSON.parse(trimmedLine.substring(6));
+
+                        if (data.type === 'init') {
+                            setBrokerLogId(data.log_id);
+                            continue;
+                        }
+
+                        if (data.type === 'done') {
+                            setBrokerStatus('completed');
+                            toast.success("Broker analysis complete!");
+                            fetchHistory();
+                            return;
+                        }
+                        if (data.type === 'error') {
+                            setBrokerStatus('error');
+                            toast.error(data.message);
+                            return;
+                        }
+                        if (data.type === 'log' || data.type === 'status') {
+                            setBrokerLogs(prev => [...prev, {
+                                type: data.type as any,
+                                message: data.message,
+                                timestamp: new Date()
+                            }]);
+                        }
+                    } catch (e) { }
+                }
+            }
+        } catch (error: any) {
+            if (error.name === 'AbortError') return;
+            setBrokerStatus('error');
+            toast.error("Connection lost");
+        }
+    };
+
     const onDrop = async (acceptedFiles: File[]) => {
         if (acceptedFiles.length === 0) return;
         const file = acceptedFiles[0];
@@ -472,6 +563,24 @@ export default function PipelinePage() {
         }
     };
 
+    const handleStopBroker = async () => {
+        if (brokerAbortController.current) {
+            brokerAbortController.current.abort();
+            brokerAbortController.current = null;
+            setBrokerStatus('idle');
+
+            if (brokerLogId) {
+                try {
+                    await api.post('/api/stocks/pipeline/abort_log/', { log_id: brokerLogId });
+                    fetchHistory();
+                } catch (err) {
+                    console.error('Failed to mark log as aborted:', err);
+                }
+            }
+            toast.info("Stopped broker analysis");
+        }
+    };
+
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
         accept: {
@@ -539,9 +648,22 @@ export default function PipelinePage() {
                             <DailyPriceUpload onSuccess={fetchHistory} />
                         </div>
 
-                        {/* Step 3: Update Technical Indicators */}
+                        {/* Step 3: Update Broker Data & Accumulation */}
                         <PipelineStep
-                            title="3. Update Technical Indicators"
+                            title="3. Update Broker Data & Accumulation"
+                            description="Refresh buyer/seller statistics and recalculate full market accumulation history based on uploaded floorsheet."
+                            status={brokerStatus}
+                            icon={<Zap className="w-5 h-5" />}
+                            onRun={handleRunBroker}
+                            onStop={handleStopBroker}
+                            logs={brokerLogs}
+                            showLogs={showBrokerLogs}
+                            onToggleLogs={() => setShowBrokerLogs(!showBrokerLogs)}
+                        />
+
+                        {/* Step 4: Update Technical Indicators */}
+                        <PipelineStep
+                            title="4. Update Technical Indicators"
                             description="Recalculate RSI, MACD, SMAs, and Sector stats for all stocks."
                             status={indicatorStatus}
                             icon={<Activity className="w-5 h-5" />}
@@ -552,9 +674,9 @@ export default function PipelinePage() {
                             onToggleLogs={() => setShowIndicatorLogs(!showIndicatorLogs)}
                         />
 
-                        {/* Step 4: Global Strategy Optimization */}
+                        {/* Step 5: Global Strategy Optimization */}
                         <PipelineStep
-                            title="4. Global Strategy Training"
+                            title="5. Global Strategy Training"
                             description="Scan entire market to discover optimal parameters for each sector and symbol. Recommended before signal generation."
                             status={optimizationStatus}
                             icon={<Zap className="w-5 h-5" />}
@@ -565,9 +687,9 @@ export default function PipelinePage() {
                             onToggleLogs={() => setShowOptimizationLogs(!showOptimizationLogs)}
                         />
 
-                        {/* Step 5: Signal Generation (The new "Boot Process") */}
+                        {/* Step 6: Signal Generation (The new "Boot Process") */}
                         <PipelineStep
-                            title="5. Generate Strategy Signals"
+                            title="6. Generate Strategy Signals"
                             description="Run backtests using optimized parameters to generate fresh BUY/SELL recommendations."
                             status={signalStatus}
                             icon={<Cpu className="w-5 h-5" />}

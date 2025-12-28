@@ -3680,6 +3680,7 @@ class PipelineViewSet(viewsets.ViewSet):
     TASKS = {
         'sync_stocks': 'Sync Stock List',
         'sync_prices': 'Sync Daily Prices',
+        'broker_analysis': 'Update Broker Data & Accumulation',
         'sync_floorsheet': 'Sync Floorsheet Data',
         'update_indexes': 'Update DB Indexes',
         'generate_signals': 'Generate Strategy Signals',
@@ -3985,6 +3986,68 @@ class PipelineViewSet(viewsets.ViewSet):
         response['Cache-Control'] = 'no-cache'
         response['X-Accel-Buffering'] = 'no'  # Disable buffering for nginx
         return response
+
+    @action(detail=False, methods=['get'])
+    def update_broker_analysis_stream(self, request):
+        """
+        Streams logs from broker analysis update process.
+        """
+        import sys
+        import subprocess
+        import os
+        from django.conf import settings
+        from .models import DataUploadLog
+
+        # Create log entry
+        log_entry = DataUploadLog.objects.create(
+            file_name='Broker Data & Accumulation Update',
+            upload_type='BROKER_ANALYSIS',
+            status='PENDING'
+        )
+
+        def event_stream():
+            # Get the base directory where manage.py is located
+            base_dir = settings.BASE_DIR
+            manage_py = os.path.join(base_dir, 'manage.py')
+            
+            cmd = [sys.executable, manage_py, 'update_broker_analysis']
+
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                universal_newlines=True,
+                cwd=base_dir
+            )
+
+            yield f"data: {{\"type\": \"init\", \"log_id\": {log_entry.id}}}\n\n"
+            yield "data: {\"type\": \"status\", \"message\": \"Initializing broker analysis...\"}\n\n"
+            
+            for line in process.stdout:
+                if line.strip():
+                    # Escape quotes in the message
+                    escaped_message = line.strip().replace('"', '\\"')
+                    yield f"data: {{\"type\": \"log\", \"message\": \"{escaped_message}\"}}\n\n"
+
+            process.wait()
+            if process.returncode == 0:
+                log_entry.status = 'SUCCESS'
+                log_entry.save()
+                yield "data: {\"type\": \"status\", \"message\": \"Broker analysis updated successfully.\"}\n\n"
+                yield "data: {\"type\": \"done\"}\n\n"
+            else:
+                log_entry.status = 'FAILED'
+                log_entry.error_message = f"Process exited with code {process.returncode}"
+                log_entry.save()
+                yield f"data: {{\"type\": \"error\", \"message\": \"Process exited with code {process.returncode}\"}}\n\n"
+
+        response = StreamingResponse(event_stream(), content_type='text/event-stream')
+        response['Cache-Control'] = 'no-cache'
+        response['X-Accel-Buffering'] = 'no'  # Disable buffering for nginx
+        return response
+
 
 
     @action(detail=True, methods=['post'])

@@ -42,3 +42,6 @@ backtesting
 pandas_ta
 django-filter>=23.5
 skfolio
+optuna
+joblib
+scikit-learn

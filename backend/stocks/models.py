@@ -425,6 +425,7 @@ class DataUploadLog(models.Model):
         ('INDICATORS', 'Technical Indicators'),
         ('OPTIMIZATION', 'Strategy Training'),
         ('SIGNALS', 'Signal Generation'),
+        ('BROKER_ANALYSIS', 'Broker Analysis'),
     )
     STATUS_CHOICES = (
         ('PENDING', 'Pending'),
