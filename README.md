@@ -62,7 +62,33 @@ npm run dev
 
 See [frontend/SETUP.md](frontend/SETUP.md) for detailed instructions.
 
-## Running the Application
+## Docker Deployment (Recommended)
+
+The easiest way to run the entire stack is using Docker:
+
+```bash
+# Build and start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Create superuser (first time only)
+docker-compose exec backend python manage.py createsuperuser
+```
+
+Access the application at: `http://localhost:3000`
+
+**Services included:**
+- PostgreSQL 15 (port 5432)
+- Redis 7 (port 6379)
+- Django Backend (port 8000)
+- Celery Worker
+- Next.js Frontend (port 3000)
+
+See [DOCKER.md](DOCKER.md) for comprehensive Docker documentation.
+
+## Running the Application (Local Development)
 
 You need **4 services** running simultaneously:
 
@@ -183,6 +209,7 @@ npm start
 
 ## Documentation
 
+- [Docker Deployment Guide](DOCKER.md) ⭐ **Recommended**
 - [Backend Setup Guide](backend/SETUP.md)
 - [Frontend Setup Guide](frontend/SETUP.md)
 - [Backend Environment Config](backend/.env.example)

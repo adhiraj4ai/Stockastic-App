@@ -12,7 +12,7 @@ frozendict==2.4.7
 gunicorn==23.0.0
 idna==3.11
 multitasking==0.0.12
-numpy==2.3.5
+numpy==2.2.6
 packaging>=23.2,<25.0
 pandas==2.3.3
 peewee==3.18.3
@@ -41,3 +41,4 @@ plotly<6.0.0
 backtesting
 pandas_ta
 django-filter>=23.5
+skfolio

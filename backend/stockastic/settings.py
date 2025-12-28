@@ -95,14 +95,6 @@ if os.environ.get("DB_HOST"):
             "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
             "HOST": os.environ.get("DB_HOST", "db"),
             "PORT": os.environ.get("DB_PORT", "5432"),
-        },
-        "stock_market": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": "stock_market",
-            "USER": os.environ.get("POSTGRES_USER", "postgres"),
-            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
-            "HOST": os.environ.get("DB_HOST", "db"),
-            "PORT": os.environ.get("DB_PORT", "5432"),
         }
     }
 else:
@@ -115,18 +107,10 @@ else:
             "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
             "HOST": os.environ.get("DB_HOST", "localhost"),
             "PORT": os.environ.get("DB_PORT", "5434"),
-        },
-        "stock_market": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": "stock_market",
-            "USER": os.environ.get("POSTGRES_USER", "postgres"),
-            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
-            "HOST": os.environ.get("DB_HOST", "localhost"),
-            "PORT": os.environ.get("DB_PORT", "5434"),
         }
     }
 
-DATABASE_ROUTERS = ['stocks.routers.StockMarketRouter']
+# DATABASE_ROUTERS = ['stocks.routers.StockMarketRouter']  # Disabled - using single database
 
 
 # Password validation
