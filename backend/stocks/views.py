@@ -2585,22 +2585,27 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
             WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
         )
         SELECT 
-            symbol,
-            entity_id as broker,
-            cumulative_net,
-            ROUND(cumulative_buy_amount / NULLIF(cumulative_buy, 0), 2) as wac,
-            CASE WHEN net_5d > 0 THEN 'Increasing' WHEN net_5d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_5d,
-            ABS(COALESCE(net_5d, 0)) AS change_5d,
-            CASE WHEN net_10d > 0 THEN 'Increasing' WHEN net_10d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_10d,
-            ABS(COALESCE(net_10d, 0)) AS change_10d,
-            CASE WHEN net_20d > 0 THEN 'Increasing' WHEN net_20d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_20d,
-            ABS(COALESCE(net_20d, 0)) AS change_20d,
-            CASE WHEN net_50d > 0 THEN 'Increasing' WHEN net_50d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_50d,
-            ABS(COALESCE(net_50d, 0)) AS change_50d
-        FROM trend_data
-        WHERE transaction_date = latest_date
-        AND cumulative_net > 250000
-        ORDER BY cumulative_net DESC;
+            td.symbol,
+            td.entity_id as broker,
+            td.cumulative_net,
+            ROUND(td.cumulative_buy_amount / NULLIF(td.cumulative_buy, 0), 2) as wac,
+            CASE WHEN td.net_5d > 0 THEN 'Increasing' WHEN td.net_5d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_5d,
+            ABS(COALESCE(td.net_5d, 0)) AS change_5d,
+            CASE WHEN td.net_10d > 0 THEN 'Increasing' WHEN td.net_10d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_10d,
+            ABS(COALESCE(td.net_10d, 0)) AS change_10d,
+            CASE WHEN td.net_20d > 0 THEN 'Increasing' WHEN td.net_20d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_20d,
+            ABS(COALESCE(td.net_20d, 0)) AS change_20d,
+            CASE WHEN td.net_50d > 0 THEN 'Increasing' WHEN td.net_50d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_50d,
+            ABS(COALESCE(td.net_50d, 0)) AS change_50d,
+            dsp.close as ltp
+        FROM trend_data td
+        LEFT JOIN (
+            SELECT DISTINCT ON (symbol) symbol, close 
+            FROM daily_stock_price ORDER BY symbol, transaction_date DESC
+        ) dsp ON td.symbol = dsp.symbol
+        WHERE td.transaction_date = td.latest_date
+        AND td.cumulative_net > 250000
+        ORDER BY td.cumulative_net DESC;
         """
         
         with connections['default'].cursor() as cursor:

@@ -48,6 +48,7 @@ interface BrokerTrend {
     broker: number;
     cumulative_net: number;
     wac?: number; // Added WAC
+    ltp: number; // Added LTP
     trend_5d: string;
     change_5d: number;
     trend_10d: string;
@@ -951,6 +952,7 @@ export default function AccumulationPage() {
                                                 <TableHead className="w-[120px]">Symbol</TableHead>
                                                 <TableHead>Broker ID</TableHead>
                                                 <TableHead className="text-right">Cumulative Net</TableHead>
+                                                <TableHead className="text-right">LTP</TableHead>
                                                 <TableHead className="text-right">WAC</TableHead>
                                                 <TableHead className="text-center">5D Trend</TableHead>
                                                 <TableHead className="text-center">10D Trend</TableHead>
@@ -987,6 +989,9 @@ export default function AccumulationPage() {
                                                             </TableCell>
                                                             <TableCell className="text-right font-mono font-bold text-blue-800">
                                                                 {row.cumulative_net.toLocaleString()}
+                                                            </TableCell>
+                                                            <TableCell className="text-right font-mono font-bold text-gray-900">
+                                                                {row.ltp?.toLocaleString()}
                                                             </TableCell>
                                                             <TableCell className="text-right font-mono font-bold text-gray-700">
                                                                 {row.wac?.toLocaleString()}
