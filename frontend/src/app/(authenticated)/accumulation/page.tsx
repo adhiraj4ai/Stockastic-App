@@ -581,7 +581,7 @@ function AccumulationContent() {
         return (
             <div className={`flex flex-col items-center px-2 py-1 rounded border ${color}`}>
                 <span className="text-[10px] font-bold uppercase">{trend}</span>
-                <span className="text-[9px] font-mono">{change.toLocaleString()}</span>
+                <span className="text-[9px] font-mono">{change.toFixed(2)}%</span>
             </div>
         );
     };

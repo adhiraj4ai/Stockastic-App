@@ -2645,14 +2645,19 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
             td.entity_id as broker,
             td.cumulative_net,
             ROUND(td.cumulative_buy_amount / NULLIF(td.cumulative_buy, 0), 2) as wac,
+            
             CASE WHEN td.net_5d > 0 THEN 'Increasing' WHEN td.net_5d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_5d,
-            ABS(COALESCE(td.net_5d, 0)) AS change_5d,
+            ROUND(ABS(COALESCE(td.net_5d, 0)) / NULLIF(ABS(td.cumulative_net), 1) * 100, 2) AS change_5d,
+            
             CASE WHEN td.net_10d > 0 THEN 'Increasing' WHEN td.net_10d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_10d,
-            ABS(COALESCE(td.net_10d, 0)) AS change_10d,
+            ROUND(ABS(COALESCE(td.net_10d, 0)) / NULLIF(ABS(td.cumulative_net), 1) * 100, 2) AS change_10d,
+            
             CASE WHEN td.net_20d > 0 THEN 'Increasing' WHEN td.net_20d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_20d,
-            ABS(COALESCE(td.net_20d, 0)) AS change_20d,
+            ROUND(ABS(COALESCE(td.net_20d, 0)) / NULLIF(ABS(td.cumulative_net), 1) * 100, 2) AS change_20d,
+            
             CASE WHEN td.net_50d > 0 THEN 'Increasing' WHEN td.net_50d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_50d,
-            ABS(COALESCE(td.net_50d, 0)) AS change_50d,
+            ROUND(ABS(COALESCE(td.net_50d, 0)) / NULLIF(ABS(td.cumulative_net), 1) * 100, 2) AS change_50d,
+            
             dsp.close as ltp
         FROM trend_data td
         LEFT JOIN (
