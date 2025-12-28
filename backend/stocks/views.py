@@ -4241,3 +4241,130 @@ class StrategySignalViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ['symbol', 'date', 'strategy', 'signal']
     search_fields = ['symbol', 'strategy__name']
 
+    @action(detail=False, methods=['get'])
+    def tracking(self, request):
+        """
+        Returns signal tracking data showing BUY-SELL pairs.
+        Active positions: BUY signals without corresponding SELL signals
+        Closed positions: Matched BUY-SELL pairs with return calculations
+        
+        Excludes sector indices and non-tradeable symbols as per NEPSE rules.
+        """
+        from datetime import datetime, timedelta
+        from collections import defaultdict
+        
+        # List of sector indices and non-tradeable symbols to exclude
+        EXCLUDED_SYMBOLS = [
+            'NEPSE', 'SENSITIVE', 'FLOAT'
+        ]
+        
+        # Get all unique sector names from the companies table
+        # These are sector aggregates, not individual tradeable stocks
+        from stocks.models import Company
+        sector_names = Company.objects.values_list('sector', flat=True).distinct()
+        
+        # Combine excluded symbols with sector names
+        all_excluded = list(EXCLUDED_SYMBOLS) + list(sector_names)
+        
+        # Fetch all signals ordered by date, excluding sector indices and sector aggregates
+        signals = StrategySignal.objects.exclude(
+            symbol__in=all_excluded
+        ).exclude(
+            symbol__icontains='INDEX'
+        ).order_by('symbol', 'date')
+        
+        # Group signals by symbol AND strategy
+        symbol_strategy_signals = defaultdict(list)
+        for signal in signals:
+            key = (signal.symbol, signal.strategy.id)
+            symbol_strategy_signals[key].append(signal)
+        
+        active_positions = []
+        closed_positions = []
+        
+        # Process each symbol-strategy combination's signals
+        for (symbol, strategy_id), sig_list in symbol_strategy_signals.items():
+            # Track unmatched BUY signals for this specific strategy
+            open_buys = []
+            
+            for signal in sig_list:
+                if signal.signal == 'BUY':
+                    # Add to open buys
+                    open_buys.append(signal)
+                elif signal.signal == 'SELL' and open_buys:
+                    # Match with the oldest BUY signal from SAME strategy (FIFO)
+                    # But only if at least 3 days have passed (NEPSE rule)
+                    buy_signal = open_buys[0]
+                    days_between = (signal.date - buy_signal.date).days
+                    
+                    if days_between >= 3:
+                        # Valid match - remove from open buys
+                        buy_signal = open_buys.pop(0)
+                        
+                        # Calculate metrics
+                        buy_price = float(buy_signal.last_close) if buy_signal.last_close else 0
+                        sell_price = float(signal.last_close) if signal.last_close else 0
+                        
+                        return_pct = 0
+                        if buy_price > 0:
+                            return_pct = ((sell_price - buy_price) / buy_price) * 100
+                        
+                        closed_positions.append({
+                            'symbol': symbol,
+                            'buy_signal': StrategySignalSerializer(buy_signal).data,
+                            'sell_signal': StrategySignalSerializer(signal).data,
+                            'buy_date': buy_signal.date.isoformat(),
+                            'sell_date': signal.date.isoformat(),
+                            'buy_price': str(buy_price),
+                            'sell_price': str(sell_price),
+                            'return_pct': round(return_pct, 2),
+                            'days_held': days_between,
+                            'buy_strategy': buy_signal.strategy.name,
+                            'sell_strategy': signal.strategy.name  # Will always match buy_strategy now
+                        })
+                    # If less than 3 days, keep the BUY signal as open and ignore this SELL
+            
+            # Remaining open buys are active positions
+            for buy_signal in open_buys:
+                buy_price = float(buy_signal.last_close) if buy_signal.last_close else 0
+                days_held = (datetime.now().date() - buy_signal.date).days
+                
+                active_positions.append({
+                    'symbol': symbol,
+                    'buy_signal': StrategySignalSerializer(buy_signal).data,
+                    'buy_date': buy_signal.date.isoformat(),
+                    'buy_price': str(buy_price),
+                    'days_held': days_held,
+                    'strategies': [buy_signal.strategy.name]  # Single strategy now
+                })
+        
+        # Group active positions by symbol, date, and price
+        # This consolidates multiple strategies that triggered the same BUY signal
+        grouped_active = {}
+        for pos in active_positions:
+            key = (pos['symbol'], pos['buy_date'], pos['buy_price'])
+            if key in grouped_active:
+                # Add strategy to existing group
+                grouped_active[key]['strategies'].extend(pos['strategies'])
+            else:
+                # Create new group
+                grouped_active[key] = pos
+        
+        # Convert back to list
+        active_positions = list(grouped_active.values())
+        
+        # Sort by date (most recent first)
+        active_positions.sort(key=lambda x: x['buy_date'], reverse=True)
+        closed_positions.sort(key=lambda x: x['sell_date'], reverse=True)
+        
+        return Response({
+            'active_positions': active_positions,
+            'closed_positions': closed_positions,
+            'summary': {
+                'total_active': len(active_positions),
+                'total_closed': len(closed_positions),
+                'avg_return': round(sum(p['return_pct'] for p in closed_positions) / len(closed_positions), 2) if closed_positions else 0,
+                'avg_holding_period': round(sum(p['days_held'] for p in closed_positions) / len(closed_positions), 1) if closed_positions else 0
+            }
+        })
+

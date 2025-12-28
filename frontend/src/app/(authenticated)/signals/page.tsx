@@ -23,7 +23,42 @@ interface StrategySignal {
     metadata: any;
 }
 
+interface ActivePosition {
+    symbol: string;
+    buy_signal: StrategySignal;
+    buy_date: string;
+    buy_price: string;
+    days_held: number;
+    strategies: string[];
+}
+
+interface ClosedPosition {
+    symbol: string;
+    buy_signal: StrategySignal;
+    sell_signal: StrategySignal;
+    buy_date: string;
+    sell_date: string;
+    buy_price: string;
+    sell_price: string;
+    return_pct: number;
+    days_held: number;
+    buy_strategy: string;
+    sell_strategy: string;
+}
+
+interface TrackingData {
+    active_positions: ActivePosition[];
+    closed_positions: ClosedPosition[];
+    summary: {
+        total_active: number;
+        total_closed: number;
+        avg_return: number;
+        avg_holding_period: number;
+    };
+}
+
 type ViewMode = 'all' | 'by-symbol';
+type TabMode = 'signals' | 'tracking';
 type SignalFilter = 'ALL' | 'BUY' | 'SELL' | 'HOLD';
 
 // Component to render the grouped table
@@ -319,13 +354,22 @@ export default function SignalsPage() {
     const [signals, setSignals] = useState<StrategySignal[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<ViewMode>('all');
+    const [tabMode, setTabMode] = useState<TabMode>('signals');
     const [signalFilter, setSignalFilter] = useState<SignalFilter>('ALL');
     const [searchTerm, setSearchTerm] = useState('');
     const [generating, setGenerating] = useState(false);
+    const [trackingData, setTrackingData] = useState<TrackingData | null>(null);
+    const [trackingLoading, setTrackingLoading] = useState(false);
 
     useEffect(() => {
         fetchSignals();
     }, []);
+
+    useEffect(() => {
+        if (tabMode === 'tracking') {
+            fetchTrackingData();
+        }
+    }, [tabMode]);
 
     const fetchSignals = async () => {
         setLoading(true);
@@ -340,6 +384,19 @@ export default function SignalsPage() {
             console.error("Failed to fetch signals", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchTrackingData = async () => {
+        setTrackingLoading(true);
+        try {
+            const response = await api.get('/api/stocks/signals/tracking/');
+            setTrackingData(response.data);
+        } catch (error) {
+            console.error("Failed to fetch tracking data", error);
+            toast.error('Failed to load tracking data');
+        } finally {
+            setTrackingLoading(false);
         }
     };
 
@@ -491,198 +548,453 @@ export default function SignalsPage() {
                     </CardContent>
                 </Card>
 
-                {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
-                    <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-white">
-                        <CardContent className="p-3">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-emerald-600 mb-0.5">BUY Signals</p>
-                                    <p className="text-3xl font-bold text-emerald-700">{buyCount}</p>
-                                    <p className="text-xs text-emerald-600 mt-0.5">
-                                        {total > 0 ? ((buyCount / total) * 100).toFixed(1) : 0}% of total
-                                    </p>
-                                </div>
-                                <div className="p-2 bg-emerald-100 rounded-lg">
-                                    <TrendingUp className="w-5 h-5 text-emerald-600" />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                {/* Tab Navigation */}
+                <Card className="mb-3">
+                    <CardContent className="py-3 px-4">
+                        <div className="flex gap-2">
+                            <Button
+                                variant={tabMode === 'signals' ? 'default' : 'outline'}
+                                onClick={() => setTabMode('signals')}
+                                className={cn(
+                                    'font-semibold',
+                                    tabMode === 'signals' && 'bg-blue-600 hover:bg-blue-700'
+                                )}
+                            >
+                                All Signals
+                            </Button>
+                            <Button
+                                variant={tabMode === 'tracking' ? 'default' : 'outline'}
+                                onClick={() => setTabMode('tracking')}
+                                className={cn(
+                                    'font-semibold',
+                                    tabMode === 'tracking' && 'bg-blue-600 hover:bg-blue-700'
+                                )}
+                            >
+                                Signal Tracking
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
 
-                    <Card className="border-rose-200 bg-gradient-to-br from-rose-50 to-white">
-                        <CardContent className="p-3">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-rose-600 mb-0.5">SELL Signals</p>
-                                    <p className="text-3xl font-bold text-rose-700">{sellCount}</p>
-                                    <p className="text-xs text-rose-600 mt-0.5">
-                                        {total > 0 ? ((sellCount / total) * 100).toFixed(1) : 0}% of total
-                                    </p>
-                                </div>
-                                <div className="p-2 bg-rose-100 rounded-lg">
-                                    <TrendingDown className="w-5 h-5 text-rose-600" />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-white">
-                        <CardContent className="p-3">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-amber-600 mb-0.5">HOLD Signals</p>
-                                    <p className="text-3xl font-bold text-amber-700">{holdCount}</p>
-                                    <p className="text-xs text-amber-600 mt-0.5">
-                                        {total > 0 ? ((holdCount / total) * 100).toFixed(1) : 0}% of total
-                                    </p>
-                                </div>
-                                <div className="p-2 bg-amber-100 rounded-lg">
-                                    <Minus className="w-5 h-5 text-amber-600" />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-white">
-                        <CardContent className="p-3">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-blue-600 mb-0.5">Total Signals</p>
-                                    <p className="text-3xl font-bold text-blue-700">{total}</p>
-                                    <p className="text-xs text-blue-600 mt-0.5">
-                                        {Object.keys(groupedBySymbol).length} symbols
-                                    </p>
-                                </div>
-                                <div className="p-2 bg-blue-100 rounded-lg">
-                                    <BarChart3 className="w-5 h-5 text-blue-600" />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Signals Display */}
-                {loading ? (
-                    <Card>
-                        <CardContent className="p-12 text-center">
-                            <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                            <p className="text-slate-600">Loading signals...</p>
-                        </CardContent>
-                    </Card>
-                ) : (
+                {/* Tab Content */}
+                {tabMode === 'signals' && (
                     <>
-                        {viewMode === 'by-symbol' && (
-                            <div className="space-y-6">
-                                {Object.entries(groupedBySymbol).map(([symbol, symbolSignals]) => {
-                                    const buySignals = symbolSignals.filter(s => s.signal === 'BUY');
-                                    const sellSignals = symbolSignals.filter(s => s.signal === 'SELL');
-                                    const holdSignals = symbolSignals.filter(s => s.signal === 'HOLD' || s.signal.startsWith('HOLD'));
-
-                                    return (
-                                        <Card key={symbol} className="overflow-hidden">
-                                            <CardHeader className="bg-white border-b py-2 px-4">
-                                                <div className="flex items-center justify-between">
-                                                    <div>
-                                                        <CardTitle className="text-lg font-bold text-slate-800">{symbol}</CardTitle>
-                                                        <p className="text-xs text-slate-500 mt-0.5">
-                                                            {symbolSignals.length} strategies
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <div className="text-center px-3 py-1 bg-emerald-50 rounded border border-emerald-200">
-                                                            <p className="text-xs text-emerald-600 font-medium">BUY</p>
-                                                            <p className="text-sm font-bold text-emerald-700">{buySignals.length}</p>
-                                                        </div>
-                                                        <div className="text-center px-3 py-1 bg-rose-50 rounded border border-rose-200">
-                                                            <p className="text-xs text-rose-600 font-medium">SELL</p>
-                                                            <p className="text-sm font-bold text-rose-700">{sellSignals.length}</p>
-                                                        </div>
-                                                        <div className="text-center px-3 py-1 bg-amber-50 rounded border border-amber-200">
-                                                            <p className="text-xs text-amber-600 font-medium">HOLD</p>
-                                                            <p className="text-sm font-bold text-amber-700">{holdSignals.length}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </CardHeader>
-                                            <CardContent className="p-6">
-                                                {/* Sprint Board - Three Columns */}
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                                    {/* BUY Column */}
-                                                    <div className="space-y-3">
-                                                        <div className="flex items-center gap-2 pb-3 border-b-2 border-emerald-200">
-                                                            <TrendingUp className="w-5 h-5 text-emerald-600" />
-                                                            <h3 className="text-sm font-bold text-emerald-700 uppercase tracking-wide">
-                                                                BUY ({buySignals.length})
-                                                            </h3>
-                                                        </div>
-                                                        <div className="flex flex-wrap gap-2 min-h-[100px]">
-                                                            {buySignals.length > 0 ? (
-                                                                buySignals.map(sig => (
-                                                                    <StrategyCard key={sig.id} signal={sig} />
-                                                                ))
-                                                            ) : (
-                                                                <p className="text-xs text-slate-400 text-center py-4 w-full">No BUY signals</p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-
-                                                    {/* SELL Column */}
-                                                    <div className="space-y-3">
-                                                        <div className="flex items-center gap-2 pb-3 border-b-2 border-rose-200">
-                                                            <TrendingDown className="w-5 h-5 text-rose-600" />
-                                                            <h3 className="text-sm font-bold text-rose-700 uppercase tracking-wide">
-                                                                SELL ({sellSignals.length})
-                                                            </h3>
-                                                        </div>
-                                                        <div className="flex flex-wrap gap-2 min-h-[100px]">
-                                                            {sellSignals.length > 0 ? (
-                                                                sellSignals.map(sig => (
-                                                                    <StrategyCard key={sig.id} signal={sig} />
-                                                                ))
-                                                            ) : (
-                                                                <p className="text-xs text-slate-400 text-center py-4 w-full">No SELL signals</p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-
-                                                    {/* HOLD Column */}
-                                                    <div className="space-y-3">
-                                                        <div className="flex items-center gap-2 pb-3 border-b-2 border-amber-200">
-                                                            <Minus className="w-5 h-5 text-amber-600" />
-                                                            <h3 className="text-sm font-bold text-amber-700 uppercase tracking-wide">
-                                                                HOLD ({holdSignals.length})
-                                                            </h3>
-                                                        </div>
-                                                        <div className="flex flex-wrap gap-2 min-h-[100px]">
-                                                            {holdSignals.length > 0 ? (
-                                                                holdSignals.map(sig => (
-                                                                    <StrategyCard key={sig.id} signal={sig} />
-                                                                ))
-                                                            ) : (
-                                                                <p className="text-xs text-slate-400 text-center py-4 w-full">No HOLD signals</p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    );
-                                })}
-                            </div>
-                        )}
-
-                        {viewMode === 'all' && (
-                            <GroupedSignalsTable signals={filteredSignals} getSignalBadge={getSignalBadge} />
-                        )}
-
-                        {filteredSignals.length === 0 && (
-                            <Card>
-                                <CardContent className="p-12 text-center">
-                                    <p className="text-slate-600">No signals found matching your filters.</p>
+                        {/* Summary Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
+                            <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-white">
+                                <CardContent className="p-3">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-emerald-600 mb-0.5">BUY Signals</p>
+                                            <p className="text-3xl font-bold text-emerald-700">{buyCount}</p>
+                                            <p className="text-xs text-emerald-600 mt-0.5">
+                                                {total > 0 ? ((buyCount / total) * 100).toFixed(1) : 0}% of total
+                                            </p>
+                                        </div>
+                                        <div className="p-2 bg-emerald-100 rounded-lg">
+                                            <TrendingUp className="w-5 h-5 text-emerald-600" />
+                                        </div>
+                                    </div>
                                 </CardContent>
                             </Card>
+
+                            <Card className="border-rose-200 bg-gradient-to-br from-rose-50 to-white">
+                                <CardContent className="p-3">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-rose-600 mb-0.5">SELL Signals</p>
+                                            <p className="text-3xl font-bold text-rose-700">{sellCount}</p>
+                                            <p className="text-xs text-rose-600 mt-0.5">
+                                                {total > 0 ? ((sellCount / total) * 100).toFixed(1) : 0}% of total
+                                            </p>
+                                        </div>
+                                        <div className="p-2 bg-rose-100 rounded-lg">
+                                            <TrendingDown className="w-5 h-5 text-rose-600" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-white">
+                                <CardContent className="p-3">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-amber-600 mb-0.5">HOLD Signals</p>
+                                            <p className="text-3xl font-bold text-amber-700">{holdCount}</p>
+                                            <p className="text-xs text-amber-600 mt-0.5">
+                                                {total > 0 ? ((holdCount / total) * 100).toFixed(1) : 0}% of total
+                                            </p>
+                                        </div>
+                                        <div className="p-2 bg-amber-100 rounded-lg">
+                                            <Minus className="w-5 h-5 text-amber-600" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-white">
+                                <CardContent className="p-3">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-blue-600 mb-0.5">Total Signals</p>
+                                            <p className="text-3xl font-bold text-blue-700">{total}</p>
+                                            <p className="text-xs text-blue-600 mt-0.5">
+                                                {Object.keys(groupedBySymbol).length} symbols
+                                            </p>
+                                        </div>
+                                        <div className="p-2 bg-blue-100 rounded-lg">
+                                            <BarChart3 className="w-5 h-5 text-blue-600" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Signals Display */}
+                        {loading ? (
+                            <Card>
+                                <CardContent className="p-12 text-center">
+                                    <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+                                    <p className="text-slate-600">Loading signals...</p>
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            <>
+                                {viewMode === 'by-symbol' && (
+                                    <div className="space-y-6">
+                                        {Object.entries(groupedBySymbol).map(([symbol, symbolSignals]) => {
+                                            const buySignals = symbolSignals.filter(s => s.signal === 'BUY');
+                                            const sellSignals = symbolSignals.filter(s => s.signal === 'SELL');
+                                            const holdSignals = symbolSignals.filter(s => s.signal === 'HOLD' || s.signal.startsWith('HOLD'));
+
+                                            return (
+                                                <Card key={symbol} className="overflow-hidden">
+                                                    <CardHeader className="bg-white border-b py-2 px-4">
+                                                        <div className="flex items-center justify-between">
+                                                            <div>
+                                                                <CardTitle className="text-lg font-bold text-slate-800">{symbol}</CardTitle>
+                                                                <p className="text-xs text-slate-500 mt-0.5">
+                                                                    {symbolSignals.length} strategies
+                                                                </p>
+                                                            </div>
+                                                            <div className="flex gap-2">
+                                                                <div className="text-center px-3 py-1 bg-emerald-50 rounded border border-emerald-200">
+                                                                    <p className="text-xs text-emerald-600 font-medium">BUY</p>
+                                                                    <p className="text-sm font-bold text-emerald-700">{buySignals.length}</p>
+                                                                </div>
+                                                                <div className="text-center px-3 py-1 bg-rose-50 rounded border border-rose-200">
+                                                                    <p className="text-xs text-rose-600 font-medium">SELL</p>
+                                                                    <p className="text-sm font-bold text-rose-700">{sellSignals.length}</p>
+                                                                </div>
+                                                                <div className="text-center px-3 py-1 bg-amber-50 rounded border border-amber-200">
+                                                                    <p className="text-xs text-amber-600 font-medium">HOLD</p>
+                                                                    <p className="text-sm font-bold text-amber-700">{holdSignals.length}</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </CardHeader>
+                                                    <CardContent className="p-6">
+                                                        {/* Sprint Board - Three Columns */}
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                            {/* BUY Column */}
+                                                            <div className="space-y-3">
+                                                                <div className="flex items-center gap-2 pb-3 border-b-2 border-emerald-200">
+                                                                    <TrendingUp className="w-5 h-5 text-emerald-600" />
+                                                                    <h3 className="text-sm font-bold text-emerald-700 uppercase tracking-wide">
+                                                                        BUY ({buySignals.length})
+                                                                    </h3>
+                                                                </div>
+                                                                <div className="flex flex-wrap gap-2 min-h-[100px]">
+                                                                    {buySignals.length > 0 ? (
+                                                                        buySignals.map(sig => (
+                                                                            <StrategyCard key={sig.id} signal={sig} />
+                                                                        ))
+                                                                    ) : (
+                                                                        <p className="text-xs text-slate-400 text-center py-4 w-full">No BUY signals</p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* SELL Column */}
+                                                            <div className="space-y-3">
+                                                                <div className="flex items-center gap-2 pb-3 border-b-2 border-rose-200">
+                                                                    <TrendingDown className="w-5 h-5 text-rose-600" />
+                                                                    <h3 className="text-sm font-bold text-rose-700 uppercase tracking-wide">
+                                                                        SELL ({sellSignals.length})
+                                                                    </h3>
+                                                                </div>
+                                                                <div className="flex flex-wrap gap-2 min-h-[100px]">
+                                                                    {sellSignals.length > 0 ? (
+                                                                        sellSignals.map(sig => (
+                                                                            <StrategyCard key={sig.id} signal={sig} />
+                                                                        ))
+                                                                    ) : (
+                                                                        <p className="text-xs text-slate-400 text-center py-4 w-full">No SELL signals</p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* HOLD Column */}
+                                                            <div className="space-y-3">
+                                                                <div className="flex items-center gap-2 pb-3 border-b-2 border-amber-200">
+                                                                    <Minus className="w-5 h-5 text-amber-600" />
+                                                                    <h3 className="text-sm font-bold text-amber-700 uppercase tracking-wide">
+                                                                        HOLD ({holdSignals.length})
+                                                                    </h3>
+                                                                </div>
+                                                                <div className="flex flex-wrap gap-2 min-h-[100px]">
+                                                                    {holdSignals.length > 0 ? (
+                                                                        holdSignals.map(sig => (
+                                                                            <StrategyCard key={sig.id} signal={sig} />
+                                                                        ))
+                                                                    ) : (
+                                                                        <p className="text-xs text-slate-400 text-center py-4 w-full">No HOLD signals</p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                {viewMode === 'all' && (
+                                    <GroupedSignalsTable signals={filteredSignals} getSignalBadge={getSignalBadge} />
+                                )}
+
+                                {filteredSignals.length === 0 && (
+                                    <Card>
+                                        <CardContent className="p-12 text-center">
+                                            <p className="text-slate-600">No signals found matching your filters.</p>
+                                        </CardContent>
+                                    </Card>
+                                )}
+                            </>
                         )}
+                    </>
+                )}
+
+                {/* Tracking View */}
+                {tabMode === 'tracking' && (
+                    <>
+                        {trackingLoading ? (
+                            <Card>
+                                <CardContent className="p-12 text-center">
+                                    <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+                                    <p className="text-slate-600">Loading tracking data...</p>
+                                </CardContent>
+                            </Card>
+                        ) : trackingData ? (
+                            <>
+                                {/* Tracking Summary Cards */}
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
+                                    <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-white">
+                                        <CardContent className="p-3">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-sm font-medium text-blue-600 mb-0.5">Active Positions</p>
+                                                    <p className="text-3xl font-bold text-blue-700">{trackingData.summary.total_active}</p>
+                                                    <p className="text-xs text-blue-600 mt-0.5">Awaiting SELL signal</p>
+                                                </div>
+                                                <div className="p-2 bg-blue-100 rounded-lg">
+                                                    <TrendingUp className="w-5 h-5 text-blue-600" />
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-white">
+                                        <CardContent className="p-3">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-sm font-medium text-purple-600 mb-0.5">Closed Positions</p>
+                                                    <p className="text-3xl font-bold text-purple-700">{trackingData.summary.total_closed}</p>
+                                                    <p className="text-xs text-purple-600 mt-0.5">Completed trades</p>
+                                                </div>
+                                                <div className="p-2 bg-purple-100 rounded-lg">
+                                                    <BarChart3 className="w-5 h-5 text-purple-600" />
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    <Card className={cn(
+                                        "border-2",
+                                        trackingData.summary.avg_return >= 0
+                                            ? "border-emerald-200 bg-gradient-to-br from-emerald-50 to-white"
+                                            : "border-rose-200 bg-gradient-to-br from-rose-50 to-white"
+                                    )}>
+                                        <CardContent className="p-3">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className={cn(
+                                                        "text-sm font-medium mb-0.5",
+                                                        trackingData.summary.avg_return >= 0 ? "text-emerald-600" : "text-rose-600"
+                                                    )}>Average Return</p>
+                                                    <p className={cn(
+                                                        "text-3xl font-bold",
+                                                        trackingData.summary.avg_return >= 0 ? "text-emerald-700" : "text-rose-700"
+                                                    )}>
+                                                        {trackingData.summary.avg_return >= 0 ? '+' : ''}{trackingData.summary.avg_return}%
+                                                    </p>
+                                                    <p className={cn(
+                                                        "text-xs mt-0.5",
+                                                        trackingData.summary.avg_return >= 0 ? "text-emerald-600" : "text-rose-600"
+                                                    )}>Across all closed</p>
+                                                </div>
+                                                <div className={cn(
+                                                    "p-2 rounded-lg",
+                                                    trackingData.summary.avg_return >= 0 ? "bg-emerald-100" : "bg-rose-100"
+                                                )}>
+                                                    {trackingData.summary.avg_return >= 0 ? (
+                                                        <TrendingUp className="w-5 h-5 text-emerald-600" />
+                                                    ) : (
+                                                        <TrendingDown className="w-5 h-5 text-rose-600" />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50 to-white">
+                                        <CardContent className="p-3">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-sm font-medium text-indigo-600 mb-0.5">Avg Hold Period</p>
+                                                    <p className="text-3xl font-bold text-indigo-700">{trackingData.summary.avg_holding_period}</p>
+                                                    <p className="text-xs text-indigo-600 mt-0.5">Days</p>
+                                                </div>
+                                                <div className="p-2 bg-indigo-100 rounded-lg">
+                                                    <BarChart3 className="w-5 h-5 text-indigo-600" />
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+
+                                {/* Closed Positions Table */}
+                                {trackingData.closed_positions.length > 0 && (
+                                    <Card className="mb-4">
+                                        <CardHeader className="bg-purple-50 border-b py-3 px-4">
+                                            <CardTitle className="text-lg font-bold text-purple-800">Closed Positions</CardTitle>
+                                            <p className="text-xs text-purple-600 mt-1">Matched BUY-SELL signal pairs</p>
+                                        </CardHeader>
+                                        <CardContent className="p-6">
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full">
+                                                    <thead>
+                                                        <tr className="border-b border-slate-200">
+                                                            <th className="text-left p-3 font-bold text-slate-600 text-sm">Symbol</th>
+                                                            <th className="text-left p-3 font-bold text-slate-600 text-sm">Buy Date</th>
+                                                            <th className="text-left p-3 font-bold text-slate-600 text-sm">Sell Date</th>
+                                                            <th className="text-left p-3 font-bold text-slate-600 text-sm">Buy Price</th>
+                                                            <th className="text-left p-3 font-bold text-slate-600 text-sm">Sell Price</th>
+                                                            <th className="text-left p-3 font-bold text-slate-600 text-sm">Return</th>
+                                                            <th className="text-left p-3 font-bold text-slate-600 text-sm">Days Held</th>
+                                                            <th className="text-left p-3 font-bold text-slate-600 text-sm">Strategies</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100">
+                                                        {trackingData.closed_positions.map((position, idx) => (
+                                                            <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                                                                <td className="p-3 font-bold text-slate-800">{position.symbol}</td>
+                                                                <td className="p-3 text-slate-600 text-sm">{position.buy_date}</td>
+                                                                <td className="p-3 text-slate-600 text-sm">{position.sell_date}</td>
+                                                                <td className="p-3 text-slate-600">Rs. {position.buy_price}</td>
+                                                                <td className="p-3 text-slate-600">Rs. {position.sell_price}</td>
+                                                                <td className="p-3">
+                                                                    <Badge className={cn(
+                                                                        'font-bold',
+                                                                        position.return_pct >= 0
+                                                                            ? 'bg-emerald-600 hover:bg-emerald-700'
+                                                                            : 'bg-rose-600 hover:bg-rose-700'
+                                                                    )}>
+                                                                        {position.return_pct >= 0 ? '+' : ''}{position.return_pct}%
+                                                                    </Badge>
+                                                                </td>
+                                                                <td className="p-3 text-slate-600">{position.days_held} days</td>
+                                                                <td className="p-3">
+                                                                    <div className="flex flex-col gap-1">
+                                                                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">
+                                                                            Buy: {position.buy_strategy}
+                                                                        </Badge>
+                                                                        <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-xs">
+                                                                            Sell: {position.sell_strategy}
+                                                                        </Badge>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
+
+                                {/* Active Positions Table */}
+                                {trackingData.active_positions.length > 0 && (
+                                    <Card>
+                                        <CardHeader className="bg-blue-50 border-b py-3 px-4">
+                                            <CardTitle className="text-lg font-bold text-blue-800">Active Positions</CardTitle>
+                                            <p className="text-xs text-blue-600 mt-1">BUY signals awaiting corresponding SELL signals</p>
+                                        </CardHeader>
+                                        <CardContent className="p-6">
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full">
+                                                    <thead>
+                                                        <tr className="border-b border-slate-200">
+                                                            <th className="text-left p-3 font-bold text-slate-600 text-sm">Symbol</th>
+                                                            <th className="text-left p-3 font-bold text-slate-600 text-sm">Buy Date</th>
+                                                            <th className="text-left p-3 font-bold text-slate-600 text-sm">Buy Price</th>
+                                                            <th className="text-left p-3 font-bold text-slate-600 text-sm">Days Held</th>
+                                                            <th className="text-left p-3 font-bold text-slate-600 text-sm">Strategies</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100">
+                                                        {trackingData.active_positions.map((position, idx) => (
+                                                            <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                                                                <td className="p-3 font-bold text-slate-800">{position.symbol}</td>
+                                                                <td className="p-3 text-slate-600">{position.buy_date}</td>
+                                                                <td className="p-3 text-slate-600">Rs. {position.buy_price}</td>
+                                                                <td className="p-3">
+                                                                    <Badge variant="outline" className={cn(
+                                                                        position.days_held <= 7 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                                                            position.days_held <= 30 ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                                                                'bg-rose-50 text-rose-700 border-rose-200'
+                                                                    )}>
+                                                                        {position.days_held} days
+                                                                    </Badge>
+                                                                </td>
+                                                                <td className="p-3">
+                                                                    <div className="flex flex-wrap gap-1">
+                                                                        {position.strategies.map((strategy, sidx) => (
+                                                                            <Badge key={sidx} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                                                                                {strategy}
+                                                                            </Badge>
+                                                                        ))}
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
+
+                                {trackingData.active_positions.length === 0 && trackingData.closed_positions.length === 0 && (
+                                    <Card>
+                                        <CardContent className="p-12 text-center">
+                                            <p className="text-slate-600">No tracking data available yet. Generate some signals to see tracking information.</p>
+                                        </CardContent>
+                                    </Card>
+                                )}
+                            </>
+                        ) : null}
                     </>
                 )}
             </div>

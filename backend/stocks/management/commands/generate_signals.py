@@ -48,14 +48,28 @@ class Command(BaseCommand):
         
         # 4. Get Company Sectors for lookup
         company_sectors = dict(Company.objects.values_list('symbol', 'sector'))
+        
+        # 5. Get all sector names to exclude from signal generation
+        # Sector names appear as symbols but are not tradeable stocks
+        sector_names = set(Company.objects.values_list('sector', flat=True).distinct())
+        
+        # 6. Additional non-tradeable symbols to exclude
+        EXCLUDED_SYMBOLS = {'NEPSE', 'SENSITIVE', 'FLOAT'}
+        all_excluded = sector_names | EXCLUDED_SYMBOLS
 
         self.stdout.write(f"Portfolio contains {len(portfolio_symbols)} unique symbols")
+        self.stdout.write(f"Excluding {len(all_excluded)} sector/index symbols from signal generation")
         self.stdout.write(f"processing {len(strategies)} strategies for {len(symbols)} symbols...")
         
         signals_saved = 0
         signals_skipped = 0
         
         for symbol in symbols:
+            # Skip sector symbols and indices
+            if symbol in all_excluded or 'INDEX' in symbol.upper():
+                self.stdout.write(f"Skipping sector/index symbol: {symbol}")
+                continue
+                
             sector = company_sectors.get(symbol)
             saved, skipped = self.process_symbol(symbol, strategies, portfolio_symbols, sector)
             signals_saved += saved
@@ -202,12 +216,12 @@ class Command(BaseCommand):
                     skipped_count += 1
                     continue
                 
-                # 2. Only save SELL and HOLD signals if stock is in portfolio
-                if final_signal in ['SELL', 'HOLD', 'HOLD_SHORT'] and not is_in_portfolio:
+                # 2. Skip HOLD signals if stock is not in portfolio (only relevant for portfolio management)
+                if final_signal in ['HOLD', 'HOLD_SHORT'] and not is_in_portfolio:
                     skipped_count += 1
                     continue
                 
-                # Save to DB (only BUY, HOLD, and portfolio SELL signals)
+                # Save to DB (BUY and SELL signals for all stocks, HOLD only for portfolio stocks)
                 meta['optimized_params'] = best_params if best_params else "None (Defaults Used)"
                 meta['optimization_scope'] = exp.scope_type if exp else "DEFAULT"
                 meta['experiment_id'] = exp.id if exp else None
