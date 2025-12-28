@@ -99,6 +99,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+        NEXT_PUBLIC_ML_SERVICE_URL: http://localhost:8001
     container_name: stockastic-frontend
     volumes:
       - ./frontend:/app

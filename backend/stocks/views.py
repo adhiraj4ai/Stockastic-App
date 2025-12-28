@@ -2391,8 +2391,8 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def accumulation(self, request):
         """
-        Return accumulation flows by aggregating daily_floorsheet.
-        This provides exact calendar-range flows and avoids sparse data issues.
+        Return accumulation flows.
+        Uses Top 15 Broker Concentration (Holders) to determine Net Accumulation (Smart Money flow).
         """
         time_range = request.query_params.get('range', '1D')
         sector = request.query_params.get('sector', 'All')
@@ -2404,82 +2404,103 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
 
         from django.db import connections
 
-        # Strategy:
-        # 1. Calculate Start Date (Global Max - Days).
-        # 2. Aggregate Buys and Sells from Daily Floorsheet for the period.
-        # 3. Compute Net Flow per Symbol.
+        # Query Logic:
+        # 1. Identify "Smart Money" = Top 15 Holders by Cumulative Net Quantity as of latest date.
+        # 2. Iterate Floorsheet for Selected Time Range.
+        # 3. Sum Net Flow of ONLY the "Smart Money" brokers.
+        #    If Smart Money Buys -> Accumulation.
+        #    If Smart Money Sells -> Distribution.
         
         query = f"""
         WITH ref_date AS (
-            SELECT MAX(transaction_date) as current_date FROM daily_floorsheet
+            SELECT MAX(transaction_date) as max_date FROM daily_cumulative_accumulation
         ),
-        target_range AS (
+        ranked_holders AS (
             SELECT 
-                current_date - INTERVAL '{days} days' as start_date
-            FROM ref_date
+                symbol, entity_id, cumulative_net,
+                ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY cumulative_net DESC) as rank
+            FROM daily_cumulative_accumulation, ref_date
+            WHERE transaction_date = ref_date.max_date
+            AND cumulative_net > 0 
+        ),
+        smart_money AS (
+            SELECT symbol, entity_id as broker 
+            FROM ranked_holders 
+            WHERE rank <= 15 -- Top 15 Holders
+        ),
+        
+        -- Floorsheet Aggregation for Period
+        fs_target AS (
+             SELECT (MAX(transaction_date) - INTERVAL '{days} days') as start_date FROM daily_floorsheet
         ),
         floorsheet_activity AS (
-            -- Union Buys and Sells to normalize broker activity
             SELECT 
                 buyer_id as broker, symbol, transaction_quantity as buy_qty, 0 as sell_qty
-            FROM daily_floorsheet, target_range
-            WHERE transaction_date > target_range.start_date
-            
+            FROM daily_floorsheet, fs_target
+            WHERE transaction_date > fs_target.start_date
             UNION ALL
-            
             SELECT 
                 seller_id as broker, symbol, 0 as buy_qty, transaction_quantity as sell_qty
-            FROM daily_floorsheet, target_range
-            WHERE transaction_date > target_range.start_date
+            FROM daily_floorsheet, fs_target
+            WHERE transaction_date > fs_target.start_date
         ),
-        broker_symbol_summary AS (
-            -- Aggregate Net Flow per Broker-Symbol
+        broker_net AS (
             SELECT 
-                broker, symbol,
+                broker, symbol, (SUM(buy_qty) - SUM(sell_qty)) as net_flow,
                 SUM(buy_qty) as total_buy,
-                SUM(sell_qty) as total_sell,
-                (SUM(buy_qty) - SUM(sell_qty)) as net_flow
+                SUM(sell_qty) as total_sell
             FROM floorsheet_activity
             GROUP BY broker, symbol
+            HAVING (SUM(buy_qty) - SUM(sell_qty)) != 0
         ),
-        symbol_accumulation AS (
-            -- Aggregate to Symbol Level
-            SELECT 
-                symbol,
-                SUM(total_buy) as buy_qty, -- Total Volume (Buy side)
-                SUM(total_sell) as sell_qty, -- Total Volume (Sell side) - Should equal Buy Qty globally but we want Institutional logic?
-                -- Wait, Total Buy = Total Sell in a closed system. 
-                -- We want "Net Accumulation" which implies identifying WHO is accumulating.
-                -- "Accumulation" usually means: Is the Smart Money buying?
-                -- The previous logic summed POSITIVE net flows of big players.
-                -- Let's replicate that: Sum of Net Positive Flows of Brokers vs Sum of Net Negative Flows.
-                SUM(CASE WHEN net_flow > 0 THEN net_flow ELSE 0 END) as institutional_buy,
-                SUM(CASE WHEN net_flow < 0 THEN ABS(net_flow) ELSE 0 END) as institutional_sell,
-                
-                ARRAY_AGG(broker ORDER BY net_flow DESC) FILTER (WHERE net_flow > 0) as buyers,
-                ARRAY_AGG(broker ORDER BY net_flow ASC) FILTER (WHERE net_flow < 0) as sellers
-            FROM broker_symbol_summary
-            GROUP BY symbol
+        
+        symbol_agg AS (
+             SELECT 
+                 bn.symbol,
+                 -- Smart Money Net = Net Flow of Brokers defined in 'smart_money' CTE
+                 SUM(CASE WHEN sm.broker IS NOT NULL THEN bn.net_flow ELSE 0 END) as smart_net_qty,
+                 
+                 -- Total Volume for Context (buy or sell side total)
+                 SUM(bn.total_buy) as total_vol,
+                 
+                 -- Top Buyers/Sellers (Regardless of Smart Money status, for UI links)
+                 ARRAY_AGG(bn.broker ORDER BY bn.net_flow DESC) FILTER (WHERE bn.net_flow > 0) as top_buyers,
+                 ARRAY_AGG(bn.broker ORDER BY bn.net_flow ASC) FILTER (WHERE bn.net_flow < 0) as top_sellers
+                 
+             FROM broker_net bn
+             -- Cast bn.broker to varchar to match sm.broker (entity_id is varchar)
+             LEFT JOIN smart_money sm ON bn.symbol = sm.symbol AND CAST(bn.broker AS VARCHAR) = sm.broker
+             GROUP BY bn.symbol
         )
         SELECT 
             sa.symbol, c."companyName" as name, c."sectorName" as sector,
-            sa.institutional_buy as buy_qty, 
-            sa.institutional_sell as sell_qty, 
-            (sa.institutional_buy - sa.institutional_sell) as net_qty,
-            CASE WHEN (sa.institutional_buy + sa.institutional_sell) > 0 
-                THEN (CAST(sa.institutional_buy AS NUMERIC) / (sa.institutional_buy + sa.institutional_sell)) * 100 
-                ELSE 0 END as accumulation_ratio,
-            COALESCE(sa.buyers[1:3], ARRAY[]::text[]) as top_buyers,
-            COALESCE(sa.sellers[1:3], ARRAY[]::text[]) as top_sellers,
-            dsp.close
-        FROM symbol_accumulation sa
+            
+            -- We just return smart_net_qty as net_qty. 
+            -- Note: buy_qty and sell_qty in UI are just for visual magnitude?
+            -- Let's derive them from smart_net_qty to be consistent with bar charts.
+            
+            CASE WHEN sa.smart_net_qty > 0 THEN sa.smart_net_qty ELSE 0 END as buy_qty,
+            CASE WHEN sa.smart_net_qty < 0 THEN ABS(sa.smart_net_qty) ELSE 0 END as sell_qty,
+            sa.smart_net_qty as net_qty,
+            
+            -- Accumulation Ratio: Smart Money Net / Total Volume of Trade
+            -- Use ABS(Smart Net) just to show magnitude of Smart Money participation
+            CASE WHEN sa.total_vol > 0 
+               THEN (ABS(sa.smart_net_qty) / sa.total_vol) * 100 
+               ELSE 0 END as accumulation_ratio,
+            
+            COALESCE(sa.top_buyers[1:3], ARRAY[]::integer[]) as top_buyers,
+            COALESCE(sa.top_sellers[1:3], ARRAY[]::integer[]) as top_sellers,
+            COALESCE(dsp.close, 0) as close
+        FROM symbol_agg sa
         INNER JOIN companies c ON sa.symbol = c.symbol
         LEFT JOIN (
             SELECT DISTINCT ON (symbol) symbol, close 
-            FROM daily_stock_price ORDER BY symbol, transaction_date DESC
+            FROM daily_stock_price 
+            ORDER BY symbol, transaction_date DESC
         ) dsp ON sa.symbol = dsp.symbol
         WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
-        {"" if sector.lower() == 'all' else f"AND c.\\\"sectorName\\\" = '{sector}'"}
+        {"" if sector.lower() == 'all' else f"AND c.\"sectorName\" = '{sector}'"}
         ORDER BY net_qty DESC;
         """
 

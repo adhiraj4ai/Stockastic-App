@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import { CompanySelect } from '@/components/CompanySelect';
@@ -27,7 +27,10 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import ReactECharts from 'echarts-for-react';
+import nextDynamic from 'next/dynamic';
+const ReactECharts = nextDynamic(() => import('echarts-for-react'), { ssr: false });
+
+export const dynamic = 'force-dynamic';
 
 interface AccumulationData {
     symbol: string;
@@ -120,7 +123,7 @@ interface AccumulationItem {
 
 import { useSearchParams, useRouter } from 'next/navigation';
 
-export default function AccumulationPage() {
+function AccumulationContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const [data, setData] = useState<AccumulationData[]>([]);
@@ -1431,5 +1434,13 @@ export default function AccumulationPage() {
                 }
             `}</style>
         </DashboardLayout >
+    );
+}
+
+export default function AccumulationPage() {
+    return (
+        <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-blue-500" /></div>}>
+            <AccumulationContent />
+        </Suspense>
     );
 }
