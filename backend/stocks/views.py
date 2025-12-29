@@ -2589,8 +2589,8 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
                     THEN ROUND(((CAST(ss.institutional_buy AS NUMERIC) - ss.institutional_sell) / lav.avg_vol_20d) * 100, 2)
                     ELSE 0 
                 END as intensity,
-                COALESCE(ss.top_buyers[1:3], ARRAY[]::text[]) as producers,
-                COALESCE(ss.top_sellers[1:3], ARRAY[]::text[]) as offloaders
+                COALESCE(ss.top_buyers[1:3]::text[], ARRAY[]::text[]) as producers,
+                COALESCE(ss.top_sellers[1:3]::text[], ARRAY[]::text[]) as offloaders
             FROM symbol_accumulation ss
             INNER JOIN companies c ON ss.symbol = c.symbol
             INNER JOIN latest_avg_vol lav ON ss.symbol = lav.symbol

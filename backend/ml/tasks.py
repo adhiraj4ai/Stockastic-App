@@ -183,18 +183,66 @@ def train_model_task(self, symbol, model_type, hyperparameters, user_id=None, op
         train_dates = original_df.index[sequence_length : sequence_length + train_size]
         val_dates = original_df.index[sequence_length + train_size : sequence_length + train_size + val_size]
         
-        # Train model with callback
-        training_metrics = forecaster.train(
-            data_splits['X_train'], data_splits['y_train'],
-            data_splits['X_val'], data_splits['y_val'],
-            train_dates=train_dates,
-            val_dates=val_dates,
-            task=self,  # Deprecated but kept for safety
-            callback=progress_callback
-        )
+        # Check if cross-validation is enabled
+        use_cv = hyperparameters.get('use_cv', True)  # Default to True for robustness
+        n_cv_splits = hyperparameters.get('n_cv_splits', 5)
+        cv_gap = hyperparameters.get('cv_gap', 30)  # 30-day gap between folds
         
-        # Log training scores
-        training_scores_log = f"""
+        if use_cv:
+            # Use cross-validation for robust training
+            cv_log = f"""
+🔄 Cross-Validation Enabled:
+   • Number of Folds: {n_cv_splits}
+   • Temporal Gap: {cv_gap} days
+   • This will train {n_cv_splits} models and select the best one
+"""
+            job.refresh_from_db()
+            job.progress_message = (job.progress_message or '') + '\n' + cv_log
+            job.save(update_fields=['progress_message'])
+            
+            # Combine train and validation data for CV (test set remains separate)
+            X_for_cv = np.concatenate([data_splits['X_train'], data_splits['X_val']], axis=0)
+            y_for_cv = np.concatenate([data_splits['y_train'], data_splits['y_val']], axis=0)
+            cv_dates = original_df.index[sequence_length : sequence_length + len(y_for_cv)]
+            
+            # Train with cross-validation
+            training_metrics = forecaster.train_with_cv(
+                X=X_for_cv,
+                y=y_for_cv,
+                train_dates=cv_dates,
+                n_splits=n_cv_splits,
+                gap=cv_gap,
+                task=self,
+                callback=progress_callback
+            )
+        else:
+            # Standard training without CV (backward compatible)
+            training_metrics = forecaster.train(
+                data_splits['X_train'], data_splits['y_train'],
+                data_splits['X_val'], data_splits['y_val'],
+                train_dates=train_dates,
+                val_dates=val_dates,
+                task=self,
+                callback=progress_callback
+            )
+        
+        # Log training scores (handle both CV and non-CV metrics)
+        if use_cv:
+            # Safely format CV metrics (they might be missing or non-numeric)
+            val_loss_mean = training_metrics.get('final_val_loss_mean')
+            val_loss_std = training_metrics.get('final_val_loss_std', 0)
+            val_mae_mean = training_metrics.get('final_val_mae_mean')
+            val_mae_std = training_metrics.get('final_val_mae_std', 0)
+            
+            training_scores_log = f"""
+📈 Cross-Validation Results:
+   • Number of Folds: {training_metrics.get('n_folds', 'N/A')}
+   • Best Fold: {training_metrics.get('best_fold', 'N/A')}
+   • Avg Validation Loss: {f'{val_loss_mean:.6f} ± {val_loss_std:.6f}' if val_loss_mean is not None else 'N/A'}
+   • Avg Validation MAE: {f'{val_mae_mean:.6f} ± {val_mae_std:.6f}' if val_mae_mean is not None else 'N/A'}
+"""
+        else:
+            training_scores_log = f"""
 📈 Training Performance:
    • Final Training Loss: {training_metrics.get('final_train_loss', 'N/A')}
    • Final Validation Loss: {training_metrics.get('final_val_loss', 'N/A')}
@@ -202,6 +250,7 @@ def train_model_task(self, symbol, model_type, hyperparameters, user_id=None, op
    • Final Validation MAE: {training_metrics.get('final_val_mae', 'N/A')}
    • Epochs Trained: {training_metrics.get('epochs_trained', 'N/A')}
 """
+
         job.refresh_from_db()
         job.progress_message = (job.progress_message or '') + '\n' + training_scores_log
         job.save(update_fields=['progress_message'])

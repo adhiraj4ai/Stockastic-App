@@ -67,7 +67,7 @@ services:
       retries: 3
       start_period: 40s
 
-  # Celery Worker
+  # Celery Worker (Backend tasks)
   celery:
     build:
       context: ./backend
@@ -89,6 +89,62 @@ services:
       - stockastic-network
     healthcheck:
       test: [ "CMD-SHELL", "celery -A stockastic inspect ping || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ML Service Celery Worker (Forecast/ML tasks)
+  ml_service_celery:
+    build:
+      context: ./ml_service
+      dockerfile: Dockerfile
+    container_name: stockastic-ml-celery
+    command: celery -A ml_service worker --loglevel=info -Q ml_tasks
+    volumes:
+      - ./ml_service:/app
+      - ml_models:/app/ml_models
+    env_file:
+      - .env.docker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ml_service:
+        condition: service_healthy
+    networks:
+      - stockastic-network
+    healthcheck:
+      test: [ "CMD-SHELL", "celery -A ml_service inspect ping || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ML Service (Separate Django app for forecasting)
+  ml_service:
+    build:
+      context: ./ml_service
+      dockerfile: Dockerfile
+    container_name: stockastic-ml-service
+    command: python manage.py runserver 0.0.0.0:8001
+    volumes:
+      - ./ml_service:/app
+      - ml_models:/app/ml_models
+    ports:
+      - "8001:8001"
+    env_file:
+      - .env.docker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - stockastic-network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8001/admin/ || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -127,6 +183,8 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  ml_models:
     driver: local
 
 networks:
