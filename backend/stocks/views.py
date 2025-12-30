@@ -2030,8 +2030,70 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 # Optimize for Mean Return
                 return sum(returns) / len(returns)
             
+            # Method selection with smart defaults
+            method = request.data.get('method', 'auto')
+            sampler = None
+            
+            # Calculate total search space size for auto mode
+            total_combinations = 1
+            search_space = {}
+            
+            for param_name, param_config in param_ranges.items():
+                if isinstance(param_config, dict):
+                    p_type = param_config.get('type', 'int')
+                    p_range = param_config.get('range', param_config.get('range', [1, 10]))
+                    start, end = p_range[0], p_range[1]
+                else:
+                    p_type = 'int'
+                    start, end = param_config[0], param_config[1]
+                    
+                if p_type == 'int':
+                    count = int(end) - int(start) + 1
+                    search_space[param_name] = list(range(int(start), int(end) + 1))
+                elif p_type == 'float':
+                    # For floats, use 20 steps
+                    step = (end - start) / 20.0
+                    if step == 0: step = 0.1
+                    values = []
+                    curr = start
+                    while curr <= end + 1e-9:
+                        values.append(round(curr, 4))
+                        curr += step
+                    search_space[param_name] = values
+                    count = len(values)
+                else:
+                    count = int(end) - int(start) + 1
+                    search_space[param_name] = list(range(int(start), int(end) + 1))
+                    
+                total_combinations *= count
+            
+            print(f"Total parameter combinations: {total_combinations}")
+            
+            # Auto mode: use Grid for small spaces, Bayes for large
+            GRID_THRESHOLD = 500  # Max combinations before switching to Bayesian
+            
+            if method == 'auto':
+                if total_combinations <= GRID_THRESHOLD:
+                    method = 'grid'
+                    print(f"Auto mode: Using GRID search ({total_combinations} combinations)")
+                else:
+                    method = 'bayes'
+                    print(f"Auto mode: Using BAYESIAN search ({total_combinations} combinations too large for grid)")
+            
+            if method == 'grid':
+                sampler = optuna.samplers.GridSampler(search_space)
+                # For grid search, n_trials = total_combinations (override user input)
+                n_trials = total_combinations
+                print(f"Grid search will run {n_trials} trials (all combinations)")
+            elif method == 'bayes':
+                # TPE with multivariate for correlated parameters
+                sampler = optuna.samplers.TPESampler(multivariate=True, n_startup_trials=min(10, n_trials // 4))
+                print(f"Bayesian search will run {n_trials} trials")
+            else:
+                sampler = optuna.samplers.TPESampler()
+            
             # Run optimization
-            study = optuna.create_study(direction='maximize', study_name='strategy_optimization')
+            study = optuna.create_study(direction='maximize', study_name='strategy_optimization', sampler=sampler)
             study.optimize(objective, n_trials=n_trials, show_progress_bar=False)
             
             # Get results

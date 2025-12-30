@@ -371,7 +371,7 @@ export default function RunStrategyPage() {
         }
     };
 
-    const handleOptimize = async (paramRanges: any, nTrials: number) => {
+    const handleOptimize = async (paramRanges: any, nTrials: number, method: string) => {
         if (!strategy) return;
 
         // Check scope from params
@@ -393,7 +393,8 @@ export default function RunStrategyPage() {
                 start_date: startDate,
                 end_date: endDate,
                 param_ranges: requestParams,
-                n_trials: nTrials
+                n_trials: nTrials,
+                method: method
             };
 
             if (requestParams._scope === 'ALL') {
@@ -1026,6 +1027,7 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, sectors,
         initialMode === 'sector' ? 'SECTOR' : initialMode === 'all' ? 'ALL' : 'SINGLE'
     );
     const [selectedSector, setSelectedSector] = useState(initialMode === 'sector' ? initialSector : '');
+    const [method, setMethod] = useState<'auto' | 'grid' | 'bayes'>('auto');
 
     const extractParameters = (code: string) => {
         const params: any = {};
@@ -1062,7 +1064,7 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, sectors,
                 toast.error('Please select a sector for optimization');
                 return;
             }
-            onOptimize(finalParams, nTrials);
+            onOptimize(finalParams, nTrials, method);
         } catch (error) {
             setJsonError('Invalid JSON format. Please check your syntax.');
         }
@@ -1083,7 +1085,51 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, sectors,
                     max={200}
                     className="w-full"
                 />
-                <p className="text-xs text-gray-500 mt-1">More trials = better results but slower (recommended: 50-100)</p>
+                <p className="text-xs text-gray-500 mt-1">For Grid search, this is ignored (all combinations are tested)</p>
+            </div>
+
+            <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700 block">Optimization Method</Label>
+                <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="method"
+                            value="auto"
+                            checked={method === 'auto'}
+                            onChange={() => setMethod('auto')}
+                            className="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300"
+                        />
+                        <span className="text-sm text-gray-700">Auto</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="method"
+                            value="grid"
+                            checked={method === 'grid'}
+                            onChange={() => setMethod('grid')}
+                            className="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300"
+                        />
+                        <span className="text-sm text-gray-700">Grid (Exhaustive)</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="method"
+                            value="bayes"
+                            checked={method === 'bayes'}
+                            onChange={() => setMethod('bayes')}
+                            className="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300"
+                        />
+                        <span className="text-sm text-gray-700">Bayesian (Smart)</span>
+                    </label>
+                </div>
+                <p className="text-xs text-gray-500">
+                    {method === 'auto' && 'Auto: Uses Grid for small parameter spaces (≤500 combinations), Bayesian for large ones'}
+                    {method === 'grid' && 'Grid: Tests ALL parameter combinations. Guaranteed to find the best, but can be slow for large ranges.'}
+                    {method === 'bayes' && 'Bayesian: Uses smart sampling to approximate the best parameters quickly. Good for large search spaces.'}
+                </p>
             </div>
 
             <div className="space-y-2">
