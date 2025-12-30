@@ -1684,9 +1684,23 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 'symbol': symbol,
             }
             
-            # Execute User Code
+            # Inject parameters into code - override default values
+            import re
+            modified_code = code
+            if params:
+                for param_name, param_value in params.items():
+                    # Replace class attributes like "n1 = 10" with "n1 = <param_value>"
+                    if isinstance(param_value, (int, float)):
+                        if isinstance(param_value, float):
+                            pattern = rf'(\s{param_name}\s*=\s*)[\d\.]+'
+                            modified_code = re.sub(pattern, rf'\g<1>{param_value:.4f}', modified_code)
+                        else:
+                            pattern = rf'(\s{param_name}\s*=\s*)\d+'
+                            modified_code = re.sub(pattern, rf'\g<1>{int(param_value)}', modified_code)
+            
+            # Execute User Code with overridden params
             try:
-                exec(code, local_scope)
+                exec(modified_code, local_scope)
             except Exception as code_err:
                 return None, f"Code Execution Error: {str(code_err)}", {}
             

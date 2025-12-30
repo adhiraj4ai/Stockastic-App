@@ -431,17 +431,18 @@ export default function RunStrategyPage() {
     };
 
     const handleApplyOptimized = async () => {
-        if (!optimizationResults || !strategy) return;
-        try {
-            await api.patch(`/api/stocks/strategies/${strategyId}/`,
-                { code: optimizationResults.optimized_code }
-            );
-            setStrategy({ ...strategy, code: optimizationResults.optimized_code });
-            setOptimizationResults(null);
-            toast.success('Optimized parameters applied to strategy!');
-        } catch (error: any) {
-            toast.error('Failed to update strategy');
-        }
+        if (!optimizationResults) return;
+
+        // Just update the local parameters JSON - don't modify the strategy code
+        // Each symbol can have its own optimized config
+        setParamsJson(JSON.stringify(optimizationResults.best_params, null, 2));
+
+        // Get the symbol/scope info for the toast message
+        const scopeInfo = symbol || 'selected scope';
+
+        setOptimizationResults(null);
+        setShowOptimizeDialog(false);
+        toast.success(`Optimized config applied for ${scopeInfo}`);
     };
 
     if (loading) return <DashboardLayout><div>Loading...</div></DashboardLayout>;
@@ -1022,7 +1023,6 @@ function MetricsView({ stats, plotHtml, strategyId }: { stats: any, plotHtml?: s
 
 // Optimization Form Component
 function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, sectors, initialMode, initialSector, initialSymbol, onAbort, startDate, endDate, setStartDate, setEndDate, rangeType, setRangeType }: any) {
-    const [nTrials, setNTrials] = useState(50);
     const [scope, setScope] = useState<'SINGLE' | 'SECTOR' | 'ALL'>(
         initialMode === 'sector' ? 'SECTOR' : initialMode === 'all' ? 'ALL' : 'SINGLE'
     );
@@ -1064,7 +1064,7 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, sectors,
                 toast.error('Please select a sector for optimization');
                 return;
             }
-            onOptimize(finalParams, nTrials, method);
+            onOptimize(finalParams, 100, method); // Default trials (Grid search overrides this)
         } catch (error) {
             setJsonError('Invalid JSON format. Please check your syntax.');
         }
@@ -1072,22 +1072,6 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, sectors,
 
     return (
         <div className="p-6 space-y-6">
-            <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">Number of Trials</Label>
-                <Input
-                    type="number"
-                    value={isNaN(nTrials) ? '' : nTrials}
-                    onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        setNTrials(isNaN(val) ? 0 : val);
-                    }}
-                    min={10}
-                    max={200}
-                    className="w-full"
-                />
-                <p className="text-xs text-gray-500 mt-1">For Grid search, this is ignored (all combinations are tested)</p>
-            </div>
-
             <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-700 block">Optimization Method</Label>
                 <div className="flex gap-4">
