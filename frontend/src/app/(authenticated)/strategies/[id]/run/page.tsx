@@ -373,10 +373,15 @@ export default function RunStrategyPage() {
 
     const handleOptimize = async (paramRanges: any, nTrials: number) => {
         if (!strategy) return;
-        if (!symbol) {
+
+        // Check scope from params
+        const scope = paramRanges._scope || 'SINGLE';
+
+        if (scope === 'SINGLE' && !symbol) {
             toast.error('Please select a stock symbol');
             return;
         }
+
         setOptimizing(true);
         try {
             // Clone paramRanges to avoid reference issues and side-effects
@@ -406,7 +411,7 @@ export default function RunStrategyPage() {
             if (abortControllerRef.current) abortControllerRef.current.abort();
             abortControllerRef.current = new AbortController();
 
-            const response = await api.post('/api/stocks/strategies/optimize/', requestData, {
+            const response = await api.post(`/api/stocks/strategies/${strategy.id}/optimize/`, requestData, {
                 signal: abortControllerRef.current.signal
             });
             setOptimizationResults(response.data);

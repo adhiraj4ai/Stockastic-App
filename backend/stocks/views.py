@@ -1840,12 +1840,13 @@ class StrategyViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return None, str(e), {}
 
-    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
-    def optimize(self, request):
+    @action(detail=True, methods=['post'], permission_classes=[AllowAny])
+    def optimize(self, request, pk=None):
         """
         Optimize strategy parameters using Optuna
         """
         import optuna
+        strategy = self.get_object()
         
         code_template = request.data.get('code', '')
         symbol = request.data.get('symbol', 'NABIL')
