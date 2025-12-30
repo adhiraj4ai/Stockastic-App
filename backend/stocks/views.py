@@ -1804,6 +1804,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
         end_date = request.data.get('end_date')
         n_trials = request.data.get('n_trials', 50)
         param_ranges = request.data.get('param_ranges', {})
+        objective_type = request.data.get('objective', 'profit')  # 'win_rate', 'profit', or 'balanced'
         
         # Debug logging
         print(f"\n=== OPTIMIZE DEBUG ===")
@@ -1813,6 +1814,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
         print(f"end_date: {end_date}")
         print(f"n_trials: {n_trials}")
         print(f"param_ranges: {param_ranges}")
+        print(f"objective: {objective_type}")
         print(f"======================\n")
         
         if not param_ranges:
@@ -1965,23 +1967,51 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 
                 # Run backtest for ALL dataframes
                 win_rates = []
+                returns = []
                 for ticker, df_data in data_map.items():
                     try:
                         bt = Backtest(df_data, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
                         stats = bt.run()
+                        
                         # Get win rate - handle potential None or NaN values
                         win_rate = stats.get('Win Rate [%]', 0)
                         if win_rate is None or (isinstance(win_rate, float) and win_rate != win_rate):  # NaN check
                             win_rate = 0
                         win_rates.append(win_rate)
+                        
+                        # Get return percentage
+                        return_pct = stats.get('Return [%]', 0)
+                        if return_pct is None or (isinstance(return_pct, float) and return_pct != return_pct):  # NaN check
+                            return_pct = 0
+                        returns.append(return_pct)
                     except Exception as bt_err:
                         continue # Skip failed backtests
                 
                 if not win_rates:
                     return -9999 # Penalty for failing all
                 
-                # Optimize for Mean Win Rate
-                return sum(win_rates) / len(win_rates)
+                # Calculate objective based on user selection
+                if objective_type == 'win_rate':
+                    # Optimize for Mean Win Rate
+                    return sum(win_rates) / len(win_rates)
+                elif objective_type == 'profit':
+                    # Optimize for Mean Return
+                    return sum(returns) / len(returns)
+                else:  # 'balanced'
+                    # Optimize for balanced combination
+                    # Normalize both metrics to 0-1 scale for fair weighting
+                    avg_win_rate = sum(win_rates) / len(win_rates)
+                    avg_return = sum(returns) / len(returns)
+                    
+                    # Normalize win rate (already 0-100, so divide by 100)
+                    normalized_win_rate = avg_win_rate / 100.0
+                    
+                    # Normalize return (assume reasonable range of -50% to +100%)
+                    # Map to 0-1 scale where 0% return = 0.33, 100% return = 1.0
+                    normalized_return = max(0, min(1, (avg_return + 50) / 150.0))
+                    
+                    # 50/50 weighted combination
+                    return 0.5 * normalized_win_rate + 0.5 * normalized_return
             
             # Method selection with smart defaults
             method = request.data.get('method', 'auto')
@@ -2079,6 +2109,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
             import uuid
             batch_id = uuid.uuid4()
             backtest_results = []
+            all_metrics = []
             
             for symbol_ticker, df_data in data_map.items():
                 res, err, exp_data = self._run_single_backtest(
@@ -2105,6 +2136,12 @@ class StrategyViewSet(viewsets.ModelViewSet):
                         'symbol': symbol_ticker,
                         'pnl_percent': res['stats']['pnl_percent']
                     })
+                    all_metrics.append(res['stats'])
+
+            # Calculate aggregated metrics from all backtests
+            avg_win_rate = sum(m.get('win_rate', 0) for m in all_metrics) / len(all_metrics) if all_metrics else 0
+            avg_max_drawdown = sum(m.get('max_drawdown', 0) for m in all_metrics) / len(all_metrics) if all_metrics else 0
+            avg_profit_factor = sum(m.get('profit_factor', 0) for m in all_metrics) / len(all_metrics) if all_metrics else 0
 
             # Log Optimization Experiment
             try:
@@ -2143,6 +2180,9 @@ class StrategyViewSet(viewsets.ModelViewSet):
             return Response({
                 'best_params': best_params,
                 'best_value': best_value,
+                'win_rate': avg_win_rate,
+                'max_drawdown': avg_max_drawdown,
+                'profit_factor': avg_profit_factor,
                 'n_trials': len(study.trials),
                 'trials': trials_data,
                 'optimized_code': optimized_code,

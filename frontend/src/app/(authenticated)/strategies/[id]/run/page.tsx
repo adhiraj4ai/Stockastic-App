@@ -7,7 +7,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { format, subYears } from "date-fns"
+import { format, subYears, subMonths } from "date-fns"
 import { Play, ArrowLeft, Calendar as CalendarIcon, FileText, TrendingUp, Activity, Zap, Settings, AlertTriangle, ChevronRight, CheckCircle, Save, History, Beaker, ExternalLink, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { CompanySelect } from '@/components/CompanySelect';
@@ -57,6 +57,8 @@ interface PeriodSelectorProps {
     rangeType: '5y' | '10y' | 'all' | 'custom';
     setRangeType: (v: '5y' | '10y' | 'all' | 'custom') => void;
 }
+
+
 
 function PeriodSelector({ startDate, endDate, setStartDate, setEndDate, rangeType, setRangeType }: PeriodSelectorProps) {
 
@@ -162,6 +164,7 @@ function PeriodSelector({ startDate, endDate, setStartDate, setEndDate, rangeTyp
         </div>
     );
 }
+
 export default function RunStrategyPage() {
     const router = useRouter();
     const params = useParams();
@@ -372,7 +375,7 @@ export default function RunStrategyPage() {
         }
     };
 
-    const handleOptimize = async (paramRanges: any, nTrials: number, method: string) => {
+    const handleOptimize = async (paramRanges: any, nTrials: number, method: string, objective: string) => {
         if (!strategy) return;
 
         // Check scope from params
@@ -395,7 +398,8 @@ export default function RunStrategyPage() {
                 end_date: endDate,
                 param_ranges: requestParams,
                 n_trials: nTrials,
-                method: method
+                method: method,
+                objective: objective
             };
 
             if (requestParams._scope === 'ALL') {
@@ -822,7 +826,7 @@ export default function RunStrategyPage() {
             {/* Optimization Dialog */}
             {showOptimizeDialog && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
                         <div className="p-6 border-b border-gray-200">
                             <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                                 <Zap className="text-purple-600" size={24} />
@@ -1029,8 +1033,11 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, optimiza
         initialMode === 'sector' ? 'SECTOR' : initialMode === 'all' ? 'ALL' : 'SINGLE'
     );
     const [selectedSector, setSelectedSector] = useState(initialMode === 'sector' ? initialSector : '');
-    const [method, setMethod] = useState<'auto' | 'grid' | 'bayes'>('auto');
+    const [method, setMethod] = useState<'auto' | 'grid' | 'bayes'>('bayes');
+    const [objective, setObjective] = useState<'win_rate' | 'profit' | 'balanced'>('balanced');
     const [usingStrategyConfig, setUsingStrategyConfig] = useState(false);
+
+
 
     const initialParams = useMemo(() => {
         // Try to use strategy's optimization_config first
@@ -1062,7 +1069,13 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, optimiza
         return { params: finalParams, fromStrategy: false };
     }, [optimizationConfig, strategyCode]);
 
-    const [paramJson, setParamJson] = useState(JSON.stringify(initialParams.params, null, 2));
+    const formatParamsToCheck = (params: any) => {
+        return Object.entries(params)
+            .map(([key, value]) => `${key}: [${(value as number[]).join(', ')}]`)
+            .join('\n');
+    };
+
+    const [paramJson, setParamJson] = useState(formatParamsToCheck(initialParams.params));
 
     useEffect(() => {
         setUsingStrategyConfig(initialParams.fromStrategy);
@@ -1071,7 +1084,47 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, optimiza
 
     const handleSubmit = () => {
         try {
-            const paramRanges = JSON.parse(paramJson);
+            // Support simplified format: key: [min, max] or "key": [min, max]
+            let jsonStr = paramJson.trim();
+
+            // 1. Add quotes to unquoted keys
+            jsonStr = jsonStr.replace(/^(\s*)(\w+)(\s*):/gm, '$1"$2"$3:');
+
+            // 2. Add commas between lines if missing
+            // Matches "]" at EOL (ignoring whitespace) not followed by comma, adds comma
+            jsonStr = jsonStr.replace(/](?!\s*,)\s*$/gm, '],');
+
+            // 3. Wrap in braces if missing
+            if (!jsonStr.startsWith('{')) jsonStr = '{' + jsonStr + '}';
+
+            // 4. Remove comma from very last line inside object
+            jsonStr = jsonStr.replace(/,\s*}/g, '}');
+            // Also remove trailing comma if it was added to the very last line before } was added (if } was missing)
+            jsonStr = jsonStr.replace(/,\s*$/, '');
+            if (jsonStr.endsWith('},')) jsonStr = jsonStr.slice(0, -1); // Helper cleanup
+
+            // Final cleanup of trailing comma inside braces again just in case
+            if (jsonStr.endsWith(',}')) jsonStr = jsonStr.slice(0, 2) + '}';
+
+            // Use JSON5-like loose parsing if possible, but strict JSON.parse needs valid JSON.
+            // Our regexes try to make it valid.
+            // Let's rely on the previous regexes. 
+            // Better regex for Step 2:
+            // jsonStr = jsonStr.replace(/](?!\s*,)(\s*)\n/g, '],$1\n'); 
+
+            // Let's re-do logic slightly more robustly in this block:
+
+            let processStr = paramJson.trim();
+            // 1. Add quotes to unquoted keys
+            processStr = processStr.replace(/^(\s*)(\w+)(\s*):/gm, '$1"$2"$3:');
+            // 2. Add commas
+            processStr = processStr.replace(/](?!\s*,)\s*(\n|$)/g, '],$1');
+            // 3. Remove comma from last item
+            processStr = processStr.replace(/,\s*$/, '');
+            // 4. Wrap
+            if (!processStr.startsWith('{')) processStr = '{' + processStr + '}';
+
+            const paramRanges = JSON.parse(processStr);
             for (const [key, value] of Object.entries(paramRanges)) {
                 if (!Array.isArray(value) || value.length !== 2) {
                     setJsonError(`Invalid format for "${key}". Expected [min, max] array.`);
@@ -1084,127 +1137,96 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, optimiza
                 toast.error('Please select a sector for optimization');
                 return;
             }
-            onOptimize(finalParams, 100, method); // Default trials (Grid search overrides this)
+            onOptimize(finalParams, 100, method, objective); // Pass objective to parent
         } catch (error) {
-            setJsonError('Invalid JSON format. Please check your syntax.');
+            console.error("Params parse error", error);
+            setJsonError('Invalid format. Please use syntax like: n1: [5, 30]');
         }
     };
 
     return (
         <div className="p-6 space-y-6">
-            <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700 block">Optimization Method</Label>
-                <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name="method"
-                            value="auto"
-                            checked={method === 'auto'}
-                            onChange={() => setMethod('auto')}
-                            className="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300"
-                        />
-                        <span className="text-sm text-gray-700">Auto</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name="method"
-                            value="grid"
-                            checked={method === 'grid'}
-                            onChange={() => setMethod('grid')}
-                            className="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300"
-                        />
-                        <span className="text-sm text-gray-700">Grid (Exhaustive)</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name="method"
-                            value="bayes"
-                            checked={method === 'bayes'}
-                            onChange={() => setMethod('bayes')}
-                            className="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300"
-                        />
-                        <span className="text-sm text-gray-700">Bayesian (Smart)</span>
-                    </label>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label className="text-xs font-bold text-gray-500 uppercase">Optimization Method</Label>
+                    <select
+                        value={method}
+                        onChange={(e) => setMethod(e.target.value as 'auto' | 'grid' | 'bayes')}
+                        className="w-full h-9 px-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm bg-white hover:border-gray-400 transition-colors shadow-sm outline-none"
+                    >
+                        <option value="auto">Auto (Smart Selection)</option>
+                        <option value="grid">Grid (Exhaustive)</option>
+                        <option value="bayes">Bayesian (Recommended)</option>
+                    </select>
                 </div>
-                <p className="text-xs text-gray-500">
-                    {method === 'auto' && 'Auto: Uses Grid for small parameter spaces (≤500 combinations), Bayesian for large ones'}
-                    {method === 'grid' && 'Grid: Tests ALL parameter combinations. Guaranteed to find the best, but can be slow for large ranges.'}
-                    {method === 'bayes' && 'Bayesian: Uses smart sampling to approximate the best parameters quickly. Good for large search spaces.'}
-                </p>
+                <div className="space-y-2">
+                    <Label className="text-xs font-bold text-gray-500 uppercase">Optimization Objective</Label>
+                    <select
+                        value={objective}
+                        onChange={(e) => setObjective(e.target.value as 'win_rate' | 'profit' | 'balanced')}
+                        className="w-full h-9 px-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm bg-white hover:border-gray-400 transition-colors shadow-sm outline-none"
+                    >
+                        <option value="profit">Profit (Return %)</option>
+                        <option value="win_rate">Win Rate (%)</option>
+                        <option value="balanced">Balanced (Recommended)</option>
+                    </select>
+                </div>
             </div>
 
-            <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700 block">Optimization Scope</Label>
-                <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name="scope"
-                            value="SINGLE"
-                            checked={scope === 'SINGLE'}
-                            onChange={() => setScope('SINGLE')}
-                            className="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300"
-                        />
-                        <span className="text-sm text-gray-700">Current Symbol Only</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name="scope"
-                            value="SECTOR"
-                            checked={scope === 'SECTOR'}
-                            onChange={() => setScope('SECTOR')}
-                            className="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300"
-                        />
-                        <span className="text-sm text-gray-700">Specific Sector</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name="scope"
-                            value="ALL"
-                            checked={scope === 'ALL'}
-                            onChange={() => setScope('ALL')}
-                            className="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300"
-                        />
-                        <span className="text-sm text-gray-700">All Symbols (Market-wide)</span>
-                    </label>
+            <div className="space-y-3">
+                <Label className="text-xs font-bold text-gray-500 uppercase">Optimization Scope</Label>
+                <div className="flex p-1 bg-gray-100 rounded-lg gap-1">
+                    <button
+                        type="button"
+                        onClick={() => setScope('SINGLE')}
+                        className={`flex-1 py-1.5 px-2 text-[10px] font-bold rounded-md transition-all ${scope === 'SINGLE' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        SINGLE
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setScope('SECTOR')}
+                        className={`flex-1 py-1.5 px-2 text-[10px] font-bold rounded-md transition-all ${scope === 'SECTOR' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        SECTOR
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setScope('ALL')}
+                        className={`flex-1 py-1.5 px-2 text-[10px] font-bold rounded-md transition-all ${scope === 'ALL' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        ALL
+                    </button>
                 </div>
             </div>
 
             {scope === 'SINGLE' && (
-                <div className="mt-2">
-                    <Label className="text-sm font-medium text-gray-700 mb-2 block">Symbol</Label>
-                    <div className="w-full h-9 px-3 rounded-md border border-gray-200 bg-gray-100 text-sm flex items-center text-gray-600">
-                        {initialSymbol || <span className="text-red-500">No symbol selected - please select a symbol first</span>}
+                <div className="space-y-2">
+                    <Label className="text-xs font-bold text-gray-500 uppercase">Symbol</Label>
+                    <div className="w-full h-9 px-3 rounded-md border border-gray-300 bg-gray-50 text-sm flex items-center text-gray-700 font-medium shadow-sm">
+                        {initialSymbol || <span className="text-red-500">No symbol selected</span>}
                     </div>
-                    {!initialSymbol && (
-                        <p className="text-xs text-red-500 mt-1">Go back and select a symbol in the configuration panel</p>
-                    )}
                 </div>
             )}
 
             {scope === 'SECTOR' && (
-                <div className="mt-2">
+                <div className="space-y-2">
+                    <Label className="text-xs font-bold text-gray-500 uppercase">Select Sector</Label>
                     <select
                         value={selectedSector}
                         onChange={(e) => setSelectedSector(e.target.value)}
-                        className="w-full h-9 px-3 rounded-md border border-gray-300 bg-white text-sm"
+                        className="w-full h-9 px-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm bg-white hover:border-gray-400 transition-colors shadow-sm outline-none"
                     >
-                        <option value="">Select a sector...</option>
+                        <option value="">Choose a sector...</option>
                         {sectors?.map((s: any) => (
-                            <option key={s.name} value={s.name}>
-                                {s.name} ({s.count})
-                            </option>
+                            <option key={s.name} value={s.name}>{s.name} ({s.count})</option>
                         ))}
                     </select>
                 </div>
             )}
 
-            <div className="pt-4 border-t border-gray-100">
+
+            <div className="pt-2 border-t border-gray-100">
                 <PeriodSelector
                     startDate={startDate}
                     endDate={endDate}
@@ -1217,7 +1239,7 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, optimiza
 
             <div>
                 <div className="flex items-center justify-between mb-2">
-                    <Label className="text-sm font-medium text-gray-700 block">Parameter Ranges (JSON)</Label>
+                    <Label className="text-xs font-bold text-gray-500 uppercase block">Parameter Ranges</Label>
                     {usingStrategyConfig && (
                         <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-600 border-blue-100 uppercase font-black px-2 py-0.5 animate-in fade-in zoom-in duration-300">
                             <CheckCircle size={10} className="mr-1" /> From Strategy
@@ -1231,8 +1253,9 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, optimiza
                         setJsonError('');
                         setUsingStrategyConfig(false); // User modified it
                     }}
-                    className="w-full h-48 p-3 border border-gray-300 rounded-md font-mono text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder='{\n  "n1": [5, 30],\n  "n2": [20, 100]\n}'
+                    className="w-full h-24 p-2 text-[11px] font-mono border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 outline-none resize-none shadow-sm"
+                    placeholder={`n1: [5, 30]\nn2: [20, 100]`}
+                    rows={5}
                 />
                 {jsonError && (
                     <p className="text-xs text-red-600 mt-1">{jsonError}</p>
@@ -1254,7 +1277,7 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, optimiza
                     )}
                 </Button>
             </div>
-        </div>
+        </div >
     );
 }
 
@@ -1262,9 +1285,23 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, optimiza
 function OptimizationResults({ results, onApply, onClose }: any) {
     return (
         <div className="p-6 space-y-6">
-            <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg border border-purple-200">
-                <div className="text-sm text-gray-600 mb-2">Best Return Achieved</div>
-                <div className="text-4xl font-bold text-purple-600">{results.best_value.toFixed(2)}%</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
+                    <div className="text-xs text-green-700 font-medium mb-1">Return %</div>
+                    <div className="text-2xl font-bold text-green-600">{results.best_value?.toFixed(2)}%</div>
+                </div>
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+                    <div className="text-xs text-blue-700 font-medium mb-1">Win Rate</div>
+                    <div className="text-2xl font-bold text-blue-600">{results.win_rate?.toFixed(1) || 'N/A'}%</div>
+                </div>
+                <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border border-red-200">
+                    <div className="text-xs text-red-700 font-medium mb-1">Max Drawdown</div>
+                    <div className="text-2xl font-bold text-red-600">{results.max_drawdown?.toFixed(2) || 'N/A'}%</div>
+                </div>
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
+                    <div className="text-xs text-purple-700 font-medium mb-1">Profit Factor</div>
+                    <div className="text-2xl font-bold text-purple-600">{results.profit_factor?.toFixed(2) || 'N/A'}</div>
+                </div>
             </div>
 
             <div>
