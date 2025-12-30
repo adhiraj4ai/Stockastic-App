@@ -7,7 +7,8 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Play, ArrowLeft, Calendar, FileText, TrendingUp, Activity, Zap, Settings, AlertTriangle, ChevronRight, CheckCircle, Save, History, Beaker, ExternalLink, Check } from 'lucide-react';
+import { format, subYears } from "date-fns"
+import { Play, ArrowLeft, Calendar as CalendarIcon, FileText, TrendingUp, Activity, Zap, Settings, AlertTriangle, ChevronRight, CheckCircle, Save, History, Beaker, ExternalLink, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { CompanySelect } from '@/components/CompanySelect';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -29,6 +30,14 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
+import { cn } from "@/lib/utils"
+import { Calendar } from "@/components/ui/calendar"
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
+import { DateRange } from "react-day-picker"
 import ExperimentsTab from '../tabs/ExperimentsTab';
 
 interface Strategy {
@@ -39,6 +48,119 @@ interface Strategy {
     default_parameters?: Record<string, any>;
 }
 
+interface PeriodSelectorProps {
+    startDate: string;
+    endDate: string;
+    setStartDate: (v: string) => void;
+    setEndDate: (v: string) => void;
+    rangeType: '5y' | '10y' | 'all' | 'custom';
+    setRangeType: (v: '5y' | '10y' | 'all' | 'custom') => void;
+}
+
+function PeriodSelector({ startDate, endDate, setStartDate, setEndDate, rangeType, setRangeType }: PeriodSelectorProps) {
+
+    // Toggle presets
+    useEffect(() => {
+        const today = new Date();
+        if (rangeType === '10y') {
+            const from = subYears(today, 10);
+            setStartDate(format(from, 'yyyy-MM-dd'));
+            setEndDate(format(today, 'yyyy-MM-dd'));
+        } else if (rangeType === '5y') {
+            const from = subYears(today, 5);
+            setStartDate(format(from, 'yyyy-MM-dd'));
+            setEndDate(format(today, 'yyyy-MM-dd'));
+        } else if (rangeType === 'all') {
+            setStartDate('');
+            setEndDate('');
+        }
+    }, [rangeType, setStartDate, setEndDate]);
+
+    const fromDate = startDate ? new Date(startDate) : undefined;
+    const toDate = endDate ? new Date(endDate) : undefined;
+
+    return (
+        <div className="space-y-4">
+            <Label className="text-xs font-bold text-gray-500 uppercase">Backtest Period</Label>
+            <div className="flex p-1 bg-gray-100 rounded-lg gap-1">
+                {(['10y', '5y', 'all', 'custom'] as const).map((t) => (
+                    <button
+                        key={t}
+                        onClick={() => setRangeType(t)}
+                        className={`flex-1 py-1.5 px-2 text-[10px] font-bold rounded-md transition-all ${rangeType === t ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        {t === 'all' ? 'ALL' : t.toUpperCase()}
+                    </button>
+                ))}
+            </div>
+
+            {rangeType === 'custom' && (
+                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="space-y-1.5">
+                        <Label className="text-[10px] uppercase font-bold text-gray-400 pl-1">From</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className={cn(
+                                        "w-full h-9 justify-start text-left font-medium text-xs bg-white border-gray-200 rounded-xl",
+                                        !fromDate && "text-muted-foreground"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-3.5 w-3.5 text-blue-500" />
+                                    {fromDate ? format(fromDate, "MMM dd, y") : "Select..."}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0 rounded-2xl overflow-hidden shadow-2xl" align="start">
+                                <Calendar
+                                    mode="single"
+                                    selected={fromDate}
+                                    onSelect={(d) => d && setStartDate(format(d, 'yyyy-MM-dd'))}
+                                    initialFocus
+                                    disabled={(d) => d > new Date()}
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <Label className="text-[10px] uppercase font-bold text-gray-400 pl-1">To</Label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className={cn(
+                                        "w-full h-9 justify-start text-left font-medium text-xs bg-white border-gray-200 rounded-xl",
+                                        !toDate && "text-muted-foreground"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-3.5 w-3.5 text-blue-500" />
+                                    {toDate ? format(toDate, "MMM dd, y") : "Select..."}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0 rounded-2xl overflow-hidden shadow-2xl" align="end">
+                                <Calendar
+                                    mode="single"
+                                    selected={toDate}
+                                    onSelect={(d) => d && setEndDate(format(d, 'yyyy-MM-dd'))}
+                                    initialFocus
+                                    disabled={(d) => d > new Date() || !!(fromDate && d < fromDate)}
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                </div>
+            )}
+
+            {!startDate && !endDate && rangeType !== 'custom' && (
+                <div className="flex items-center gap-2 p-2 bg-blue-50/50 rounded-lg border border-blue-100">
+                    <CalendarIcon size={12} className="text-blue-500" />
+                    <span className="text-[10px] text-blue-600 font-medium">Running with full market history</span>
+                </div>
+            )}
+        </div>
+    );
+}
 export default function RunStrategyPage() {
     const router = useRouter();
     const params = useParams();
@@ -75,6 +197,8 @@ export default function RunStrategyPage() {
 
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+
+    const [rangeType, setRangeType] = useState<'5y' | '10y' | 'all' | 'custom'>('10y');
 
     useEffect(() => {
         if (strategyId) {
@@ -452,21 +576,15 @@ export default function RunStrategyPage() {
                                             />
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-bold text-gray-500 uppercase">Start Date</Label>
-                                                <div className="relative">
-                                                    <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-9 bg-white text-xs pl-8" />
-                                                    <Calendar className="absolute left-2.5 top-2.5 text-gray-400" size={14} />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-bold text-gray-500 uppercase">End Date</Label>
-                                                <div className="relative">
-                                                    <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-9 bg-white text-xs pl-8" />
-                                                    <Calendar className="absolute left-2.5 top-2.5 text-gray-400" size={14} />
-                                                </div>
-                                            </div>
+                                        <div className="pt-4 border-t border-gray-100">
+                                            <PeriodSelector
+                                                startDate={startDate}
+                                                endDate={endDate}
+                                                setStartDate={setStartDate}
+                                                setEndDate={setEndDate}
+                                                rangeType={rangeType}
+                                                setRangeType={setRangeType}
+                                            />
                                         </div>
 
                                         <div className="space-y-2 pt-6">
@@ -713,6 +831,12 @@ export default function RunStrategyPage() {
                                 initialMode={mode}
                                 initialSector={sector}
                                 onAbort={handleCancel}
+                                startDate={startDate}
+                                endDate={endDate}
+                                setStartDate={setStartDate}
+                                setEndDate={setEndDate}
+                                rangeType={rangeType}
+                                setRangeType={setRangeType}
                             />
                         ) : (
                             <OptimizationResults
@@ -888,7 +1012,7 @@ function MetricsView({ stats, plotHtml, strategyId }: { stats: any, plotHtml?: s
 }
 
 // Optimization Form Component
-function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, sectors, initialMode, initialSector, onAbort }: any) {
+function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, sectors, initialMode, initialSector, onAbort, startDate, endDate, setStartDate, setEndDate, rangeType, setRangeType }: any) {
     const [nTrials, setNTrials] = useState(50);
     const [scope, setScope] = useState<'SINGLE' | 'SECTOR' | 'ALL'>(
         initialMode === 'sector' ? 'SECTOR' : initialMode === 'all' ? 'ALL' : 'SINGLE'
@@ -1009,6 +1133,17 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, sectors,
                     </select>
                 </div>
             )}
+
+            <div className="pt-4 border-t border-gray-100">
+                <PeriodSelector
+                    startDate={startDate}
+                    endDate={endDate}
+                    setStartDate={setStartDate}
+                    setEndDate={setEndDate}
+                    rangeType={rangeType}
+                    setRangeType={setRangeType}
+                />
+            </div>
 
             <div>
                 <Label className="text-sm font-medium text-gray-700 mb-2 block">Parameter Ranges (JSON)</Label>
