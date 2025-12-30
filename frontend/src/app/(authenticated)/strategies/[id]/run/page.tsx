@@ -73,15 +73,8 @@ export default function RunStrategyPage() {
     const [sector, setSector] = useState('');
     const [sectors, setSectors] = useState<{ name: string; count: number }[]>([]);
 
-    // Default Dates: Last 5 Years
-    const today = new Date();
-    const fiveYearsAgo = new Date();
-    fiveYearsAgo.setFullYear(today.getFullYear() - 5);
-
-    const formatDate = (date: Date) => date.toISOString().split('T')[0];
-
-    const [startDate, setStartDate] = useState(formatDate(fiveYearsAgo));
-    const [endDate, setEndDate] = useState(formatDate(today));
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
     useEffect(() => {
         if (strategyId) {

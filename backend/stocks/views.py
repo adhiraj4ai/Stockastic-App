@@ -1395,9 +1395,6 @@ class StrategyViewSet(viewsets.ModelViewSet):
         start_date = request.data.get('start_date')
         end_date = request.data.get('end_date')
 
-        if not start_date or not end_date:
-            return Response({'error': 'Start and End dates are required'}, status=400)
-        
         if not symbol and not sector:
             return Response({'error': 'Either symbol or sector is required'}, status=400)
 
@@ -1628,10 +1625,10 @@ class StrategyViewSet(viewsets.ModelViewSet):
         """Helper method to run backtest for a single stock. Returns (result_dict, error_msg, experiment_data)."""
         experiment = ExperimentLogger()
         # 1. Fetch Data
-        queryset = DailyStockPrice.objects.filter(
-            ticker=symbol, 
-            date__range=[start_date, end_date]
-        ).order_by('date')
+        queryset = DailyStockPrice.objects.filter(ticker=symbol)
+        if start_date and end_date:
+            queryset = queryset.filter(date__range=[start_date, end_date])
+        queryset = queryset.order_by('date')
         
         ticks_data = list(queryset.values('date', 'open', 'high', 'low', 'close', 'volume'))
         if not ticks_data:
@@ -1858,9 +1855,6 @@ class StrategyViewSet(viewsets.ModelViewSet):
         n_trials = request.data.get('n_trials', 50)
         param_ranges = request.data.get('param_ranges', {})
         
-        if not start_date or not end_date:
-            return Response({'error': 'Start and End dates are required'}, status=400)
-        
         if not param_ranges:
             return Response({'error': 'param_ranges required (e.g., {"n1": [5, 30], "n2": [20, 100]})'}, status=400)
         
@@ -1870,17 +1864,16 @@ class StrategyViewSet(viewsets.ModelViewSet):
             from backtesting.lib import crossover
             from backtesting.test import SMA
             import inspect
-            
             # Fetch data
             data_map = {} # ticker -> DataFrame
             
             if symbol == 'ALL' or (sector and sector.upper() == 'ALL'):
                 # Fetch all active companies
                 companies = Company.objects.filter(status='A').values_list('symbol', flat=True)
-                queryset = DailyStockPrice.objects.filter(
-                    ticker__in=companies,
-                    date__range=[start_date, end_date]
-                ).order_by('date')
+                queryset = DailyStockPrice.objects.filter(ticker__in=companies)
+                if start_date and end_date:
+                    queryset = queryset.filter(date__range=[start_date, end_date])
+                queryset = queryset.order_by('date')
                 all_data = list(queryset.values('ticker', 'date', 'open', 'high', 'low', 'close', 'volume'))
 
             elif sector:
@@ -1889,20 +1882,20 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 if not companies:
                     return Response({'error': f'No active companies found in sector: {sector}'}, status=404)
                 
-                queryset = DailyStockPrice.objects.filter(
-                    ticker__in=companies,
-                    date__range=[start_date, end_date]
-                ).order_by('date')
+                queryset = DailyStockPrice.objects.filter(ticker__in=companies)
+                if start_date and end_date:
+                    queryset = queryset.filter(date__range=[start_date, end_date])
+                queryset = queryset.order_by('date')
                 all_data = list(queryset.values('ticker', 'date', 'open', 'high', 'low', 'close', 'volume'))
 
             else:
                 # Single symbol logic
                 all_data = [] # Placeholder to skip the list logic below
                 
-                queryset = DailyStockPrice.objects.filter(
-                    ticker=symbol,
-                    date__range=[start_date, end_date]
-                ).order_by('date')
+                queryset = DailyStockPrice.objects.filter(ticker=symbol)
+                if start_date and end_date:
+                    queryset = queryset.filter(date__range=[start_date, end_date])
+                queryset = queryset.order_by('date')
                 
                 ticks_data = list(queryset.values('date', 'open', 'high', 'low', 'close', 'volume'))
                 if not ticks_data:
