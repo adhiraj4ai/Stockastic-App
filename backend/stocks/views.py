@@ -2164,7 +2164,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
                         plot_html=res['plot_html'],
                         batch_id=batch_id,
                         status=StrategyExperiment.Status.SUCCESS,
-                        is_published=True # Mark these detailed backtests as published too
+                        is_published=False
                     )
                     backtest_results.append({
                         'symbol': symbol_ticker,
