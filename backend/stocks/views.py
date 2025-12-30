@@ -18,12 +18,13 @@ from . import serializers # For PortfolioAccountSerializer which was added diffe
 from .utils import calculate_broker_commission, calculate_sebon_fee, calculate_dp_charge, calculate_cgt
 from decimal import Decimal
 from django.db.models import Q
-import ast
-import tempfile
 import os
+import tempfile
 import subprocess
 import json
-from .optimization import perform_portfolio_optimization
+import ast
+import inspect
+
 # rest_framework imports are already at the top
 
 class ExperimentLogger:
@@ -851,6 +852,9 @@ class StrategyViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = StrategySerializer
     pagination_class = StandardResultsSetPagination
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name', 'description', 'ticker']
+    ordering_fields = ['created_at', 'pnl_percent', 'sharpe_ratio']
 
     def get_queryset(self):
         # Return user's own strategies and public ones
@@ -863,19 +867,26 @@ class StrategyViewSet(viewsets.ModelViewSet):
         strategy = self.get_object()
         
         # Ownership check
-        if strategy.user != self.request.user:
+        if strategy.user_id != self.request.user.id and not self.request.user.is_staff:
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("You do not have permission to edit this strategy.")
             
         # Check if ANY experiment is published for this strategy
-        if strategy.experiments.filter(is_published=True).exists():
+        has_published = strategy.experiments.filter(is_published=True).exists()
+        if has_published:
             if 'code' in serializer.validated_data:
-                from rest_framework.exceptions import PermissionDenied
-                raise PermissionDenied("This strategy has published configurations and cannot be edited. Unpublish all configurations first.")
+                new_code = serializer.validated_data['code']
+                # Normalize line endings for comparison
+                normalized_new_code = new_code.replace('\r\n', '\n').strip()
+                normalized_old_code = strategy.code.replace('\r\n', '\n').strip()
+                
+                if normalized_new_code != normalized_old_code:
+                    from rest_framework.exceptions import PermissionDenied
+                    raise PermissionDenied("This strategy has published configurations and its code cannot be edited. Unpublish all configurations first.")
+        
         serializer.save()
-
     def perform_destroy(self, instance):
-        if instance.user != self.request.user:
+        if instance.user_id != self.request.user.id and not self.request.user.is_staff:
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("You do not have permission to delete this strategy.")
         instance.delete()
@@ -1309,82 +1320,6 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 })
         
         return Response(unique_best[:10]) # Return top 10 unique scopes
-        code = request.data.get('code', '')
-        
-        # 1. Basic Syntax Check (AST)
-        try:
-            ast.parse(code)
-        except SyntaxError as e:
-            return Response({
-                'valid': False,
-                'issues': [{
-                    'line': e.lineno,
-                    'message': f"Syntax Error: {e.msg}",
-                    'type': 'error',
-                    'symbol': 'syntax-error'
-                }]
-            })
-            
-        # 2. Advanced Linting (Pylint)
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as temp:
-            temp.write(code)
-            temp_path = temp.name
-
-        try:
-            # Run pylint with JSON output
-            # Use sys.executable to ensure we use the same python environment
-            import sys
-            result = subprocess.run(
-                [sys.executable, '-m', 'pylint', '--output-format=json', '--disable=C0114,C0115,C0116,C0103', temp_path],
-                capture_output=True,
-                text=True
-            )
-            
-            issues = []
-            if result.stdout:
-                try:
-                    pylint_issues = json.loads(result.stdout)
-                    for issue in pylint_issues:
-                        issues.append({
-                            'line': issue['line'],
-                            'message': issue['message'],
-                            'type': issue['type'], # convention, refactor, warning, error
-                            'symbol': issue['symbol-id'] if 'symbol-id' in issue else issue['symbol']
-                        })
-                except json.JSONDecodeError:
-                    # If stdout isn't JSON, maybe it crashed or printed something else
-                    issues.append({
-                        'line': 0, 
-                        'message': f"Linter Parse Error: {result.stdout[:100]}", 
-                        'type': 'error', 
-                        'symbol': 'pylint-error'
-                    })
-            
-            if result.stderr:
-                 issues.append({
-                    'line': 0, 
-                    'message': f"Linter Stderr: {result.stderr[:100]}", 
-                    'type': 'error', 
-                    'symbol': 'pylint-stderr'
-                })
-
-            return Response({
-                'valid': len(issues) == 0,
-                'issues': issues,
-                'message': 'Linting completed'
-            })
-
-        except Exception as e:
-            return Response({
-                'valid': False, 
-                'message': str(e), 
-                'issues': [{
-                    'line': 0,
-                    'message': f"Internal Error: {str(e)}",
-                    'type': 'error',
-                    'symbol': 'internal-error'
-                }]
-            })
     @action(detail=True, methods=['post'], permission_classes=[AllowAny])
     def backtest(self, request, pk=None):
         print("DEBUG: Backtest Request Data:", request.data)

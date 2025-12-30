@@ -8,7 +8,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Play, Save, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Play, Save, ArrowLeft, Activity } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Strategy {
@@ -16,6 +16,7 @@ interface Strategy {
     name: string;
     description: string;
     code: string;
+    optimization_config?: string;
 }
 
 export default function EditStrategyPage() {
@@ -25,13 +26,11 @@ export default function EditStrategyPage() {
 
     // Editor State
     const [code, setCode] = useState<string>('# Write your strategy logic here\n\ndef next_move(tick):\n    if tick["close"] > tick["ma_50"]:\n        return "BUY"\n    return "HOLD"');
-    const [validationIssues, setValidationIssues] = useState<any[]>([]);
+    const [optimizationConfig, setOptimizationConfig] = useState<string>('');
 
     // Sidebar State
     const [strategy, setStrategy] = useState<Strategy | null>(null);
-    const [symbol, setSymbol] = useState('NABIL');
-    const [startDate, setStartDate] = useState('2023-01-01');
-    const [endDate, setEndDate] = useState('2023-12-31');
+    const [originalData, setOriginalData] = useState<{ code: string; config: string; name: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -44,26 +43,82 @@ export default function EditStrategyPage() {
     const fetchStrategy = async () => {
         try {
             const response = await api.get(`/api/stocks/strategies/${strategyId}/`);
-            setStrategy(response.data);
-            if (response.data.code) {
-                setCode(response.data.code);
+            const data = response.data;
+            setStrategy(data);
+            if (data.code) {
+                setCode(data.code);
             }
+
+            let initialConfig = data.optimization_config || '';
+            let displayConfig = initialConfig;
+            try {
+                if (initialConfig.trim()) {
+                    const parsed = JSON.parse(initialConfig);
+                    displayConfig = Object.entries(parsed)
+                        .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
+                        .join('\n');
+                }
+            } catch (e) {
+                console.warn('Optimization config is not valid JSON', e);
+            }
+
+            setOptimizationConfig(displayConfig);
+
+            setOriginalData({
+                code: data.code || '',
+                config: displayConfig,
+                name: data.name || ''
+            });
         } catch (error: any) {
             console.error('Failed to fetch strategy', error);
-            // 401 handled by global interceptor
             toast.error('Failed to load strategy');
         } finally {
             setLoading(false);
         }
     };
 
+    const isDirty = originalData && (
+        code !== originalData.code ||
+        optimizationConfig !== originalData.config ||
+        (strategy?.name !== originalData.name)
+    );
+
     const handleSave = async () => {
         setSaving(true);
+
+        // Convert line-by-line back to JSON
+        let configToSave = optimizationConfig;
+        try {
+            const lines = optimizationConfig.split('\n').filter(l => l.trim());
+            const obj: any = {};
+            lines.forEach(line => {
+                const colonIndex = line.indexOf(':');
+                if (colonIndex > -1) {
+                    const key = line.substring(0, colonIndex).trim();
+                    const value = line.substring(colonIndex + 1).trim();
+                    try {
+                        obj[key] = JSON.parse(value);
+                    } catch (e) {
+                        obj[key] = value;
+                    }
+                }
+            });
+            configToSave = JSON.stringify(obj);
+        } catch (e) {
+            console.error('Failed to parse config lines', e);
+        }
+
         try {
             await api.patch(`/api/stocks/strategies/${strategyId}/`, {
                 code,
+                optimization_config: configToSave,
                 name: strategy?.name,
                 description: strategy?.description
+            });
+            setOriginalData({
+                code,
+                config: optimizationConfig,
+                name: strategy?.name || ''
             });
             toast.success('Strategy saved successfully');
         } catch (error: any) {
@@ -84,45 +139,6 @@ export default function EditStrategyPage() {
         setMonacoRef(monaco);
     };
 
-    const handleValidate = async () => {
-        toast.info('Running linter...');
-        setValidationIssues([]);
-
-        // Clear existing markers
-        if (monacoRef && editorRef) {
-            monacoRef.editor.setModelMarkers(editorRef.getModel(), 'owner', []);
-        }
-
-        try {
-            const response = await api.post('/api/stocks/strategies/validate_code/', { code });
-
-            if (response.data.valid) {
-                toast.success('Code looks good!');
-            } else {
-                toast.warning(`${response.data.issues.length} issues found`);
-                setValidationIssues(response.data.issues);
-
-                // Set Markers in Editor
-                if (monacoRef && editorRef) {
-                    const markers = response.data.issues.map((issue: any) => ({
-                        startLineNumber: issue.line,
-                        startColumn: 1,
-                        endLineNumber: issue.line,
-                        endColumn: 1000,
-                        message: issue.message,
-                        severity: issue.type === 'error' ? monacoRef.MarkerSeverity.Error : monacoRef.MarkerSeverity.Warning,
-                    }));
-                    monacoRef.editor.setModelMarkers(editorRef.getModel(), 'owner', markers);
-                }
-            }
-        } catch (error) {
-            console.error('Validation failed', error);
-            toast.error('Validation failed');
-        }
-    };
-
-
-
     if (loading) {
         return (
             <DashboardLayout>
@@ -132,8 +148,9 @@ export default function EditStrategyPage() {
     }
 
     const handleRun = async () => {
-        // Auto-save before running
-        await handleSave();
+        if (isDirty) {
+            await handleSave();
+        }
         router.push(`/strategies/${strategyId}/run`);
     };
 
@@ -147,7 +164,7 @@ export default function EditStrategyPage() {
                             variant="ghost"
                             size="icon"
                             className="h-9 w-9 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                            onClick={() => window.location.href = '/strategies'}
+                            onClick={() => router.push('/strategies')}
                         >
                             <ArrowLeft size={18} />
                         </Button>
@@ -163,6 +180,26 @@ export default function EditStrategyPage() {
                                 <span className="text-[10px] text-gray-400 font-medium truncate">{strategy?.description || 'No description provided'}</span>
                             </div>
                         </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <Button
+                            onClick={handleSave}
+                            disabled={saving || !isDirty}
+                            variant={isDirty ? "default" : "outline"}
+                            className={`h-9 px-4 gap-2 transition-all font-bold ${isDirty ? 'bg-green-600 hover:bg-green-700 text-white shadow-md' : 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed'}`}
+                        >
+                            <Save size={16} />
+                            {saving ? 'Saving...' : 'Save Strategy'}
+                        </Button>
+
+                        <Button
+                            onClick={handleRun}
+                            className="h-9 px-4 gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md active:scale-[0.98] transition-all"
+                        >
+                            <Play size={16} />
+                            Run Backtest
+                        </Button>
                     </div>
                 </div>
 
@@ -190,84 +227,41 @@ export default function EditStrategyPage() {
                     </div>
 
                     {/* Right Sidebar: Configuration */}
-                    <div className="w-80 bg-gray-50 p-5 border-l border-gray-200 flex flex-col gap-6 overflow-y-auto">
-                        <div>
-                            <h3 className="text-[11px] font-bold text-gray-400 mb-4 uppercase tracking-[0.1em]">Actions</h3>
-                            <div className="grid grid-cols-1 gap-3">
-                                <Button
-                                    onClick={handleValidate}
-                                    variant="outline"
-                                    className="w-full justify-start gap-3 h-11 border-gray-200 hover:bg-white hover:border-blue-200 hover:text-blue-600 transition-all font-semibold"
-                                >
-                                    <div className="h-6 w-6 rounded bg-blue-50 flex items-center justify-center text-blue-500">
-                                        <CheckCircle size={14} />
-                                    </div>
-                                    Validate Code
-                                </Button>
-
-                                <Button
-                                    onClick={handleSave}
-                                    disabled={saving}
-                                    variant="outline"
-                                    className="w-full justify-start gap-3 h-11 border-gray-200 hover:bg-white hover:border-green-200 hover:text-green-600 transition-all font-semibold"
-                                >
-                                    <div className={`h-6 w-6 rounded flex items-center justify-center ${saving ? 'bg-gray-100 text-gray-400' : 'bg-green-50 text-green-500'}`}>
-                                        <Save size={14} />
-                                    </div>
-                                    {saving ? 'Saving...' : 'Save Strategy'}
-                                </Button>
-
-                                <div className="h-px bg-gray-200 my-1"></div>
-
-                                <Button
-                                    onClick={handleRun}
-                                    disabled={saving}
-                                    className="w-full justify-start gap-3 h-11 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-100 active:scale-[0.98] transition-all"
-                                >
-                                    <div className="h-6 w-6 rounded bg-blue-500/50 flex items-center justify-center text-white">
-                                        <Play size={14} />
-                                    </div>
-                                    {saving ? 'Saving...' : 'Run Backtest'}
-                                </Button>
+                    <div className="w-80 bg-gray-50 border-l border-gray-200 flex flex-col h-full overflow-hidden">
+                        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+                            <div className="space-y-3">
+                                <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-[0.1em]">Optimization Config</h3>
+                                <p className="text-[10px] text-gray-500 leading-relaxed italic">
+                                    Maintain parameter ranges for optimization runs. One parameter per line in `key: value` format.
+                                </p>
+                                <textarea
+                                    value={optimizationConfig}
+                                    onChange={(e) => setOptimizationConfig(e.target.value)}
+                                    className="w-full h-[400px] p-3 text-xs font-mono bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none shadow-sm"
+                                    placeholder={'fast_window: [10, 30]\nslow_window: [40, 60]'}
+                                />
                             </div>
-                            <p className="text-[10px] text-gray-400 mt-4 leading-relaxed bg-white/50 p-2 rounded border border-gray-100">
-                                This will validate and save your current code changes before initializing the backtest runner.
+
+                            <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-xl space-y-2">
+                                <div className="flex items-center gap-2 text-blue-700 font-bold text-[10px] uppercase">
+                                    <Activity size={12} />
+                                    Tips
+                                </div>
+                                <p className="text-[10px] text-blue-600/80 leading-relaxed">
+                                    Use list format `[min, max]` for continuous ranges or `[1, 2, 3]` for categorical values. Example: `param_name: [start, end]`.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Footer Info */}
+                        <div className="p-3 bg-white border-t border-gray-200 text-center">
+                            <p className="text-[9px] text-gray-400 font-medium lowercase">
+                                {isDirty ? 'unsaved changes detected' : 'all changes saved'}
                             </p>
                         </div>
-
-                        <div className="border-t border-gray-200 pt-6">
-                            <h3 className="flex items-center justify-between text-sm font-bold text-gray-900 mb-3 uppercase tracking-wider">
-                                Linter Results
-                                {validationIssues.length > 0 && <span className="bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs">{validationIssues.length}</span>}
-                            </h3>
-
-                            {validationIssues.length === 0 ? (
-                                <div className="bg-white p-4 rounded-lg border border-gray-200 text-center text-gray-400 text-sm">
-                                    <AlertCircle size={24} className="mx-auto mb-2 opacity-50" />
-                                    No issues found.
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    {validationIssues.map((issue, idx) => (
-                                        <div key={idx} className="bg-white p-3 rounded-lg border border-red-200 shadow-sm border-l-4 border-l-red-500">
-                                            <div className="flex justify-between items-start mb-1">
-                                                <span className="text-xs font-bold text-red-600 uppercase">{issue.type || 'Error'}</span>
-                                                <span className="text-xs text-gray-400">Line {issue.line}</span>
-                                            </div>
-                                            <p className="text-xs text-gray-700 font-medium">{issue.message}</p>
-                                            <p className="text-[10px] text-gray-400 mt-1 font-mono">{issue.symbol}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
                     </div>
                 </div>
-
-
             </div>
-
-        </DashboardLayout >
+        </DashboardLayout>
     );
 }

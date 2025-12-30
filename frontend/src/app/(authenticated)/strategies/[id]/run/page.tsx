@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import api from '@/lib/api';
 import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -46,6 +46,7 @@ interface Strategy {
     description: string;
     code: string;
     default_parameters?: Record<string, any>;
+    optimization_config?: string;
 }
 
 interface PeriodSelectorProps {
@@ -836,6 +837,7 @@ export default function RunStrategyPage() {
                                 onCancel={() => setShowOptimizeDialog(false)}
                                 optimizing={optimizing}
                                 strategyCode={strategy?.code || ""}
+                                optimizationConfig={strategy?.optimization_config}
                                 sectors={sectors}
                                 initialMode={mode}
                                 initialSector={sector}
@@ -1022,18 +1024,31 @@ function MetricsView({ stats, plotHtml, strategyId }: { stats: any, plotHtml?: s
 }
 
 // Optimization Form Component
-function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, sectors, initialMode, initialSector, initialSymbol, onAbort, startDate, endDate, setStartDate, setEndDate, rangeType, setRangeType }: any) {
+function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, optimizationConfig, sectors, initialMode, initialSector, initialSymbol, onAbort, startDate, endDate, setStartDate, setEndDate, rangeType, setRangeType }: any) {
     const [scope, setScope] = useState<'SINGLE' | 'SECTOR' | 'ALL'>(
         initialMode === 'sector' ? 'SECTOR' : initialMode === 'all' ? 'ALL' : 'SINGLE'
     );
     const [selectedSector, setSelectedSector] = useState(initialMode === 'sector' ? initialSector : '');
     const [method, setMethod] = useState<'auto' | 'grid' | 'bayes'>('auto');
+    const [usingStrategyConfig, setUsingStrategyConfig] = useState(false);
 
-    const extractParameters = (code: string) => {
+    const initialParams = useMemo(() => {
+        // Try to use strategy's optimization_config first
+        if (optimizationConfig) {
+            try {
+                const parsed = JSON.parse(optimizationConfig);
+                if (Object.keys(parsed).length > 0) {
+                    return { params: parsed, fromStrategy: true };
+                }
+            } catch (e) {
+                console.warn('Failed to parse strategy optimization_config', e);
+            }
+        }
+
         const params: any = {};
         const regex = /^\s*(\w+)\s*=\s*([\d.]+)/gm;
         let match;
-        while ((match = regex.exec(code)) !== null) {
+        while ((match = regex.exec(strategyCode)) !== null) {
             const paramName = match[1];
             const valueStr = match[2];
             if (['self', 'data', 'position', 'equity'].includes(paramName)) continue;
@@ -1043,10 +1058,15 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, sectors,
             const max = Math.ceil(value * 2);
             params[paramName] = [min, max];
         }
-        return Object.keys(params).length > 0 ? params : { "n1": [5, 30], "n2": [20, 100] };
-    };
+        const finalParams = Object.keys(params).length > 0 ? params : { "n1": [5, 30], "n2": [20, 100] };
+        return { params: finalParams, fromStrategy: false };
+    }, [optimizationConfig, strategyCode]);
 
-    const [paramJson, setParamJson] = useState(JSON.stringify(extractParameters(strategyCode), null, 2));
+    const [paramJson, setParamJson] = useState(JSON.stringify(initialParams.params, null, 2));
+
+    useEffect(() => {
+        setUsingStrategyConfig(initialParams.fromStrategy);
+    }, [initialParams]);
     const [jsonError, setJsonError] = useState('');
 
     const handleSubmit = () => {
@@ -1196,12 +1216,20 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, sectors,
             </div>
 
             <div>
-                <Label className="text-sm font-medium text-gray-700 mb-2 block">Parameter Ranges (JSON)</Label>
+                <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-medium text-gray-700 block">Parameter Ranges (JSON)</Label>
+                    {usingStrategyConfig && (
+                        <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-600 border-blue-100 uppercase font-black px-2 py-0.5 animate-in fade-in zoom-in duration-300">
+                            <CheckCircle size={10} className="mr-1" /> From Strategy
+                        </Badge>
+                    )}
+                </div>
                 <textarea
                     value={paramJson}
                     onChange={(e) => {
                         setParamJson(e.target.value);
                         setJsonError('');
+                        setUsingStrategyConfig(false); // User modified it
                     }}
                     className="w-full h-48 p-3 border border-gray-300 rounded-md font-mono text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder='{\n  "n1": [5, 30],\n  "n2": [20, 100]\n}'
