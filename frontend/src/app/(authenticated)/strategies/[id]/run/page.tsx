@@ -399,12 +399,14 @@ export default function RunStrategyPage() {
             if (requestParams._scope === 'ALL') {
                 requestData.symbol = 'ALL';
                 delete requestParams._scope;
+                delete requestParams._sector;
             } else if (requestParams._scope === 'SECTOR') {
                 requestData.sector = requestParams._sector;
                 delete requestParams._scope;
                 delete requestParams._sector;
             } else {
                 delete requestParams._scope;
+                delete requestParams._sector;
             }
 
             // Create new controller
@@ -835,6 +837,7 @@ export default function RunStrategyPage() {
                                 sectors={sectors}
                                 initialMode={mode}
                                 initialSector={sector}
+                                initialSymbol={symbol}
                                 onAbort={handleCancel}
                                 startDate={startDate}
                                 endDate={endDate}
@@ -1017,7 +1020,7 @@ function MetricsView({ stats, plotHtml, strategyId }: { stats: any, plotHtml?: s
 }
 
 // Optimization Form Component
-function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, sectors, initialMode, initialSector, onAbort, startDate, endDate, setStartDate, setEndDate, rangeType, setRangeType }: any) {
+function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, sectors, initialMode, initialSector, initialSymbol, onAbort, startDate, endDate, setStartDate, setEndDate, rangeType, setRangeType }: any) {
     const [nTrials, setNTrials] = useState(50);
     const [scope, setScope] = useState<'SINGLE' | 'SECTOR' | 'ALL'>(
         initialMode === 'sector' ? 'SECTOR' : initialMode === 'all' ? 'ALL' : 'SINGLE'
@@ -1121,6 +1124,18 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, sectors,
                     </label>
                 </div>
             </div>
+
+            {scope === 'SINGLE' && (
+                <div className="mt-2">
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">Symbol</Label>
+                    <div className="w-full h-9 px-3 rounded-md border border-gray-200 bg-gray-100 text-sm flex items-center text-gray-600">
+                        {initialSymbol || <span className="text-red-500">No symbol selected - please select a symbol first</span>}
+                    </div>
+                    {!initialSymbol && (
+                        <p className="text-xs text-red-500 mt-1">Go back and select a symbol in the configuration panel</p>
+                    )}
+                </div>
+            )}
 
             {scope === 'SECTOR' && (
                 <div className="mt-2">

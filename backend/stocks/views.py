@@ -1856,6 +1856,16 @@ class StrategyViewSet(viewsets.ModelViewSet):
         n_trials = request.data.get('n_trials', 50)
         param_ranges = request.data.get('param_ranges', {})
         
+        # Debug logging
+        print(f"\n=== OPTIMIZE DEBUG ===")
+        print(f"symbol: {symbol}")
+        print(f"sector: {sector}")
+        print(f"start_date: {start_date}")
+        print(f"end_date: {end_date}")
+        print(f"n_trials: {n_trials}")
+        print(f"param_ranges: {param_ranges}")
+        print(f"======================\n")
+        
         if not param_ranges:
             return Response({'error': 'param_ranges required (e.g., {"n1": [5, 30], "n2": [20, 100]})'}, status=400)
         
