@@ -1262,7 +1262,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 return None
 
             # Run Backtest
-            bt = Backtest(df, strategy_class, cash=100000, commission=.004)
+            bt = Backtest(df, strategy_class, cash=100000, commission=.004, finalize_trades=True)
             stats = bt.run()
             
             # Check for trades
@@ -1718,7 +1718,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
 
             bt = Backtest(df, strategy_class,
                           cash=1000000, commission=.002,
-                          exclusive_orders=True)
+                          exclusive_orders=True, finalize_trades=True)
             
             try:
                 stats = bt.run()
@@ -2032,7 +2032,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 win_rates = []
                 for ticker, df_data in data_map.items():
                     try:
-                        bt = Backtest(df_data, strategy_class, cash=1000000, commission=.002, exclusive_orders=True)
+                        bt = Backtest(df_data, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
                         stats = bt.run()
                         # Get win rate - handle potential None or NaN values
                         win_rate = stats.get('Win Rate [%]', 0)
