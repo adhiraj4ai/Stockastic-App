@@ -17,12 +17,12 @@ from .prompts.sql_prompts import (
 
 class SQLOfThoughtAgent:
     def __init__(self):
-        # 1. Setup Reliable LangChain DB Connection to 'stock_market'
+        # 1. Setup Reliable LangChain DB Connection to 'default'
         user = os.environ.get("POSTGRES_USER", "postgres")
         password = os.environ.get("POSTGRES_PASSWORD", "postgres")
         host = os.environ.get("DB_HOST", "localhost")
         port = os.environ.get("DB_PORT", "5434")
-        db_name = "stock_market"
+        db_name = "default"
         
         self.db_uri = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{db_name}"
         

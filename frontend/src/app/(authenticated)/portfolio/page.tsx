@@ -74,7 +74,9 @@ interface PortfolioItem {
     value_yield?: number;
 }
 
-export default function PortfolioPage() {
+export const dynamic = 'force-dynamic';
+
+function PortfolioContent() {
     const [items, setItems] = useState<PortfolioItem[]>([]);
     const [accounts, setAccounts] = useState<PortfolioAccount[]>([]);
     const [selectedAccount, setSelectedAccount] = useState<string>('all');
@@ -1291,5 +1293,13 @@ export default function PortfolioPage() {
                 </DialogContent>
             </Dialog>
         </DashboardLayout >
+    );
+}
+
+export default function PortfolioPage() {
+    return (
+        <React.Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" /></div>}>
+            <PortfolioContent />
+        </React.Suspense>
     );
 }

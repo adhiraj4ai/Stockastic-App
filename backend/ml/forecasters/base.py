@@ -145,6 +145,41 @@ class BaseForecaster(ABC):
         """
         pass
     
+    def train_with_cv(self, X: np.ndarray, y: np.ndarray,
+                     train_dates: Optional[pd.Index] = None,
+                     n_splits: int = 5,
+                     gap: int = 30,
+                     task: Optional[object] = None,
+                     callback: Optional[callable] = None) -> Dict:
+        """
+        Train the model using time series cross-validation.
+        
+        Args:
+            X: All available feature sequences (will be split by CV)
+            y: All available target values (will be split by CV)
+            train_dates: Optional dates corresponding to the data
+            n_splits: Number of CV folds (default: 5)
+            gap: Temporal gap between train and validation (default: 30 days)
+            task: Optional task object for distributed training
+            callback: Optional callback function for training progress
+            
+        Returns:
+            Dictionary containing aggregated CV metrics
+        """
+        from ml.time_series_validator import TimeSeriesValidator
+        
+        validator = TimeSeriesValidator(n_splits=n_splits, gap=gap)
+        cv_metrics = validator.validate_model(
+            forecaster=self,
+            X=X,
+            y=y,
+            train_dates=train_dates,
+            callback=callback,
+            task=task
+        )
+        
+        return cv_metrics
+    
     def forecast_future(self, last_sequence: np.ndarray, horizon: int) -> np.ndarray:
         """
         Generate iterative forecasts for future time steps.

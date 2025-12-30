@@ -11,8 +11,8 @@ class DataPreprocessor:
     """
     
     def __init__(self, symbol: str, sequence_length: int = 60, 
-                 train_ratio: float = 0.7, val_ratio: float = 0.15, 
-                 test_window_size: int = 90):
+                 train_ratio: float = 0.8, val_ratio: float = 0.05, 
+                 test_window_size: int = 90, temporal_gap: int = 30):
         """
         Initialize the preprocessor.
         
@@ -20,14 +20,16 @@ class DataPreprocessor:
             symbol: Stock symbol to process
             sequence_length: Number of time steps in each sequence (for LSTM/GRU)
             train_ratio: Ratio of data for training
-            val_ratio: Ratio of data for validation
+            val_ratio: Ratio of data for validation (default: 0.05)
             test_window_size: Number of days for testing
+            temporal_gap: Number of days to gap between splits (default: 30)
         """
         self.symbol = symbol
         self.sequence_length = sequence_length
         self.train_ratio = train_ratio
         self.val_ratio = val_ratio
         self.test_window_size = test_window_size
+        self.temporal_gap = temporal_gap
         self.scaler = MinMaxScaler(feature_range=(0, 1))
         self.feature_columns = []
         
@@ -141,6 +143,8 @@ class DataPreprocessor:
     def split_data(self, X: np.ndarray, y: np.ndarray) -> Dict:
         """
         Split data into train, validation, and test sets based on configured ratios.
+        A temporal gap is maintained between training, validation, and testing sets
+        to prevent information leakage and respect autocorrelation.
         
         Args:
             X: Feature sequences
@@ -150,27 +154,34 @@ class DataPreprocessor:
             Dictionary containing train, val, and test splits
         """
         n = len(X)
+        gap = self.temporal_gap
         
         # Test set: use specified test_window_size
         test_size = min(self.test_window_size, int(n * 0.3))  # Capped at 30% to ensure enough training data
         test_start = n - test_size
         
-        # Remaining data split based on train_ratio and val_ratio
-        # Normalize ratios to sum to 1 for the remaining part
-        total_remaining_ratio = self.train_ratio + self.val_ratio
-        if total_remaining_ratio == 0:
-            train_factor = 0.8
+        # Adjust gaps if data is extremely sparse
+        # We need at least some data for each set
+        if n < (gap * 2 + 100):
+            effective_gap = max(1, int(n * 0.05))
         else:
-            train_factor = self.train_ratio / total_remaining_ratio
+            effective_gap = gap
             
-        remaining_size = test_start
-        train_end = int(remaining_size * train_factor)
+        # Validation size: exactly val_ratio of n
+        val_size = max(1, int(n * self.val_ratio))
+        
+        # Validation end is before test_start with a gap
+        val_end = max(0, test_start - effective_gap)
+        val_start = max(0, val_end - val_size)
+        
+        # Training end is before val_start with a gap
+        train_end = max(0, val_start - effective_gap)
         
         return {
             'X_train': X[:train_end],
             'y_train': y[:train_end],
-            'X_val': X[train_end:test_start],
-            'y_val': y[train_end:test_start],
+            'X_val': X[val_start:val_end],
+            'y_val': y[val_start:val_end],
             'X_test': X[test_start:],
             'y_test': y[test_start:]
         }

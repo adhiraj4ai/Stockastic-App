@@ -151,7 +151,7 @@ export default function BrokerPage() {
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
                                     </Pie>
-                                    <RechartsTooltip formatter={(value: number) => `Rs. ${(value / 100000).toFixed(2)} L`} />
+                                    <RechartsTooltip formatter={(value: number | undefined) => value ? `Rs. ${(value / 100000).toFixed(2)} L` : 'N/A'} />
                                 </PieChart>
                             </ResponsiveContainer>
                         </CardContent>

@@ -121,6 +121,41 @@ export default function RunStrategyPage() {
         }
     };
 
+    // Auto-fetch best parameters when scope changes
+    useEffect(() => {
+        if (!strategyId || !strategy) return;
+
+        const fetchBestConfig = async () => {
+            try {
+                let query = '';
+                if (mode === 'symbol' && symbol) {
+                    query = `?symbol=${symbol}`;
+                } else if (mode === 'sector' && sector) {
+                    query = `?sector=${sector}`;
+                } else if (mode === 'all') {
+                    query = `?scope_type=ALL`;
+                }
+
+                if (query || mode === 'all') {
+                    const response = await api.get(`/api/stocks/strategies/${strategyId}/get_published_config/${query}`);
+                    if (response.data.parameters) {
+                        setParamsJson(JSON.stringify(response.data.parameters, null, 2));
+                        // No toast here to avoid spamming the user on ogni selection change
+                    }
+                }
+            } catch (error) {
+                // 404 is expected if no optimization was ever run for this scope
+                console.log("No published config found for this scope");
+            }
+        };
+
+        const timer = setTimeout(() => {
+            fetchBestConfig();
+        }, 300); // Small debounce
+
+        return () => clearTimeout(timer);
+    }, [symbol, sector, mode, strategyId, strategy]);
+
     const handleRun = async () => {
         if (!strategy) return;
 

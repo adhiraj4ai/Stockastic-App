@@ -17,6 +17,7 @@ interface PipelineStepProps {
     status: 'idle' | 'running' | 'completed' | 'error';
     icon: React.ReactNode;
     onRun: () => void;
+    onStop?: () => void;
     logs?: LogEntry[];
     showLogs?: boolean;
     onToggleLogs?: () => void;
@@ -28,6 +29,7 @@ export function PipelineStep({
     status,
     icon,
     onRun,
+    onStop,
     logs = [],
     showLogs = false,
     onToggleLogs
@@ -55,20 +57,20 @@ export function PipelineStep({
                         "bg-transparent group-hover:bg-blue-200"
             )} />
 
-            <div className="p-6">
+            <div className="p-3">
                 <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
                         <div className={cn(
-                            "p-3 rounded-xl transition-colors",
+                            "p-2 rounded-xl transition-colors",
                             status === 'running' ? "bg-blue-100 text-blue-600" :
                                 status === 'completed' ? "bg-emerald-100 text-emerald-600" :
-                                    "bg-gray-100 text-gray-500 group-hover:bg-blue-50 group-hover:text-blue-500"
+                                    "bg-gray-50 text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500"
                         )}>
-                            {status === 'running' ? <Loader2 className="w-6 h-6 animate-spin" /> : icon}
+                            {status === 'running' ? <Loader2 className="w-5 h-5 animate-spin" /> : icon}
                         </div>
-                        <div>
-                            <h3 className="font-bold text-gray-900 leading-tight">{title}</h3>
-                            <p className="text-sm text-gray-500 mt-1 max-w-[280px]">{description}</p>
+                        <div className="flex-1">
+                            <h3 className="font-bold text-gray-900 leading-tight text-sm">{title}</h3>
+                            <p className="text-xs text-gray-500 mt-1">{description}</p>
                         </div>
                     </div>
 
@@ -83,10 +85,16 @@ export function PipelineStep({
                                 Run Step
                             </Button>
                         ) : status === 'running' ? (
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold animate-pulse">
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                                PROCESSING
-                            </div>
+                            <Button
+                                onClick={onStop}
+                                size="sm"
+                                variant="destructive"
+                                className="gap-2 px-4"
+                                disabled={!onStop}
+                            >
+                                <Circle className="w-3 h-3 fill-current" />
+                                Stop
+                            </Button>
                         ) : status === 'completed' ? (
                             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">
                                 <CheckCircle2 className="w-3 h-3" />

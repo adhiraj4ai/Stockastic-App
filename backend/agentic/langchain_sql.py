@@ -11,13 +11,13 @@ from langchain_core.runnables import RunnablePassthrough
 
 class LangChainSQLAgent:
     def __init__(self):
-        # 1. Setup Database Connection (Targeting 'stock_market' specifically)
+        # 1. Setup Database Connection (Targeting 'default' specifically)
         # We construct the URI manually from environment vars matching settings.py
         user = os.environ.get("POSTGRES_USER", "postgres")
         password = os.environ.get("POSTGRES_PASSWORD", "postgres")
         host = os.environ.get("DB_HOST", "localhost")
         port = os.environ.get("DB_PORT", "5434")
-        db_name = "stock_market" # Explicitly targeting the stock data DB
+        db_name = "default" # Explicitly targeting the stock data DB
         
         # URI: postgresql+psycopg2://user:password@host:port/dbname
         self.db_uri = f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{db_name}"
@@ -28,7 +28,7 @@ class LangChainSQLAgent:
         try:
             self.db = SQLDatabase.from_uri(self.db_uri)
         except Exception as e:
-            print(f"Error connecting to stock_market DB: {e}")
+            print(f"Error connecting to default DB: {e}")
             # Fallback (mostly for dev if DB is missing)
             self.db = None
 

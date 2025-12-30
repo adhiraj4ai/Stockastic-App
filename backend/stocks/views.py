@@ -860,6 +860,12 @@ class StrategyViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         strategy = self.get_object()
+        
+        # Ownership check
+        if strategy.user != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You do not have permission to edit this strategy.")
+            
         # Check if ANY experiment is published for this strategy
         if strategy.experiments.filter(is_published=True).exists():
             if 'code' in serializer.validated_data:
@@ -867,12 +873,24 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 raise PermissionDenied("This strategy has published configurations and cannot be edited. Unpublish all configurations first.")
         serializer.save()
 
+    def perform_destroy(self, instance):
+        if instance.user != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You do not have permission to delete this strategy.")
+        instance.delete()
+
     @action(detail=True, methods=['post'])
     def publish(self, request, pk=None):
         """
         Publish strategy experiment for recommendations. Requires 'experiment_id'.
         """
         strategy = self.get_object()
+        
+        # Ownership check
+        if strategy.user != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You do not have permission to publish this strategy.")
+            
         experiment_id = request.data.get('experiment_id')
         
         if not experiment_id:
@@ -900,6 +918,12 @@ class StrategyViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def unpublish(self, request, pk=None):
         strategy = self.get_object()
+        
+        # Ownership check
+        if strategy.user != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You do not have permission to unpublish this strategy.")
+            
         experiment_id = request.data.get('experiment_id')
         
         if experiment_id:
@@ -1002,6 +1026,83 @@ class StrategyViewSet(viewsets.ModelViewSet):
              result.append(StrategyExperimentSerializer(item['experiment']).data)
              
         return Response(result)
+
+    @action(detail=True, methods=['get'])
+    def get_published_config(self, request, pk=None):
+        """
+        Get the best published configuration for a specific scope (Symbol, Sector, or All).
+        Follows hierarchy: Requested Symbol > Sector > Market (ALL)
+        """
+        strategy = self.get_object()
+        symbol = request.query_params.get('symbol')
+        sector = request.query_params.get('sector')
+        
+        # 1. Direct hierarchy lookup
+        exp = None
+        
+        # Try Symbol
+        if symbol:
+            exp = StrategyExperiment.objects.filter(
+                strategy=strategy,
+                scope_type=ScopeType.SYMBOL,
+                scope_value=symbol,
+                is_published=True
+            ).order_by('-created_at').first()
+            
+            if not exp:
+                # Get sector for this symbol
+                company = Company.objects.filter(symbol=symbol).first()
+                if company and company.sector:
+                    exp = StrategyExperiment.objects.filter(
+                        strategy=strategy,
+                        scope_type=ScopeType.SECTOR,
+                        scope_value=company.sector,
+                        is_published=True
+                    ).order_by('-created_at').first()
+                    
+        # Try Sector
+        if not exp and sector:
+            exp = StrategyExperiment.objects.filter(
+                strategy=strategy,
+                scope_type=ScopeType.SECTOR,
+                scope_value=sector,
+                is_published=True
+            ).order_by('-created_at').first()
+            
+        # Try Market (ALL)
+        if not exp:
+            exp = StrategyExperiment.objects.filter(
+                strategy=strategy,
+                scope_type=ScopeType.ALL,
+                is_published=True
+            ).order_by('-created_at').first()
+            
+        if exp:
+            params = exp.parameters
+            # Robustness: if optimization experiment has ranges in parameters, pick from metrics
+            if exp.run_type == StrategyExperiment.RunType.OPTIMIZATION and params:
+                # Check if any value looks like a range (list)
+                if any(isinstance(v, list) for v in params.values()):
+                    if exp.metrics and 'best_params' in exp.metrics:
+                        params = exp.metrics['best_params']
+            
+            return Response({
+                'id': exp.id,
+                'scope_type': exp.scope_type,
+                'scope_value': exp.scope_value,
+                'parameters': params,
+                'metrics': exp.metrics,
+                'created_at': exp.created_at
+            })
+        
+        # Fallback: Strategy default_parameters if they exist
+        if strategy.default_parameters:
+            return Response({
+                'parameters': strategy.default_parameters,
+                'source': 'strategy_default'
+            })
+        
+        return Response({'message': 'No published configuration found for this scope.'}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=False, methods=['get'])
     def recommendations(self, request):
@@ -1912,9 +2013,44 @@ class StrategyViewSet(viewsets.ModelViewSet):
             for param_name, param_value in best_params.items():
                 # Replace parameter values in code
                 import re
-                pattern = rf'(\s{param_name}\s*=\s*)\d+'
-                optimized_code = re.sub(pattern, rf'\g<1>{param_value}', optimized_code)
+                if isinstance(param_value, float):
+                    pattern = rf'(\s{param_name}\s*=\s*)[\d\.]+'
+                    optimized_code = re.sub(pattern, rf'\g<1>{param_value:.4f}', optimized_code)
+                else:
+                    pattern = rf'(\s{param_name}\s*=\s*)\d+'
+                    optimized_code = re.sub(pattern, rf'\g<1>{int(param_value)}', optimized_code)
             
+            # Run detailed backtests for "reinvestigation"
+            import uuid
+            batch_id = uuid.uuid4()
+            backtest_results = []
+            
+            for symbol_ticker, df_data in data_map.items():
+                res, err, exp_data = self._run_single_backtest(
+                    optimized_code, symbol_ticker, start_date, end_date, params=best_params
+                )
+                if res:
+                    # Create detailed BACKTEST experiment
+                    StrategyExperiment.objects.create(
+                        strategy=strategy,
+                        user=request.user,
+                        run_type=StrategyExperiment.RunType.BACKTEST,
+                        scope_type=ScopeType.SYMBOL,
+                        scope_value=symbol_ticker,
+                        start_date=start_date,
+                        end_date=end_date,
+                        parameters=best_params,
+                        metrics=res['stats'],
+                        plot_html=res['plot_html'],
+                        batch_id=batch_id,
+                        status=StrategyExperiment.Status.SUCCESS,
+                        is_published=True # Mark these detailed backtests as published too
+                    )
+                    backtest_results.append({
+                        'symbol': symbol_ticker,
+                        'pnl_percent': res['stats']['pnl_percent']
+                    })
+
             # Log Optimization Experiment
             try:
                 scope_type = ScopeType.SYMBOL
@@ -1935,13 +2071,16 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     scope_value=scope_val,
                     start_date=start_date,
                     end_date=end_date,
-                    parameters=param_ranges, # Input ranges
+                    parameters=best_params, # Store winning config
                     metrics={
                         'best_return': best_value,
-                        'best_params': best_params,
-                        'n_trials': len(study.trials)
+                        'search_ranges': param_ranges,
+                        'n_trials': len(study.trials),
+                        'batch_id': str(batch_id) # Link to backtests
                     },
-                    status=StrategyExperiment.Status.SUCCESS
+                    status=StrategyExperiment.Status.SUCCESS,
+                    is_published=True,
+                    batch_id=batch_id
                 )
             except Exception as e:
                 print(f"Failed to log optimization experiment: {e}")
@@ -1951,7 +2090,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 'best_value': best_value,
                 'n_trials': len(study.trials),
                 'trials': trials_data,
-                'optimized_code': optimized_code
+                'optimized_code': optimized_code,
+                'batch_id': str(batch_id)
             })
             
         except Exception as e:
@@ -2251,106 +2391,178 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def accumulation(self, request):
         """
-        Return accumulation data using accurate row-based offsets (LAG).
+        Return accumulation flows.
+        Uses Top 15 Broker Concentration (Holders) to determine Net Accumulation (Smart Money flow).
         """
         time_range = request.query_params.get('range', '1D')
         sector = request.query_params.get('sector', 'All')
-        
-        # Map frontend range to row offset
+
         range_map = {
-            '1D': 1, '1W': 5, '2W': 10, '1M': 20, '3M': 60, '6M': 120, '1Y': 250, '2Y': 500
+            '1D': 1, '1W': 7, '2W': 14, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, '2Y': 730
         }
-        offset = range_map.get(time_range, 1) if time_range != 'ALL' else 1000000
+        days = range_map.get(time_range, 1) if time_range != 'ALL' else 36500
 
         from django.db import connections
+
+        # Query Logic:
+        # 1. Identify "Smart Money" = Top 15 Holders by Cumulative Net Quantity as of latest date.
+        # 2. Iterate Floorsheet for Selected Time Range.
+        # 3. Sum Net Flow of ONLY the "Smart Money" brokers.
+        #    If Smart Money Buys -> Accumulation.
+        #    If Smart Money Sells -> Distribution.
         
-        # Using LAG for accurate N-row lookback regardless of calendar dates
         query = f"""
-        WITH ranked_data AS (
-            SELECT 
-                ca.symbol, ca.entity_id, ca.transaction_date, ca.cumulative_net as pos_now,
-                LAG(ca.cumulative_net, {offset}) OVER (
-                    PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date
-                ) as pos_past,
-                MAX(ca.transaction_date) OVER () as latest_date
-            FROM daily_cumulative_accumulation ca
-            INNER JOIN companies c ON ca.symbol = c.symbol
-            WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
-            {"" if sector.lower() == 'all' else f"AND c.\\\"sectorName\\\" = '{sector}'"}
+        WITH ref_date AS (
+            SELECT MAX(transaction_date) as max_date FROM daily_cumulative_accumulation
         ),
-        institutional_flows AS (
+        ranked_holders AS (
             SELECT 
-                symbol, entity_id, pos_now,
-                COALESCE(pos_past, 0) as pos_past,
-                (pos_now - COALESCE(pos_past, 0)) as net_volume
-            FROM ranked_data
-            WHERE transaction_date = latest_date
-            -- Define "Institutional" as having at least 100k shares at some point
-            AND (pos_now > 100000 OR pos_past > 100000)
+                symbol, entity_id, cumulative_net,
+                ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY cumulative_net DESC) as rank
+            FROM daily_cumulative_accumulation, ref_date
+            WHERE transaction_date = ref_date.max_date
+            AND cumulative_net > 0 
         ),
-        aggregated_accumulation AS (
+        smart_money AS (
+            SELECT symbol, entity_id as broker 
+            FROM ranked_holders 
+            WHERE rank <= 15 -- Top 15 Holders
+        ),
+        
+        -- Floorsheet Aggregation for Period
+        fs_target AS (
+             SELECT (MAX(transaction_date) - INTERVAL '{days} days') as start_date FROM daily_floorsheet
+        ),
+        floorsheet_activity AS (
             SELECT 
-                symbol,
-                SUM(CASE WHEN net_volume > 0 THEN net_volume ELSE 0 END) AS buy_qty,
-                SUM(CASE WHEN net_volume < 0 THEN ABS(net_volume) ELSE 0 END) AS sell_qty,
-                ARRAY_AGG(entity_id ORDER BY net_volume DESC) FILTER (WHERE net_volume > 0) AS buyers,
-                ARRAY_AGG(entity_id ORDER BY net_volume ASC) FILTER (WHERE net_volume < 0) AS sellers
-            FROM institutional_flows
-            GROUP BY symbol
+                buyer_id as broker, symbol, transaction_quantity as buy_qty, 0 as sell_qty
+            FROM daily_floorsheet, fs_target
+            WHERE transaction_date > fs_target.start_date
+            UNION ALL
+            SELECT 
+                seller_id as broker, symbol, 0 as buy_qty, transaction_quantity as sell_qty
+            FROM daily_floorsheet, fs_target
+            WHERE transaction_date > fs_target.start_date
+        ),
+        broker_net AS (
+            SELECT 
+                broker, symbol, (SUM(buy_qty) - SUM(sell_qty)) as net_flow,
+                SUM(buy_qty) as total_buy,
+                SUM(sell_qty) as total_sell
+            FROM floorsheet_activity
+            GROUP BY broker, symbol
+            HAVING (SUM(buy_qty) - SUM(sell_qty)) != 0
+        ),
+        
+        symbol_agg AS (
+             SELECT 
+                 bn.symbol,
+                 -- Smart Money Net = Net Flow of Brokers defined in 'smart_money' CTE
+                 SUM(CASE WHEN sm.broker IS NOT NULL THEN bn.net_flow ELSE 0 END) as smart_net_qty,
+                 
+                 -- Total Volume for Context (buy or sell side total)
+                 SUM(bn.total_buy) as total_vol,
+                 
+                 -- Top Buyers/Sellers (Regardless of Smart Money status, for UI links)
+                 ARRAY_AGG(bn.broker ORDER BY bn.net_flow DESC) FILTER (WHERE bn.net_flow > 0) as top_buyers,
+                 ARRAY_AGG(bn.broker ORDER BY bn.net_flow ASC) FILTER (WHERE bn.net_flow < 0) as top_sellers
+                 
+             FROM broker_net bn
+             -- Cast bn.broker to varchar to match sm.broker (entity_id is varchar)
+             LEFT JOIN smart_money sm ON bn.symbol = sm.symbol AND CAST(bn.broker AS VARCHAR) = sm.broker
+             GROUP BY bn.symbol
         )
         SELECT 
-            aa.symbol, c."companyName" as name, c."sectorName" as sector,
-            aa.buy_qty, aa.sell_qty, (aa.buy_qty - aa.sell_qty) as net_qty,
-            CASE WHEN (aa.buy_qty + aa.sell_qty) > 0 
-                THEN (CAST(aa.buy_qty AS NUMERIC) / (aa.buy_qty + aa.sell_qty)) * 100 
-                ELSE 0 END as accumulation_ratio,
-            COALESCE(aa.buyers[1:3], ARRAY[]::text[]) as top_buyers,
-            COALESCE(aa.sellers[1:3], ARRAY[]::text[]) as top_sellers,
-            dsp.close
-        FROM aggregated_accumulation aa
-        INNER JOIN companies c ON aa.symbol = c.symbol
+            sa.symbol, c."companyName" as name, c."sectorName" as sector,
+            
+            -- We just return smart_net_qty as net_qty. 
+            -- Note: buy_qty and sell_qty in UI are just for visual magnitude?
+            -- Let's derive them from smart_net_qty to be consistent with bar charts.
+            
+            CASE WHEN sa.smart_net_qty > 0 THEN sa.smart_net_qty ELSE 0 END as buy_qty,
+            CASE WHEN sa.smart_net_qty < 0 THEN ABS(sa.smart_net_qty) ELSE 0 END as sell_qty,
+            sa.smart_net_qty as net_qty,
+            
+            -- Accumulation Ratio: Smart Money Net / Total Volume of Trade
+            -- Use ABS(Smart Net) just to show magnitude of Smart Money participation
+            CASE WHEN sa.total_vol > 0 
+               THEN (ABS(sa.smart_net_qty) / sa.total_vol) * 100 
+               ELSE 0 END as accumulation_ratio,
+            
+            COALESCE(sa.top_buyers[1:3], ARRAY[]::integer[]) as top_buyers,
+            COALESCE(sa.top_sellers[1:3], ARRAY[]::integer[]) as top_sellers,
+            COALESCE(dsp.close, 0) as close
+        FROM symbol_agg sa
+        INNER JOIN companies c ON sa.symbol = c.symbol
         LEFT JOIN (
             SELECT DISTINCT ON (symbol) symbol, close 
-            FROM daily_stock_price ORDER BY symbol, transaction_date DESC
-        ) dsp ON aa.symbol = dsp.symbol
+            FROM daily_stock_price 
+            ORDER BY symbol, transaction_date DESC
+        ) dsp ON sa.symbol = dsp.symbol
+        WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
+        {"" if sector.lower() == 'all' else f"AND c.\"sectorName\" = '{sector}'"}
         ORDER BY net_qty DESC;
         """
-        
-        with connections['stock_market'].cursor() as cursor:
+
+        with connections['default'].cursor() as cursor:
             cursor.execute(query)
             columns = [col[0] for col in cursor.description]
             results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-            
+
         return Response(results)
 
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def aggressive(self, request):
         """
         Identify aggressive institutional activity relative to 20D average volume.
-        Uses accurate LAG-based row offsets for deltas.
+        Uses accurate daily_floorsheet aggregation for flows.
         """
         time_range = request.query_params.get('range', '1W')
         sector = request.query_params.get('sector', 'All')
         
         range_map = {
-            '1D': 1, '1W': 5, '2W': 10, '1M': 20, '3M': 60, '6M': 120, '1Y': 250, '2Y': 500
+            '1D': 1, '1W': 7, '2W': 14, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, '2Y': 730
         }
-        offset_val = range_map.get(time_range, 5)
+        days = range_map.get(time_range, 7)
         
         from django.db import connections
         
         query = f"""
-        WITH ranked_data AS (
+        WITH ref_date AS (
+            SELECT MAX(transaction_date) as current_date FROM daily_floorsheet
+        ),
+        target_range AS (
             SELECT 
-                ca.symbol, ca.entity_id, ca.transaction_date, ca.cumulative_net as pos_now,
-                LAG(ca.cumulative_net, {offset_val}) OVER (
-                    PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date
-                ) as pos_past,
-                MAX(ca.transaction_date) OVER () as latest_date
-            FROM daily_cumulative_accumulation ca
-            INNER JOIN companies c ON ca.symbol = c.symbol
-            WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
-            {"" if sector.lower() == 'all' else f"AND c.\\\"sectorName\\\" = '{sector}'"}
+                current_date - INTERVAL '{days} days' as start_date
+            FROM ref_date
+        ),
+        floorsheet_activity AS (
+            SELECT 
+                buyer_id as broker, symbol, transaction_quantity as buy_qty, 0 as sell_qty
+            FROM daily_floorsheet, target_range
+            WHERE transaction_date > target_range.start_date
+            UNION ALL
+            SELECT 
+                seller_id as broker, symbol, 0 as buy_qty, transaction_quantity as sell_qty
+            FROM daily_floorsheet, target_range
+            WHERE transaction_date > target_range.start_date
+        ),
+        broker_symbol_summary AS (
+            SELECT 
+                broker, symbol,
+                (SUM(buy_qty) - SUM(sell_qty)) as net_flow
+            FROM floorsheet_activity
+            GROUP BY broker, symbol
+        ),
+        symbol_accumulation AS (
+            SELECT 
+                symbol,
+                SUM(CASE WHEN net_flow > 0 THEN net_flow ELSE 0 END) as institutional_buy,
+                SUM(CASE WHEN net_flow < 0 THEN ABS(net_flow) ELSE 0 END) as institutional_sell,
+                ARRAY_AGG(broker ORDER BY net_flow DESC) FILTER (WHERE net_flow > 0) as top_buyers,
+                ARRAY_AGG(broker ORDER BY net_flow ASC) FILTER (WHERE net_flow < 0) as top_sellers
+            FROM broker_symbol_summary
+            GROUP BY symbol
         ),
         avg_volume_cte AS (
             SELECT 
@@ -2360,28 +2572,10 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
                 transaction_date,
                 ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY transaction_date DESC) as rn
             FROM daily_stock_price
-            WHERE transaction_date <= (SELECT MAX(transaction_date) FROM daily_cumulative_accumulation)
+            WHERE transaction_date <= (SELECT current_date FROM ref_date)
         ),
         latest_avg_vol AS (
             SELECT symbol, avg_vol_20d, close FROM avg_volume_cte WHERE rn = 1
-        ),
-        pos_change AS (
-            SELECT 
-                symbol, entity_id, pos_now,
-                (pos_now - COALESCE(pos_past, 0)) as net_volume
-            FROM ranked_data
-            WHERE transaction_date = latest_date
-            AND (pos_now > 100000 OR pos_past > 100000)
-        ),
-        symbol_summary AS (
-            SELECT 
-                symbol,
-                SUM(CASE WHEN net_volume > 0 THEN net_volume ELSE 0 END) as institutional_buy,
-                SUM(CASE WHEN net_volume < 0 THEN ABS(net_volume) ELSE 0 END) as institutional_sell,
-                ARRAY_AGG(entity_id ORDER BY net_volume DESC) FILTER (WHERE net_volume > 0) as top_buyers,
-                ARRAY_AGG(entity_id ORDER BY net_volume ASC) FILTER (WHERE net_volume < 0) as top_sellers
-            FROM pos_change
-            GROUP BY symbol
         ),
         intensity_cte AS (
             SELECT 
@@ -2395,18 +2589,20 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
                     THEN ROUND(((CAST(ss.institutional_buy AS NUMERIC) - ss.institutional_sell) / lav.avg_vol_20d) * 100, 2)
                     ELSE 0 
                 END as intensity,
-                COALESCE(ss.top_buyers[1:3], ARRAY[]::text[]) as producers,
-                COALESCE(ss.top_sellers[1:3], ARRAY[]::text[]) as offloaders
-            FROM symbol_summary ss
+                COALESCE(ss.top_buyers[1:3]::text[], ARRAY[]::text[]) as producers,
+                COALESCE(ss.top_sellers[1:3]::text[], ARRAY[]::text[]) as offloaders
+            FROM symbol_accumulation ss
             INNER JOIN companies c ON ss.symbol = c.symbol
             INNER JOIN latest_avg_vol lav ON ss.symbol = lav.symbol
+            WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
+            {"" if sector.lower() == 'all' else f"AND c.\\\"sectorName\\\" = '{sector}'"}
         )
         SELECT * FROM intensity_cte
         WHERE ABS(intensity) > 5 -- At least 5% of daily volume
         ORDER BY ABS(intensity) DESC;
         """
         
-        with connections['stock_market'].cursor() as cursor:
+        with connections['default'].cursor() as cursor:
             cursor.execute(query)
             columns = [col[0] for col in cursor.description]
             results = [dict(zip(columns, row)) for row in cursor.fetchall()]
@@ -2445,25 +2641,35 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
             WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
         )
         SELECT 
-            symbol,
-            entity_id as broker,
-            cumulative_net,
-            ROUND(cumulative_buy_amount / NULLIF(cumulative_buy, 0), 2) as wac,
-            CASE WHEN net_5d > 0 THEN 'Increasing' WHEN net_5d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_5d,
-            ABS(COALESCE(net_5d, 0)) AS change_5d,
-            CASE WHEN net_10d > 0 THEN 'Increasing' WHEN net_10d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_10d,
-            ABS(COALESCE(net_10d, 0)) AS change_10d,
-            CASE WHEN net_20d > 0 THEN 'Increasing' WHEN net_20d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_20d,
-            ABS(COALESCE(net_20d, 0)) AS change_20d,
-            CASE WHEN net_50d > 0 THEN 'Increasing' WHEN net_50d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_50d,
-            ABS(COALESCE(net_50d, 0)) AS change_50d
-        FROM trend_data
-        WHERE transaction_date = latest_date
-        AND cumulative_net > 250000
-        ORDER BY cumulative_net DESC;
+            td.symbol,
+            td.entity_id as broker,
+            td.cumulative_net,
+            ROUND(td.cumulative_buy_amount / NULLIF(td.cumulative_buy, 0), 2) as wac,
+            
+            CASE WHEN td.net_5d > 0 THEN 'Increasing' WHEN td.net_5d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_5d,
+            ROUND(ABS(COALESCE(td.net_5d, 0)) / NULLIF(ABS(td.cumulative_net), 1) * 100, 2) AS change_5d,
+            
+            CASE WHEN td.net_10d > 0 THEN 'Increasing' WHEN td.net_10d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_10d,
+            ROUND(ABS(COALESCE(td.net_10d, 0)) / NULLIF(ABS(td.cumulative_net), 1) * 100, 2) AS change_10d,
+            
+            CASE WHEN td.net_20d > 0 THEN 'Increasing' WHEN td.net_20d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_20d,
+            ROUND(ABS(COALESCE(td.net_20d, 0)) / NULLIF(ABS(td.cumulative_net), 1) * 100, 2) AS change_20d,
+            
+            CASE WHEN td.net_50d > 0 THEN 'Increasing' WHEN td.net_50d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_50d,
+            ROUND(ABS(COALESCE(td.net_50d, 0)) / NULLIF(ABS(td.cumulative_net), 1) * 100, 2) AS change_50d,
+            
+            dsp.close as ltp
+        FROM trend_data td
+        LEFT JOIN (
+            SELECT DISTINCT ON (symbol) symbol, close 
+            FROM daily_stock_price ORDER BY symbol, transaction_date DESC
+        ) dsp ON td.symbol = dsp.symbol
+        WHERE td.transaction_date = td.latest_date
+        AND td.cumulative_net > 250000
+        ORDER BY td.cumulative_net DESC;
         """
         
-        with connections['stock_market'].cursor() as cursor:
+        with connections['default'].cursor() as cursor:
             cursor.execute(query)
             # Fetch all rows and convert to list of dicts
             columns = [col[0] for col in cursor.description]
@@ -2479,7 +2685,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
         """Return unique broker IDs from accumulation data."""
         from django.db import connections
         query = "SELECT DISTINCT entity_id FROM daily_cumulative_accumulation"
-        with connections['stock_market'].cursor() as cursor:
+        with connections['default'].cursor() as cursor:
             cursor.execute(query)
             results = [row[0] for row in cursor.fetchall() if row[0]]
         # Sort as integers for numeric ordering
@@ -2490,7 +2696,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
         """Return unique symbols from accumulation data."""
         from django.db import connections
         query = "SELECT DISTINCT symbol FROM daily_cumulative_accumulation"
-        with connections['stock_market'].cursor() as cursor:
+        with connections['default'].cursor() as cursor:
             cursor.execute(query)
             results = [row[0] for row in cursor.fetchall() if row[0]]
         return Response(sorted(results))
@@ -2506,51 +2712,107 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
         if not broker:
             return Response({'error': 'broker ID is required'}, status=400)
 
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
+    def broker_favorites(self, request):
+        """
+        Calculate net accumulation for a specific broker across multiple time periods.
+        Uses daily_floorsheet aggregation for accuracy.
+        """
+        from django.db import connections
+        broker = request.query_params.get('broker')
+        
+        if not broker:
+            return Response({'error': 'broker ID is required'}, status=400)
+
+        # 1D, 2D, 3D, 1W, 1M, 3M, 6M, 1Y
+        # We need conditional sums based on Date > (Now - Interval)
+        
         query = """
-        WITH latest_date AS (
-            SELECT MAX(transaction_date) as mdate FROM daily_cumulative_accumulation
+        WITH ref_date AS (
+            SELECT MAX(transaction_date) as current_date FROM daily_floorsheet
         ),
-        base_data AS (
+        broker_activity AS (
             SELECT 
-                symbol,
-                cumulative_net,
-                cumulative_buy,
-                cumulative_buy_amount,
-                transaction_date,
-                LAG(cumulative_net, 1) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_1d,
-                LAG(cumulative_net, 2) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_2d,
-                LAG(cumulative_net, 3) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_3d,
-                LAG(cumulative_net, 7) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_1w,
-                LAG(cumulative_net, 30) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_1m,
-                LAG(cumulative_net, 90) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_3m,
-                LAG(cumulative_net, 180) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_6m,
-                LAG(cumulative_net, 365) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_1y,
-                FIRST_VALUE(cumulative_net) OVER (PARTITION BY symbol ORDER BY transaction_date) as initial_val
-            FROM daily_cumulative_accumulation
-            WHERE entity_id = %s
+                symbol, transaction_date, 
+                transaction_quantity as net_qty, -- Positive for Buy
+                (transaction_quantity * transaction_rate) as net_amt
+            FROM daily_floorsheet
+            WHERE buyer_id = %s
+            
+            UNION ALL
+            
+            SELECT 
+                symbol, transaction_date, 
+                -transaction_quantity as net_qty, -- Negative for Sell
+                -(transaction_quantity * transaction_rate) as net_amt
+            FROM daily_floorsheet
+            WHERE seller_id = %s
+        ),
+        aggregated_stats AS (
+            SELECT 
+                ba.symbol,
+                SUM(ba.net_qty) as total_net,
+                -- WAC only makes sense for current holding, which we can't easily get from just flows history without initial state.
+                -- Converting WAC to "Avg Price of Net Flow" or just omitting if complex.
+                -- Old query used cumulative_buy_amount / cumulative_buy.
+                -- We can calc "Avg Buy Price" from activity?
+                -- Let's stick to flows.
+                
+                SUM(CASE WHEN ba.transaction_date > (rd.current_date - INTERVAL '1 day') THEN ba.net_qty ELSE 0 END) as flow_1d,
+                SUM(CASE WHEN ba.transaction_date > (rd.current_date - INTERVAL '2 days') THEN ba.net_qty ELSE 0 END) as flow_2d,
+                SUM(CASE WHEN ba.transaction_date > (rd.current_date - INTERVAL '3 days') THEN ba.net_qty ELSE 0 END) as flow_3d,
+                SUM(CASE WHEN ba.transaction_date > (rd.current_date - INTERVAL '7 days') THEN ba.net_qty ELSE 0 END) as flow_1w,
+                SUM(CASE WHEN ba.transaction_date > (rd.current_date - INTERVAL '30 days') THEN ba.net_qty ELSE 0 END) as flow_1m,
+                SUM(CASE WHEN ba.transaction_date > (rd.current_date - INTERVAL '90 days') THEN ba.net_qty ELSE 0 END) as flow_3m,
+                SUM(CASE WHEN ba.transaction_date > (rd.current_date - INTERVAL '180 days') THEN ba.net_qty ELSE 0 END) as flow_6m,
+                SUM(CASE WHEN ba.transaction_date > (rd.current_date - INTERVAL '365 days') THEN ba.net_qty ELSE 0 END) as flow_1y,
+                
+                -- Calculate "Current Net" (Proxied by Total History from Floorsheet? Or use Cumulative table for that?)
+                -- Cumulative Accumulation table IS the "Current Net".
+                -- So we can join with `daily_cumulative_accumulation` for "Current Net" & "WAC".
+                -- But Flows come from floorsheet.
+                MAX(ba.transaction_date) as last_trade_date
+            FROM broker_activity ba, ref_date rd
+            GROUP BY ba.symbol
         )
         SELECT 
-            b.symbol,
+            ast.symbol,
             c."companyName" as name,
-            b.cumulative_net as current_net,
-            ROUND(b.cumulative_buy_amount / NULLIF(b.cumulative_buy, 0), 2) as wac,
-            (b.cumulative_net - COALESCE(b.prev_1d, b.cumulative_net)) as change_1d,
-            (b.cumulative_net - COALESCE(b.prev_2d, b.prev_1d, b.cumulative_net)) as change_2d,
-            (b.cumulative_net - COALESCE(b.prev_3d, b.prev_1d, b.cumulative_net)) as change_3d,
-            (b.cumulative_net - COALESCE(b.prev_1w, b.prev_1d, b.cumulative_net)) as change_1w,
-            (b.cumulative_net - COALESCE(b.prev_1m, b.prev_1d, b.cumulative_net)) as change_1m,
-            (b.cumulative_net - COALESCE(b.prev_3m, b.prev_1d, b.cumulative_net)) as change_3m,
-            (b.cumulative_net - COALESCE(b.prev_6m, b.prev_1d, b.cumulative_net)) as change_6m,
-            (b.cumulative_net - COALESCE(b.prev_1y, b.prev_1d, b.cumulative_net)) as change_1y,
-            (b.cumulative_net - b.initial_val) as change_all
-        FROM base_data b
-        JOIN companies c ON b.symbol = c.symbol
-        WHERE b.transaction_date = (SELECT mdate FROM latest_date)
-        ORDER BY b.cumulative_net DESC;
+            COALESCE(ca.cumulative_net, 0) as current_net,
+            CASE WHEN ca.cumulative_buy > 0 THEN ROUND(ca.cumulative_buy_amount / ca.cumulative_buy, 2) ELSE 0 END as wac,
+            
+            ast.flow_1d as change_1d,
+            ast.flow_2d as change_2d,
+            ast.flow_3d as change_3d,
+            ast.flow_1w as change_1w,
+            ast.flow_1m as change_1m,
+            ast.flow_3m as change_3m,
+            ast.flow_6m as change_6m,
+            ast.flow_1y as change_1y,
+            ast.total_net as change_all
+        FROM aggregated_stats ast
+        INNER JOIN companies c ON ast.symbol = c.symbol
+        -- Join latest cumulative for current position
+        LEFT JOIN LATERAL (
+            SELECT cumulative_net, cumulative_buy, cumulative_buy_amount 
+            FROM daily_cumulative_accumulation 
+            WHERE symbol = ast.symbol AND entity_id = %s
+            ORDER BY transaction_date DESC LIMIT 1
+        ) ca ON true
+        WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
+        ORDER BY ast.flow_1m DESC; 
+        -- Ordering by 1M flow as default or what? Old was by cumulative_net.
+        -- Let's order by current_net like before.
         """
         
-        with connections['stock_market'].cursor() as cursor:
-            cursor.execute(query, [broker])
+        # Modify ORDER BY to match old behavior if needed, or stick to accumulation focus.
+        # User goal is "Broker Favorites" -> usually means what they hold most.
+        # So ORDER BY current_net DESC is better.
+        
+        query = query.replace("ORDER BY ast.flow_1m DESC;", "ORDER BY current_net DESC;")
+
+        with connections['default'].cursor() as cursor:
+            cursor.execute(query, [broker, broker, broker])
             columns = [col[0] for col in cursor.description]
             results = [dict(zip(columns, row)) for row in cursor.fetchall()]
             
@@ -2597,7 +2859,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
         ORDER BY value DESC;
         """
         
-        with connections['stock_market'].cursor() as cursor:
+        with connections['default'].cursor() as cursor:
             cursor.execute(query, [broker_id])
             columns = [col[0] for col in cursor.description]
             results = [dict(zip(columns, row)) for row in cursor.fetchall()]
@@ -2637,7 +2899,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
         days = range_map.get(time_range, 365)
         start_date = today - timedelta(days=days)
         
-        with connections['stock_market'].cursor() as cursor:
+        with connections['default'].cursor() as cursor:
             # 1. Identify Top 5 Brokers by current holding
             cursor.execute("""
                 SELECT entity_id 
@@ -3257,7 +3519,7 @@ class WatchlistViewSet(viewsets.ModelViewSet):
             if item.ticker in signals_map:
                 item_data['signals'] = signals_map[item.ticker]
             else:
-                 item_data['signals'] = None
+                item_data['signals'] = None
                 
             data.append(item_data)
             
@@ -3420,7 +3682,7 @@ def get_broker_portfolio(request):
     ORDER BY value DESC;
     """
     
-    with connections['stock_market'].cursor() as cursor:
+    with connections['default'].cursor() as cursor:
         cursor.execute(query, [broker_id])
         columns = [col[0] for col in cursor.description]
         results = [dict(zip(columns, row)) for row in cursor.fetchall()]
@@ -3524,7 +3786,7 @@ def accumulation_history(request):
     LIMIT %s OFFSET %s;
     """
     
-    with connections['stock_market'].cursor() as cursor:
+    with connections['default'].cursor() as cursor:
         cursor.execute(query, [broker, symbol, page_size, offset])
         columns = [col[0] for col in cursor.description]
         results = [dict(zip(columns, row)) for row in cursor.fetchall()]
@@ -3540,9 +3802,12 @@ class PipelineViewSet(viewsets.ViewSet):
     TASKS = {
         'sync_stocks': 'Sync Stock List',
         'sync_prices': 'Sync Daily Prices',
+        'broker_analysis': 'Update Broker Data & Accumulation',
         'sync_floorsheet': 'Sync Floorsheet Data',
         'update_indexes': 'Update DB Indexes',
         'generate_signals': 'Generate Strategy Signals',
+        'update_indicators': 'Update Technical Indicators',
+        'optimize_strategies': 'Global Strategy Optimization',
     }
 
     @action(detail=False, methods=['get'])
@@ -3580,6 +3845,27 @@ class PipelineViewSet(viewsets.ViewSet):
             'page': current_page.number,
             'pages': paginator.num_pages
         })
+
+
+    @action(detail=False, methods=['post'])
+    def abort_log(self, request):
+        """
+        Mark a log entry as aborted.
+        """
+        from .models import DataUploadLog
+        
+        log_id = request.data.get('log_id')
+        if not log_id:
+            return Response({'error': 'log_id is required'}, status=400)
+        
+        try:
+            log_entry = DataUploadLog.objects.get(id=log_id)
+            log_entry.status = 'ABORTED'
+            log_entry.error_message = 'Process was manually stopped by user'
+            log_entry.save()
+            return Response({'message': 'Log marked as aborted'})
+        except DataUploadLog.DoesNotExist:
+            return Response({'error': 'Log not found'}, status=404)
 
     @action(detail=False, methods=['get'])
     def status(self, request):
@@ -3637,12 +3923,79 @@ class PipelineViewSet(viewsets.ViewSet):
         })
 
     @action(detail=False, methods=['get'])
+    def trigger_indicators_stream(self, request):
+        """
+        Streams logs from technical indicator update process.
+        """
+        import sys
+        from django.conf import settings
+        from .models import DataUploadLog
+
+        # Create log entry
+        log_entry = DataUploadLog.objects.create(
+            file_name='Technical Indicators Update',
+            upload_type='INDICATORS',
+            status='PENDING'
+        )
+
+        def event_stream():
+            # Get the base directory where manage.py is located
+            base_dir = settings.BASE_DIR
+            manage_py = os.path.join(base_dir, 'manage.py')
+            
+            cmd = [sys.executable, manage_py, 'update_technical_indicators']
+
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                universal_newlines=True,
+                cwd=base_dir
+            )
+
+            yield f"data: {{\"type\": \"init\", \"log_id\": {log_entry.id}}}\n\n"
+            yield "data: {\"type\": \"status\", \"message\": \"Initializing indicator update...\"}\n\n"
+            
+            for line in process.stdout:
+                if line.strip():
+                    # Escape quotes in the message
+                    escaped_message = line.strip().replace('"', '\\"')
+                    yield f"data: {{\"type\": \"log\", \"message\": \"{escaped_message}\"}}\n\n"
+
+            process.wait()
+            if process.returncode == 0:
+                log_entry.status = 'SUCCESS'
+                log_entry.save()
+                yield "data: {\"type\": \"status\", \"message\": \"Technical indicators updated successfully.\"}\n\n"
+                yield "data: {\"type\": \"done\"}\n\n"
+            else:
+                log_entry.status = 'FAILED'
+                log_entry.error_message = f"Process exited with code {process.returncode}"
+                log_entry.save()
+                yield f"data: {{\"type\": \"error\", \"message\": \"Process exited with code {process.returncode}\"}}\n\n"
+
+        response = StreamingResponse(event_stream(), content_type='text/event-stream')
+        response['Cache-Control'] = 'no-cache'
+        response['X-Accel-Buffering'] = 'no'  # Disable buffering for nginx
+        return response
+
+    @action(detail=False, methods=['get'])
     def generate_signals_stream(self, request):
         """
         Streams logs from signal generation process.
         """
         import sys
         from django.conf import settings
+        from .models import DataUploadLog
+
+        # Create log entry
+        log_entry = DataUploadLog.objects.create(
+            file_name='Signal Generation',
+            upload_type='SIGNALS',
+            status='PENDING'
+        )
 
         def event_stream():
             symbol = request.query_params.get('symbol')
@@ -3665,6 +4018,7 @@ class PipelineViewSet(viewsets.ViewSet):
                 cwd=base_dir
             )
 
+            yield f"data: {{\"type\": \"init\", \"log_id\": {log_entry.id}}}\n\n"
             yield "data: {\"type\": \"status\", \"message\": \"Initializing boot process...\"}\n\n"
             
             for line in process.stdout:
@@ -3675,15 +4029,148 @@ class PipelineViewSet(viewsets.ViewSet):
 
             process.wait()
             if process.returncode == 0:
+                log_entry.status = 'SUCCESS'
+                log_entry.save()
                 yield "data: {\"type\": \"status\", \"message\": \"Signal generation completed successfully.\"}\n\n"
                 yield "data: {\"type\": \"done\"}\n\n"
             else:
+                log_entry.status = 'FAILED'
+                log_entry.error_message = f"Process exited with code {process.returncode}"
+                log_entry.save()
                 yield f"data: {{\"type\": \"error\", \"message\": \"Process exited with code {process.returncode}\"}}\n\n"
 
         response = StreamingResponse(event_stream(), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         response['X-Accel-Buffering'] = 'no'  # Disable buffering for nginx
         return response
+
+    @action(detail=False, methods=['get'])
+    def optimize_strategies_stream(self, request):
+        """
+        Streams logs from strategy optimization process.
+        """
+        import sys
+        import subprocess
+        from django.conf import settings
+        from .models import DataUploadLog
+
+        # Create log entry
+        log_entry = DataUploadLog.objects.create(
+            file_name='Strategy Training',
+            upload_type='OPTIMIZATION',
+            status='PENDING'
+        )
+
+        def event_stream():
+            all_symbols = request.query_params.get('all_symbols') == 'true'
+            trials = request.query_params.get('trials', '30')
+            
+            # Get the base directory where manage.py is located
+            base_dir = settings.BASE_DIR
+            manage_py = os.path.join(base_dir, 'manage.py')
+            
+            cmd = [sys.executable, manage_py, 'optimize_strategies', '--trials', trials]
+            if all_symbols:
+                cmd.append('--all-symbols')
+
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                universal_newlines=True,
+                cwd=base_dir
+            )
+
+            yield f"data: {{\"type\": \"init\", \"log_id\": {log_entry.id}}}\n\n"
+            yield "data: {\"type\": \"status\", \"message\": \"Initializing optimization engine...\"}\n\n"
+            
+            for line in process.stdout:
+                if line.strip():
+                    # Escape quotes in the message
+                    escaped_message = line.strip().replace('"', '\\"')
+                    yield f"data: {{\"type\": \"log\", \"message\": \"{escaped_message}\"}}\n\n"
+
+            process.wait()
+            if process.returncode == 0:
+                log_entry.status = 'SUCCESS'
+                log_entry.save()
+                yield "data: {\"type\": \"status\", \"message\": \"Strategy optimization completed successfully.\"}\n\n"
+                yield "data: {\"type\": \"done\"}\n\n"
+            else:
+                log_entry.status = 'FAILED'
+                log_entry.error_message = f"Process exited with code {process.returncode}"
+                log_entry.save()
+                yield f"data: {{\"type\": \"error\", \"message\": \"Process exited with code {process.returncode}\"}}\n\n"
+
+        response = StreamingResponse(event_stream(), content_type='text/event-stream')
+        response['Cache-Control'] = 'no-cache'
+        response['X-Accel-Buffering'] = 'no'  # Disable buffering for nginx
+        return response
+
+    @action(detail=False, methods=['get'])
+    def update_broker_analysis_stream(self, request):
+        """
+        Streams logs from broker analysis update process.
+        """
+        import sys
+        import subprocess
+        import os
+        from django.conf import settings
+        from .models import DataUploadLog
+
+        # Create log entry
+        log_entry = DataUploadLog.objects.create(
+            file_name='Broker Data & Accumulation Update',
+            upload_type='BROKER_ANALYSIS',
+            status='PENDING'
+        )
+
+        def event_stream():
+            # Get the base directory where manage.py is located
+            base_dir = settings.BASE_DIR
+            manage_py = os.path.join(base_dir, 'manage.py')
+            
+            cmd = [sys.executable, manage_py, 'update_broker_analysis']
+
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                universal_newlines=True,
+                cwd=base_dir
+            )
+
+            yield f"data: {{\"type\": \"init\", \"log_id\": {log_entry.id}}}\n\n"
+            yield "data: {\"type\": \"status\", \"message\": \"Initializing broker analysis...\"}\n\n"
+            
+            for line in process.stdout:
+                if line.strip():
+                    # Escape quotes in the message
+                    escaped_message = line.strip().replace('"', '\\"')
+                    yield f"data: {{\"type\": \"log\", \"message\": \"{escaped_message}\"}}\n\n"
+
+            process.wait()
+            if process.returncode == 0:
+                log_entry.status = 'SUCCESS'
+                log_entry.save()
+                yield "data: {\"type\": \"status\", \"message\": \"Broker analysis updated successfully.\"}\n\n"
+                yield "data: {\"type\": \"done\"}\n\n"
+            else:
+                log_entry.status = 'FAILED'
+                log_entry.error_message = f"Process exited with code {process.returncode}"
+                log_entry.save()
+                yield f"data: {{\"type\": \"error\", \"message\": \"Process exited with code {process.returncode}\"}}\n\n"
+
+        response = StreamingResponse(event_stream(), content_type='text/event-stream')
+        response['Cache-Control'] = 'no-cache'
+        response['X-Accel-Buffering'] = 'no'  # Disable buffering for nginx
+        return response
+
+
 
     @action(detail=True, methods=['post'])
     def run(self, request, pk=None):
@@ -3938,4 +4425,131 @@ class StrategySignalViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['symbol', 'date', 'strategy', 'signal']
     search_fields = ['symbol', 'strategy__name']
+
+    @action(detail=False, methods=['get'])
+    def tracking(self, request):
+        """
+        Returns signal tracking data showing BUY-SELL pairs.
+        Active positions: BUY signals without corresponding SELL signals
+        Closed positions: Matched BUY-SELL pairs with return calculations
+        
+        Excludes sector indices and non-tradeable symbols as per NEPSE rules.
+        """
+        from datetime import datetime, timedelta
+        from collections import defaultdict
+        
+        # List of sector indices and non-tradeable symbols to exclude
+        EXCLUDED_SYMBOLS = [
+            'NEPSE', 'SENSITIVE', 'FLOAT'
+        ]
+        
+        # Get all unique sector names from the companies table
+        # These are sector aggregates, not individual tradeable stocks
+        from stocks.models import Company
+        sector_names = Company.objects.values_list('sector', flat=True).distinct()
+        
+        # Combine excluded symbols with sector names
+        all_excluded = list(EXCLUDED_SYMBOLS) + list(sector_names)
+        
+        # Fetch all signals ordered by date, excluding sector indices and sector aggregates
+        signals = StrategySignal.objects.exclude(
+            symbol__in=all_excluded
+        ).exclude(
+            symbol__icontains='INDEX'
+        ).order_by('symbol', 'date')
+        
+        # Group signals by symbol AND strategy
+        symbol_strategy_signals = defaultdict(list)
+        for signal in signals:
+            key = (signal.symbol, signal.strategy.id)
+            symbol_strategy_signals[key].append(signal)
+        
+        active_positions = []
+        closed_positions = []
+        
+        # Process each symbol-strategy combination's signals
+        for (symbol, strategy_id), sig_list in symbol_strategy_signals.items():
+            # Track unmatched BUY signals for this specific strategy
+            open_buys = []
+            
+            for signal in sig_list:
+                if signal.signal == 'BUY':
+                    # Add to open buys
+                    open_buys.append(signal)
+                elif signal.signal == 'SELL' and open_buys:
+                    # Match with the oldest BUY signal from SAME strategy (FIFO)
+                    # But only if at least 3 days have passed (NEPSE rule)
+                    buy_signal = open_buys[0]
+                    days_between = (signal.date - buy_signal.date).days
+                    
+                    if days_between >= 3:
+                        # Valid match - remove from open buys
+                        buy_signal = open_buys.pop(0)
+                        
+                        # Calculate metrics
+                        buy_price = float(buy_signal.last_close) if buy_signal.last_close else 0
+                        sell_price = float(signal.last_close) if signal.last_close else 0
+                        
+                        return_pct = 0
+                        if buy_price > 0:
+                            return_pct = ((sell_price - buy_price) / buy_price) * 100
+                        
+                        closed_positions.append({
+                            'symbol': symbol,
+                            'buy_signal': StrategySignalSerializer(buy_signal).data,
+                            'sell_signal': StrategySignalSerializer(signal).data,
+                            'buy_date': buy_signal.date.isoformat(),
+                            'sell_date': signal.date.isoformat(),
+                            'buy_price': str(buy_price),
+                            'sell_price': str(sell_price),
+                            'return_pct': round(return_pct, 2),
+                            'days_held': days_between,
+                            'buy_strategy': buy_signal.strategy.name,
+                            'sell_strategy': signal.strategy.name  # Will always match buy_strategy now
+                        })
+                    # If less than 3 days, keep the BUY signal as open and ignore this SELL
+            
+            # Remaining open buys are active positions
+            for buy_signal in open_buys:
+                buy_price = float(buy_signal.last_close) if buy_signal.last_close else 0
+                days_held = (datetime.now().date() - buy_signal.date).days
+                
+                active_positions.append({
+                    'symbol': symbol,
+                    'buy_signal': StrategySignalSerializer(buy_signal).data,
+                    'buy_date': buy_signal.date.isoformat(),
+                    'buy_price': str(buy_price),
+                    'days_held': days_held,
+                    'strategies': [buy_signal.strategy.name]  # Single strategy now
+                })
+        
+        # Group active positions by symbol, date, and price
+        # This consolidates multiple strategies that triggered the same BUY signal
+        grouped_active = {}
+        for pos in active_positions:
+            key = (pos['symbol'], pos['buy_date'], pos['buy_price'])
+            if key in grouped_active:
+                # Add strategy to existing group
+                grouped_active[key]['strategies'].extend(pos['strategies'])
+            else:
+                # Create new group
+                grouped_active[key] = pos
+        
+        # Convert back to list
+        active_positions = list(grouped_active.values())
+        
+        # Sort by date (most recent first)
+        active_positions.sort(key=lambda x: x['buy_date'], reverse=True)
+        closed_positions.sort(key=lambda x: x['sell_date'], reverse=True)
+        
+        return Response({
+            'active_positions': active_positions,
+            'closed_positions': closed_positions,
+            'summary': {
+                'total_active': len(active_positions),
+                'total_closed': len(closed_positions),
+                'avg_return': round(sum(p['return_pct'] for p in closed_positions) / len(closed_positions), 2) if closed_positions else 0,
+                'avg_holding_period': round(sum(p['days_held'] for p in closed_positions) / len(closed_positions), 1) if closed_positions else 0
+            }
+        })
 

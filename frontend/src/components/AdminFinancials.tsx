@@ -52,7 +52,14 @@ interface AdminFinancialsProps {
     onHasReports?: (hasReports: boolean) => void;
 }
 
-// ... (FiscalYearData type remains same)
+interface FiscalYearData {
+    year: string;
+    annual?: FinancialReport;
+    q1?: FinancialReport;
+    q2?: FinancialReport;
+    q3?: FinancialReport;
+    q4?: FinancialReport;
+}
 
 export default function AdminFinancials({ ticker, onHasReports }: AdminFinancialsProps) {
     const [reports, setReports] = useState<FinancialReport[]>([]);
