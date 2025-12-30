@@ -17,3 +17,5 @@ logs
 
 *.pkl
 *.h5
+
+.env

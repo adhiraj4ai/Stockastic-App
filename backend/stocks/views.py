@@ -1097,9 +1097,44 @@ class StrategyViewSet(viewsets.ModelViewSet):
             })
         
         # Fallback: Strategy default_parameters if they exist
-        if strategy.default_parameters:
+        # Fix: Parse from code since 'default_parameters' is not a DB field
+        default_parameters = {}
+        if strategy.code:
+             try:
+                 tree = ast.parse(strategy.code)
+                 for node in tree.body:
+                     if isinstance(node, ast.ClassDef):
+                         # Assume the first Strategy subclass is the one
+                         # Simple check for base class 'Strategy'
+                         is_strategy = False
+                         for b in node.bases:
+                             if isinstance(b, ast.Name) and b.id == 'Strategy':
+                                 is_strategy = True
+                                 break
+                         
+                         if is_strategy:
+                             for item in node.body:
+                                 if isinstance(item, ast.Assign):
+                                     for target in item.targets:
+                                         if isinstance(target, ast.Name):
+                                             if not target.id.startswith('_'):
+                                                 val = None
+                                                 if isinstance(item.value, ast.Constant):
+                                                     val = item.value.value
+                                                 elif isinstance(item.value, ast.Num):
+                                                     val = item.value.n
+                                                 elif isinstance(item.value, ast.Str):
+                                                     val = item.value.s
+                                                 
+                                                 if val is not None:
+                                                     default_parameters[target.id] = val
+                             break # Stop after finding the strategy class
+             except Exception as e:
+                 print(f"Error parsing params: {e}")
+
+        if default_parameters:
             return Response({
-                'parameters': strategy.default_parameters,
+                'parameters': default_parameters,
                 'source': 'strategy_default'
             })
         
