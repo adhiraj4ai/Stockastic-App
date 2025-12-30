@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-!j$6-689g(2e9mz$2_&0m%2j+)5=3x1nm8q1*r%2*o_3+tyxjs"
+SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-!j$6-689g(2e9mz$2_&0m%2j+)5=3x1nm8q1*r%2*o_3+tyxjs")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "django_filters",
     "corsheaders",
     "users",
+    "companies",  # Added for company management
     "stocks",
     "chat",
     "ml",
@@ -95,14 +96,6 @@ if os.environ.get("DB_HOST"):
             "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
             "HOST": os.environ.get("DB_HOST", "db"),
             "PORT": os.environ.get("DB_PORT", "5432"),
-        },
-        "stock_market": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": "stock_market",
-            "USER": os.environ.get("POSTGRES_USER", "postgres"),
-            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
-            "HOST": os.environ.get("DB_HOST", "db"),
-            "PORT": os.environ.get("DB_PORT", "5432"),
         }
     }
 else:
@@ -115,18 +108,10 @@ else:
             "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
             "HOST": os.environ.get("DB_HOST", "localhost"),
             "PORT": os.environ.get("DB_PORT", "5434"),
-        },
-        "stock_market": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": "stock_market",
-            "USER": os.environ.get("POSTGRES_USER", "postgres"),
-            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
-            "HOST": os.environ.get("DB_HOST", "localhost"),
-            "PORT": os.environ.get("DB_PORT", "5434"),
         }
     }
 
-DATABASE_ROUTERS = ['stocks.routers.StockMarketRouter']
+# DATABASE_ROUTERS = ['stocks.routers.StockMarketRouter']  # Disabled - using single database
 
 
 # Password validation
@@ -179,11 +164,6 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",
 ]
 CORS_ALLOW_CREDENTIALS = True
-from corsheaders.defaults import default_headers
-CORS_ALLOW_HEADERS = list(default_headers) + [
-    'authorization',
-    'x-csrftoken',
-]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",

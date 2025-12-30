@@ -66,9 +66,10 @@ export default function EditStrategyPage() {
                 description: strategy?.description
             });
             toast.success('Strategy saved successfully');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to save strategy', error);
-            toast.error('Failed to save strategy');
+            const message = error.response?.data?.detail || error.response?.data?.error || 'Failed to save strategy';
+            toast.error(message);
         } finally {
             setSaving(false);
         }

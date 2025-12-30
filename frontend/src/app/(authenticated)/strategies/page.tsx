@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
-import { Plus, Lightbulb, ExternalLink, Play, Edit, Trash2, Info, LayoutGrid, List, Search, MoreVertical, TrendingUp, TrendingDown, Target, Zap, Filter, Beaker, FileCheck } from 'lucide-react';
+import { Plus, Lightbulb, ExternalLink, Play, Edit, Trash2, Info, LayoutGrid, List, Search, MoreVertical, TrendingUp, TrendingDown, Target, Zap, Filter, Beaker, FileCheck, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -220,43 +220,49 @@ export default function StrategiesPage() {
                             </div>
                         ) : (
                             viewMode === 'grid' ? (
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                                     {filteredStrategies.map((strategy) => (
                                         <Card
                                             key={strategy.id}
-                                            className="hover:shadow-md transition-shadow duration-200 border-gray-200 flex flex-col cursor-pointer hover:border-blue-300"
+                                            className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5 border-slate-200/60 flex flex-col cursor-pointer bg-white"
                                             onClick={() => router.push(`/strategies/${strategy.id}`)}
                                         >
-                                            <div className="p-1 border-b border-gray-100 bg-white rounded-t-xl">
-                                                <div className="flex items-start gap-2.5">
-                                                    <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0 mt-0.5">
-                                                        <Lightbulb size={16} />
+                                            {/* Header Accent */}
+                                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                                            <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-br from-white to-slate-50/50">
+                                                <div className="flex items-start gap-4">
+                                                    <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0 shadow-sm border border-blue-100/50 group-hover:scale-110 transition-transform duration-300">
+                                                        <Lightbulb size={20} />
                                                     </div>
                                                     <div className="min-w-0 flex-1">
-                                                        <div className="flex items-center justify-between gap-2 mb-0.5">
-                                                            <div className="flex items-center gap-1.5 min-w-0">
-                                                                <span className="text-[15px] font-bold text-gray-900 leading-none truncate hover:text-blue-600 hover:underline">
+                                                        <div className="flex items-center justify-between gap-2 mb-1">
+                                                            <div className="flex flex-col gap-1.5 min-w-0">
+                                                                <h3 className="text-base font-bold text-slate-900 leading-tight truncate group-hover:text-blue-600 transition-colors">
                                                                     {strategy.name}
-                                                                </span>
+                                                                </h3>
                                                                 {strategy.published_experiments && strategy.published_experiments.length > 0 && (
-                                                                    <span className="bg-blue-50 text-blue-700 text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0">
-                                                                        Published ({strategy.published_experiments.length})
-                                                                    </span>
+                                                                    <div className="flex">
+                                                                        <Badge className="bg-emerald-50 hover:bg-emerald-50 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-bold border-emerald-100/50 shadow-none">
+                                                                            <Activity size={10} className="mr-1" />
+                                                                            Published ({strategy.published_experiments.length})
+                                                                        </Badge>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                             <DropdownMenu>
                                                                 <DropdownMenuTrigger asChild>
                                                                     <button
-                                                                        className="h-6 w-6 rounded-md hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-700 flex-shrink-0"
+                                                                        className="h-8 w-8 rounded-lg hover:bg-white hover:shadow-sm flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all flex-shrink-0"
                                                                         onClick={(e) => e.stopPropagation()}
                                                                     >
-                                                                        <MoreVertical size={14} />
+                                                                        <MoreVertical size={16} />
                                                                     </button>
                                                                 </DropdownMenuTrigger>
-                                                                <DropdownMenuContent align="end">
+                                                                <DropdownMenuContent align="end" className="rounded-xl border-slate-200 shadow-lg">
                                                                     <DropdownMenuItem
                                                                         onSelect={() => handleDelete(strategy.id, strategy.name)}
-                                                                        className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
+                                                                        className="text-rose-600 focus:text-rose-600 focus:bg-rose-50 cursor-pointer rounded-lg m-1"
                                                                     >
                                                                         <Trash2 size={14} className="mr-2" />
                                                                         Delete Strategy
@@ -268,31 +274,30 @@ export default function StrategiesPage() {
                                                 </div>
                                             </div>
 
-                                            <div className="p-1 flex-1 bg-white">
-                                                <p className="text-[11px] text-gray-500 line-clamp-6 leading-tight">
+                                            <div className="px-4 py-3 flex-1 bg-white">
+                                                <p className="text-[12px] text-slate-500 leading-relaxed font-medium">
                                                     {strategy.description}
                                                 </p>
                                             </div>
 
-                                            <div className="flex bg-gray-50/50 border-t border-gray-100 rounded-b-xl">
+                                            <div className="flex bg-slate-50/80 border-t border-slate-100">
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         router.push(`/strategies/${strategy.id}/run`);
                                                     }}
-                                                    className="flex-1 py-1.5 flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-blue-600 hover:bg-white transition-colors"
+                                                    className="flex-1 py-3.5 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 hover:text-blue-600 hover:bg-white transition-all active:scale-95 border-r border-slate-100"
                                                 >
-                                                    <Play size={14} /> Run
+                                                    <Play size={14} fill="currentColor" className="text-blue-500" /> Run
                                                 </button>
-                                                <div className="w-px bg-gray-200 my-1"></div>
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         router.push(`/strategies/${strategy.id}/edit`);
                                                     }}
-                                                    className="flex-1 py-1.5 flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-green-600 hover:bg-white transition-colors"
+                                                    className="flex-1 py-3.5 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 hover:text-emerald-600 hover:bg-white transition-all active:scale-95"
                                                 >
-                                                    <Edit size={14} /> Edit
+                                                    <Edit size={14} className="text-emerald-500" /> Edit
                                                 </button>
                                             </div>
                                         </Card>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import { CompanySelect } from '@/components/CompanySelect';
@@ -27,7 +27,10 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import ReactECharts from 'echarts-for-react';
+import nextDynamic from 'next/dynamic';
+const ReactECharts = nextDynamic(() => import('echarts-for-react'), { ssr: false });
+
+export const dynamic = 'force-dynamic';
 
 interface AccumulationData {
     symbol: string;
@@ -48,6 +51,7 @@ interface BrokerTrend {
     broker: number;
     cumulative_net: number;
     wac?: number; // Added WAC
+    ltp: number; // Added LTP
     trend_5d: string;
     change_5d: number;
     trend_10d: string;
@@ -119,7 +123,7 @@ interface AccumulationItem {
 
 import { useSearchParams, useRouter } from 'next/navigation';
 
-export default function AccumulationPage() {
+function AccumulationContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const [data, setData] = useState<AccumulationData[]>([]);
@@ -577,7 +581,7 @@ export default function AccumulationPage() {
         return (
             <div className={`flex flex-col items-center px-2 py-1 rounded border ${color}`}>
                 <span className="text-[10px] font-bold uppercase">{trend}</span>
-                <span className="text-[9px] font-mono">{change.toLocaleString()}</span>
+                <span className="text-[9px] font-mono">{change.toFixed(2)}%</span>
             </div>
         );
     };
@@ -951,6 +955,7 @@ export default function AccumulationPage() {
                                                 <TableHead className="w-[120px]">Symbol</TableHead>
                                                 <TableHead>Broker ID</TableHead>
                                                 <TableHead className="text-right">Cumulative Net</TableHead>
+                                                <TableHead className="text-right">LTP</TableHead>
                                                 <TableHead className="text-right">WAC</TableHead>
                                                 <TableHead className="text-center">5D Trend</TableHead>
                                                 <TableHead className="text-center">10D Trend</TableHead>
@@ -987,6 +992,9 @@ export default function AccumulationPage() {
                                                             </TableCell>
                                                             <TableCell className="text-right font-mono font-bold text-blue-800">
                                                                 {row.cumulative_net.toLocaleString()}
+                                                            </TableCell>
+                                                            <TableCell className="text-right font-mono font-bold text-gray-900">
+                                                                {row.ltp?.toLocaleString()}
                                                             </TableCell>
                                                             <TableCell className="text-right font-mono font-bold text-gray-700">
                                                                 {row.wac?.toLocaleString()}
@@ -1426,5 +1434,13 @@ export default function AccumulationPage() {
                 }
             `}</style>
         </DashboardLayout >
+    );
+}
+
+export default function AccumulationPage() {
+    return (
+        <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-blue-500" /></div>}>
+            <AccumulationContent />
+        </Suspense>
     );
 }

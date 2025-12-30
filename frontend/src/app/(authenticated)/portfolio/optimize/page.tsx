@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -94,7 +94,9 @@ const strategies = [
     }
 ];
 
-export default function OptimizePage() {
+export const dynamic = 'force-dynamic';
+
+function OptimizeContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const accountId = searchParams.get('account') || 'all';
@@ -311,5 +313,13 @@ export default function OptimizePage() {
                 )}
             </div>
         </DashboardLayout>
+    );
+}
+
+export default function OptimizePage() {
+    return (
+        <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-blue-500" /></div>}>
+            <OptimizeContent />
+        </Suspense>
     );
 }

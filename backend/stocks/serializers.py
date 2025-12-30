@@ -62,13 +62,15 @@ class PortfolioItemSerializer(serializers.ModelSerializer):
     day_gain_loss = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     sector = serializers.CharField(read_only=True)
     volatility = serializers.FloatField(read_only=True)
+    signals = serializers.JSONField(read_only=True, required=False)
 
     class Meta:
         model = PortfolioItem
         fields = ['id', 'account', 'ticker', 'quantity', 'buy_price', 'wacc', 'purchased_at', 
                   'current_price', 'current_value', 'investment_value', 'gain_loss', 
-                  'gain_loss_percent', 'day_gain_loss', 'sector', 'volatility',
-                  'stop_loss_price', 'target_price', 'target_price_2', 'target_price_3', 'thesis', 'strategy_type']
+                  'gain_loss_percent', 'day_gain_loss', 'sector', 'volatility', 'signals',
+                  'stop_loss_price', 'target_price', 'target_price_2', 'target_price_3', 
+                  'thesis', 'strategy_type']
         read_only_fields = ['id', 'purchased_at']
 
 class PortfolioTransactionSerializer(serializers.ModelSerializer):

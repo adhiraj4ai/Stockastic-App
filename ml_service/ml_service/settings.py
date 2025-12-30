@@ -10,7 +10,7 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-ml-service-key-change-in-production")
+SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-!j$6-689g(2e9mz$2_&0m%2j+)5=3x1nm8q1*r%2*o_3+tyxjs")
 
 DEBUG = os.environ.get("DEBUG", "True") == "True"
 
@@ -59,20 +59,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "ml_service.wsgi.application"
 
-# Database - Shared with main backend
+# Database - Shared with main backend (all in stockastic DB)
 if os.environ.get("DB_HOST"):
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
             "NAME": os.environ.get("POSTGRES_DB", "stockastic"),
-            "USER": os.environ.get("POSTGRES_USER", "postgres"),
-            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
-            "HOST": os.environ.get("DB_HOST", "db"),
-            "PORT": os.environ.get("DB_PORT", "5432"),
-        },
-        "stock_market": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": "stock_market",
             "USER": os.environ.get("POSTGRES_USER", "postgres"),
             "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
             "HOST": os.environ.get("DB_HOST", "db"),
@@ -88,18 +80,12 @@ else:
             "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
             "HOST": os.environ.get("DB_HOST", "localhost"),
             "PORT": os.environ.get("DB_PORT", "5434"),
-        },
-        "stock_market": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": "stock_market",
-            "USER": os.environ.get("POSTGRES_USER", "postgres"),
-            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
-            "HOST": os.environ.get("DB_HOST", "localhost"),
-            "PORT": os.environ.get("DB_PORT", "5434"),
         }
     }
 
-DATABASE_ROUTERS = ['forecasting.routers.MLRouter']
+# No custom router needed - all models use default database
+# DATABASE_ROUTERS = ['forecasting.routers.MLRouter']
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
