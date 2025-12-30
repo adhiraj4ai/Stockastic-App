@@ -2029,20 +2029,24 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     raise ValueError('No Strategy class found')
                 
                 # Run backtest for ALL dataframes
-                returns = []
+                win_rates = []
                 for ticker, df_data in data_map.items():
                     try:
                         bt = Backtest(df_data, strategy_class, cash=1000000, commission=.002, exclusive_orders=True)
                         stats = bt.run()
-                        returns.append(stats['Return [%]'])
+                        # Get win rate - handle potential None or NaN values
+                        win_rate = stats.get('Win Rate [%]', 0)
+                        if win_rate is None or (isinstance(win_rate, float) and win_rate != win_rate):  # NaN check
+                            win_rate = 0
+                        win_rates.append(win_rate)
                     except Exception as bt_err:
                         continue # Skip failed backtests
                 
-                if not returns:
+                if not win_rates:
                     return -9999 # Penalty for failing all
                 
-                # Optimize for Mean Return
-                return sum(returns) / len(returns)
+                # Optimize for Mean Win Rate
+                return sum(win_rates) / len(win_rates)
             
             # Method selection with smart defaults
             method = request.data.get('method', 'auto')
