@@ -868,7 +868,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("You do not have permission to edit this strategy.")
             
         # Check if ANY experiment is published for this strategy
-        if strategy.experiments.filter(is_published=True).exists():
+        if strategy.experiments.filter(is_published=False).exists():
             if 'code' in serializer.validated_data:
                 from rest_framework.exceptions import PermissionDenied
                 raise PermissionDenied("This strategy has published configurations and cannot be edited. Unpublish all configurations first.")
@@ -2109,7 +2109,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
                         'batch_id': str(batch_id) # Link to backtests
                     },
                     status=StrategyExperiment.Status.SUCCESS,
-                    is_published=True,
+                    is_published=False,
                     batch_id=batch_id
                 )
             except Exception as e:

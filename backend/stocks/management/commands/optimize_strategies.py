@@ -241,7 +241,7 @@ class Command(BaseCommand):
                         metrics=metrics,
                         batch_id=batch_id,
                         status=StrategyExperiment.Status.SUCCESS,
-                        is_published=True
+                        is_published=False
                     )
                 except:
                     pass
@@ -262,7 +262,7 @@ class Command(BaseCommand):
                 'batch_id': str(batch_id)
             },
             status=StrategyExperiment.Status.SUCCESS,
-            is_published=True,
+            is_published=False,
             batch_id=batch_id
         )
         
