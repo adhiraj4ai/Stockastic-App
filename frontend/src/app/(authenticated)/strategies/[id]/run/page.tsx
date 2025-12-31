@@ -394,8 +394,8 @@ export default function RunStrategyPage() {
             const requestData: any = {
                 code: strategy.code,
                 symbol,
-                start_date: startDate,
-                end_date: endDate,
+                start_date: startDate ? format(startDate, 'yyyy-MM-dd') : undefined,
+                end_date: endDate ? format(endDate, 'yyyy-MM-dd') : undefined,
                 param_ranges: requestParams,
                 n_trials: nTrials,
                 method: method,
