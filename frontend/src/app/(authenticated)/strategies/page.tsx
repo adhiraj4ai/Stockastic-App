@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
-import { Plus, Lightbulb, ExternalLink, Play, Edit, Trash2, Info, LayoutGrid, List, Search, MoreVertical, TrendingUp, TrendingDown, Target, Zap, Filter, Beaker, FileCheck, Activity } from 'lucide-react';
+import { Plus, Lightbulb, ExternalLink, Play, Edit, Trash2, Info, LayoutGrid, List, Search, MoreVertical, TrendingUp, TrendingDown, Target, Zap, Filter, Beaker, FileCheck, Activity, GitCompare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -158,9 +158,14 @@ export default function StrategiesPage() {
 
                         {/* Actions Area - Context aware */}
                         {activeTab === 'my-strategies' && (
-                            <Button onClick={() => setIsCreateModalOpen(true)} size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700">
-                                <Plus size={16} /> Create Strategy
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button onClick={() => router.push('/strategies/compare')} variant="outline" size="sm" className="gap-2 border-purple-200 text-purple-600 hover:bg-purple-50">
+                                    <GitCompare size={16} /> Compare
+                                </Button>
+                                <Button onClick={() => setIsCreateModalOpen(true)} size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700">
+                                    <Plus size={16} /> Create Strategy
+                                </Button>
+                            </div>
                         )}
                     </div>
 

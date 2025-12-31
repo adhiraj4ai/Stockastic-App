@@ -1,4 +1,5 @@
-
+import warnings
+warnings.filterwarnings('ignore', category=FutureWarning)
 
 from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes, action
@@ -2321,6 +2322,437 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 pass 
 
             return Response({'error': f"Optimization Error: {str(e)}", 'traceback': tb}, status=400)
+
+    @action(detail=False, methods=['post'])
+    def compare(self, request):
+        """
+        Compare multiple strategies on a single symbol across different time periods.
+        Returns a matrix of performance metrics.
+        """
+        import pandas as pd
+        from backtesting import Backtest, Strategy as BTStrategy
+        from backtesting.lib import crossover
+        from backtesting.test import SMA
+        import inspect
+        import numpy as np
+        from dateutil.relativedelta import relativedelta
+        from datetime import datetime
+        
+        # Import Django Strategy model explicitly
+        from .models import Strategy as StrategyModel
+        
+        symbol = request.data.get('symbol')
+        strategy_ids = request.data.get('strategy_ids', [])
+        periods = request.data.get('periods', ['1Y', '3Y', '5Y', '10Y'])
+        
+        if not symbol:
+            return Response({'error': 'Symbol is required'}, status=400)
+        
+        # Get strategies to compare using Django model
+        if strategy_ids:
+            strategies = StrategyModel.objects.filter(id__in=strategy_ids)
+        else:
+            # Get all user's strategies
+            strategies = StrategyModel.objects.filter(Q(user=request.user) | Q(is_public=True))
+        
+        if not strategies.exists():
+            return Response({'error': 'No strategies found'}, status=404)
+
+        
+        # Define period mappings
+        period_map = {
+            '1Y': relativedelta(years=1),
+            '3Y': relativedelta(years=3),
+            '5Y': relativedelta(years=5),
+            '10Y': relativedelta(years=10),
+            'ALL': None
+        }
+        
+        today = datetime.now().date()
+        
+        # Helper to run a single backtest
+        def run_backtest_for_period(strategy_obj, start_date, end_date):
+            try:
+                # Fetch data
+                queryset = DailyStockPrice.objects.filter(ticker=symbol)
+                if start_date:
+                    queryset = queryset.filter(date__gte=start_date)
+                if end_date:
+                    queryset = queryset.filter(date__lte=end_date)
+                queryset = queryset.order_by('date')
+                
+                ticks_data = list(queryset.values('date', 'open', 'high', 'low', 'close', 'volume'))
+                if not ticks_data or len(ticks_data) < 20:
+                    return {'error': 'Insufficient data'}
+                
+                df = pd.DataFrame(ticks_data)
+                df.rename(columns={
+                    'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'volume': 'Volume'
+                }, inplace=True)
+                
+                numeric_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
+                df[numeric_cols] = df[numeric_cols].astype(float)
+                
+                # Filter bad data
+                df = df[
+                    (df['High'] / df['Open'] <= 2.0) & 
+                    (df['Low'] / df['Open'] >= 0.5) & 
+                    (df['Close'] > 0)
+                ].copy()
+                
+                if len(df) < 10:
+                    return {'error': 'Insufficient valid data'}
+                
+                df['date'] = pd.to_datetime(df['date'])
+                df.set_index('date', inplace=True)
+                
+                # Execute strategy code
+                local_scope = {
+                    'Backtest': Backtest,
+                    'Strategy': BTStrategy,
+                    'crossover': crossover,
+                    'SMA': SMA,
+                    'pd': pd,
+                }
+                
+                exec(strategy_obj.code, local_scope)
+                
+                # Find strategy class
+                strategy_class = None
+                for name, obj in local_scope.items():
+                    if inspect.isclass(obj) and issubclass(obj, BTStrategy) and obj is not BTStrategy:
+                        strategy_class = obj
+                        break
+
+                
+                if not strategy_class:
+                    return {'error': 'No Strategy class found'}
+                
+                # Run backtest
+                bt = Backtest(df, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
+                stats = bt.run()
+                
+                def safe_num(val, default=0.0):
+                    if val is None: return default
+                    if isinstance(val, (int, float, np.integer, np.floating)):
+                        return float(val) if not np.isnan(val) else default
+                    return default
+                
+                return {
+                    'win_rate': safe_num(stats.get('Win Rate [%]')),
+                    'return_pct': safe_num(stats.get('Return [%]')),
+                    'max_drawdown': safe_num(stats.get('Max. Drawdown [%]')),
+                    'profit_factor': safe_num(stats.get('Profit Factor', 0)),
+                    'total_trades': int(safe_num(stats.get('# Trades'), 0)),
+                    'sharpe_ratio': safe_num(stats.get('Sharpe Ratio')),
+                }
+            except Exception as e:
+                return {'error': str(e)}
+        
+        # Build results matrix
+        results = []
+        
+        for strategy_obj in strategies:
+            strategy_result = {
+                'strategy_id': strategy_obj.id,
+                'strategy_name': strategy_obj.name,
+                'periods': {}
+            }
+            
+            for period in periods:
+                if period == 'ALL':
+                    start_date = None
+                    end_date = today
+                else:
+                    delta = period_map.get(period)
+                    if delta:
+                        start_date = today - delta
+                        end_date = today
+                    else:
+                        continue
+                
+                metrics = run_backtest_for_period(strategy_obj, start_date, end_date)
+                strategy_result['periods'][period] = metrics
+            
+            results.append(strategy_result)
+        
+        return Response({
+            'symbol': symbol,
+            'periods': periods,
+            'results': results
+        })
+
+    @action(detail=False, methods=['post'])
+    def optimize_compare(self, request):
+        """
+        Optimize and compare multiple strategies on a single symbol across different time periods.
+        Runs optimization for each strategy × period combination and returns best results.
+        """
+        import pandas as pd
+        from backtesting import Backtest, Strategy as BTStrategy
+        from backtesting.lib import crossover
+        from backtesting.test import SMA
+        import inspect
+        import numpy as np
+        import optuna
+        from dateutil.relativedelta import relativedelta
+        from datetime import datetime
+        import re
+        
+        # Import Django Strategy model explicitly
+        from .models import Strategy as StrategyModel
+        
+        optuna.logging.set_verbosity(optuna.logging.WARNING)
+        
+        symbol = request.data.get('symbol')
+        strategy_ids = request.data.get('strategy_ids', [])
+        periods = request.data.get('periods', ['1Y', '3Y', '5Y', '10Y'])
+        n_trials = request.data.get('n_trials', 20)  # Fewer trials for speed
+        
+        if not symbol:
+            return Response({'error': 'Symbol is required'}, status=400)
+        
+        # Get strategies to compare using Django model
+        if strategy_ids:
+            strategies = StrategyModel.objects.filter(id__in=strategy_ids)
+        else:
+            strategies = StrategyModel.objects.filter(Q(user=request.user) | Q(is_public=True))
+        
+        if not strategies.exists():
+            return Response({'error': 'No strategies found'}, status=404)
+        
+        # Define period mappings
+        period_map = {
+            '1Y': relativedelta(years=1),
+            '3Y': relativedelta(years=3),
+            '5Y': relativedelta(years=5),
+            '10Y': relativedelta(years=10),
+            'ALL': None
+        }
+        
+        today = datetime.now().date()
+        
+        # Helper to extract parameters from strategy code
+        def extract_params(code):
+            params = {}
+            regex = r'^\s*(\w+)\s*=\s*([\d.]+)'
+            for match in re.finditer(regex, code, re.MULTILINE):
+                param_name = match.group(1)
+                value_str = match.group(2)
+                if param_name in ['self', 'data', 'position', 'equity']:
+                    continue
+                if '.' in value_str:
+                    continue  # Skip floats for now
+                try:
+                    value = int(value_str)
+                    min_val = max(1, int(value * 0.5))
+                    max_val = int(value * 2)
+                    params[param_name] = [min_val, max_val]
+                except:
+                    pass
+            return params
+        
+        # Helper to run optimization for a period
+        def run_optimization_for_period(strategy_obj, start_date, end_date, n_trials):
+            try:
+                # Fetch data
+                queryset = DailyStockPrice.objects.filter(ticker=symbol)
+                if start_date:
+                    queryset = queryset.filter(date__gte=start_date)
+                if end_date:
+                    queryset = queryset.filter(date__lte=end_date)
+                queryset = queryset.order_by('date')
+                
+                ticks_data = list(queryset.values('date', 'open', 'high', 'low', 'close', 'volume'))
+                if not ticks_data or len(ticks_data) < 50:
+                    return {'error': 'Insufficient data'}
+                
+                df = pd.DataFrame(ticks_data)
+                df.rename(columns={
+                    'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'volume': 'Volume'
+                }, inplace=True)
+                
+                numeric_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
+                df[numeric_cols] = df[numeric_cols].astype(float)
+                
+                df = df[
+                    (df['High'] / df['Open'] <= 2.0) & 
+                    (df['Low'] / df['Open'] >= 0.5) & 
+                    (df['Close'] > 0)
+                ].copy()
+                
+                if len(df) < 30:
+                    return {'error': 'Insufficient valid data'}
+                
+                df['date'] = pd.to_datetime(df['date'])
+                df.set_index('date', inplace=True)
+                
+                code_template = strategy_obj.code
+                param_ranges = extract_params(code_template)
+                
+                if not param_ranges:
+                    # No optimizable parameters, just run backtest
+                    local_scope = {
+                        'Backtest': Backtest,
+                        'Strategy': BTStrategy,
+                        'crossover': crossover,
+                        'SMA': SMA,
+                        'pd': pd,
+                    }
+                    exec(code_template, local_scope)
+                    
+                    strategy_class = None
+                    for name, obj in local_scope.items():
+                        if inspect.isclass(obj) and issubclass(obj, BTStrategy) and obj is not BTStrategy:
+                            strategy_class = obj
+                            break
+                    
+                    if not strategy_class:
+                        return {'error': 'No Strategy class found'}
+                    
+                    bt = Backtest(df, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
+                    stats = bt.run()
+                    
+                    def safe_num(val, default=0.0):
+                        if val is None: return default
+                        if isinstance(val, (int, float, np.integer, np.floating)):
+                            return float(val) if not np.isnan(val) else default
+                        return default
+                    
+                    return {
+                        'win_rate': safe_num(stats.get('Win Rate [%]')),
+                        'return_pct': safe_num(stats.get('Return [%]')),
+                        'max_drawdown': safe_num(stats.get('Max. Drawdown [%]')),
+                        'profit_factor': safe_num(stats.get('Profit Factor', 0)),
+                        'total_trades': int(safe_num(stats.get('# Trades'), 0)),
+                        'sharpe_ratio': safe_num(stats.get('Sharpe Ratio')),
+                        'best_params': {},
+                        'optimized': False
+                    }
+                
+                # Define objective function
+                def objective(trial):
+                    params = {}
+                    for param_name, (min_val, max_val) in param_ranges.items():
+                        params[param_name] = trial.suggest_int(param_name, min_val, max_val)
+                    
+                    code = code_template
+                    for param_name, param_value in params.items():
+                        code = code.replace(f"{param_name} = ", f"{param_name} = {param_value} #")
+                    
+                    local_scope = {
+                        'Backtest': Backtest,
+                        'Strategy': BTStrategy,
+                        'crossover': crossover,
+                        'SMA': SMA,
+                        'pd': pd,
+                    }
+                    
+                    try:
+                        exec(code, local_scope)
+                        
+                        strategy_class = None
+                        for name, obj in local_scope.items():
+                            if inspect.isclass(obj) and issubclass(obj, BTStrategy) and obj is not BTStrategy:
+                                strategy_class = obj
+                                break
+                        
+                        if not strategy_class:
+                            return -9999
+                        
+                        bt = Backtest(df, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
+                        stats = bt.run()
+                        
+                        return_pct = stats.get('Return [%]', 0)
+                        if return_pct is None or (isinstance(return_pct, float) and return_pct != return_pct):
+                            return_pct = 0
+                        return return_pct
+                    except:
+                        return -9999
+                
+                # Run optimization
+                study = optuna.create_study(direction='maximize')
+                study.optimize(objective, n_trials=n_trials, show_progress_bar=False)
+                
+                best_params = study.best_params
+                best_value = study.best_value
+                
+                # Run final backtest with best params
+                code = code_template
+                for param_name, param_value in best_params.items():
+                    code = code.replace(f"{param_name} = ", f"{param_name} = {param_value} #")
+                
+                local_scope = {
+                    'Backtest': Backtest,
+                    'Strategy': BTStrategy,
+                    'crossover': crossover,
+                    'SMA': SMA,
+                    'pd': pd,
+                }
+                exec(code, local_scope)
+                
+                strategy_class = None
+                for name, obj in local_scope.items():
+                    if inspect.isclass(obj) and issubclass(obj, BTStrategy) and obj is not BTStrategy:
+                        strategy_class = obj
+                        break
+                
+                bt = Backtest(df, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
+                stats = bt.run()
+                
+                def safe_num(val, default=0.0):
+                    if val is None: return default
+                    if isinstance(val, (int, float, np.integer, np.floating)):
+                        return float(val) if not np.isnan(val) else default
+                    return default
+                
+                return {
+                    'win_rate': safe_num(stats.get('Win Rate [%]')),
+                    'return_pct': safe_num(stats.get('Return [%]')),
+                    'max_drawdown': safe_num(stats.get('Max. Drawdown [%]')),
+                    'profit_factor': safe_num(stats.get('Profit Factor', 0)),
+                    'total_trades': int(safe_num(stats.get('# Trades'), 0)),
+                    'sharpe_ratio': safe_num(stats.get('Sharpe Ratio')),
+                    'best_params': best_params,
+                    'optimized': True,
+                    'n_trials': n_trials
+                }
+            except Exception as e:
+                return {'error': str(e)}
+        
+        # Build results matrix
+        results = []
+        
+        for strategy_obj in strategies:
+            strategy_result = {
+                'strategy_id': strategy_obj.id,
+                'strategy_name': strategy_obj.name,
+                'periods': {}
+            }
+            
+            for period in periods:
+                if period == 'ALL':
+                    start_date = None
+                    end_date = today
+                else:
+                    delta = period_map.get(period)
+                    if delta:
+                        start_date = today - delta
+                        end_date = today
+                    else:
+                        continue
+                
+                metrics = run_optimization_for_period(strategy_obj, start_date, end_date, n_trials)
+                strategy_result['periods'][period] = metrics
+            
+            results.append(strategy_result)
+        
+        return Response({
+            'symbol': symbol,
+            'periods': periods,
+            'results': results,
+            'optimized': True
+        })
 
     @action(detail=False, methods=['get'])
     def experiment_detail(self, request):
