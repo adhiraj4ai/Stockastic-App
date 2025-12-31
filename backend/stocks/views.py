@@ -2324,9 +2324,9 @@ class StrategyViewSet(viewsets.ModelViewSet):
             return Response({'error': f"Optimization Error: {str(e)}", 'traceback': tb}, status=400)
 
     @action(detail=True, methods=['post'])
-    def save_optimized(self, request, pk=None):
+    def publish_optimized(self, request, pk=None):
         """
-        Save optimized parameters for a strategy. Creates an experiment record.
+        Publish optimized parameters for a strategy. Creates a published experiment record.
         """
         import re
         
@@ -2335,7 +2335,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
         symbol = request.data.get('symbol', '')
         
         if not best_params:
-            return Response({'error': 'No parameters to save'}, status=400)
+            return Response({'error': 'No parameters to publish'}, status=400)
         
         if not symbol:
             return Response({'error': 'Symbol is required'}, status=400)
@@ -2343,8 +2343,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
         # Update strategy code with new parameter values
         new_code = strategy.code
         for param_name, param_value in best_params.items():
-            # Replace parameter assignments in the code
-            pattern = rf"({param_name}\s*=\s*)\d+"
+            # Replace parameter assignments in the code using word boundaries and matching floats
+            pattern = rf"(\b{param_name}\s*=\s*)[-+]?[\d\.]+"
             new_code = re.sub(pattern, rf"\g<1>{param_value}", new_code)
         
         # Save the updated code 
@@ -2352,23 +2352,33 @@ class StrategyViewSet(viewsets.ModelViewSet):
         strategy.ticker = symbol  # Update the default ticker
         strategy.save()
         
-        # Create an experiment record for this optimization
+        # Unpublish existing experiments for the same strategy and symbol
+        StrategyExperiment.objects.filter(
+            strategy=strategy,
+            scope_type=ScopeType.SYMBOL,
+            scope_value=symbol,
+            is_published=True
+        ).update(is_published=False)
+
+        # Create a published experiment record for this optimization
         from datetime import date
         experiment = StrategyExperiment.objects.create(
             strategy=strategy,
-            name=f"Optimized for {symbol}",
-            ticker=symbol,
-            scope_type=ScopeType.SINGLE_TICKER,
+            user=request.user,
+            run_type=StrategyExperiment.RunType.OPTIMIZATION,
+            scope_type=ScopeType.SYMBOL,
+            scope_value=symbol,
             start_date=date.today(),
             end_date=date.today(),
             parameters=best_params,
-            metrics={'optimized': True, 'symbol': symbol},
-            status=StrategyExperiment.Status.COMPLETED
+            metrics={'optimized': True, 'symbol': symbol, 'params': best_params},
+            status=StrategyExperiment.Status.SUCCESS,
+            is_published=True
         )
         
         return Response({
             'success': True,
-            'message': f'Saved optimized config for {strategy.name}',
+            'message': f'Published optimized config for {strategy.name}',
             'experiment_id': experiment.id,
             'updated_params': best_params,
             'symbol': symbol
@@ -2509,6 +2519,12 @@ class StrategyViewSet(viewsets.ModelViewSet):
             strategy_result = {
                 'strategy_id': strategy_obj.id,
                 'strategy_name': strategy_obj.name,
+                'is_published': StrategyExperiment.objects.filter(
+                    strategy=strategy_obj,
+                    scope_type=ScopeType.SYMBOL,
+                    scope_value=symbol,
+                    is_published=True
+                ).exists(),
                 'periods': {}
             }
             
@@ -2720,10 +2736,20 @@ class StrategyViewSet(viewsets.ModelViewSet):
                         bt = Backtest(df, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
                         stats = bt.run()
                         
+                        # Prioritize win rate (60%) then return (40%)
+                        win_rate = stats.get('Win Rate [%]', 0)
                         return_pct = stats.get('Return [%]', 0)
+                        
+                        if win_rate is None or (isinstance(win_rate, float) and win_rate != win_rate):
+                            win_rate = 0
                         if return_pct is None or (isinstance(return_pct, float) and return_pct != return_pct):
                             return_pct = 0
-                        return return_pct
+                        
+                        # Composite score: win_rate weighted higher
+                        # Win rate is 0-100, return can be negative/large positive
+                        # Normalize return to similar scale and combine
+                        score = (win_rate * 0.6) + (return_pct * 0.4)
+                        return score
                     except:
                         return -9999
                 
@@ -2786,6 +2812,12 @@ class StrategyViewSet(viewsets.ModelViewSet):
             strategy_result = {
                 'strategy_id': strategy_obj.id,
                 'strategy_name': strategy_obj.name,
+                'is_published': StrategyExperiment.objects.filter(
+                    strategy=strategy_obj,
+                    scope_type=ScopeType.SYMBOL,
+                    scope_value=symbol,
+                    is_published=True
+                ).exists(),
                 'periods': {}
             }
             

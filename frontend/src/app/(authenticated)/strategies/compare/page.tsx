@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { CompanySelect } from '@/components/CompanySelect';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Play, TrendingUp, TrendingDown, Activity, AlertTriangle, Loader2, Zap, Settings, StopCircle, ChevronUp, ChevronDown, Save } from 'lucide-react';
+import { ArrowLeft, Play, TrendingUp, TrendingDown, Activity, AlertTriangle, Loader2, Zap, Settings, StopCircle, ChevronUp, ChevronDown, Upload, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
@@ -32,6 +32,7 @@ interface PeriodMetrics {
 interface StrategyResult {
     strategy_id: number;
     strategy_name: string;
+    is_published: boolean;
     periods: Record<string, PeriodMetrics>;
 }
 
@@ -52,6 +53,7 @@ export default function StrategyComparePage() {
     const [strategies, setStrategies] = useState<Strategy[]>([]);
     const abortControllerRef = useRef<AbortController | null>(null);
     const [sortConfig, setSortConfig] = useState<{ period: string; metric: string; direction: 'asc' | 'desc' } | null>(null);
+    const [newlyPublished, setNewlyPublished] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         // Fetch available strategies
@@ -108,59 +110,24 @@ export default function StrategyComparePage() {
         setLoading(false);
     };
 
-    const [savingStrategy, setSavingStrategy] = useState<number | null>(null);
+    const [publishingStrategy, setPublishingStrategy] = useState<number | null>(null);
 
-    const handleSaveOptimization = async (strategyId: number, strategyName: string, bestParams: Record<string, number>) => {
-        setSavingStrategy(strategyId);
+    const handlePublishOptimization = async (strategyId: number, strategyName: string, bestParams: Record<string, number>) => {
+        setPublishingStrategy(strategyId);
         try {
-            await api.post(`/api/stocks/strategies/${strategyId}/save_optimized/`, {
+            await api.post(`/api/stocks/strategies/${strategyId}/publish_optimized/`, {
                 best_params: bestParams,
                 symbol: symbol,
             });
-            toast.success(`Saved optimized config for ${strategyName}`);
+            setNewlyPublished(prev => new Set(prev).add(strategyId));
+            toast.success(`Published optimized config for ${strategyName}`);
         } catch (error: any) {
-            toast.error(error.response?.data?.error || 'Failed to save optimization');
+            toast.error(error.response?.data?.error || 'Failed to publish optimization');
         } finally {
-            setSavingStrategy(null);
+            setPublishingStrategy(null);
         }
     };
 
-    // Helper to render metric cell
-    const MetricCell = ({ metrics }: { metrics: PeriodMetrics }) => {
-        if (metrics.error) {
-            return (
-                <div className="text-center py-2 text-gray-400 text-xs">
-                    <AlertTriangle size={14} className="mx-auto mb-1" />
-                    Error
-                </div>
-            );
-        }
-
-        const returnPositive = (metrics.return_pct || 0) >= 0;
-
-        return (
-            <div className="space-y-1 py-2">
-                <div className="flex items-center justify-center gap-1">
-                    <Activity size={10} className="text-blue-500" />
-                    <span className="text-xs font-medium">{metrics.win_rate?.toFixed(1) || 'N/A'}%</span>
-                </div>
-                <div className={`text-sm font-bold ${returnPositive ? 'text-green-600' : 'text-red-600'}`}>
-                    {returnPositive ? '+' : ''}{metrics.return_pct?.toFixed(1) || 0}%
-                </div>
-                <div className="text-[10px] text-red-500">
-                    {metrics.max_drawdown?.toFixed(1) || 0}% DD
-                </div>
-                <div className="text-[10px] text-gray-400">
-                    {metrics.total_trades || 0} trades
-                </div>
-                {metrics.best_params && Object.keys(metrics.best_params).length > 0 && (
-                    <div className="text-[9px] text-purple-500 mt-1 flex items-center justify-center gap-0.5">
-                        <Settings size={8} /> Optimized
-                    </div>
-                )}
-            </div>
-        );
-    };
 
     // Handle sorting
     const handleSort = (period: string, metric: string) => {
@@ -368,7 +335,14 @@ export default function StrategyComparePage() {
                                                 <td className={`px-4 py-2.5 border-r border-gray-100 sticky left-0 z-10 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                                                     <div className="flex items-center justify-between gap-2">
                                                         <div>
-                                                            <div className="font-semibold text-gray-900 text-sm">{strategyResult.strategy_name}</div>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="font-semibold text-gray-900 text-sm whitespace-nowrap">{strategyResult.strategy_name}</div>
+                                                                {(strategyResult.is_published || newlyPublished.has(strategyResult.strategy_id)) && (
+                                                                    <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 bg-green-50 text-green-700 border-green-200">
+                                                                        Published
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
                                                             {results.optimized && strategyResult.periods[results.periods[0]]?.best_params && (
                                                                 <div className="text-[9px] text-purple-500 flex items-center gap-0.5 mt-0.5">
                                                                     <Settings size={8} /> Optimized
@@ -377,19 +351,24 @@ export default function StrategyComparePage() {
                                                         </div>
                                                         {results.optimized && strategyResult.periods[results.periods[0]]?.best_params && (
                                                             <button
-                                                                onClick={() => handleSaveOptimization(
+                                                                onClick={() => handlePublishOptimization(
                                                                     strategyResult.strategy_id,
                                                                     strategyResult.strategy_name,
                                                                     strategyResult.periods[results.periods[0]].best_params!
                                                                 )}
-                                                                disabled={savingStrategy === strategyResult.strategy_id}
-                                                                className="p-1 rounded hover:bg-green-100 text-green-600 transition-colors disabled:opacity-50"
-                                                                title={`Save optimized params for ${strategyResult.strategy_name}`}
+                                                                disabled={publishingStrategy === strategyResult.strategy_id || strategyResult.is_published || newlyPublished.has(strategyResult.strategy_id)}
+                                                                className={`p-1 rounded transition-colors disabled:opacity-50 ${(strategyResult.is_published || newlyPublished.has(strategyResult.strategy_id))
+                                                                        ? 'text-green-600 bg-green-50'
+                                                                        : 'hover:bg-green-100 text-green-600'
+                                                                    }`}
+                                                                title={(strategyResult.is_published || newlyPublished.has(strategyResult.strategy_id)) ? "Already published" : `Publish optimized params for ${strategyResult.strategy_name}`}
                                                             >
-                                                                {savingStrategy === strategyResult.strategy_id ? (
+                                                                {publishingStrategy === strategyResult.strategy_id ? (
                                                                     <Loader2 size={14} className="animate-spin" />
+                                                                ) : (strategyResult.is_published || newlyPublished.has(strategyResult.strategy_id)) ? (
+                                                                    <Check size={14} />
                                                                 ) : (
-                                                                    <Save size={14} />
+                                                                    <Upload size={14} />
                                                                 )}
                                                             </button>
                                                         )}
