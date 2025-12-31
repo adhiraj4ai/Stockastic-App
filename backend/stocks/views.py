@@ -2323,6 +2323,57 @@ class StrategyViewSet(viewsets.ModelViewSet):
 
             return Response({'error': f"Optimization Error: {str(e)}", 'traceback': tb}, status=400)
 
+    @action(detail=True, methods=['post'])
+    def save_optimized(self, request, pk=None):
+        """
+        Save optimized parameters for a strategy. Creates an experiment record.
+        """
+        import re
+        
+        strategy = self.get_object()
+        best_params = request.data.get('best_params', {})
+        symbol = request.data.get('symbol', '')
+        
+        if not best_params:
+            return Response({'error': 'No parameters to save'}, status=400)
+        
+        if not symbol:
+            return Response({'error': 'Symbol is required'}, status=400)
+        
+        # Update strategy code with new parameter values
+        new_code = strategy.code
+        for param_name, param_value in best_params.items():
+            # Replace parameter assignments in the code
+            pattern = rf"({param_name}\s*=\s*)\d+"
+            new_code = re.sub(pattern, rf"\g<1>{param_value}", new_code)
+        
+        # Save the updated code 
+        strategy.code = new_code
+        strategy.ticker = symbol  # Update the default ticker
+        strategy.save()
+        
+        # Create an experiment record for this optimization
+        from datetime import date
+        experiment = StrategyExperiment.objects.create(
+            strategy=strategy,
+            name=f"Optimized for {symbol}",
+            ticker=symbol,
+            scope_type=ScopeType.SINGLE_TICKER,
+            start_date=date.today(),
+            end_date=date.today(),
+            parameters=best_params,
+            metrics={'optimized': True, 'symbol': symbol},
+            status=StrategyExperiment.Status.COMPLETED
+        )
+        
+        return Response({
+            'success': True,
+            'message': f'Saved optimized config for {strategy.name}',
+            'experiment_id': experiment.id,
+            'updated_params': best_params,
+            'symbol': symbol
+        })
+
     @action(detail=False, methods=['post'])
     def compare(self, request):
         """
@@ -2413,6 +2464,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     'crossover': crossover,
                     'SMA': SMA,
                     'pd': pd,
+                    'np': np,
+                    'symbol': symbol,
                 }
                 
                 exec(strategy_obj.code, local_scope)
@@ -2598,6 +2651,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
                         'crossover': crossover,
                         'SMA': SMA,
                         'pd': pd,
+                        'np': np,
+                        'symbol': symbol,
                     }
                     exec(code_template, local_scope)
                     
@@ -2646,6 +2701,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
                         'crossover': crossover,
                         'SMA': SMA,
                         'pd': pd,
+                        'np': np,
+                        'symbol': symbol,
                     }
                     
                     try:
@@ -2688,6 +2745,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     'crossover': crossover,
                     'SMA': SMA,
                     'pd': pd,
+                    'np': np,
+                    'symbol': symbol,
                 }
                 exec(code, local_scope)
                 

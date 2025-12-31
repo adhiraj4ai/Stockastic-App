@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { CompanySelect } from '@/components/CompanySelect';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Play, TrendingUp, TrendingDown, Activity, AlertTriangle, Loader2, Zap, Settings, StopCircle, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Play, TrendingUp, TrendingDown, Activity, AlertTriangle, Loader2, Zap, Settings, StopCircle, ChevronUp, ChevronDown, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
@@ -106,6 +106,23 @@ export default function StrategyComparePage() {
             abortControllerRef.current = null;
         }
         setLoading(false);
+    };
+
+    const [savingStrategy, setSavingStrategy] = useState<number | null>(null);
+
+    const handleSaveOptimization = async (strategyId: number, strategyName: string, bestParams: Record<string, number>) => {
+        setSavingStrategy(strategyId);
+        try {
+            await api.post(`/api/stocks/strategies/${strategyId}/save_optimized/`, {
+                best_params: bestParams,
+                symbol: symbol,
+            });
+            toast.success(`Saved optimized config for ${strategyName}`);
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || 'Failed to save optimization');
+        } finally {
+            setSavingStrategy(null);
+        }
     };
 
     // Helper to render metric cell
@@ -309,43 +326,38 @@ export default function StrategyComparePage() {
                                         </tr>
                                         <tr className="bg-gray-50 border-b">
                                             {results.periods.map(period => (
-                                                <>
+                                                <React.Fragment key={period}>
                                                     <th
-                                                        key={`${period}-wr`}
                                                         onClick={() => handleSort(period, 'win_rate')}
                                                         className="text-center px-2 py-1 text-[10px] font-semibold text-blue-600 uppercase cursor-pointer hover:bg-blue-50 transition-colors"
                                                     >
                                                         Win%<SortIndicator period={period} metric="win_rate" />
                                                     </th>
                                                     <th
-                                                        key={`${period}-ret`}
                                                         onClick={() => handleSort(period, 'return_pct')}
                                                         className="text-center px-2 py-1 text-[10px] font-semibold text-green-600 uppercase cursor-pointer hover:bg-green-50 transition-colors"
                                                     >
                                                         Return<SortIndicator period={period} metric="return_pct" />
                                                     </th>
                                                     <th
-                                                        key={`${period}-dd`}
                                                         onClick={() => handleSort(period, 'max_drawdown')}
                                                         className="text-center px-2 py-1 text-[10px] font-semibold text-red-600 uppercase cursor-pointer hover:bg-red-50 transition-colors"
                                                     >
                                                         DD<SortIndicator period={period} metric="max_drawdown" />
                                                     </th>
                                                     <th
-                                                        key={`${period}-tr`}
                                                         onClick={() => handleSort(period, 'total_trades')}
                                                         className="text-center px-2 py-1 text-[10px] font-semibold text-gray-500 uppercase cursor-pointer hover:bg-gray-100 transition-colors"
                                                     >
                                                         Trades<SortIndicator period={period} metric="total_trades" />
                                                     </th>
                                                     <th
-                                                        key={`${period}-sr`}
                                                         onClick={() => handleSort(period, 'sharpe_ratio')}
                                                         className="text-center px-2 py-1 text-[10px] font-semibold text-purple-600 uppercase border-r border-gray-200 cursor-pointer hover:bg-purple-50 transition-colors"
                                                     >
                                                         Sharpe<SortIndicator period={period} metric="sharpe_ratio" />
                                                     </th>
-                                                </>
+                                                </React.Fragment>
                                             ))}
                                         </tr>
                                     </thead>
@@ -354,12 +366,34 @@ export default function StrategyComparePage() {
                                             <tr key={strategyResult.strategy_id} className={`hover:bg-blue-50/30 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
 
                                                 <td className={`px-4 py-2.5 border-r border-gray-100 sticky left-0 z-10 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                                                    <div className="font-semibold text-gray-900 text-sm">{strategyResult.strategy_name}</div>
-                                                    {strategyResult.periods[results.periods[0]]?.optimized && (
-                                                        <div className="text-[9px] text-purple-500 flex items-center gap-0.5 mt-0.5">
-                                                            <Settings size={8} /> Optimized
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <div>
+                                                            <div className="font-semibold text-gray-900 text-sm">{strategyResult.strategy_name}</div>
+                                                            {results.optimized && strategyResult.periods[results.periods[0]]?.best_params && (
+                                                                <div className="text-[9px] text-purple-500 flex items-center gap-0.5 mt-0.5">
+                                                                    <Settings size={8} /> Optimized
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    )}
+                                                        {results.optimized && strategyResult.periods[results.periods[0]]?.best_params && (
+                                                            <button
+                                                                onClick={() => handleSaveOptimization(
+                                                                    strategyResult.strategy_id,
+                                                                    strategyResult.strategy_name,
+                                                                    strategyResult.periods[results.periods[0]].best_params!
+                                                                )}
+                                                                disabled={savingStrategy === strategyResult.strategy_id}
+                                                                className="p-1 rounded hover:bg-green-100 text-green-600 transition-colors disabled:opacity-50"
+                                                                title={`Save optimized params for ${strategyResult.strategy_name}`}
+                                                            >
+                                                                {savingStrategy === strategyResult.strategy_id ? (
+                                                                    <Loader2 size={14} className="animate-spin" />
+                                                                ) : (
+                                                                    <Save size={14} />
+                                                                )}
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 {results.periods.map(period => {
                                                     const m = strategyResult.periods[period] || {};
@@ -368,12 +402,10 @@ export default function StrategyComparePage() {
 
                                                     if (hasError) {
                                                         return (
-                                                            <>
-                                                                <td key={`${period}-wr`} colSpan={5} className="text-center px-2 py-2 text-gray-400 text-xs border-r border-gray-100">
-                                                                    <AlertTriangle size={12} className="inline mr-1" />
-                                                                    {m.error}
-                                                                </td>
-                                                            </>
+                                                            <td key={`${period}-error`} colSpan={5} className="text-center px-2 py-2 text-gray-400 text-xs border-r border-gray-100">
+                                                                <AlertTriangle size={12} className="inline mr-1" />
+                                                                {m.error}
+                                                            </td>
                                                         );
                                                     }
 
@@ -383,23 +415,23 @@ export default function StrategyComparePage() {
                                                         const drawdownBad = Math.abs(m.max_drawdown || 0) >= 20;
 
                                                         return (
-                                                            <>
-                                                                <td key={`${period}-wr`} className={`text-center px-2 py-2 text-xs font-semibold ${winRateGood ? 'text-blue-700 bg-blue-50/50' : 'text-gray-500'}`}>
+                                                            <React.Fragment key={period}>
+                                                                <td className={`text-center px-2 py-2 text-xs font-semibold ${winRateGood ? 'text-blue-700 bg-blue-50/50' : 'text-gray-500'}`}>
                                                                     {m.win_rate?.toFixed(0) || '-'}%
                                                                 </td>
-                                                                <td key={`${period}-ret`} className={`text-center px-2 py-2 text-xs font-bold ${returnPositive ? 'text-green-700 bg-green-50/50' : 'text-red-600 bg-red-50/50'}`}>
+                                                                <td className={`text-center px-2 py-2 text-xs font-bold ${returnPositive ? 'text-green-700 bg-green-50/50' : 'text-red-600 bg-red-50/50'}`}>
                                                                     {returnPositive ? '+' : ''}{m.return_pct?.toFixed(1) || '0'}%
                                                                 </td>
-                                                                <td key={`${period}-dd`} className={`text-center px-2 py-2 text-xs font-medium ${drawdownBad ? 'text-red-600 bg-red-50/50' : 'text-orange-500'}`}>
+                                                                <td className={`text-center px-2 py-2 text-xs font-medium ${drawdownBad ? 'text-red-600 bg-red-50/50' : 'text-orange-500'}`}>
                                                                     {m.max_drawdown?.toFixed(0) || '0'}%
                                                                 </td>
-                                                                <td key={`${period}-tr`} className="text-center px-2 py-2 text-xs text-gray-500">
+                                                                <td className="text-center px-2 py-2 text-xs text-gray-500">
                                                                     {m.total_trades || 0}
                                                                 </td>
-                                                                <td key={`${period}-sr`} className={`text-center px-2 py-2 text-xs font-semibold border-r border-gray-100 ${sharpeGood ? 'text-purple-700 bg-purple-50/50' : 'text-purple-400'}`}>
+                                                                <td className={`text-center px-2 py-2 text-xs font-semibold border-r border-gray-100 ${sharpeGood ? 'text-purple-700 bg-purple-50/50' : 'text-purple-400'}`}>
                                                                     {m.sharpe_ratio?.toFixed(2) || '-'}
                                                                 </td>
-                                                            </>
+                                                            </React.Fragment>
                                                         );
                                                     })();
                                                 })}
