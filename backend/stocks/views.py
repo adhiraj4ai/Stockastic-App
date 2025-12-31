@@ -1805,6 +1805,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
         n_trials = request.data.get('n_trials', 50)
         param_ranges = request.data.get('param_ranges', {})
         objective_type = request.data.get('objective', 'profit')  # 'win_rate', 'profit', or 'balanced'
+        validation_split = request.data.get('validation_split', 0.2)  # WFA: Fraction for out-of-sample testing
         
         # Debug logging
         print(f"\n=== OPTIMIZE DEBUG ===")
@@ -1815,7 +1816,9 @@ class StrategyViewSet(viewsets.ModelViewSet):
         print(f"n_trials: {n_trials}")
         print(f"param_ranges: {param_ranges}")
         print(f"objective: {objective_type}")
+        print(f"validation_split: {validation_split}")
         print(f"======================\n")
+
         
         if not param_ranges:
             return Response({'error': 'param_ranges required (e.g., {"n1": [5, 30], "n2": [20, 100]})'}, status=400)
@@ -1912,12 +1915,38 @@ class StrategyViewSet(viewsets.ModelViewSet):
             if not data_map:
                  return Response({'error': 'No valid data found for any symbol'}, status=400)
             
+            # WFA: Split data into train (in-sample) and test (out-of-sample) sets
+            train_map = {}
+            test_map = {}
+            split_date = None
+            
+            if validation_split > 0:
+                for ticker, df in data_map.items():
+                    n = len(df)
+                    split_idx = int(n * (1 - validation_split))
+                    if split_idx < 10 or (n - split_idx) < 5:
+                        # Not enough data to split, use all for training
+                        train_map[ticker] = df
+                        test_map[ticker] = pd.DataFrame()  # Empty test set
+                    else:
+                        train_map[ticker] = df.iloc[:split_idx].copy()
+                        test_map[ticker] = df.iloc[split_idx:].copy()
+                        if split_date is None:
+                            split_date = df.index[split_idx].strftime('%Y-%m-%d')
+                print(f"WFA: Split at {split_date}, Train sizes: {[len(v) for v in train_map.values()]}, Test sizes: {[len(v) for v in test_map.values()]}")
+            else:
+                # No WFA: use all data for both optimization and testing
+                train_map = data_map
+                test_map = {}
+                print("WFA: Disabled (validation_split=0)")
+            
             # Validate that all parameters exist in the code
             for param_name in param_ranges.keys():
                 if f"{param_name} = " not in code_template:
                     return Response({
                         'error': f'Parameter "{param_name}" not found in strategy code. Available parameters must be defined as class attributes like "n1 = 10".'
                     }, status=400)
+
             
             # Define objective function
             def objective(trial):
@@ -1965,13 +1994,14 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 if not strategy_class:
                     raise ValueError('No Strategy class found')
                 
-                # Run backtest for ALL dataframes
+                # Run backtest for ALL dataframes (using train_map for WFA)
                 win_rates = []
                 returns = []
-                for ticker, df_data in data_map.items():
+                for ticker, df_data in train_map.items():
                     try:
                         bt = Backtest(df_data, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
                         stats = bt.run()
+
                         
                         # Get win rate - handle potential None or NaN values
                         win_rate = stats.get('Win Rate [%]', 0)
@@ -2109,39 +2139,94 @@ class StrategyViewSet(viewsets.ModelViewSet):
             import uuid
             batch_id = uuid.uuid4()
             backtest_results = []
-            all_metrics = []
             
-            for symbol_ticker, df_data in data_map.items():
+            # WFA: Separate train and test metrics
+            train_metrics = []
+            test_metrics = []
+            
+            # Helper to aggregate metrics
+            def aggregate_stats(metrics_list):
+                if not metrics_list:
+                    return {'pnl_percent': 0, 'win_rate': 0, 'max_drawdown': 0, 'sharpe_ratio': 0}
+                return {
+                    'pnl_percent': sum(m.get('pnl_percent', 0) for m in metrics_list) / len(metrics_list),
+                    'win_rate': sum(m.get('win_rate', 0) for m in metrics_list) / len(metrics_list),
+                    'max_drawdown': sum(m.get('Max. Drawdown [%]', m.get('max_drawdown', 0)) for m in metrics_list) / len(metrics_list),
+                    'sharpe_ratio': sum(m.get('Sharpe Ratio', m.get('sharpe_ratio', 0)) for m in metrics_list) / len(metrics_list),
+                }
+            
+            # Run backtests on TRAIN data
+            for symbol_ticker, df_data in train_map.items():
+                if df_data.empty:
+                    continue
                 res, err, exp_data = self._run_single_backtest(
                     optimized_code, symbol_ticker, start_date, end_date, params=best_params
                 )
                 if res:
-                    # Create detailed BACKTEST experiment
-                    StrategyExperiment.objects.create(
-                        strategy=strategy,
-                        user=request.user,
-                        run_type=StrategyExperiment.RunType.BACKTEST,
-                        scope_type=ScopeType.SYMBOL,
-                        scope_value=symbol_ticker,
-                        start_date=start_date,
-                        end_date=end_date,
-                        parameters=best_params,
-                        metrics=res['stats'],
-                        plot_html=res['plot_html'],
-                        batch_id=batch_id,
-                        status=StrategyExperiment.Status.SUCCESS,
-                        is_published=False
-                    )
+                    train_metrics.append(res['stats'])
                     backtest_results.append({
                         'symbol': symbol_ticker,
-                        'pnl_percent': res['stats']['pnl_percent']
+                        'pnl_percent': res['stats']['pnl_percent'],
+                        'set': 'train'
                     })
-                    all_metrics.append(res['stats'])
-
-            # Calculate aggregated metrics from all backtests
-            avg_win_rate = sum(m.get('win_rate', 0) for m in all_metrics) / len(all_metrics) if all_metrics else 0
-            avg_max_drawdown = sum(m.get('max_drawdown', 0) for m in all_metrics) / len(all_metrics) if all_metrics else 0
-            avg_profit_factor = sum(m.get('profit_factor', 0) for m in all_metrics) / len(all_metrics) if all_metrics else 0
+            
+            # Run backtests on TEST data (if WFA enabled)
+            if validation_split > 0 and test_map:
+                for symbol_ticker, df_data in test_map.items():
+                    if df_data.empty:
+                        continue
+                    # Use test_map data directly for backtesting
+                    try:
+                        from backtesting import Backtest, Strategy
+                        from backtesting.lib import crossover
+                        from backtesting.test import SMA
+                        import numpy as np
+                        
+                        local_scope = {
+                            'Backtest': Backtest,
+                            'Strategy': Strategy,
+                            'crossover': crossover,
+                            'SMA': SMA,
+                            'pd': pd,
+                        }
+                        exec(optimized_code, local_scope)
+                        
+                        strategy_class = None
+                        for name, obj in local_scope.items():
+                            if inspect.isclass(obj) and issubclass(obj, Strategy) and obj is not Strategy:
+                                strategy_class = obj
+                                break
+                        
+                        if strategy_class and len(df_data) >= 10:
+                            bt = Backtest(df_data, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
+                            stats = bt.run()
+                            
+                            def safe_num(val, default=0.0):
+                                if val is None: return default
+                                if isinstance(val, (int, float, np.integer, np.floating)):
+                                    return float(val) if not np.isnan(val) else default
+                                return default
+                            
+                            test_stats = {
+                                'pnl_percent': safe_num(stats.get('Return [%]')),
+                                'win_rate': safe_num(stats.get('Win Rate [%]')),
+                                'max_drawdown': safe_num(stats.get('Max. Drawdown [%]')),
+                                'sharpe_ratio': safe_num(stats.get('Sharpe Ratio')),
+                                'total_trades': int(safe_num(stats.get('# Trades'), 0)),
+                            }
+                            test_metrics.append(test_stats)
+                            backtest_results.append({
+                                'symbol': symbol_ticker,
+                                'pnl_percent': test_stats['pnl_percent'],
+                                'set': 'test'
+                            })
+                    except Exception as test_err:
+                        print(f"WFA test backtest failed for {symbol_ticker}: {test_err}")
+                        continue
+            
+            # Aggregate stats
+            aggregated_train_stats = aggregate_stats(train_metrics)
+            aggregated_test_stats = aggregate_stats(test_metrics) if test_metrics else None
 
             # Log Optimization Experiment
             try:
@@ -2168,7 +2253,10 @@ class StrategyViewSet(viewsets.ModelViewSet):
                         'best_return': best_value,
                         'search_ranges': param_ranges,
                         'n_trials': len(study.trials),
-                        'batch_id': str(batch_id) # Link to backtests
+                        'batch_id': str(batch_id),
+                        'train_stats': aggregated_train_stats,
+                        'test_stats': aggregated_test_stats,
+                        'validation_split': validation_split,
                     },
                     status=StrategyExperiment.Status.SUCCESS,
                     is_published=False,
@@ -2177,17 +2265,30 @@ class StrategyViewSet(viewsets.ModelViewSet):
             except Exception as e:
                 print(f"Failed to log optimization experiment: {e}")
 
-            return Response({
+            # Build response with WFA stats
+            response_data = {
                 'best_params': best_params,
                 'best_value': best_value,
-                'win_rate': avg_win_rate,
-                'max_drawdown': avg_max_drawdown,
-                'profit_factor': avg_profit_factor,
                 'n_trials': len(study.trials),
                 'trials': trials_data,
                 'optimized_code': optimized_code,
-                'batch_id': str(batch_id)
-            })
+                'batch_id': str(batch_id),
+                'validation_split': validation_split,
+            }
+            
+            if validation_split > 0 and aggregated_test_stats:
+                # WFA enabled: return train and test stats separately
+                response_data['train_stats'] = aggregated_train_stats
+                response_data['test_stats'] = aggregated_test_stats
+                response_data['split_date'] = split_date
+            else:
+                # No WFA: return combined stats
+                response_data['win_rate'] = aggregated_train_stats.get('win_rate', 0)
+                response_data['max_drawdown'] = aggregated_train_stats.get('max_drawdown', 0)
+                response_data['profit_factor'] = 0  # Not calculated in this simplified version
+            
+            return Response(response_data)
+
             
         except Exception as e:
             import traceback

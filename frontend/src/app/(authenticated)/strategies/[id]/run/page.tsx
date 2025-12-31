@@ -375,7 +375,7 @@ export default function RunStrategyPage() {
         }
     };
 
-    const handleOptimize = async (paramRanges: any, nTrials: number, method: string, objective: string) => {
+    const handleOptimize = async (paramRanges: any, nTrials: number, method: string, objective: string, validationSplit: number = 0.2) => {
         if (!strategy) return;
 
         // Check scope from params
@@ -399,7 +399,8 @@ export default function RunStrategyPage() {
                 param_ranges: requestParams,
                 n_trials: nTrials,
                 method: method,
-                objective: objective
+                objective: objective,
+                validation_split: validationSplit // WFA: Validation split for train/test
             };
 
             if (requestParams._scope === 'ALL') {
@@ -1036,6 +1037,7 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, optimiza
     const [method, setMethod] = useState<'auto' | 'grid' | 'bayes'>('bayes');
     const [objective, setObjective] = useState<'win_rate' | 'profit' | 'balanced'>('balanced');
     const [usingStrategyConfig, setUsingStrategyConfig] = useState(false);
+    const [validationSplit, setValidationSplit] = useState(0.2); // 20% for out-of-sample testing
 
 
 
@@ -1137,7 +1139,7 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, optimiza
                 toast.error('Please select a sector for optimization');
                 return;
             }
-            onOptimize(finalParams, 100, method, objective); // Pass objective to parent
+            onOptimize(finalParams, 100, method, objective, validationSplit); // Pass objective and validation split to parent
         } catch (error) {
             console.error("Params parse error", error);
             setJsonError('Invalid format. Please use syntax like: n1: [5, 30]');
@@ -1237,6 +1239,31 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, optimiza
                 />
             </div>
 
+            {/* Walk-Forward Analysis Split */}
+            <div className="space-y-3 pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold text-gray-500 uppercase">Validation Split (WFA)</Label>
+                    <span className="text-sm font-bold text-purple-600">{Math.round(validationSplit * 100)}%</span>
+                </div>
+                <input
+                    type="range"
+                    min="0"
+                    max="50"
+                    value={validationSplit * 100}
+                    onChange={(e) => setValidationSplit(parseInt(e.target.value) / 100)}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                />
+                <div className="flex justify-between text-[10px] text-gray-400">
+                    <span>0% (No Split)</span>
+                    <span>50% (Max)</span>
+                </div>
+                <p className="text-[10px] text-gray-500 leading-relaxed">
+                    {validationSplit > 0
+                        ? `Optimize on first ${Math.round((1 - validationSplit) * 100)}% of data, validate on last ${Math.round(validationSplit * 100)}%.`
+                        : 'Walk-Forward Analysis disabled. Optimization will use all data.'}
+                </p>
+            </div>
+
             <div>
                 <div className="flex items-center justify-between mb-2">
                     <Label className="text-xs font-bold text-gray-500 uppercase block">Parameter Ranges</Label>
@@ -1283,26 +1310,93 @@ function OptimizeForm({ onOptimize, onCancel, optimizing, strategyCode, optimiza
 
 // Optimization Results Component
 function OptimizationResults({ results, onApply, onClose }: any) {
+    const hasWFA = results.train_stats && results.test_stats;
+
+    // Helper component for stat cards
+    const StatCard = ({ label, value, color, suffix = '' }: { label: string, value: any, color: string, suffix?: string }) => (
+        <div className={`bg-gradient-to-br from-${color}-50 to-${color}-100 p-3 rounded-lg border border-${color}-200`}>
+            <div className={`text-[10px] text-${color}-700 font-medium mb-0.5 uppercase`}>{label}</div>
+            <div className={`text-lg font-bold text-${color}-600`}>
+                {value !== undefined && value !== null ? `${typeof value === 'number' ? value.toFixed(2) : value}${suffix}` : 'N/A'}
+            </div>
+        </div>
+    );
+
     return (
         <div className="p-6 space-y-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
-                    <div className="text-xs text-green-700 font-medium mb-1">Return %</div>
-                    <div className="text-2xl font-bold text-green-600">{results.best_value?.toFixed(2)}%</div>
+            {hasWFA ? (
+                <>
+                    {/* WFA Results: Train vs Test */}
+                    <div className="grid grid-cols-2 gap-6">
+                        {/* In-Sample (Train) */}
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                                <span className="text-sm font-bold text-gray-700 uppercase">In-Sample (Train)</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <StatCard label="Return" value={results.train_stats.pnl_percent} color="blue" suffix="%" />
+                                <StatCard label="Win Rate" value={results.train_stats.win_rate} color="blue" suffix="%" />
+                                <StatCard label="Max DD" value={results.train_stats.max_drawdown} color="blue" suffix="%" />
+                                <StatCard label="Sharpe" value={results.train_stats.sharpe_ratio} color="blue" />
+                            </div>
+                        </div>
+
+                        {/* Out-of-Sample (Test) */}
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                <span className="text-sm font-bold text-gray-700 uppercase">Out-of-Sample (Test)</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <StatCard label="Return" value={results.test_stats.pnl_percent} color="green" suffix="%" />
+                                <StatCard label="Win Rate" value={results.test_stats.win_rate} color="green" suffix="%" />
+                                <StatCard label="Max DD" value={results.test_stats.max_drawdown} color="green" suffix="%" />
+                                <StatCard label="Sharpe" value={results.test_stats.sharpe_ratio} color="green" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* WFA Summary */}
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="text-xs font-bold text-purple-700 uppercase mb-1">Walk-Forward Validation</div>
+                                <p className="text-[11px] text-purple-600">
+                                    Split Date: {results.split_date || 'N/A'} •
+                                    Validation: {Math.round((results.validation_split || 0.2) * 100)}%
+                                </p>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-xs text-gray-500">Generalization</div>
+                                <div className={`text-lg font-bold ${results.test_stats.pnl_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    {results.test_stats.pnl_percent >= 0 ? '✓ Positive' : '✗ Negative'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            ) : (
+                /* Original non-WFA display */
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
+                        <div className="text-xs text-green-700 font-medium mb-1">Return %</div>
+                        <div className="text-2xl font-bold text-green-600">{results.best_value?.toFixed(2)}%</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+                        <div className="text-xs text-blue-700 font-medium mb-1">Win Rate</div>
+                        <div className="text-2xl font-bold text-blue-600">{results.win_rate?.toFixed(1) || 'N/A'}%</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border border-red-200">
+                        <div className="text-xs text-red-700 font-medium mb-1">Max Drawdown</div>
+                        <div className="text-2xl font-bold text-red-600">{results.max_drawdown?.toFixed(2) || 'N/A'}%</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
+                        <div className="text-xs text-purple-700 font-medium mb-1">Profit Factor</div>
+                        <div className="text-2xl font-bold text-purple-600">{results.profit_factor?.toFixed(2) || 'N/A'}</div>
+                    </div>
                 </div>
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
-                    <div className="text-xs text-blue-700 font-medium mb-1">Win Rate</div>
-                    <div className="text-2xl font-bold text-blue-600">{results.win_rate?.toFixed(1) || 'N/A'}%</div>
-                </div>
-                <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border border-red-200">
-                    <div className="text-xs text-red-700 font-medium mb-1">Max Drawdown</div>
-                    <div className="text-2xl font-bold text-red-600">{results.max_drawdown?.toFixed(2) || 'N/A'}%</div>
-                </div>
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
-                    <div className="text-xs text-purple-700 font-medium mb-1">Profit Factor</div>
-                    <div className="text-2xl font-bold text-purple-600">{results.profit_factor?.toFixed(2) || 'N/A'}</div>
-                </div>
-            </div>
+            )}
 
             <div>
                 <h3 className="font-semibold text-gray-900 mb-3">Optimized Parameters</h3>
