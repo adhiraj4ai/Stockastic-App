@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import api from '@/lib/api';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -185,7 +185,9 @@ export default function RunStrategyPage() {
 
     // Param State
     const [mode, setMode] = useState<'symbol' | 'sector' | 'all'>('symbol');
+    const searchParams = useSearchParams();
     const abortControllerRef = useRef<AbortController | null>(null);
+    const autorunRef = useRef(false);
 
     const handleCancel = () => {
         if (abortControllerRef.current) {
@@ -209,7 +211,22 @@ export default function RunStrategyPage() {
             fetchStrategy();
         }
         fetchSectors();
-    }, [strategyId]);
+
+        // Parse query params
+        const symbolParam = searchParams.get('symbol');
+        const paramsParam = searchParams.get('params');
+
+        if (symbolParam) setSymbol(symbolParam);
+        if (paramsParam) {
+            try {
+                const decoded = decodeURIComponent(paramsParam);
+                JSON.parse(decoded); // Validate
+                setParamsJson(decoded);
+            } catch (e) {
+                console.error("Failed to parse params from URL", e);
+            }
+        }
+    }, [strategyId, searchParams]);
 
     const fetchStrategy = async () => {
         try {
@@ -247,6 +264,9 @@ export default function RunStrategyPage() {
         if (!strategyId || !strategy) return;
 
         const fetchBestConfig = async () => {
+            // If we have params in URL, don't fetch published config to avoid overwriting
+            if (searchParams.get('params')) return;
+
             try {
                 let query = '';
                 if (mode === 'symbol' && symbol) {
@@ -275,7 +295,23 @@ export default function RunStrategyPage() {
         }, 300); // Small debounce
 
         return () => clearTimeout(timer);
-    }, [symbol, sector, mode, strategyId, strategy]);
+    }, [symbol, sector, mode, strategyId, strategy, searchParams]);
+
+    // Auto-run effect
+    useEffect(() => {
+        if (
+            searchParams.get('autorun') === 'true' &&
+            strategy &&
+            !loading &&
+            !running &&
+            !results &&
+            !autorunRef.current &&
+            symbol // Ensure symbol is set if coming from deep link
+        ) {
+            autorunRef.current = true;
+            setTimeout(() => handleRun(), 500); // Allow states to settle
+        }
+    }, [strategy, loading, symbol, running, results, searchParams]);
 
     const handleRun = async () => {
         if (!strategy) return;

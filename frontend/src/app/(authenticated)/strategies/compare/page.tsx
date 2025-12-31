@@ -8,10 +8,11 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { CompanySelect } from '@/components/CompanySelect';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Play, TrendingUp, TrendingDown, Activity, AlertTriangle, Loader2, Zap, Settings, StopCircle, ChevronUp, ChevronDown, Upload, Check, Eye } from 'lucide-react';
+import { ArrowLeft, Play, TrendingUp, TrendingDown, Activity, AlertTriangle, Loader2, Zap, Settings, StopCircle, ChevronUp, ChevronDown, Upload, Check, Eye, ExternalLink } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import Link from 'next/link';
 
 interface Strategy {
     id: number;
@@ -364,7 +365,14 @@ export default function StrategyComparePage() {
                                                         <div className="flex items-center justify-between gap-3">
                                                             <div className="min-w-0">
                                                                 <div className="flex items-center gap-2">
-                                                                    <div className="font-bold text-gray-900 text-sm whitespace-nowrap overflow-hidden text-ellipsis">{strategyResult.strategy_name}</div>
+                                                                    <Link
+                                                                        href={`/strategies/${strategyResult.strategy_id}/run?symbol=${results.symbol}${results.optimized && strategyResult.periods[results.periods[0]]?.best_params ? `&params=${encodeURIComponent(JSON.stringify(strategyResult.periods[results.periods[0]].best_params))}` : ''}&autorun=true`}
+                                                                        target="_blank"
+                                                                        className="font-bold text-gray-900 text-sm whitespace-nowrap overflow-hidden text-ellipsis hover:text-blue-600 hover:underline flex items-center gap-1 group/link"
+                                                                    >
+                                                                        {strategyResult.strategy_name}
+                                                                        <ExternalLink size={10} className="opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                                                                    </Link>
                                                                     {(strategyResult.is_published || newlyPublished.has(strategyResult.strategy_id)) && (
                                                                         <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4 bg-green-50 text-green-700 border-green-200 uppercase font-black tracking-tighter">
                                                                             Live
@@ -422,8 +430,8 @@ export default function StrategyComparePage() {
                                                                         )}
                                                                         disabled={publishingStrategy === strategyResult.strategy_id || strategyResult.is_published || newlyPublished.has(strategyResult.strategy_id)}
                                                                         className={`p-1.5 rounded-lg transition-all transform hover:scale-110 disabled:opacity-50 disabled:scale-100 shadow-sm ${(strategyResult.is_published || newlyPublished.has(strategyResult.strategy_id))
-                                                                                ? 'text-green-600 bg-green-50 border border-green-200'
-                                                                                : 'bg-white border border-gray-200 text-blue-600 hover:border-blue-300 hover:text-blue-700'
+                                                                            ? 'text-green-600 bg-green-50 border border-green-200'
+                                                                            : 'bg-white border border-gray-200 text-blue-600 hover:border-blue-300 hover:text-blue-700'
                                                                             }`}
                                                                         title={(strategyResult.is_published || newlyPublished.has(strategyResult.strategy_id)) ? "Configuration Live" : `Publish optimized parameters`}
                                                                     >
