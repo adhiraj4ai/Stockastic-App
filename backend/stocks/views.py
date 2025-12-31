@@ -2604,6 +2604,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
         # Helper to extract parameters from strategy code
         def extract_params(code):
             params = {}
+            search_space = {}
             regex = r'^\s*(\w+)\s*=\s*([\d.]+)'
             for match in re.finditer(regex, code, re.MULTILINE):
                 param_name = match.group(1)
@@ -2617,9 +2618,10 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     min_val = max(1, int(value * 0.5))
                     max_val = int(value * 2)
                     params[param_name] = [min_val, max_val]
+                    search_space[param_name] = list(range(min_val, max_val + 1))
                 except:
                     pass
-            return params
+            return params, search_space
         
         # Helper to run optimization for a period
         def run_optimization_for_period(strategy_obj, start_date, end_date, n_trials):
@@ -2657,7 +2659,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 df.set_index('date', inplace=True)
                 
                 code_template = strategy_obj.code
-                param_ranges = extract_params(code_template)
+                param_ranges, search_space = extract_params(code_template)
                 
                 if not param_ranges:
                     # No optimizable parameters, just run backtest
@@ -2700,6 +2702,21 @@ class StrategyViewSet(viewsets.ModelViewSet):
                         'best_params': {},
                         'optimized': False
                     }
+                
+                # Calculate total combinations
+                total_combinations = 1
+                for param_name, values in search_space.items():
+                    total_combinations *= len(values)
+                
+                # GRID_THRESHOLD
+                GRID_THRESHOLD = 500
+                
+                if total_combinations <= GRID_THRESHOLD:
+                    sampler = optuna.samplers.GridSampler(search_space)
+                    actual_trials = total_combinations
+                else:
+                    sampler = optuna.samplers.TPESampler()
+                    actual_trials = max(n_trials, 50) # Bump up default for larger spaces
                 
                 # Define objective function
                 def objective(trial):
@@ -2745,17 +2762,20 @@ class StrategyViewSet(viewsets.ModelViewSet):
                         if return_pct is None or (isinstance(return_pct, float) and return_pct != return_pct):
                             return_pct = 0
                         
-                        # Composite score: win_rate weighted higher
-                        # Win rate is 0-100, return can be negative/large positive
-                        # Normalize return to similar scale and combine
-                        score = (win_rate * 0.6) + (return_pct * 0.4)
+                        # Composite score: win_rate (60%) and return (40%)
+                        # Normalize win rate (0-100 -> 0-1)
+                        norm_win = win_rate / 100.0
+                        # Normalize return (-50% to +100% scale -> 0-1)
+                        norm_ret = max(0, min(1, (return_pct + 50) / 150.0))
+                        
+                        score = (norm_win * 0.6) + (norm_ret * 0.4)
                         return score
                     except:
                         return -9999
                 
                 # Run optimization
-                study = optuna.create_study(direction='maximize')
-                study.optimize(objective, n_trials=n_trials, show_progress_bar=False)
+                study = optuna.create_study(direction='maximize', sampler=sampler)
+                study.optimize(objective, n_trials=actual_trials, show_progress_bar=False)
                 
                 best_params = study.best_params
                 best_value = study.best_value
@@ -2800,7 +2820,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     'sharpe_ratio': safe_num(stats.get('Sharpe Ratio')),
                     'best_params': best_params,
                     'optimized': True,
-                    'n_trials': n_trials
+                    'n_trials': actual_trials
                 }
             except Exception as e:
                 return {'error': str(e)}
