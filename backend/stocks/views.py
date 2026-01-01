@@ -25,6 +25,8 @@ import subprocess
 import json
 import ast
 import inspect
+import uuid
+from datetime import date, timedelta
 
 # rest_framework imports are already at the top
 
@@ -857,7 +859,132 @@ class StrategyViewSet(viewsets.ModelViewSet):
     search_fields = ['name', 'description', 'ticker']
     ordering_fields = ['created_at', 'pnl_percent', 'sharpe_ratio']
 
+    @staticmethod
+    def _get_bt_local_scope(symbol, params=None):
+        from backtesting import Backtest, Strategy as BTStrategy
+        from backtesting.lib import crossover
+        from backtesting.test import SMA
+        import pandas as pd
+        import numpy as np
+        return {
+            'Backtest': Backtest,
+            'Strategy': BTStrategy,
+            'crossover': crossover,
+            'SMA': SMA,
+            'pd': pd,
+            'np': np,
+            'symbol': symbol,
+            'params': params or {},
+        }
+
+    @staticmethod
+    def _clean_for_json(obj):
+        """
+        Recursively clean an object to be JSON serializable (no NaN or Inf).
+        """
+        import numpy as np
+        if isinstance(obj, dict):
+            return {k: StrategyViewSet._clean_for_json(v) for k, v in obj.items()}
+        elif isinstance(obj, (list, tuple)):
+            return [StrategyViewSet._clean_for_json(x) for x in obj]
+        elif isinstance(obj, (float, np.floating)):
+            if np.isnan(obj) or np.isinf(obj):
+                return 0.0
+            return float(obj)
+        elif isinstance(obj, (int, np.integer)):
+            return int(obj)
+        elif hasattr(obj, 'isoformat'):
+            return obj.isoformat()
+        return obj
+
+    @staticmethod
+    def _extract_bt_stats(stats, initial_cash=1000000):
+        import numpy as np
+        import pandas as pd
+        
+        def safe_num(val, default=0.0):
+            if val is None: return default
+            if isinstance(val, (int, float, np.integer, np.floating)):
+                # Handle NaN and Infinity which are not JSON serializable
+                if np.isnan(val) or np.isinf(val):
+                    return default
+                return float(val)
+            return default
+
+        stats_dict = stats.to_dict()
+        clean_stats = {}
+        
+        # Core Normalized metrics
+        clean_stats['win_rate'] = safe_num(stats.get('Win Rate [%]'))
+        clean_stats['pnl_percent'] = safe_num(stats.get('Return [%]'))
+        clean_stats['return_pct'] = clean_stats['pnl_percent']
+        clean_stats['total_pnl'] = safe_num(stats.get('Equity Final [$]', initial_cash) - initial_cash)
+        clean_stats['total_trades'] = int(safe_num(stats.get('# Trades'), 0))
+        clean_stats['sharpe_ratio'] = safe_num(stats.get('Sharpe Ratio'))
+        clean_stats['max_drawdown'] = safe_num(stats.get('Max. Drawdown [%]'))
+        clean_stats['profit_factor'] = safe_num(stats.get('Profit Factor', 0))
+        
+        # Advanced trade-level stats
+        trades_df = stats.get('_trades')
+        if isinstance(trades_df, pd.DataFrame) and not trades_df.empty:
+            try:
+                winning_trades = trades_df[trades_df['PnL'] > 0]
+                losing_trades = trades_df[trades_df['PnL'] <= 0]
+                
+                count_win = len(winning_trades)
+                count_loss = len(losing_trades)
+                gross_profit = safe_num(winning_trades['PnL'].sum())
+                gross_loss = safe_num(losing_trades['PnL'].sum())
+                
+                clean_stats['Total Winning Trades'] = count_win
+                clean_stats['Total Losing Trades'] = count_loss
+                clean_stats['Gross Profit'] = gross_profit
+                clean_stats['Gross Loss'] = gross_loss
+                clean_stats['Average Win'] = safe_num(gross_profit / count_win) if count_win > 0 else 0
+                clean_stats['Average Loss'] = safe_num(gross_loss / count_loss) if count_loss > 0 else 0
+            except: pass
+
+        # Include raw stats (stringified where necessary)
+        for k, v in stats_dict.items():
+            if k.startswith('_'): continue
+            if k in clean_stats: continue
+
+            if isinstance(v, (int, float, np.integer, np.floating)):
+                clean_stats[k] = safe_num(v)
+            elif isinstance(v, (str, bool, type(None))):
+                clean_stats[k] = v
+            elif hasattr(v, 'isoformat'):
+                clean_stats[k] = v.isoformat()
+            else:
+                clean_stats[k] = str(v)
+
+        # Categorized metrics for Detail View UI
+        categorized = {
+            'Performance Metrics': {
+                'PNL': f"{clean_stats['total_pnl']:.2f} ({clean_stats['pnl_percent']:.2f}%)",
+                'Win rate': f"{clean_stats['win_rate']:.2f}%",
+                'Sharpe ratio': f"{clean_stats['sharpe_ratio']:.2f}",
+                'Profit factor': f"{clean_stats['profit_factor']:.2f}",
+                'Max drawdown': f"{clean_stats['max_drawdown']:.2f}%",
+                'Total trades': str(clean_stats['total_trades'])
+            },
+            'Risk/Reward': {
+                'Sharpe ratio': f"{clean_stats.get('Sharpe Ratio', 0):.2f}",
+                'Sortino ratio': f"{clean_stats.get('Sortino Ratio', 0):.2f}",
+                'Profit factor': f"{clean_stats.get('Profit Factor', 0):.2f}",
+                'Calmar ratio': f"{clean_stats.get('Calmar Ratio', 0):.2f}",
+                'Omega ratio': f"{clean_stats.get('Omega Ratio', 0):.2f}"
+            }
+        }
+        
+        # Final safety pass for JSON serialization
+        clean_stats = StrategyViewSet._clean_for_json(clean_stats)
+        categorized = StrategyViewSet._clean_for_json(categorized)
+        
+        return clean_stats, categorized
+
     def get_queryset(self):
+
         # Return user's own strategies and public ones
         return Strategy.objects.filter(Q(user=self.request.user) | Q(is_public=True))
 
@@ -1257,16 +1384,18 @@ class StrategyViewSet(viewsets.ModelViewSet):
             df['date'] = pd.to_datetime(df['date'])
             df.set_index('date', inplace=True)
 
+            from backtesting import Backtest, Strategy as BTStrategy, crossover
+            from backtesting.test import SMA
             # Execution Environment
             local_scope = {
-                'Backtest': Backtest, 'Strategy': Strategy, 'crossover': crossover, 
+                'Backtest': Backtest, 'Strategy': BTStrategy, 'crossover': crossover, 
                 'SMA': SMA, 'pd': pd, 'params': params or {}
             }
             exec(code, local_scope)
             
             strategy_class = None
             for name, obj in local_scope.items():
-                if inspect.isclass(obj) and issubclass(obj, Strategy) and obj is not Strategy:
+                if inspect.isclass(obj) and issubclass(obj, BTStrategy) and obj is not BTStrategy:
                     strategy_class = obj
                     break
             
@@ -1609,16 +1738,10 @@ class StrategyViewSet(viewsets.ModelViewSet):
             df.set_index('date', inplace=True)
             
             # 2. Execution Environment
-            local_scope = {
-                'Backtest': Backtest,
-                'Strategy': Strategy,
-                'crossover': crossover,
-                'SMA': SMA,
-                'pd': pd,
-                'experiment': experiment,
-                'params': params or {},
-                'symbol': symbol,
-            }
+            local_scope = self._get_bt_local_scope(symbol, params=params)
+             
+            # Add experiment logger (backwards compatibility for some strategies)
+            local_scope['experiment'] = experiment
             
             # Inject parameters into code - override default values
             import re
@@ -1641,9 +1764,10 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 return None, f"Code Execution Error: {str(code_err)}", {}
             
             # Find the Strategy Class
+            from backtesting import Strategy as BTStrategy
             strategy_class = None
             for name, obj in local_scope.items():
-                if inspect.isclass(obj) and issubclass(obj, Strategy) and obj is not Strategy:
+                if inspect.isclass(obj) and issubclass(obj, BTStrategy) and obj is not BTStrategy:
                     strategy_class = obj
                     break
             
@@ -1677,98 +1801,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     os.remove(plot_path)
 
             # 5. Format Stats for Frontend
-            stats_dict = stats.to_dict()
-            clean_stats = {}
-            
-            # Extract Trades DataFrame for advanced calculation
-            trades_df = stats.get('_trades')
-            
-            # Helper to safely convert numbers
-            def safe_num(val, default=0.0):
-                if val is None: return default
-                if isinstance(val, (int, float, np.integer, np.floating)):
-                    return float(val) if not np.isnan(val) else default
-                return default
-
-            # Standard Stats
-            clean_stats['pnl_percent'] = safe_num(stats.get('Return [%]'))
-            clean_stats['total_pnl'] = safe_num(stats.get('Equity Final [$]', 1000000) - 1000000)
-            clean_stats['win_rate'] = safe_num(stats.get('Win Rate [%]'))
-            clean_stats['total_trades'] = int(safe_num(stats.get('# Trades'), 0))
-            
-            # Advanced Stats
-            if isinstance(trades_df, pd.DataFrame) and not trades_df.empty:
-                try:
-                    winning_trades = trades_df[trades_df['PnL'] > 0]
-                    losing_trades = trades_df[trades_df['PnL'] <= 0]
-                    
-                    count_win = len(winning_trades)
-                    count_loss = len(losing_trades)
-                    
-                    gross_profit = safe_num(winning_trades['PnL'].sum())
-                    gross_loss = safe_num(losing_trades['PnL'].sum())
-                    
-                    clean_stats['Total Winning Trades'] = count_win
-                    clean_stats['Total Losing Trades'] = count_loss
-                    clean_stats['Gross Profit'] = gross_profit
-                    clean_stats['Gross Loss'] = gross_loss
-                    clean_stats['Average Win'] = safe_num(gross_profit / count_win) if count_win > 0 else 0
-                    clean_stats['Average Loss'] = safe_num(gross_loss / count_loss) if count_loss > 0 else 0
-                    
-                except Exception as e:
-                    print(f"Error calculating advanced stats: {e}")
-
-            # Collect all other stats safely
-            for k, v in stats_dict.items():
-                if k.startswith('_'): continue
-                if k in clean_stats: continue # Keep our safe ones
-
-                if isinstance(v, (int, float, np.integer, np.floating)):
-                    clean_stats[k] = safe_num(v)
-                elif isinstance(v, (str, bool, type(None))):
-                    clean_stats[k] = v
-                elif hasattr(v, 'isoformat'):
-                    clean_stats[k] = v.isoformat()
-                else:
-                    clean_stats[k] = str(v)
-            
-            categorized = {
-                'Performance Metrics': {
-                    'PNL': f"{safe_num(clean_stats.get('total_pnl')):.2f} ({safe_num(clean_stats.get('pnl_percent')):.2f}%)",
-                    'Win rate': f"{safe_num(clean_stats.get('win_rate')):.2f}%",
-                    'Sharpe ratio': f"{safe_num(clean_stats.get('Sharpe Ratio')):.2f}",
-                    'Smart Sharpe': f"{safe_num(clean_stats.get('Smart Sharpe')):.2f}",
-                    'Sortino ratio': f"{safe_num(clean_stats.get('Sortino Ratio')):.2f}",
-                    'Smart Sortino': f"{safe_num(clean_stats.get('Smart Sortino')):.2f}",
-                    'Calmar ratio': f"{safe_num(clean_stats.get('Calmar Ratio')):.2f}",
-                    'Omega ratio': f"{safe_num(clean_stats.get('Omega Ratio')):.2f}",
-                    'Serenity index': f"{safe_num(clean_stats.get('Serenity Index')):.2f}",
-                    'Average win/loss': f"{safe_num(clean_stats.get('Average Win/Loss')):.2f}",
-                    'Average win': f"{safe_num(clean_stats.get('Average Win')):.2f}",
-                    'Average loss': f"{safe_num(clean_stats.get('Average Loss')):.2f}",
-                },
-                'Risk Metrics': {
-                    'Largest losing trade': f"{safe_num(clean_stats.get('Worst Trade [%]')):.2f}",
-                    'Largest winning trade': f"{safe_num(clean_stats.get('Best Trade [%]')):.2f}",
-                    'Max drawdown': f"{safe_num(clean_stats.get('Max. Drawdown [%]')):.2f}%",
-                    'Profit Factor': f"{safe_num(clean_stats.get('Profit Factor')):.2f}",
-                    'Expectancy': f"{safe_num(clean_stats.get('Expectancy [%]')):.2f}%",
-                    'Volatility (Ann.) [%]': f"{safe_num(clean_stats.get('Volatility (Ann.) [%]')):.2f}%",
-                    'Max Drawdown Duration': str(clean_stats.get('Max. Drawdown Duration', '0 days')),
-                    'Avg Drawdown Duration': str(clean_stats.get('Avg. Drawdown Duration', '0 days')),
-                },
-                'Trade Metrics': {
-                    'Total trades': int(safe_num(clean_stats.get('total_trades'))),
-                    'Total winning trades': int(safe_num(clean_stats.get('Total Winning Trades'))),
-                    'Total losing trades': int(safe_num(clean_stats.get('Total Losing Trades'))),
-                    'Starting balance': f"{1000000.0:.2f}",
-                    'Finishing balance': f"{safe_num(clean_stats.get('Equity Final [$]'), 1000000.0):.2f}",
-                    'Gross profit': f"{safe_num(clean_stats.get('Gross Profit')):.2f}",
-                    'Gross loss': f"{safe_num(clean_stats.get('Gross Loss')):.2f}",
-                    'Max Trade Duration': str(clean_stats.get('Max. Trade Duration', '0 days')),
-                    'Avg Trade Duration': str(clean_stats.get('Avg. Trade Duration', '0 days')),
-                }
-            }
+            clean_stats, categorized = self._extract_bt_stats(stats)
 
             formatted_stats = {
                 'total_pnl': clean_stats.get('total_pnl', 0.0),
@@ -1785,7 +1818,10 @@ class StrategyViewSet(viewsets.ModelViewSet):
             return {
                 'stats': formatted_stats,
                 'plot_html': plot_html
-            }, None, {'params': experiment.params, 'metrics': experiment.metrics}
+            }, None, {
+                'params': self._clean_for_json(experiment.params),
+                'metrics': self._clean_for_json(experiment.metrics)
+            }
 
         except Exception as e:
             return None, str(e), {}
@@ -1986,9 +2022,10 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 exec(code, local_scope)
                 
                 # Find strategy class
+                from backtesting import Strategy as BTStrategy
                 strategy_class = None
                 for name, obj in local_scope.items():
-                    if inspect.isclass(obj) and issubclass(obj, Strategy) and obj is not Strategy:
+                    if inspect.isclass(obj) and issubclass(obj, BTStrategy) and obj is not BTStrategy:
                         strategy_class = obj
                         break
                 
@@ -2191,10 +2228,10 @@ class StrategyViewSet(viewsets.ModelViewSet):
                             'pd': pd,
                         }
                         exec(optimized_code, local_scope)
-                        
+                        from backtesting import Strategy as BTStrategy
                         strategy_class = None
                         for name, obj in local_scope.items():
-                            if inspect.isclass(obj) and issubclass(obj, Strategy) and obj is not Strategy:
+                            if inspect.isclass(obj) and issubclass(obj, BTStrategy) and obj is not BTStrategy:
                                 strategy_class = obj
                                 break
                         
@@ -2205,7 +2242,9 @@ class StrategyViewSet(viewsets.ModelViewSet):
                             def safe_num(val, default=0.0):
                                 if val is None: return default
                                 if isinstance(val, (int, float, np.integer, np.floating)):
-                                    return float(val) if not np.isnan(val) else default
+                                    if np.isnan(val) or np.isinf(val):
+                                        return default
+                                    return float(val)
                                 return default
                             
                             test_stats = {
@@ -2226,8 +2265,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
                         continue
             
             # Aggregate stats
-            aggregated_train_stats = aggregate_stats(train_metrics)
-            aggregated_test_stats = aggregate_stats(test_metrics) if test_metrics else None
+            aggregated_train_stats = self._clean_for_json(aggregate_stats(train_metrics))
+            aggregated_test_stats = self._clean_for_json(aggregate_stats(test_metrics)) if test_metrics else None
 
             # Log Optimization Experiment
             try:
@@ -2250,7 +2289,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     start_date=start_date,
                     end_date=end_date,
                     parameters=best_params, # Store winning config
-                    metrics={
+                    metrics=self._clean_for_json({
                         'best_return': best_value,
                         'search_ranges': param_ranges,
                         'n_trials': len(study.trials),
@@ -2258,7 +2297,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
                         'train_stats': aggregated_train_stats,
                         'test_stats': aggregated_test_stats,
                         'validation_split': validation_split,
-                    },
+                    }),
                     status=StrategyExperiment.Status.SUCCESS,
                     is_published=False,
                     batch_id=batch_id
@@ -2267,7 +2306,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 print(f"Failed to log optimization experiment: {e}")
 
             # Build response with WFA stats
-            response_data = {
+            response_data = self._clean_for_json({
                 'best_params': best_params,
                 'best_value': best_value,
                 'n_trials': len(study.trials),
@@ -2275,7 +2314,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 'optimized_code': optimized_code,
                 'batch_id': str(batch_id),
                 'validation_split': validation_split,
-            }
+            })
             
             if validation_split > 0 and aggregated_test_stats:
                 # WFA enabled: return train and test stats separately
@@ -2331,8 +2370,9 @@ class StrategyViewSet(viewsets.ModelViewSet):
         import re
         
         strategy = self.get_object()
-        best_params = request.data.get('best_params', {})
+        best_params = request.data.get('params', {}) or request.data.get('best_params', {})
         symbol = request.data.get('symbol', '')
+        period = request.data.get('period', '')
         
         if not best_params:
             return Response({'error': 'No parameters to publish'}, status=400)
@@ -2360,21 +2400,103 @@ class StrategyViewSet(viewsets.ModelViewSet):
             is_published=True
         ).update(is_published=False)
 
-        # Create a published experiment record for this optimization
-        from datetime import date
-        experiment = StrategyExperiment.objects.create(
-            strategy=strategy,
-            user=request.user,
-            run_type=StrategyExperiment.RunType.OPTIMIZATION,
-            scope_type=ScopeType.SYMBOL,
-            scope_value=symbol,
-            start_date=date.today(),
-            end_date=date.today(),
-            parameters=best_params,
-            metrics={'optimized': True, 'symbol': symbol, 'params': best_params},
-            status=StrategyExperiment.Status.SUCCESS,
-            is_published=True
-        )
+        # Perform a fresh backtest with the optimized parameters to capture full state (plot, etc.)
+        try:
+            from datetime import date, datetime
+            from dateutil.relativedelta import relativedelta
+            import pandas as pd
+            from backtesting import Backtest
+            import inspect
+
+            tags = request.data.get('tags', [])
+
+            # Determine date range
+            today = date.today()
+            period_map = {
+                '1Y': relativedelta(years=1),
+                '3Y': relativedelta(years=3),
+                '5Y': relativedelta(years=5),
+                '10Y': relativedelta(years=10),
+                'ALL': None
+            }
+            p_delta = period_map.get(period)
+            p_start = (today - p_delta) if p_delta else None
+            p_end = today
+            
+            # Fetch Data
+            queryset = DailyStockPrice.objects.filter(ticker=symbol)
+            if p_start:
+                queryset = queryset.filter(date__gte=p_start)
+            queryset = queryset.filter(date__lte=p_end).order_by('date')
+            
+            ticks_data = list(queryset.values('date', 'open', 'high', 'low', 'close', 'volume'))
+            
+            if not ticks_data or len(ticks_data) < 20:
+                 raise Exception("Insufficient data for backtest")
+
+            df = pd.DataFrame(ticks_data)
+            df.rename(columns={'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'volume': 'Volume'}, inplace=True)
+            numeric_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
+            df[numeric_cols] = df[numeric_cols].astype(float)
+            df['date'] = pd.to_datetime(df['date'])
+            df.set_index('date', inplace=True)
+
+            # Execute Code
+            local_scope = self._get_bt_local_scope(symbol)
+            exec(strategy.code, local_scope)
+            
+            # Find Strategy Class
+            from backtesting import Strategy as BTStrategy
+            strategy_class = None
+            for name, obj in local_scope.items():
+                if inspect.isclass(obj) and issubclass(obj, BTStrategy) and obj is not BTStrategy:
+                    strategy_class = obj
+                    break
+            
+            if not strategy_class:
+                raise Exception("No Strategy class found in code")
+                
+            # Run Backtest with Best Params
+            # Note: backtesting.py params are class attributes. We need to set them.
+            # However, Backtest(..., strategy_class) instantiates internally.
+            # To pass params, we might need to subclass or setattr on the class temporarily/dynamically.
+            # Standard way in backtesting.py is creating a subclass with updated params.
+            class OptimizedStrategy(strategy_class):
+                pass
+                
+            for k, v in best_params.items():
+                setattr(OptimizedStrategy, k, v)
+            
+            bt = Backtest(df, OptimizedStrategy, cash=1000000, commission=.002, exclusive_orders=True)
+            stats = bt.run()
+            
+            # Generate Plot
+            plot_html = bt.plot(open_browser=False, filename=None)
+            
+            # Clean Stats
+            metrics, _ = self._extract_bt_stats(stats)
+            # Add extra metadata
+            metrics.update({'optimized': True, 'symbol': symbol, 'params': best_params, 'period': period, 'tags': tags})
+            
+            experiment = StrategyExperiment.objects.create(
+                strategy=strategy,
+                user=request.user,
+                run_type=StrategyExperiment.RunType.OPTIMIZATION,
+                scope_type=ScopeType.SYMBOL,
+                scope_value=symbol,
+                start_date=p_start if p_start else df.index[0].date(),
+                end_date=p_end,
+                parameters=self._clean_for_json(best_params),
+                metrics=self._clean_for_json(metrics),
+                plot_html=plot_html,
+                status=StrategyExperiment.Status.SUCCESS,
+                is_published=True
+            )
+            
+        except Exception as e:
+            # Fallback to simple creation if backtest fails (though it shouldn't)
+            # Or return error. User wants "experiment to run", so error is better.
+            return Response({'error': f"Failed to run published backtest: {str(e)}"}, status=500)
         
         return Response({
             'success': True,
@@ -2382,6 +2504,31 @@ class StrategyViewSet(viewsets.ModelViewSet):
             'experiment_id': experiment.id,
             'updated_params': best_params,
             'symbol': symbol
+        })
+
+    @action(detail=True, methods=['post'])
+    def unpublish_optimized(self, request, pk=None):
+        """
+        Unpublish optimized parameters for a strategy and symbol.
+        """
+        strategy = self.get_object()
+        symbol = request.data.get('symbol', '')
+        
+        if not symbol:
+            return Response({'error': 'Symbol is required'}, status=400)
+        
+        # Unpublish existing experiments for the same strategy and symbol
+        updated_count = StrategyExperiment.objects.filter(
+            strategy=strategy,
+            scope_type=ScopeType.SYMBOL,
+            scope_value=symbol,
+            is_published=True
+        ).update(is_published=False)
+        
+        return Response({
+            'success': True,
+            'message': f'Unpublished optimized config for {strategy.name} on {symbol}',
+            'updated_count': updated_count
         })
 
     @action(detail=False, methods=['post'])
@@ -2468,26 +2615,17 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 df.set_index('date', inplace=True)
                 
                 # Execute strategy code
-                local_scope = {
-                    'Backtest': Backtest,
-                    'Strategy': BTStrategy,
-                    'crossover': crossover,
-                    'SMA': SMA,
-                    'pd': pd,
-                    'np': np,
-                    'symbol': symbol,
-                }
-                
+                local_scope = self._get_bt_local_scope(symbol)
                 exec(strategy_obj.code, local_scope)
                 
                 # Find strategy class
+                from backtesting import Strategy as BTStrategy
                 strategy_class = None
                 for name, obj in local_scope.items():
                     if inspect.isclass(obj) and issubclass(obj, BTStrategy) and obj is not BTStrategy:
                         strategy_class = obj
                         break
 
-                
                 if not strategy_class:
                     return {'error': 'No Strategy class found'}
                 
@@ -2495,20 +2633,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 bt = Backtest(df, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
                 stats = bt.run()
                 
-                def safe_num(val, default=0.0):
-                    if val is None: return default
-                    if isinstance(val, (int, float, np.integer, np.floating)):
-                        return float(val) if not np.isnan(val) else default
-                    return default
-                
-                return {
-                    'win_rate': safe_num(stats.get('Win Rate [%]')),
-                    'return_pct': safe_num(stats.get('Return [%]')),
-                    'max_drawdown': safe_num(stats.get('Max. Drawdown [%]')),
-                    'profit_factor': safe_num(stats.get('Profit Factor', 0)),
-                    'total_trades': int(safe_num(stats.get('# Trades'), 0)),
-                    'sharpe_ratio': safe_num(stats.get('Sharpe Ratio')),
-                }
+                metrics, _ = self._extract_bt_stats(stats)
+                return metrics
             except Exception as e:
                 return {'error': str(e)}
         
@@ -2577,6 +2703,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
         strategy_ids = request.data.get('strategy_ids', [])
         periods = request.data.get('periods', ['1Y', '3Y', '5Y', '10Y'])
         n_trials = request.data.get('n_trials', 20)  # Fewer trials for speed
+        force_refresh = request.data.get('force_refresh', False)
+        batch_id = uuid.uuid4()
         
         if not symbol:
             return Response({'error': 'Symbol is required'}, status=400)
@@ -2662,18 +2790,10 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 param_ranges, search_space = extract_params(code_template)
                 
                 if not param_ranges:
-                    # No optimizable parameters, just run backtest
-                    local_scope = {
-                        'Backtest': Backtest,
-                        'Strategy': BTStrategy,
-                        'crossover': crossover,
-                        'SMA': SMA,
-                        'pd': pd,
-                        'np': np,
-                        'symbol': symbol,
-                    }
+                    local_scope = self._get_bt_local_scope(symbol)
                     exec(code_template, local_scope)
                     
+                    from backtesting import Strategy as BTStrategy
                     strategy_class = None
                     for name, obj in local_scope.items():
                         if inspect.isclass(obj) and issubclass(obj, BTStrategy) and obj is not BTStrategy:
@@ -2686,22 +2806,10 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     bt = Backtest(df, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
                     stats = bt.run()
                     
-                    def safe_num(val, default=0.0):
-                        if val is None: return default
-                        if isinstance(val, (int, float, np.integer, np.floating)):
-                            return float(val) if not np.isnan(val) else default
-                        return default
-                    
-                    return {
-                        'win_rate': safe_num(stats.get('Win Rate [%]')),
-                        'return_pct': safe_num(stats.get('Return [%]')),
-                        'max_drawdown': safe_num(stats.get('Max. Drawdown [%]')),
-                        'profit_factor': safe_num(stats.get('Profit Factor', 0)),
-                        'total_trades': int(safe_num(stats.get('# Trades'), 0)),
-                        'sharpe_ratio': safe_num(stats.get('Sharpe Ratio')),
-                        'best_params': {},
-                        'optimized': False
-                    }
+                    metrics, _ = self._extract_bt_stats(stats)
+                    metrics['optimized'] = False
+                    metrics['best_params'] = {}
+                    return metrics
                 
                 # Calculate total combinations
                 total_combinations = 1
@@ -2720,6 +2828,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 
                 # Define objective function
                 def objective(trial):
+                    from backtesting import Strategy as BTStrategy
                     params = {}
                     for param_name, (min_val, max_val) in param_ranges.items():
                         params[param_name] = trial.suggest_int(param_name, min_val, max_val)
@@ -2728,15 +2837,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     for param_name, param_value in params.items():
                         code = code.replace(f"{param_name} = ", f"{param_name} = {param_value} #")
                     
-                    local_scope = {
-                        'Backtest': Backtest,
-                        'Strategy': BTStrategy,
-                        'crossover': crossover,
-                        'SMA': SMA,
-                        'pd': pd,
-                        'np': np,
-                        'symbol': symbol,
-                    }
+                    local_scope = self._get_bt_local_scope(symbol, params=params)
                     
                     try:
                         exec(code, local_scope)
@@ -2781,19 +2882,12 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 best_value = study.best_value
                 
                 # Run final backtest with best params
+                from backtesting import Strategy as BTStrategy
                 code = code_template
                 for param_name, param_value in best_params.items():
                     code = code.replace(f"{param_name} = ", f"{param_name} = {param_value} #")
                 
-                local_scope = {
-                    'Backtest': Backtest,
-                    'Strategy': BTStrategy,
-                    'crossover': crossover,
-                    'SMA': SMA,
-                    'pd': pd,
-                    'np': np,
-                    'symbol': symbol,
-                }
+                local_scope = self._get_bt_local_scope(symbol, params=best_params)
                 exec(code, local_scope)
                 
                 strategy_class = None
@@ -2805,23 +2899,14 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 bt = Backtest(df, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
                 stats = bt.run()
                 
-                def safe_num(val, default=0.0):
-                    if val is None: return default
-                    if isinstance(val, (int, float, np.integer, np.floating)):
-                        return float(val) if not np.isnan(val) else default
-                    return default
-                
-                return {
-                    'win_rate': safe_num(stats.get('Win Rate [%]')),
-                    'return_pct': safe_num(stats.get('Return [%]')),
-                    'max_drawdown': safe_num(stats.get('Max. Drawdown [%]')),
-                    'profit_factor': safe_num(stats.get('Profit Factor', 0)),
-                    'total_trades': int(safe_num(stats.get('# Trades'), 0)),
-                    'sharpe_ratio': safe_num(stats.get('Sharpe Ratio')),
+                metrics, _ = self._extract_bt_stats(stats)
+                metrics.update({
                     'best_params': best_params,
                     'optimized': True,
                     'n_trials': actual_trials
-                }
+                })
+                # Final safety pass before returning and potentially saving to DB
+                return self._clean_for_json(metrics)
             except Exception as e:
                 return {'error': str(e)}
         
@@ -2829,32 +2914,85 @@ class StrategyViewSet(viewsets.ModelViewSet):
         results = []
         
         for strategy_obj in strategies:
+            # Find all currently published experiments for this symbol
+            published_periods = list(StrategyExperiment.objects.filter(
+                strategy=strategy_obj,
+                scope_type=ScopeType.SYMBOL,
+                scope_value=symbol,
+                is_published=True
+            ).values_list('metrics__period', flat=True))
+            
+            # Filter out None/empty periods just in case
+            published_periods = [p for p in published_periods if p]
+
             strategy_result = {
                 'strategy_id': strategy_obj.id,
                 'strategy_name': strategy_obj.name,
-                'is_published': StrategyExperiment.objects.filter(
-                    strategy=strategy_obj,
-                    scope_type=ScopeType.SYMBOL,
-                    scope_value=symbol,
-                    is_published=True
-                ).exists(),
-                'periods': {}
+                'is_published': len(published_periods) > 0,
+                'published_periods': published_periods,
+                'periods': {},
+                'best_params': {}
             }
             
+            # Step 1: Run optimization/backtest for EACH period independently
             for period in periods:
                 if period == 'ALL':
-                    start_date = None
-                    end_date = today
+                    p_start = None
+                    p_end = today
                 else:
-                    delta = period_map.get(period)
-                    if delta:
-                        start_date = today - delta
-                        end_date = today
+                    p_delta = period_map.get(period)
+                    if p_delta:
+                        p_start = today - p_delta
+                        p_end = today
                     else:
                         continue
                 
-                metrics = run_optimization_for_period(strategy_obj, start_date, end_date, n_trials)
-                strategy_result['periods'][period] = metrics
+                # Check cache for this specific strategy-symbol-period combo
+                cached = None
+                if not force_refresh:
+                    # Look for ANY recent successful optimization for this period
+                    # tailored to the user's request for persistence
+                    cached = StrategyExperiment.objects.filter(
+                        strategy=strategy_obj,
+                        scope_type=ScopeType.SYMBOL,
+                        scope_value=symbol,
+                        metrics__period=period,  # Check the stored period tag
+                        run_type=StrategyExperiment.RunType.OPTIMIZATION,
+                        status=StrategyExperiment.Status.SUCCESS
+                    ).order_by('-created_at').first()
+                
+                # Define start date for potential DB entry
+                db_p_start = p_start or date(2000, 1, 1)
+                
+                if cached:
+                    period_metrics = cached.metrics
+                    period_metrics['cached'] = True
+                    period_metrics['best_params'] = cached.parameters
+                else:
+                    period_metrics = run_optimization_for_period(strategy_obj, p_start, p_end, n_trials)
+                    if 'error' not in period_metrics:
+                        # Add period tag to metrics for future cache lookup
+                        period_metrics['period'] = period
+                        
+                        # Save optimization result to cache
+                        StrategyExperiment.objects.create(
+                            strategy=strategy_obj,
+                            user=request.user,
+                            run_type=StrategyExperiment.RunType.OPTIMIZATION,
+                            scope_type=ScopeType.SYMBOL,
+                            scope_value=symbol,
+                            start_date=db_p_start,
+                            end_date=p_end,
+                            parameters=period_metrics.get('best_params', {}),
+                            metrics=period_metrics,
+                            batch_id=batch_id,
+                            status=StrategyExperiment.Status.SUCCESS
+                        )
+                
+                strategy_result['periods'][period] = self._clean_for_json(period_metrics)
+            
+            # Step 2: Use 3Y as the default best_params for the whole strategy if available
+            strategy_result['best_params'] = strategy_result['periods'].get('3Y', {}).get('best_params', {})
             
             results.append(strategy_result)
         
