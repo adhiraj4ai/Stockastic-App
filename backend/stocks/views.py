@@ -1852,540 +1852,168 @@ class StrategyViewSet(viewsets.ModelViewSet):
             return None, str(e), {}
 
     @action(detail=True, methods=['post'], permission_classes=[AllowAny])
+    @action(detail=True, methods=['post'])
     def optimize(self, request, pk=None):
+        """DEPRECATED - Use optimize_multi_period instead"""
+        return Response({'error': 'Use /optimize_multi_period/ endpoint'}, status=410)
+
+    @action(detail=True, methods=['post'])
+    def optimize_multi_period(self, request, pk=None):
         """
-        Optimize strategy parameters using Optuna
+        Multi-period optimization: Run Grid search across 1Y, 3Y, 5Y, 10Y
+        for all 3 objectives (win_rate, profit, balanced).
+        Auto-publish 1Y, 3Y, 5Y experiments.
         """
-        import optuna
+        from .optimize_multi_period import calculate_periods, fetch_period_data, run_single_objective_optimization, run_final_backtest
+        
         strategy = self.get_object()
         
         code_template = request.data.get('code', '')
         symbol = request.data.get('symbol', 'NABIL')
         sector = request.data.get('sector')
-        start_date = request.data.get('start_date')
-        end_date = request.data.get('end_date')
-        n_trials = request.data.get('n_trials', 50)
         param_ranges = request.data.get('param_ranges', {})
-        objective_type = request.data.get('objective', 'profit')  # 'win_rate', 'profit', or 'balanced'
-        validation_split = request.data.get('validation_split', 0.2)  # WFA: Fraction for out-of-sample testing
-        
-        # Debug logging
-        print(f"\n=== OPTIMIZE DEBUG ===")
-        print(f"symbol: {symbol}")
-        print(f"sector: {sector}")
-        print(f"start_date: {start_date}")
-        print(f"end_date: {end_date}")
-        print(f"n_trials: {n_trials}")
-        print(f"param_ranges: {param_ranges}")
-        print(f"objective: {objective_type}")
-        print(f"validation_split: {validation_split}")
-        print(f"======================\n")
-
+        n_trials = request.data.get('n_trials', 50)
         
         if not param_ranges:
-            return Response({'error': 'param_ranges required (e.g., {"n1": [5, 30], "n2": [20, 100]})'}, status=400)
+            return Response({'error': 'param_ranges required'}, status=400)
         
-        try:
-            import pandas as pd
-            from backtesting import Backtest, Strategy
-            from backtesting.lib import crossover
-            from backtesting.test import SMA
-            import inspect
-            # Fetch data
-            data_map = {} # ticker -> DataFrame
+        # Calculate periods
+        all_periods = calculate_periods()
+        
+        # Filter requested periods
+        requested_periods = request.data.get('periods')
+        if requested_periods:
+            periods = [p for p in all_periods if p[0] in requested_periods]
+        else:
+            periods = all_periods
+        
+        # Store results for all periods
+        results_by_period = {}
+        
+        # Loop over each period
+        for period_name, period_start, period_end in periods:
+            print(f"\n{'='*60}")
+            print(f"PERIOD: {period_name} ({period_start} to {period_end})")
+            print(f"{'='*60}\n")
             
-            if symbol == 'ALL' or (sector and sector.upper() == 'ALL'):
-                # Fetch all active companies
-                companies = Company.objects.filter(status='A').values_list('symbol', flat=True)
-                queryset = DailyStockPrice.objects.filter(ticker__in=companies)
-                if start_date and end_date:
-                    queryset = queryset.filter(date__range=[start_date, end_date])
-                queryset = queryset.order_by('date')
-                all_data = list(queryset.values('ticker', 'date', 'open', 'high', 'low', 'close', 'volume'))
-
-            elif sector:
-                 # Fetch companies in specific sector
-                companies = Company.objects.filter(sector__iexact=sector, status='A').values_list('symbol', flat=True)
-                if not companies:
-                    return Response({'error': f'No active companies found in sector: {sector}'}, status=404)
+            results_by_period[period_name] = {}
+            
+            try:
+                # Fetch data for this period
+                data_map, error = fetch_period_data(
+                    symbol, sector, period_start, period_end,
+                    DailyStockPrice, Company
+                )
                 
-                queryset = DailyStockPrice.objects.filter(ticker__in=companies)
-                if start_date and end_date:
-                    queryset = queryset.filter(date__range=[start_date, end_date])
-                queryset = queryset.order_by('date')
-                all_data = list(queryset.values('ticker', 'date', 'open', 'high', 'low', 'close', 'volume'))
-
-            else:
-                # Single symbol logic
-                all_data = [] # Placeholder to skip the list logic below
-                
-                queryset = DailyStockPrice.objects.filter(ticker=symbol)
-                if start_date and end_date:
-                    queryset = queryset.filter(date__range=[start_date, end_date])
-                queryset = queryset.order_by('date')
-                
-                ticks_data = list(queryset.values('date', 'open', 'high', 'low', 'close', 'volume'))
-                if not ticks_data:
-                    return Response({'error': 'No data found for symbol/dates'}, status=404)
-                
-                df = pd.DataFrame(ticks_data)
-                df.rename(columns={
-                    'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'volume': 'Volume'
-                }, inplace=True)
-                
-                numeric_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
-                df[numeric_cols] = df[numeric_cols].astype(float)
-                
-                # Filter bad data
-                df = df[
-                    (df['High'] / df['Open'] <= 2.0) & (df['Low'] / df['Open'] >= 0.5) & (df['Close'] > 0)
-                ].copy()
-                
-                if df.empty:
-                    return Response({'error': 'No valid data after filtering'}, status=400)
-                
-                df['date'] = pd.to_datetime(df['date'])
-                df.set_index('date', inplace=True)
-                data_map[symbol] = df
-
-            # Common processing for list-based data (ALL or SECTOR)
-            if not data_map and (symbol == 'ALL' or sector):
-                if not all_data:
-                     return Response({'error': 'No data found for any active company in range'}, status=404)
-
-                master_df = pd.DataFrame(all_data)
-                master_df.rename(columns={
-                    'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'volume': 'Volume'
-                }, inplace=True)
-                numeric_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
-                master_df[numeric_cols] = master_df[numeric_cols].astype(float)
-                master_df['date'] = pd.to_datetime(master_df['date'])
-                
-                # Split into dict
-                for ticker, group in master_df.groupby('ticker'):
-                    sub_df = group.copy()
-                    # Filter bad data
-                    sub_df = sub_df[
-                        (sub_df['High'] / sub_df['Open'] <= 2.0) &
-                        (sub_df['Low'] / sub_df['Open'] >= 0.5) &
-                        (sub_df['Close'] > 0)
-                    ]
-                    if not sub_df.empty:
-                        sub_df.set_index('date', inplace=True)
-                        data_map[ticker] = sub_df
-            
-            if not data_map:
-                 return Response({'error': 'No valid data found for any symbol'}, status=400)
-            
-            # WFA: Split data into train (in-sample) and test (out-of-sample) sets
-            train_map = {}
-            test_map = {}
-            split_date = None
-            
-            if validation_split > 0:
-                for ticker, df in data_map.items():
-                    n = len(df)
-                    split_idx = int(n * (1 - validation_split))
-                    if split_idx < 10 or (n - split_idx) < 5:
-                        # Not enough data to split, use all for training
-                        train_map[ticker] = df
-                        test_map[ticker] = pd.DataFrame()  # Empty test set
-                    else:
-                        train_map[ticker] = df.iloc[:split_idx].copy()
-                        test_map[ticker] = df.iloc[split_idx:].copy()
-                        if split_date is None:
-                            split_date = df.index[split_idx].strftime('%Y-%m-%d')
-                print(f"WFA: Split at {split_date}, Train sizes: {[len(v) for v in train_map.values()]}, Test sizes: {[len(v) for v in test_map.values()]}")
-            else:
-                # No WFA: use all data for both optimization and testing
-                train_map = data_map
-                test_map = {}
-                print("WFA: Disabled (validation_split=0)")
-            
-            # Validate that all parameters exist in the code
-            for param_name in param_ranges.keys():
-                if f"{param_name} = " not in code_template:
-                    return Response({
-                        'error': f'Parameter "{param_name}" not found in strategy code. Available parameters must be defined as class attributes like "n1 = 10".'
-                    }, status=400)
-
-            
-            # Define objective function
-            def objective(trial):
-                # Suggest parameters
-                params = {}
-                for param_name, param_config in param_ranges.items():
-                    # Support both old format [min, max] and new format {type: 'int/float', range: [min, max]}
-                    if isinstance(param_config, dict):
-                        param_type = param_config.get('type', 'int')
-                        min_val, max_val = param_config['range']
-                        
-                        if param_type == 'float':
-                            params[param_name] = trial.suggest_float(param_name, min_val, max_val)
-                        else:
-                            params[param_name] = trial.suggest_int(param_name, int(min_val), int(max_val))
-                    else:
-                        # Old format: [min, max]
-                        min_val, max_val = param_config
-                        params[param_name] = trial.suggest_int(param_name, min_val, max_val)
-                
-                # Replace parameters in code template
-                code = code_template
-                for param_name, param_value in params.items():
-                    # Replace class attributes like "n1 = 10" with "n1 = <optimized_value>"
-                    code = code.replace(f"{param_name} = ", f"{param_name} = {param_value} #")
-                
-                # Execute strategy code
-                local_scope = {
-                    'Backtest': Backtest,
-                    'Strategy': Strategy,
-                    'crossover': crossover,
-                    'SMA': SMA,
-                    'pd': pd,
-                }
-                
-                exec(code, local_scope)
-                
-                # Find strategy class
-                from backtesting import Strategy as BTStrategy
-                strategy_class = None
-                for name, obj in local_scope.items():
-                    if inspect.isclass(obj) and issubclass(obj, BTStrategy) and obj is not BTStrategy:
-                        strategy_class = obj
-                        break
-                
-                if not strategy_class:
-                    raise ValueError('No Strategy class found')
-                
-                # Run backtest for ALL dataframes (using train_map for WFA)
-                win_rates = []
-                returns = []
-                for ticker, df_data in train_map.items():
-                    try:
-                        bt = Backtest(df_data, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
-                        stats = bt.run()
-
-                        
-                        # Get win rate - handle potential None or NaN values
-                        win_rate = stats.get('Win Rate [%]', 0)
-                        if win_rate is None or (isinstance(win_rate, float) and win_rate != win_rate):  # NaN check
-                            win_rate = 0
-                        win_rates.append(win_rate)
-                        
-                        # Get return percentage
-                        return_pct = stats.get('Return [%]', 0)
-                        if return_pct is None or (isinstance(return_pct, float) and return_pct != return_pct):  # NaN check
-                            return_pct = 0
-                        returns.append(return_pct)
-                    except Exception as bt_err:
-                        continue # Skip failed backtests
-                
-                if not win_rates:
-                    return -9999 # Penalty for failing all
-                
-                # Calculate objective based on user selection
-                if objective_type == 'win_rate':
-                    # Optimize for Mean Win Rate
-                    return sum(win_rates) / len(win_rates)
-                elif objective_type == 'profit':
-                    # Optimize for Mean Return
-                    return sum(returns) / len(returns)
-                else:  # 'balanced'
-                    # Optimize for balanced combination
-                    # Normalize both metrics to 0-1 scale for fair weighting
-                    avg_win_rate = sum(win_rates) / len(win_rates)
-                    avg_return = sum(returns) / len(returns)
-                    
-                    # Normalize win rate (already 0-100, so divide by 100)
-                    normalized_win_rate = avg_win_rate / 100.0
-                    
-                    # Normalize return (assume reasonable range of -50% to +100%)
-                    # Map to 0-1 scale where 0% return = 0.33, 100% return = 1.0
-                    normalized_return = max(0, min(1, (avg_return + 50) / 150.0))
-                    
-                    # 50/50 weighted combination
-                    return 0.5 * normalized_win_rate + 0.5 * normalized_return
-            
-            # Method selection with smart defaults
-            method = request.data.get('method', 'auto')
-            sampler = None
-            
-            # Calculate total search space size for auto mode
-            total_combinations = 1
-            search_space = {}
-            
-            for param_name, param_config in param_ranges.items():
-                if isinstance(param_config, dict):
-                    p_type = param_config.get('type', 'int')
-                    p_range = param_config.get('range', param_config.get('range', [1, 10]))
-                    start, end = p_range[0], p_range[1]
-                else:
-                    p_type = 'int'
-                    start, end = param_config[0], param_config[1]
-                    
-                if p_type == 'int':
-                    count = int(end) - int(start) + 1
-                    search_space[param_name] = list(range(int(start), int(end) + 1))
-                elif p_type == 'float':
-                    # For floats, use 20 steps
-                    step = (end - start) / 20.0
-                    if step == 0: step = 0.1
-                    values = []
-                    curr = start
-                    while curr <= end + 1e-9:
-                        values.append(round(curr, 4))
-                        curr += step
-                    search_space[param_name] = values
-                    count = len(values)
-                else:
-                    count = int(end) - int(start) + 1
-                    search_space[param_name] = list(range(int(start), int(end) + 1))
-                    
-                total_combinations *= count
-            
-            print(f"Total parameter combinations: {total_combinations}")
-            
-            # Auto mode: use Grid for small spaces, Bayes for large
-            GRID_THRESHOLD = 500  # Max combinations before switching to Bayesian
-            
-            if method == 'auto':
-                if total_combinations <= GRID_THRESHOLD:
-                    method = 'grid'
-                    print(f"Auto mode: Using GRID search ({total_combinations} combinations)")
-                else:
-                    method = 'bayes'
-                    print(f"Auto mode: Using BAYESIAN search ({total_combinations} combinations too large for grid)")
-            
-            if method == 'grid':
-                sampler = optuna.samplers.GridSampler(search_space)
-                # For grid search, n_trials = total_combinations (override user input)
-                n_trials = total_combinations
-                print(f"Grid search will run {n_trials} trials (all combinations)")
-            elif method == 'bayes':
-                # TPE with multivariate for correlated parameters
-                sampler = optuna.samplers.TPESampler(multivariate=True, n_startup_trials=min(10, n_trials // 4))
-                print(f"Bayesian search will run {n_trials} trials")
-            else:
-                sampler = optuna.samplers.TPESampler()
-            
-            # Run optimization
-            study = optuna.create_study(direction='maximize', study_name='strategy_optimization', sampler=sampler)
-            study.optimize(objective, n_trials=n_trials, show_progress_bar=False)
-            
-            # Get results
-            best_params = study.best_params
-            best_value = study.best_value
-            
-            # Get trial history
-            trials_data = []
-            for trial in study.trials:
-                trials_data.append({
-                    'number': trial.number,
-                    'params': trial.params,
-                    'value': trial.value,
-                    'state': str(trial.state)
-                })
-            
-            # Generate optimized code with best parameters
-            optimized_code = code_template
-            for param_name, param_value in best_params.items():
-                # Replace parameter values in code
-                import re
-                if isinstance(param_value, float):
-                    pattern = rf'(\s{param_name}\s*=\s*)[\d\.]+'
-                    optimized_code = re.sub(pattern, rf'\g<1>{param_value:.4f}', optimized_code)
-                else:
-                    pattern = rf'(\s{param_name}\s*=\s*)\d+'
-                    optimized_code = re.sub(pattern, rf'\g<1>{int(param_value)}', optimized_code)
-            
-            # Run detailed backtests for "reinvestigation"
-            import uuid
-            batch_id = uuid.uuid4()
-            backtest_results = []
-            
-            # WFA: Separate train and test metrics
-            train_metrics = []
-            test_metrics = []
-            
-            # Helper to aggregate metrics
-            def aggregate_stats(metrics_list):
-                if not metrics_list:
-                    return {'pnl_percent': 0, 'win_rate': 0, 'max_drawdown': 0, 'sharpe_ratio': 0}
-                return {
-                    'pnl_percent': sum(m.get('pnl_percent', 0) for m in metrics_list) / len(metrics_list),
-                    'win_rate': sum(m.get('win_rate', 0) for m in metrics_list) / len(metrics_list),
-                    'max_drawdown': sum(m.get('Max. Drawdown [%]', m.get('max_drawdown', 0)) for m in metrics_list) / len(metrics_list),
-                    'sharpe_ratio': sum(m.get('Sharpe Ratio', m.get('sharpe_ratio', 0)) for m in metrics_list) / len(metrics_list),
-                }
-            
-            # Run backtests on TRAIN data
-            for symbol_ticker, df_data in train_map.items():
-                if df_data.empty:
+                if error:
+                    results_by_period[period_name]['error'] = error
                     continue
-                res, err, exp_data = self._run_single_backtest(
-                    optimized_code, symbol_ticker, start_date, end_date, params=best_params
-                )
-                if res:
-                    train_metrics.append(res['stats'])
-                    backtest_results.append({
-                        'symbol': symbol_ticker,
-                        'pnl_percent': res['stats']['pnl_percent'],
-                        'set': 'train'
-                    })
-            
-            # Run backtests on TEST data (if WFA enabled)
-            if validation_split > 0 and test_map:
-                for symbol_ticker, df_data in test_map.items():
-                    if df_data.empty:
-                        continue
-                    # Use test_map data directly for backtesting
-                    try:
-                        from backtesting import Backtest, Strategy
-                        from backtesting.lib import crossover
-                        from backtesting.test import SMA
-                        import numpy as np
-                        
-                        local_scope = {
-                            'Backtest': Backtest,
-                            'Strategy': Strategy,
-                            'crossover': crossover,
-                            'SMA': SMA,
-                            'pd': pd,
-                        }
-                        exec(optimized_code, local_scope)
-                        from backtesting import Strategy as BTStrategy
-                        strategy_class = None
-                        for name, obj in local_scope.items():
-                            if inspect.isclass(obj) and issubclass(obj, BTStrategy) and obj is not BTStrategy:
-                                strategy_class = obj
-                                break
-                        
-                        if strategy_class and len(df_data) >= 10:
-                            bt = Backtest(df_data, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
-                            stats = bt.run()
-                            
-                            def safe_num(val, default=0.0):
-                                if val is None: return default
-                                if isinstance(val, (int, float, np.integer, np.floating)):
-                                    if np.isnan(val) or np.isinf(val):
-                                        return default
-                                    return float(val)
-                                return default
-                            
-                            test_stats = {
-                                'pnl_percent': safe_num(stats.get('Return [%]')),
-                                'win_rate': safe_num(stats.get('Win Rate [%]')),
-                                'max_drawdown': safe_num(stats.get('Max. Drawdown [%]')),
-                                'sharpe_ratio': safe_num(stats.get('Sharpe Ratio')),
-                                'total_trades': int(safe_num(stats.get('# Trades'), 0)),
-                            }
-                            test_metrics.append(test_stats)
-                            backtest_results.append({
-                                'symbol': symbol_ticker,
-                                'pnl_percent': test_stats['pnl_percent'],
-                                'set': 'test'
-                            })
-                    except Exception as test_err:
-                        print(f"WFA test backtest failed for {symbol_ticker}: {test_err}")
-                        continue
-            
-            # Aggregate stats
-            aggregated_train_stats = self._clean_for_json(aggregate_stats(train_metrics))
-            aggregated_test_stats = self._clean_for_json(aggregate_stats(test_metrics)) if test_metrics else None
-
-            # Log Optimization Experiment
-            try:
-                scope_type = ScopeType.SYMBOL
-                scope_val = symbol
                 
-                if symbol == 'ALL':
-                    scope_type = ScopeType.ALL
-                    scope_val = 'ALL'
-                elif sector:
-                    scope_type = ScopeType.SECTOR
-                    scope_val = sector
-                
-                StrategyExperiment.objects.create(
-                    strategy=strategy,
-                    user=request.user,
-                    run_type=StrategyExperiment.RunType.OPTIMIZATION,
-                    scope_type=scope_type,
-                    scope_value=scope_val,
-                    start_date=start_date,
-                    end_date=end_date,
-                    parameters=best_params, # Store winning config
-                    metrics=self._clean_for_json({
-                        'best_return': best_value,
-                        'search_ranges': param_ranges,
-                        'n_trials': len(study.trials),
-                        'batch_id': str(batch_id),
-                        'train_stats': aggregated_train_stats,
-                        'test_stats': aggregated_test_stats,
-                        'validation_split': validation_split,
-                    }),
-                    status=StrategyExperiment.Status.SUCCESS,
-                    is_published=False,
-                    batch_id=batch_id
-                )
-            except Exception as e:
-                print(f"Failed to log optimization experiment: {e}")
+                # Run optimization for all 3 objectives
+                for obj_type in ['win_rate', 'profit', 'balanced']:
+                    print(f"  Optimizing for {obj_type}...")
+                    
+                    result = run_single_objective_optimization(
+                        data_map, code_template, param_ranges, obj_type, n_trials
+                    )
+                    
+                    # Log raw result from optimization
+                    print(f"    Raw Result for {obj_type}: {result}")
+                    
+                    # Run full backtest for ALL objectives to get displayable stats
+                    # This allows side-by-side comparison of metrics
+                    full_stats, bt_instance, plot_html = run_final_backtest(data_map, code_template, result['best_params'])
+                    
+                    if full_stats:
+                        print(f"    ✅ Backtest stats generated for {obj_type}")
+                        result['stats'] = full_stats
+                        
+                        # Create Experiment Record for this objective's result
+                        try:
+                            # Determine scope
+                            scope_type = ScopeType.SYMBOL
+                            scope_val = symbol
+                            if symbol == 'ALL':
+                                scope_type = ScopeType.ALL 
+                                scope_val = 'ALL'
+                            elif sector:
+                                scope_type = ScopeType.SECTOR
+                                scope_val = sector
 
-            # Build response with WFA stats
-            response_data = self._clean_for_json({
-                'best_params': best_params,
-                'best_value': best_value,
-                'n_trials': len(study.trials),
-                'trials': trials_data,
-                'optimized_code': optimized_code,
-                'batch_id': str(batch_id),
-                'validation_split': validation_split,
-            })
-            
-            if validation_split > 0 and aggregated_test_stats:
-                # WFA enabled: return train and test stats separately
-                response_data['train_stats'] = aggregated_train_stats
-                response_data['test_stats'] = aggregated_test_stats
-                response_data['split_date'] = split_date
-            else:
-                # No WFA: return combined stats
-                response_data['win_rate'] = aggregated_train_stats.get('win_rate', 0)
-                response_data['max_drawdown'] = aggregated_train_stats.get('max_drawdown', 0)
-                response_data['profit_factor'] = 0  # Not calculated in this simplified version
-            
-            return Response(response_data)
+                            # Only auto-publish 'balanced' or 'profit' to avoid clutter/conflicts?
+                            # Let's publish 'balanced' as the primary one. 
+                            # 'win_rate' and 'profit' will be saved but not marked published,
+                            # so they don't override the default view but are accessible via link.
+                            is_published = (obj_type == 'balanced')
+                            
+                            exp = StrategyExperiment.objects.create(
+                                strategy=strategy,
+                                user=request.user,
+                                run_type=StrategyExperiment.RunType.OPTIMIZATION,
+                                scope_type=scope_type,
+                                scope_value=scope_val,
+                                start_date=period_start,
+                                end_date=period_end,
+                                parameters=result['best_params'],
+                                metrics={
+                                    'stats': full_stats,
+                                    'period': period_name,
+                                    'objective': obj_type
+                                },
+                                plot_html=plot_html,
+                                status=StrategyExperiment.Status.SUCCESS,
+                                is_published=is_published 
+                            )
+                            print(f"  ✅ Created Experiment {exp.id} ({obj_type})")
+                            result['experiment_id'] = exp.id
+                            
+                            # If this is the published one, unpublish others
+                            if is_published:
+                                StrategyExperiment.objects.filter(
+                                    strategy=strategy,
+                                    scope_type=scope_type,
+                                    scope_value=scope_val,
+                                    is_published=True
+                                ).exclude(id=exp.id).update(is_published=False)
+                            
+                        except Exception as exp_err:
+                            print(f"  ❌ Failed to create experiment: {exp_err}")
+                    else:
+                        print(f"    ⚠️ Full backtest returned None for {obj_type}")
+                    
+                    results_by_period[period_name][obj_type] = result
 
-            
-        except Exception as e:
-            import traceback
-            tb = traceback.format_exc()
-            # Log Failed Optimization
-            try:
-                scope_type = ScopeType.SYMBOL
-                scope_val = symbol
-                if symbol == 'ALL':
-                    scope_type = ScopeType.ALL
-                    scope_val = 'ALL'
-                elif sector:
-                    scope_type = ScopeType.SECTOR
-                    scope_val = sector
+            except Exception as period_err:
+                import traceback
+                print(f"❌ Period {period_name} failed: {period_err}")
+                traceback.print_exc()
+                results_by_period[period_name]['error'] = str(period_err)
+        
+        # Sanitization Helper for NumPy types
+        def sanitize_for_json(obj):
+            import numpy as np
+            if isinstance(obj, dict):
+                return {k: sanitize_for_json(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [sanitize_for_json(v) for v in obj]
+            elif isinstance(obj, np.integer):
+                return int(obj)
+            elif isinstance(obj, np.floating):
+                return float(obj)
+            elif isinstance(obj, np.bool_):
+                return bool(obj)
+            elif isinstance(obj, np.ndarray):
+                return sanitize_for_json(obj.tolist())
+            return obj
 
-                StrategyExperiment.objects.create(
-                    strategy=strategy,
-                    user=request.user,
-                    run_type=StrategyExperiment.RunType.OPTIMIZATION,
-                    scope_type=scope_type,
-                    scope_value=scope_val,
-                    start_date=start_date, # These might be None if request failed early, handle with care? 
-                    end_date=end_date,
-                    parameters=param_ranges,
-                    metrics={},
-                    status=StrategyExperiment.Status.FAILED,
-                    error_log=str(e)
-                )
-            except:
-                pass 
+        clean_results = sanitize_for_json(results_by_period)
 
-            return Response({'error': f"Optimization Error: {str(e)}", 'traceback': tb}, status=400)
+        return Response({
+            'success': True,
+            'message': 'Multi-period optimization complete',
+            'results_by_period': clean_results
+        })
+
 
     @action(detail=True, methods=['post'])
     def publish_optimized(self, request, pk=None):
@@ -2858,7 +2486,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
     def optimize_compare(self, request):
         """
         Optimize and compare multiple strategies on a single symbol across different time periods.
-        Runs optimization for each strategy × period combination and returns best results.
+        Runs optimization for each strategy x period combination and returns best results.
         """
         import pandas as pd
         from backtesting import Backtest, Strategy as BTStrategy
@@ -3574,7 +3202,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
             
             -- We just return smart_net_qty as net_qty. 
             -- Note: buy_qty and sell_qty in UI are just for visual magnitude?
-            -- Let's derive them from smart_net_qty to be consistent with bar charts.
+            -- Lets derive them from smart_net_qty to be consistent with bar charts.
             
             CASE WHEN sa.smart_net_qty > 0 THEN sa.smart_net_qty ELSE 0 END as buy_qty,
             CASE WHEN sa.smart_net_qty < 0 THEN ABS(sa.smart_net_qty) ELSE 0 END as sell_qty,
@@ -3611,7 +3239,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def aggressive(self, request):
         """
-        Identify aggressive institutional activity relative to 20D average volume.
+        Identify aggressive institutional activity relative to 20-Day average volume.
         Uses accurate daily_floorsheet aggregation for flows.
         """
         time_range = request.query_params.get('range', '1W')

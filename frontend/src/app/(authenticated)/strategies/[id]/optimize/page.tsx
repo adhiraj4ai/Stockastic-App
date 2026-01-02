@@ -6,11 +6,13 @@ import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Zap, TrendingUp, Activity, CheckCircle, Play } from 'lucide-react';
+import { ArrowLeft, Zap, TrendingUp, Activity, CheckCircle, Play, ChevronDown, AlertTriangle, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { PeriodSelector } from '../../components/PeriodSelector';
+
+import { MetricsDisplay } from '../../components/MetricsDisplay';
+import { SymbolSelector } from '@/components/SymbolSelector';
 
 interface Strategy {
     id: number;
@@ -28,15 +30,21 @@ export default function OptimizePage() {
     const [strategy, setStrategy] = useState<Strategy | null>(null);
     const [loading, setLoading] = useState(true);
     const [optimizing, setOptimizing] = useState(false);
-    const [results, setResults] = useState<any>(null);
+    const [configExpanded, setConfigExpanded] = useState(true);
+    // State for progressive optimization
+    const [periodResults, setPeriodResults] = useState<Record<string, { status: 'pending' | 'loading' | 'success' | 'error', data?: any }>>({
+        '1Y': { status: 'pending' },
+        '3Y': { status: 'pending' },
+        '5Y': { status: 'pending' },
+        '10Y': { status: 'pending' }
+    });
+    // const [results, setResults] = useState<any>(null); // Deprecated
 
     // Configuration state
     const [scope, setScope] = useState<'SINGLE' | 'SECTOR' | 'ALL'>('SINGLE');
     const [symbol, setSymbol] = useState('');
     const [sector, setSector] = useState('');
     const [sectors, setSectors] = useState<{ name: string; count: number }[]>([]);
-    const [method, setMethod] = useState<'auto' | 'grid' | 'bayes'>('bayes');
-    const [objective, setObjective] = useState<'win_rate' | 'profit' | 'balanced'>('balanced');
     const [validationSplit, setValidationSplit] = useState(0.2);
 
     const [startDate, setStartDate] = useState('');
@@ -70,6 +78,7 @@ export default function OptimizePage() {
         }
     };
 
+
     const initialParams = useMemo(() => {
         if (!strategy) return { "n1": [5, 30], "n2": [20, 100] };
 
@@ -98,16 +107,19 @@ export default function OptimizePage() {
         return Object.keys(params).length > 0 ? params : { "n1": [5, 30], "n2": [20, 100] };
     }, [strategy]);
 
-    const formatParams = (params: any) => {
-        return Object.entries(params)
-            .map(([key, value]) => `${key}: [${(value as number[]).join(', ')}]`)
-            .join('\n');
-    };
 
-    const [paramText, setParamText] = useState('');
+
+    const [parameters, setParameters] = useState<{ name: string, min: number, max: number }[]>([]);
 
     useEffect(() => {
-        setParamText(formatParams(initialParams));
+        if (initialParams) {
+            const paramsArray = Object.entries(initialParams).map(([name, range]: [string, any]) => ({
+                name,
+                min: range[0],
+                max: range[1]
+            }));
+            setParameters(paramsArray);
+        }
     }, [initialParams]);
 
     const handleOptimize = async () => {
@@ -121,44 +133,72 @@ export default function OptimizePage() {
         }
 
         setOptimizing(true);
-        setResults(null);
+        // Reset state
+        setPeriodResults({
+            '1Y': { status: 'pending' },
+            '3Y': { status: 'pending' },
+            '5Y': { status: 'pending' },
+            '10Y': { status: 'pending' }
+        });
+
+        const periods = ['1Y', '3Y', '5Y', '10Y'];
 
         try {
             // Parse parameter ranges
-            let processStr = paramText.trim();
-            processStr = processStr.replace(/^(\s*)(\w+)(\s*):/gm, '$1"$2"$3:');
-            processStr = processStr.replace(/](?!\s*,)\s*(\n|$)/g, '],$1');
-            processStr = processStr.replace(/,\s*$/, '');
-            if (!processStr.startsWith('{')) processStr = '{' + processStr + '}';
+            const paramRanges: any = {};
+            parameters.forEach(p => {
+                paramRanges[p.name] = [p.min, p.max];
+            });
 
-            const paramRanges = JSON.parse(processStr);
+            for (const period of periods) {
+                // Update status to loading for this period
+                setPeriodResults(prev => ({
+                    ...prev,
+                    [period]: { status: 'loading' }
+                }));
 
-            const requestData: any = {
-                code: strategy!.code,
-                symbol: scope === 'SINGLE' ? symbol : scope === 'ALL' ? 'ALL' : undefined,
-                sector: scope === 'SECTOR' ? sector : undefined,
-                start_date: startDate || undefined,
-                end_date: endDate || undefined,
-                param_ranges: paramRanges,
-                n_trials: 100,
-                method: method,
-                objective: objective,
-                validation_split: validationSplit
-            };
+                const requestData: any = {
+                    code: strategy!.code,
+                    symbol: scope === 'SINGLE' ? symbol : scope === 'ALL' ? 'ALL' : undefined,
+                    sector: scope === 'SECTOR' ? sector : undefined,
+                    start_date: startDate || undefined,
+                    end_date: endDate || undefined,
+                    param_ranges: paramRanges,
+                    n_trials: 100,
+                    validation_split: validationSplit,
+                    periods: [period]
+                };
 
-            const response = await api.post(`/api/stocks/strategies/${strategy!.id}/optimize/`, requestData);
-            setResults(response.data);
-            toast.success(`Optimization complete! Best return: ${response.data.best_value.toFixed(2)}%`);
+                try {
+                    const response = await api.post(`/api/stocks/strategies/${strategy!.id}/optimize_multi_period/`, requestData);
+                    const periodData = response.data.results_by_period[period];
+
+                    setPeriodResults(prev => ({
+                        ...prev,
+                        [period]: { status: 'success', data: periodData }
+                    }));
+                } catch (error) {
+                    console.error(`Failed period ${period}`, error);
+                    setPeriodResults(prev => ({
+                        ...prev,
+                        [period]: { status: 'error' }
+                    }));
+                }
+            }
+            toast.success(`Sequential optimization complete!`);
         } catch (error: any) {
-            toast.error(error.response?.data?.error || 'Optimization failed');
+            toast.error('Optimization sequence failed');
         } finally {
             setOptimizing(false);
         }
     };
 
     const handleApplyParameters = () => {
-        if (!results) return;
-        const params = JSON.stringify(results.best_params, null, 2);
+        // Find best overall (e.g. from 3Y or 5Y)
+        const bestPeriod = periodResults['3Y'].data ? '3Y' : '1Y';
+        if (!periodResults[bestPeriod].data) return;
+
+        const params = JSON.stringify(periodResults[bestPeriod].data.balanced.best_params, null, 2);
         const encodedParams = encodeURIComponent(params);
         router.push(`/strategies/${strategyId}/backtest?params=${encodedParams}${symbol ? `&symbol=${symbol}` : ''}`);
     };
@@ -182,244 +222,300 @@ export default function OptimizePage() {
                     </Button>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className="space-y-4">
                     {/* Configuration Panel */}
-                    <div className="lg:col-span-5 xl:col-span-4">
-                        <Card className="border-gray-200 shadow-sm overflow-hidden sticky top-6">
-                            <CardHeader className="py-4 px-6 bg-purple-50/50 border-b border-purple-100">
-                                <div className="flex items-center gap-2">
-                                    <div className="p-1.5 bg-purple-100 text-purple-600 rounded-lg">
-                                        <Zap size={16} />
+                    <div className="">
+                        <Card className="border-gray-200 shadow-sm overflow-hidden ">
+                            <CardHeader className="py-3 px-4 bg-gradient-to-r from-purple-50/50 to-blue-50/50 border-b border-purple-100 cursor-pointer hover:bg-purple-50/70 transition-colors" onClick={() => setConfigExpanded(!configExpanded)}>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-1.5 bg-purple-100 text-purple-600 rounded-lg">
+                                            <Zap size={16} />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-sm font-bold uppercase tracking-wider text-purple-700">Optimization Settings</CardTitle>
+                                            <CardDescription className="text-[10px] text-purple-600">Configure parameter search space</CardDescription>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <CardTitle className="text-sm font-bold uppercase tracking-wider text-purple-700">Optimization Settings</CardTitle>
-                                        <CardDescription className="text-[10px] text-purple-600">Configure parameter search space</CardDescription>
-                                    </div>
+                                    <ChevronDown
+                                        size={16}
+                                        className={`text-purple-600 transition-transform ${configExpanded ? 'rotate-180' : ''}`}
+                                    />
                                 </div>
                             </CardHeader>
-                            <CardContent className="p-6 space-y-6">
-                                {/* Scope Selection */}
-                                <div className="space-y-3">
-                                    <Label className="text-xs font-bold text-gray-500 uppercase">Optimization Scope</Label>
-                                    <div className="flex p-1 bg-gray-100 rounded-lg gap-1">
-                                        <button
-                                            onClick={() => setScope('SINGLE')}
-                                            className={`flex-1 py-1.5 px-2 text-[10px] font-bold rounded-md transition-all ${scope === 'SINGLE' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-500'}`}
-                                        >
-                                            SINGLE
-                                        </button>
-                                        <button
-                                            onClick={() => setScope('SECTOR')}
-                                            className={`flex-1 py-1.5 px-2 text-[10px] font-bold rounded-md transition-all ${scope === 'SECTOR' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-500'}`}
-                                        >
-                                            SECTOR
-                                        </button>
-                                        <button
-                                            onClick={() => setScope('ALL')}
-                                            className={`flex-1 py-1.5 px-2 text-[10px] font-bold rounded-md transition-all ${scope === 'ALL' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-500'}`}
-                                        >
-                                            ALL
-                                        </button>
-                                    </div>
-                                </div>
+                            {configExpanded && (
+                                <CardContent className="p-4 space-y-3"><div className="grid grid-cols-12 gap-4">
+                                    {/* Column 1: Configuration (Scope + Target) */}
+                                    <div className="col-span-3 space-y-3">
+                                        {/* Scope Section */}
+                                        <div>
+                                            <Label className="text-[10px] font-semibold text-gray-500 mb-1 block">SCOPE</Label>
+                                            <select
+                                                value={scope}
+                                                onChange={(e) => setScope(e.target.value as any)}
+                                                className="w-full h-8 px-2 text-xs rounded border border-gray-300 bg-white focus:ring-1 focus:ring-purple-500 outline-none shadow-sm"
+                                            >
+                                                <option value="SINGLE">Single Symbol</option>
+                                                <option value="SECTOR">Sector</option>
+                                                <option value="ALL">All Symbols</option>
+                                            </select>
+                                        </div>
 
-                                {scope === 'SINGLE' && (
-                                    <div className="space-y-2">
-                                        <Label className="text-xs font-bold text-gray-500 uppercase">Symbol</Label>
-                                        <input
-                                            type="text"
-                                            value={symbol}
-                                            onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                                            placeholder="e.g. NABIL"
-                                            className="w-full h-9 px-3 rounded-md border border-gray-300 bg-white text-sm focus:ring-2 focus:ring-purple-500 outline-none"
-                                        />
-                                    </div>
-                                )}
-
-                                {scope === 'SECTOR' && (
-                                    <div className="space-y-2">
-                                        <Label className="text-xs font-bold text-gray-500 uppercase">Sector</Label>
-                                        <select
-                                            value={sector}
-                                            onChange={(e) => setSector(e.target.value)}
-                                            className="w-full h-9 px-3 rounded-md border border-gray-300 bg-white text-sm focus:ring-2 focus:ring-purple-500 outline-none"
-                                        >
-                                            <option value="">Select sector...</option>
-                                            {sectors.map((s) => (
-                                                <option key={s.name} value={s.name}>{s.name} ({s.count})</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                )}
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label className="text-xs font-bold text-gray-500 uppercase">Method</Label>
-                                        <select
-                                            value={method}
-                                            onChange={(e) => setMethod(e.target.value as any)}
-                                            className="w-full h-9 px-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm bg-white outline-none"
-                                        >
-                                            <option value="auto">Auto</option>
-                                            <option value="grid">Grid</option>
-                                            <option value="bayes">Bayesian</option>
-                                        </select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-xs font-bold text-gray-500 uppercase">Objective</Label>
-                                        <select
-                                            value={objective}
-                                            onChange={(e) => setObjective(e.target.value as any)}
-                                            className="w-full h-9 px-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm bg-white outline-none"
-                                        >
-                                            <option value="balanced">Balanced</option>
-                                            <option value="profit">Max Profit</option>
-                                            <option value="win_rate">Win Rate</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2 pt-4 border-t border-gray-100">
-                                    <Label className="text-xs font-bold text-gray-500 uppercase">Parameter Ranges</Label>
-                                    <textarea
-                                        value={paramText}
-                                        onChange={(e) => setParamText(e.target.value)}
-                                        className="w-full h-32 p-2 text-[11px] font-mono border rounded-md bg-white focus:ring-2 focus:ring-purple-500 outline-none resize-none"
-                                        placeholder='n1: [5, 30]\nn2: [20, 100]'
-                                    />
-                                    <p className="text-[10px] text-gray-500">Format: param_name: [min, max]</p>
-                                </div>
-
-                                <div className="pt-4 border-t border-gray-100">
-                                    <PeriodSelector
-                                        startDate={startDate}
-                                        endDate={endDate}
-                                        setStartDate={setStartDate}
-                                        setEndDate={setEndDate}
-                                        rangeType={rangeType}
-                                        setRangeType={setRangeType}
-                                    />
-                                </div>
-
-                                <div className="space-y-2 pt-6">
-                                    <Button
-                                        onClick={handleOptimize}
-                                        disabled={optimizing || (scope === 'SINGLE' && !symbol) || (scope === 'SECTOR' && !sector)}
-                                        className="w-full h-10 font-bold uppercase tracking-wider text-xs shadow-md bg-purple-600 hover:bg-purple-700 text-white"
-                                    >
-                                        {optimizing ? (
-                                            <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" /> Optimizing...</>
-                                        ) : (
-                                            <><Zap size={14} className="mr-2" /> Start Optimization</>
+                                        {/* Target Selection (Symbol or Sector) - Conditionally Rendered */}
+                                        {scope === 'SINGLE' && (
+                                            <div>
+                                                <Label className="text-[10px] font-semibold text-gray-500 mb-1 block">SYMBOL TARGET</Label>
+                                                <div className="relative">
+                                                    <SymbolSelector
+                                                        value={symbol}
+                                                        onChange={setSymbol}
+                                                    />
+                                                </div>
+                                            </div>
                                         )}
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => router.push(`/strategies/${strategyId}/backtest`)}
-                                        className="w-full h-9 text-[10px] uppercase font-bold"
-                                    >
-                                        <Play size={12} className="mr-1.5" /> Run Backtest Instead
-                                    </Button>
-                                </div>
-                            </CardContent>
+
+                                        {scope === 'SECTOR' && (
+                                            <div>
+                                                <Label className="text-[10px] font-semibold text-gray-500 mb-1 block">SECTOR TARGET</Label>
+                                                <select
+                                                    value={sector}
+                                                    onChange={(e) => setSector(e.target.value)}
+                                                    className="w-full h-8 px-2 text-xs rounded border border-gray-300 bg-white focus:ring-1 focus:ring-purple-500 outline-none shadow-sm"
+                                                >
+                                                    <option value="">Select sector...</option>
+                                                    {sectors.map((s) => (
+                                                        <option key={s.name} value={s.name}>{s.name} ({s.count})</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+
+                                        {scope === 'ALL' && (
+                                            <div>
+                                                <Label className="text-[10px] font-semibold text-gray-500 mb-1 block">TARGET</Label>
+                                                <div className="w-full h-8 px-2 text-xs flex items-center text-gray-500 bg-gray-50 border border-gray-200 rounded">
+                                                    All available symbols
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Column 2: Parameters */}
+                                    <div className="col-span-6 border-l border-gray-100 pl-4">
+                                        <Label className="text-[10px] font-semibold text-gray-500 mb-1 block">PARAMETER RANGES</Label>
+                                        <div className="relative max-h-[150px] min-h-[80px] overflow-y-auto pr-1">
+                                            <div className="space-y-2">
+                                                {parameters.map((param, idx) => (
+                                                    <div key={param.name} className="flex items-center gap-2">
+                                                        <div className="w-24 text-[10px] font-mono font-semibold text-gray-600 truncate" title={param.name}>
+                                                            {param.name}
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="number"
+                                                                value={param.min}
+                                                                onChange={(e) => {
+                                                                    const newParams = [...parameters];
+                                                                    newParams[idx].min = parseInt(e.target.value) || 0;
+                                                                    setParameters(newParams);
+                                                                }}
+                                                                className="w-20 h-7 px-2 text-[10px] text-center border rounded border-gray-200 focus:ring-1 focus:ring-purple-500 outline-none bg-gray-50/50"
+                                                                placeholder="Min"
+                                                            />
+                                                            <span className="text-gray-300 text-[10px]">-</span>
+                                                            <input
+                                                                type="number"
+                                                                value={param.max}
+                                                                onChange={(e) => {
+                                                                    const newParams = [...parameters];
+                                                                    newParams[idx].max = parseInt(e.target.value) || 0;
+                                                                    setParameters(newParams);
+                                                                }}
+                                                                className="w-20 h-7 px-2 text-[10px] text-center border rounded border-gray-200 focus:ring-1 focus:ring-purple-500 outline-none bg-gray-50/50"
+                                                                placeholder="Max"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {parameters.length === 0 && (
+                                                    <div className="text-[10px] text-gray-400 text-center py-4 italic">
+                                                        No parameters found
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Column 3: Action */}
+                                    <div className="col-span-3 flex items-center justify-center pl-4 border-l border-gray-100">
+                                        <Button
+                                            onClick={handleOptimize}
+                                            disabled={optimizing || (scope === 'SINGLE' && !symbol) || (scope === 'SECTOR' && !sector)}
+                                            className="w-full h-10 text-xs font-bold uppercase tracking-wider bg-purple-600 hover:bg-purple-700 text-white shadow-md active:scale-95 transition-all"
+                                        >
+                                            {optimizing ? (
+                                                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" /> RUNNING</>
+                                            ) : (
+                                                <><Zap size={16} className="mr-2" /> START OPTIMIZATION</>
+                                            )}
+                                        </Button>
+                                    </div>
+                                </div></CardContent>
+                            )}
                         </Card>
                     </div>
 
-                    {/* Results Panel */}
-                    <div className="lg:col-span-7 xl:col-span-8 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col min-h-[700px]">
-                        {optimizing ? (
-                            <div className="h-full flex flex-col items-center justify-center space-y-4">
-                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-                                <p className="text-gray-500 animate-pulse">Finding optimal parameters...</p>
-                                <p className="text-xs text-gray-400">This may take a few minutes</p>
-                            </div>
-                        ) : results ? (
-                            <div className="p-6 space-y-6">
-                                <div className="flex items-center justify-between border-b pb-4">
-                                    <div>
-                                        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                            <CheckCircle className="text-green-500" size={20} />
-                                            Optimization Complete
-                                        </h3>
-                                        <p className="text-sm text-gray-500 mt-1">Found optimal parameters after {results.n_trials || 100} trials</p>
-                                    </div>
-                                    <Button
-                                        onClick={handleApplyParameters}
-                                        className="bg-green-600 hover:bg-green-700 text-white gap-2"
-                                    >
-                                        <Play size={14} /> Test These Parameters
-                                    </Button>
-                                </div>
+                    {/* Progressive Results Panel */}
+                    <div className="space-y-6 pb-20">
+                        {['1Y', '3Y', '5Y', '10Y'].map((period) => {
+                            const result = periodResults[period];
+                            if (result.status === 'pending') return null;
 
-                                <div className="grid grid-cols-3 gap-4">
-                                    <Card className="bg-green-50 border-green-100">
-                                        <CardContent className="p-4">
-                                            <p className="text-xs text-green-600 font-medium mb-1">Best Return</p>
-                                            <p className="text-2xl font-bold text-green-700">{results.best_value?.toFixed(2)}%</p>
-                                        </CardContent>
-                                    </Card>
-                                    <Card className="bg-blue-50 border-blue-100">
-                                        <CardContent className="p-4">
-                                            <p className="text-xs text-blue-600 font-medium mb-1">Trials Completed</p>
-                                            <p className="text-2xl font-bold text-blue-700">{results.n_trials || 100}</p>
-                                        </CardContent>
-                                    </Card>
-                                    <Card className="bg-purple-50 border-purple-100">
-                                        <CardContent className="p-4">
-                                            <p className="text-xs text-purple-600 font-medium mb-1">Method</p>
-                                            <p className="text-lg font-bold text-purple-700 capitalize">{method}</p>
-                                        </CardContent>
-                                    </Card>
-                                </div>
-
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="text-base">Best Parameters Found</CardTitle>
-                                        <CardDescription>Use these optimized parameters in your backtest</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <pre className="bg-gray-900 text-gray-50 p-4 rounded-lg text-sm font-mono overflow-auto">
-                                            {JSON.stringify(results.best_params, null, 2)}
-                                        </pre>
-                                    </CardContent>
-                                </Card>
-
-                                {results.validation_metrics && (
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle className="text-base">Validation Metrics</CardTitle>
-                                            <CardDescription>Out-of-sample performance on {(validationSplit * 100).toFixed(0)}% validation set</CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                                {Object.entries(results.validation_metrics).map(([key, value]: [string, any]) => (
-                                                    <div key={key} className="bg-gray-50 p-3 rounded-lg">
-                                                        <p className="text-xs text-gray-500 mb-1 capitalize">{key.replace(/_/g, ' ')}</p>
-                                                        <p className="font-bold text-gray-900">{typeof value === 'number' ? value.toFixed(2) : value}</p>
-                                                    </div>
-                                                ))}
+                            return (
+                                <div key={period} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                                    <div className="border-b px-6 py-4 flex justify-between items-center bg-gray-50/50">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded-lg ${result.status === 'loading' ? 'bg-purple-100 text-purple-600' : 'bg-green-100 text-green-600'}`}>
+                                                {result.status === 'loading' ? <div className="animate-spin w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full" /> : <CheckCircle size={18} />}
                                             </div>
-                                        </CardContent>
-                                    </Card>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="h-full flex flex-col items-center justify-center p-8 text-center">
-                                <div className="mb-4 p-4 bg-purple-100 rounded-full">
-                                    <Zap size={32} className="text-purple-600" />
+                                            <div>
+                                                <h3 className="font-bold text-gray-900">{period} Optimization</h3>
+                                                <p className="text-xs text-gray-500">
+                                                    {result.status === 'loading' ? 'Searching parameter space...' : 'Optimization completed'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {result.status === 'success' && ['1Y', '3Y', '5Y'].includes(period) && (
+                                            <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-green-200">
+                                                PUBLISHED
+                                            </Badge>
+                                        )}
+                                    </div>
+
+                                    {result.status === 'loading' && (
+                                        <div className="p-12 flex flex-col items-center justify-center text-center">
+                                            <div className="w-16 h-1 bg-purple-100 rounded-full overflow-hidden mb-4">
+                                                <div className="w-1/2 h-full bg-purple-600 animate-[loading_1s_ease-in-out_infinite]" />
+                                            </div>
+                                            <p className="text-sm font-medium text-gray-600">Running genetic optimization...</p>
+                                            <p className="text-xs text-gray-400 mt-1">Testing {parameters.length} parameters on {period} historical data</p>
+                                        </div>
+                                    )}
+
+                                    {result.status === 'success' && result.data && (
+                                        <div className="p-6">
+                                            {/* Side-by-Side Comparison Table */}
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-sm border-collapse">
+                                                    <thead>
+                                                        <tr>
+                                                            <th className="p-3 text-left bg-gray-50 border-b w-1/4">Metric</th>
+                                                            {['win_rate', 'profit', 'balanced'].map(obj => (
+                                                                <th key={obj} className={`p-3 text-left border-b w-1/4 uppercase tracking-wider ${obj === 'balanced' ? 'bg-purple-50 text-purple-700' : 'bg-gray-50 text-gray-700'}`}>
+                                                                    {obj.replace('_', ' ')}
+                                                                </th>
+                                                            ))}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {/* Parameters Row */}
+                                                        <tr>
+                                                            <td className="p-3 font-bold text-gray-500 bg-gray-50/30 border-b align-top">Parameters</td>
+                                                            {['win_rate', 'profit', 'balanced'].map(obj => {
+                                                                const objData = result.data![obj];
+                                                                return (
+                                                                    <td key={obj} className={`p-3 border-b align-top ${obj === 'balanced' ? 'bg-purple-50/30' : ''}`}>
+                                                                        <pre className="text-[10px] text-gray-600 whitespace-pre-wrap font-mono">
+                                                                            {JSON.stringify(objData?.best_params || {}, null, 2).replace(/{|}|"/g, '').trim()}
+                                                                        </pre>
+                                                                    </td>
+                                                                );
+                                                            })}
+                                                        </tr>
+
+                                                        {/* Key Metrics Rows */}
+                                                        {[
+                                                            { label: 'Primary Result', key: 'best_value', format: (v: number) => v.toFixed(4) },
+                                                            { label: 'Win Rate', path: ['stats', 'categorized', 'Trade Metrics', 'Win Rate'] },
+                                                            { label: 'Total Return', path: ['stats', 'categorized', 'Performance Metrics', 'Return'] },
+                                                            { label: 'Max Drawdown', path: ['stats', 'categorized', 'Risk Metrics', 'Max Drawdown'] },
+                                                            { label: 'Sharpe Ratio', path: ['stats', 'categorized', 'Performance Metrics', 'Sharpe Ratio'] },
+                                                            { label: 'Profit Factor', path: ['stats', 'categorized', 'Trade Metrics', 'Profit Factor'] },
+                                                            { label: 'Total Trades', path: ['stats', 'categorized', 'Trade Metrics', 'Total Trades'] },
+                                                        ].map((row: any, i) => (
+                                                            <tr key={i} className="hover:bg-gray-50">
+                                                                <td className="p-3 font-medium text-gray-600 border-b">{row.label}</td>
+                                                                {['win_rate', 'profit', 'balanced'].map(obj => {
+                                                                    const objData = result.data![obj];
+                                                                    let value = '-';
+
+                                                                    if (objData) {
+                                                                        if (row.key === 'best_value') {
+                                                                            // Specific formatting for primary objective value
+                                                                            const rawVal = objData.best_value;
+                                                                            value = obj === 'profit' || obj === 'win_rate' ? `${rawVal.toFixed(2)}%` : rawVal.toFixed(4);
+                                                                            if (obj === 'balanced') value = rawVal.toFixed(4); // Score
+                                                                        } else if (row.path && objData.stats) {
+                                                                            // Deep access safe getter
+                                                                            let current = objData;
+                                                                            for (const key of row.path) {
+                                                                                current = current?.[key];
+                                                                            }
+                                                                            value = current !== undefined ? String(current) : '-';
+                                                                        }
+                                                                    }
+
+                                                                    const isBalanced = obj === 'balanced';
+                                                                    return (
+                                                                        <td key={obj} className={`p-3 border-b font-mono ${isBalanced ? 'bg-purple-50/30 font-bold text-purple-900' : 'text-gray-900'}`}>
+                                                                            {value}
+                                                                        </td>
+                                                                    );
+                                                                })}
+                                                            </tr>
+                                                        ))}
+
+                                                        {/* Action Row */}
+                                                        <tr>
+                                                            <td className="p-3 border-b"></td>
+                                                            {['win_rate', 'profit', 'balanced'].map(obj => {
+                                                                const expId = result.data![obj]?.experiment_id;
+                                                                return (
+                                                                    <td key={obj} className={`p-3 border-b ${obj === 'balanced' ? 'bg-purple-50/30' : ''}`}>
+                                                                        {expId && (
+                                                                            <Button
+                                                                                variant="outline"
+                                                                                size="sm"
+                                                                                className="w-full text-[10px] h-7 uppercase font-bold text-gray-600 hover:text-purple-600"
+                                                                                onClick={() => window.open(`/strategies/${strategyId}/experiments/${expId}`, '_blank')}
+                                                                            >
+                                                                                <ExternalLink size={12} className="mr-1" /> View Graph
+                                                                            </Button>
+                                                                        )}
+                                                                    </td>
+                                                                );
+                                                            })}
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Debug/Error State */}
+                                    {result.status === 'success' && !result.data && (
+                                        <div className="p-6 text-red-500 bg-red-50">
+                                            <p className="font-bold">Error: Valid response status but no data received.</p>
+                                            <pre className="text-xs mt-2 overflow-auto max-h-40 p-2 bg-white rounded border">
+                                                {JSON.stringify(result, null, 2)}
+                                            </pre>
+                                        </div>
+                                    )}
                                 </div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to Optimize</h3>
-                                <p className="text-sm text-gray-500 max-w-md mb-6">
-                                    Configure your parameter search space on the left and start optimization to find the best parameters for your strategy.
-                                </p>
-                                <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 max-w-md">
-                                    <p className="text-xs text-blue-700">
-                                        <strong>Tip:</strong> Bayesian optimization is recommended for most cases as it intelligently explores the parameter space.
-                                    </p>
-                                </div>
-                            </div>
-                        )}
+                            );
+                        })}
                     </div>
+
                 </div>
             </div>
         </DashboardLayout>
