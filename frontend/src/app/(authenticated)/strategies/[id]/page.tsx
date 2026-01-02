@@ -85,84 +85,106 @@ export default function StrategyDetailPage() {
     }
 
     return (
-        <DashboardLayout>
+        <DashboardLayout
+            headerContent={
+                <div className="flex items-center gap-2">
+                    {/* Breadcrumb Navigation Only */}
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                        onClick={() => router.push('/strategies')}
+                    >
+                        <ArrowLeft size={16} className="mr-1" /> Strategies
+                    </Button>
+                    <span className="text-slate-400">/</span>
+                    <h1 className="text-base font-semibold text-slate-900 truncate">{strategy.name}</h1>
+                </div>
+            }
+        >
             <div className="space-y-6">
-                {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0 rounded-full"
-                                onClick={() => router.push('/strategies')}
-                            >
-                                <ArrowLeft size={16} />
-                            </Button>
-                            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{strategy.name}</h1>
-                            {strategy.published_experiments && strategy.published_experiments.length > 0 && (
-                                <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100">
-                                    {strategy.published_experiments.length} Published
-                                </Badge>
-                            )}
+                {/* Strategy Context Card with Actions */}
+                <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                                <h2 className="text-xl font-bold text-slate-900">{strategy.name}</h2>
+                                {strategy.published_experiments && strategy.published_experiments.length > 0 && (
+                                    <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-2.5 py-0.5 rounded-full font-bold shadow-sm">
+                                        <Activity size={12} className="mr-1" />
+                                        {strategy.published_experiments.length} Published
+                                    </Badge>
+                                )}
+                            </div>
+                            <p className="text-sm text-slate-600 leading-relaxed line-clamp-2">{strategy.description}</p>
                         </div>
-                        <p className="text-gray-500 text-sm max-w-2xl">{strategy.description}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            className="gap-2"
-                            onClick={() => router.push(`/strategies/${id}/edit`)}
-                        >
-                            <Edit size={16} /> Edit Code
-                        </Button>
-                        <Button
-                            className="gap-2 bg-blue-600 hover:bg-blue-700"
-                            onClick={() => router.push(`/strategies/${id}/run`)}
-                        >
-                            <Play size={16} /> Run Strategy
-                        </Button>
+                        {/* Action Buttons on Right */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1.5 h-9 text-xs font-bold border-slate-200 hover:bg-slate-50"
+                                onClick={() => router.push(`/strategies/${id}/editor`)}
+                            >
+                                <Edit size={14} /> Edit
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1.5 h-9 text-xs font-bold bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200 text-purple-700 hover:from-purple-100 hover:to-purple-200"
+                                onClick={() => router.push(`/strategies/${id}/optimize`)}
+                            >
+                                <Activity size={14} /> Optimize
+                            </Button>
+                            <Button
+                                size="sm"
+                                className="gap-1.5 h-9 text-xs font-bold bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                                onClick={() => router.push(`/strategies/${id}/backtest`)}
+                            >
+                                <Play size={14} /> Run
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
                 {/* Key Metrics Cards (Overview) */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <Card className="bg-gray-50/50 border-gray-100">
-                        <CardHeader className="p-4 pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-500">Total Return</CardTitle>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <Card className="bg-white border-slate-200 hover:shadow-md transition-shadow">
+                        <CardHeader className="p-3 pb-2">
+                            <CardTitle className="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Return</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                            <div className={`text-2xl font-bold ${Number(strategy.pnl_percent || 0) >= 0 ? "text-green-600" : "text-red-600"}`}>
+                        <CardContent className="p-3 pt-0">
+                            <div className={`text-xl font-bold ${Number(strategy.pnl_percent || 0) >= 0 ? "text-green-600" : "text-red-600"}`}>
                                 {Number(strategy.pnl_percent || 0).toFixed(2)}%
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-gray-50/50 border-gray-100">
-                        <CardHeader className="p-4 pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-500">Sharpe Ratio</CardTitle>
+                    <Card className="bg-white border-slate-200 hover:shadow-md transition-shadow">
+                        <CardHeader className="p-3 pb-2">
+                            <CardTitle className="text-xs font-medium text-slate-500 uppercase tracking-wide">Sharpe Ratio</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                            <div className="text-2xl font-bold text-gray-900">
+                        <CardContent className="p-3 pt-0">
+                            <div className="text-xl font-bold text-slate-900">
                                 {Number(strategy.sharpe_ratio || 0).toFixed(2)}
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-gray-50/50 border-gray-100">
-                        <CardHeader className="p-4 pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-500">Max Drawdown</CardTitle>
+                    <Card className="bg-white border-slate-200 hover:shadow-md transition-shadow">
+                        <CardHeader className="p-3 pb-2">
+                            <CardTitle className="text-xs font-medium text-slate-500 uppercase tracking-wide">Max Drawdown</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                            <div className="text-2xl font-bold text-red-600">
+                        <CardContent className="p-3 pt-0">
+                            <div className="text-xl font-bold text-red-600">
                                 {Number(strategy.max_drawdown || 0).toFixed(2)}%
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-gray-50/50 border-gray-100">
-                        <CardHeader className="p-4 pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-500">Win Rate</CardTitle>
+                    <Card className="bg-white border-slate-200 hover:shadow-md transition-shadow">
+                        <CardHeader className="p-3 pb-2">
+                            <CardTitle className="text-xs font-medium text-slate-500 uppercase tracking-wide">Win Rate</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                            <div className="text-2xl font-bold text-gray-900">
+                        <CardContent className="p-3 pt-0">
+                            <div className="text-xl font-bold text-slate-900">
                                 {Number(strategy.win_rate || 0).toFixed(0)}%
                             </div>
                         </CardContent>
@@ -170,19 +192,19 @@ export default function StrategyDetailPage() {
                 </div>
 
                 {/* Tabs for Details */}
-                <Tabs defaultValue="history" className="space-y-6">
-                    <TabsList className="bg-gray-50 border-b border-gray-200 p-0 h-auto w-full justify-start rounded-none">
+                <Tabs defaultValue="history" className="space-y-4">
+                    <TabsList className="bg-white border border-slate-200 p-0.5 h-auto rounded-lg">
                         <TabsTrigger
                             value="history"
-                            className="data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none bg-transparent py-3 px-4 text-gray-600 font-medium transition-all"
+                            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-md py-2 px-3 text-xs font-bold text-slate-600 transition-all"
                         >
-                            <History size={16} className="mr-2" /> Execution History
+                            <History size={14} className="mr-1.5" /> History
                         </TabsTrigger>
                         <TabsTrigger
                             value="implementation"
-                            className="data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none bg-transparent py-3 px-4 text-gray-600 font-medium transition-all"
+                            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-md py-2 px-3 text-xs font-bold text-slate-600 transition-all"
                         >
-                            <Code size={16} className="mr-2" /> Implementation
+                            <Code size={14} className="mr-1.5" /> Implementation
                         </TabsTrigger>
                         <TabsTrigger
                             value="parameters"

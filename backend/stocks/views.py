@@ -958,22 +958,47 @@ class StrategyViewSet(viewsets.ModelViewSet):
             else:
                 clean_stats[k] = str(v)
 
-        # Categorized metrics for Detail View UI
+        # Categorized metrics for Detail View UI - Comprehensive version
         categorized = {
             'Performance Metrics': {
                 'PNL': f"{clean_stats['total_pnl']:.2f} ({clean_stats['pnl_percent']:.2f}%)",
                 'Win rate': f"{clean_stats['win_rate']:.2f}%",
-                'Sharpe ratio': f"{clean_stats['sharpe_ratio']:.2f}",
-                'Profit factor': f"{clean_stats['profit_factor']:.2f}",
-                'Max drawdown': f"{clean_stats['max_drawdown']:.2f}%",
-                'Total trades': str(clean_stats['total_trades'])
-            },
-            'Risk/Reward': {
                 'Sharpe ratio': f"{clean_stats.get('Sharpe Ratio', 0):.2f}",
+                'Smart Sharpe': f"{clean_stats.get('Smart Sharpe', 0):.2f}",
                 'Sortino ratio': f"{clean_stats.get('Sortino Ratio', 0):.2f}",
-                'Profit factor': f"{clean_stats.get('Profit Factor', 0):.2f}",
+                'Smart Sortino': f"{clean_stats.get('Smart Sortino', 0):.2f}",
                 'Calmar ratio': f"{clean_stats.get('Calmar Ratio', 0):.2f}",
-                'Omega ratio': f"{clean_stats.get('Omega Ratio', 0):.2f}"
+                'Omega ratio': f"{clean_stats.get('Omega Ratio', 0):.2f}",
+                'Serenity index': f"{clean_stats.get('Serenity Index', 0):.2f}",
+                'Average win/loss': f"{clean_stats.get('Avg. Win/Loss', 0):.2f}",
+                'Average win': f"{clean_stats.get('Average Win', clean_stats.get('Avg. Win [$]', 0)):.2f}",
+                'Average loss': f"{clean_stats.get('Average Loss', clean_stats.get('Avg. Loss [$]', 0)):.2f}",
+            },
+            'Risk Metrics': {
+                'Total losing streak': str(clean_stats.get('Max. Losing Streak', 0)),
+                'Largest losing trade': f"{clean_stats.get('Worst Trade [%]', 0):.2f}",
+                'Largest winning trade': f"{clean_stats.get('Best Trade [%]', 0):.2f}",
+                'Total winning streak': str(clean_stats.get('Max. Winning Streak', 0)),
+                'Current streak': str(clean_stats.get('Current Streak', 0)),
+                'Expectancy': f"{clean_stats.get('Expectancy [%]', 0):.2f} ({clean_stats.get('Expectancy [%]', 0):.2f}%)",
+                'Expected net profit': f"{clean_stats.get('Expected Net Profit', 0):.2f}",
+                'Average holding period': str(clean_stats.get('Avg. Trade Duration', 'N/A')),
+                'Gross profit': f"{clean_stats.get('Gross Profit', 0):.2f}",
+                'Gross loss': f"{clean_stats.get('Gross Loss', 0):.2f}",
+                'Max drawdown': f"{clean_stats.get('Max. Drawdown [%]', 0):.2f}",
+                'Profit factor': f"{clean_stats.get('Profit Factor', 0):.2f}",
+            },
+            'Trade Metrics': {
+                'Total trades': str(clean_stats.get('total_trades', clean_stats.get('# Trades', 0))),
+                'Total winning trades': str(clean_stats.get('Total Winning Trades', 0)),
+                'Total losing trades': str(clean_stats.get('Total Losing Trades', 0)),
+                'Starting balance': f"{clean_stats.get('Equity Initial [$]', 10000):.2f}",
+                'Finishing balance': f"{clean_stats.get('Equity Final [$]', 10000):.2f}",
+                'Longs count': str(clean_stats.get('Longs Count', 0)),
+                'Shorts count': str(clean_stats.get('Shorts Count', 0)),
+                'Fee': f"{clean_stats.get('Fee', 0):.2f}",
+                'Total open trades': str(clean_stats.get('Total Open Trades', 0)),
+                'Open PL': f"{clean_stats.get('Open PL', 0):.2f}",
             }
         }
         
@@ -2506,6 +2531,56 @@ class StrategyViewSet(viewsets.ModelViewSet):
             'symbol': symbol
         })
 
+    @action(detail=True, methods=['get'])
+    def symbol_config(self, request, pk=None):
+        """Get symbol configuration with all 3 published parameter sets"""
+        from .models import StrategySymbolConfig
+        from .serializers import StrategySymbolConfigSerializer
+        
+        strategy = self.get_object()
+        symbol = request.query_params.get('symbol')
+        
+        if not symbol:
+            return Response({'error': 'Symbol parameter required'}, status=400)
+        
+        # Get or create config with default 3Y timeframe
+        config, created = StrategySymbolConfig.objects.get_or_create(
+            user=request.user,
+            strategy=strategy,
+            symbol=symbol,
+            defaults={'preferred_timeframe': '3Y'}
+        )
+        
+        serializer = StrategySymbolConfigSerializer(config)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def set_symbol_config(self, request, pk=None):
+        """Update symbol configuration timeframe preference"""
+        from .models import StrategySymbolConfig
+        
+        strategy = self.get_object()
+        symbol = request.data.get('symbol')
+        preferred_timeframe = request.data.get('preferred_timeframe')
+        
+        if not symbol:
+            return Response({'error': 'Symbol parameter required'}, status=400)
+        
+        if preferred_timeframe not in ['1Y', '3Y', '5Y']:
+            return Response({'error': 'Invalid timeframe. Must be 1Y, 3Y, or 5Y'}, status=400)
+        
+        config, created = StrategySymbolConfig.objects.update_or_create(
+            user=request.user,
+            strategy=strategy,
+            symbol=symbol,
+            defaults={'preferred_timeframe': preferred_timeframe}
+        )
+        
+        return Response({
+            'status': 'updated',
+            'preferred_timeframe': config.preferred_timeframe
+        })
+
     @action(detail=True, methods=['post'])
     def unpublish_optimized(self, request, pk=None):
         """
@@ -2545,6 +2620,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
         import numpy as np
         from dateutil.relativedelta import relativedelta
         from datetime import datetime
+        import uuid
         
         # Import Django Strategy model explicitly
         from .models import Strategy as StrategyModel
@@ -2566,6 +2642,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
         if not strategies.exists():
             return Response({'error': 'No strategies found'}, status=404)
 
+        # Generate batch_id for this comparison session
+        batch_id = uuid.uuid4()
         
         # Define period mappings
         period_map = {
@@ -2579,7 +2657,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
         today = datetime.now().date()
         
         # Helper to run a single backtest
-        def run_backtest_for_period(strategy_obj, start_date, end_date):
+        def run_backtest_for_period(strategy_obj, start_date, end_date, period_name):
             try:
                 # Fetch data
                 queryset = DailyStockPrice.objects.filter(ticker=symbol)
@@ -2591,7 +2669,26 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 
                 ticks_data = list(queryset.values('date', 'open', 'high', 'low', 'close', 'volume'))
                 if not ticks_data or len(ticks_data) < 20:
-                    return {'error': 'Insufficient data'}
+                    error_msg = 'Insufficient data'
+                    # Log failed experiment
+                    try:
+                        StrategyExperiment.objects.create(
+                            strategy=strategy_obj,
+                            user=request.user,
+                            run_type=StrategyExperiment.RunType.BACKTEST,
+                            scope_type=ScopeType.SYMBOL,
+                            scope_value=symbol,
+                            start_date=start_date,
+                            end_date=end_date,
+                            parameters={'comparison_period': period_name},
+                            metrics={},
+                            batch_id=batch_id,
+                            status=StrategyExperiment.Status.FAILED,
+                            error_log=error_msg
+                        )
+                    except Exception as log_err:
+                        print(f"Failed to log comparison experiment: {log_err}")
+                    return {'error': error_msg}
                 
                 df = pd.DataFrame(ticks_data)
                 df.rename(columns={
@@ -2609,7 +2706,26 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 ].copy()
                 
                 if len(df) < 10:
-                    return {'error': 'Insufficient valid data'}
+                    error_msg = 'Insufficient valid data'
+                    # Log failed experiment
+                    try:
+                        StrategyExperiment.objects.create(
+                            strategy=strategy_obj,
+                            user=request.user,
+                            run_type=StrategyExperiment.RunType.BACKTEST,
+                            scope_type=ScopeType.SYMBOL,
+                            scope_value=symbol,
+                            start_date=start_date,
+                            end_date=end_date,
+                            parameters={'comparison_period': period_name},
+                            metrics={},
+                            batch_id=batch_id,
+                            status=StrategyExperiment.Status.FAILED,
+                            error_log=error_msg
+                        )
+                    except Exception as log_err:
+                        print(f"Failed to log comparison experiment: {log_err}")
+                    return {'error': error_msg}
                 
                 df['date'] = pd.to_datetime(df['date'])
                 df.set_index('date', inplace=True)
@@ -2627,16 +2743,76 @@ class StrategyViewSet(viewsets.ModelViewSet):
                         break
 
                 if not strategy_class:
-                    return {'error': 'No Strategy class found'}
+                    error_msg = 'No Strategy class found'
+                    # Log failed experiment
+                    try:
+                        StrategyExperiment.objects.create(
+                            strategy=strategy_obj,
+                            user=request.user,
+                            run_type=StrategyExperiment.RunType.BACKTEST,
+                            scope_type=ScopeType.SYMBOL,
+                            scope_value=symbol,
+                            start_date=start_date,
+                            end_date=end_date,
+                            parameters={'comparison_period': period_name},
+                            metrics={},
+                            batch_id=batch_id,
+                            status=StrategyExperiment.Status.FAILED,
+                            error_log=error_msg
+                        )
+                    except Exception as log_err:
+                        print(f"Failed to log comparison experiment: {log_err}")
+                    return {'error': error_msg}
                 
                 # Run backtest
                 bt = Backtest(df, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
                 stats = bt.run()
                 
                 metrics, _ = self._extract_bt_stats(stats)
-                return metrics
+                
+                # Log successful experiment
+                experiment_id = None
+                try:
+                    exp = StrategyExperiment.objects.create(
+                        strategy=strategy_obj,
+                        user=request.user,
+                        run_type=StrategyExperiment.RunType.BACKTEST,
+                        scope_type=ScopeType.SYMBOL,
+                        scope_value=symbol,
+                        start_date=start_date,
+                        end_date=end_date,
+                        parameters={'comparison_period': period_name},
+                        metrics=metrics,
+                        batch_id=batch_id,
+                        status=StrategyExperiment.Status.SUCCESS
+                    )
+                    experiment_id = exp.id
+                except Exception as log_err:
+                    print(f"Failed to log comparison experiment: {log_err}")
+                
+                # Return metrics with experiment_id
+                return {**metrics, 'experiment_id': experiment_id}
             except Exception as e:
-                return {'error': str(e)}
+                error_msg = str(e)
+                # Log failed experiment
+                try:
+                    StrategyExperiment.objects.create(
+                        strategy=strategy_obj,
+                        user=request.user,
+                        run_type=StrategyExperiment.RunType.BACKTEST,
+                        scope_type=ScopeType.SYMBOL,
+                        scope_value=symbol,
+                        start_date=start_date,
+                        end_date=end_date,
+                        parameters={'comparison_period': period_name},
+                        metrics={},
+                        batch_id=batch_id,
+                        status=StrategyExperiment.Status.FAILED,
+                        error_log=error_msg
+                    )
+                except Exception as log_err:
+                    print(f"Failed to log comparison experiment: {log_err}")
+                return {'error': error_msg}
         
         # Build results matrix
         results = []
@@ -2666,7 +2842,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     else:
                         continue
                 
-                metrics = run_backtest_for_period(strategy_obj, start_date, end_date)
+                metrics = run_backtest_for_period(strategy_obj, start_date, end_date, period)
                 strategy_result['periods'][period] = metrics
             
             results.append(strategy_result)
@@ -2674,7 +2850,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
         return Response({
             'symbol': symbol,
             'periods': periods,
-            'results': results
+            'results': results,
+            'batch_id': str(batch_id)  # Return batch_id for reference
         })
 
     @action(detail=False, methods=['post'])
@@ -2816,8 +2993,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 for param_name, values in search_space.items():
                     total_combinations *= len(values)
                 
-                # GRID_THRESHOLD
-                GRID_THRESHOLD = 500
+                # GRID_THRESHOLD - Prefer Grid optimization for comprehensive search
+                GRID_THRESHOLD = 5000  # Increased from 500 to prefer Grid
                 
                 if total_combinations <= GRID_THRESHOLD:
                     sampler = optuna.samplers.GridSampler(search_space)
@@ -2899,14 +3076,30 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 bt = Backtest(df, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
                 stats = bt.run()
                 
-                metrics, _ = self._extract_bt_stats(stats)
+                # Generate plot HTML
+                try:
+                    plot_obj = bt.plot(open_browser=False, filename=None)
+                    # Convert Bokeh plot to HTML string
+                    if plot_obj is not None:
+                        from bokeh.embed import file_html
+                        from bokeh.resources import CDN
+                        plot_html = file_html(plot_obj, CDN, "Backtest Results")
+                    else:
+                        plot_html = None
+                except Exception as plot_err:
+                    print(f"Failed to generate plot: {plot_err}")
+                    plot_html = None
+                
+                # Extract metrics with categorization
+                metrics, categorized = self._extract_bt_stats(stats)
                 metrics.update({
                     'best_params': best_params,
                     'optimized': True,
-                    'n_trials': actual_trials
+                    'n_trials': actual_trials,
+                    'categorized': categorized  # Add categorized metrics
                 })
                 # Final safety pass before returning and potentially saving to DB
-                return self._clean_for_json(metrics)
+                return self._clean_for_json(metrics), plot_html
             except Exception as e:
                 return {'error': str(e)}
         
@@ -2968,14 +3161,24 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     period_metrics = cached.metrics
                     period_metrics['cached'] = True
                     period_metrics['best_params'] = cached.parameters
+                    period_metrics['experiment_id'] = cached.id  # Add experiment ID from cache
+                    plot_html = cached.plot_html  # Get cached plot HTML
                 else:
-                    period_metrics = run_optimization_for_period(strategy_obj, p_start, p_end, n_trials)
+                    period_result = run_optimization_for_period(strategy_obj, p_start, p_end, n_trials)
+                    # Handle the tuple return (metrics, plot_html)
+                    if isinstance(period_result, tuple):
+                        period_metrics, plot_html = period_result
+                    else:
+                        # Backward compatibility if optimization returns error dict
+                        period_metrics = period_result
+                        plot_html = None
+                    
                     if 'error' not in period_metrics:
                         # Add period tag to metrics for future cache lookup
                         period_metrics['period'] = period
                         
-                        # Save optimization result to cache
-                        StrategyExperiment.objects.create(
+                        # Save optimization result to cache and get experiment ID
+                        exp = StrategyExperiment.objects.create(
                             strategy=strategy_obj,
                             user=request.user,
                             run_type=StrategyExperiment.RunType.OPTIMIZATION,
@@ -2986,8 +3189,25 @@ class StrategyViewSet(viewsets.ModelViewSet):
                             parameters=period_metrics.get('best_params', {}),
                             metrics=period_metrics,
                             batch_id=batch_id,
-                            status=StrategyExperiment.Status.SUCCESS
+                            status=StrategyExperiment.Status.SUCCESS,
+                            plot_html=plot_html  # Save plot HTML
                         )
+                        # Add experiment_id to the metrics
+                        period_metrics['experiment_id'] = exp.id
+                        
+                        # Auto-publish: Mark this experiment as published for this symbol
+                        # Unpublish any existing published experiments for same strategy+symbol+period
+                        StrategyExperiment.objects.filter(
+                            strategy=strategy_obj,
+                            scope_type=ScopeType.SYMBOL,
+                            scope_value=symbol,
+                            is_published=True,
+                            metrics__period=period  # Only unpublish same period
+                        ).update(is_published=False)
+                        
+                        # Publish the new experiment
+                        exp.is_published = True
+                        exp.save()
                 
                 strategy_result['periods'][period] = self._clean_for_json(period_metrics)
             

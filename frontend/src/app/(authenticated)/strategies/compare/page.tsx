@@ -28,6 +28,7 @@ interface PeriodMetrics {
     profit_factor?: number;
     total_trades?: number;
     sharpe_ratio?: number;
+    experiment_id?: number;
     error?: string;
     best_params?: Record<string, number>;
     optimized?: boolean;
@@ -614,7 +615,18 @@ export default function StrategyComparePage() {
                                                                                     ))}
                                                                                 </div>
 
-                                                                                <div className="pt-2 flex justify-center">
+                                                                                <div className="pt-2 flex gap-2 justify-center">
+                                                                                    {pMetrics.experiment_id && (
+                                                                                        <button
+                                                                                            onClick={(e) => {
+                                                                                                e.stopPropagation();
+                                                                                                router.push(`/strategies/${strategyResult.strategy_id}/experiments/${pMetrics.experiment_id}`);
+                                                                                            }}
+                                                                                            className="min-w-[80px] flex items-center justify-center gap-1.5 px-3 py-1 rounded text-[10px] font-bold uppercase transition-all bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300"
+                                                                                        >
+                                                                                            <Eye size={10} /> View Details
+                                                                                        </button>
+                                                                                    )}
                                                                                     <button
                                                                                         onClick={(e) => {
                                                                                             e.stopPropagation();

@@ -225,35 +225,42 @@ export default function StrategiesPage() {
                             </div>
                         ) : (
                             viewMode === 'grid' ? (
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                     {filteredStrategies.map((strategy) => (
                                         <Card
                                             key={strategy.id}
-                                            className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5 border-slate-200/60 flex flex-col cursor-pointer bg-white"
+                                            className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-slate-200 hover:border-blue-300 flex flex-col cursor-pointer bg-white rounded-xl"
                                             onClick={() => router.push(`/strategies/${strategy.id}`)}
                                         >
-                                            {/* Header Accent */}
-                                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            {/* Gradient Top Border */}
+                                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-400" />
 
-                                            <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-br from-white to-slate-50/50">
-                                                <div className="flex items-start gap-4">
-                                                    <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0 shadow-sm border border-blue-100/50 group-hover:scale-110 transition-transform duration-300">
+                                            {/* Header */}
+                                            <div className="p-4 border-b border-slate-100 bg-gradient-to-br from-blue-50/20 via-white to-purple-50/10">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white flex-shrink-0 shadow-md group-hover:scale-105 transition-all duration-300">
                                                         <Lightbulb size={20} />
                                                     </div>
                                                     <div className="min-w-0 flex-1">
-                                                        <div className="flex items-center justify-between gap-2 mb-1">
-                                                            <div className="flex flex-col gap-1.5 min-w-0">
-                                                                <h3 className="text-base font-bold text-slate-900 leading-tight truncate group-hover:text-blue-600 transition-colors">
+                                                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                                                            <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                                                                <h3 className="text-base font-bold text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">
                                                                     {strategy.name}
                                                                 </h3>
-                                                                {strategy.published_experiments && strategy.published_experiments.length > 0 && (
-                                                                    <div className="flex">
-                                                                        <Badge className="bg-emerald-50 hover:bg-emerald-50 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-bold border-emerald-100/50 shadow-none">
+                                                                <div className="flex gap-1.5 flex-wrap">
+                                                                    {strategy.published_experiments && strategy.published_experiments.length > 0 && (
+                                                                        <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm">
                                                                             <Activity size={10} className="mr-1" />
-                                                                            Published ({strategy.published_experiments.length})
+                                                                            {strategy.published_experiments.length} Published
                                                                         </Badge>
-                                                                    </div>
-                                                                )}
+                                                                    )}
+                                                                    {/* Performance Badge */}
+                                                                    {strategy.pnl_percent != null && strategy.pnl_percent !== 0 && (
+                                                                        <Badge className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${strategy.pnl_percent >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                                                                            {strategy.pnl_percent >= 0 ? '📈' : '📉'} {Number(strategy.pnl_percent).toFixed(1)}%
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                             <DropdownMenu>
                                                                 <DropdownMenuTrigger asChild>
@@ -279,30 +286,67 @@ export default function StrategiesPage() {
                                                 </div>
                                             </div>
 
+                                            {/* Description */}
                                             <div className="px-4 py-3 flex-1 bg-white">
-                                                <p className="text-[12px] text-slate-500 leading-relaxed font-medium">
+                                                <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
                                                     {strategy.description}
                                                 </p>
                                             </div>
 
-                                            <div className="flex bg-slate-50/80 border-t border-slate-100">
+                                            {/* Quick Stats */}
+                                            {(strategy.sharpe_ratio != null || strategy.win_rate != null) && (
+                                                <div className="px-4 py-2.5 bg-slate-50 border-y border-slate-100">
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {strategy.sharpe_ratio != null && (
+                                                            <div className="text-center">
+                                                                <div className="text-xs text-slate-500 font-medium mb-0.5">Sharpe</div>
+                                                                <div className="text-sm font-bold text-slate-900">{Number(strategy.sharpe_ratio).toFixed(2)}</div>
+                                                            </div>
+                                                        )}
+                                                        {strategy.win_rate != null && (
+                                                            <div className="text-center">
+                                                                <div className="text-xs text-slate-500 font-medium mb-0.5">Win Rate</div>
+                                                                <div className="text-sm font-bold text-slate-900">{Number(strategy.win_rate).toFixed(0)}%</div>
+                                                            </div>
+                                                        )}
+                                                        {strategy.max_drawdown != null && (
+                                                            <div className="text-center">
+                                                                <div className="text-xs text-slate-500 font-medium mb-0.5">Max DD</div>
+                                                                <div className="text-sm font-bold text-red-600">{Number(strategy.max_drawdown).toFixed(1)}%</div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Action Buttons */}
+                                            <div className="grid grid-cols-3 gap-0 bg-white">
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        router.push(`/strategies/${strategy.id}/run`);
+                                                        router.push(`/strategies/${strategy.id}/backtest`);
                                                     }}
-                                                    className="flex-1 py-3.5 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 hover:text-blue-600 hover:bg-white transition-all active:scale-95 border-r border-slate-100"
+                                                    className="py-3 flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all active:scale-95 rounded-bl-xl"
                                                 >
-                                                    <Play size={14} fill="currentColor" className="text-blue-500" /> Run
+                                                    <Play size={14} fill="currentColor" /> Run
                                                 </button>
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        router.push(`/strategies/${strategy.id}/edit`);
+                                                        router.push(`/strategies/${strategy.id}/optimize`);
                                                     }}
-                                                    className="flex-1 py-3.5 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 hover:text-emerald-600 hover:bg-white transition-all active:scale-95"
+                                                    className="py-3 flex items-center justify-center gap-1.5 text-xs font-bold text-purple-700 bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 border-x border-slate-200 transition-all active:scale-95"
                                                 >
-                                                    <Edit size={14} className="text-emerald-500" /> Edit
+                                                    <Zap size={14} /> Optimize
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        router.push(`/strategies/${strategy.id}/editor`);
+                                                    }}
+                                                    className="py-3 flex items-center justify-center gap-1.5 text-xs font-bold text-slate-700 bg-gradient-to-r from-slate-100 to-slate-50 hover:from-slate-200 hover:to-slate-100 transition-all active:scale-95 rounded-br-xl"
+                                                >
+                                                    <Edit size={14} /> Edit
                                                 </button>
                                             </div>
                                         </Card>
@@ -348,7 +392,7 @@ export default function StrategiesPage() {
                                                                     className="h-8 w-8 text-blue-600"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        router.push(`/strategies/${strategy.id}/run`);
+                                                                        router.push(`/strategies/${strategy.id}/backtest`);
                                                                     }}
                                                                 >
                                                                     <Play size={14} />
@@ -359,7 +403,7 @@ export default function StrategiesPage() {
                                                                     className="h-8 w-8 text-green-600"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        router.push(`/strategies/${strategy.id}/edit`);
+                                                                        router.push(`/strategies/${strategy.id}/editor`);
                                                                     }}
                                                                 >
                                                                     <Edit size={14} />
