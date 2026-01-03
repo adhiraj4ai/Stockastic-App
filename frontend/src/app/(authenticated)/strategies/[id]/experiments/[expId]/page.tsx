@@ -216,6 +216,8 @@ export default function ExperimentDetailPage() {
         return experiment.metrics;
     };
 
+    const displayStats = getDisplayStats();
+
     return (
         <DashboardLayout
             title={`${experiment.strategy_name || 'Strategy'} Analysis`}
@@ -337,8 +339,47 @@ export default function ExperimentDetailPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                        {/* Left Panel: Parameters & Context - Keeping this for context */}
+                        {/* Left Panel: Parameters & Context */}
                         <div className="xl:col-span-3 space-y-6">
+                            {/* Summary Tiles */}
+                            <Card className="border border-gray-200 shadow-sm bg-white rounded-xl overflow-hidden">
+                                <CardHeader className="bg-gray-50/50 border-b border-gray-100 py-3 px-4">
+                                    <CardTitle className="text-sm font-bold text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                                        <BarChart3 size={14} className="text-blue-500" /> Key Metrics
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-0">
+                                    <div className="divide-y divide-gray-100">
+                                        <div className="flex flex-col p-4 hover:bg-gray-50 transition-colors">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Return</span>
+                                                <TrendingUp size={16} className={(displayStats.pnl_percent || displayStats['Return [%]'] || 0) >= 0 ? "text-green-500" : "text-red-500"} />
+                                            </div>
+                                            <span className={`text-xl font-bold font-mono ${(displayStats.pnl_percent || displayStats['Return [%]'] || 0) >= 0 ? "text-green-600" : "text-red-600"}`}>
+                                                {(displayStats.pnl_percent || displayStats['Return [%]'] || 0).toFixed(2)}%
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-col p-4 hover:bg-gray-50 transition-colors">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Win Rate</span>
+                                                <CheckCircle size={16} className="text-blue-500" />
+                                            </div>
+                                            <span className="text-xl font-bold font-mono text-gray-900">
+                                                {(displayStats.win_rate || displayStats['Win Rate [%]'] || 0).toFixed(1)}%
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-col p-4 hover:bg-gray-50 transition-colors">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Max Drawdown</span>
+                                                <Activity size={16} className="text-red-500" />
+                                            </div>
+                                            <span className="text-xl font-bold font-mono text-red-600">
+                                                {(displayStats.max_drawdown || displayStats['Max. Drawdown [%]'] || 0).toFixed(2)}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
                             <Card className="border border-gray-200 shadow-sm bg-white rounded-xl overflow-hidden">
                                 <CardHeader className="bg-gray-50/50 border-b border-gray-100 py-3 px-4">
                                     <CardTitle className="text-sm font-bold text-gray-800 uppercase tracking-widest flex items-center gap-2">
