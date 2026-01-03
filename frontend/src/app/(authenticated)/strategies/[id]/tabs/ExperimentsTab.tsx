@@ -28,6 +28,7 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface Experiment {
     id: number;
@@ -261,33 +262,56 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
         <div className="space-y-8 p-6">
 
             {/* Best Parameters Dashboard */}
-            {strategyId && bestParams.length > 0 && (
-                <section>
-                    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <Zap className="text-amber-500" size={20} /> Top Performing Configurations
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {bestParams.map((item: any, idx) => (
-                            <div key={idx} className="bg-white border text-sm border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex justify-between items-start mb-2">
-                                    <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800 uppercase">
-                                        {item.scope_type === 'ALL' ? 'Market Wide' : item.scope_value}
-                                    </span>
-                                    <span className={item.return >= 0 ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
-                                        {item.return?.toFixed(2)}%
-                                    </span>
+            {strategyId && bestParams.length > 0 && (() => {
+                // Deduplicate by symbol - keep only the best performing config per symbol
+                const uniqueBySymbol = bestParams.reduce((acc: any[], item: any) => {
+                    const existing = acc.find((x: any) => x.scope_value === item.scope_value);
+                    if (!existing || item.return > existing.return) {
+                        return [...acc.filter((x: any) => x.scope_value !== item.scope_value), item];
+                    }
+                    return acc;
+                }, []);
+
+                return (
+                    <section>
+                        <h3 className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                            <Zap className="text-amber-500" size={16} /> Top Performing Configurations
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                            {uniqueBySymbol.map((item: any, idx) => (
+                                <div key={idx} className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <Badge className="text-[10px] px-2 py-0 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold uppercase">
+                                            {item.scope_type === 'ALL' ? 'Market' : item.scope_value}
+                                        </Badge>
+                                        <div className="text-right">
+                                            <div className={`text-lg font-black ${item.return >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                {item.return >= 0 ? '+' : ''}{item.return?.toFixed(1)}%
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="text-[10px] text-slate-500 mb-2 flex items-center justify-between">
+                                        <span>{format(new Date(item.created_at), 'MMM d')}</span>
+                                        <Badge variant="outline" className="text-[9px] px-1 py-0 font-bold">
+                                            {item.run_type}
+                                        </Badge>
+                                    </div>
+                                    <div className="border-t border-slate-100 pt-2">
+                                        <div className="flex flex-wrap gap-1">
+                                            {Object.entries(item.parameters || {}).map(([key, value]: [string, any]) => (
+                                                <div key={key} className="bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded text-[10px]">
+                                                    <span className="text-slate-500">{key}:</span>{' '}
+                                                    <span className="font-bold text-slate-900">{typeof value === 'number' ? (Number.isInteger(value) ? value : value.toFixed(1)) : String(value)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="text-xs text-gray-500 mb-2">
-                                    {format(new Date(item.created_at), 'MMM d, yyyy')} • {item.run_type}
-                                </div>
-                                <div className="bg-gray-50 p-2 rounded text-xs font-mono text-gray-700 overflow-x-auto">
-                                    {JSON.stringify(item.parameters, null, 2)}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-            )}
+                            ))}
+                        </div>
+                    </section>
+                );
+            })()}
 
             {/* Experiment History Table */}
             <section>

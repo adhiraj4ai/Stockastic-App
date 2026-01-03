@@ -27,9 +27,10 @@ interface Company {
 interface SymbolSelectorProps {
     value?: string;
     onChange: (value: string) => void;
+    className?: string; // Added className prop
 }
 
-export function SymbolSelector({ value, onChange }: SymbolSelectorProps) {
+export function SymbolSelector({ value, onChange, className }: SymbolSelectorProps) {
     const [open, setOpen] = React.useState(false)
     const [companies, setCompanies] = React.useState<Company[]>([])
     const [loading, setLoading] = React.useState(false)
@@ -66,18 +67,23 @@ export function SymbolSelector({ value, onChange }: SymbolSelectorProps) {
                     variant="ghost"
                     role="combobox"
                     aria-expanded={open}
-                    className="h-9 px-4 hover:bg-gray-100 border border-gray-200 bg-white shadow-sm transition-all hover:shadow-md"
+                    className={cn(
+                        "h-9 px-4 hover:bg-gray-100 border border-gray-200 bg-white shadow-sm transition-all hover:shadow-md justify-between",
+                        className
+                    )}
                 >
-                    <TrendingUp size={16} className="mr-2 text-green-500" />
-                    <div className="flex flex-col items-start min-w-[140px]">
-                        <span className="text-sm font-bold text-gray-900">
-                            {value || "Select"}
-                        </span>
-                        {selectedCompany && (
-                            <span className="text-[10px] text-gray-500 truncate max-w-[140px]">
-                                {selectedCompany.name}
+                    <div className="flex items-center gap-2 overflow-hidden">
+                        <TrendingUp size={16} className="text-green-500 shrink-0" />
+                        <div className="flex flex-col items-start overflow-hidden">
+                            <span className="text-sm font-bold text-gray-900 truncate">
+                                {value || "Select Symbol"}
                             </span>
-                        )}
+                            {selectedCompany && (
+                                <span className="text-[10px] text-gray-500 truncate max-w-[200px]">
+                                    {selectedCompany.name}
+                                </span>
+                            )}
+                        </div>
                     </div>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>

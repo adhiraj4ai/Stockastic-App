@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Play, Edit, Calendar, Activity, TrendingUp, TrendingDown, Clock, Code, FileJson, History } from 'lucide-react';
+import { ArrowLeft, Play, Edit, Calendar, Activity, TrendingUp, TrendingDown, Clock, Code, FileJson, History, Target } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import ExperimentsTab from './tabs/ExperimentsTab'; // Import the existing ExperimentsTab
 import { toast } from 'sonner';
@@ -85,84 +85,137 @@ export default function StrategyDetailPage() {
     }
 
     return (
-        <DashboardLayout>
-            <div className="space-y-6">
-                {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0 rounded-full"
-                                onClick={() => router.push('/strategies')}
-                            >
-                                <ArrowLeft size={16} />
-                            </Button>
-                            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{strategy.name}</h1>
+        <DashboardLayout
+            headerContent={
+                <div className="flex items-center gap-4 py-2">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-full w-8 h-8 text-slate-500 hover:text-slate-900 hover:bg-slate-100 flex-shrink-0"
+                        onClick={() => router.push('/strategies')}
+                        title="Back to Strategies"
+                    >
+                        <ArrowLeft size={20} />
+                    </Button>
+                    <div className="flex flex-col min-w-0">
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-lg font-bold text-slate-900 leading-tight truncate">{strategy.name}</h1>
                             {strategy.published_experiments && strategy.published_experiments.length > 0 && (
-                                <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100">
+                                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] px-2 py-0.5 rounded-full font-bold shadow-none border">
                                     {strategy.published_experiments.length} Published
                                 </Badge>
                             )}
                         </div>
-                        <p className="text-gray-500 text-sm max-w-2xl">{strategy.description}</p>
+                        <p className="text-xs text-slate-500 line-clamp-1 max-w-3xl mt-0.5 font-medium">{strategy.description}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            className="gap-2"
-                            onClick={() => router.push(`/strategies/${id}/edit`)}
-                        >
-                            <Edit size={16} /> Edit Code
-                        </Button>
-                        <Button
-                            className="gap-2 bg-blue-600 hover:bg-blue-700"
-                            onClick={() => router.push(`/strategies/${id}/run`)}
-                        >
-                            <Play size={16} /> Run Strategy
-                        </Button>
-                    </div>
+                </div>
+            }
+        >
+            <div className="space-y-6">
+                {/* Action Toolbar */}
+                <div className="flex justify-end items-center gap-3">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 h-9 text-xs font-bold border-slate-200 hover:bg-slate-50 shadow-sm"
+                        onClick={() => router.push(`/strategies/${id}/editor`)}
+                    >
+                        <Edit size={14} className="text-slate-500" /> Edit Code
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 h-9 text-xs font-bold bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 hover:border-purple-300 shadow-sm transition-all"
+                        onClick={() => router.push(`/strategies/${id}/optimize`)}
+                    >
+                        <Activity size={14} /> Optimize Strategy
+                    </Button>
+                    <Button
+                        size="sm"
+                        className="gap-2 h-9 text-xs font-bold bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg transition-all"
+                        onClick={() => router.push(`/strategies/${id}/backtest`)}
+                    >
+                        <Play size={14} /> Run Backtest
+                    </Button>
                 </div>
 
                 {/* Key Metrics Cards (Overview) */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <Card className="bg-gray-50/50 border-gray-100">
-                        <CardHeader className="p-4 pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-500">Total Return</CardTitle>
+                    {/* Total Return - Emerald Theme */}
+                    <Card className="bg-gradient-to-br from-white to-emerald-50/50 border-emerald-100 hover:border-emerald-200 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
+                        <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <TrendingUp size={48} className="text-emerald-600" />
+                        </div>
+                        <CardHeader className="p-4 pb-1 relative z-10">
+                            <CardTitle className="text-xs font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-1.5">
+                                <div className="p-1 bg-emerald-100/80 rounded">
+                                    <TrendingUp size={12} className="text-emerald-700" />
+                                </div>
+                                Total Return
+                            </CardTitle>
                         </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                            <div className={`text-2xl font-bold ${Number(strategy.pnl_percent || 0) >= 0 ? "text-green-600" : "text-red-600"}`}>
+                        <CardContent className="p-4 pt-1 relative z-10">
+                            <div className={`text-2xl font-black tracking-tight ${Number(strategy.pnl_percent || 0) >= 0 ? "text-emerald-700" : "text-red-600"}`}>
                                 {Number(strategy.pnl_percent || 0).toFixed(2)}%
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-gray-50/50 border-gray-100">
-                        <CardHeader className="p-4 pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-500">Sharpe Ratio</CardTitle>
+
+                    {/* Sharpe Ratio - Purple Theme */}
+                    <Card className="bg-gradient-to-br from-white to-purple-50/50 border-purple-100 hover:border-purple-200 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
+                        <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <Activity size={48} className="text-purple-600" />
+                        </div>
+                        <CardHeader className="p-4 pb-1 relative z-10">
+                            <CardTitle className="text-xs font-bold text-purple-600 uppercase tracking-wider flex items-center gap-1.5">
+                                <div className="p-1 bg-purple-100/80 rounded">
+                                    <Activity size={12} className="text-purple-700" />
+                                </div>
+                                Sharpe Ratio
+                            </CardTitle>
                         </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                            <div className="text-2xl font-bold text-gray-900">
+                        <CardContent className="p-4 pt-1 relative z-10">
+                            <div className="text-2xl font-black tracking-tight text-slate-800">
                                 {Number(strategy.sharpe_ratio || 0).toFixed(2)}
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-gray-50/50 border-gray-100">
-                        <CardHeader className="p-4 pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-500">Max Drawdown</CardTitle>
+
+                    {/* Max Drawdown - Red Theme */}
+                    <Card className="bg-gradient-to-br from-white to-rose-50/50 border-rose-100 hover:border-rose-200 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
+                        <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <TrendingDown size={48} className="text-rose-600" />
+                        </div>
+                        <CardHeader className="p-4 pb-1 relative z-10">
+                            <CardTitle className="text-xs font-bold text-rose-600 uppercase tracking-wider flex items-center gap-1.5">
+                                <div className="p-1 bg-rose-100/80 rounded">
+                                    <TrendingDown size={12} className="text-rose-700" />
+                                </div>
+                                Max Drawdown
+                            </CardTitle>
                         </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                            <div className="text-2xl font-bold text-red-600">
+                        <CardContent className="p-4 pt-1 relative z-10">
+                            <div className="text-2xl font-black tracking-tight text-rose-600">
                                 {Number(strategy.max_drawdown || 0).toFixed(2)}%
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-gray-50/50 border-gray-100">
-                        <CardHeader className="p-4 pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-500">Win Rate</CardTitle>
+
+                    {/* Win Rate - Blue Theme */}
+                    <Card className="bg-gradient-to-br from-white to-blue-50/50 border-blue-100 hover:border-blue-200 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
+                        <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <Target size={48} className="text-blue-600" />
+                        </div>
+                        <CardHeader className="p-4 pb-1 relative z-10">
+                            <CardTitle className="text-xs font-bold text-blue-600 uppercase tracking-wider flex items-center gap-1.5">
+                                <div className="p-1 bg-blue-100/80 rounded">
+                                    <Target size={12} className="text-blue-700" />
+                                </div>
+                                Win Rate
+                            </CardTitle>
                         </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                            <div className="text-2xl font-bold text-gray-900">
+                        <CardContent className="p-4 pt-1 relative z-10">
+                            <div className="text-2xl font-black tracking-tight text-slate-800">
                                 {Number(strategy.win_rate || 0).toFixed(0)}%
                             </div>
                         </CardContent>
@@ -170,19 +223,19 @@ export default function StrategyDetailPage() {
                 </div>
 
                 {/* Tabs for Details */}
-                <Tabs defaultValue="history" className="space-y-6">
-                    <TabsList className="bg-gray-50 border-b border-gray-200 p-0 h-auto w-full justify-start rounded-none">
+                <Tabs defaultValue="history" className="space-y-4">
+                    <TabsList className="bg-white border border-slate-200 p-0.5 h-auto rounded-lg">
                         <TabsTrigger
                             value="history"
-                            className="data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none bg-transparent py-3 px-4 text-gray-600 font-medium transition-all"
+                            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-md py-2 px-3 text-xs font-bold text-slate-600 transition-all"
                         >
-                            <History size={16} className="mr-2" /> Execution History
+                            <History size={14} className="mr-1.5" /> History
                         </TabsTrigger>
                         <TabsTrigger
                             value="implementation"
-                            className="data-[state=active]:bg-white data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none bg-transparent py-3 px-4 text-gray-600 font-medium transition-all"
+                            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-md py-2 px-3 text-xs font-bold text-slate-600 transition-all"
                         >
-                            <Code size={16} className="mr-2" /> Implementation
+                            <Code size={14} className="mr-1.5" /> Implementation
                         </TabsTrigger>
                         <TabsTrigger
                             value="parameters"
@@ -219,7 +272,7 @@ export default function StrategyDetailPage() {
                             </div>
                             <div className="bg-gray-50 p-3 text-xs text-gray-500 flex justify-between items-center">
                                 <span>Read-only view</span>
-                                <Button variant="link" className="h-auto p-0 text-blue-600" onClick={() => router.push(`/strategies/${id}/edit`)}>
+                                <Button variant="link" className="h-auto p-0 text-blue-600" onClick={() => router.push(`/strategies/${id}/editor`)}>
                                     Edit Code &rarr;
                                 </Button>
                             </div>

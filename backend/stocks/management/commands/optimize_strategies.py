@@ -179,16 +179,19 @@ class Command(BaseCommand):
             if not strat_class:
                 return -9999
 
-            returns = []
+            win_rates = []
             for ticker, df in data_map.items():
                 try:
                     bt = Backtest(df, strat_class, cash=100_000, commission=.002, exclusive_orders=True, finalize_trades=True)
                     stats = bt.run()
-                    returns.append(stats['Return [%]'])
+                    win_rate = stats.get('Win Rate [%]', 0)
+                    if win_rate is None or (isinstance(win_rate, float) and win_rate != win_rate):
+                        win_rate = 0
+                    win_rates.append(win_rate)
                 except:
                     pass
             
-            return sum(returns) / len(returns) if returns else -9999
+            return sum(win_rates) / len(win_rates) if win_rates else -9999
 
         study = optuna.create_study(direction='maximize')
         study.optimize(objective, n_trials=n_trials)
@@ -241,7 +244,7 @@ class Command(BaseCommand):
                         metrics=metrics,
                         batch_id=batch_id,
                         status=StrategyExperiment.Status.SUCCESS,
-                        is_published=True
+                        is_published=False
                     )
                 except:
                     pass
@@ -262,7 +265,7 @@ class Command(BaseCommand):
                 'batch_id': str(batch_id)
             },
             status=StrategyExperiment.Status.SUCCESS,
-            is_published=True,
+            is_published=False,
             batch_id=batch_id
         )
         

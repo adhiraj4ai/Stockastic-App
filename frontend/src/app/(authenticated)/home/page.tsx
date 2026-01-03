@@ -118,7 +118,7 @@ export default function DashboardPage() {
 
     // Simulated Sparkline Data (Since historical index point is not in summary)
     const indexSparkData = useMemo(() => {
-        if (!data) return [];
+        if (!data || !data.market_summary) return [];
         const points = 10;
         const current = data.market_summary.total_points;
         const change = data.market_summary.points_change;
@@ -133,7 +133,7 @@ export default function DashboardPage() {
 
     // Calculate Market Sentiment (0 to 100)
     const marketSentiment = useMemo(() => {
-        if (!data) return 50;
+        if (!data || !data.market_summary) return 50;
         const { advancers, decliners, points_change } = data.market_summary;
         const total = advancers + decliners;
         if (total === 0) return 50;
@@ -144,7 +144,7 @@ export default function DashboardPage() {
 
     // Market Health radar data
     const marketHealthData = useMemo(() => {
-        if (!data) return { volume: 50, turnover: 50, breadth: 50, volatility: 50, participation: 50 };
+        if (!data || !data.market_summary) return { volume: 50, turnover: 50, breadth: 50, volatility: 50, participation: 50 };
         return {
             volume: 75, // Simulated high volume
             turnover: 65,
@@ -174,7 +174,7 @@ export default function DashboardPage() {
         );
     }
 
-    if (loading || !data || !data.market_summary) {
+    if (loading) {
         return (
             <DashboardLayout>
                 <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
@@ -183,6 +183,16 @@ export default function DashboardPage() {
                         <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
                     </div>
                     <div className="text-gray-500 font-medium animate-pulse">Initializing Data Stream...</div>
+                </div>
+            </DashboardLayout>
+        );
+    }
+
+    if (!data || !data.market_summary) {
+        return (
+            <DashboardLayout>
+                <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8">
+                    <span className="text-gray-500">No market data available yet. Please run data ingestion.</span>
                 </div>
             </DashboardLayout>
         );
