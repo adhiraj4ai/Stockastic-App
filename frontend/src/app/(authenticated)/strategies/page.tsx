@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { Plus, Lightbulb, ExternalLink, Play, Code, Trash2, Info, LayoutGrid, List, Search, MoreVertical, TrendingUp, TrendingDown, Target, Zap, Filter, Beaker, FileCheck, Activity, GitCompare, Shield, BarChart3, PieChart, Flame, Rocket, Cpu, Layers } from 'lucide-react';
@@ -58,10 +58,26 @@ interface Strategy {
 
 export default function StrategiesPage() {
     const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
 
     // Core State
-    // Core State
-    const [activeTab, setActiveTab] = useState('my-strategies');
+    const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'my-strategies');
+
+    // Update active tab when URL changes
+    useEffect(() => {
+        const tab = searchParams.get('tab');
+        if (tab) {
+            setActiveTab(tab);
+        }
+    }, [searchParams]);
+
+    const handleTabChange = (value: string) => {
+        setActiveTab(value);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('tab', value);
+        router.push(`${pathname}?${params.toString()}`);
+    };
 
     // My Strategies State
     const [strategies, setStrategies] = useState<Strategy[]>([]);
@@ -138,7 +154,7 @@ export default function StrategiesPage() {
             <div className="space-y-6">
 
 
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+                <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-1">
                         <TabsList className="bg-transparent p-0 gap-6">
                             <TabsTrigger
