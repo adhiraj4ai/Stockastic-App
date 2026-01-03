@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
@@ -33,7 +33,7 @@ interface Strategy {
     default_parameters?: Record<string, any>;
 }
 
-export default function BacktestPage() {
+function BacktestContent() {
     const router = useRouter();
     const params = useParams();
     const strategyId = params.id as string;
@@ -580,5 +580,15 @@ export default function BacktestPage() {
                 </div>
             </div>
         </DashboardLayout>
+    );
+}
+
+export default function BacktestPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>}>
+            <BacktestContent />
+        </Suspense>
     );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -63,7 +63,7 @@ const stocks = [
     { symbol: 'MSFT', name: 'Microsoft Corporation' }
 ];
 
-export default function DashboardLayout({
+function DashboardContent({
     children,
     title,
     subtitle,
@@ -418,5 +418,15 @@ export default function DashboardLayout({
             </main >
             {!isChatPage && <ChatSidebar isPinned={isChatPinned} onPinToggle={() => setIsChatPinned(!isChatPinned)} />}
         </div >
+    );
+}
+
+export default function DashboardLayout(props: any) {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gray-50">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>}>
+            <DashboardContent {...props} />
+        </Suspense>
     );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
@@ -69,7 +69,7 @@ interface Strategy {
 
 
 
-export default function StrategiesPage() {
+function StrategiesContent() {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -732,8 +732,8 @@ export default function StrategiesPage() {
                                                         type="button"
                                                         onClick={() => setSelectedIconColor(color.value)}
                                                         className={`h-10 w-10 rounded-lg flex items-center justify-center transition-all border-2 ${isSelected
-                                                                ? "border-blue-500 scale-110 shadow-md"
-                                                                : "border-slate-200 hover:border-slate-300 hover:scale-105"
+                                                            ? "border-blue-500 scale-110 shadow-md"
+                                                            : "border-slate-200 hover:border-slate-300 hover:scale-105"
                                                             }`}
                                                         style={{ backgroundColor: color.value }}
                                                         title={color.name}
@@ -889,5 +889,15 @@ export default function StrategiesPage() {
                 </Tabs>
             </div>
         </DashboardLayout >
+    );
+}
+
+export default function StrategiesPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>}>
+            <StrategiesContent />
+        </Suspense>
     );
 }

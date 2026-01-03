@@ -328,7 +328,11 @@ def run_final_backtest(data_map, code_template, params):
                  try:
                      # Check for NumPy numeric types specifically
                      if isinstance(v, (int, float, np.integer, np.floating)):
-                         stats_dict[k] = float(v)
+                         val = float(v)
+                         if np.isnan(val) or np.isinf(val):
+                             stats_dict[k] = 0.0
+                         else:
+                             stats_dict[k] = val
                      else:
                          stats_dict[k] = str(v)
                  except:
