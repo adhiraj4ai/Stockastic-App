@@ -24,3 +24,4 @@ coverage.xml
 frontend/node_modules
 backend/venv
 backend/.venv
+backend/backtest_html
