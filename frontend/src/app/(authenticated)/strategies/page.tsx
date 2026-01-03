@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
-import { Plus, Lightbulb, ExternalLink, Play, Code, Trash2, Info, LayoutGrid, List, Search, MoreVertical, TrendingUp, TrendingDown, Target, Zap, Filter, Beaker, FileCheck, Activity, GitCompare, Shield, BarChart3, PieChart, Flame, Rocket, Cpu, Layers, Pencil } from 'lucide-react';
+import { Plus, Lightbulb, ExternalLink, Play, Code, Trash2, Info, LayoutGrid, List, Search, MoreVertical, TrendingUp, TrendingDown, Target, Zap, Filter, Beaker, FileCheck, Activity, GitCompare, Shield, BarChart3, PieChart, Flame, Rocket, Cpu, Layers, Pencil, ArrowUpDown } from 'lucide-react';
 
 const strategyIcons: Record<string, any> = {
     Lightbulb,
@@ -101,17 +101,32 @@ export default function StrategiesPage() {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
     const [mounted, setMounted] = useState(false);
+    const [sortBy, setSortBy] = useState("created_date_desc");
     const [renameDialogOpen, setRenameDialogOpen] = useState(false);
     const [renameStrategy, setRenameStrategy] = useState<Strategy | null>(null);
     const [newName, setNewName] = useState('');
     const [selectedIcon, setSelectedIcon] = useState('Lightbulb');
 
 
-    // Filtered My Strategies
-    const filteredStrategies = strategies.filter(s =>
-        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.description.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    // Filtered and Sorted Strategies
+    const filteredStrategies = strategies
+        .filter(s =>
+            s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            s.description.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .sort((a, b) => {
+            switch (sortBy) {
+                case 'name_asc':
+                    return a.name.localeCompare(b.name);
+                case 'name_desc':
+                    return b.name.localeCompare(a.name);
+                case 'created_date_asc':
+                    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+                case 'created_date_desc':
+                default:
+                    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            }
+        });
 
     const fetchStrategies = async () => {
         setLoadingStrategies(true);
@@ -270,6 +285,40 @@ export default function StrategiesPage() {
                                     className="pl-9 bg-white"
                                 />
                             </div>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className="gap-2">
+                                        <ArrowUpDown size={14} />
+                                        Sort
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56">
+                                    <DropdownMenuItem
+                                        onClick={() => setSortBy('created_date_desc')}
+                                        className={sortBy === 'created_date_desc' ? 'bg-blue-50 text-blue-600' : ''}
+                                    >
+                                        Newest First
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => setSortBy('created_date_asc')}
+                                        className={sortBy === 'created_date_asc' ? 'bg-blue-50 text-blue-600' : ''}
+                                    >
+                                        Oldest First
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => setSortBy('name_asc')}
+                                        className={sortBy === 'name_asc' ? 'bg-blue-50 text-blue-600' : ''}
+                                    >
+                                        A → Z
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => setSortBy('name_desc')}
+                                        className={sortBy === 'name_desc' ? 'bg-blue-50 text-blue-600' : ''}
+                                    >
+                                        Z → A
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                             <div className="flex items-center bg-gray-100 p-1 rounded-lg border border-gray-200">
                                 <button
                                     onClick={() => setViewMode('grid')}
