@@ -196,6 +196,40 @@ export default function ExperimentDetailPage() {
         );
     }
 
+
+    // Helper functions to safely get metrics for both backtest and optimization experiments
+    const getMetricValue = (key: string, defaultValue: any = 0) => {
+        // For batch/aggregated experiments
+        if (experiment.metrics?.aggregated) {
+            // Aggregated metrics usually have specific keys like avg_return, avg_win_rate
+            // We might need to map generic keys if they don't match
+            return experiment.metrics[key] ?? defaultValue;
+        }
+
+        // Try direct lookup first (works for standard backtests)
+        let val = experiment.metrics?.[key];
+
+        // For optimization experiments (metrics nested in stats)
+        if (val === undefined && experiment.metrics?.stats) {
+            val = experiment.metrics.stats[key];
+
+            // If still undefined, try mapping to raw backtest keys (optimization returns raw stats)
+            if (val === undefined) {
+                const keyMap: Record<string, string> = {
+                    'pnl_percent': 'Return [%]',
+                    'win_rate': 'Win Rate [%]',
+                    'total_trades': '# Trades',
+                    'max_drawdown': 'Max. Drawdown [%]',
+                    'profit_factor': 'Profit Factor',
+                    'sharpe_ratio': 'Sharpe Ratio'
+                };
+                val = experiment.metrics.stats[keyMap[key]];
+            }
+        }
+
+        return val ?? defaultValue;
+    };
+
     return (
         <DashboardLayout
             title={`${experiment.strategy_name} Strategy`}
@@ -284,10 +318,10 @@ export default function ExperimentDetailPage() {
                             <p className="text-sm font-medium text-gray-700">
                                 {experiment.metrics?.aggregated ? 'Avg. Batch Return' : 'Total Return'}
                             </p>
-                            <h3 className={`text-2xl font-semibold ${(experiment.metrics?.aggregated ? experiment.metrics.aggregated.avg_return : experiment.metrics.pnl_percent) >= 0 ? 'text-green-600' : 'text-red-600'} tracking-tight`}>
+                            <h3 className={`text-2xl font-semibold ${(experiment.metrics?.aggregated ? experiment.metrics.aggregated.avg_return : getMetricValue('pnl_percent')) >= 0 ? 'text-green-600' : 'text-red-600'} tracking-tight`}>
                                 {experiment.metrics?.aggregated
                                     ? `${experiment.metrics.aggregated.avg_return?.toFixed(2)}%`
-                                    : `${experiment.metrics.pnl_percent?.toFixed(2)}%`
+                                    : `${getMetricValue('pnl_percent')?.toFixed(2)}%`
                                 }
                             </h3>
                         </CardContent>
@@ -309,7 +343,7 @@ export default function ExperimentDetailPage() {
                             <h3 className="text-2xl font-semibold text-gray-900 tracking-tight">
                                 {experiment.metrics?.aggregated
                                     ? `${((experiment.metrics.successful_backtests / experiment.metrics.total_companies) * 100).toFixed(0)}%`
-                                    : `${experiment.metrics.win_rate?.toFixed(1)}%`
+                                    : `${getMetricValue('win_rate')?.toFixed(1)}%`
                                 }
                             </h3>
                         </CardContent>
@@ -331,7 +365,7 @@ export default function ExperimentDetailPage() {
                             <h3 className="text-2xl font-semibold text-gray-900 tracking-tight">
                                 {experiment.metrics?.aggregated
                                     ? `${experiment.metrics.aggregated.avg_win_rate?.toFixed(1)}%`
-                                    : (experiment.metrics.sharpe_ratio?.toFixed(2) || 'N/A')
+                                    : (getMetricValue('sharpe_ratio')?.toFixed(2) || 'N/A')
                                 }
                             </h3>
                         </CardContent>
@@ -351,7 +385,7 @@ export default function ExperimentDetailPage() {
                             <h3 className="text-2xl font-semibold text-gray-900 tracking-tight">
                                 {experiment.metrics?.aggregated
                                     ? experiment.metrics.aggregated.total_trades
-                                    : experiment.metrics.total_trades
+                                    : getMetricValue('total_trades')
                                 }
                             </h3>
                         </CardContent>
@@ -371,19 +405,19 @@ export default function ExperimentDetailPage() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <p className="text-xs text-gray-600 font-medium">Win Rate</p>
-                                        <p className="text-2xl font-semibold text-gray-900">{experiment.metrics.win_rate?.toFixed(1)}%</p>
+                                        <p className="text-2xl font-semibold text-gray-900">{getMetricValue('win_rate')?.toFixed(1)}%</p>
                                     </div>
                                     <div className="space-y-1">
                                         <p className="text-xs text-gray-600 font-medium">Total Trades</p>
-                                        <p className="text-2xl font-semibold text-gray-900">{experiment.metrics.total_trades}</p>
+                                        <p className="text-2xl font-semibold text-gray-900">{getMetricValue('total_trades')}</p>
                                     </div>
                                     <div className="space-y-1">
                                         <p className="text-xs text-gray-600 font-medium">Max Drawdown</p>
-                                        <p className="text-2xl font-semibold text-red-500">{experiment.metrics.max_drawdown?.toFixed(2)}%</p>
+                                        <p className="text-2xl font-semibold text-red-500">{getMetricValue('max_drawdown')?.toFixed(2)}%</p>
                                     </div>
                                     <div className="space-y-1">
                                         <p className="text-xs text-gray-600 font-medium">Profit Factor</p>
-                                        <p className="text-2xl font-semibold text-blue-600">{experiment.metrics.profit_factor?.toFixed(2)}</p>
+                                        <p className="text-2xl font-semibold text-blue-600">{getMetricValue('profit_factor')?.toFixed(2)}</p>
                                     </div>
                                 </div>
                             </CardContent>
@@ -554,9 +588,9 @@ export default function ExperimentDetailPage() {
 
                         {/* Categorized Metrics Display */}
                         <div className="space-y-6">
-                            {experiment.metrics?.categorized ? (
+                            {(experiment.metrics?.categorized || experiment.metrics?.stats?.categorized) ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {Object.entries(experiment.metrics.categorized).map(([category, items]: [string, any]) => (
+                                    {Object.entries(experiment.metrics?.categorized || experiment.metrics?.stats?.categorized || {}).map(([category, items]: [string, any]) => (
                                         <Card key={category} className="border-none shadow-xl shadow-gray-900/5 bg-white overflow-hidden rounded-3xl">
                                             <CardHeader className="border-b border-gray-50 bg-gray-50/30">
                                                 <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">

@@ -424,10 +424,9 @@ export default function OptimizePage() {
 
                                                         {/* Key Metrics Rows */}
                                                         {[
-                                                            { label: 'Primary Result', key: 'best_value', format: (v: number) => v.toFixed(4) },
-                                                            { label: 'Win Rate', path: ['stats', 'categorized', 'Trade Metrics', 'Win Rate'] },
-                                                            { label: 'Total Return', path: ['stats', 'categorized', 'Performance Metrics', 'Return'] },
-                                                            { label: 'Max Drawdown', path: ['stats', 'categorized', 'Risk Metrics', 'Max Drawdown'] },
+                                                            { label: 'Win Rate', path: ['stats', 'categorized', 'Trade Metrics', 'Win Rate [%]'] },
+                                                            { label: 'Total Return', path: ['stats', 'categorized', 'Performance Metrics', 'Return [%]'] },
+                                                            { label: 'Max Drawdown', path: ['stats', 'categorized', 'Risk Metrics', 'Max Drawdown [%]'] },
                                                             { label: 'Sharpe Ratio', path: ['stats', 'categorized', 'Performance Metrics', 'Sharpe Ratio'] },
                                                             { label: 'Profit Factor', path: ['stats', 'categorized', 'Trade Metrics', 'Profit Factor'] },
                                                             { label: 'Total Trades', path: ['stats', 'categorized', 'Trade Metrics', 'Total Trades'] },
