@@ -15,16 +15,17 @@ interface MetricsDisplayProps {
     plotHtml?: string;
     strategyId: string;
     experimentId?: number;
+    chartHeight?: string;
 }
 
-export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId }: MetricsDisplayProps) {
+export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, chartHeight = '700px' }: MetricsDisplayProps) {
     const hasCategorized = stats.categorized && Object.keys(stats.categorized).length > 0;
 
     return (
         <div className="space-y-6">
             {/* Chart Section */}
             {plotHtml && (
-                <div className="w-full bg-white border rounded-xl overflow-hidden mb-6 shadow-md" style={{ height: '700px' }}>
+                <div className="w-full bg-white border rounded-xl overflow-hidden mb-6 shadow-md" style={{ height: chartHeight }}>
                     <div className="px-4 py-2 bg-gray-50 border-b flex justify-between items-center">
                         <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Strategy Plot</span>
                         {(experimentId || stats.id) && (

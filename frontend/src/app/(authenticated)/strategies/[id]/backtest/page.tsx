@@ -491,6 +491,7 @@ export default function BacktestPage() {
                                             stats={results.stats}
                                             plotHtml={results.plot_html}
                                             strategyId={strategyId}
+                                            chartHeight="750px"
                                         />
                                     ) : (
                                         <div className="flex flex-col h-full space-y-6">

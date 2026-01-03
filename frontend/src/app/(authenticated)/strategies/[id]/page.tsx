@@ -87,64 +87,56 @@ export default function StrategyDetailPage() {
     return (
         <DashboardLayout
             headerContent={
-                <div className="flex items-center gap-2">
-                    {/* Breadcrumb Navigation Only */}
+                <div className="flex items-center gap-4 py-2">
                     <Button
                         variant="ghost"
-                        size="sm"
-                        className="h-8 px-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                        size="icon"
+                        className="rounded-full w-8 h-8 text-slate-500 hover:text-slate-900 hover:bg-slate-100 flex-shrink-0"
                         onClick={() => router.push('/strategies')}
+                        title="Back to Strategies"
                     >
-                        <ArrowLeft size={16} className="mr-1" /> Strategies
+                        <ArrowLeft size={20} />
                     </Button>
-                    <span className="text-slate-400">/</span>
-                    <h1 className="text-base font-semibold text-slate-900 truncate">{strategy.name}</h1>
+                    <div className="flex flex-col min-w-0">
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-lg font-bold text-slate-900 leading-tight truncate">{strategy.name}</h1>
+                            {strategy.published_experiments && strategy.published_experiments.length > 0 && (
+                                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] px-2 py-0.5 rounded-full font-bold shadow-none border">
+                                    {strategy.published_experiments.length} Published
+                                </Badge>
+                            )}
+                        </div>
+                        <p className="text-xs text-slate-500 line-clamp-1 max-w-3xl mt-0.5 font-medium">{strategy.description}</p>
+                    </div>
                 </div>
             }
         >
             <div className="space-y-6">
-                {/* Strategy Context Card with Actions */}
-                <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
-                    <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                                <h2 className="text-xl font-bold text-slate-900">{strategy.name}</h2>
-                                {strategy.published_experiments && strategy.published_experiments.length > 0 && (
-                                    <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-2.5 py-0.5 rounded-full font-bold shadow-sm">
-                                        <Activity size={12} className="mr-1" />
-                                        {strategy.published_experiments.length} Published
-                                    </Badge>
-                                )}
-                            </div>
-                            <p className="text-sm text-slate-600 leading-relaxed line-clamp-2">{strategy.description}</p>
-                        </div>
-                        {/* Action Buttons on Right */}
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-1.5 h-9 text-xs font-bold border-slate-200 hover:bg-slate-50"
-                                onClick={() => router.push(`/strategies/${id}/editor`)}
-                            >
-                                <Edit size={14} /> Edit
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-1.5 h-9 text-xs font-bold bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200 text-purple-700 hover:from-purple-100 hover:to-purple-200"
-                                onClick={() => router.push(`/strategies/${id}/optimize`)}
-                            >
-                                <Activity size={14} /> Optimize
-                            </Button>
-                            <Button
-                                size="sm"
-                                className="gap-1.5 h-9 text-xs font-bold bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-                                onClick={() => router.push(`/strategies/${id}/backtest`)}
-                            >
-                                <Play size={14} /> Run
-                            </Button>
-                        </div>
-                    </div>
+                {/* Action Toolbar */}
+                <div className="flex justify-end items-center gap-3">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 h-9 text-xs font-bold border-slate-200 hover:bg-slate-50 shadow-sm"
+                        onClick={() => router.push(`/strategies/${id}/editor`)}
+                    >
+                        <Edit size={14} className="text-slate-500" /> Edit Code
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 h-9 text-xs font-bold bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 hover:border-purple-300 shadow-sm transition-all"
+                        onClick={() => router.push(`/strategies/${id}/optimize`)}
+                    >
+                        <Activity size={14} /> Optimize Strategy
+                    </Button>
+                    <Button
+                        size="sm"
+                        className="gap-2 h-9 text-xs font-bold bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg transition-all"
+                        onClick={() => router.push(`/strategies/${id}/backtest`)}
+                    >
+                        <Play size={14} /> Run Backtest
+                    </Button>
                 </div>
 
                 {/* Key Metrics Cards (Overview) */}
