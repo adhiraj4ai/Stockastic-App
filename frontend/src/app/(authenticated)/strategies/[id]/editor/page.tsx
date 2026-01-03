@@ -8,7 +8,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Play, Save, ArrowLeft, Activity } from 'lucide-react';
+import { Play, Save, ArrowLeft, Activity, Sun, Moon } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Strategy {
@@ -27,6 +27,7 @@ export default function EditStrategyPage() {
     // Editor State
     const [code, setCode] = useState<string>('# Write your strategy logic here\n\ndef next_move(tick):\n    if tick["close"] > tick["ma_50"]:\n        return "BUY"\n    return "HOLD"');
     const [optimizationConfig, setOptimizationConfig] = useState<string>('');
+    const [themeMode, setThemeMode] = useState<'default' | 'light' | 'dark'>('default');
 
     // Sidebar State
     const [strategy, setStrategy] = useState<Strategy | null>(null);
@@ -145,6 +146,60 @@ export default function EditStrategyPage() {
     const [editorRef, setEditorRef] = useState<any>(null);
     const [monacoRef, setMonacoRef] = useState<any>(null);
 
+    const handleBeforeMount = (monaco: any) => {
+        // Define Ayu Light Theme
+        monaco.editor.defineTheme('ayu-light', {
+            base: 'vs',
+            inherit: true,
+            rules: [
+                { token: 'comment', foreground: 'ABB0B6', fontStyle: 'italic' },
+                { token: 'keyword', foreground: 'FA8D3E' },
+                { token: 'string', foreground: '86B300' },
+                { token: 'number', foreground: 'A37ACC' },
+                { token: 'regexp', foreground: '4CBF99' },
+                { token: 'type', foreground: '399EE6' },
+                { token: 'function', foreground: 'F29718' },
+                { token: 'variable', foreground: '5C6773' },
+                { token: 'class', foreground: '399EE6' },
+            ],
+            colors: {
+                'editor.background': '#FAFAFA',
+                'editor.foreground': '#5C6773',
+                'editor.lineHighlightBackground': '#F2F2F2',
+                'editorCursor.foreground': '#FFCC66',
+                'editor.selectionBackground': '#F0EEE4',
+                'editorIndentGuide.background': '#EDEEF0',
+                'editorIndentGuide.activeBackground': '#ABB0B6',
+            }
+        });
+
+        // Define Ayu Dark Theme
+        monaco.editor.defineTheme('ayu-dark', {
+            base: 'vs-dark',
+            inherit: true,
+            rules: [
+                { token: 'comment', foreground: '5C6773', fontStyle: 'italic' },
+                { token: 'keyword', foreground: 'FAEFA5' },
+                { token: 'string', foreground: 'ADDB67' },
+                { token: 'number', foreground: 'D484FF' },
+                { token: 'regexp', foreground: '5FB3B3' },
+                { token: 'type', foreground: '73D0FF' },
+                { token: 'function', foreground: 'FFB454' },
+                { token: 'variable', foreground: 'CCCAC2' },
+                { token: 'class', foreground: '73D0FF' },
+            ],
+            colors: {
+                'editor.background': '#0F1419',
+                'editor.foreground': '#CCCAC2',
+                'editor.lineHighlightBackground': '#151A1E',
+                'editorCursor.foreground': '#F29718',
+                'editor.selectionBackground': '#253340',
+                'editorIndentGuide.background': '#23282D',
+                'editorIndentGuide.activeBackground': '#5C6773',
+            }
+        });
+    };
+
     const handleEditorDidMount = (editor: any, monaco: any) => {
         setEditorRef(editor);
         setMonacoRef(monaco);
@@ -165,6 +220,11 @@ export default function EditStrategyPage() {
         router.push(`/strategies/${strategyId}/run`);
     };
 
+    const getEditorTheme = () => {
+        if (themeMode === 'default') return 'vs-light';
+        return themeMode === 'light' ? 'ayu-light' : 'ayu-dark';
+    };
+
     return (
         <DashboardLayout
             showBack={true}
@@ -174,14 +234,15 @@ export default function EditStrategyPage() {
                 {/* Main Content: Split View */}
                 <div className="flex flex-1 overflow-hidden">
                     {/* Editor Area */}
-                    <div className="flex-1 border-r border-gray-200 bg-white">
+                    <div className={`flex-1 border-r ${themeMode === 'dark' ? 'border-[#151A1E] bg-[#0F1419]' : 'border-gray-200 bg-white'}`}>
                         <Editor
                             height="100%"
                             defaultLanguage="python"
                             value={code}
                             onChange={(value) => setCode(value || '')}
+                            beforeMount={handleBeforeMount}
                             onMount={handleEditorDidMount}
-                            theme="vs-light"
+                            theme={getEditorTheme()}
                             options={{
                                 minimap: { enabled: false },
                                 fontSize: 16,
@@ -205,8 +266,34 @@ export default function EditStrategyPage() {
                     {/* Right Sidebar: Configuration */}
                     <div className="w-80 bg-gray-50 border-l border-gray-200 flex flex-col h-full overflow-hidden">
                         <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                            {/* Action Buttons at Top of Sidebar */}
+                            {/* Theme Toggle & Action Buttons */}
                             <div className="space-y-4 pb-8 border-b border-gray-200">
+                                <div className="flex flex-col gap-2 mb-4">
+                                    <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Editor Theme</Label>
+                                    <div className="flex items-center gap-1 p-1 bg-gray-200/50 rounded-xl">
+                                        <button
+                                            onClick={() => setThemeMode('default')}
+                                            className={`flex-1 flex items-center justify-center h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'default' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                        >
+                                            Default
+                                        </button>
+                                        <button
+                                            onClick={() => setThemeMode('light')}
+                                            className={`flex-1 flex items-center justify-center gap-2 h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'light' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                        >
+                                            <Sun size={12} />
+                                            Ayu Light
+                                        </button>
+                                        <button
+                                            onClick={() => setThemeMode('dark')}
+                                            className={`flex-1 flex items-center justify-center gap-2 h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'dark' ? 'bg-gray-800 text-blue-400 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                        >
+                                            <Moon size={12} />
+                                            Ayu Dark
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <Button
                                     onClick={handleSave}
                                     disabled={saving || !isDirty}
@@ -241,7 +328,7 @@ export default function EditStrategyPage() {
                                             setOptimizationConfig(lines.slice(0, 10).join('\n'));
                                         }
                                     }}
-                                    className="w-full h-[240px] p-4 text-sm font-mono font-medium bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none shadow-sm leading-relaxed"
+                                    className="w-full h-[240px] p-4 text-sm font-mono font-medium bg-white border border-gray-200 text-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none shadow-sm leading-relaxed"
                                     placeholder={'fast_window: [10, 30]\nslow_window: [40, 60]'}
                                 />
                             </div>
