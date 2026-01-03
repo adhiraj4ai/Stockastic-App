@@ -19,3 +19,5 @@ logs
 *.h5
 
 .env
+*.html
+backtesting_html

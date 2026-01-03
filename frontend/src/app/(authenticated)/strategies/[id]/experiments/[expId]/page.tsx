@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
+import { MetricsDisplay } from '../../../components/MetricsDisplay';
 import {
     Activity,
     ArrowLeft,
@@ -199,37 +200,20 @@ export default function ExperimentDetailPage() {
     }
 
 
-    // Helper functions to safely get metrics for both backtest and optimization experiments
-    const getMetricValue = (key: string, defaultValue: any = 0) => {
-        // For batch/aggregated experiments
-        if (experiment.metrics?.aggregated) {
-            // Aggregated metrics usually have specific keys like avg_return, avg_win_rate
-            // We might need to map generic keys if they don't match
-            return experiment.metrics[key] ?? defaultValue;
+    // Helper to prepare stats for MetricsDisplay
+    const getDisplayStats = () => {
+        if (!experiment.metrics) return {};
+
+        // If optimization, stats might be nested or need mapping
+        if (experiment.run_type === 'OPTIMIZATION' && experiment.metrics.stats) {
+            return {
+                ...experiment.metrics.stats,
+                // Ensure top-level fallback keys exist if needed
+                id: experiment.id
+            };
         }
 
-        // Try direct lookup first (works for standard backtests)
-        let val = experiment.metrics?.[key];
-
-        // For optimization experiments (metrics nested in stats)
-        if (val === undefined && experiment.metrics?.stats) {
-            val = experiment.metrics.stats[key];
-
-            // If still undefined, try mapping to raw backtest keys (optimization returns raw stats)
-            if (val === undefined) {
-                const keyMap: Record<string, string> = {
-                    'pnl_percent': 'Return [%]',
-                    'win_rate': 'Win Rate [%]',
-                    'total_trades': '# Trades',
-                    'max_drawdown': 'Max. Drawdown [%]',
-                    'profit_factor': 'Profit Factor',
-                    'sharpe_ratio': 'Sharpe Ratio'
-                };
-                val = experiment.metrics.stats[keyMap[key]];
-            }
-        }
-
-        return val ?? defaultValue;
+        return experiment.metrics;
     };
 
     return (
@@ -299,89 +283,8 @@ export default function ExperimentDetailPage() {
                     </div>
                 </div>
 
-                {/* 2. KPI Strip - Fintech Style */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card className="border border-green-100 shadow-sm bg-gradient-to-br from-green-50 to-white rounded-xl">
-                        <CardContent className="p-5 flex items-start justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-green-700/80 mb-1">Total Return</p>
-                                <div className="flex items-baseline gap-2">
-                                    <h3 className={`text-3xl font-bold tracking-tighter ${(experiment.metrics?.aggregated ? experiment.metrics.aggregated.avg_return : getMetricValue('pnl_percent')) >= 0
-                                        ? 'text-green-900' : 'text-red-700'
-                                        }`}>
-                                        {experiment.metrics?.aggregated
-                                            ? `${experiment.metrics.aggregated.avg_return?.toFixed(2)}%`
-                                            : `${getMetricValue('pnl_percent')?.toFixed(2)}%`
-                                        }
-                                    </h3>
-                                    {/* Indicator could go here */}
-                                </div>
-                            </div>
-                            <div className={`p-2.5 rounded-lg ${(experiment.metrics?.aggregated ? experiment.metrics.aggregated.avg_return : getMetricValue('pnl_percent')) >= 0
-                                ? 'bg-white text-green-600 shadow-sm' : 'bg-red-100 text-red-600'
-                                }`}>
-                                <TrendingUp size={20} />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border border-blue-100 shadow-sm bg-gradient-to-br from-blue-50 to-white rounded-xl">
-                        <CardContent className="p-5 flex items-start justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-blue-700/80 mb-1">Win Rate</p>
-                                <h3 className="text-3xl font-bold tracking-tighter text-blue-900">
-                                    {experiment.metrics?.aggregated
-                                        ? `${experiment.metrics.aggregated.avg_win_rate?.toFixed(1)}%`
-                                        : `${getMetricValue('win_rate')?.toFixed(1)}%`
-                                    }
-                                </h3>
-                            </div>
-                            <div className="p-2.5 rounded-lg bg-white text-blue-600 shadow-sm">
-                                <CheckCircle size={20} />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border border-purple-100 shadow-sm bg-gradient-to-br from-purple-50 to-white rounded-xl">
-                        <CardContent className="p-5 flex items-start justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-purple-700/80 mb-1">
-                                    {experiment.metrics?.aggregated ? 'Success Rate' : 'Sharpe Ratio'}
-                                </p>
-                                <h3 className="text-3xl font-bold tracking-tighter text-purple-900">
-                                    {experiment.metrics?.aggregated
-                                        ? `${((experiment.metrics.successful_backtests / experiment.metrics.total_companies) * 100).toFixed(0)}%`
-                                        : (getMetricValue('sharpe_ratio')?.toFixed(2) || 'N/A')
-                                    }
-                                </h3>
-                            </div>
-                            <div className="p-2.5 rounded-lg bg-white text-purple-600 shadow-sm">
-                                <Zap size={20} />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border border-amber-100 shadow-sm bg-gradient-to-br from-amber-50 to-white rounded-xl">
-                        <CardContent className="p-5 flex items-start justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-amber-700/80 mb-1">Total Trades</p>
-                                <h3 className="text-3xl font-bold tracking-tighter text-amber-900">
-                                    {experiment.metrics?.aggregated
-                                        ? experiment.metrics.aggregated.total_trades
-                                        : getMetricValue('total_trades')
-                                    }
-                                </h3>
-                            </div>
-                            <div className="p-2.5 rounded-lg bg-white text-amber-600 shadow-sm">
-                                <Activity size={20} />
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* 3. Hero Chart Section - Full Width */}
-                <div className="w-full">
-                    {batchChildren.length > 0 ? (
+                {batchChildren.length > 0 ? (
+                    <div className="w-full">
                         <Card className="border border-gray-200 shadow-sm bg-white rounded-xl overflow-visible">
                             <CardHeader className="border-b border-gray-100 py-4 px-6 flex flex-row items-center justify-between">
                                 <div className="flex items-center gap-3">
@@ -431,144 +334,67 @@ export default function ExperimentDetailPage() {
                                 </Table>
                             </div>
                         </Card>
-                    ) : (
-                        <Card className="border border-gray-200 shadow-sm bg-white rounded-xl overflow-hidden h-[820px] flex flex-col">
-                            <div className="px-6 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50/30">
-                                <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                    <BarChart3 size={16} /> Market Performance & Signals
-                                </h3>
-                                <div className="text-xs font-medium text-gray-500">Interactive Bokeh Chart</div>
-                            </div>
-                            <div className="flex-1 relative bg-white">
-                                {experiment.plot_html ? (
-                                    <iframe
-                                        title="Backtest Plot"
-                                        srcDoc={experiment.plot_html}
-                                        className="w-full h-full border-0 absolute inset-0"
-                                        sandbox="allow-scripts"
-                                    />
-                                ) : (
-                                    <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                                        <Activity size={48} className="mb-4 opacity-10" />
-                                        <p>Chart data unavailable</p>
-                                    </div>
-                                )}
-                            </div>
-                        </Card>
-                    )}
-                </div>
-
-                {/* 4. Data Deck - Parameters & Detailed Metrics */}
-                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                    {/* Left Panel: Parameters & Context */}
-                    <div className="xl:col-span-3 space-y-6">
-                        <Card className="border border-gray-200 shadow-sm bg-white rounded-xl overflow-hidden">
-                            <CardHeader className="bg-gray-50/50 border-b border-gray-100 py-3 px-4">
-                                <CardTitle className="text-sm font-bold text-gray-800 uppercase tracking-widest flex items-center gap-2">
-                                    <Zap size={14} className="text-blue-500" /> Parameters
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-0">
-                                <div className="divide-y divide-gray-100">
-                                    {Object.entries(experiment.parameters || {}).map(([key, value]: [string, any]) => (
-                                        <div key={key} className="flex flex-col p-3 hover:bg-gray-50 transition-colors">
-                                            <span className="text-[10px] uppercase font-bold text-gray-400 mb-0.5 tracking-wider">
-                                                {key.replace(/_/g, ' ')}
-                                            </span>
-                                            <span className="text-sm font-mono font-medium text-gray-800">
-                                                {String(value)}
-                                            </span>
-                                        </div>
-                                    ))}
-                                    {Object.keys(experiment.parameters || {}).length === 0 && (
-                                        <div className="p-4 text-sm text-gray-400 text-center italic">Default Parameters</div>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Quick Insights (Mini Card) */}
-                        <Card className="border border-blue-100 shadow-sm bg-gradient-to-br from-blue-50 to-white rounded-xl overflow-hidden">
-                            <CardContent className="p-5">
-                                <h3 className="text-blue-900 font-semibold mb-3 flex items-center gap-2">
-                                    <Info size={16} /> Run Details
-                                </h3>
-                                <dl className="space-y-2 text-sm">
-                                    <div className="flex justify-between">
-                                        <dt className="text-blue-700/70">Type</dt>
-                                        <dd className="font-medium text-blue-900">{experiment.run_type}</dd>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <dt className="text-blue-700/70">Engine</dt>
-                                        <dd className="font-medium text-blue-900">Backtesting.py</dd>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <dt className="text-blue-700/70">Data</dt>
-                                        <dd className="font-medium text-blue-900">Daily OHLCV</dd>
-                                    </div>
-                                </dl>
-                            </CardContent>
-                        </Card>
                     </div>
-
-                    {/* Right Panel: Detailed Metrics Grid */}
-                    <div className="xl:col-span-9">
-                        {(experiment.metrics?.categorized || experiment.metrics?.stats?.categorized) ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {Object.entries(experiment.metrics?.categorized || experiment.metrics?.stats?.categorized || {}).map(([category, items]: [string, any]) => (
-                                    <Card key={category} className="border border-gray-200 shadow-sm bg-white rounded-xl overflow-hidden h-fit">
-                                        <CardHeader className="bg-gray-50/30 border-b border-gray-100 py-2.5 px-4">
-                                            <CardTitle className="text-xs font-bold text-gray-600 uppercase tracking-widest">
-                                                {category}
-                                            </CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="p-0">
-                                            <Table>
-                                                <TableBody>
-                                                    {Object.entries(items).map(([key, value]: [string, any]) => (
-                                                        <TableRow key={key} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
-                                                            <TableCell className="py-2 pl-4 text-xs font-medium text-gray-500">
-                                                                {key}
-                                                            </TableCell>
-                                                            <TableCell className="py-2 pr-4 text-right font-mono text-sm font-semibold text-gray-900">
-                                                                {value}
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                                </TableBody>
-                                            </Table>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </div>
-                        ) : (
-                            <Card className="border border-gray-200 shadow-sm bg-white rounded-xl">
-                                <CardHeader className="border-b border-gray-100 py-3 px-6">
-                                    <CardTitle className="text-sm font-bold text-gray-800">Complete Metrics</CardTitle>
+                ) : (
+                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                        {/* Left Panel: Parameters & Context - Keeping this for context */}
+                        <div className="xl:col-span-3 space-y-6">
+                            <Card className="border border-gray-200 shadow-sm bg-white rounded-xl overflow-hidden">
+                                <CardHeader className="bg-gray-50/50 border-b border-gray-100 py-3 px-4">
+                                    <CardTitle className="text-sm font-bold text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                                        <Zap size={14} className="text-blue-500" /> Parameters
+                                    </CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-0">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 divide-x divide-y divide-gray-100">
-                                        {Object.entries(experiment.metrics || {})
-                                            .filter(([key]) => !['aggregated', 'best_params', 'best_return', 'best_trial', 'categorized', 'stats', 'successful_backtests', 'total_companies'].includes(key))
-                                            .sort(([a], [b]) => a.localeCompare(b))
-                                            .map(([key, value]) => (
-                                                <div key={key} className="p-4 flex flex-col gap-1 hover:bg-gray-50">
-                                                    <span className="text-xs text-gray-500 font-medium capitalize">
-                                                        {key.replace(/_/g, ' ').replace('[%]', '').replace('[$]', '')}
-                                                    </span>
-                                                    <span className="font-mono text-sm font-bold text-gray-900">
-                                                        {typeof value === 'number' ?
-                                                            (Number.isInteger(value) ? value : value.toFixed(4)) :
-                                                            String(value)}
-                                                    </span>
-                                                </div>
-                                            ))}
+                                    <div className="divide-y divide-gray-100">
+                                        {Object.entries(experiment.parameters || {}).map(([key, value]: [string, any]) => (
+                                            <div key={key} className="flex flex-col p-3 hover:bg-gray-50 transition-colors">
+                                                <span className="text-[10px] uppercase font-bold text-gray-400 mb-0.5 tracking-wider">
+                                                    {key.replace(/_/g, ' ')}
+                                                </span>
+                                                <span className="text-sm font-mono font-medium text-gray-800">
+                                                    {String(value)}
+                                                </span>
+                                            </div>
+                                        ))}
+                                        {Object.keys(experiment.parameters || {}).length === 0 && (
+                                            <div className="p-4 text-sm text-gray-400 text-center italic">Default Parameters</div>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
-                        )}
+
+                            <Card className="border border-blue-100 shadow-sm bg-gradient-to-br from-blue-50 to-white rounded-xl overflow-hidden">
+                                <CardContent className="p-5">
+                                    <h3 className="text-blue-900 font-semibold mb-3 flex items-center gap-2">
+                                        <Info size={16} /> Run Details
+                                    </h3>
+                                    <dl className="space-y-2 text-sm">
+                                        <div className="flex justify-between">
+                                            <dt className="text-blue-700/70">Type</dt>
+                                            <dd className="font-medium text-blue-900">{experiment.run_type}</dd>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <dt className="text-blue-700/70">Engine</dt>
+                                            <dd className="font-medium text-blue-900">Backtesting.py</dd>
+                                        </div>
+                                    </dl>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Right Panel: Standardized Metrics Display */}
+                        <div className="xl:col-span-9">
+                            <MetricsDisplay
+                                stats={getDisplayStats()}
+                                plotHtml={experiment.plot_html}
+                                strategyId={Array.isArray(strategyId) ? strategyId[0] : (strategyId || '')}
+                                experimentId={experiment.id}
+                                chartHeight="750px"
+                            />
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         </DashboardLayout>
     );

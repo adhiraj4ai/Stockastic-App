@@ -28,16 +28,20 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
                 <div className="w-full bg-white border rounded-xl overflow-hidden mb-6 shadow-md" style={{ height: chartHeight }}>
                     <div className="px-4 py-2 bg-gray-50 border-b flex justify-between items-center">
                         <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Strategy Plot</span>
-                        {(experimentId || stats.id) && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-7 text-[10px] uppercase font-bold"
-                                onClick={() => window.open(`/strategies/${strategyId}/experiments/${experimentId || stats.id}`, '_blank')}
-                            >
-                                <ExternalLink size={12} className="mr-1" /> Full Screen
-                            </Button>
-                        )}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-[10px] uppercase font-bold"
+                            onClick={() => {
+                                const newWindow = window.open('', '_blank');
+                                if (newWindow) {
+                                    newWindow.document.write(plotHtml);
+                                    newWindow.document.close();
+                                }
+                            }}
+                        >
+                            <ExternalLink size={12} className="mr-1" /> Full Screen
+                        </Button>
                     </div>
                     <iframe
                         title="Backtest Plot"

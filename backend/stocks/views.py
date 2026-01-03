@@ -1812,18 +1812,30 @@ class StrategyViewSet(viewsets.ModelViewSet):
             
             # 4. Generate Plot (Optional for Sector)
             plot_html = None
-            fd, plot_path = tempfile.mkstemp(suffix='.html')
-            os.close(fd) 
+            
+            # Ensure backtest_html directory exists
+            output_dir = 'backtest_html'
+            if not os.path.exists(output_dir):
+                try:
+                    os.makedirs(output_dir)
+                except OSError:
+                    pass # Race condition or permission
+
+            # Generate unique filename: StrategyName_Symbol_Timestamp.html
+            timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+            # Sanitize strategy name if possible, or use symbol
+            safe_symbol = "".join([c for c in symbol if c.isalnum() or c in ('-','_')])
+            filename = f"Backtest_{safe_symbol}_{timestamp}_{uuid.uuid4().hex[:8]}.html"
+            plot_path = os.path.join(output_dir, filename)
             
             try:
                 bt.plot(filename=plot_path, open_browser=False)
-                with open(plot_path, 'r', encoding='utf-8') as f:
-                    plot_html = f.read()
-            except:
-                pass # Non-critical if plot fails
-            finally:
                 if os.path.exists(plot_path):
-                    os.remove(plot_path)
+                    with open(plot_path, 'r', encoding='utf-8') as f:
+                        plot_html = f.read()
+            except Exception as e:
+                print(f"Plot generation failed: {e}")
+            # Do NOT remove the file as per user request
 
             # 5. Format Stats for Frontend
             clean_stats, categorized = self._extract_bt_stats(stats)
