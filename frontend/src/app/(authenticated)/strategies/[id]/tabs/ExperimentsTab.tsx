@@ -15,7 +15,10 @@ import {
     ChevronUp,
     Search,
     ExternalLink,
-    AlertTriangle
+    AlertTriangle,
+    ChevronLeft,
+    ChevronRight,
+    MoreHorizontal
 } from "lucide-react";
 
 import { toast } from 'sonner';
@@ -67,7 +70,9 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
     const [batchResults, setBatchResults] = useState<Record<string, Experiment[]>>({});
 
     // Pagination State
+    // Pagination State
     const [page, setPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
     const [hasNext, setHasNext] = useState(false);
     const [hasPrev, setHasPrev] = useState(false);
 
@@ -94,10 +99,12 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
 
                 if (expRes.data.results) {
                     setExperiments(expRes.data.results);
+                    setTotalCount(expRes.data.count);
                     setHasNext(!!expRes.data.next);
                     setHasPrev(!!expRes.data.previous);
                 } else {
                     setExperiments(expRes.data);
+                    setTotalCount(expRes.data.length);
                     setHasNext(false); setHasPrev(false);
                 }
                 setBestParams(bestRes.data);
@@ -106,10 +113,12 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                 const response = await api.get('/api/stocks/strategies/all_experiments/', { params });
                 if (response.data.results) {
                     setExperiments(response.data.results);
+                    setTotalCount(response.data.count);
                     setHasNext(!!response.data.next);
                     setHasPrev(!!response.data.previous);
                 } else {
                     setExperiments(response.data); // Fallback if regular list
+                    setTotalCount(response.data.length);
                     setHasNext(false); setHasPrev(false);
                 }
                 setBestParams([]); // No best params for global view
@@ -658,24 +667,88 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                         </tbody>
                     </table>
                     {/* Pagination Controls */}
+                    {/* Pagination Controls */}
                     <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50/50">
                         <div className="text-xs text-gray-500 font-medium">
-                            Showing page {page}
+                            Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, totalCount)} of {totalCount} results
                         </div>
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setPage(p => Math.max(1, p - 1))}
                                 disabled={!hasPrev || loading}
-                                className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="p-2 text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
-                                Previous
+                                <ChevronLeft size={16} />
                             </button>
+
+                            {/* Page Numbers */}
+                            <div className="flex gap-1">
+                                {(() => {
+                                    const totalPages = Math.ceil(totalCount / 20);
+                                    const maxVisible = 5;
+                                    let startPage = Math.max(1, page - Math.floor(maxVisible / 2));
+                                    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+                                    if (endPage - startPage + 1 < maxVisible) {
+                                        startPage = Math.max(1, endPage - maxVisible + 1);
+                                    }
+
+                                    const pages = [];
+                                    if (startPage > 1) {
+                                        pages.push(
+                                            <button
+                                                key={1}
+                                                onClick={() => setPage(1)}
+                                                className={`h-8 w-8 flex items-center justify-center text-xs font-bold rounded-lg transition-colors ${page === 1 ? 'bg-blue-600 text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                            >
+                                                1
+                                            </button>
+                                        );
+                                        if (startPage > 2) {
+                                            pages.push(<span key="start-ellipsis" className="flex items-center justify-center w-8 text-gray-400"><MoreHorizontal size={14} /></span>);
+                                        }
+                                    }
+
+                                    for (let i = startPage; i <= endPage; i++) {
+                                        pages.push(
+                                            <button
+                                                key={i}
+                                                onClick={() => setPage(i)}
+                                                className={`h-8 w-8 flex items-center justify-center text-xs font-bold rounded-lg transition-colors ${page === i
+                                                    ? 'bg-blue-600 text-white shadow-sm'
+                                                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                                    }`}
+                                            >
+                                                {i}
+                                            </button>
+                                        );
+                                    }
+
+                                    if (endPage < totalPages) {
+                                        if (endPage < totalPages - 1) {
+                                            pages.push(<span key="end-ellipsis" className="flex items-center justify-center w-8 text-gray-400"><MoreHorizontal size={14} /></span>);
+                                        }
+                                        pages.push(
+                                            <button
+                                                key={totalPages}
+                                                onClick={() => setPage(totalPages)}
+                                                className={`h-8 w-8 flex items-center justify-center text-xs font-bold rounded-lg transition-colors ${page === totalPages ? 'bg-blue-600 text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                            >
+                                                {totalPages}
+                                            </button>
+                                        );
+                                    }
+
+                                    return pages;
+                                })()}
+                            </div>
+
                             <button
                                 onClick={() => setPage(p => p + 1)}
                                 disabled={!hasNext || loading}
-                                className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="p-2 text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
-                                Next
+                                <ChevronRight size={16} />
                             </button>
                         </div>
                     </div>
