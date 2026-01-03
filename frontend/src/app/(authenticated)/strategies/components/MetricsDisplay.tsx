@@ -19,7 +19,75 @@ interface MetricsDisplayProps {
 }
 
 export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, chartHeight = '700px' }: MetricsDisplayProps) {
-    const hasCategorized = stats.categorized && Object.keys(stats.categorized).length > 0;
+
+    // Helper to format/group stats if not already categorized
+    const getCategorizedStats = (s: any) => {
+        // ALWAYS use frontend categorization to ensure consistency across Backtest and Experiment views.
+        // We prefer 'raw' data if available (new backend format), otherwise falling back to 's' (legacy/flat format).
+        const data = s.raw || s;
+
+        // Helper for safe number formatting
+        const fmt = (val: any, precision = 2, suffix = '') => {
+            if (val === undefined || val === null) return '0' + suffix;
+            const num = Number(val);
+            if (isNaN(num)) return val;
+            return num.toFixed(precision) + suffix;
+        };
+
+        const safeStr = (val: any) => (val !== undefined && val !== null) ? String(val) : '0';
+
+        // Replicate backend 'Comprehensive' categorization logic exactly
+        return {
+            'Performance Metrics': {
+                'PNL': `${fmt(data.total_pnl)} (${fmt(data.pnl_percent || data['Return [%]'])}%)`,
+                'Win rate': `${fmt(data.win_rate || data['Win Rate [%]'])}%`,
+                'Sharpe ratio': fmt(data['Sharpe Ratio'] || data.sharpe_ratio),
+                'Smart Sharpe': fmt(data['Smart Sharpe']),
+                'Sortino ratio': fmt(data['Sortino Ratio'] || data.sortino_ratio),
+                'Smart Sortino': fmt(data['Smart Sortino']),
+                'Calmar ratio': fmt(data['Calmar Ratio'] || data.calmar_ratio),
+                'Omega ratio': fmt(data['Omega Ratio']),
+                'Serenity index': fmt(data['Serenity Index']),
+                'Average win/loss': fmt(data['Avg. Win/Loss']),
+                'Average win': fmt(data['Average Win'] || data['Avg. Win [$]']),
+                'Average loss': fmt(data['Average Loss'] || data['Avg. Loss [$]']),
+            },
+            'Risk Metrics': {
+                'Max drawdown': `${fmt(data.max_drawdown || data['Max. Drawdown [%]'])}%`,
+                'Average drawdown': `${fmt(data['Avg. Drawdown [%]'])}%`, // Added likely field
+                'Profit factor': fmt(data.profit_factor || data['Profit Factor']),
+                'Largest losing trade': `${fmt(data['Worst Trade [%]'])}%`,
+                'Largest winning trade': `${fmt(data['Best Trade [%]'])}%`,
+                'Total winning streak': safeStr(data['Max. Winning Streak']),
+                'Total losing streak': safeStr(data['Max. Losing Streak']),
+                'Current streak': safeStr(data['Current Streak']),
+                'Expectancy': `${fmt(data['Expectancy [%]'])}%`,
+                'Expected net profit': fmt(data['Expected Net Profit']),
+                'Average holding period': safeStr(data['Avg. Trade Duration'] || 'N/A'),
+                'Gross profit': fmt(data['Gross Profit']),
+                'Gross loss': fmt(data['Gross Loss']),
+                'Volatility (Ann.)': `${fmt(data['Volatility (Ann.) [%]'])}%`, // Added from screenshot
+            },
+            'Trade Metrics': {
+                'Total trades': safeStr(data.total_trades || data['# Trades']),
+                'Total winning trades': safeStr(data['Total Winning Trades']),
+                'Total losing trades': safeStr(data['Total Losing Trades']),
+                'Starting balance': fmt(data['Equity Initial [$]'] || 10000),
+                'Finishing balance': fmt(data['Equity Final [$]'] || data.final_equity),
+                'Longs count': safeStr(data['Longs Count']),
+                'Shorts count': safeStr(data['Shorts Count']),
+                'Fee': fmt(data['Fee']),
+                'Total open trades': safeStr(data['Total Open Trades']),
+                'Open PL': fmt(data['Open PL']),
+                'SQN': fmt(data['SQN']), // Added from screenshot
+                'Buy & Hold Return': `${fmt(data['Buy & Hold Return [%]'])}%`, // Added from screenshot
+            }
+        };
+    };
+
+    const categorized = getCategorizedStats(stats);
+    const hasCategorized = Object.keys(categorized).length > 0;
+
 
     return (
         <div className="space-y-6">
@@ -52,98 +120,36 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
                 </div>
             )}
 
-            {hasCategorized ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {Object.entries(stats.categorized).map(([category, metrics]: [string, any]) => (
-                        <Card key={category} className="shadow-sm border-gray-100 overflow-hidden">
-                            <CardHeader className="py-3 px-4 bg-gray-50/50 border-b border-gray-100">
-                                <CardTitle className="text-sm font-bold text-gray-700 uppercase tracking-tight flex items-center gap-2">
-                                    {category === 'Performance Metrics' && <TrendingUp size={14} className="text-green-500" />}
-                                    {category === 'Risk Metrics' && <AlertTriangle size={14} className="text-red-500" />}
-                                    {category === 'Trade Metrics' && <Activity size={14} className="text-blue-500" />}
-                                    {category}
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-0">
-                                <Table>
-                                    <TableBody>
-                                        {Object.entries(metrics).map(([label, value]: [string, any]) => (
-                                            <TableRow key={label} className="hover:bg-transparent border-gray-50">
-                                                <TableCell className="py-2.5 px-4 text-xs font-medium text-gray-500">
-                                                    {label}
-                                                </TableCell>
-                                                <TableCell className="py-2.5 px-4 text-xs font-mono text-right font-bold text-gray-900">
-                                                    {String(value)}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            ) : (
-                <>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                            <p className="text-xs text-gray-500">Total Trades</p>
-                            <p className="text-lg font-bold">{stats.total_trades}</p>
-                        </div>
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                            <p className="text-xs text-gray-500">Win Rate</p>
-                            <p className="text-lg font-bold">{stats.win_rate?.toFixed(1)}%</p>
-                        </div>
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                            <p className="text-xs text-gray-500">Max Drawdown</p>
-                            <p className="text-lg font-bold text-red-600">{stats.max_drawdown?.toFixed(2)}%</p>
-                        </div>
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                            <p className="text-xs text-gray-500">Profit Factor</p>
-                            <p className="text-lg font-bold">{stats.profit_factor?.toFixed(2)}</p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <h4 className="text-sm font-medium border-b pb-2">Full Metrics</h4>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-8 text-sm">
-                            <div>
-                                <span className="text-gray-500 block text-xs">Sharpe Ratio</span>
-                                <span className="font-mono">{stats.sharpe_ratio?.toFixed(2)}</span>
-                            </div>
-                            <div>
-                                <span className="text-gray-500 block text-xs">Sortino Ratio</span>
-                                <span className="font-mono">{stats.sortino_ratio?.toFixed(2)}</span>
-                            </div>
-                            <div>
-                                <span className="text-gray-500 block text-xs">Calmar Ratio</span>
-                                <span className="font-mono">{stats.calmar_ratio?.toFixed(2)}</span>
-                            </div>
-                            <div>
-                                <span className="text-gray-500 block text-xs">Total PnL</span>
-                                <span className={`font-mono ${stats.total_pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    {stats.total_pnl?.toFixed(2)}
-                                </span>
-                            </div>
-                            <div>
-                                <span className="text-gray-500 block text-xs">Avg Trade</span>
-                                <span className="font-mono">{stats.avg_trade?.toFixed(2)}%</span>
-                            </div>
-                            <div>
-                                <span className="text-gray-500 block text-xs">Max Trade Duration</span>
-                                <span className="font-mono">{stats.max_trade_duration}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="mt-4">
-                        <h4 className="text-sm font-medium mb-2">Raw Data</h4>
-                        <pre className="bg-slate-900 text-slate-50 p-4 rounded-lg text-xs overflow-auto max-h-40">
-                            {JSON.stringify(stats, null, 2)}
-                        </pre>
-                    </div>
-                </>
-            )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {Object.entries(categorized).map(([category, metrics]: [string, any]) => (
+                    <Card key={category} className="shadow-sm border-gray-100 overflow-hidden">
+                        <CardHeader className="py-3 px-4 bg-gray-50/50 border-b border-gray-100">
+                            <CardTitle className="text-sm font-bold text-gray-700 uppercase tracking-tight flex items-center gap-2">
+                                {category === 'Performance Metrics' && <TrendingUp size={14} className="text-green-500" />}
+                                {category === 'Risk Metrics' && <AlertTriangle size={14} className="text-red-500" />}
+                                {category === 'Trade Metrics' && <Activity size={14} className="text-blue-500" />}
+                                {category}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <Table>
+                                <TableBody>
+                                    {Object.entries(metrics).map(([label, value]: [string, any]) => (
+                                        <TableRow key={label} className="hover:bg-transparent border-gray-50">
+                                            <TableCell className="py-2.5 px-4 text-xs font-medium text-gray-500">
+                                                {label}
+                                            </TableCell>
+                                            <TableCell className="py-2.5 px-4 text-xs font-mono text-right font-bold text-gray-900">
+                                                {String(value)}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
         </div>
     );
 }
