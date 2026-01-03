@@ -273,6 +273,7 @@ class Strategy(models.Model):
     sharpe_ratio = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
     win_rate = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
     optimization_config = models.TextField(blank=True, default="")
+    icon = models.CharField(max_length=50, default="Lightbulb")
 
     # Recommendation / Publishing
     # Published status is now tracked on individual StrategyExperiment models (is_published=True)

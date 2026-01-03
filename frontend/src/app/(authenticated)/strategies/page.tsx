@@ -4,7 +4,22 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
-import { Plus, Lightbulb, ExternalLink, Play, Edit, Trash2, Info, LayoutGrid, List, Search, MoreVertical, TrendingUp, TrendingDown, Target, Zap, Filter, Beaker, FileCheck, Activity, GitCompare } from 'lucide-react';
+import { Plus, Lightbulb, ExternalLink, Play, Code, Trash2, Info, LayoutGrid, List, Search, MoreVertical, TrendingUp, TrendingDown, Target, Zap, Filter, Beaker, FileCheck, Activity, GitCompare, Shield, BarChart3, PieChart, Flame, Rocket, Cpu, Layers } from 'lucide-react';
+
+const strategyIcons: Record<string, any> = {
+    Lightbulb,
+    TrendingUp,
+    Zap,
+    Target,
+    Activity,
+    Shield,
+    BarChart3,
+    PieChart,
+    Flame,
+    Rocket,
+    Cpu,
+    Layers
+};
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -36,6 +51,7 @@ interface Strategy {
     max_drawdown?: number;
     sharpe_ratio?: number;
     win_rate?: number;
+    icon?: string;
 }
 
 
@@ -238,8 +254,11 @@ export default function StrategiesPage() {
                                             {/* Header */}
                                             <div className="p-4 border-b border-slate-100 bg-gradient-to-br from-blue-50/20 via-white to-purple-50/10">
                                                 <div className="flex items-start gap-3">
-                                                    <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white flex-shrink-0 shadow-md group-hover:scale-105 transition-all duration-300">
-                                                        <Lightbulb size={20} />
+                                                    <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center text-white flex-shrink-0 shadow-md group-hover:scale-105 transition-all duration-300">
+                                                        {(() => {
+                                                            const Icon = (strategy.icon && strategyIcons[strategy.icon]) || Lightbulb;
+                                                            return <Icon size={20} />;
+                                                        })()}
                                                     </div>
                                                     <div className="min-w-0 flex-1">
                                                         <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -320,13 +339,13 @@ export default function StrategiesPage() {
                                             )}
 
                                             {/* Action Buttons */}
-                                            <div className="grid grid-cols-3 gap-0 bg-white">
+                                            <div className="px-3 py-2 flex gap-2 bg-white border-t border-slate-100">
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         router.push(`/strategies/${strategy.id}/backtest`);
                                                     }}
-                                                    className="py-3 flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all active:scale-95 rounded-bl-xl"
+                                                    className="flex-1 py-2 flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 transition-all active:scale-95 rounded-lg shadow-sm hover:shadow"
                                                 >
                                                     <Play size={14} fill="currentColor" /> Run
                                                 </button>
@@ -335,7 +354,7 @@ export default function StrategiesPage() {
                                                         e.stopPropagation();
                                                         router.push(`/strategies/${strategy.id}/optimize`);
                                                     }}
-                                                    className="py-3 flex items-center justify-center gap-1.5 text-xs font-bold text-purple-700 bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 border-x border-slate-200 transition-all active:scale-95"
+                                                    className="flex-1 py-2 flex items-center justify-center gap-1.5 text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-100 transition-all active:scale-95 rounded-lg"
                                                 >
                                                     <Zap size={14} /> Optimize
                                                 </button>
@@ -344,88 +363,158 @@ export default function StrategiesPage() {
                                                         e.stopPropagation();
                                                         router.push(`/strategies/${strategy.id}/editor`);
                                                     }}
-                                                    className="py-3 flex items-center justify-center gap-1.5 text-xs font-bold text-slate-700 bg-gradient-to-r from-slate-100 to-slate-50 hover:from-slate-200 hover:to-slate-100 transition-all active:scale-95 rounded-br-xl"
+                                                    className="flex-1 py-2 flex items-center justify-center gap-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-all active:scale-95 rounded-lg"
                                                 >
-                                                    <Edit size={14} /> Edit
+                                                    <Code size={14} /> Edit
                                                 </button>
                                             </div>
                                         </Card>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-sm text-left">
-                                            <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">
-                                                <tr>
-                                                    <th className="px-4 py-3">Strategy Name</th>
-
-                                                    <th className="px-4 py-3 text-right">Actions</th>
+                                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm flex flex-col max-h-[calc(100vh-320px)]">
+                                    <div className="overflow-x-auto overflow-y-auto">
+                                        <table className="w-full text-sm text-left border-collapse">
+                                            <thead className="sticky top-0 z-10">
+                                                <tr className="bg-slate-50 border-b border-slate-200">
+                                                    <th className="px-6 py-4 text-sm font-bold text-slate-800">Strategy</th>
+                                                    <th className="px-6 py-4 text-sm font-bold text-slate-800">Performance</th>
+                                                    <th className="px-6 py-4 text-sm font-bold text-slate-800">Key Metrics</th>
+                                                    <th className="px-6 py-4 text-sm font-bold text-slate-800">Created At</th>
+                                                    <th className="px-6 py-4 text-sm font-bold text-slate-800 text-right">Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-gray-100">
+                                            <tbody className="divide-y divide-slate-100">
                                                 {filteredStrategies.map((strategy) => (
                                                     <tr
                                                         key={strategy.id}
-                                                        className="hover:bg-gray-50 group cursor-pointer"
+                                                        className="hover:bg-blue-50/50 group cursor-pointer transition-colors duration-200"
                                                         onClick={() => router.push(`/strategies/${strategy.id}`)}
                                                     >
-                                                        <td className="px-4 py-3">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
-                                                                    <Lightbulb size={16} />
+                                                        {/* Strategy Name & Info */}
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex items-center gap-4">
+                                                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center text-white flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                                                                    {(() => {
+                                                                        const Icon = (strategy.icon && strategyIcons[strategy.icon]) || Lightbulb;
+                                                                        return <Icon size={18} />;
+                                                                    })()}
                                                                 </div>
-                                                                <div>
-                                                                    <div className="font-semibold text-gray-900 hover:text-blue-600 hover:underline block">
+                                                                <div className="min-w-0">
+                                                                    <div className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate">
                                                                         {strategy.name}
                                                                     </div>
-                                                                    <div className="text-xs text-gray-500 truncate max-w-[200px]">{strategy.description}</div>
+                                                                    <div className="text-[11px] text-slate-500 truncate max-w-[240px] font-medium leading-relaxed">
+                                                                        {strategy.description}
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </td>
 
-                                                        <td className="px-4 py-3 text-right">
-                                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        {/* Performance Badge */}
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex flex-col gap-1">
+                                                                {strategy.pnl_percent != null && strategy.pnl_percent !== 0 ? (
+                                                                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black ${strategy.pnl_percent >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                                        {strategy.pnl_percent >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                                                                        {Number(strategy.pnl_percent).toFixed(1)}%
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-slate-300 font-bold uppercase text-[10px] tracking-widest pl-2">No Data</span>
+                                                                )}
+                                                                {strategy.published_experiments && strategy.published_experiments.length > 0 && (
+                                                                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest pl-1">
+                                                                        {strategy.published_experiments.length} Active
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+
+                                                        {/* Metrics Grid */}
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex items-center gap-6">
+                                                                {strategy.sharpe_ratio != null && (
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sharpe</span>
+                                                                        <span className="text-xs font-bold text-slate-700">{Number(strategy.sharpe_ratio).toFixed(2)}</span>
+                                                                    </div>
+                                                                )}
+                                                                {strategy.win_rate != null && (
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Win Rate</span>
+                                                                        <span className="text-xs font-bold text-slate-700">{Number(strategy.win_rate).toFixed(0)}%</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </td>
+
+                                                        {/* Date */}
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-xs font-bold text-slate-600">
+                                                                    {new Date(strategy.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                                </span>
+                                                                <span className="text-[10px] text-slate-400 font-medium">
+                                                                    {new Date(strategy.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                                                                </span>
+                                                            </div>
+                                                        </td>
+
+                                                        {/* Actions */}
+                                                        <td className="px-6 py-4 text-right">
+                                                            <div className="flex items-center justify-end gap-1 group-hover:opacity-100 transition-opacity">
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="icon"
-                                                                    className="h-8 w-8 text-blue-600"
+                                                                    className="h-9 w-9 text-slate-400 hover:text-blue-600 hover:bg-white hover:shadow-sm rounded-xl transition-all"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         router.push(`/strategies/${strategy.id}/backtest`);
                                                                     }}
+                                                                    title="Run Backtest"
                                                                 >
-                                                                    <Play size={14} />
+                                                                    <Play size={16} fill="currentColor" />
                                                                 </Button>
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="icon"
-                                                                    className="h-8 w-8 text-green-600"
+                                                                    className="h-9 w-9 text-slate-400 hover:text-blue-600 hover:bg-white hover:shadow-sm rounded-xl transition-all"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         router.push(`/strategies/${strategy.id}/editor`);
                                                                     }}
+                                                                    title="Open Editor"
                                                                 >
-                                                                    <Edit size={14} />
+                                                                    <Code size={16} />
                                                                 </Button>
                                                                 <DropdownMenu>
                                                                     <DropdownMenuTrigger asChild>
                                                                         <Button
                                                                             variant="ghost"
                                                                             size="icon"
-                                                                            className="h-8 w-8 text-gray-600"
+                                                                            className="h-9 w-9 text-slate-400 hover:text-slate-600 transition-all rounded-xl"
                                                                             onClick={(e) => e.stopPropagation()}
                                                                         >
-                                                                            <MoreVertical size={14} />
+                                                                            <MoreVertical size={16} />
                                                                         </Button>
                                                                     </DropdownMenuTrigger>
-                                                                    <DropdownMenuContent align="end">
+                                                                    <DropdownMenuContent align="end" className="rounded-xl border-slate-200 shadow-xl min-w-[160px]">
+                                                                        <DropdownMenuItem
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                router.push(`/strategies/${strategy.id}/optimize`);
+                                                                            }}
+                                                                            className="cursor-pointer gap-2 font-bold text-xs uppercase tracking-wider p-2.5"
+                                                                        >
+                                                                            <Zap size={14} className="text-purple-600" />
+                                                                            Optimize
+                                                                        </DropdownMenuItem>
                                                                         <DropdownMenuItem
                                                                             onSelect={() => handleDelete(strategy.id, strategy.name)}
-                                                                            className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
+                                                                            className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer gap-2 font-bold text-xs uppercase tracking-wider p-2.5"
                                                                         >
-                                                                            <Trash2 size={14} className="mr-2" />
-                                                                            Delete Strategy
+                                                                            <Trash2 size={14} />
+                                                                            Delete
                                                                         </DropdownMenuItem>
                                                                     </DropdownMenuContent>
                                                                 </DropdownMenu>

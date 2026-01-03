@@ -90,7 +90,7 @@ class StrategySerializer(serializers.ModelSerializer):
     class Meta:
         model = Strategy
         fields = ['id', 'name', 'description', 'code', 'optimization_config', 'created_at', 'is_public', 
-                  'pnl_amount', 'pnl_percent', 'max_drawdown', 'sharpe_ratio', 'win_rate', 'default_parameters',
+                  'pnl_amount', 'pnl_percent', 'max_drawdown', 'sharpe_ratio', 'win_rate', 'icon', 'default_parameters',
                   'published_experiments']
         read_only_fields = ['id', 'created_at', 'published_experiments']
 
