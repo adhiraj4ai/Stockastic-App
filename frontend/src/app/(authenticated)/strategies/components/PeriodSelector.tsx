@@ -18,8 +18,8 @@ interface PeriodSelectorProps {
     endDate: string;
     setStartDate: (v: string) => void;
     setEndDate: (v: string) => void;
-    rangeType: '5y' | '10y' | 'all' | 'custom';
-    setRangeType: (v: '5y' | '10y' | 'all' | 'custom') => void;
+    rangeType: '1y' | '3y' | '5y' | '10y' | 'all' | 'custom';
+    setRangeType: (v: '1y' | '3y' | '5y' | '10y' | 'all' | 'custom') => void;
 }
 
 export function PeriodSelector({ startDate, endDate, setStartDate, setEndDate, rangeType, setRangeType }: PeriodSelectorProps) {
@@ -32,6 +32,14 @@ export function PeriodSelector({ startDate, endDate, setStartDate, setEndDate, r
             setEndDate(format(today, 'yyyy-MM-dd'));
         } else if (rangeType === '5y') {
             const from = subYears(today, 5);
+            setStartDate(format(from, 'yyyy-MM-dd'));
+            setEndDate(format(today, 'yyyy-MM-dd'));
+        } else if (rangeType === '3y') {
+            const from = subYears(today, 3);
+            setStartDate(format(from, 'yyyy-MM-dd'));
+            setEndDate(format(today, 'yyyy-MM-dd'));
+        } else if (rangeType === '1y') {
+            const from = subYears(today, 1);
             setStartDate(format(from, 'yyyy-MM-dd'));
             setEndDate(format(today, 'yyyy-MM-dd'));
         } else if (rangeType === 'all') {
@@ -47,11 +55,11 @@ export function PeriodSelector({ startDate, endDate, setStartDate, setEndDate, r
         <div className="space-y-4">
             <Label className="text-xs font-bold text-gray-500 uppercase">Backtest Period</Label>
             <div className="flex p-1 bg-gray-100 rounded-lg gap-1">
-                {(['10y', '5y', 'all', 'custom'] as const).map((t) => (
+                {(['1y', '3y', '5y', '10y', 'all', 'custom'] as const).map((t) => (
                     <button
                         key={t}
                         onClick={() => setRangeType(t)}
-                        className={`flex-1 py-1.5 px-2 text-[10px] font-bold rounded-md transition-all ${rangeType === t ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`flex-1 py-1.5 px-1 text-[10px] font-bold rounded-md transition-all ${rangeType === t ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                     >
                         {t === 'all' ? 'ALL' : t.toUpperCase()}
                     </button>

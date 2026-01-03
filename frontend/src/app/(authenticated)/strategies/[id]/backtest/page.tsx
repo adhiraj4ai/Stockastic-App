@@ -55,7 +55,7 @@ export default function BacktestPage() {
     // Period state
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
-    const [rangeType, setRangeType] = useState<'5y' | '10y' | 'all' | 'custom'>('10y');
+    const [rangeType, setRangeType] = useState<'1y' | '3y' | '5y' | '10y' | 'all' | 'custom'>('5y');
 
     const abortControllerRef = useRef<AbortController | null>(null);
     const autorunRef = useRef(false);
@@ -256,36 +256,14 @@ export default function BacktestPage() {
 
     return (
         <DashboardLayout
+            showBack={true}
             title={`Backtest - ${strategy?.name || 'Strategy'}`}
-            subtitle="Test your trading strategy with historical market data"
         >
             <div className="space-y-6">
-                <div className="flex items-center gap-2 -mt-4 mb-2">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => router.push(`/strategies/${strategyId}`)}
-                        className="h-8 gap-1 text-gray-500 hover:text-gray-900"
-                    >
-                        <ArrowLeft size={14} /> Back to Strategy
-                    </Button>
-                </div>
-
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Configuration Panel */}
-                    <div className="lg:col-span-5 xl:col-span-4">
+                    <div className="lg:col-span-4 xl:col-span-3">
                         <Card className="border-gray-200 shadow-md overflow-hidden sticky top-6">
-                            <CardHeader className="py-5 px-6 bg-gradient-to-br from-blue-50 to-blue-100/50 border-b border-blue-200">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-blue-500 text-white rounded-xl shadow-sm">
-                                        <Settings size={20} />
-                                    </div>
-                                    <div>
-                                        <CardTitle className="text-base font-black uppercase tracking-wider text-gray-800">Configuration</CardTitle>
-                                        <CardDescription className="text-xs text-gray-600">Set your backtest parameters</CardDescription>
-                                    </div>
-                                </div>
-                            </CardHeader>
                             <CardContent className="p-6 space-y-8">
                                 {/* Mode Toggle */}
                                 <div className="space-y-4">
@@ -435,7 +413,7 @@ export default function BacktestPage() {
                     </div>
 
                     {/* Results Panel */}
-                    <div className="lg:col-span-7 xl:col-span-8 bg-white rounded-2xl shadow-lg border-2 border-gray-100 overflow-hidden flex flex-col min-h-[700px]">
+                    <div className="lg:col-span-8 xl:col-span-9 bg-white rounded-2xl shadow-lg border-2 border-gray-100 overflow-hidden flex flex-col min-h-[700px]">
                         {running ? (
                             <div className="h-full flex flex-col items-center justify-center space-y-4">
                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>

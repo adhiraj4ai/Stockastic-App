@@ -169,6 +169,14 @@ def run_single_objective_optimization(data_map, code_template, param_ranges, obj
         for param_name, param_value in params.items():
             code = code.replace(f"{param_name} = ", f"{param_name} = {param_value} #")
         
+        # Safe-patch: fix index alignment bug if present in template
+        if 'pd.Series(x).index' in code:
+            code = code.replace('pd.Series(x).index', 'self.data.index')
+        
+        # Safe-patch: fix position.entry_price attribute error
+        if '.position.entry_price' in code:
+            code = code.replace('.position.entry_price', '.trades[0].entry_price')
+        
         # Execute strategy code
         local_scope = {
             'Backtest': Backtest,
@@ -176,6 +184,7 @@ def run_single_objective_optimization(data_map, code_template, param_ranges, obj
             'crossover': crossover,
             'SMA': SMA,
             'pd': pd,
+            'np': np,
         }
         
         exec(code, local_scope)
@@ -196,9 +205,27 @@ def run_single_objective_optimization(data_map, code_template, param_ranges, obj
         returns = []
         for ticker, df_data in data_map.items():
             try:
+                # Inject current ticker/symbol into the strategy's global scope
+                local_scope['symbol'] = ticker
+                local_scope['ticker'] = ticker
+                
+                # Check for institutional data availability (if strategy uses it)
+                if 'DailyCumulativeAccumulation' in code_template:
+                     from stocks.models import DailyCumulativeAccumulation
+                     qs = DailyCumulativeAccumulation.objects.filter(symbol=ticker)
+                     count = qs.count()
+                     if trial.number == 0:
+                         print(f"      📊 Institutional records for {ticker}: {count}")
+                         if count > 0:
+                             qs_dates = list(qs.values_list('transaction_date', flat=True).distinct())
+                             price_dates = [d.date() for d in df_data.index]
+                             overlap = set(qs_dates).intersection(set(price_dates))
+                             print(f"      🕒 Date overlap (Accumulation vs Price): {len(overlap)} days")
+                
                 bt = Backtest(df_data, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
                 stats = bt.run()
                 
+                trades = stats.get('# Trades', 0)
                 win_rate = stats.get('Win Rate [%]', 0)
                 if win_rate is None or (isinstance(win_rate, float) and win_rate != win_rate):
                     win_rate = 0
@@ -208,7 +235,13 @@ def run_single_objective_optimization(data_map, code_template, param_ranges, obj
                 if return_pct is None or (isinstance(return_pct, float) and return_pct != return_pct):
                     return_pct = 0
                 returns.append(return_pct)
-            except Exception:
+
+                if trial.number == 0:
+                    print(f"      📈 Trial 0 Info for {ticker}: Trades={trades}, WinRate={win_rate:.2f}%, Return={return_pct:.2f}%")
+            except Exception as e:
+                import traceback
+                print(f"      ⚠️ Backtest failure for {ticker}: {str(e)[:100]}")
+                # Optional: print(traceback.format_exc()) for deep debugging
                 continue
         
         if not win_rates:
@@ -250,6 +283,7 @@ def run_final_backtest(data_map, code_template, params):
         'crossover': crossover,
         'SMA': SMA,
         'pd': pd,
+        'np': np,
     }
     
     try:
@@ -265,8 +299,9 @@ def run_final_backtest(data_map, code_template, params):
             return None
             
         # Use the first dataframe (primary symbol) for the main backtest plot/stats
-        # Multi-symbol not fully supported for plotting in this simple view
         symbol = list(data_map.keys())[0]
+        local_scope['symbol'] = symbol
+        local_scope['ticker'] = symbol
         df = data_map[symbol]
         
         bt = Backtest(df, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)

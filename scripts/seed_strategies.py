@@ -1,6 +1,7 @@
 import os
 import sys
 import django
+import json
 
 # Environment setup is handled if this script is run via `python manage.py shell < seed_strategies.py`
 # But if run standalone, we need to setup.
@@ -868,16 +869,19 @@ import pandas as pd
 import pandas_ta as ta
 
 class WilliamsAlligatorV2(Strategy):
-    jaw = 13
-    teeth = 8
-    lips = 5
-    frac = 5
+    jaw_period = 13 # range: [8, 34]
+    teeth_period = 8 # range: [5, 21]
+    lips_period = 5 # range: [3, 13]
+    jaw_shift = 8 # range: [5, 13]
+    teeth_shift = 5 # range: [3, 8]
+    lips_shift = 3 # range: [2, 5]
+    frac_period = 5 # range: [3, 10]
     
     def init(self):
-        self.j = self.I(lambda x: ta.ema(pd.Series(x), length=self.jaw).shift(8).fillna(method='bfill').values, self.data.Close)
-        self.t = self.I(lambda x: ta.ema(pd.Series(x), length=self.teeth).shift(5).fillna(method='bfill').values, self.data.Close)
-        self.l = self.I(lambda x: ta.ema(pd.Series(x), length=self.lips).shift(3).fillna(method='bfill').values, self.data.Close)
-        self.rh = self.I(lambda x: pd.Series(x).rolling(self.frac).max().shift(1).values, self.data.High)
+        self.j = self.I(lambda x: ta.ema(pd.Series(x), length=self.jaw_period).shift(self.jaw_shift).fillna(method='bfill').values, self.data.Close)
+        self.t = self.I(lambda x: ta.ema(pd.Series(x), length=self.teeth_period).shift(self.teeth_shift).fillna(method='bfill').values, self.data.Close)
+        self.l = self.I(lambda x: ta.ema(pd.Series(x), length=self.lips_period).shift(self.lips_shift).fillna(method='bfill').values, self.data.Close)
+        self.rh = self.I(lambda x: pd.Series(x).rolling(self.frac_period).max().shift(1).values, self.data.High)
 
     def next(self):
         if self.l[-1] > self.t[-1] > self.j[-1] and self.data.Close[-1] > self.rh[-1]:
@@ -1147,7 +1151,16 @@ strategies = [
     {
         "name": "Williams Alligator v2",
         "description": "Trend Following. Uses Bill Williams' Alligator lines with Fractal confirmation. Buys when the Alligator is 'eating' (trending) and price breaks a recent fractal high.",
-        "code": CODE_ALLIGATOR_V2
+        "code": CODE_ALLIGATOR_V2,
+        "optimization_config": {
+            "jaw_period": [8, 34],
+            "teeth_period": [5, 21],
+            "lips_period": [3, 13],
+            "jaw_shift": [5, 13],
+            "teeth_shift": [3, 8],
+            "lips_shift": [2, 5],
+            "frac_period": [3, 10]
+        }
     },
     {
         "name": "Turtle Soup Reversal",
@@ -1237,9 +1250,13 @@ def seed():
                 'description': s['description'],
                 'code': s['code'],
                 'user': user,
-                'is_public': True
+                'is_public': True,
+                'optimization_config': json.dumps(s.get('optimization_config', {}))
             }
         )
+        if strategy.name == "Williams Alligator v2":
+             print(f"[DEBUG] Saving config for {strategy.name}: {json.dumps(s.get('optimization_config', {}))}")
+        
         if created:
             print(f"[CREATED] {s['name']}")
         else:

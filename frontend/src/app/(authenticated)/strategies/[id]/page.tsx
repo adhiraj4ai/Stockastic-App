@@ -241,7 +241,7 @@ export default function StrategyDetailPage() {
                             </div>
                             <div className="bg-gray-50 p-3 text-xs text-gray-500 flex justify-between items-center">
                                 <span>Read-only view</span>
-                                <Button variant="link" className="h-auto p-0 text-blue-600" onClick={() => router.push(`/strategies/${id}/edit`)}>
+                                <Button variant="link" className="h-auto p-0 text-blue-600" onClick={() => router.push(`/strategies/${id}/editor`)}>
                                     Edit Code &rarr;
                                 </Button>
                             </div>

@@ -30,7 +30,7 @@ export default function EditStrategyPage() {
 
     // Sidebar State
     const [strategy, setStrategy] = useState<Strategy | null>(null);
-    const [originalData, setOriginalData] = useState<{ code: string; config: string; name: string } | null>(null);
+    const [originalData, setOriginalData] = useState<{ code: string; config: string; name: string; description: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -67,7 +67,8 @@ export default function EditStrategyPage() {
             setOriginalData({
                 code: data.code || '',
                 config: displayConfig,
-                name: data.name || ''
+                name: data.name || '',
+                description: data.description || ''
             });
         } catch (error: any) {
             console.error('Failed to fetch strategy', error);
@@ -80,10 +81,12 @@ export default function EditStrategyPage() {
     const isDirty = originalData && (
         code !== originalData.code ||
         optimizationConfig !== originalData.config ||
-        (strategy?.name !== originalData.name)
+        (strategy?.name !== originalData.name) ||
+        (strategy?.description !== originalData.description)
     );
 
     const handleSave = async () => {
+        if (!originalData || !strategy) return;
         setSaving(true);
 
         // Convert line-by-line back to JSON
@@ -108,23 +111,31 @@ export default function EditStrategyPage() {
             console.error('Failed to parse config lines', e);
         }
 
+        // Construct only modified fields
+        const payload: any = {};
+        if (code !== originalData.code) payload.code = code;
+        if (optimizationConfig !== originalData.config) payload.optimization_config = configToSave;
+        if (strategy.name !== originalData.name) payload.name = strategy.name;
+        if (strategy.description !== originalData.description) payload.description = strategy.description;
+
         try {
-            await api.patch(`/api/stocks/strategies/${strategyId}/`, {
-                code,
-                optimization_config: configToSave,
-                name: strategy?.name,
-                description: strategy?.description
-            });
+            await api.patch(`/api/stocks/strategies/${strategyId}/`, payload);
             setOriginalData({
                 code,
                 config: optimizationConfig,
-                name: strategy?.name || ''
+                name: strategy.name || '',
+                description: strategy.description || ''
             });
             toast.success('Strategy saved successfully');
         } catch (error: any) {
             console.error('Failed to save strategy', error);
-            const message = error.response?.data?.detail || error.response?.data?.error || 'Failed to save strategy';
-            toast.error(message);
+            // Extract the most descriptive error message
+            const errorData = error.response?.data;
+            const message = errorData?.detail ||
+                (errorData && typeof errorData === 'object' ? Object.values(errorData)[0] : null) ||
+                'Failed to save strategy. Please check if the strategy is published.';
+
+            toast.error(typeof message === 'string' ? message : 'Failed to save strategy');
         } finally {
             setSaving(false);
         }
@@ -155,50 +166,45 @@ export default function EditStrategyPage() {
     };
 
     return (
-        <DashboardLayout>
-            <div className="flex flex-col h-[calc(100vh-64px)]">
+        <DashboardLayout
+            showBack={true}
+            title={`Edit Strategy - ${strategy?.name || 'Loading...'}`}
+        >
+            <div className="flex flex-col h-[calc(100vh-140px)] -mt-4">
                 {/* Toolbar */}
-                <div className="bg-white border-b border-gray-200 px-4 py-3 flex justify-between items-center gap-4">
+                <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex justify-between items-center gap-4 mb-4 shadow-sm">
                     <div className="flex items-center gap-4 flex-1">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-9 w-9 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                            onClick={() => router.push('/strategies')}
-                        >
-                            <ArrowLeft size={18} />
-                        </Button>
                         <div className="flex flex-col flex-1 min-w-0">
                             <input
                                 value={strategy?.name || ''}
                                 onChange={(e) => strategy && setStrategy({ ...strategy, name: e.target.value })}
-                                className="text-xl font-bold text-gray-900 border-none bg-transparent p-0 h-7 w-full focus:ring-0 placeholder:text-gray-300"
+                                className="text-lg font-bold text-gray-900 border-none bg-transparent p-0 h-7 w-full focus:ring-0 placeholder:text-gray-300"
                                 placeholder="Untitled Strategy"
                             />
                             <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded uppercase tracking-wider border border-blue-100">Python 3.10</span>
-                                <span className="text-[10px] text-gray-400 font-medium truncate">{strategy?.description || 'No description provided'}</span>
+                                <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-wider border border-blue-100">Python 3.10</span>
+                                <span className="text-[10px] text-gray-400 font-bold truncate tracking-tight">{strategy?.description || 'No description provided'}</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                         <Button
                             onClick={handleSave}
                             disabled={saving || !isDirty}
                             variant={isDirty ? "default" : "outline"}
-                            className={`h-9 px-4 gap-2 transition-all font-bold ${isDirty ? 'bg-green-600 hover:bg-green-700 text-white shadow-md' : 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed'}`}
+                            className={`h-9 px-5 gap-2 transition-all font-bold rounded-xl ${isDirty ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-100' : 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed opacity-60'}`}
                         >
                             <Save size={16} />
-                            {saving ? 'Saving...' : 'Save Strategy'}
+                            {saving ? 'Saving...' : 'Save Changes'}
                         </Button>
 
                         <Button
                             onClick={handleRun}
-                            className="h-9 px-4 gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md active:scale-[0.98] transition-all"
+                            className="h-9 px-5 gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold shadow-lg shadow-blue-100 active:scale-[0.98] transition-all rounded-xl"
                         >
                             <Play size={16} />
-                            Run Backtest
+                            Backtest
                         </Button>
                     </div>
                 </div>

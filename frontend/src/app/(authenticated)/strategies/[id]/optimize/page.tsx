@@ -207,64 +207,46 @@ export default function OptimizePage() {
 
     return (
         <DashboardLayout
+            showBack={true}
             title={`Optimize - ${strategy?.name || 'Strategy'}`}
-            subtitle="Find the best parameters for your trading strategy"
         >
             <div className="space-y-6">
-                <div className="flex items-center gap-2 -mt-4 mb-2">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => router.push(`/strategies/${strategyId}`)}
-                        className="h-8 gap-1 text-gray-500 hover:text-gray-900"
-                    >
-                        <ArrowLeft size={14} /> Back to Strategy
-                    </Button>
-                </div>
-
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Configuration Panel */}
-                    <div className="">
-                        <Card className="border-gray-200 shadow-sm overflow-hidden ">
-                            <CardHeader className="py-3 px-4 bg-gradient-to-r from-purple-50/50 to-blue-50/50 border-b border-purple-100 cursor-pointer hover:bg-purple-50/70 transition-colors" onClick={() => setConfigExpanded(!configExpanded)}>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <div className="p-1.5 bg-purple-100 text-purple-600 rounded-lg">
-                                            <Zap size={16} />
-                                        </div>
-                                        <div>
-                                            <CardTitle className="text-sm font-bold uppercase tracking-wider text-purple-700">Optimization Settings</CardTitle>
-                                            <CardDescription className="text-[10px] text-purple-600">Configure parameter search space</CardDescription>
-                                        </div>
-                                    </div>
-                                    <ChevronDown
-                                        size={16}
-                                        className={`text-purple-600 transition-transform ${configExpanded ? 'rotate-180' : ''}`}
-                                    />
-                                </div>
-                            </CardHeader>
+                    <div className="lg:col-span-4 xl:col-span-3">
+                        <Card className="border-gray-200 shadow-sm overflow-hidden sticky top-6">
                             {configExpanded && (
-                                <CardContent className="p-4 space-y-3"><div className="grid grid-cols-12 gap-4">
-                                    {/* Column 1: Configuration (Scope + Target) */}
-                                    <div className="col-span-3 space-y-3">
-                                        {/* Scope Section */}
+                                <CardContent className="p-6 space-y-6">
+                                    {/* Scope Section */}
+                                    <div className="space-y-4">
                                         <div>
-                                            <Label className="text-[10px] font-semibold text-gray-500 mb-1 block">SCOPE</Label>
-                                            <select
-                                                value={scope}
-                                                onChange={(e) => setScope(e.target.value as any)}
-                                                className="w-full h-8 px-2 text-xs rounded border border-gray-300 bg-white focus:ring-1 focus:ring-purple-500 outline-none shadow-sm"
-                                            >
-                                                <option value="SINGLE">Single Symbol</option>
-                                                <option value="SECTOR">Sector</option>
-                                                <option value="ALL">All Symbols</option>
-                                            </select>
+                                            <Label className="text-[10px] font-bold text-gray-500 mb-2 block uppercase tracking-wider">Scope</Label>
+                                            <div className="flex p-1 bg-gray-100 rounded-xl gap-1 shadow-inner border border-gray-200/50">
+                                                <button
+                                                    onClick={() => setScope('SINGLE')}
+                                                    className={`flex-1 py-2 px-1 text-[10px] font-black rounded-lg transition-all duration-200 ${scope === 'SINGLE' ? 'bg-white text-purple-700 shadow-sm scale-[1.02]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                                                >
+                                                    SINGLE
+                                                </button>
+                                                <button
+                                                    onClick={() => setScope('SECTOR')}
+                                                    className={`flex-1 py-2 px-1 text-[10px] font-black rounded-lg transition-all duration-200 ${scope === 'SECTOR' ? 'bg-white text-purple-700 shadow-sm scale-[1.02]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                                                >
+                                                    SECTOR
+                                                </button>
+                                                <button
+                                                    onClick={() => setScope('ALL')}
+                                                    className={`flex-1 py-2 px-1 text-[10px] font-black rounded-lg transition-all duration-200 ${scope === 'ALL' ? 'bg-white text-purple-700 shadow-sm scale-[1.02]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                                                >
+                                                    ALL
+                                                </button>
+                                            </div>
                                         </div>
 
                                         {/* Target Selection (Symbol or Sector) - Conditionally Rendered */}
                                         {scope === 'SINGLE' && (
-                                            <div>
-                                                <Label className="text-[10px] font-semibold text-gray-500 mb-1 block">SYMBOL TARGET</Label>
+                                            <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                                                <Label className="text-[10px] font-bold text-gray-400 mb-2 block uppercase tracking-wider">Symbol Target</Label>
                                                 <div className="relative">
                                                     <SymbolSelector
                                                         value={symbol}
@@ -275,12 +257,12 @@ export default function OptimizePage() {
                                         )}
 
                                         {scope === 'SECTOR' && (
-                                            <div>
-                                                <Label className="text-[10px] font-semibold text-gray-500 mb-1 block">SECTOR TARGET</Label>
+                                            <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                                                <Label className="text-[10px] font-bold text-gray-400 mb-2 block uppercase tracking-wider">Sector Target</Label>
                                                 <select
                                                     value={sector}
                                                     onChange={(e) => setSector(e.target.value)}
-                                                    className="w-full h-8 px-2 text-xs rounded border border-gray-300 bg-white focus:ring-1 focus:ring-purple-500 outline-none shadow-sm"
+                                                    className="w-full h-10 px-3 text-xs rounded-xl border-2 border-gray-100 bg-gray-50/50 focus:bg-white focus:border-purple-200 focus:ring-4 focus:ring-purple-500/5 outline-none transition-all shadow-sm"
                                                 >
                                                     <option value="">Select sector...</option>
                                                     {sectors.map((s) => (
@@ -291,67 +273,65 @@ export default function OptimizePage() {
                                         )}
 
                                         {scope === 'ALL' && (
-                                            <div>
-                                                <Label className="text-[10px] font-semibold text-gray-500 mb-1 block">TARGET</Label>
-                                                <div className="w-full h-8 px-2 text-xs flex items-center text-gray-500 bg-gray-50 border border-gray-200 rounded">
+                                            <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                                                <Label className="text-[10px] font-bold text-gray-400 mb-2 block uppercase tracking-wider">Target</Label>
+                                                <div className="w-full h-10 px-3 text-xs flex items-center text-gray-500 bg-gray-50 border border-gray-200 rounded-xl italic">
                                                     All available symbols
                                                 </div>
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* Column 2: Parameters */}
-                                    <div className="col-span-6 border-l border-gray-100 pl-4">
-                                        <Label className="text-[10px] font-semibold text-gray-500 mb-1 block">PARAMETER RANGES</Label>
-                                        <div className="relative max-h-[150px] min-h-[80px] overflow-y-auto pr-1">
-                                            <div className="space-y-2">
-                                                {parameters.map((param, idx) => (
-                                                    <div key={param.name} className="flex items-center gap-2">
-                                                        <div className="w-24 text-[10px] font-mono font-semibold text-gray-600 truncate" title={param.name}>
-                                                            {param.name}
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <input
-                                                                type="number"
-                                                                value={param.min}
-                                                                onChange={(e) => {
-                                                                    const newParams = [...parameters];
-                                                                    newParams[idx].min = parseInt(e.target.value) || 0;
-                                                                    setParameters(newParams);
-                                                                }}
-                                                                className="w-20 h-7 px-2 text-[10px] text-center border rounded border-gray-200 focus:ring-1 focus:ring-purple-500 outline-none bg-gray-50/50"
-                                                                placeholder="Min"
-                                                            />
-                                                            <span className="text-gray-300 text-[10px]">-</span>
-                                                            <input
-                                                                type="number"
-                                                                value={param.max}
-                                                                onChange={(e) => {
-                                                                    const newParams = [...parameters];
-                                                                    newParams[idx].max = parseInt(e.target.value) || 0;
-                                                                    setParameters(newParams);
-                                                                }}
-                                                                className="w-20 h-7 px-2 text-[10px] text-center border rounded border-gray-200 focus:ring-1 focus:ring-purple-500 outline-none bg-gray-50/50"
-                                                                placeholder="Max"
-                                                            />
-                                                        </div>
+                                    {/* Parameters Section */}
+                                    <div className="pt-6 border-t border-gray-100">
+                                        <Label className="text-[10px] font-semibold text-gray-500 mb-3 block uppercase tracking-wider">Parameter Ranges</Label>
+                                        <div className="relative max-h-[250px] overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+                                            {parameters.map((param, idx) => (
+                                                <div key={param.name} className="space-y-1.5">
+                                                    <div className="text-[10px] font-mono font-semibold text-gray-600 truncate flex justify-between items-center" title={param.name}>
+                                                        <span>{param.name}</span>
                                                     </div>
-                                                ))}
-                                                {parameters.length === 0 && (
-                                                    <div className="text-[10px] text-gray-400 text-center py-4 italic">
-                                                        No parameters found
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="number"
+                                                            value={param.min}
+                                                            onChange={(e) => {
+                                                                const newParams = [...parameters];
+                                                                newParams[idx].min = parseInt(e.target.value) || 0;
+                                                                setParameters(newParams);
+                                                            }}
+                                                            className="flex-1 h-8 px-2 text-[10px] text-center border rounded-md border-gray-200 focus:ring-1 focus:ring-purple-500 outline-none bg-gray-50/50"
+                                                            placeholder="Min"
+                                                        />
+                                                        <span className="text-gray-300 text-[10px]">to</span>
+                                                        <input
+                                                            type="number"
+                                                            value={param.max}
+                                                            onChange={(e) => {
+                                                                const newParams = [...parameters];
+                                                                newParams[idx].max = parseInt(e.target.value) || 0;
+                                                                setParameters(newParams);
+                                                            }}
+                                                            className="flex-1 h-8 px-2 text-[10px] text-center border rounded-md border-gray-200 focus:ring-1 focus:ring-purple-500 outline-none bg-gray-50/50"
+                                                            placeholder="Max"
+                                                        />
                                                     </div>
-                                                )}
-                                            </div>
+                                                </div>
+                                            ))}
+                                            {parameters.length === 0 && (
+                                                <div className="text-[10px] text-gray-400 text-center py-4 italic">
+                                                    No parameters found
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
-                                    {/* Column 3: Action */}
-                                    <div className="col-span-3 flex items-center justify-center pl-4 border-l border-gray-100">
+                                    {/* Action Button */}
+                                    <div className="pt-6 border-t border-gray-100">
                                         <Button
                                             onClick={handleOptimize}
                                             disabled={optimizing || (scope === 'SINGLE' && !symbol) || (scope === 'SECTOR' && !sector)}
-                                            className="w-full h-10 text-xs font-bold uppercase tracking-wider bg-purple-600 hover:bg-purple-700 text-white shadow-md active:scale-95 transition-all"
+                                            className="w-full h-11 text-xs font-bold uppercase tracking-wider bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-200 active:scale-95 transition-all rounded-xl"
                                         >
                                             {optimizing ? (
                                                 <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" /> RUNNING</>
@@ -360,38 +340,35 @@ export default function OptimizePage() {
                                             )}
                                         </Button>
                                     </div>
-                                </div></CardContent>
+                                </CardContent>
                             )}
                         </Card>
                     </div>
 
                     {/* Progressive Results Panel */}
-                    <div className="space-y-6 pb-20">
+                    <div className="lg:col-span-8 xl:col-span-9 space-y-6 pb-20">
                         {['1Y', '3Y', '5Y', '10Y'].map((period) => {
                             const result = periodResults[period];
                             if (result.status === 'pending') return null;
 
                             return (
                                 <div key={period} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                                    <div className="border-b px-6 py-4 flex justify-between items-center bg-gray-50/50">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`p-2 rounded-lg ${result.status === 'loading' ? 'bg-purple-100 text-purple-600' : 'bg-green-100 text-green-600'}`}>
-                                                {result.status === 'loading' ? <div className="animate-spin w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full" /> : <CheckCircle size={18} />}
-                                            </div>
-                                            <div>
-                                                <h3 className="font-bold text-gray-900">{period} Optimization</h3>
-                                                <p className="text-xs text-gray-500">
-                                                    {result.status === 'loading' ? 'Searching parameter space...' : 'Optimization completed'}
-                                                </p>
-                                            </div>
+                                    <div className="px-6 py-3 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Activity size={16} className="text-purple-600" />
+                                            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">{period} Optimization</h3>
                                         </div>
-                                        {result.status === 'success' && ['1Y', '3Y', '5Y'].includes(period) && (
-                                            <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-green-200">
-                                                PUBLISHED
+                                        {result.status === 'success' && (
+                                            <Badge variant="outline" className="text-[10px] bg-white text-green-600 border-green-100 flex items-center gap-1">
+                                                <CheckCircle size={10} /> Success
+                                            </Badge>
+                                        )}
+                                        {result.status === 'loading' && (
+                                            <Badge variant="outline" className="text-[10px] bg-white text-purple-600 border-purple-100 animate-pulse">
+                                                Processing...
                                             </Badge>
                                         )}
                                     </div>
-
                                     {result.status === 'loading' && (
                                         <div className="p-12 flex flex-col items-center justify-center text-center">
                                             <div className="w-16 h-1 bg-purple-100 rounded-full overflow-hidden mb-4">
@@ -515,7 +492,6 @@ export default function OptimizePage() {
                             );
                         })}
                     </div>
-
                 </div>
             </div>
         </DashboardLayout>
