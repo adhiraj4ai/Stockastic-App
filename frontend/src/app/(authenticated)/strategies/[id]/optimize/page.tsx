@@ -232,23 +232,23 @@ export default function OptimizePage() {
                                     {/* Scope Section */}
                                     <div className="space-y-4">
                                         <div>
-                                            <Label className="text-[10px] font-bold text-gray-500 mb-2 block uppercase tracking-wider">Scope</Label>
-                                            <div className="flex p-1 bg-gray-100 rounded-xl gap-1 shadow-inner border border-gray-200/50">
+                                            <Label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wider">Scope</Label>
+                                            <div className="flex p-1.5 bg-gray-100 rounded-xl gap-1 shadow-inner border border-gray-200/50">
                                                 <button
                                                     onClick={() => setScope('SINGLE')}
-                                                    className={`flex-1 py-2 px-1 text-[10px] font-black rounded-lg transition-all duration-200 ${scope === 'SINGLE' ? 'bg-white text-purple-700 shadow-sm scale-[1.02]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                                                    className={`flex-1 py-2.5 px-2 text-xs font-black rounded-lg transition-all duration-200 ${scope === 'SINGLE' ? 'bg-white text-purple-700 shadow-sm scale-[1.02]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                                                 >
                                                     SINGLE
                                                 </button>
                                                 <button
                                                     onClick={() => setScope('SECTOR')}
-                                                    className={`flex-1 py-2 px-1 text-[10px] font-black rounded-lg transition-all duration-200 ${scope === 'SECTOR' ? 'bg-white text-purple-700 shadow-sm scale-[1.02]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                                                    className={`flex-1 py-2.5 px-2 text-xs font-black rounded-lg transition-all duration-200 ${scope === 'SECTOR' ? 'bg-white text-purple-700 shadow-sm scale-[1.02]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                                                 >
                                                     SECTOR
                                                 </button>
                                                 <button
                                                     onClick={() => setScope('ALL')}
-                                                    className={`flex-1 py-2 px-1 text-[10px] font-black rounded-lg transition-all duration-200 ${scope === 'ALL' ? 'bg-white text-purple-700 shadow-sm scale-[1.02]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                                                    className={`flex-1 py-2.5 px-2 text-xs font-black rounded-lg transition-all duration-200 ${scope === 'ALL' ? 'bg-white text-purple-700 shadow-sm scale-[1.02]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                                                 >
                                                     ALL
                                                 </button>
@@ -258,11 +258,12 @@ export default function OptimizePage() {
                                         {/* Target Selection (Symbol or Sector) - Conditionally Rendered */}
                                         {scope === 'SINGLE' && (
                                             <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-                                                <Label className="text-[10px] font-bold text-gray-400 mb-2 block uppercase tracking-wider">Symbol Target</Label>
+                                                <Label className="text-xs font-bold text-gray-400 mb-2 block uppercase tracking-wider">Symbol Target</Label>
                                                 <div className="relative">
                                                     <SymbolSelector
                                                         value={symbol}
                                                         onChange={setSymbol}
+                                                        className="w-full h-11"
                                                     />
                                                 </div>
                                             </div>
@@ -296,11 +297,11 @@ export default function OptimizePage() {
 
                                     {/* Parameters Section */}
                                     <div className="pt-6 border-t border-gray-100">
-                                        <Label className="text-[10px] font-semibold text-gray-500 mb-3 block uppercase tracking-wider">Parameter Ranges</Label>
-                                        <div className="relative max-h-[250px] overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+                                        <Label className="text-xs font-semibold text-gray-500 mb-3 block uppercase tracking-wider">Parameter Ranges</Label>
+                                        <div className="relative max-h-[60vh] overflow-y-auto pr-2 space-y-3 custom-scrollbar">
                                             {parameters.map((param, idx) => (
-                                                <div key={param.name} className="space-y-1.5">
-                                                    <div className="text-[10px] font-mono font-semibold text-gray-600 truncate flex justify-between items-center" title={param.name}>
+                                                <div key={param.name} className="space-y-1">
+                                                    <div className="text-xs font-mono font-semibold text-gray-600 truncate flex justify-between items-center" title={param.name}>
                                                         <span>{param.name}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2">
@@ -312,7 +313,7 @@ export default function OptimizePage() {
                                                                 newParams[idx].min = parseInt(e.target.value) || 0;
                                                                 setParameters(newParams);
                                                             }}
-                                                            className="flex-1 h-8 px-2 text-[10px] text-center border rounded-md border-gray-200 focus:ring-1 focus:ring-purple-500 outline-none bg-gray-50/50"
+                                                            className="w-20 h-9 px-3 text-xs text-center border rounded-md border-gray-200 focus:ring-1 focus:ring-purple-500 outline-none bg-gray-50/50 font-medium"
                                                             placeholder="Min"
                                                         />
                                                         <span className="text-gray-300 text-[10px]">to</span>
@@ -324,7 +325,7 @@ export default function OptimizePage() {
                                                                 newParams[idx].max = parseInt(e.target.value) || 0;
                                                                 setParameters(newParams);
                                                             }}
-                                                            className="flex-1 h-8 px-2 text-[10px] text-center border rounded-md border-gray-200 focus:ring-1 focus:ring-purple-500 outline-none bg-gray-50/50"
+                                                            className="w-20 h-9 px-3 text-xs text-center border rounded-md border-gray-200 focus:ring-1 focus:ring-purple-500 outline-none bg-gray-50/50 font-medium"
                                                             placeholder="Max"
                                                         />
                                                     </div>
