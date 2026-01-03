@@ -112,7 +112,7 @@ def fetch_period_data(symbol, sector, period_start, period_end, DailyStockPrice,
 
 def run_single_objective_optimization(data_map, code_template, param_ranges, objective_type, n_trials):
     """Run optimization for a single objective"""
-    # Build search space for Grid sampler
+    # Build search space
     search_space = {}
     total_combinations = 1
     
@@ -129,7 +129,7 @@ def run_single_objective_optimization(data_map, code_template, param_ranges, obj
             count = int(end) - int(start) + 1
             search_space[param_name] = list(range(int(start), int(end) + 1))
         elif p_type == 'float':
-            step = (end - start) / 20.0
+            step = (end - start) / 10.0 # Fewer steps for grid search
             if step == 0: step = 0.1
             values = []
             curr = start
@@ -144,9 +144,13 @@ def run_single_objective_optimization(data_map, code_template, param_ranges, obj
         
         total_combinations *= count
     
-    # Always use Grid sampler
-    sampler = optuna.samplers.GridSampler(search_space)
-    n_trials = total_combinations
+    # Decide sampler
+    if total_combinations <= n_trials:
+        sampler = optuna.samplers.GridSampler(search_space)
+        actual_n_trials = total_combinations
+    else:
+        sampler = optuna.samplers.TPESampler()
+        actual_n_trials = n_trials
     
     # Define objective function
     def objective(trial):
@@ -162,12 +166,14 @@ def run_single_objective_optimization(data_map, code_template, param_ranges, obj
                     params[param_name] = trial.suggest_int(param_name, int(min_val), int(max_val))
             else:
                 min_val, max_val = param_config
-                params[param_name] = trial.suggest_int(param_name, min_val, max_val)
+                params[param_name] = trial.suggest_int(param_name, int(min_val), int(max_val))
         
         # Replace parameters in code
         code = code_template
         for param_name, param_value in params.items():
+            # Support both "name = " and "name=" patterns
             code = code.replace(f"{param_name} = ", f"{param_name} = {param_value} #")
+            code = code.replace(f"{param_name}=", f"{param_name}={param_value} #")
         
         # Safe-patch: fix index alignment bug if present in template
         if 'pd.Series(x).index' in code:
@@ -187,7 +193,11 @@ def run_single_objective_optimization(data_map, code_template, param_ranges, obj
             'np': np,
         }
         
-        exec(code, local_scope)
+        try:
+            exec(code, local_scope)
+        except Exception as e:
+            print(f"      ❌ Strategy code execution failure: {e}")
+            return -9999
         
         # Find strategy class
         from backtesting import Strategy as BTStrategy
@@ -198,7 +208,7 @@ def run_single_objective_optimization(data_map, code_template, param_ranges, obj
                 break
         
         if not strategy_class:
-            raise ValueError('No Strategy class found')
+            return -9999
         
         # Run backtest for all dataframes
         win_rates = []
@@ -208,19 +218,6 @@ def run_single_objective_optimization(data_map, code_template, param_ranges, obj
                 # Inject current ticker/symbol into the strategy's global scope
                 local_scope['symbol'] = ticker
                 local_scope['ticker'] = ticker
-                
-                # Check for institutional data availability (if strategy uses it)
-                if 'DailyCumulativeAccumulation' in code_template:
-                     from stocks.models import DailyCumulativeAccumulation
-                     qs = DailyCumulativeAccumulation.objects.filter(symbol=ticker)
-                     count = qs.count()
-                     if trial.number == 0:
-                         print(f"      📊 Institutional records for {ticker}: {count}")
-                         if count > 0:
-                             qs_dates = list(qs.values_list('transaction_date', flat=True).distinct())
-                             price_dates = [d.date() for d in df_data.index]
-                             overlap = set(qs_dates).intersection(set(price_dates))
-                             print(f"      🕒 Date overlap (Accumulation vs Price): {len(overlap)} days")
                 
                 bt = Backtest(df_data, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
                 stats = bt.run()
@@ -235,34 +232,27 @@ def run_single_objective_optimization(data_map, code_template, param_ranges, obj
                 if return_pct is None or (isinstance(return_pct, float) and return_pct != return_pct):
                     return_pct = 0
                 returns.append(return_pct)
-
-                if trial.number == 0:
-                    print(f"      📈 Trial 0 Info for {ticker}: Trades={trades}, WinRate={win_rate:.2f}%, Return={return_pct:.2f}%")
             except Exception as e:
-                import traceback
-                print(f"      ⚠️ Backtest failure for {ticker}: {str(e)[:100]}")
-                # Optional: print(traceback.format_exc()) for deep debugging
                 continue
         
         if not win_rates:
             return -9999
         
         # Calculate objective based on type
+        avg_win_rate = sum(win_rates) / len(win_rates)
+        avg_return = sum(returns) / len(returns)
+
         if objective_type == 'win_rate':
-            return sum(win_rates) / len(win_rates)
+            return avg_win_rate
         elif objective_type == 'profit':
-            return sum(returns) / len(returns)
+            return avg_return
         else:  # 'balanced'
-            avg_win_rate = sum(win_rates) / len(win_rates)
-            avg_return = sum(returns) / len(returns)
-            avg_win_rate = sum(win_rates) / len(win_rates)
-            avg_return = sum(returns) / len(returns)
-            # Prioritize Win Rate: 
-            return avg_win_rate * 1000 + avg_return
+            # Quality metric: Win rate weighted significantly + Return
+            return (avg_win_rate * 2) + (avg_return / 10)
     
     # Run optimization
     study = optuna.create_study(direction='maximize', sampler=sampler)
-    study.optimize(objective, n_trials=n_trials, show_progress_bar=False)
+    study.optimize(objective, n_trials=actual_n_trials, show_progress_bar=False)
     
     return {
         'best_params': study.best_params,

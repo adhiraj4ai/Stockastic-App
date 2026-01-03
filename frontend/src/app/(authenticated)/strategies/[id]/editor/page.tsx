@@ -170,49 +170,11 @@ export default function EditStrategyPage() {
             showBack={true}
             title={`Edit Strategy - ${strategy?.name || 'Loading...'}`}
         >
-            <div className="flex flex-col h-[calc(100vh-140px)] -mt-4">
-                {/* Toolbar */}
-                <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex justify-between items-center gap-4 mb-4 shadow-sm">
-                    <div className="flex items-center gap-4 flex-1">
-                        <div className="flex flex-col flex-1 min-w-0">
-                            <input
-                                value={strategy?.name || ''}
-                                onChange={(e) => strategy && setStrategy({ ...strategy, name: e.target.value })}
-                                className="text-lg font-bold text-gray-900 border-none bg-transparent p-0 h-7 w-full focus:ring-0 placeholder:text-gray-300"
-                                placeholder="Untitled Strategy"
-                            />
-                            <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-wider border border-blue-100">Python 3.10</span>
-                                <span className="text-[10px] text-gray-400 font-bold truncate tracking-tight">{strategy?.description || 'No description provided'}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                        <Button
-                            onClick={handleSave}
-                            disabled={saving || !isDirty}
-                            variant={isDirty ? "default" : "outline"}
-                            className={`h-9 px-5 gap-2 transition-all font-bold rounded-xl ${isDirty ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-100' : 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed opacity-60'}`}
-                        >
-                            <Save size={16} />
-                            {saving ? 'Saving...' : 'Save Changes'}
-                        </Button>
-
-                        <Button
-                            onClick={handleRun}
-                            className="h-9 px-5 gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold shadow-lg shadow-blue-100 active:scale-[0.98] transition-all rounded-xl"
-                        >
-                            <Play size={16} />
-                            Backtest
-                        </Button>
-                    </div>
-                </div>
-
+            <div className="flex flex-col h-[calc(100vh-100px)] -mt-4">
                 {/* Main Content: Split View */}
                 <div className="flex flex-1 overflow-hidden">
                     {/* Editor Area */}
-                    <div className="flex-1 border-r border-gray-200">
+                    <div className="flex-1 border-r border-gray-200 bg-white">
                         <Editor
                             height="100%"
                             defaultLanguage="python"
@@ -222,28 +184,64 @@ export default function EditStrategyPage() {
                             theme="vs-light"
                             options={{
                                 minimap: { enabled: false },
-                                fontSize: 14,
+                                fontSize: 16,
+                                fontWeight: '500',
                                 wordWrap: 'on',
                                 automaticLayout: true,
                                 scrollBeyondLastLine: false,
                                 lineNumbersMinChars: 3,
-                                padding: { top: 16 }
+                                padding: { top: 20, bottom: 20 },
+                                fontFamily: "'SF Mono', 'Geist Mono', 'JetBrains Mono', 'Fira Code', 'IBM Plex Mono', ui-monospace, monospace",
+                                fontLigatures: true,
+                                lineHeight: 26,
+                                letterSpacing: 0.5,
+                                renderLineHighlight: 'all',
+                                cursorSmoothCaretAnimation: 'on',
+                                smoothScrolling: true,
                             }}
                         />
                     </div>
 
                     {/* Right Sidebar: Configuration */}
                     <div className="w-80 bg-gray-50 border-l border-gray-200 flex flex-col h-full overflow-hidden">
-                        <div className="flex-1 overflow-y-auto p-5 space-y-6">
-                            <div className="space-y-3">
-                                <h3 className="text-[11px] font-bold text-gray-400 uppercase tracking-[0.1em]">Optimization Config</h3>
-                                <p className="text-[10px] text-gray-500 leading-relaxed italic">
-                                    Maintain parameter ranges for optimization runs. One parameter per line in `key: value` format.
+                        <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                            {/* Action Buttons at Top of Sidebar */}
+                            <div className="space-y-4 pb-8 border-b border-gray-200">
+                                <Button
+                                    onClick={handleSave}
+                                    disabled={saving || !isDirty}
+                                    variant={isDirty ? "default" : "outline"}
+                                    className={`w-full h-12 px-5 gap-2 transition-all font-black rounded-xl text-sm uppercase tracking-widest ${isDirty ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-100' : 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed opacity-60'}`}
+                                >
+                                    <Save size={18} />
+                                    {saving ? 'Saving...' : 'Save Changes'}
+                                </Button>
+
+                                <Button
+                                    onClick={handleRun}
+                                    className="w-full h-12 px-5 gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-black rounded-xl text-sm uppercase tracking-widest shadow-lg shadow-blue-100 active:scale-[0.98] transition-all"
+                                >
+                                    <Play size={18} />
+                                    Backtest
+                                </Button>
+                            </div>
+
+                            <div className="space-y-4 pt-2">
+                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-[0.15em]">Optimization Config</h3>
+                                <p className="text-[11px] text-gray-500 leading-relaxed font-medium">
+                                    Define parameter ranges (max 10 lines).
                                 </p>
                                 <textarea
                                     value={optimizationConfig}
-                                    onChange={(e) => setOptimizationConfig(e.target.value)}
-                                    className="w-full h-[400px] p-3 text-xs font-mono bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none shadow-sm"
+                                    onChange={(e) => {
+                                        const lines = e.target.value.split('\n');
+                                        if (lines.length <= 10) {
+                                            setOptimizationConfig(e.target.value);
+                                        } else {
+                                            setOptimizationConfig(lines.slice(0, 10).join('\n'));
+                                        }
+                                    }}
+                                    className="w-full h-[240px] p-4 text-sm font-mono font-medium bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none shadow-sm leading-relaxed"
                                     placeholder={'fast_window: [10, 30]\nslow_window: [40, 60]'}
                                 />
                             </div>

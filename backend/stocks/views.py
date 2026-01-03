@@ -1888,125 +1888,121 @@ class StrategyViewSet(viewsets.ModelViewSet):
             periods = all_periods
         
         # Store results for all periods
+        # Store results for all periods
         results_by_period = {}
         
-        # Loop over each period
-        for period_name, period_start, period_end in periods:
-            print(f"\n{'='*60}")
-            print(f"PERIOD: {period_name} ({period_start} to {period_end})")
-            print(f"{'='*60}\n")
-            
-            results_by_period[period_name] = {}
-            
-            try:
-                # Fetch data for this period
-                data_map, error = fetch_period_data(
-                    symbol, sector, period_start, period_end,
-                    DailyStockPrice, Company
-                )
+        try:
+            # Loop over each period
+            for period_name, period_start, period_end in periods:
+                print(f"\n{'='*60}")
+                print(f"PERIOD: {period_name} ({period_start} to {period_end})")
+                print(f"{'='*60}\n")
                 
-                if error:
-                    results_by_period[period_name]['error'] = error
-                    continue
+                results_by_period[period_name] = {}
                 
-                # Run optimization for all 3 objectives
-                for obj_type in ['win_rate', 'profit', 'balanced']:
-                    print(f"  Optimizing for {obj_type}...")
-                    
-                    result = run_single_objective_optimization(
-                        data_map, code_template, param_ranges, obj_type, n_trials
+                try:
+                    # Fetch data for this period
+                    data_map, error = fetch_period_data(
+                        symbol, sector, period_start, period_end,
+                        DailyStockPrice, Company
                     )
                     
-                    # Log raw result from optimization
-                    print(f"    Raw Result for {obj_type}: {result}")
+                    if error:
+                        results_by_period[period_name]['error'] = error
+                        continue
                     
-                    # Run full backtest for ALL objectives to get displayable stats
-                    # This allows side-by-side comparison of metrics
-                    full_stats, bt_instance, plot_html = run_final_backtest(data_map, code_template, result['best_params'])
-                    
-                    if full_stats:
-                        print(f"    ✅ Backtest stats generated for {obj_type}")
-                        result['stats'] = full_stats
+                    # Run optimization for all 3 objectives
+                    for obj_type in ['win_rate', 'profit', 'balanced']:
+                        print(f"  Optimizing for {obj_type}...")
                         
-                        # Create Experiment Record for this objective's result
-                        try:
-                            # Determine scope
-                            scope_type = ScopeType.SYMBOL
-                            scope_val = symbol
-                            if symbol == 'ALL':
-                                scope_type = ScopeType.ALL 
-                                scope_val = 'ALL'
-                            elif sector:
-                                scope_type = ScopeType.SECTOR
-                                scope_val = sector
+                        result = run_single_objective_optimization(
+                            data_map, code_template, param_ranges, obj_type, n_trials
+                        )
+                        
+                        # Log raw result from optimization
+                        print(f"    Raw Result for {obj_type}: {result}")
+                        
+                        # Run full backtest for ALL objectives to get displayable stats
+                        # This allows side-by-side comparison of metrics
+                        full_stats, bt_instance, plot_html = run_final_backtest(data_map, code_template, result['best_params'])
+                        
+                        if full_stats:
+                            print(f"    ✅ Backtest stats generated for {obj_type}")
+                            result['stats'] = full_stats
+                            
+                            # Create Experiment Record for this objective's result
+                            try:
+                                # Determine scope
+                                scope_type = ScopeType.SYMBOL
+                                scope_val = symbol
+                                if symbol == 'ALL':
+                                    scope_type = ScopeType.ALL 
+                                    scope_val = 'ALL'
+                                elif sector:
+                                    scope_type = ScopeType.SECTOR
+                                    scope_val = sector
 
-                            # Only auto-publish 'balanced' or 'profit' to avoid clutter/conflicts?
-                            # Let's publish 'balanced' as the primary one. 
-                            # 'win_rate' and 'profit' will be saved but not marked published,
-                            # so they don't override the default view but are accessible via link.
-                            is_published = (obj_type == 'balanced')
-                            
-                            exp = StrategyExperiment.objects.create(
-                                strategy=strategy,
-                                user=request.user,
-                                run_type=StrategyExperiment.RunType.OPTIMIZATION,
-                                scope_type=scope_type,
-                                scope_value=scope_val,
-                                start_date=period_start,
-                                end_date=period_end,
-                                parameters=result['best_params'],
-                                metrics={
-                                    'stats': full_stats,
-                                    'period': period_name,
-                                    'objective': obj_type
-                                },
-                                plot_html=plot_html,
-                                status=StrategyExperiment.Status.SUCCESS,
-                                is_published=is_published 
-                            )
-                            print(f"  ✅ Created Experiment {exp.id} ({obj_type})")
-                            result['experiment_id'] = exp.id
-                            
-                            # If this is the published one, unpublish others
-                            if is_published:
-                                StrategyExperiment.objects.filter(
+                                # Only auto-publish 'balanced' or 'profit' to avoid clutter/conflicts?
+                                # Let's publish 'balanced' as the primary one. 
+                                # 'win_rate' and 'profit' will be saved but not marked published,
+                                # so they don't override the default view but are accessible via link.
+                                is_published = (obj_type == 'balanced')
+                                
+                                exp = StrategyExperiment.objects.create(
                                     strategy=strategy,
+                                    user=request.user,
+                                    run_type=StrategyExperiment.RunType.OPTIMIZATION,
                                     scope_type=scope_type,
                                     scope_value=scope_val,
-                                    is_published=True
-                                ).exclude(id=exp.id).update(is_published=False)
-                            
-                        except Exception as exp_err:
-                            print(f"  ❌ Failed to create experiment: {exp_err}")
-                    else:
-                        print(f"    ⚠️ Full backtest returned None for {obj_type}")
-                    
-                    results_by_period[period_name][obj_type] = result
+                                    start_date=period_start,
+                                    end_date=period_end,
+                                    parameters=result['best_params'],
+                                    metrics={
+                                        'stats': full_stats,
+                                        'period': period_name,
+                                        'objective': obj_type
+                                    },
+                                    plot_html=plot_html,
+                                    status=StrategyExperiment.Status.SUCCESS,
+                                    is_published=is_published 
+                                )
+                                print(f"  ✅ Created Experiment {exp.id} ({obj_type})")
+                                result['experiment_id'] = exp.id
+                                
+                                # If this is the published one, unpublish others
+                                if is_published:
+                                    StrategyExperiment.objects.filter(
+                                        strategy=strategy,
+                                        scope_type=scope_type,
+                                        scope_value=scope_val,
+                                        is_published=True
+                                    ).exclude(id=exp.id).update(is_published=False)
+                                
+                            except Exception as exp_err:
+                                print(f"  ❌ Failed to create experiment: {exp_err}")
+                        else:
+                            print(f"    ⚠️ Full backtest returned None for {obj_type}")
+                        
+                        results_by_period[period_name][obj_type] = result
 
-            except Exception as period_err:
-                import traceback
-                print(f"❌ Period {period_name} failed: {period_err}")
-                traceback.print_exc()
-                results_by_period[period_name]['error'] = str(period_err)
+                except Exception as period_err:
+                    import traceback
+                    print(f"❌ Period {period_name} failed: {period_err}")
+                    traceback.print_exc()
+                    results_by_period[period_name]['error'] = str(period_err)
         
-        # Sanitization Helper for NumPy types
-        def sanitize_for_json(obj):
-            import numpy as np
-            if isinstance(obj, dict):
-                return {k: sanitize_for_json(v) for k, v in obj.items()}
-            elif isinstance(obj, list):
-                return [sanitize_for_json(v) for v in obj]
-            elif isinstance(obj, np.integer):
-                return int(obj)
-            elif isinstance(obj, np.floating):
-                return float(obj)
-            elif isinstance(obj, np.bool_):
-                return bool(obj)
-            elif isinstance(obj, np.ndarray):
-                return sanitize_for_json(obj.tolist())
-            return obj
+        except Exception as e:
+            import traceback
+            error_msg = f"Multi-period optimization failed: {str(e)}"
+            print(f"❌ {error_msg}")
+            traceback.print_exc()
+            return Response({
+                'success': False,
+                'error': error_msg,
+                'traceback': traceback.format_exc()
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        clean_results = sanitize_for_json(results_by_period)
+        clean_results = StrategyViewSet._clean_for_json(results_by_period)
 
         return Response({
             'success': True,
