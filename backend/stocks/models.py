@@ -274,6 +274,7 @@ class Strategy(models.Model):
     win_rate = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
     optimization_config = models.TextField(blank=True, default="")
     icon = models.CharField(max_length=50, default="Lightbulb")
+    icon_color = models.CharField(max_length=7, default="#000000")
 
     # Recommendation / Publishing
     # Published status is now tracked on individual StrategyExperiment models (is_published=True)

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
-import { Plus, Lightbulb, ExternalLink, Play, Code, Trash2, Info, LayoutGrid, List, Search, MoreVertical, TrendingUp, TrendingDown, Target, Zap, Filter, Beaker, FileCheck, Activity, GitCompare, Shield, BarChart3, PieChart, Flame, Rocket, Cpu, Layers } from 'lucide-react';
+import { Plus, Lightbulb, ExternalLink, Play, Code, Trash2, Info, LayoutGrid, List, Search, MoreVertical, TrendingUp, TrendingDown, Target, Zap, Filter, Beaker, FileCheck, Activity, GitCompare, Shield, BarChart3, PieChart, Flame, Rocket, Cpu, Layers, Pencil } from 'lucide-react';
 
 const strategyIcons: Record<string, any> = {
     Lightbulb,
@@ -20,12 +20,24 @@ const strategyIcons: Record<string, any> = {
     Cpu,
     Layers
 };
+
+const iconColors = [
+    { name: "Black", value: "#000000" },
+    { name: "Blue", value: "#3B82F6" },
+    { name: "Green", value: "#10B981" },
+    { name: "Amber", value: "#F59E0B" },
+    { name: "Red", value: "#EF4444" },
+    { name: "Purple", value: "#8B5CF6" },
+    { name: "Pink", value: "#EC4899" },
+    { name: "Cyan", value: "#06B6D4" },
+];
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Table,
@@ -52,6 +64,7 @@ interface Strategy {
     sharpe_ratio?: number;
     win_rate?: number;
     icon?: string;
+    icon_color?: string;
 }
 
 
@@ -80,6 +93,7 @@ export default function StrategiesPage() {
     };
 
     // My Strategies State
+    const [selectedIconColor, setSelectedIconColor] = useState("#000000");
     const [strategies, setStrategies] = useState<Strategy[]>([]);
     const [loadingStrategies, setLoadingStrategies] = useState(false);
     const [strategiesError, setStrategiesError] = useState('');
@@ -87,6 +101,10 @@ export default function StrategiesPage() {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
     const [mounted, setMounted] = useState(false);
+    const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+    const [renameStrategy, setRenameStrategy] = useState<Strategy | null>(null);
+    const [newName, setNewName] = useState('');
+    const [selectedIcon, setSelectedIcon] = useState('Lightbulb');
 
 
     // Filtered My Strategies
@@ -142,6 +160,40 @@ export default function StrategiesPage() {
                 alert(`Failed to delete strategy: ${err.message}`);
             }
         }, 150);
+    };
+
+    const handleRenameClick = (strategy: Strategy) => {
+        setRenameStrategy(strategy);
+        setNewName(strategy.name);
+        setSelectedIcon(strategy.icon || 'Lightbulb');
+        setSelectedIconColor(strategy.icon_color || "#000000");
+        setRenameDialogOpen(true);
+    };
+
+    const handleRenameSubmit = async () => {
+        if (!renameStrategy || !newName.trim()) return;
+
+        const payload = {
+            name: newName.trim(),
+            icon: selectedIcon,
+            icon_color: selectedIconColor
+        };
+
+        console.log('Updating strategy with payload:', payload);
+
+        try {
+            const response = await api.patch(`/api/stocks/strategies/${renameStrategy.id}/`, payload);
+            console.log('Update response:', response.data);
+            setRenameDialogOpen(false);
+            setRenameStrategy(null);
+            setNewName('');
+            setSelectedIcon('Lightbulb');
+            setSelectedIconColor("#000000");
+            fetchStrategies();
+        } catch (err: any) {
+            console.error('Failed to update strategy:', err);
+            alert(`Failed to rename strategy: ${err.message}`);
+        }
     };
 
     if (!mounted) return null;
@@ -270,7 +322,7 @@ export default function StrategiesPage() {
                                             {/* Header */}
                                             <div className="p-4 border-b border-slate-100 bg-gradient-to-br from-blue-50/20 via-white to-purple-50/10">
                                                 <div className="flex items-start gap-3">
-                                                    <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center text-white flex-shrink-0 shadow-md group-hover:scale-105 transition-all duration-300">
+                                                    <div className="h-11 w-11 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-md group-hover:scale-105 transition-all duration-300" style={{ backgroundColor: strategy.icon_color || "#000000" }}>
                                                         {(() => {
                                                             const Icon = (strategy.icon && strategyIcons[strategy.icon]) || Lightbulb;
                                                             return <Icon size={20} />;
@@ -307,6 +359,16 @@ export default function StrategiesPage() {
                                                                     </button>
                                                                 </DropdownMenuTrigger>
                                                                 <DropdownMenuContent align="end" className="rounded-xl border-slate-200 shadow-lg">
+                                                                    <DropdownMenuItem
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleRenameClick(strategy);
+                                                                        }}
+                                                                        className="cursor-pointer rounded-lg m-1"
+                                                                    >
+                                                                        <Pencil size={14} className="mr-2" />
+                                                                        Rename Strategy
+                                                                    </DropdownMenuItem>
                                                                     <DropdownMenuItem
                                                                         onSelect={() => handleDelete(strategy.id, strategy.name)}
                                                                         className="text-rose-600 focus:text-rose-600 focus:bg-rose-50 cursor-pointer rounded-lg m-1"
@@ -410,7 +472,7 @@ export default function StrategiesPage() {
                                                         {/* Strategy Name & Info */}
                                                         <td className="px-6 py-4">
                                                             <div className="flex items-center gap-4">
-                                                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center text-white flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                                                                <div className="h-10 w-10 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform" style={{ backgroundColor: strategy.icon_color || "#000000" }}>
                                                                     {(() => {
                                                                         const Icon = (strategy.icon && strategyIcons[strategy.icon]) || Lightbulb;
                                                                         return <Icon size={18} />;
@@ -526,6 +588,16 @@ export default function StrategiesPage() {
                                                                             Optimize
                                                                         </DropdownMenuItem>
                                                                         <DropdownMenuItem
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleRenameClick(strategy);
+                                                                            }}
+                                                                            className="cursor-pointer gap-2 font-bold text-xs uppercase tracking-wider p-2.5"
+                                                                        >
+                                                                            <Pencil size={14} className="text-blue-600" />
+                                                                            Rename
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem
                                                                             onSelect={() => handleDelete(strategy.id, strategy.name)}
                                                                             className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer gap-2 font-bold text-xs uppercase tracking-wider p-2.5"
                                                                         >
@@ -549,6 +621,102 @@ export default function StrategiesPage() {
                             onClose={() => setIsCreateModalOpen(false)}
                             onSuccess={handleCreateSuccess}
                         />
+
+                        {/* Rename Dialog */}
+                        <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+                            <DialogContent className="sm:max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle>Edit Strategy</DialogTitle>
+                                    <DialogDescription>
+                                        Update the name and icon for "{renameStrategy?.name}"
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-700">Strategy Name</label>
+                                        <Input
+                                            value={newName}
+                                            onChange={(e) => setNewName(e.target.value)}
+                                            placeholder="Strategy name"
+                                            className="w-full"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    handleRenameSubmit();
+                                                }
+                                            }}
+                                            autoFocus
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-700">Icon</label>
+                                        <div className="grid grid-cols-6 gap-2">
+                                            {Object.keys(strategyIcons).map((iconName) => {
+                                                const Icon = strategyIcons[iconName];
+                                                const isSelected = selectedIcon === iconName;
+                                                return (
+                                                    <button
+                                                        key={iconName}
+                                                        type="button"
+                                                        onClick={() => setSelectedIcon(iconName)}
+                                                        className={`h-12 w-12 rounded-lg flex items-center justify-center transition-all ${isSelected
+                                                            ? 'bg-gradient-to-br from-sky-400 to-blue-500 text-white shadow-md scale-110'
+                                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:scale-105'
+                                                            }`}
+                                                        title={iconName}
+                                                    >
+                                                        <Icon size={20} />
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-slate-700">Icon Color</label>
+                                        <div className="grid grid-cols-8 gap-2">
+                                            {iconColors.map((color) => {
+                                                const isSelected = selectedIconColor === color.value;
+                                                return (
+                                                    <button
+                                                        key={color.value}
+                                                        type="button"
+                                                        onClick={() => setSelectedIconColor(color.value)}
+                                                        className={`h-10 w-10 rounded-lg flex items-center justify-center transition-all border-2 ${isSelected
+                                                                ? "border-blue-500 scale-110 shadow-md"
+                                                                : "border-slate-200 hover:border-slate-300 hover:scale-105"
+                                                            }`}
+                                                        style={{ backgroundColor: color.value }}
+                                                        title={color.name}
+                                                    >
+                                                        {isSelected && (
+                                                            <svg className="w-5 h-5" style={{ color: color.value === "#000000" ? "white" : "white" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        )}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                                <DialogFooter>
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setRenameDialogOpen(false)}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={handleRenameSubmit}
+                                        disabled={!newName.trim()}
+                                        className="bg-blue-600 hover:bg-blue-700"
+                                    >
+                                        Rename
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
                     </TabsContent>
 
                     <TabsContent value="published" className="m-0">

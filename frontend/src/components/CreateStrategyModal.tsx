@@ -24,6 +24,17 @@ const availableIcons = [
     { name: 'Layers', icon: Layers },
 ];
 
+const iconColors = [
+    { name: "Black", value: "#000000" },
+    { name: "Blue", value: "#3B82F6" },
+    { name: "Green", value: "#10B981" },
+    { name: "Amber", value: "#F59E0B" },
+    { name: "Red", value: "#EF4444" },
+    { name: "Purple", value: "#8B5CF6" },
+    { name: "Pink", value: "#EC4899" },
+    { name: "Cyan", value: "#06B6D4" },
+];
+
 interface CreateStrategyModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -34,6 +45,7 @@ export default function CreateStrategyModal({ isOpen, onClose, onSuccess }: Crea
     const router = useRouter();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
+    const [selectedIconColor, setSelectedIconColor] = useState("#000000");
     const [selectedIcon, setSelectedIcon] = useState('Lightbulb');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -51,7 +63,7 @@ export default function CreateStrategyModal({ isOpen, onClose, onSuccess }: Crea
 
             const response = await axios.post(
                 `${apiUrl}/api/stocks/strategies/`,
-                { name, description, icon: selectedIcon },
+                { name, description, icon: selectedIcon, icon_color: selectedIconColor },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
@@ -59,6 +71,7 @@ export default function CreateStrategyModal({ isOpen, onClose, onSuccess }: Crea
             setName('');
             setDescription('');
             setSelectedIcon('Lightbulb');
+            setSelectedIconColor("#000000");
             onSuccess();
             onClose();
 
@@ -114,6 +127,36 @@ export default function CreateStrategyModal({ isOpen, onClose, onSuccess }: Crea
                                         title={item.name}
                                     >
                                         <Icon size={20} />
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+
+                    <div className="space-y-2">
+                        <Label>Icon Color</Label>
+                        <div className="grid grid-cols-8 gap-2 p-1 bg-gray-50 rounded-xl border border-gray-100">
+                            {iconColors.map((color) => {
+                                const isSelected = selectedIconColor === color.value;
+                                return (
+                                    <button
+                                        key={color.value}
+                                        type="button"
+                                        onClick={() => setSelectedIconColor(color.value)}
+                                        className={`h-10 w-10 rounded-lg flex items-center justify-center transition-all border-2 ${
+                                            isSelected 
+                                                ? "border-blue-500 scale-110 shadow-md" 
+                                                : "border-slate-200 hover:border-slate-300 hover:scale-105"
+                                        }`}
+                                        style={{ backgroundColor: color.value }}
+                                        title={color.name}
+                                    >
+                                        {isSelected && (
+                                            <svg className="w-5 h-5" style={{ color: color.value === "#000000" ? "white" : "white" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        )}
                                     </button>
                                 );
                             })}
