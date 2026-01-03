@@ -14,7 +14,9 @@ import {
     XCircle,
     Info,
     Search,
-    RotateCw
+    RotateCw,
+    Layers,
+    BarChart3
 } from "lucide-react";
 import { toast } from 'sonner';
 import { Badge } from "@/components/ui/badge";
@@ -232,429 +234,339 @@ export default function ExperimentDetailPage() {
 
     return (
         <DashboardLayout
-            title={`${experiment.strategy_name} Strategy`}
-            subtitle={`Run ID: EXP-${experiment.id} • Run Date: ${new Date(experiment.created_at).toLocaleDateString()}`}
+            title={`${experiment.strategy_name || 'Strategy'} Analysis`}
+            subtitle={`Run ${experiment.id} • ${new Date(experiment.created_at).toLocaleDateString()}`}
             showBack={true}
         >
-            <div className="max-w-[1600px] mx-auto space-y-8 p-6">
-                {/* Compact Context Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-6">
-                    <div className="flex items-center gap-6">
+            <div className="max-w-[1800px] mx-auto space-y-6 p-4 md:p-6">
+                {/* 1. Command Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
+                    <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 bg-gray-100 rounded-xl flex items-center justify-center text-gray-700 font-bold text-xl border border-gray-200">
+                            {experiment.scope_value.slice(0, 2)}
+                        </div>
                         <div>
-                            <h1 className="text-3xl font-semibold text-gray-900 tracking-tight leading-none mb-1">
+                            <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
                                 {experiment.scope_value}
+                                <Badge variant="outline" className="text-xs font-medium text-gray-500 bg-gray-50 border-gray-200">
+                                    {experiment.scope_type}
+                                </Badge>
                             </h1>
-                            <p className="text-sm font-medium text-gray-700">Selected Symbol</p>
-                        </div>
-
-                        <div className="h-10 w-px bg-gray-200 hidden md:block" />
-
-                        <div className="flex items-center gap-2">
-                            <Badge variant={experiment.metrics.pnl_percent >= 0 ? "default" : "destructive"} className="text-md font-semibold text-white px-4 py-1.5 rounded-full shadow-sm">
-                                {experiment.metrics.pnl_percent?.toFixed(2)}% Return
-                            </Badge>
-                            {experiment.status === 'SUCCESS' ? (
-                                <div className="flex items-center gap-1.5 text-green-600 bg-green-50 px-3 py-1.5 rounded-full text-sm font-semibold ring-1 ring-green-100">
-                                    <CheckCircle size={14} /> Success
-                                </div>
-                            ) : (
-                                <div className="flex items-center gap-1.5 text-red-600 bg-red-50 px-3 py-1.5 rounded-full text-sm font-semibold ring-1 ring-red-100">
-                                    <XCircle size={14} /> Failed
-                                </div>
-                            )}
-                        </div>
-                        <div className="h-4 w-px bg-gray-200 hidden md:block" />
-                        <div className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
-                            <Calendar size={14} className="text-gray-600" />
-                            {experiment.start_date} to {experiment.end_date}
+                            <div className="flex items-center gap-3 text-sm text-gray-500 font-medium">
+                                <span className={`flex items-center gap-1.5 ${experiment.status === 'SUCCESS' ? 'text-green-600' : 'text-red-600'}`}>
+                                    {experiment.status === 'SUCCESS' ? <CheckCircle size={14} /> : <XCircle size={14} />}
+                                    {experiment.status}
+                                </span>
+                                <span className="h-3 w-px bg-gray-300" />
+                                <span className="flex items-center gap-1.5">
+                                    <Calendar size={14} />
+                                    {experiment.start_date} – {experiment.end_date}
+                                </span>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Rerun Button */}
-                    <Button
-                        onClick={handleRerun}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg shadow-sm"
-                    >
-                        <RotateCw size={16} />
-                        Rerun Strategy
-                    </Button>
+                    <div className="flex items-center gap-3">
+                        {experiment.siblings && experiment.siblings.length > 0 && (
+                            <div className="hidden md:flex items-center gap-2 bg-gray-50 p-1 pr-3 rounded-lg border border-gray-200">
+                                <div className="p-1.5 bg-white rounded-md shadow-sm border border-gray-100 text-gray-500">
+                                    <Layers size={14} />
+                                </div>
+                                <Select
+                                    onValueChange={(val) => router.push(`/strategies/${strategyId}/experiments/${val}`)}
+                                >
+                                    <SelectTrigger className="w-[140px] bg-transparent border-none shadow-none h-8 p-0 text-sm font-medium focus:ring-0">
+                                        <SelectValue placeholder="Switch Symbol" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {experiment.siblings.map(sib => (
+                                            <SelectItem key={sib.id} value={sib.id.toString()}>
+                                                {sib.symbol}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
 
-                    {experiment.siblings && experiment.siblings.length > 0 && (
-                        <div className="flex items-center gap-3 bg-white p-2 pl-4 rounded-2xl border border-gray-100 shadow-sm">
-                            <span className="text-sm font-medium text-gray-700">Switch Batch Symbol</span>
-                            <Select
-                                onValueChange={(val) => router.push(`/strategies/${strategyId}/experiments/${val}`)}
-                            >
-                                <SelectTrigger className="w-[180px] bg-gray-50/50 border-none shadow-none rounded-xl h-9 focus:ring-0">
-                                    <div className="flex items-center gap-2">
-                                        <Search size={12} className="text-gray-600" />
-                                        <SelectValue placeholder="Select Symbol" />
+                        <Button
+                            onClick={handleRerun}
+                            className="bg-gray-900 hover:bg-gray-800 text-white font-medium shadow-sm transition-all"
+                        >
+                            <RotateCw size={16} className="mr-2" />
+                            Rerun
+                        </Button>
+                    </div>
+                </div>
+
+                {/* 2. KPI Strip - Fintech Style */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card className="border border-green-100 shadow-sm bg-gradient-to-br from-green-50 to-white rounded-xl">
+                        <CardContent className="p-5 flex items-start justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-green-700/80 mb-1">Total Return</p>
+                                <div className="flex items-baseline gap-2">
+                                    <h3 className={`text-3xl font-bold tracking-tighter ${(experiment.metrics?.aggregated ? experiment.metrics.aggregated.avg_return : getMetricValue('pnl_percent')) >= 0
+                                        ? 'text-green-900' : 'text-red-700'
+                                        }`}>
+                                        {experiment.metrics?.aggregated
+                                            ? `${experiment.metrics.aggregated.avg_return?.toFixed(2)}%`
+                                            : `${getMetricValue('pnl_percent')?.toFixed(2)}%`
+                                        }
+                                    </h3>
+                                    {/* Indicator could go here */}
+                                </div>
+                            </div>
+                            <div className={`p-2.5 rounded-lg ${(experiment.metrics?.aggregated ? experiment.metrics.aggregated.avg_return : getMetricValue('pnl_percent')) >= 0
+                                ? 'bg-white text-green-600 shadow-sm' : 'bg-red-100 text-red-600'
+                                }`}>
+                                <TrendingUp size={20} />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border border-blue-100 shadow-sm bg-gradient-to-br from-blue-50 to-white rounded-xl">
+                        <CardContent className="p-5 flex items-start justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-blue-700/80 mb-1">Win Rate</p>
+                                <h3 className="text-3xl font-bold tracking-tighter text-blue-900">
+                                    {experiment.metrics?.aggregated
+                                        ? `${experiment.metrics.aggregated.avg_win_rate?.toFixed(1)}%`
+                                        : `${getMetricValue('win_rate')?.toFixed(1)}%`
+                                    }
+                                </h3>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-white text-blue-600 shadow-sm">
+                                <CheckCircle size={20} />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border border-purple-100 shadow-sm bg-gradient-to-br from-purple-50 to-white rounded-xl">
+                        <CardContent className="p-5 flex items-start justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-purple-700/80 mb-1">
+                                    {experiment.metrics?.aggregated ? 'Success Rate' : 'Sharpe Ratio'}
+                                </p>
+                                <h3 className="text-3xl font-bold tracking-tighter text-purple-900">
+                                    {experiment.metrics?.aggregated
+                                        ? `${((experiment.metrics.successful_backtests / experiment.metrics.total_companies) * 100).toFixed(0)}%`
+                                        : (getMetricValue('sharpe_ratio')?.toFixed(2) || 'N/A')
+                                    }
+                                </h3>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-white text-purple-600 shadow-sm">
+                                <Zap size={20} />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border border-amber-100 shadow-sm bg-gradient-to-br from-amber-50 to-white rounded-xl">
+                        <CardContent className="p-5 flex items-start justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-amber-700/80 mb-1">Total Trades</p>
+                                <h3 className="text-3xl font-bold tracking-tighter text-amber-900">
+                                    {experiment.metrics?.aggregated
+                                        ? experiment.metrics.aggregated.total_trades
+                                        : getMetricValue('total_trades')
+                                    }
+                                </h3>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-white text-amber-600 shadow-sm">
+                                <Activity size={20} />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* 3. Hero Chart Section - Full Width */}
+                <div className="w-full">
+                    {batchChildren.length > 0 ? (
+                        <Card className="border border-gray-200 shadow-sm bg-white rounded-xl overflow-visible">
+                            <CardHeader className="border-b border-gray-100 py-4 px-6 flex flex-row items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-1.5 bg-blue-100 text-blue-600 rounded">
+                                        <Layers size={16} />
                                     </div>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {experiment.siblings.map(sib => (
-                                        <SelectItem key={sib.id} value={sib.id.toString()}>
-                                            {sib.symbol}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                                    <h3 className="font-semibold text-gray-900">Batch Breakdown</h3>
+                                </div>
+                                <Button variant="outline" size="sm" onClick={() => { }}>
+                                    Export CSV
+                                </Button>
+                            </CardHeader>
+                            <div className="p-0 overflow-x-auto">
+                                <Table>
+                                    <thead className="bg-gray-50/50">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Symbol</th>
+                                            <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Return</th>
+                                            <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Win Rate</th>
+                                            <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Trades</th>
+                                            <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {batchChildren
+                                            .sort((a, b) => b.metrics.pnl_percent - a.metrics.pnl_percent)
+                                            .map((child) => (
+                                                <TableRow key={child.id} className="hover:bg-gray-50 transition-colors">
+                                                    <TableCell className="px-6 py-3 font-medium text-gray-900">
+                                                        {child.scope_value}
+                                                    </TableCell>
+                                                    <TableCell className={`px-6 py-3 text-right font-mono font-semibold ${(child.metrics.pnl_percent || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                        {(child.metrics.pnl_percent || 0).toFixed(2)}%
+                                                    </TableCell>
+                                                    <TableCell className="px-6 py-3 text-right font-mono text-gray-700">
+                                                        {(child.metrics.win_rate || 0).toFixed(1)}%
+                                                    </TableCell>
+                                                    <TableCell className="px-6 py-3 text-right font-mono text-gray-700">
+                                                        {child.metrics.total_trades || 0}
+                                                    </TableCell>
+                                                    <TableCell className="px-6 py-3 text-right">
+                                                        <a href={`/strategies/${strategyId}/experiments/${child.id}`} target="_blank" className="text-blue-600 hover:text-blue-800 text-xs font-bold">View</a>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                    </tbody>
+                                </Table>
+                            </div>
+                        </Card>
+                    ) : (
+                        <Card className="border border-gray-200 shadow-sm bg-white rounded-xl overflow-hidden h-[820px] flex flex-col">
+                            <div className="px-6 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50/30">
+                                <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                    <BarChart3 size={16} /> Market Performance & Signals
+                                </h3>
+                                <div className="text-xs font-medium text-gray-500">Interactive Bokeh Chart</div>
+                            </div>
+                            <div className="flex-1 relative bg-white">
+                                {experiment.plot_html ? (
+                                    <iframe
+                                        title="Backtest Plot"
+                                        srcDoc={experiment.plot_html}
+                                        className="w-full h-full border-0 absolute inset-0"
+                                        sandbox="allow-scripts"
+                                    />
+                                ) : (
+                                    <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                                        <Activity size={48} className="mb-4 opacity-10" />
+                                        <p>Chart data unavailable</p>
+                                    </div>
+                                )}
+                            </div>
+                        </Card>
                     )}
                 </div>
 
-                {/* High-Level Stat Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card className="border-none shadow-lg shadow-blue-900/5 bg-white rounded-3xl overflow-hidden group hover:shadow-xl transition-all duration-300">
-                        <CardContent className="p-6">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="p-2 bg-green-50 text-green-600 rounded-xl group-hover:scale-110 transition-transform">
-                                    <TrendingUp size={20} />
-                                </div>
-                                <Badge variant="outline" className="text-xs font-medium text-green-600 border-green-100 bg-green-50/50">
-                                    {experiment.metrics?.aggregated ? 'Batch Performance' : 'Performance'}
-                                </Badge>
-                            </div>
-                            <p className="text-sm font-medium text-gray-700">
-                                {experiment.metrics?.aggregated ? 'Avg. Batch Return' : 'Total Return'}
-                            </p>
-                            <h3 className={`text-2xl font-semibold ${(experiment.metrics?.aggregated ? experiment.metrics.aggregated.avg_return : getMetricValue('pnl_percent')) >= 0 ? 'text-green-600' : 'text-red-600'} tracking-tight`}>
-                                {experiment.metrics?.aggregated
-                                    ? `${experiment.metrics.aggregated.avg_return?.toFixed(2)}%`
-                                    : `${getMetricValue('pnl_percent')?.toFixed(2)}%`
-                                }
-                            </h3>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-none shadow-lg shadow-blue-900/5 bg-white rounded-3xl overflow-hidden group hover:shadow-xl transition-all duration-300">
-                        <CardContent className="p-6">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl group-hover:scale-110 transition-transform">
-                                    <CheckCircle size={20} />
-                                </div>
-                                <Badge variant="outline" className="text-xs font-medium text-blue-600 border-blue-100 bg-blue-50/50">
-                                    {experiment.metrics?.aggregated ? 'Batch Scope' : 'Reliability'}
-                                </Badge>
-                            </div>
-                            <p className="text-sm font-medium text-gray-700">
-                                {experiment.metrics?.aggregated ? 'Success Rate' : 'Win Rate'}
-                            </p>
-                            <h3 className="text-2xl font-semibold text-gray-900 tracking-tight">
-                                {experiment.metrics?.aggregated
-                                    ? `${((experiment.metrics.successful_backtests / experiment.metrics.total_companies) * 100).toFixed(0)}%`
-                                    : `${getMetricValue('win_rate')?.toFixed(1)}%`
-                                }
-                            </h3>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-none shadow-lg shadow-blue-900/5 bg-white rounded-3xl overflow-hidden group hover:shadow-xl transition-all duration-300">
-                        <CardContent className="p-6">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="p-2 bg-purple-50 text-purple-600 rounded-xl group-hover:scale-110 transition-transform">
-                                    <Zap size={20} />
-                                </div>
-                                <Badge variant="outline" className="text-xs font-medium text-purple-600 border-purple-100 bg-purple-50/50">
-                                    {experiment.metrics?.aggregated ? 'Batch Avg' : 'Efficiency'}
-                                </Badge>
-                            </div>
-                            <p className="text-sm font-medium text-gray-700">
-                                {experiment.metrics?.aggregated ? 'Avg. Win Rate' : 'Sharpe Ratio'}
-                            </p>
-                            <h3 className="text-2xl font-semibold text-gray-900 tracking-tight">
-                                {experiment.metrics?.aggregated
-                                    ? `${experiment.metrics.aggregated.avg_win_rate?.toFixed(1)}%`
-                                    : (getMetricValue('sharpe_ratio')?.toFixed(2) || 'N/A')
-                                }
-                            </h3>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-none shadow-lg shadow-blue-900/5 bg-white rounded-3xl overflow-hidden group hover:shadow-xl transition-all duration-300">
-                        <CardContent className="p-6">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="p-2 bg-amber-50 text-amber-600 rounded-xl group-hover:scale-110 transition-transform">
-                                    <Activity size={20} />
-                                </div>
-                                <Badge variant="outline" className="text-xs font-medium text-amber-600 border-amber-100 bg-amber-50/50">Volume</Badge>
-                            </div>
-                            <p className="text-sm font-medium text-gray-700">
-                                {experiment.metrics?.aggregated ? 'Total Batch Trades' : 'Total Trades'}
-                            </p>
-                            <h3 className="text-2xl font-semibold text-gray-900 tracking-tight">
-                                {experiment.metrics?.aggregated
-                                    ? experiment.metrics.aggregated.total_trades
-                                    : getMetricValue('total_trades')
-                                }
-                            </h3>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-                    {/* Left Column: Stats & Params */}
-                    <div className="xl:col-span-1 space-y-6">
-                        <Card className="border-none shadow-xl shadow-blue-900/5 bg-gradient-to-br from-white to-blue-50/30 overflow-hidden rounded-3xl">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                    <TrendingUp size={14} /> Performance
+                {/* 4. Data Deck - Parameters & Detailed Metrics */}
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                    {/* Left Panel: Parameters & Context */}
+                    <div className="xl:col-span-3 space-y-6">
+                        <Card className="border border-gray-200 shadow-sm bg-white rounded-xl overflow-hidden">
+                            <CardHeader className="bg-gray-50/50 border-b border-gray-100 py-3 px-4">
+                                <CardTitle className="text-sm font-bold text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                                    <Zap size={14} className="text-blue-500" /> Parameters
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-6">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <p className="text-xs text-gray-600 font-medium">Win Rate</p>
-                                        <p className="text-2xl font-semibold text-gray-900">{getMetricValue('win_rate')?.toFixed(1)}%</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-xs text-gray-600 font-medium">Total Trades</p>
-                                        <p className="text-2xl font-semibold text-gray-900">{getMetricValue('total_trades')}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-xs text-gray-600 font-medium">Max Drawdown</p>
-                                        <p className="text-2xl font-semibold text-red-500">{getMetricValue('max_drawdown')?.toFixed(2)}%</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-xs text-gray-600 font-medium">Profit Factor</p>
-                                        <p className="text-2xl font-semibold text-blue-600">{getMetricValue('profit_factor')?.toFixed(2)}</p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="border-none shadow-xl shadow-gray-900/5 rounded-3xl">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                    <Zap size={14} className="text-amber-500" /> Parameters
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-3">
+                            <CardContent className="p-0">
+                                <div className="divide-y divide-gray-100">
                                     {Object.entries(experiment.parameters || {}).map(([key, value]: [string, any]) => (
-                                        <div key={key} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0 text-sm">
-                                            <span className="text-gray-500 capitalize">{key.replace(/_/g, ' ')}</span>
-                                            <span className="font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">{String(value)}</span>
+                                        <div key={key} className="flex flex-col p-3 hover:bg-gray-50 transition-colors">
+                                            <span className="text-[10px] uppercase font-bold text-gray-400 mb-0.5 tracking-wider">
+                                                {key.replace(/_/g, ' ')}
+                                            </span>
+                                            <span className="text-sm font-mono font-medium text-gray-800">
+                                                {String(value)}
+                                            </span>
                                         </div>
                                     ))}
                                     {Object.keys(experiment.parameters || {}).length === 0 && (
-                                        <p className="text-sm text-gray-400 italic">No custom parameters</p>
+                                        <div className="p-4 text-sm text-gray-400 text-center italic">Default Parameters</div>
                                     )}
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <div className="bg-blue-600 rounded-[2rem] p-6 text-white shadow-2xl shadow-blue-500/20 relative overflow-hidden group">
-                            <div className="relative z-10">
-                                <h3 className="text-gray-600 text-sm font-semibold mb-4">Quick Insights</h3>
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                                            <TrendingUp size={16} />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-white/80 font-medium">Strategy Type</p>
-                                            <p className="text-sm font-semibold">{experiment.run_type}</p>
-                                        </div>
+                        {/* Quick Insights (Mini Card) */}
+                        <Card className="border border-blue-100 shadow-sm bg-gradient-to-br from-blue-50 to-white rounded-xl overflow-hidden">
+                            <CardContent className="p-5">
+                                <h3 className="text-blue-900 font-semibold mb-3 flex items-center gap-2">
+                                    <Info size={16} /> Run Details
+                                </h3>
+                                <dl className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                        <dt className="text-blue-700/70">Type</dt>
+                                        <dd className="font-medium text-blue-900">{experiment.run_type}</dd>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                                            <Info size={16} />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-white/80 font-medium">Scope</p>
-                                            <p className="text-sm font-semibold">{experiment.scope_type}</p>
-                                        </div>
+                                    <div className="flex justify-between">
+                                        <dt className="text-blue-700/70">Engine</dt>
+                                        <dd className="font-medium text-blue-900">Backtesting.py</dd>
                                     </div>
-                                    {experiment.metrics?.aggregated && (
-                                        <div className="pt-4 mt-4 border-t border-white/10 space-y-3">
-                                            <p className="text-xs text-white/70 font-medium">Batch Averages</p>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <p className="text-[10px] text-white/60 font-medium">Avg Win Rate</p>
-                                                    <p className="text-sm font-bold">{experiment.metrics.aggregated.avg_win_rate?.toFixed(1)}%</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] text-white/60 font-medium">Total Trades</p>
-                                                    <p className="text-sm font-bold">{experiment.metrics.aggregated.total_trades}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] text-white/60 font-medium">Best Performer</p>
-                                                    <p className="text-sm font-bold text-green-300">{experiment.metrics.aggregated.best_stock?.symbol}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] text-white/60 font-medium">Worst Performer</p>
-                                                    <p className="text-sm font-bold text-red-300">{experiment.metrics.aggregated.worst_stock?.symbol}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                            {/* Decoration */}
-                            <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-colors" />
-                        </div>
+                                    <div className="flex justify-between">
+                                        <dt className="text-blue-700/70">Data</dt>
+                                        <dd className="font-medium text-blue-900">Daily OHLCV</dd>
+                                    </div>
+                                </dl>
+                            </CardContent>
+                        </Card>
                     </div>
 
-                    {/* Right Column: immersive Chart & Categorized Metrics */}
-                    <div className="xl:col-span-3 space-y-6">
-                        {/* Interactive Equity Curve or Batch Table */}
-                        {batchChildren.length > 0 ? (
-                            <Card className="border-none shadow-2xl shadow-gray-900/10 overflow-hidden bg-white rounded-3xl">
-                                <div className="px-6 py-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/20">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                                        <h3 className="text-sm font-semibold text-gray-800">Individual Symbol Breakdown</h3>
-                                    </div>
-                                    <Badge variant="outline" className="text-xs font-semibold bg-white border-gray-100 px-3 py-1">
-                                        {batchChildren.length} Symbols
-                                    </Badge>
-                                </div>
-                                <div className="p-0 overflow-x-auto">
-                                    <Table>
-                                        <thead className="bg-gray-50/50">
-                                            <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Symbol</th>
-                                                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700">Return</th>
-                                                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700">Win Rate</th>
-                                                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700">Trades</th>
-                                                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-100">
-                                            {batchChildren
-                                                .sort((a, b) => b.metrics.pnl_percent - a.metrics.pnl_percent)
-                                                .map((child) => (
-                                                    <TableRow key={child.id} className="hover:bg-blue-50/30 transition-colors group">
-                                                        <TableCell className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="font-semibold text-gray-900">{child.scope_value}</div>
-                                                            <div className="text-xs text-gray-600 font-medium">#{child.id}</div>
-                                                        </TableCell>
-                                                        <TableCell className="px-6 py-4 whitespace-nowrap text-right">
-                                                            <span className={`font-semibold text-sm ${(child.metrics.pnl_percent || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                                {(child.metrics.pnl_percent || 0).toFixed(2)}%
-                                                            </span>
-                                                        </TableCell>
-                                                        <TableCell className="px-6 py-4 whitespace-nowrap text-right font-semibold text-gray-700 text-sm">
-                                                            {(child.metrics.win_rate || 0).toFixed(1)}%
-                                                        </TableCell>
-                                                        <TableCell className="px-6 py-4 whitespace-nowrap text-right font-bold text-gray-700 text-sm">
-                                                            {child.metrics.total_trades || 0}
-                                                        </TableCell>
-                                                        <TableCell className="px-6 py-4 whitespace-nowrap text-right">
-                                                            <a
-                                                                href={`/strategies/${strategyId}/experiments/${child.id}`}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="text-blue-600 hover:text-blue-800 text-xs font-semibold hover:underline"
-                                                            >
-                                                                View Analysis →
-                                                            </a>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                        </tbody>
-                                    </Table>
-                                </div>
-                            </Card>
-                        ) : (
-                            <Card className="border-none shadow-2xl shadow-gray-900/10 overflow-hidden h-[850px] flex flex-col bg-white rounded-3xl">
-                                <div className="px-6 py-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/20">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                                        <h3 className="text-sm font-semibold text-gray-800">Interactive Equity Curve & Signal Visualization</h3>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Badge variant="outline" className="text-xs font-medium bg-white border-gray-100 px-3 py-1">Full Immersion</Badge>
-                                    </div>
-                                </div>
-                                <div className="flex-1 relative">
-                                    {experiment.plot_html ? (
-                                        <iframe
-                                            title={`Backtest Analysis Plot`}
-                                            srcDoc={experiment.plot_html}
-                                            className="w-full h-full border-0 absolute inset-0"
-                                            sandbox="allow-scripts"
-                                        />
-                                    ) : (
-                                        <div className="h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50/50">
-                                            <Activity size={64} className="mb-4 opacity-5" />
-                                            <p className="font-medium">Visualization not available for this run</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </Card>
-                        )}
-
-                        {/* Categorized Metrics Display */}
-                        <div className="space-y-6">
-                            {(experiment.metrics?.categorized || experiment.metrics?.stats?.categorized) ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {Object.entries(experiment.metrics?.categorized || experiment.metrics?.stats?.categorized || {}).map(([category, items]: [string, any]) => (
-                                        <Card key={category} className="border-none shadow-xl shadow-gray-900/5 bg-white overflow-hidden rounded-3xl">
-                                            <CardHeader className="border-b border-gray-50 bg-gray-50/30">
-                                                <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                                    <Info size={14} className="text-blue-500" /> {category}
-                                                </CardTitle>
-                                            </CardHeader>
-                                            <CardContent className="p-0">
-                                                <Table>
-                                                    <TableBody>
-                                                        {Object.entries(items).map(([key, value]: [string, any]) => (
-                                                            <TableRow key={key} className="hover:bg-blue-50/30 transition-colors border-b border-gray-50 last:border-0">
-                                                                <TableCell className="py-2.5 pl-6 text-xs text-gray-600 font-medium whitespace-nowrap">
-                                                                    {key}
-                                                                </TableCell>
-                                                                <TableCell className="py-2.5 pr-6 text-right font-mono font-bold text-gray-900 text-xs">
-                                                                    {value}
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        ))}
-                                                    </TableBody>
-                                                </Table>
-                                            </CardContent>
-                                        </Card>
-                                    ))}
-                                </div>
-                            ) : (
-                                <Card className="border-none shadow-xl shadow-gray-900/5 bg-white overflow-hidden rounded-3xl">
-                                    <CardHeader className="border-b border-gray-50 bg-gray-50/30">
-                                        <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                            <Info size={14} className="text-blue-500" /> Raw Backtest Output Metrics
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="p-0">
-                                        <div className="overflow-x-auto">
+                    {/* Right Panel: Detailed Metrics Grid */}
+                    <div className="xl:col-span-9">
+                        {(experiment.metrics?.categorized || experiment.metrics?.stats?.categorized) ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {Object.entries(experiment.metrics?.categorized || experiment.metrics?.stats?.categorized || {}).map(([category, items]: [string, any]) => (
+                                    <Card key={category} className="border border-gray-200 shadow-sm bg-white rounded-xl overflow-hidden h-fit">
+                                        <CardHeader className="bg-gray-50/30 border-b border-gray-100 py-2.5 px-4">
+                                            <CardTitle className="text-xs font-bold text-gray-600 uppercase tracking-widest">
+                                                {category}
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="p-0">
                                             <Table>
-                                                <TableHeader className="bg-gray-50/50">
-                                                    <TableRow>
-                                                        <TableHead className="text-xs font-semibold text-gray-700 pl-6">Metric</TableHead>
-                                                        <TableHead className="text-right text-xs font-semibold text-gray-700 pr-6">Value</TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
                                                 <TableBody>
-                                                    {Object.entries(experiment.metrics || {})
-                                                        .filter(([key]) => !['aggregated', 'best_params', 'best_return', 'best_trial', 'categorized'].includes(key))
-                                                        .sort(([a], [b]) => a.localeCompare(b))
-                                                        .map(([key, value]) => (
-                                                            <TableRow key={key} className="hover:bg-blue-50/30 transition-colors border-b border-gray-50">
-                                                                <TableCell className="py-3 pl-6 capitalize text-gray-600 font-medium">
-                                                                    {key.replace(/_/g, ' ').replace('[%]', '(%)').replace('[$]', '($)')}
-                                                                </TableCell>
-                                                                <TableCell className="py-3 pr-6 text-right font-mono font-bold text-gray-900">
-                                                                    {typeof value === 'number' ?
-                                                                        (Number.isInteger(value) ? value : value.toFixed(4)) :
-                                                                        String(value)}
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        ))}
+                                                    {Object.entries(items).map(([key, value]: [string, any]) => (
+                                                        <TableRow key={key} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
+                                                            <TableCell className="py-2 pl-4 text-xs font-medium text-gray-500">
+                                                                {key}
+                                                            </TableCell>
+                                                            <TableCell className="py-2 pr-4 text-right font-mono text-sm font-semibold text-gray-900">
+                                                                {value}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
                                                 </TableBody>
                                             </Table>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            )}
-                        </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        ) : (
+                            <Card className="border border-gray-200 shadow-sm bg-white rounded-xl">
+                                <CardHeader className="border-b border-gray-100 py-3 px-6">
+                                    <CardTitle className="text-sm font-bold text-gray-800">Complete Metrics</CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-0">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 divide-x divide-y divide-gray-100">
+                                        {Object.entries(experiment.metrics || {})
+                                            .filter(([key]) => !['aggregated', 'best_params', 'best_return', 'best_trial', 'categorized', 'stats', 'successful_backtests', 'total_companies'].includes(key))
+                                            .sort(([a], [b]) => a.localeCompare(b))
+                                            .map(([key, value]) => (
+                                                <div key={key} className="p-4 flex flex-col gap-1 hover:bg-gray-50">
+                                                    <span className="text-xs text-gray-500 font-medium capitalize">
+                                                        {key.replace(/_/g, ' ').replace('[%]', '').replace('[$]', '')}
+                                                    </span>
+                                                    <span className="font-mono text-sm font-bold text-gray-900">
+                                                        {typeof value === 'number' ?
+                                                            (Number.isInteger(value) ? value : value.toFixed(4)) :
+                                                            String(value)}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
                 </div>
             </div>
