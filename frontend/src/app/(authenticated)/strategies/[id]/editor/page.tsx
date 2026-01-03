@@ -266,34 +266,8 @@ export default function EditStrategyPage() {
                     {/* Right Sidebar: Configuration */}
                     <div className="w-80 bg-gray-50 border-l border-gray-200 flex flex-col h-full overflow-hidden">
                         <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                            {/* Theme Toggle & Action Buttons */}
+                            {/* Action Buttons */}
                             <div className="space-y-4 pb-8 border-b border-gray-200">
-                                <div className="flex flex-col gap-2 mb-4">
-                                    <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Editor Theme</Label>
-                                    <div className="flex items-center gap-1 p-1 bg-gray-200/50 rounded-xl">
-                                        <button
-                                            onClick={() => setThemeMode('default')}
-                                            className={`flex-1 flex items-center justify-center h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'default' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                                        >
-                                            Default
-                                        </button>
-                                        <button
-                                            onClick={() => setThemeMode('light')}
-                                            className={`flex-1 flex items-center justify-center gap-2 h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'light' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                                        >
-                                            <Sun size={12} />
-                                            Ayu Light
-                                        </button>
-                                        <button
-                                            onClick={() => setThemeMode('dark')}
-                                            className={`flex-1 flex items-center justify-center gap-2 h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'dark' ? 'bg-gray-800 text-blue-400 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                                        >
-                                            <Moon size={12} />
-                                            Ayu Dark
-                                        </button>
-                                    </div>
-                                </div>
-
                                 <Button
                                     onClick={handleSave}
                                     disabled={saving || !isDirty}
@@ -344,12 +318,35 @@ export default function EditStrategyPage() {
                             </div>
                         </div>
 
-                        {/* Footer Info */}
-                        <div className="p-3 bg-white border-t border-gray-200 text-center">
-                            <p className="text-[9px] text-gray-400 font-medium lowercase">
-                                {isDirty ? 'unsaved changes detected' : 'all changes saved'}
-                            </p>
+                        {/* Theme Toggle at Bottom */}
+                        <div className="p-4 bg-white border-t border-gray-200">
+                            <div className="flex flex-col gap-2">
+                                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1 text-center">Editor Theme</Label>
+                                <div className="flex items-center gap-1 p-1 bg-gray-50 rounded-xl border border-gray-100">
+                                    <button
+                                        onClick={() => setThemeMode('default')}
+                                        className={`flex-1 flex items-center justify-center h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'default' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                    >
+                                        Default
+                                    </button>
+                                    <button
+                                        onClick={() => setThemeMode('light')}
+                                        className={`flex-1 flex items-center justify-center gap-2 h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'light' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                    >
+                                        <Sun size={12} />
+                                        Light
+                                    </button>
+                                    <button
+                                        onClick={() => setThemeMode('dark')}
+                                        className={`flex-1 flex items-center justify-center gap-2 h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'dark' ? 'bg-gray-800 text-blue-400 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                    >
+                                        <Moon size={12} />
+                                        Dark
+                                    </button>
+                                </div>
+                            </div>
                         </div>
+
                     </div>
                 </div>
             </div>

@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import api from '@/lib/api';
 import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Zap, TrendingUp, Activity, CheckCircle, Play, ChevronDown, AlertTriangle, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Zap, TrendingUp, Activity, CheckCircle, Play, ChevronDown, AlertTriangle, ExternalLink, Code } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -208,7 +209,18 @@ export default function OptimizePage() {
     return (
         <DashboardLayout
             showBack={true}
-            title={`Optimize - ${strategy?.name || 'Strategy'}`}
+            title={
+                <div className="flex items-center gap-3">
+                    <span className="truncate">Optimize - {strategy?.name || 'Strategy'}</span>
+                    <Link
+                        href={`/strategies/${strategyId}/editor`}
+                        className="p-1 w-7 h-7 flex items-center justify-center rounded-md border border-gray-200 bg-gray-50 text-gray-400 hover:text-blue-600 hover:bg-white hover:border-blue-200 transition-all shadow-sm group"
+                        title="Edit Strategy code"
+                    >
+                        <Code size={14} className="group-hover:scale-110 transition-transform" />
+                    </Link>
+                </div>
+            }
         >
             <div className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
