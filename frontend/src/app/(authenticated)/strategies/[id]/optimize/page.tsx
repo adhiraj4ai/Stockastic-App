@@ -406,7 +406,7 @@ export default function OptimizePage() {
                                         </div>
                                     </div>
                                     <Badge className="bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border-emerald-500/30 text-[10px] uppercase font-black tracking-widest px-3 py-1">
-                                        <CheckCircle size={10} className="mr-1.5" /> 100% Complete
+                                        <CheckCircle size={10} className="mr-1.5" /> Complete & Auto-Published
                                     </Badge>
                                 </div>
 

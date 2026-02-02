@@ -1896,7 +1896,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
         """
         Refined Strategy Optimization: 3Y Windowed K-Fold Cross-Validation.
         Splits data into chronological 3Y periods, optimizes across ALL of them,
-        and saves results without auto-publishing.
+        and automatically publishes the best configurations.
         """
         from .optimize_multi_period import (
             calculate_3y_splits, fetch_period_data, 
@@ -1999,9 +1999,19 @@ class StrategyViewSet(viewsets.ModelViewSet):
                         scope_type = ScopeType.SECTOR
                         scope_val = sector
 
-                    # Disable auto-publish as per user request
-                    is_published = False
+                    # Auto-publish the results
+                    is_published = True
                     
+                    # Unpublish existing experiments for the same strategy, symbol and objective type
+                    # This ensures we have the "Best 1Y/3Y/5Y" for each flavor available
+                    StrategyExperiment.objects.filter(
+                        strategy=strategy,
+                        scope_type=scope_type,
+                        scope_value=scope_val,
+                        is_published=True,
+                        metrics__objective=obj_type
+                    ).update(is_published=False)
+
                     exp = StrategyExperiment.objects.create(
                         strategy=strategy,
                         user=request.user,
@@ -2016,7 +2026,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
                             'cv_folds': len(data_maps),
                             'cv_value': result['best_value'],
                             'objective': obj_type,
-                            'representative_period': last_fold_info[0]
+                            'representative_period': last_fold_info[0],
+                            'period': '3Y' # Consistent with optimization timeframe
                         },
                         plot_html=plot_html,
                         status=StrategyExperiment.Status.SUCCESS,
