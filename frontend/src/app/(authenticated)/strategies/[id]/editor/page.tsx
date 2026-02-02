@@ -8,8 +8,16 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Play, Save, ArrowLeft, Activity, Sun, Moon } from 'lucide-react';
+import { Play, Save, ArrowLeft, Activity, Sun, Moon, AlertTriangle, XOctagon, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
 
 interface Strategy {
     id: number;
@@ -17,6 +25,7 @@ interface Strategy {
     description: string;
     code: string;
     optimization_config?: string;
+    published_experiments?: any[];
 }
 
 export default function EditStrategyPage() {
@@ -34,6 +43,9 @@ export default function EditStrategyPage() {
     const [originalData, setOriginalData] = useState<{ code: string; config: string; name: string; description: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [isPublished, setIsPublished] = useState(false);
+    const [unpublishModalOpen, setUnpublishModalOpen] = useState(false);
+    const [isUnpublishing, setIsUnpublishing] = useState(false);
 
     useEffect(() => {
         if (strategyId) {
@@ -71,6 +83,7 @@ export default function EditStrategyPage() {
                 name: data.name || '',
                 description: data.description || ''
             });
+            setIsPublished(data.published_experiments && data.published_experiments.length > 0);
         } catch (error: any) {
             console.error('Failed to fetch strategy', error);
             toast.error('Failed to load strategy');
@@ -139,6 +152,23 @@ export default function EditStrategyPage() {
             toast.error(typeof message === 'string' ? message : 'Failed to save strategy');
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleUnpublish = async () => {
+        setIsUnpublishing(true);
+        try {
+            await api.post(`/api/stocks/strategies/${strategyId}/unpublish/`);
+            toast.success('Strategy unpublished successfully. You can now edit the code.');
+            setIsPublished(false);
+            setUnpublishModalOpen(false);
+            // Refresh strategy data to be sure
+            fetchStrategy();
+        } catch (error: any) {
+            console.error('Failed to unpublish strategy', error);
+            toast.error('Failed to unpublish strategy');
+        } finally {
+            setIsUnpublishing(false);
         }
     };
 
@@ -231,6 +261,31 @@ export default function EditStrategyPage() {
             title={`Edit Strategy - ${strategy?.name || 'Loading...'}`}
         >
             <div className="flex flex-col h-[calc(100vh-100px)] -mt-4">
+                {/* Warning Banner if Published */}
+                {isPublished && (
+                    <div className="bg-amber-50 border-b border-amber-100 px-6 py-3 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-amber-100 p-2 rounded-full">
+                                <ShieldAlert size={18} className="text-amber-700" />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-bold text-amber-900 leading-tight">Strategy is Published</h4>
+                                <p className="text-xs text-amber-700 mt-0.5">
+                                    The code cannot be modified while experiments are published. Unpublish to enable editing.
+                                </p>
+                            </div>
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setUnpublishModalOpen(true)}
+                            className="bg-white border-amber-200 text-amber-700 hover:bg-amber-100 hover:border-amber-300 font-bold text-xs h-8 px-4 rounded-lg shadow-sm"
+                        >
+                            Unpublish Now
+                        </Button>
+                    </div>
+                )}
+
                 {/* Main Content: Split View */}
                 <div className="flex flex-1 overflow-hidden">
                     {/* Editor Area */}
@@ -270,13 +325,23 @@ export default function EditStrategyPage() {
                             <div className="space-y-4 pb-8 border-b border-gray-200">
                                 <Button
                                     onClick={handleSave}
-                                    disabled={saving || !isDirty}
-                                    variant={isDirty ? "default" : "outline"}
-                                    className={`w-full h-12 px-5 gap-2 transition-all font-black rounded-xl text-sm uppercase tracking-widest ${isDirty ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-100' : 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed opacity-60'}`}
+                                    disabled={saving || !isDirty || isPublished}
+                                    variant={isDirty && !isPublished ? "default" : "outline"}
+                                    className={`w-full h-12 px-5 gap-2 transition-all font-black rounded-xl text-sm uppercase tracking-widest ${isDirty && !isPublished ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-100' : 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed opacity-60'}`}
                                 >
                                     <Save size={18} />
                                     {saving ? 'Saving...' : 'Save Changes'}
                                 </Button>
+
+                                {isPublished && (
+                                    <Button
+                                        onClick={() => setUnpublishModalOpen(true)}
+                                        className="w-full h-11 px-5 gap-2 bg-white border-2 border-amber-200 text-amber-700 hover:bg-amber-50 font-black rounded-xl text-[10px] uppercase tracking-widest shadow-sm transition-all"
+                                    >
+                                        <XOctagon size={16} />
+                                        Unpublish Strategy
+                                    </Button>
+                                )}
 
                                 <Button
                                     onClick={handleRun}
@@ -350,6 +415,42 @@ export default function EditStrategyPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Unpublish Confirmation Dialog */}
+            <Dialog open={unpublishModalOpen} onOpenChange={setUnpublishModalOpen}>
+                <DialogContent className="sm:max-w-[425px] rounded-2xl">
+                    <DialogHeader>
+                        <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-4">
+                            <AlertTriangle className="text-amber-600" size={24} />
+                        </div>
+                        <DialogTitle className="text-xl font-black text-slate-900">Unpublish Strategy?</DialogTitle>
+                        <DialogDescription className="text-slate-500 font-medium leading-relaxed pt-2">
+                            This will stop generating automated recommendations for this strategy.
+                            You will be able to edit and save your code changes after unpublishing.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="mt-6 gap-3 sm:flex-row sm:gap-4">
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setUnpublishModalOpen(false);
+                            }}
+                            className="flex-1 sm:flex-none sm:min-w-[120px] h-12 rounded-xl font-bold border-slate-200 text-slate-600 hover:bg-slate-50 transition-all"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                handleUnpublish();
+                            }}
+                            disabled={isUnpublishing}
+                            className="flex-1 sm:flex-none sm:min-w-[160px] h-12 rounded-xl font-black uppercase tracking-widest text-xs bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-100 transition-all"
+                        >
+                            {isUnpublishing ? 'Unpublishing...' : 'Confirm Unpublish'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </DashboardLayout>
     );
 }

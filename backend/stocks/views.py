@@ -1051,8 +1051,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
         """
         strategy = self.get_object()
         
-        # Ownership check
-        if strategy.user != self.request.user:
+        # Ownership check (consistent with perform_update)
+        if strategy.user_id != self.request.user.id and not self.request.user.is_staff:
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("You do not have permission to publish this strategy.")
             
@@ -1084,8 +1084,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
     def unpublish(self, request, pk=None):
         strategy = self.get_object()
         
-        # Ownership check
-        if strategy.user != self.request.user:
+        # Ownership check (consistent with perform_update)
+        if strategy.user_id != self.request.user.id and not self.request.user.is_staff:
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("You do not have permission to unpublish this strategy.")
             
