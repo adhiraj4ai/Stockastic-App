@@ -1817,10 +1817,16 @@ class StrategyViewSet(viewsets.ModelViewSet):
             
             if not strategy_class:
                 return None, "No Strategy class found in code.", {}
+            
+            # Wrap strategy with SL/TP logic (all strategies get this automatically)
+            from .optimize_multi_period import create_sl_tp_wrapped_strategy, DEFAULT_SL_PCT, DEFAULT_TP_PCT
+            sl_pct = params.get('sl_pct', DEFAULT_SL_PCT) if params else DEFAULT_SL_PCT
+            tp_pct = params.get('tp_pct', DEFAULT_TP_PCT) if params else DEFAULT_TP_PCT
+            wrapped_strategy = create_sl_tp_wrapped_strategy(strategy_class, sl_pct=sl_pct, tp_pct=tp_pct)
 
             # 3. Run Backtest
 
-            bt = Backtest(df, strategy_class,
+            bt = Backtest(df, wrapped_strategy,
                           cash=cash, commission=.002,
                           exclusive_orders=True, finalize_trades=True)
             
@@ -1868,6 +1874,9 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 'total_trades': clean_stats.get('total_trades', 0),
                 'sharpe_ratio': clean_stats.get('Sharpe Ratio', 0.0),
                 'max_drawdown': clean_stats.get('Max. Drawdown [%]', 0.0),
+                # SL/TP exit counts from the wrapped strategy
+                'sl_exits': getattr(wrapped_strategy, 'sl_exits', 0),
+                'tp_exits': getattr(wrapped_strategy, 'tp_exits', 0),
                 'categorized': categorized,
                 'raw': clean_stats
             }
@@ -1901,7 +1910,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
         from .optimize_multi_period import (
             calculate_3y_splits, fetch_period_data, 
             run_single_objective_optimization, run_final_backtest,
-            calculate_avg_cv_stats
+            calculate_avg_cv_stats, create_sl_tp_wrapped_strategy,
+            DEFAULT_SL_PCT, DEFAULT_TP_PCT
         )
         
         strategy = self.get_object()

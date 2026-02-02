@@ -11,6 +11,67 @@ import numpy as np
 import inspect
 
 
+# Default SL/TP values (can be overridden via params)
+DEFAULT_SL_PCT = 0.95  # 5% stop loss below entry
+DEFAULT_TP_PCT = 1.15  # 15% take profit above entry
+
+
+def create_sl_tp_wrapped_strategy(original_strategy, sl_pct=None, tp_pct=None):
+    """
+    Wrap any strategy class with stop loss and take profit logic.
+    This single wrapper applies SL/TP to ALL strategies uniformly.
+    
+    Args:
+        original_strategy: The backtesting.py Strategy class to wrap
+        sl_pct: Stop loss percentage (e.g., 0.95 = 5% loss trigger). None to disable.
+        tp_pct: Take profit percentage (e.g., 1.15 = 15% gain trigger). None to disable.
+    
+    Returns:
+        A new Strategy class with SL/TP logic injected into next()
+        The class has sl_exits and tp_exits counters accessible after backtest.
+    """
+    # Use defaults if not provided
+    _sl_pct = sl_pct if sl_pct is not None else DEFAULT_SL_PCT
+    _tp_pct = tp_pct if tp_pct is not None else DEFAULT_TP_PCT
+    
+    class WrappedStrategy(original_strategy):
+        # Counters for SL/TP exits - accessible after backtest (class-level)
+        sl_exits = 0
+        tp_exits = 0
+        
+        def init(self):
+            # Reset counters at start of each backtest
+            WrappedStrategy.sl_exits = 0
+            WrappedStrategy.tp_exits = 0
+            # Call parent init
+            super().init()
+        
+        def next(self):
+            # Run the original strategy logic first
+            super().next()
+            
+            # Apply SL/TP if in a position
+            try:
+                if self.position and len(self.trades) > 0:
+                    entry_price = self.trades[-1].entry_price
+                    current_price = self.data.Close[-1]
+                    
+                    # Stop Loss: Close if price drops below threshold
+                    if _sl_pct and current_price <= entry_price * _sl_pct:
+                        self.position.close()
+                        WrappedStrategy.sl_exits += 1
+                    # Take Profit: Close if price rises above threshold  
+                    elif _tp_pct and current_price >= entry_price * _tp_pct:
+                        self.position.close()
+                        WrappedStrategy.tp_exits += 1
+            except Exception:
+                pass  # Silently ignore SL/TP errors to not break strategy
+    
+    # Preserve the original class name for debugging
+    WrappedStrategy.__name__ = f"SL_TP_{original_strategy.__name__}"
+    return WrappedStrategy
+
+
 def calculate_3y_splits(symbol, DailyStockPrice, end_date=None):
     """
     Calculate chronological 3Y date ranges starting from the earliest available data for the symbol.
@@ -134,8 +195,9 @@ class CrossValidationObjective:
     def __init__(self, data_maps, code_template, param_ranges, objective_type):
         self.data_maps = data_maps
         self.code_template = code_template
-        self.param_ranges = param_ranges
         self.objective_type = objective_type
+        # param_ranges already has SL/TP injected by run_single_objective_optimization
+        self.param_ranges = param_ranges
 
     def __call__(self, trial):
         params = {}
@@ -152,11 +214,16 @@ class CrossValidationObjective:
                 min_val, max_val = param_config
                 params[param_name] = trial.suggest_int(param_name, int(min_val), int(max_val))
         
-        # Replace parameters in code
+        # Extract SL/TP from params (they're optimized along with other params)
+        sl_pct = params.get('sl_pct', DEFAULT_SL_PCT)
+        tp_pct = params.get('tp_pct', DEFAULT_TP_PCT)
+        
+        # Replace parameters in code (for strategy-specific params, not SL/TP)
         code = self.code_template
         for param_name, param_value in params.items():
-            code = code.replace(f"{param_name} = ", f"{param_name} = {param_value} #")
-            code = code.replace(f"{param_name}=", f"{param_name}={param_value} #")
+            if param_name not in ('sl_pct', 'tp_pct'):  # SL/TP handled via wrapper
+                code = code.replace(f"{param_name} = ", f"{param_name} = {param_value} #")
+                code = code.replace(f"{param_name}=", f"{param_name}={param_value} #")
         
         if 'pd.Series(x).index' in code:
             code = code.replace('pd.Series(x).index', 'self.data.index')
@@ -183,6 +250,9 @@ class CrossValidationObjective:
         if not strategy_class:
             return -9999
         
+        # Wrap strategy with SL/TP logic (all strategies get this automatically)
+        wrapped_strategy = create_sl_tp_wrapped_strategy(strategy_class, sl_pct=sl_pct, tp_pct=tp_pct)
+        
         all_win_rates = []
         all_returns = []
         
@@ -193,7 +263,7 @@ class CrossValidationObjective:
                 try:
                     local_scope['symbol'] = ticker
                     local_scope['ticker'] = ticker
-                    bt = Backtest(df_data, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
+                    bt = Backtest(df_data, wrapped_strategy, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
                     stats = bt.run()
                     
                     win_rate = stats.get('Win Rate [%]', 0)
@@ -227,6 +297,16 @@ class CrossValidationObjective:
 
 def run_single_objective_optimization(data_maps, code_template, param_ranges, objective_type, n_trials, n_jobs=4):
     """Run optimization for a single objective evaluating across multiple data folds in parallel"""
+    
+    # Inject default SL/TP param ranges if not already provided
+    # This must happen BEFORE the grid is created
+    if 'sl_pct' not in param_ranges:
+        param_ranges = param_ranges.copy()
+        param_ranges['sl_pct'] = {'type': 'float', 'range': [0.90, 0.98]}
+    if 'tp_pct' not in param_ranges:
+        param_ranges = param_ranges.copy()
+        param_ranges['tp_pct'] = {'type': 'float', 'range': [1.05, 1.25]}
+    
     search_space = {}
     total_combinations = 1
     
@@ -294,10 +374,15 @@ def run_single_objective_optimization(data_maps, code_template, param_ranges, ob
 
 def run_final_backtest(data_map, code_template, params):
     """Run a final backtest to get full stats and plot"""
-    # Replace parameters in code
+    # Extract SL/TP from params
+    sl_pct = params.get('sl_pct', DEFAULT_SL_PCT)
+    tp_pct = params.get('tp_pct', DEFAULT_TP_PCT)
+    
+    # Replace parameters in code (not SL/TP - handled via wrapper)
     code = code_template
     for param_name, param_value in params.items():
-        code = code.replace(f"{param_name} = ", f"{param_name} = {param_value} #")
+        if param_name not in ('sl_pct', 'tp_pct'):  # SL/TP handled via wrapper
+            code = code.replace(f"{param_name} = ", f"{param_name} = {param_value} #")
         
     local_scope = {
         'Backtest': Backtest,
@@ -319,6 +404,9 @@ def run_final_backtest(data_map, code_template, params):
                 
         if not strategy_class:
             return None
+        
+        # Wrap strategy with SL/TP logic (all strategies get this automatically)
+        wrapped_strategy = create_sl_tp_wrapped_strategy(strategy_class, sl_pct=sl_pct, tp_pct=tp_pct)
             
         # Use the first dataframe (primary symbol) for the main backtest plot/stats
         symbol = list(data_map.keys())[0]
@@ -326,7 +414,7 @@ def run_final_backtest(data_map, code_template, params):
         local_scope['ticker'] = symbol
         df = data_map[symbol]
         
-        bt = Backtest(df, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
+        bt = Backtest(df, wrapped_strategy, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
         stats = bt.run()
         
         # safely get plot

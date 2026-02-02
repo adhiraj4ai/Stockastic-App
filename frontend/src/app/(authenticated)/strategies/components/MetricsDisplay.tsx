@@ -110,6 +110,8 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
                 'Total trades': safeStr(data.total_trades || data['# Trades']),
                 'Total winning trades': safeStr(data['Total Winning Trades']),
                 'Total losing trades': safeStr(data['Total Losing Trades']),
+                'Stop Loss Exits': safeStr(data.sl_exits || 0),
+                'Take Profit Exits': safeStr(data.tp_exits || 0),
                 'Starting balance': fmt(data['Equity Initial [$]'] || data.equity_initial),
                 'Finishing balance': fmt(data['Equity Final [$]'] || data.final_equity),
                 'Longs count': safeStr(data['Longs Count']),
