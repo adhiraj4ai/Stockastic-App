@@ -419,7 +419,7 @@ function StrategiesContent() {
                                             </div>
 
                                             {/* Description */}
-                                            <div className="px-4 py-3 flex-1 bg-white">
+                                            <div className="px-4 py-1.5 flex-1 bg-white">
                                                 <p className="text-xs text-slate-600 leading-relaxed line-clamp-5">
                                                     {strategy.description}
                                                 </p>
