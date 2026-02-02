@@ -86,6 +86,13 @@ class PortfolioTransactionSerializer(serializers.ModelSerializer):
 class StrategySerializer(serializers.ModelSerializer):
     default_parameters = serializers.SerializerMethodField()
     published_experiments = serializers.SerializerMethodField()
+    
+    # Dynamic fields from best published experiment
+    pnl_amount = serializers.SerializerMethodField()
+    pnl_percent = serializers.SerializerMethodField()
+    max_drawdown = serializers.SerializerMethodField()
+    sharpe_ratio = serializers.SerializerMethodField()
+    win_rate = serializers.SerializerMethodField()
 
     class Meta:
         model = Strategy
@@ -93,6 +100,59 @@ class StrategySerializer(serializers.ModelSerializer):
                   'pnl_amount', 'pnl_percent', 'max_drawdown', 'sharpe_ratio', 'win_rate', 'icon', 'icon_color', 'default_parameters',
                   'published_experiments']
         read_only_fields = ['id', 'created_at', 'published_experiments']
+
+    def _get_best_published_exp(self, obj):
+        if hasattr(obj, '_best_published_exp'):
+            return obj._best_published_exp
+        
+        # Check if pre-fetched or fetch
+        if hasattr(obj, '_prefetched_objects_cache') and 'experiments' in obj._prefetched_objects_cache:
+            published = [e for e in obj.experiments.all() if e.is_published and e.status == 'SUCCESS']
+        else:
+            published = obj.experiments.filter(is_published=True, status='SUCCESS')
+            
+        if not published:
+            obj._best_published_exp = None
+            return None
+            
+        def get_return(exp):
+            m = exp.metrics or {}
+            # Try multiple common keys for return
+            return float(m.get('pnl_percent') or m.get('return_pct') or m.get('Return [%]') or 0)
+            
+        best = max(published, key=get_return)
+        obj._best_published_exp = best
+        return best
+
+    def get_pnl_amount(self, obj):
+        exp = self._get_best_published_exp(obj)
+        if exp:
+            return exp.metrics.get('total_pnl') or exp.metrics.get('Equity Final [$]') or 0
+        return obj.pnl_amount
+
+    def get_pnl_percent(self, obj):
+        exp = self._get_best_published_exp(obj)
+        if exp:
+            return exp.metrics.get('pnl_percent') or exp.metrics.get('Return [%]') or 0
+        return obj.pnl_percent
+
+    def get_max_drawdown(self, obj):
+        exp = self._get_best_published_exp(obj)
+        if exp:
+            return exp.metrics.get('max_drawdown') or exp.metrics.get('Max. Drawdown [%]') or 0
+        return obj.max_drawdown
+
+    def get_sharpe_ratio(self, obj):
+        exp = self._get_best_published_exp(obj)
+        if exp:
+            return exp.metrics.get('sharpe_ratio') or exp.metrics.get('Sharpe Ratio') or 0
+        return obj.sharpe_ratio
+
+    def get_win_rate(self, obj):
+        exp = self._get_best_published_exp(obj)
+        if exp:
+            return exp.metrics.get('win_rate') or exp.metrics.get('Win Rate [%]') or 0
+        return obj.win_rate
 
     def get_default_parameters(self, obj):
         if not obj.code:

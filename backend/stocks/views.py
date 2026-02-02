@@ -859,6 +859,9 @@ class StrategyViewSet(viewsets.ModelViewSet):
     search_fields = ['name', 'description', 'ticker']
     ordering_fields = ['created_at', 'pnl_percent', 'sharpe_ratio']
 
+    def get_queryset(self):
+        return Strategy.objects.filter(user=self.request.user).prefetch_related('experiments')
+
     @staticmethod
     def _get_bt_local_scope(symbol, params=None):
         from backtesting import Backtest, Strategy as BTStrategy
