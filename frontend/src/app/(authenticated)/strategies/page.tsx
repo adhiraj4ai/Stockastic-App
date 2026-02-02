@@ -383,20 +383,6 @@ function StrategiesContent() {
                                                                 <h3 className="text-base font-bold text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">
                                                                     {strategy.name}
                                                                 </h3>
-                                                                <div className="flex gap-1.5 flex-wrap">
-                                                                    {strategy.published_experiments && strategy.published_experiments.length > 0 && (
-                                                                        <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm">
-                                                                            <Activity size={10} className="mr-1" />
-                                                                            {strategy.published_experiments.length} Published
-                                                                        </Badge>
-                                                                    )}
-                                                                    {/* Performance Badge */}
-                                                                    {strategy.pnl_percent != null && strategy.pnl_percent !== 0 && (
-                                                                        <Badge className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${strategy.pnl_percent >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                                                                            {strategy.pnl_percent >= 0 ? '📈' : '📉'} {Number(strategy.pnl_percent).toFixed(1)}%
-                                                                        </Badge>
-                                                                    )}
-                                                                </div>
                                                             </div>
                                                             <DropdownMenu>
                                                                 <DropdownMenuTrigger asChild>
@@ -439,32 +425,6 @@ function StrategiesContent() {
                                                 </p>
                                             </div>
 
-                                            {/* Quick Stats */}
-                                            {(strategy.sharpe_ratio != null || strategy.win_rate != null) && (
-                                                <div className="px-4 py-2.5 bg-slate-50 border-y border-slate-100">
-                                                    <div className="grid grid-cols-3 gap-2">
-                                                        {strategy.sharpe_ratio != null && (
-                                                            <div className="text-center">
-                                                                <div className="text-xs text-slate-500 font-medium mb-0.5">Sharpe</div>
-                                                                <div className="text-sm font-bold text-slate-900">{Number(strategy.sharpe_ratio).toFixed(2)}</div>
-                                                            </div>
-                                                        )}
-                                                        {strategy.win_rate != null && (
-                                                            <div className="text-center">
-                                                                <div className="text-xs text-slate-500 font-medium mb-0.5">Win Rate</div>
-                                                                <div className="text-sm font-bold text-slate-900">{Number(strategy.win_rate).toFixed(0)}%</div>
-                                                            </div>
-                                                        )}
-                                                        {strategy.max_drawdown != null && (
-                                                            <div className="text-center">
-                                                                <div className="text-xs text-slate-500 font-medium mb-0.5">Max DD</div>
-                                                                <div className="text-sm font-bold text-red-600">{Number(strategy.max_drawdown).toFixed(1)}%</div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-
                                             {/* Action Buttons */}
                                             <div className="px-3 py-2 flex gap-2 bg-white border-t border-slate-100">
                                                 <button
@@ -505,8 +465,6 @@ function StrategiesContent() {
                                             <thead className="sticky top-0 z-10">
                                                 <tr className="bg-slate-50 border-b border-slate-200">
                                                     <th className="px-6 py-4 text-sm font-bold text-slate-800">Strategy</th>
-                                                    <th className="px-6 py-4 text-sm font-bold text-slate-800">Performance</th>
-                                                    <th className="px-6 py-4 text-sm font-bold text-slate-800">Key Metrics</th>
                                                     <th className="px-6 py-4 text-sm font-bold text-slate-800">Created At</th>
                                                     <th className="px-6 py-4 text-sm font-bold text-slate-800 text-right">Actions</th>
                                                 </tr>
@@ -538,42 +496,6 @@ function StrategiesContent() {
                                                             </div>
                                                         </td>
 
-                                                        {/* Performance Badge */}
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex flex-col gap-1">
-                                                                {strategy.pnl_percent != null && strategy.pnl_percent !== 0 ? (
-                                                                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black ${strategy.pnl_percent >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                                        {strategy.pnl_percent >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                                                                        {Number(strategy.pnl_percent).toFixed(1)}%
-                                                                    </div>
-                                                                ) : (
-                                                                    <span className="text-slate-300 font-bold uppercase text-[10px] tracking-widest pl-2">No Data</span>
-                                                                )}
-                                                                {strategy.published_experiments && strategy.published_experiments.length > 0 && (
-                                                                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest pl-1">
-                                                                        {strategy.published_experiments.length} Active
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </td>
-
-                                                        {/* Metrics Grid */}
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex items-center gap-6">
-                                                                {strategy.sharpe_ratio != null && (
-                                                                    <div className="flex flex-col">
-                                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sharpe</span>
-                                                                        <span className="text-xs font-bold text-slate-700">{Number(strategy.sharpe_ratio).toFixed(2)}</span>
-                                                                    </div>
-                                                                )}
-                                                                {strategy.win_rate != null && (
-                                                                    <div className="flex flex-col">
-                                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Win Rate</span>
-                                                                        <span className="text-xs font-bold text-slate-700">{Number(strategy.win_rate).toFixed(0)}%</span>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </td>
 
                                                         {/* Date */}
                                                         <td className="px-6 py-4">
