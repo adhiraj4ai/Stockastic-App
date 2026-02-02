@@ -11,20 +11,39 @@ import numpy as np
 import inspect
 
 
-def calculate_periods(end_date=None):
-    """Calculate 1Y, 3Y, 5Y, 10Y date ranges from end_date (defaults to today)"""
+def calculate_3y_splits(symbol, DailyStockPrice, end_date=None):
+    """
+    Calculate chronological 3Y date ranges starting from the earliest available data for the symbol.
+    """
     if not end_date:
-        end_date = datetime.now().strftime('%Y-%m-%d')
+        end_date = datetime.now().date()
+    else:
+        end_dt = datetime.strptime(end_date, '%Y-%m-%d').date()
+        end_date = end_dt
+
+    # Find earliest data point for this symbol
+    from django.db.models import Min
+    res = DailyStockPrice.objects.filter(ticker=symbol).aggregate(min_date=Min('date'))
+    start_date = res['min_date']
     
-    end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+    if not start_date:
+        # Fallback if no data found
+        start_date = end_date - timedelta(days=365*3)
     
-    periods = [
-        ('1Y', (end_dt - timedelta(days=365)).strftime('%Y-%m-%d'), end_date),
-        ('3Y', (end_dt - timedelta(days=365*3)).strftime('%Y-%m-%d'), end_date),
-        ('5Y', (end_dt - timedelta(days=365*5)).strftime('%Y-%m-%d'), end_date),
-        ('10Y', (end_dt - timedelta(days=365*10)).strftime('%Y-%m-%d'), end_date),
-    ]
+    periods = []
+    curr_start = start_date
     
+    while curr_start < end_date:
+        curr_end = curr_start + timedelta(days=365*3)
+        if curr_end > end_date:
+            curr_end = end_date
+        
+        period_name = f"{curr_start.year}-{curr_end.year} (3Y)"
+        periods.append((period_name, curr_start.strftime('%Y-%m-%d'), curr_end.strftime('%Y-%m-%d')))
+        
+        # Move start forward
+        curr_start = curr_end
+        
     return periods
 
 
@@ -110,9 +129,104 @@ def fetch_period_data(symbol, sector, period_start, period_end, DailyStockPrice,
     return data_map, None
 
 
-def run_single_objective_optimization(data_map, code_template, param_ranges, objective_type, n_trials):
-    """Run optimization for a single objective"""
-    # Build search space
+class CrossValidationObjective:
+    """Picklable objective class for Optuna multi-processing"""
+    def __init__(self, data_maps, code_template, param_ranges, objective_type):
+        self.data_maps = data_maps
+        self.code_template = code_template
+        self.param_ranges = param_ranges
+        self.objective_type = objective_type
+
+    def __call__(self, trial):
+        params = {}
+        for param_name, param_config in self.param_ranges.items():
+            if isinstance(param_config, dict):
+                param_type = param_config.get('type', 'int')
+                min_val, max_val = param_config['range']
+                
+                if param_type == 'float':
+                    params[param_name] = trial.suggest_float(param_name, min_val, max_val)
+                else:
+                    params[param_name] = trial.suggest_int(param_name, int(min_val), int(max_val))
+            else:
+                min_val, max_val = param_config
+                params[param_name] = trial.suggest_int(param_name, int(min_val), int(max_val))
+        
+        # Replace parameters in code
+        code = self.code_template
+        for param_name, param_value in params.items():
+            code = code.replace(f"{param_name} = ", f"{param_name} = {param_value} #")
+            code = code.replace(f"{param_name}=", f"{param_name}={param_value} #")
+        
+        if 'pd.Series(x).index' in code:
+            code = code.replace('pd.Series(x).index', 'self.data.index')
+        if '.position.entry_price' in code:
+            code = code.replace('.position.entry_price', '.trades[0].entry_price')
+        
+        local_scope = {
+            'Backtest': Backtest, 'Strategy': Strategy, 'crossover': crossover,
+            'SMA': SMA, 'pd': pd, 'np': np,
+        }
+        
+        try:
+            exec(code, local_scope)
+        except Exception as e:
+            return -9999
+        
+        from backtesting import Strategy as BTStrategy
+        strategy_class = None
+        for name, obj in local_scope.items():
+            if inspect.isclass(obj) and issubclass(obj, BTStrategy) and obj is not BTStrategy:
+                strategy_class = obj
+                break
+        
+        if not strategy_class:
+            return -9999
+        
+        all_win_rates = []
+        all_returns = []
+        
+        for fold_data_map in self.data_maps:
+            win_rates = []
+            returns = []
+            for ticker, df_data in fold_data_map.items():
+                try:
+                    local_scope['symbol'] = ticker
+                    local_scope['ticker'] = ticker
+                    bt = Backtest(df_data, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
+                    stats = bt.run()
+                    
+                    win_rate = stats.get('Win Rate [%]', 0)
+                    if win_rate is None or (isinstance(win_rate, float) and win_rate != win_rate):
+                        win_rate = 0
+                    win_rates.append(win_rate)
+                    
+                    return_pct = stats.get('Return [%]', 0)
+                    if return_pct is None or (isinstance(return_pct, float) and return_pct != return_pct):
+                        return_pct = 0
+                    returns.append(return_pct)
+                except:
+                    continue
+            
+            if win_rates:
+                all_win_rates.append(sum(win_rates) / len(win_rates))
+                all_returns.append(sum(returns) / len(returns))
+        
+        if not all_win_rates:
+            return -9999
+        
+        avg_win_rate = sum(all_win_rates) / len(all_win_rates)
+        avg_return = sum(all_returns) / len(all_returns)
+
+        if self.objective_type == 'win_rate':
+            return avg_win_rate
+        elif self.objective_type == 'profit':
+            return avg_return
+        else:  # 'balanced'
+            return (avg_win_rate * 2) + (avg_return / 10)
+
+def run_single_objective_optimization(data_maps, code_template, param_ranges, objective_type, n_trials, n_jobs=4):
+    """Run optimization for a single objective evaluating across multiple data folds in parallel"""
     search_space = {}
     total_combinations = 1
     
@@ -129,7 +243,7 @@ def run_single_objective_optimization(data_map, code_template, param_ranges, obj
             count = int(end) - int(start) + 1
             search_space[param_name] = list(range(int(start), int(end) + 1))
         elif p_type == 'float':
-            step = (end - start) / 10.0 # Fewer steps for grid search
+            step = (end - start) / 10.0
             if step == 0: step = 0.1
             values = []
             curr = start
@@ -141,124 +255,42 @@ def run_single_objective_optimization(data_map, code_template, param_ranges, obj
         else:
             count = int(end) - int(start) + 1
             search_space[param_name] = list(range(int(start), int(end) + 1))
-        
         total_combinations *= count
     
-    # Decide sampler
-    if total_combinations <= n_trials:
-        sampler = optuna.samplers.GridSampler(search_space)
-        actual_n_trials = total_combinations
-    else:
-        sampler = optuna.samplers.TPESampler()
-        actual_n_trials = n_trials
+    sampler = optuna.samplers.GridSampler(search_space)
+    actual_n_trials = total_combinations
     
-    # Define objective function
-    def objective(trial):
-        params = {}
-        for param_name, param_config in param_ranges.items():
-            if isinstance(param_config, dict):
-                param_type = param_config.get('type', 'int')
-                min_val, max_val = param_config['range']
-                
-                if param_type == 'float':
-                    params[param_name] = trial.suggest_float(param_name, min_val, max_val)
-                else:
-                    params[param_name] = trial.suggest_int(param_name, int(min_val), int(max_val))
-            else:
-                min_val, max_val = param_config
-                params[param_name] = trial.suggest_int(param_name, int(min_val), int(max_val))
+    print(f"      🔍 Exhaustive Search: {actual_n_trials} combinations across {len(data_maps)} folds (Jobs: {n_jobs})")
+    
+    import tempfile
+    import os
+    
+    # Use SQLite for multi-process coordination
+    db_fd, db_path = tempfile.mkstemp(suffix='.db')
+    os.close(db_fd)
+    storage_url = f"sqlite:///{db_path}"
+    
+    try:
+        objective_func = CrossValidationObjective(data_maps, code_template, param_ranges, objective_type)
         
-        # Replace parameters in code
-        code = code_template
-        for param_name, param_value in params.items():
-            # Support both "name = " and "name=" patterns
-            code = code.replace(f"{param_name} = ", f"{param_name} = {param_value} #")
-            code = code.replace(f"{param_name}=", f"{param_name}={param_value} #")
+        study = optuna.create_study(
+            direction='maximize', 
+            sampler=sampler,
+            storage=storage_url,
+            study_name=f"opt_{objective_type}_{datetime.now().timestamp()}"
+        )
+        study.optimize(objective_func, n_trials=actual_n_trials, n_jobs=n_jobs)
         
-        # Safe-patch: fix index alignment bug if present in template
-        if 'pd.Series(x).index' in code:
-            code = code.replace('pd.Series(x).index', 'self.data.index')
-        
-        # Safe-patch: fix position.entry_price attribute error
-        if '.position.entry_price' in code:
-            code = code.replace('.position.entry_price', '.trades[0].entry_price')
-        
-        # Execute strategy code
-        local_scope = {
-            'Backtest': Backtest,
-            'Strategy': Strategy,
-            'crossover': crossover,
-            'SMA': SMA,
-            'pd': pd,
-            'np': np,
+        return {
+            'best_params': study.best_params,
+            'best_value': study.best_value,
+            'n_trials': len(study.trials)
         }
-        
-        try:
-            exec(code, local_scope)
-        except Exception as e:
-            print(f"      ❌ Strategy code execution failure: {e}")
-            return -9999
-        
-        # Find strategy class
-        from backtesting import Strategy as BTStrategy
-        strategy_class = None
-        for name, obj in local_scope.items():
-            if inspect.isclass(obj) and issubclass(obj, BTStrategy) and obj is not BTStrategy:
-                strategy_class = obj
-                break
-        
-        if not strategy_class:
-            return -9999
-        
-        # Run backtest for all dataframes
-        win_rates = []
-        returns = []
-        for ticker, df_data in data_map.items():
+    finally:
+        if os.path.exists(db_path):
             try:
-                # Inject current ticker/symbol into the strategy's global scope
-                local_scope['symbol'] = ticker
-                local_scope['ticker'] = ticker
-                
-                bt = Backtest(df_data, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
-                stats = bt.run()
-                
-                trades = stats.get('# Trades', 0)
-                win_rate = stats.get('Win Rate [%]', 0)
-                if win_rate is None or (isinstance(win_rate, float) and win_rate != win_rate):
-                    win_rate = 0
-                win_rates.append(win_rate)
-                
-                return_pct = stats.get('Return [%]', 0)
-                if return_pct is None or (isinstance(return_pct, float) and return_pct != return_pct):
-                    return_pct = 0
-                returns.append(return_pct)
-            except Exception as e:
-                continue
-        
-        if not win_rates:
-            return -9999
-        
-        # Calculate objective based on type
-        avg_win_rate = sum(win_rates) / len(win_rates)
-        avg_return = sum(returns) / len(returns)
-
-        if objective_type == 'win_rate':
-            return avg_win_rate
-        elif objective_type == 'profit':
-            return avg_return
-        else:  # 'balanced'
-            # Quality metric: Win rate weighted significantly + Return
-            return (avg_win_rate * 2) + (avg_return / 10)
-    
-    # Run optimization
-    study = optuna.create_study(direction='maximize', sampler=sampler)
-    study.optimize(objective, n_trials=actual_n_trials, show_progress_bar=False)
-    
-    return {
-        'best_params': study.best_params,
-        'best_value': study.best_value,
-        'n_trials': len(study.trials)
-    }
+                os.unlink(db_path)
+            except: pass
 
 def run_final_backtest(data_map, code_template, params):
     """Run a final backtest to get full stats and plot"""
@@ -386,4 +418,37 @@ def run_final_backtest(data_map, code_template, params):
         print(f"Final backtest failed: {e}")
         return None, None, None
 
-        return None
+def calculate_avg_cv_stats(data_maps, code_template, params):
+    """
+    Run backtests across all data maps with the given parameters 
+    and return averaged performance metrics.
+    """
+    all_stats = []
+    
+    for dm in data_maps:
+        stats_dict, bt, plot_html = run_final_backtest(dm, code_template, params)
+        if stats_dict:
+            all_stats.append(stats_dict)
+            
+    if not all_stats:
+        return {}
+        
+    # Helper to parse formatted percentages/dollars back to floats
+    def parse_val(v):
+        if isinstance(v, (int, float)): return float(v)
+        try:
+            return float(str(v).replace('%', '').replace('$', '').replace(',', ''))
+        except:
+            return 0.0
+
+    avg_metrics = {
+        'win_rate': np.mean([parse_val(s['categorized']['Trade Metrics']['Win Rate [%]']) for s in all_stats]),
+        'return_pct': np.mean([parse_val(s['categorized']['Performance Metrics']['Return [%]']) for s in all_stats]),
+        'profit_factor': np.mean([parse_val(s['categorized']['Trade Metrics']['Profit Factor']) for s in all_stats]),
+        'sharpe': np.mean([parse_val(s['categorized']['Performance Metrics']['Sharpe Ratio']) for s in all_stats]),
+        'max_drawdown': np.mean([parse_val(s['categorized']['Risk Metrics']['Max Drawdown [%]']) for s in all_stats]),
+        'total_trades': np.sum([parse_val(s['categorized']['Trade Metrics']['Total Trades']) for s in all_stats]),
+        'avg_trades_per_fold': np.mean([parse_val(s['categorized']['Trade Metrics']['Total Trades']) for s in all_stats]),
+    }
+    
+    return avg_metrics

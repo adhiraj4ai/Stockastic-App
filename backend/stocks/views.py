@@ -1872,11 +1872,15 @@ class StrategyViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def optimize_multi_period(self, request, pk=None):
         """
-        Multi-period optimization: Run Grid search across 1Y, 3Y, 5Y, 10Y
-        for all 3 objectives (win_rate, profit, balanced).
-        Auto-publish 1Y, 3Y, 5Y experiments.
+        Refined Strategy Optimization: 3Y Windowed K-Fold Cross-Validation.
+        Splits data into chronological 3Y periods, optimizes across ALL of them,
+        and saves results without auto-publishing.
         """
-        from .optimize_multi_period import calculate_periods, fetch_period_data, run_single_objective_optimization, run_final_backtest
+        from .optimize_multi_period import (
+            calculate_3y_splits, fetch_period_data, 
+            run_single_objective_optimization, run_final_backtest,
+            calculate_avg_cv_stats
+        )
         
         strategy = self.get_object()
         
@@ -1885,142 +1889,138 @@ class StrategyViewSet(viewsets.ModelViewSet):
         sector = request.data.get('sector')
         param_ranges = request.data.get('param_ranges', {})
         n_trials = request.data.get('n_trials', 50)
+        n_jobs = int(request.data.get('parallel_envs', 4))
         
         if not param_ranges:
             return Response({'error': 'param_ranges required'}, status=400)
         
-        # Calculate periods
-        all_periods = calculate_periods()
+        # 1. Calculate the 3Y folds
+        try:
+            folds = calculate_3y_splits(symbol, DailyStockPrice)
+        except Exception as e:
+            return Response({'error': f'Failed to calculate folds: {str(e)}'}, status=500)
         
-        # Filter requested periods
-        requested_periods = request.data.get('periods')
-        if requested_periods:
-            periods = [p for p in all_periods if p[0] in requested_periods]
-        else:
-            periods = all_periods
+        if not folds:
+            return Response({'error': 'No data folds available for optimization'}, status=404)
         
-        # Store results for all periods
-        # Store results for all periods
-        results_by_period = {}
+        print(f"\n{'='*60}")
+        print(f"STRATEGY: {strategy.name}")
+        print(f"K-FOLD OPTIMIZATION: {len(folds)} folds found")
+        for f_name, f_start, f_end in folds:
+            print(f"  - Fold: {f_name} ({f_start} to {f_end})")
+        print(f"{'='*60}\n")
+
+        # 2. Fetch data for each fold
+        data_maps = []
+        errors = []
+        for f_name, f_start, f_end in folds:
+            data_map, error = fetch_period_data(
+                symbol, sector, f_start, f_end,
+                DailyStockPrice, Company
+            )
+            if error:
+                errors.append(f"{f_name}: {error}")
+            else:
+                data_maps.append(data_map)
+        
+        if not data_maps:
+            return Response({'error': f'Failed to fetch data for any folds: {"; ".join(errors)}'}, status=404)
+
+        # 3. Run optimization for all objectives, evaluating across ALL folds
+        results_by_objective = {}
         
         try:
-            # Loop over each period
-            for period_name, period_start, period_end in periods:
-                print(f"\n{'='*60}")
-                print(f"PERIOD: {period_name} ({period_start} to {period_end})")
-                print(f"{'='*60}\n")
+            for obj_type in ['win_rate', 'profit', 'balanced']:
+                print(f"  Optimizing for {obj_type} across {len(data_maps)} folds (Parallel Envs: {n_jobs})...")
                 
-                results_by_period[period_name] = {}
+                # The engine now handles multiple data maps and averages performance
+                result = run_single_objective_optimization(
+                    data_maps, code_template, param_ranges, obj_type, n_trials, n_jobs=n_jobs
+                )
                 
-                try:
-                    # Fetch data for this period
-                    data_map, error = fetch_period_data(
-                        symbol, sector, period_start, period_end,
-                        DailyStockPrice, Company
+                print(f"    ✅ Best CV Params: {result['best_params']} (Value: {result['best_value']})")
+                
+                # 4. Run final backtest on the LAST fold (most recent) for representative display
+                # We use the parameters found by CV, but show the stats of the latest period
+                last_fold_idx = len(data_maps) - 1
+                last_fold_data = data_maps[last_fold_idx]
+                last_fold_info = folds[last_fold_idx]
+                
+                full_stats, bt_instance, plot_html = run_final_backtest(
+                    last_fold_data, code_template, result['best_params']
+                )
+                
+                if full_stats:
+                    # 5. Calculate average metrics across ALL folds for the report
+                    cross_fold_averages = calculate_avg_cv_stats(
+                        data_maps, code_template, result['best_params']
                     )
                     
-                    if error:
-                        results_by_period[period_name]['error'] = error
-                        continue
+                    # Overwrite key metrics in full_stats with averages
+                    if cross_fold_averages:
+                        full_stats['categorized']['Trade Metrics']['Win Rate [%]'] = f"{cross_fold_averages['win_rate']:.2f}% (Avg)"
+                        full_stats['categorized']['Performance Metrics']['Return [%]'] = f"{cross_fold_averages['return_pct']:.2f}% (Avg)"
+                        full_stats['categorized']['Trade Metrics']['Profit Factor'] = f"{cross_fold_averages['profit_factor']:.2f} (Avg)"
+                        full_stats['categorized']['Performance Metrics']['Sharpe Ratio'] = f"{cross_fold_averages['sharpe']:.2f} (Avg)"
+                        full_stats['categorized']['Risk Metrics']['Max Drawdown [%]'] = f"{cross_fold_averages['max_drawdown']:.2f}% (Avg)"
+                        full_stats['categorized']['Trade Metrics']['Total Trades'] = f"{cross_fold_averages['total_trades']:.0f} Total / {cross_fold_averages['avg_trades_per_fold']:.1f} Avg"
+
+                    result['stats'] = full_stats
                     
-                    # Run optimization for all 3 objectives
-                    for obj_type in ['win_rate', 'profit', 'balanced']:
-                        print(f"  Optimizing for {obj_type}...")
-                        
-                        result = run_single_objective_optimization(
-                            data_map, code_template, param_ranges, obj_type, n_trials
-                        )
-                        
-                        # Log raw result from optimization
-                        print(f"    Raw Result for {obj_type}: {result}")
-                        
-                        # Run full backtest for ALL objectives to get displayable stats
-                        # This allows side-by-side comparison of metrics
-                        full_stats, bt_instance, plot_html = run_final_backtest(data_map, code_template, result['best_params'])
-                        
-                        if full_stats:
-                            print(f"    ✅ Backtest stats generated for {obj_type}")
-                            result['stats'] = full_stats
-                            
-                            # Create Experiment Record for this objective's result
-                            try:
-                                # Determine scope
-                                scope_type = ScopeType.SYMBOL
-                                scope_val = symbol
-                                if symbol == 'ALL':
-                                    scope_type = ScopeType.ALL 
-                                    scope_val = 'ALL'
-                                elif sector:
-                                    scope_type = ScopeType.SECTOR
-                                    scope_val = sector
+                    # Create Experiment Record
+                    scope_type = ScopeType.SYMBOL
+                    scope_val = symbol
+                    if symbol == 'ALL':
+                        scope_type = ScopeType.ALL 
+                        scope_val = 'ALL'
+                    elif sector:
+                        scope_type = ScopeType.SECTOR
+                        scope_val = sector
 
-                                # Only auto-publish 'balanced' or 'profit' to avoid clutter/conflicts?
-                                # Let's publish 'balanced' as the primary one. 
-                                # 'win_rate' and 'profit' will be saved but not marked published,
-                                # so they don't override the default view but are accessible via link.
-                                is_published = (obj_type == 'balanced')
-                                
-                                exp = StrategyExperiment.objects.create(
-                                    strategy=strategy,
-                                    user=request.user,
-                                    run_type=StrategyExperiment.RunType.OPTIMIZATION,
-                                    scope_type=scope_type,
-                                    scope_value=scope_val,
-                                    start_date=period_start,
-                                    end_date=period_end,
-                                    parameters=result['best_params'],
-                                    metrics={
-                                        'stats': full_stats,
-                                        'period': period_name,
-                                        'objective': obj_type
-                                    },
-                                    plot_html=plot_html,
-                                    status=StrategyExperiment.Status.SUCCESS,
-                                    is_published=is_published 
-                                )
-                                print(f"  ✅ Created Experiment {exp.id} ({obj_type})")
-                                result['experiment_id'] = exp.id
-                                
-                                # If this is the published one, unpublish others
-                                if is_published:
-                                    StrategyExperiment.objects.filter(
-                                        strategy=strategy,
-                                        scope_type=scope_type,
-                                        scope_value=scope_val,
-                                        is_published=True
-                                    ).exclude(id=exp.id).update(is_published=False)
-                                
-                            except Exception as exp_err:
-                                print(f"  ❌ Failed to create experiment: {exp_err}")
-                        else:
-                            print(f"    ⚠️ Full backtest returned None for {obj_type}")
-                        
-                        results_by_period[period_name][obj_type] = result
+                    # Disable auto-publish as per user request
+                    is_published = False
+                    
+                    exp = StrategyExperiment.objects.create(
+                        strategy=strategy,
+                        user=request.user,
+                        run_type=StrategyExperiment.RunType.OPTIMIZATION,
+                        scope_type=scope_type,
+                        scope_value=scope_val,
+                        start_date=folds[0][1], # Total range start
+                        end_date=folds[-1][2],   # Total range end
+                        parameters=result['best_params'],
+                        metrics={
+                            'stats': full_stats,
+                            'cv_folds': len(data_maps),
+                            'cv_value': result['best_value'],
+                            'objective': obj_type,
+                            'representative_period': last_fold_info[0]
+                        },
+                        plot_html=plot_html,
+                        status=StrategyExperiment.Status.SUCCESS,
+                        is_published=is_published 
+                    )
+                    results_by_objective[obj_type] = {
+                        'experiment_id': exp.id,
+                        'best_params': result['best_params'],
+                        'metrics': exp.metrics,
+                        'stats': full_stats  # Explicitly expose stats at top level
+                    }
 
-                except Exception as period_err:
-                    import traceback
-                    print(f"❌ Period {period_name} failed: {period_err}")
-                    traceback.print_exc()
-                    results_by_period[period_name]['error'] = str(period_err)
-        
+            clean_results = StrategyViewSet._clean_for_json(results_by_objective)
+
+            return Response({
+                'success': True,
+                'status': 'success',
+                'message': 'K-fold optimization complete',
+                'folds_evaluated': len(data_maps),
+                'results': clean_results
+            })
+
         except Exception as e:
             import traceback
-            error_msg = f"Multi-period optimization failed: {str(e)}"
-            print(f"❌ {error_msg}")
             traceback.print_exc()
-            return Response({
-                'success': False,
-                'error': error_msg,
-                'traceback': traceback.format_exc()
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        clean_results = StrategyViewSet._clean_for_json(results_by_period)
-
-        return Response({
-            'success': True,
-            'message': 'Multi-period optimization complete',
-            'results_by_period': clean_results
-        })
+            return Response({'error': str(e)}, status=500)
 
 
     @action(detail=True, methods=['post'])
