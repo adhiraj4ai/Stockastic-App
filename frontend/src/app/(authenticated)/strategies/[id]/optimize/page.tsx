@@ -207,34 +207,34 @@ export default function OptimizePage() {
                                             <div className="flex p-1.5 bg-gray-100 rounded-xl gap-1 shadow-inner border border-gray-200/50">
                                                 <button
                                                     onClick={() => setScope('SINGLE')}
-                                                    className={`flex-1 py-2.5 px-2 text-xs font-black rounded-lg transition-all duration-200 ${scope === 'SINGLE' ? 'bg-white text-purple-700 shadow-sm scale-[1.02]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                                                    className={`flex-1 py-2.5 px-2 text-xs font-bold rounded-lg transition-all duration-200 ${scope === 'SINGLE' ? 'bg-white text-purple-700 shadow-sm scale-[1.02]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                                                 >
-                                                    SINGLE
+                                                    Single
                                                 </button>
                                                 <button
                                                     onClick={() => setScope('SECTOR')}
-                                                    className={`flex-1 py-2.5 px-2 text-xs font-black rounded-lg transition-all duration-200 ${scope === 'SECTOR' ? 'bg-white text-purple-700 shadow-sm scale-[1.02]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                                                    className={`flex-1 py-2.5 px-2 text-xs font-bold rounded-lg transition-all duration-200 ${scope === 'SECTOR' ? 'bg-white text-purple-700 shadow-sm scale-[1.02]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                                                 >
-                                                    SECTOR
+                                                    Sector
                                                 </button>
                                                 <button
                                                     onClick={() => setScope('ALL')}
-                                                    className={`flex-1 py-2.5 px-2 text-xs font-black rounded-lg transition-all duration-200 ${scope === 'ALL' ? 'bg-white text-purple-700 shadow-sm scale-[1.02]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                                                    className={`flex-1 py-2.5 px-2 text-xs font-bold rounded-lg transition-all duration-200 ${scope === 'ALL' ? 'bg-white text-purple-700 shadow-sm scale-[1.02]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                                                 >
-                                                    ALL
+                                                    All
                                                 </button>
                                             </div>
                                         </div>
 
                                         {/* Parallel Environments Selector */}
                                         <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-                                            <Label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wider">Parallel Environments</Label>
+                                            <Label className="text-xs font-bold text-gray-500 mb-2 block">Parallel Environments</Label>
                                             <div className="flex p-1 bg-gray-50 rounded-lg gap-1 border border-gray-200/50">
                                                 {[1, 4, 8].map((val) => (
                                                     <button
                                                         key={val}
                                                         onClick={() => setParallelEnvs(val)}
-                                                        className={`flex-1 py-1.5 text-[10px] font-black rounded transition-all ${parallelEnvs === val ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                                        className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-all ${parallelEnvs === val ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                                                     >
                                                         {val} CPU
                                                     </button>

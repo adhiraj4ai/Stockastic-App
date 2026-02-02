@@ -1484,6 +1484,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
         sector = request.data.get('sector')
         start_date = request.data.get('start_date')
         end_date = request.data.get('end_date')
+        initial_balance = float(request.data.get('initial_balance', 100000))
 
         if not symbol and not sector:
             return Response({'error': 'Either symbol or sector is required'}, status=400)
@@ -1518,8 +1519,12 @@ class StrategyViewSet(viewsets.ModelViewSet):
             for stock_symbol in companies:
                 try:
                     # Run backtest for this stock
-                    result, error, exp_data = self._run_single_backtest(code, stock_symbol, start_date, end_date, params=strategy_params)
+                    result, error, exp_data = self._run_single_backtest(code, stock_symbol, start_date, end_date, params=strategy_params, cash=initial_balance)
                     if result:
+                        # Ensure we have valid dates for logging
+                        s_date = start_date or result.get('start_date')
+                        e_date = end_date or result.get('end_date')
+                        
                         # Log Individual Experiment
                         final_params = strategy_params.copy()
                         if exp_data.get('params'): final_params.update(exp_data['params'])
@@ -1534,8 +1539,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
                                 run_type=StrategyExperiment.RunType.BACKTEST,
                                 scope_type=ScopeType.SYMBOL,
                                 scope_value=stock_symbol,
-                                start_date=start_date,
-                                end_date=end_date,
+                                start_date=s_date,
+                                end_date=e_date,
                                 parameters=final_params,
                                 metrics=final_metrics,
                                 batch_id=batch_id,
@@ -1554,6 +1559,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
                             'total_pnl': result['stats']['total_pnl'],
                             'win_rate': result['stats']['win_rate'],
                             'total_trades': result['stats']['total_trades'],
+                            'start_date': result.get('start_date'),
+                            'end_date': result.get('end_date'),
                             'stats': result['stats'] # Include full stats for detailed view
                         })
                         successful_backtests += 1
@@ -1593,6 +1600,11 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 total_trades = sum(r.get('total_trades', 0) or 0 for r in sector_results)
                 best_stock = max(sector_results, key=lambda x: x.get('return', 0) or 0)
                 worst_stock = min(sector_results, key=lambda x: x.get('return', 0) or 0)
+
+            if not start_date and sector_results:
+                start_date = sector_results[0].get('start_date')
+            if not end_date and sector_results:
+                end_date = sector_results[0].get('end_date')
 
             # Log Parent Experiment for Aggregation
             try:
@@ -1659,7 +1671,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
         
 
         # Single stock backtest
-        result, error, exp_data = self._run_single_backtest(code, symbol, start_date, end_date, params=strategy_params)
+        result, error, exp_data = self._run_single_backtest(code, symbol, start_date, end_date, params=strategy_params, cash=initial_balance)
         
         # Merge returned params/metrics
         final_params = strategy_params.copy()
@@ -1671,6 +1683,10 @@ class StrategyViewSet(viewsets.ModelViewSet):
         if result is None:
             return Response({'error': error or 'No data found for symbol/dates'}, status=400)
             
+        # Use actual dates from results if not provided in request
+        if not start_date: start_date = result.get('start_date')
+        if not end_date: end_date = result.get('end_date')
+
         # Meta data for frontend (manual saving)
         result['metadata'] = {
             'scope_type': 'SYMBOL',
@@ -1711,7 +1727,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=400)
     
-    def _run_single_backtest(self, code, symbol, start_date, end_date, params=None):
+    def _run_single_backtest(self, code, symbol, start_date, end_date, params=None, cash=100000):
         """Helper method to run backtest for a single stock. Returns (result_dict, error_msg, experiment_data)."""
         experiment = ExperimentLogger()
         # 1. Fetch Data
@@ -1802,7 +1818,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
             # 3. Run Backtest
 
             bt = Backtest(df, strategy_class,
-                          cash=1000000, commission=.002,
+                          cash=cash, commission=.002,
                           exclusive_orders=True, finalize_trades=True)
             
             try:
@@ -1838,13 +1854,14 @@ class StrategyViewSet(viewsets.ModelViewSet):
             # Do NOT remove the file as per user request
 
             # 5. Format Stats for Frontend
-            clean_stats, categorized = self._extract_bt_stats(stats)
+            clean_stats, categorized = self._extract_bt_stats(stats, initial_cash=cash)
 
             formatted_stats = {
                 'total_pnl': clean_stats.get('total_pnl', 0.0),
                 'pnl_percent': clean_stats.get('pnl_percent', 0.0),
                 'win_rate': clean_stats.get('win_rate', 0.0),
-                'final_equity': clean_stats.get('Equity Final [$]', 1000000.0),
+                'final_equity': clean_stats.get('Equity Final [$]', cash),
+                'equity_initial': cash,
                 'total_trades': clean_stats.get('total_trades', 0),
                 'sharpe_ratio': clean_stats.get('Sharpe Ratio', 0.0),
                 'max_drawdown': clean_stats.get('Max. Drawdown [%]', 0.0),
@@ -1854,7 +1871,9 @@ class StrategyViewSet(viewsets.ModelViewSet):
 
             return {
                 'stats': formatted_stats,
-                'plot_html': plot_html
+                'plot_html': plot_html,
+                'start_date': df.index.min().strftime('%Y-%m-%d'),
+                'end_date': df.index.max().strftime('%Y-%m-%d')
             }, None, {
                 'params': self._clean_for_json(experiment.params),
                 'metrics': self._clean_for_json(experiment.metrics)

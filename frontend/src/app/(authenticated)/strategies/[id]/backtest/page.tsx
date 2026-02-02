@@ -57,6 +57,7 @@ function BacktestContent() {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [rangeType, setRangeType] = useState<'1y' | '3y' | '5y' | '10y' | 'all' | 'custom'>('5y');
+    const [initialBalance, setInitialBalance] = useState<number>(100000);
 
     const abortControllerRef = useRef<AbortController | null>(null);
     const autorunRef = useRef(false);
@@ -197,7 +198,8 @@ function BacktestContent() {
                 code: strategy.code,
                 start_date: startDate,
                 end_date: endDate,
-                parameters: parameters
+                parameters: parameters,
+                initial_balance: initialBalance
             };
 
             if (mode === 'symbol') {
@@ -283,21 +285,21 @@ function BacktestContent() {
                                     <div className="flex p-1.5 bg-gray-100 rounded-xl gap-1 shadow-inner">
                                         <button
                                             onClick={() => setMode('symbol')}
-                                            className={`flex-1 py-2 px-3 text-xs font-extrabold rounded-lg transition-all ${mode === 'symbol' ? 'bg-white text-blue-600 shadow-md scale-105' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                                            className={`flex-1 py-2 px-3 text-xs font-bold rounded-lg transition-all ${mode === 'symbol' ? 'bg-white text-blue-600 shadow-md scale-105' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                                         >
-                                            SYMBOL
+                                            Symbol
                                         </button>
                                         <button
                                             onClick={() => setMode('sector')}
-                                            className={`flex-1 py-2 px-3 text-xs font-extrabold rounded-lg transition-all ${mode === 'sector' ? 'bg-white text-blue-600 shadow-md scale-105' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                                            className={`flex-1 py-2 px-3 text-xs font-bold rounded-lg transition-all ${mode === 'sector' ? 'bg-white text-blue-600 shadow-md scale-105' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                                         >
-                                            SECTOR
+                                            Sector
                                         </button>
                                         <button
                                             onClick={() => setMode('all')}
-                                            className={`flex-1 py-2 px-3 text-xs font-extrabold rounded-lg transition-all ${mode === 'all' ? 'bg-white text-blue-600 shadow-md scale-105' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                                            className={`flex-1 py-2 px-3 text-xs font-bold rounded-lg transition-all ${mode === 'all' ? 'bg-white text-blue-600 shadow-md scale-105' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
                                         >
-                                            ALL
+                                            All
                                         </button>
                                     </div>
                                 </div>
@@ -389,7 +391,18 @@ function BacktestContent() {
                                     />
                                 </div>
 
-                                <div className="pt-4 border-t border-gray-100">
+                                <div className="pt-4 border-t border-gray-100 space-y-4">
+                                    <div className="space-y-3">
+                                        <Label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Initial Capital (NPR)</Label>
+                                        <input
+                                            type="number"
+                                            value={initialBalance}
+                                            onChange={(e) => setInitialBalance(Number(e.target.value))}
+                                            className="w-full h-11 px-4 rounded-lg border-2 border-gray-200 bg-white text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm hover:border-gray-300"
+                                            placeholder="100,000"
+                                        />
+                                    </div>
+
                                     <PeriodSelector
                                         startDate={startDate}
                                         endDate={endDate}
@@ -441,7 +454,7 @@ function BacktestContent() {
                                                 <Check size={16} />
                                             </div>
                                             <div>
-                                                <p className="text-xs font-black uppercase tracking-widest">Unsaved Experiment</p>
+                                                <p className="text-xs font-bold">Unsaved Experiment</p>
                                                 <p className="text-[10px] opacity-80 font-medium">Results are temporary. Save to persist in history.</p>
                                             </div>
                                         </div>
