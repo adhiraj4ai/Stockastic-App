@@ -270,32 +270,33 @@ class StrategySymbolConfigSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = StrategySymbolConfig
-        fields = ['id', 'strategy', 'symbol', 'preferred_timeframe', 'published_params', 'created_at', 'updated_at']
+        fields = ['id', 'strategy', 'symbol', 'preferred_objective', 'published_params', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
     
     def get_published_params(self, obj):
-        """Fetch all 3 published parameter sets (1Y, 3Y, 5Y) for this strategy+symbol"""
+        """Fetch all 3 published parameter flavors (Win Rate, Profit, Balanced) for the standard 3Y period"""
         result = {}
         
-        for period in ['1Y', '3Y', '5Y']:
+        for objective in ['win_rate', 'profit', 'balanced']:
             experiment = StrategyExperiment.objects.filter(
                 strategy=obj.strategy,
                 scope_type='SYMBOL',
                 scope_value=obj.symbol,
                 is_published=True,
-                metrics__period=period,
+                metrics__objective=objective,
+                metrics__period='3Y', # Everything is now 3Y based
                 status='SUCCESS'
             ).order_by('-created_at').first()
             
             if experiment:
-                result[period] = {
+                result[objective] = {
                     'experiment_id': experiment.id,
                     'parameters': experiment.parameters,
                     'metrics': {
-                        'return_pct': experiment.metrics.get('return_pct', 0),
-                        'sharpe_ratio': experiment.metrics.get('sharpe_ratio', 0),
-                        'win_rate': experiment.metrics.get('win_rate', 0),
-                        'max_drawdown': experiment.metrics.get('max_drawdown', 0),
+                        'return_pct': experiment.metrics.get('stats', {}).get('pnl_percent', 0),
+                        'sharpe_ratio': experiment.metrics.get('stats', {}).get('sharpe_ratio', 0),
+                        'win_rate': experiment.metrics.get('stats', {}).get('win_rate', 0),
+                        'max_drawdown': experiment.metrics.get('stats', {}).get('max_drawdown', 0),
                     }
                 }
         

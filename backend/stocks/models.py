@@ -327,18 +327,18 @@ class StrategyExperiment(models.Model):
 
 class StrategySymbolConfig(models.Model):
     """Stores user preference for which parameter timeframe to use per strategy+symbol"""
-    class Timeframe(models.TextChoices):
-        SHORT = '1Y', 'Short Term (1 Year)'
-        MID = '3Y', 'Mid Term (3 Years)'
-        LONG = '5Y', 'Long Term (5 Years)'
+    class Objective(models.TextChoices):
+        WIN_RATE = 'win_rate', 'Win Rate'
+        PROFIT = 'profit', 'Max Profit'
+        BALANCED = 'balanced', 'Balanced'
     
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     strategy = models.ForeignKey(Strategy, on_delete=models.CASCADE, related_name='symbol_configs')
     symbol = models.CharField(max_length=20)
-    preferred_timeframe = models.CharField(
-        max_length=2,
-        choices=Timeframe.choices,
-        default=Timeframe.MID
+    preferred_objective = models.CharField(
+        max_length=20,
+        choices=Objective.choices,
+        default=Objective.BALANCED
     )
     
     created_at = models.DateTimeField(auto_now_add=True)
@@ -351,7 +351,7 @@ class StrategySymbolConfig(models.Model):
         ]
     
     def __str__(self):
-        return f"{self.user.username} - {self.strategy.name} ({self.symbol}): {self.get_preferred_timeframe_display()}"
+        return f"{self.user.username} - {self.strategy.name} ({self.symbol}): {self.get_preferred_objective_display()}"
 
 class DailyBuyerFloorsheet(models.Model):
     transaction_date = models.DateField(primary_key=True) # Fake PK for Django

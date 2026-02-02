@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { PeriodSelector } from '../../components/PeriodSelector';
 import { MetricsDisplay } from '../../components/MetricsDisplay';
-import ParameterTimeframeSelector from '../../components/ParameterTimeframeSelector';
+import ParameterObjectiveSelector from '../../components/ParameterObjectiveSelector';
 
 interface Strategy {
     id: number;
@@ -343,38 +343,12 @@ function BacktestContent() {
 
                                 {/* Parameter Timeframe Selector */}
                                 {mode === 'symbol' && symbol && (
-                                    <ParameterTimeframeSelector
+                                    <ParameterObjectiveSelector
                                         strategyId={parseInt(strategyId)}
                                         symbol={symbol}
-                                        onParametersSelected={(params, timeframe) => {
+                                        onParametersSelected={(params, objective) => {
                                             setParamsJson(JSON.stringify(params, null, 2));
-
-                                            // Auto-set backtest period based on timeframe
-                                            const today = new Date();
-                                            const endDateStr = today.toISOString().split('T')[0];
-                                            let startDateStr = '';
-
-                                            if (timeframe === '1Y') {
-                                                const oneYearAgo = new Date(today);
-                                                oneYearAgo.setFullYear(today.getFullYear() - 1);
-                                                startDateStr = oneYearAgo.toISOString().split('T')[0];
-                                                setRangeType('custom');
-                                            } else if (timeframe === '3Y') {
-                                                const threeYearsAgo = new Date(today);
-                                                threeYearsAgo.setFullYear(today.getFullYear() - 3);
-                                                startDateStr = threeYearsAgo.toISOString().split('T')[0];
-                                                setRangeType('custom');
-                                            } else if (timeframe === '5Y') {
-                                                const fiveYearsAgo = new Date(today);
-                                                fiveYearsAgo.setFullYear(today.getFullYear() - 5);
-                                                startDateStr = fiveYearsAgo.toISOString().split('T')[0];
-                                                setRangeType('5y');
-                                            }
-
-                                            setStartDate(startDateStr);
-                                            setEndDate(endDateStr);
-
-                                            toast.success(`Using ${timeframe} optimized parameters & period`);
+                                            toast.success(`Using ${objective.replace('_', ' ')} optimized parameters`);
                                         }}
                                     />
                                 )}

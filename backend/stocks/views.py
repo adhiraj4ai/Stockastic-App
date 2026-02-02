@@ -2212,12 +2212,12 @@ class StrategyViewSet(viewsets.ModelViewSet):
         if not symbol:
             return Response({'error': 'Symbol parameter required'}, status=400)
         
-        # Get or create config with default 3Y timeframe
+        # Get or create config with default Balanced objective
         config, created = StrategySymbolConfig.objects.get_or_create(
             user=request.user,
             strategy=strategy,
             symbol=symbol,
-            defaults={'preferred_timeframe': '3Y'}
+            defaults={'preferred_objective': 'balanced'}
         )
         
         serializer = StrategySymbolConfigSerializer(config)
@@ -2230,24 +2230,24 @@ class StrategyViewSet(viewsets.ModelViewSet):
         
         strategy = self.get_object()
         symbol = request.data.get('symbol')
-        preferred_timeframe = request.data.get('preferred_timeframe')
+        preferred_objective = request.data.get('preferred_objective')
         
         if not symbol:
             return Response({'error': 'Symbol parameter required'}, status=400)
         
-        if preferred_timeframe not in ['1Y', '3Y', '5Y']:
-            return Response({'error': 'Invalid timeframe. Must be 1Y, 3Y, or 5Y'}, status=400)
+        if preferred_objective not in ['win_rate', 'profit', 'balanced']:
+            return Response({'error': 'Invalid objective. Must be win_rate, profit, or balanced'}, status=400)
         
         config, created = StrategySymbolConfig.objects.update_or_create(
             user=request.user,
             strategy=strategy,
             symbol=symbol,
-            defaults={'preferred_timeframe': preferred_timeframe}
+            defaults={'preferred_objective': preferred_objective}
         )
         
         return Response({
             'status': 'updated',
-            'preferred_timeframe': config.preferred_timeframe
+            'preferred_objective': config.preferred_objective
         })
 
     @action(detail=True, methods=['post'])
