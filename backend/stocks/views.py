@@ -3979,6 +3979,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def recommendations(self, request):
+        try:
         """
         Scan market for trading signals.
         Strategy: 'smart_cross', 'ema_cross', 'ichimoku'
@@ -4012,7 +4013,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = DailyStockPrice.objects.filter(
             ticker__in=active_tickers,
             date__gte=start_date
-        ).values('ticker', 'date', 'close', 'high', 'low', 'volume').order_by('ticker', 'date')
+        ).values('ticker', 'date', 'open', 'close', 'high', 'low', 'volume').order_by('ticker', 'date')
         
         if not queryset.exists():
              return Response([])
@@ -4190,7 +4191,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
                     if curr_vol > (curr_avg * 2.0) and close.iloc[-1] > close.iloc[-2]:
                         signal = 'BUY'
                         # Strength based on volume multiple
-                        multiple = curr_vol / curr_avg
+                        multiple = curr_vol / curr_avg if curr_avg > 0 else 1.0
                         strength = min(100, 60 + (multiple * 10))
                         reason = f"Volume Breakout: {multiple:.1f}x Average Volume + Price Up"
 
@@ -4281,14 +4282,21 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
                         
             except Exception as e:
                 continue
-            except Exception as e:
-                continue
                 
             if signal:
+                # Sanitize values for JSON safety
+                import math
+                
+                safe_strength = 0
+                if strength is not None:
+                     safe_strength = float(strength)
+                     if math.isnan(safe_strength) or math.isinf(safe_strength):
+                         safe_strength = 0
+                
                 results.append({
                     'symbol': ticker,
                     'signal': signal,
-                    'strength': strength,
+                    'strength': safe_strength,
                     'reason': reason,
                     'close': float(close.iloc[-1]),
                     'date': df.index[-1].strftime('%Y-%m-%d')
@@ -4297,6 +4305,11 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
         # Sort by strength
         results.sort(key=lambda x: x['strength'], reverse=True)
         return Response(results)
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response({'error': str(e)}, status=500)
 
 
 
