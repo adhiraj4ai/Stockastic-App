@@ -221,26 +221,26 @@ function StrategiesContent() {
             <div className="space-y-6">
 
 
-                <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-1">
-                        <TabsList className="bg-transparent p-0 gap-6">
+                <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <TabsList className="bg-gray-100/80 p-1 gap-1 rounded-lg h-auto">
                             <TabsTrigger
                                 value="my-strategies"
-                                className="bg-transparent p-0 pb-3 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none text-gray-500 font-medium"
+                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm text-gray-500 hover:text-gray-700 hover:bg-white/50"
                             >
                                 <Zap className="w-4 h-4 mr-2" />
                                 All Strategies
                             </TabsTrigger>
                             <TabsTrigger
                                 value="published"
-                                className="bg-transparent p-0 pb-3 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none text-gray-500 font-medium"
+                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm text-gray-500 hover:text-gray-700 hover:bg-white/50"
                             >
                                 <FileCheck className="w-4 h-4 mr-2" />
                                 Published
                             </TabsTrigger>
                             <TabsTrigger
                                 value="experiment-logs"
-                                className="bg-transparent p-0 pb-3 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none text-gray-500 font-medium"
+                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm text-gray-500 hover:text-gray-700 hover:bg-white/50"
                             >
                                 <Beaker className="w-4 h-4 mr-2" />
                                 Experiment Logs
@@ -248,24 +248,14 @@ function StrategiesContent() {
 
                             <TabsTrigger
                                 value="recommendations"
-                                className="bg-transparent p-0 pb-3 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none text-gray-500 font-medium"
+                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm text-gray-500 hover:text-gray-700 hover:bg-white/50"
                             >
                                 <Target className="w-4 h-4 mr-2" />
                                 Recommendations
                             </TabsTrigger>
                         </TabsList>
 
-                        {/* Actions Area - Context aware */}
-                        {activeTab === 'my-strategies' && (
-                            <div className="flex gap-2">
-                                <Button onClick={() => router.push('/strategies/compare')} variant="outline" size="sm" className="gap-2 border-purple-200 text-purple-600 hover:bg-purple-50">
-                                    <GitCompare size={16} /> Compare
-                                </Button>
-                                <Button onClick={() => setIsCreateModalOpen(true)} size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700">
-                                    <Plus size={16} /> Create Strategy
-                                </Button>
-                            </div>
-                        )}
+
                     </div>
 
                     {/* Recommendations Content */}
@@ -274,64 +264,97 @@ function StrategiesContent() {
                     </TabsContent>
 
                     <TabsContent value="my-strategies" className="space-y-6 m-0">
-                        {/* Search and Filter Bar */}
-                        <div className="flex items-center gap-2">
-                            <div className="relative flex-1 max-w-sm">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                        {/* Unified Toolbar */}
+                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white p-2 rounded-xl border border-gray-100 shadow-sm">
+                            {/* Left: Search */}
+                            <div className="relative flex-1 w-full sm:max-w-md">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                                 <Input
-                                    placeholder="Search your strategies..."
+                                    placeholder="Search specific strategies..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-9 bg-white"
+                                    className="pl-9 bg-gray-50 border-transparent hover:bg-white hover:border-gray-200 focus:bg-white focus:border-blue-300 transition-all h-10"
                                 />
                             </div>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" className="gap-2">
-                                        <ArrowUpDown size={14} />
-                                        Sort
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-56">
-                                    <DropdownMenuItem
-                                        onClick={() => setSortBy('created_date_desc')}
-                                        className={sortBy === 'created_date_desc' ? 'bg-blue-50 text-blue-600' : ''}
+
+                            {/* Right: Actions Group */}
+                            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                                {/* View Toggles */}
+                                <div className="flex items-center bg-gray-100 p-1 rounded-lg border border-gray-200">
+                                    <button
+                                        onClick={() => setViewMode('grid')}
+                                        className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                        title="Grid View"
                                     >
-                                        Newest First
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() => setSortBy('created_date_asc')}
-                                        className={sortBy === 'created_date_asc' ? 'bg-blue-50 text-blue-600' : ''}
+                                        <LayoutGrid size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => setViewMode('list')}
+                                        className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                        title="List View"
                                     >
-                                        Oldest First
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() => setSortBy('name_asc')}
-                                        className={sortBy === 'name_asc' ? 'bg-blue-50 text-blue-600' : ''}
-                                    >
-                                        A → Z
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() => setSortBy('name_desc')}
-                                        className={sortBy === 'name_desc' ? 'bg-blue-50 text-blue-600' : ''}
-                                    >
-                                        Z → A
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            <div className="flex items-center bg-gray-100 p-1 rounded-lg border border-gray-200">
-                                <button
-                                    onClick={() => setViewMode('grid')}
-                                    className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                        <List size={16} />
+                                    </button>
+                                </div>
+
+                                {/* Sort */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" className="gap-2 h-10 border-gray-200">
+                                            <ArrowUpDown size={14} className="text-gray-500" />
+                                            <span className="hidden sm:inline">Sort</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-48">
+                                        <DropdownMenuItem
+                                            onClick={() => setSortBy('created_date_desc')}
+                                            className={sortBy === 'created_date_desc' ? 'bg-blue-50 text-blue-600' : ''}
+                                        >
+                                            Newest First
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() => setSortBy('created_date_asc')}
+                                            className={sortBy === 'created_date_asc' ? 'bg-blue-50 text-blue-600' : ''}
+                                        >
+                                            Oldest First
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() => setSortBy('name_asc')}
+                                            className={sortBy === 'name_asc' ? 'bg-blue-50 text-blue-600' : ''}
+                                        >
+                                            A → Z
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() => setSortBy('name_desc')}
+                                            className={sortBy === 'name_desc' ? 'bg-blue-50 text-blue-600' : ''}
+                                        >
+                                            Z → A
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+
+                                {/* Divider */}
+                                <div className="h-6 w-px bg-gray-200 mx-1 hidden sm:block"></div>
+
+                                {/* Major Actions */}
+                                <Button
+                                    onClick={() => router.push('/strategies/compare')}
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2 h-10 border-purple-200 text-purple-700 hover:bg-purple-50 hidden sm:flex"
                                 >
-                                    <LayoutGrid size={16} />
-                                </button>
-                                <button
-                                    onClick={() => setViewMode('list')}
-                                    className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                    <GitCompare size={16} />
+                                    <span>Compare</span>
+                                </Button>
+                                <Button
+                                    onClick={() => setIsCreateModalOpen(true)}
+                                    size="sm"
+                                    className="gap-2 h-10 bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200"
                                 >
-                                    <List size={16} />
-                                </button>
+                                    <Plus size={18} />
+                                    <span className="hidden sm:inline">Create Strategy</span>
+                                    <span className="sm:hidden">Create</span>
+                                </Button>
                             </div>
                         </div>
 
@@ -706,7 +729,6 @@ function StrategiesContent() {
                                                 <tr>
                                                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Strategy</th>
                                                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Scope</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Config ID</th>
                                                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Return</th>
                                                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Sharpe</th>
                                                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Win Rate</th>
@@ -740,9 +762,7 @@ function StrategiesContent() {
                                                                                 `📈 ${exp.scope_value}`}
                                                                     </Badge>
                                                                 </td>
-                                                                <td className="px-4 py-3">
-                                                                    <span className="text-xs font-mono text-gray-500">#{exp.id}</span>
-                                                                </td>
+
                                                                 <td className="px-4 py-3">
                                                                     {(() => {
                                                                         const pnl = exp.metrics?.stats?.pnl_percent ?? exp.metrics?.stats?.return_pct ?? exp.metrics?.pnl_percent ?? null;
@@ -791,7 +811,10 @@ function StrategiesContent() {
                                                                     <Button
                                                                         variant="ghost"
                                                                         size="sm"
-                                                                        onClick={() => router.push(`/strategies/${strategy.id}`)}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            router.push(`/strategies/${strategy.id}/experiments/${exp.id}`);
+                                                                        }}
                                                                         className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                                                     >
                                                                         View
