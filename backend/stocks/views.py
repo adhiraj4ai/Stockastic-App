@@ -859,6 +859,9 @@ class StrategyViewSet(viewsets.ModelViewSet):
     search_fields = ['name', 'description', 'ticker']
     ordering_fields = ['created_at', 'pnl_percent', 'sharpe_ratio']
 
+    def get_queryset(self):
+        return Strategy.objects.filter(user=self.request.user).prefetch_related('experiments')
+
     @staticmethod
     def _get_bt_local_scope(symbol, params=None):
         from backtesting import Backtest, Strategy as BTStrategy
@@ -924,6 +927,18 @@ class StrategyViewSet(viewsets.ModelViewSet):
         clean_stats['max_drawdown'] = safe_num(stats.get('Max. Drawdown [%]'))
         clean_stats['profit_factor'] = safe_num(stats.get('Profit Factor', 0))
         
+        # Set initial cash explicitly
+        clean_stats['Equity Initial [$]'] = initial_cash
+        
+        # Calculate Fee (commission paid on trades)
+        # Fee = Gross PnL - Net PnL (difference between trades profit and final return)
+        equity_final = safe_num(stats.get('Equity Final [$]', initial_cash))
+        trades_df = stats.get('_trades')
+        if isinstance(trades_df, pd.DataFrame) and not trades_df.empty and 'PnL' in trades_df.columns:
+            total_trade_pnl = safe_num(trades_df['PnL'].sum())
+            net_pnl = equity_final - initial_cash
+            clean_stats['Fee'] = safe_num(total_trade_pnl - net_pnl)
+        
         # Advanced trade-level stats
         trades_df = stats.get('_trades')
         if isinstance(trades_df, pd.DataFrame) and not trades_df.empty:
@@ -942,7 +957,96 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 clean_stats['Gross Loss'] = gross_loss
                 clean_stats['Average Win'] = safe_num(gross_profit / count_win) if count_win > 0 else 0
                 clean_stats['Average Loss'] = safe_num(gross_loss / count_loss) if count_loss > 0 else 0
-            except: pass
+                
+                # Average Win/Loss Ratio
+                avg_win = clean_stats['Average Win']
+                avg_loss = abs(clean_stats['Average Loss'])
+                clean_stats['Avg. Win/Loss'] = safe_num(avg_win / avg_loss) if avg_loss > 0 else 0
+                
+                # Calculate Winning/Losing Streaks
+                pnl_signs = (trades_df['PnL'] > 0).astype(int)  # 1 for win, 0 for loss
+                max_win_streak = 0
+                max_loss_streak = 0
+                current_streak = 0
+                current_is_win = None
+                
+                for is_win in pnl_signs:
+                    if is_win == 1:  # Win
+                        if current_is_win == True:
+                            current_streak += 1
+                        else:
+                            current_streak = 1
+                            current_is_win = True
+                        max_win_streak = max(max_win_streak, current_streak)
+                    else:  # Loss
+                        if current_is_win == False:
+                            current_streak += 1
+                        else:
+                            current_streak = 1
+                            current_is_win = False
+                        max_loss_streak = max(max_loss_streak, current_streak)
+                
+                clean_stats['Max. Winning Streak'] = max_win_streak
+                clean_stats['Max. Losing Streak'] = max_loss_streak
+                clean_stats['Current Streak'] = current_streak * (1 if current_is_win else -1) if current_is_win is not None else 0
+                
+                # Expectancy = (Win Rate × Avg Win) - (Loss Rate × Avg Loss)
+                win_rate_decimal = count_win / len(trades_df) if len(trades_df) > 0 else 0
+                loss_rate_decimal = 1 - win_rate_decimal
+                expectancy = (win_rate_decimal * avg_win) - (loss_rate_decimal * avg_loss)
+                clean_stats['Expected Net Profit'] = expectancy
+                
+                # Omega Ratio = Sum of gains above threshold / Sum of losses below threshold
+                threshold = 0
+                gains_above = trades_df[trades_df['PnL'] > threshold]['PnL'].sum()
+                losses_below = abs(trades_df[trades_df['PnL'] <= threshold]['PnL'].sum())
+                clean_stats['Omega Ratio'] = safe_num(gains_above / losses_below) if losses_below > 0 else 0
+                
+                # Longs/Shorts count - based on trade direction (Size > 0 = long, Size < 0 = short)
+                if 'Size' in trades_df.columns:
+                    longs = trades_df[trades_df['Size'] > 0]
+                    shorts = trades_df[trades_df['Size'] < 0]
+                    clean_stats['Longs Count'] = len(longs)
+                    clean_stats['Shorts Count'] = len(shorts)
+                else:
+                    # Default: assume all trades are longs (typical for long-only strategies)
+                    clean_stats['Longs Count'] = len(trades_df)
+                    clean_stats['Shorts Count'] = 0
+                
+            except Exception as e:
+                print(f"Trade-level stats extraction error: {e}")
+        
+        # Smart Sharpe/Sortino (adjusted for autocorrelation) using equity curve
+        equity_curve = stats.get('_equity_curve')
+        if isinstance(equity_curve, pd.DataFrame) and not equity_curve.empty:
+            try:
+                equity = equity_curve['Equity']
+                returns = equity.pct_change().dropna()
+                
+                if len(returns) > 2:
+                    # Calculate autocorrelation for first lag
+                    autocorr = returns.autocorr(lag=1)
+                    if np.isnan(autocorr):
+                        autocorr = 0
+                    
+                    # Smart Sharpe = Sharpe × sqrt((1 + (2 × rho × T)) / (1 + 2 × rho))
+                    # Simplified: Smart Sharpe ≈ Sharpe / sqrt(1 + 2*autocorr)
+                    sharpe = safe_num(stats.get('Sharpe Ratio', 0))
+                    adjustment = np.sqrt(1 + 2 * autocorr) if (1 + 2 * autocorr) > 0 else 1
+                    clean_stats['Smart Sharpe'] = safe_num(sharpe / adjustment) if adjustment > 0 else sharpe
+                    
+                    sortino = safe_num(stats.get('Sortino Ratio', 0))
+                    clean_stats['Smart Sortino'] = safe_num(sortino / adjustment) if adjustment > 0 else sortino
+                    
+                    # Serenity Index (alternative risk-adjusted return)
+                    # Serenity = (CAGR - Risk-Free) / (1 + Ulcer Index)
+                    # Simplified: Serenity ≈ Return / (1 + Max Drawdown)
+                    return_pct = safe_num(stats.get('Return [%]', 0))
+                    max_dd = abs(safe_num(stats.get('Max. Drawdown [%]', 0)))
+                    clean_stats['Serenity Index'] = safe_num(return_pct / (1 + max_dd)) if max_dd >= 0 else 0
+                    
+            except Exception as e:
+                print(f"Equity curve stats error: {e}")
 
         # Include raw stats (stringified where necessary)
         for k, v in stats_dict.items():
@@ -1051,8 +1155,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
         """
         strategy = self.get_object()
         
-        # Ownership check
-        if strategy.user != self.request.user:
+        # Ownership check (consistent with perform_update)
+        if strategy.user_id != self.request.user.id and not self.request.user.is_staff:
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("You do not have permission to publish this strategy.")
             
@@ -1084,8 +1188,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
     def unpublish(self, request, pk=None):
         strategy = self.get_object()
         
-        # Ownership check
-        if strategy.user != self.request.user:
+        # Ownership check (consistent with perform_update)
+        if strategy.user_id != self.request.user.id and not self.request.user.is_staff:
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("You do not have permission to unpublish this strategy.")
             
@@ -1484,6 +1588,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
         sector = request.data.get('sector')
         start_date = request.data.get('start_date')
         end_date = request.data.get('end_date')
+        initial_balance = float(request.data.get('initial_balance', 100000))
 
         if not symbol and not sector:
             return Response({'error': 'Either symbol or sector is required'}, status=400)
@@ -1518,8 +1623,12 @@ class StrategyViewSet(viewsets.ModelViewSet):
             for stock_symbol in companies:
                 try:
                     # Run backtest for this stock
-                    result, error, exp_data = self._run_single_backtest(code, stock_symbol, start_date, end_date, params=strategy_params)
+                    result, error, exp_data = self._run_single_backtest(code, stock_symbol, start_date, end_date, params=strategy_params, cash=initial_balance)
                     if result:
+                        # Ensure we have valid dates for logging
+                        s_date = start_date or result.get('start_date')
+                        e_date = end_date or result.get('end_date')
+                        
                         # Log Individual Experiment
                         final_params = strategy_params.copy()
                         if exp_data.get('params'): final_params.update(exp_data['params'])
@@ -1534,8 +1643,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
                                 run_type=StrategyExperiment.RunType.BACKTEST,
                                 scope_type=ScopeType.SYMBOL,
                                 scope_value=stock_symbol,
-                                start_date=start_date,
-                                end_date=end_date,
+                                start_date=s_date,
+                                end_date=e_date,
                                 parameters=final_params,
                                 metrics=final_metrics,
                                 batch_id=batch_id,
@@ -1554,6 +1663,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
                             'total_pnl': result['stats']['total_pnl'],
                             'win_rate': result['stats']['win_rate'],
                             'total_trades': result['stats']['total_trades'],
+                            'start_date': result.get('start_date'),
+                            'end_date': result.get('end_date'),
                             'stats': result['stats'] # Include full stats for detailed view
                         })
                         successful_backtests += 1
@@ -1593,6 +1704,11 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 total_trades = sum(r.get('total_trades', 0) or 0 for r in sector_results)
                 best_stock = max(sector_results, key=lambda x: x.get('return', 0) or 0)
                 worst_stock = min(sector_results, key=lambda x: x.get('return', 0) or 0)
+
+            if not start_date and sector_results:
+                start_date = sector_results[0].get('start_date')
+            if not end_date and sector_results:
+                end_date = sector_results[0].get('end_date')
 
             # Log Parent Experiment for Aggregation
             try:
@@ -1659,7 +1775,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
         
 
         # Single stock backtest
-        result, error, exp_data = self._run_single_backtest(code, symbol, start_date, end_date, params=strategy_params)
+        result, error, exp_data = self._run_single_backtest(code, symbol, start_date, end_date, params=strategy_params, cash=initial_balance)
         
         # Merge returned params/metrics
         final_params = strategy_params.copy()
@@ -1671,6 +1787,10 @@ class StrategyViewSet(viewsets.ModelViewSet):
         if result is None:
             return Response({'error': error or 'No data found for symbol/dates'}, status=400)
             
+        # Use actual dates from results if not provided in request
+        if not start_date: start_date = result.get('start_date')
+        if not end_date: end_date = result.get('end_date')
+
         # Meta data for frontend (manual saving)
         result['metadata'] = {
             'scope_type': 'SYMBOL',
@@ -1711,7 +1831,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=400)
     
-    def _run_single_backtest(self, code, symbol, start_date, end_date, params=None):
+    def _run_single_backtest(self, code, symbol, start_date, end_date, params=None, cash=100000):
         """Helper method to run backtest for a single stock. Returns (result_dict, error_msg, experiment_data)."""
         experiment = ExperimentLogger()
         # 1. Fetch Data
@@ -1798,11 +1918,17 @@ class StrategyViewSet(viewsets.ModelViewSet):
             
             if not strategy_class:
                 return None, "No Strategy class found in code.", {}
+            
+            # Wrap strategy with SL/TP logic (all strategies get this automatically)
+            from .optimize_multi_period import create_sl_tp_wrapped_strategy, DEFAULT_SL_PCT, DEFAULT_TP_PCT
+            sl_pct = params.get('sl_pct', DEFAULT_SL_PCT) if params else DEFAULT_SL_PCT
+            tp_pct = params.get('tp_pct', DEFAULT_TP_PCT) if params else DEFAULT_TP_PCT
+            wrapped_strategy = create_sl_tp_wrapped_strategy(strategy_class, sl_pct=sl_pct, tp_pct=tp_pct)
 
             # 3. Run Backtest
 
-            bt = Backtest(df, strategy_class,
-                          cash=1000000, commission=.002,
+            bt = Backtest(df, wrapped_strategy,
+                          cash=cash, commission=.002,
                           exclusive_orders=True, finalize_trades=True)
             
             try:
@@ -1838,23 +1964,29 @@ class StrategyViewSet(viewsets.ModelViewSet):
             # Do NOT remove the file as per user request
 
             # 5. Format Stats for Frontend
-            clean_stats, categorized = self._extract_bt_stats(stats)
+            clean_stats, categorized = self._extract_bt_stats(stats, initial_cash=cash)
 
             formatted_stats = {
                 'total_pnl': clean_stats.get('total_pnl', 0.0),
                 'pnl_percent': clean_stats.get('pnl_percent', 0.0),
                 'win_rate': clean_stats.get('win_rate', 0.0),
-                'final_equity': clean_stats.get('Equity Final [$]', 1000000.0),
+                'final_equity': clean_stats.get('Equity Final [$]', cash),
+                'equity_initial': cash,
                 'total_trades': clean_stats.get('total_trades', 0),
                 'sharpe_ratio': clean_stats.get('Sharpe Ratio', 0.0),
                 'max_drawdown': clean_stats.get('Max. Drawdown [%]', 0.0),
+                # SL/TP exit counts from the wrapped strategy
+                'sl_exits': getattr(wrapped_strategy, 'sl_exits', 0),
+                'tp_exits': getattr(wrapped_strategy, 'tp_exits', 0),
                 'categorized': categorized,
                 'raw': clean_stats
             }
 
             return {
                 'stats': formatted_stats,
-                'plot_html': plot_html
+                'plot_html': plot_html,
+                'start_date': df.index.min().strftime('%Y-%m-%d'),
+                'end_date': df.index.max().strftime('%Y-%m-%d')
             }, None, {
                 'params': self._clean_for_json(experiment.params),
                 'metrics': self._clean_for_json(experiment.metrics)
@@ -1872,11 +2004,16 @@ class StrategyViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def optimize_multi_period(self, request, pk=None):
         """
-        Multi-period optimization: Run Grid search across 1Y, 3Y, 5Y, 10Y
-        for all 3 objectives (win_rate, profit, balanced).
-        Auto-publish 1Y, 3Y, 5Y experiments.
+        Refined Strategy Optimization: 3Y Windowed K-Fold Cross-Validation.
+        Splits data into chronological 3Y periods, optimizes across ALL of them,
+        and automatically publishes the best configurations.
         """
-        from .optimize_multi_period import calculate_periods, fetch_period_data, run_single_objective_optimization, run_final_backtest
+        from .optimize_multi_period import (
+            calculate_3y_splits, fetch_period_data, 
+            run_single_objective_optimization, run_final_backtest,
+            calculate_avg_cv_stats, create_sl_tp_wrapped_strategy,
+            DEFAULT_SL_PCT, DEFAULT_TP_PCT
+        )
         
         strategy = self.get_object()
         
@@ -1885,142 +2022,180 @@ class StrategyViewSet(viewsets.ModelViewSet):
         sector = request.data.get('sector')
         param_ranges = request.data.get('param_ranges', {})
         n_trials = request.data.get('n_trials', 50)
+        n_jobs = int(request.data.get('parallel_envs', 4))
         
         if not param_ranges:
             return Response({'error': 'param_ranges required'}, status=400)
         
-        # Calculate periods
-        all_periods = calculate_periods()
+        # 1. Calculate the 3Y folds
+        try:
+            folds = calculate_3y_splits(symbol, DailyStockPrice)
+        except Exception as e:
+            return Response({'error': f'Failed to calculate folds: {str(e)}'}, status=500)
         
-        # Filter requested periods
-        requested_periods = request.data.get('periods')
-        if requested_periods:
-            periods = [p for p in all_periods if p[0] in requested_periods]
-        else:
-            periods = all_periods
+        if not folds:
+            return Response({'error': 'No data folds available for optimization'}, status=404)
         
-        # Store results for all periods
-        # Store results for all periods
-        results_by_period = {}
+        print(f"\n{'='*60}")
+        print(f"STRATEGY: {strategy.name}")
+        print(f"K-FOLD OPTIMIZATION: {len(folds)} folds found")
+        for f_name, f_start, f_end in folds:
+            print(f"  - Fold: {f_name} ({f_start} to {f_end})")
+        print(f"{'='*60}\n")
+
+        # 2. Fetch data for each fold
+        data_maps = []
+        errors = []
+        for f_name, f_start, f_end in folds:
+            data_map, error = fetch_period_data(
+                symbol, sector, f_start, f_end,
+                DailyStockPrice, Company
+            )
+            if error:
+                errors.append(f"{f_name}: {error}")
+            else:
+                data_maps.append(data_map)
+        
+        if not data_maps:
+            return Response({'error': f'Failed to fetch data for any folds: {"; ".join(errors)}'}, status=404)
+
+        # 3. Run optimization for all objectives, evaluating across ALL folds
+        results_by_objective = {}
         
         try:
-            # Loop over each period
-            for period_name, period_start, period_end in periods:
-                print(f"\n{'='*60}")
-                print(f"PERIOD: {period_name} ({period_start} to {period_end})")
-                print(f"{'='*60}\n")
+            for obj_type in ['win_rate', 'profit', 'balanced']:
+                print(f"  Optimizing for {obj_type} across {len(data_maps)} folds (Parallel Envs: {n_jobs})...")
                 
-                results_by_period[period_name] = {}
+                # The engine now handles multiple data maps and averages performance
+                result = run_single_objective_optimization(
+                    data_maps, code_template, param_ranges, obj_type, n_trials, n_jobs=n_jobs
+                )
                 
-                try:
-                    # Fetch data for this period
-                    data_map, error = fetch_period_data(
-                        symbol, sector, period_start, period_end,
-                        DailyStockPrice, Company
+                new_value = result['best_value']
+                new_params = result['best_params']
+                
+                # Compare against all-time best for this objective type
+                stored_best = strategy.best_score
+                stored_objective = strategy.best_objective
+                
+                # Only update if: (1) no stored best exists, (2) different objective, or (3) new value beats stored
+                use_new = False
+                if stored_best is None or stored_objective != obj_type:
+                    use_new = True  # No comparable stored best
+                elif new_value > stored_best:
+                    use_new = True  # New optimization beats stored best
+                
+                if use_new:
+                    # Update strategy with new all-time best
+                    strategy.best_params = new_params
+                    strategy.best_score = new_value
+                    strategy.best_objective = obj_type
+                    strategy.save(update_fields=['best_params', 'best_score', 'best_objective'])
+                    result['is_new_best'] = True
+                    result['published'] = True
+                    print(f"    ✅ NEW BEST! Params: {new_params} (Value: {new_value:.4f})")
+                else:
+                    # Use stored best params instead
+                    result['best_params'] = strategy.best_params
+                    result['best_value'] = stored_best
+                    result['is_new_best'] = False
+                    result['published'] = False
+                    print(f"    📌 USING STORED BEST (New: {new_value:.4f} vs Stored: {stored_best:.4f})")
+                
+                # 4. Run final backtest on the LAST fold (most recent) for representative display
+                # We use the parameters found by CV, but show the stats of the latest period
+                last_fold_idx = len(data_maps) - 1
+                last_fold_data = data_maps[last_fold_idx]
+                last_fold_info = folds[last_fold_idx]
+                
+                full_stats, bt_instance, plot_html = run_final_backtest(
+                    last_fold_data, code_template, result['best_params']
+                )
+                
+                if full_stats:
+                    # 5. Calculate average metrics across ALL folds for the report
+                    cross_fold_averages = calculate_avg_cv_stats(
+                        data_maps, code_template, result['best_params']
                     )
                     
-                    if error:
-                        results_by_period[period_name]['error'] = error
-                        continue
+                    # Overwrite key metrics in full_stats with averages
+                    if cross_fold_averages:
+                        full_stats['categorized']['Trade Metrics']['Win Rate [%]'] = f"{cross_fold_averages['win_rate']:.2f}% (Avg)"
+                        full_stats['categorized']['Performance Metrics']['Return [%]'] = f"{cross_fold_averages['return_pct']:.2f}% (Avg)"
+                        full_stats['categorized']['Trade Metrics']['Profit Factor'] = f"{cross_fold_averages['profit_factor']:.2f} (Avg)"
+                        full_stats['categorized']['Performance Metrics']['Sharpe Ratio'] = f"{cross_fold_averages['sharpe']:.2f} (Avg)"
+                        full_stats['categorized']['Risk Metrics']['Max Drawdown [%]'] = f"{cross_fold_averages['max_drawdown']:.2f}% (Avg)"
+                        full_stats['categorized']['Trade Metrics']['Total Trades'] = f"{cross_fold_averages['total_trades']:.0f} Total / {cross_fold_averages['avg_trades_per_fold']:.1f} Avg"
+
+                    result['stats'] = full_stats
                     
-                    # Run optimization for all 3 objectives
-                    for obj_type in ['win_rate', 'profit', 'balanced']:
-                        print(f"  Optimizing for {obj_type}...")
-                        
-                        result = run_single_objective_optimization(
-                            data_map, code_template, param_ranges, obj_type, n_trials
-                        )
-                        
-                        # Log raw result from optimization
-                        print(f"    Raw Result for {obj_type}: {result}")
-                        
-                        # Run full backtest for ALL objectives to get displayable stats
-                        # This allows side-by-side comparison of metrics
-                        full_stats, bt_instance, plot_html = run_final_backtest(data_map, code_template, result['best_params'])
-                        
-                        if full_stats:
-                            print(f"    ✅ Backtest stats generated for {obj_type}")
-                            result['stats'] = full_stats
-                            
-                            # Create Experiment Record for this objective's result
-                            try:
-                                # Determine scope
-                                scope_type = ScopeType.SYMBOL
-                                scope_val = symbol
-                                if symbol == 'ALL':
-                                    scope_type = ScopeType.ALL 
-                                    scope_val = 'ALL'
-                                elif sector:
-                                    scope_type = ScopeType.SECTOR
-                                    scope_val = sector
+                    # Create Experiment Record
+                    scope_type = ScopeType.SYMBOL
+                    scope_val = symbol
+                    if symbol == 'ALL':
+                        scope_type = ScopeType.ALL 
+                        scope_val = 'ALL'
+                    elif sector:
+                        scope_type = ScopeType.SECTOR
+                        scope_val = sector
 
-                                # Only auto-publish 'balanced' or 'profit' to avoid clutter/conflicts?
-                                # Let's publish 'balanced' as the primary one. 
-                                # 'win_rate' and 'profit' will be saved but not marked published,
-                                # so they don't override the default view but are accessible via link.
-                                is_published = (obj_type == 'balanced')
-                                
-                                exp = StrategyExperiment.objects.create(
-                                    strategy=strategy,
-                                    user=request.user,
-                                    run_type=StrategyExperiment.RunType.OPTIMIZATION,
-                                    scope_type=scope_type,
-                                    scope_value=scope_val,
-                                    start_date=period_start,
-                                    end_date=period_end,
-                                    parameters=result['best_params'],
-                                    metrics={
-                                        'stats': full_stats,
-                                        'period': period_name,
-                                        'objective': obj_type
-                                    },
-                                    plot_html=plot_html,
-                                    status=StrategyExperiment.Status.SUCCESS,
-                                    is_published=is_published 
-                                )
-                                print(f"  ✅ Created Experiment {exp.id} ({obj_type})")
-                                result['experiment_id'] = exp.id
-                                
-                                # If this is the published one, unpublish others
-                                if is_published:
-                                    StrategyExperiment.objects.filter(
-                                        strategy=strategy,
-                                        scope_type=scope_type,
-                                        scope_value=scope_val,
-                                        is_published=True
-                                    ).exclude(id=exp.id).update(is_published=False)
-                                
-                            except Exception as exp_err:
-                                print(f"  ❌ Failed to create experiment: {exp_err}")
-                        else:
-                            print(f"    ⚠️ Full backtest returned None for {obj_type}")
-                        
-                        results_by_period[period_name][obj_type] = result
+                    # Auto-publish the results
+                    is_published = True
+                    
+                    # Unpublish existing experiments for the same strategy, symbol and objective type
+                    # This ensures we have the "Best 1Y/3Y/5Y" for each flavor available
+                    StrategyExperiment.objects.filter(
+                        strategy=strategy,
+                        scope_type=scope_type,
+                        scope_value=scope_val,
+                        is_published=True,
+                        metrics__objective=obj_type
+                    ).update(is_published=False)
 
-                except Exception as period_err:
-                    import traceback
-                    print(f"❌ Period {period_name} failed: {period_err}")
-                    traceback.print_exc()
-                    results_by_period[period_name]['error'] = str(period_err)
-        
+                    exp = StrategyExperiment.objects.create(
+                        strategy=strategy,
+                        user=request.user,
+                        run_type=StrategyExperiment.RunType.OPTIMIZATION,
+                        scope_type=scope_type,
+                        scope_value=scope_val,
+                        start_date=folds[0][1], # Total range start
+                        end_date=folds[-1][2],   # Total range end
+                        parameters=result['best_params'],
+                        metrics={
+                            'stats': full_stats,
+                            'cv_folds': len(data_maps),
+                            'cv_value': result['best_value'],
+                            'objective': obj_type,
+                            'representative_period': last_fold_info[0],
+                            'period': '3Y' # Consistent with optimization timeframe
+                        },
+                        plot_html=plot_html,
+                        status=StrategyExperiment.Status.SUCCESS,
+                        is_published=is_published 
+                    )
+                    results_by_objective[obj_type] = {
+                        'experiment_id': exp.id,
+                        'best_params': result['best_params'],
+                        'metrics': exp.metrics,
+                        'stats': full_stats,  # Explicitly expose stats at top level
+                        'is_new_best': result.get('is_new_best', True),
+                        'published': result.get('published', True)
+                    }
+
+            clean_results = StrategyViewSet._clean_for_json(results_by_objective)
+
+            return Response({
+                'success': True,
+                'status': 'success',
+                'message': 'K-fold optimization complete',
+                'folds_evaluated': len(data_maps),
+                'results': clean_results
+            })
+
         except Exception as e:
             import traceback
-            error_msg = f"Multi-period optimization failed: {str(e)}"
-            print(f"❌ {error_msg}")
             traceback.print_exc()
-            return Response({
-                'success': False,
-                'error': error_msg,
-                'traceback': traceback.format_exc()
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        clean_results = StrategyViewSet._clean_for_json(results_by_period)
-
-        return Response({
-            'success': True,
-            'message': 'Multi-period optimization complete',
-            'results_by_period': clean_results
-        })
+            return Response({'error': str(e)}, status=500)
 
 
     @action(detail=True, methods=['post'])
@@ -2179,12 +2354,12 @@ class StrategyViewSet(viewsets.ModelViewSet):
         if not symbol:
             return Response({'error': 'Symbol parameter required'}, status=400)
         
-        # Get or create config with default 3Y timeframe
+        # Get or create config with default Balanced objective
         config, created = StrategySymbolConfig.objects.get_or_create(
             user=request.user,
             strategy=strategy,
             symbol=symbol,
-            defaults={'preferred_timeframe': '3Y'}
+            defaults={'preferred_objective': 'balanced'}
         )
         
         serializer = StrategySymbolConfigSerializer(config)
@@ -2197,48 +2372,51 @@ class StrategyViewSet(viewsets.ModelViewSet):
         
         strategy = self.get_object()
         symbol = request.data.get('symbol')
-        preferred_timeframe = request.data.get('preferred_timeframe')
+        preferred_objective = request.data.get('preferred_objective')
         
         if not symbol:
             return Response({'error': 'Symbol parameter required'}, status=400)
         
-        if preferred_timeframe not in ['1Y', '3Y', '5Y']:
-            return Response({'error': 'Invalid timeframe. Must be 1Y, 3Y, or 5Y'}, status=400)
+        if preferred_objective not in ['win_rate', 'profit', 'balanced']:
+            return Response({'error': 'Invalid objective. Must be win_rate, profit, or balanced'}, status=400)
         
         config, created = StrategySymbolConfig.objects.update_or_create(
             user=request.user,
             strategy=strategy,
             symbol=symbol,
-            defaults={'preferred_timeframe': preferred_timeframe}
+            defaults={'preferred_objective': preferred_objective}
         )
         
         return Response({
             'status': 'updated',
-            'preferred_timeframe': config.preferred_timeframe
+            'preferred_objective': config.preferred_objective
         })
 
     @action(detail=True, methods=['post'])
     def unpublish_optimized(self, request, pk=None):
         """
-        Unpublish optimized parameters for a strategy and symbol.
+        Unpublish optimized parameters for a strategy and symbol/scope.
         """
+        from .models import ScopeType
         strategy = self.get_object()
-        symbol = request.data.get('symbol', '')
+        # Accept 'symbol' (legacy) or 'scope_value'
+        scope_value = request.data.get('symbol') or request.data.get('scope_value', '')
+        scope_type = request.data.get('scope_type', ScopeType.SYMBOL)
         
-        if not symbol:
-            return Response({'error': 'Symbol is required'}, status=400)
+        if not scope_value:
+            return Response({'error': 'Symbol/Scope Value is required'}, status=400)
         
-        # Unpublish existing experiments for the same strategy and symbol
+        # Unpublish existing experiments for the same strategy and scope
         updated_count = StrategyExperiment.objects.filter(
             strategy=strategy,
-            scope_type=ScopeType.SYMBOL,
-            scope_value=symbol,
+            scope_type=scope_type,
+            scope_value=scope_value,
             is_published=True
         ).update(is_published=False)
         
         return Response({
             'success': True,
-            'message': f'Unpublished optimized config for {strategy.name} on {symbol}',
+            'message': f'Unpublished optimized config for {strategy.name} on {scope_value} ({scope_type})',
             'updated_count': updated_count
         })
 

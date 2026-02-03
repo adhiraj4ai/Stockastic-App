@@ -11,20 +11,100 @@ import numpy as np
 import inspect
 
 
-def calculate_periods(end_date=None):
-    """Calculate 1Y, 3Y, 5Y, 10Y date ranges from end_date (defaults to today)"""
+# Default SL/TP values (can be overridden via params)
+DEFAULT_SL_PCT = 0.95  # 5% stop loss below entry
+DEFAULT_TP_PCT = 1.15  # 15% take profit above entry
+
+
+def create_sl_tp_wrapped_strategy(original_strategy, sl_pct=None, tp_pct=None):
+    """
+    Wrap any strategy class with stop loss and take profit logic.
+    This single wrapper applies SL/TP to ALL strategies uniformly.
+    
+    Args:
+        original_strategy: The backtesting.py Strategy class to wrap
+        sl_pct: Stop loss percentage (e.g., 0.95 = 5% loss trigger). None to disable.
+        tp_pct: Take profit percentage (e.g., 1.15 = 15% gain trigger). None to disable.
+    
+    Returns:
+        A new Strategy class with SL/TP logic injected into next()
+        The class has sl_exits and tp_exits counters accessible after backtest.
+    """
+    # Use defaults if not provided
+    _sl_pct = sl_pct if sl_pct is not None else DEFAULT_SL_PCT
+    _tp_pct = tp_pct if tp_pct is not None else DEFAULT_TP_PCT
+    
+    class WrappedStrategy(original_strategy):
+        # Counters for SL/TP exits - accessible after backtest (class-level)
+        sl_exits = 0
+        tp_exits = 0
+        
+        def init(self):
+            # Reset counters at start of each backtest
+            WrappedStrategy.sl_exits = 0
+            WrappedStrategy.tp_exits = 0
+            # Call parent init
+            super().init()
+        
+        def next(self):
+            # Run the original strategy logic first
+            super().next()
+            
+            # Apply SL/TP if in a position
+            try:
+                if self.position and len(self.trades) > 0:
+                    entry_price = self.trades[-1].entry_price
+                    current_price = self.data.Close[-1]
+                    
+                    # Stop Loss: Close if price drops below threshold
+                    if _sl_pct and current_price <= entry_price * _sl_pct:
+                        self.position.close()
+                        WrappedStrategy.sl_exits += 1
+                    # Take Profit: Close if price rises above threshold  
+                    elif _tp_pct and current_price >= entry_price * _tp_pct:
+                        self.position.close()
+                        WrappedStrategy.tp_exits += 1
+            except Exception:
+                pass  # Silently ignore SL/TP errors to not break strategy
+    
+    # Preserve the original class name for debugging
+    WrappedStrategy.__name__ = f"SL_TP_{original_strategy.__name__}"
+    return WrappedStrategy
+
+
+def calculate_3y_splits(symbol, DailyStockPrice, end_date=None):
+    """
+    Calculate chronological 3Y date ranges starting from the earliest available data for the symbol.
+    """
     if not end_date:
-        end_date = datetime.now().strftime('%Y-%m-%d')
+        end_date = datetime.now().date()
+    else:
+        end_dt = datetime.strptime(end_date, '%Y-%m-%d').date()
+        end_date = end_dt
+
+    # Find earliest data point for this symbol
+    from django.db.models import Min
+    res = DailyStockPrice.objects.filter(ticker=symbol).aggregate(min_date=Min('date'))
+    start_date = res['min_date']
     
-    end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+    if not start_date:
+        # Fallback if no data found
+        start_date = end_date - timedelta(days=365*3)
     
-    periods = [
-        ('1Y', (end_dt - timedelta(days=365)).strftime('%Y-%m-%d'), end_date),
-        ('3Y', (end_dt - timedelta(days=365*3)).strftime('%Y-%m-%d'), end_date),
-        ('5Y', (end_dt - timedelta(days=365*5)).strftime('%Y-%m-%d'), end_date),
-        ('10Y', (end_dt - timedelta(days=365*10)).strftime('%Y-%m-%d'), end_date),
-    ]
+    periods = []
+    curr_start = start_date
     
+    while curr_start < end_date:
+        curr_end = curr_start + timedelta(days=365*3)
+        if curr_end > end_date:
+            curr_end = end_date
+        
+        period_name = f"{curr_start.year}-{curr_end.year} (3Y)"
+        periods.append((period_name, curr_start.strftime('%Y-%m-%d'), curr_end.strftime('%Y-%m-%d')))
+        
+        # Move start forward
+        curr_start = curr_end
+        
     return periods
 
 
@@ -110,52 +190,18 @@ def fetch_period_data(symbol, sector, period_start, period_end, DailyStockPrice,
     return data_map, None
 
 
-def run_single_objective_optimization(data_map, code_template, param_ranges, objective_type, n_trials):
-    """Run optimization for a single objective"""
-    # Build search space
-    search_space = {}
-    total_combinations = 1
-    
-    for param_name, param_config in param_ranges.items():
-        if isinstance(param_config, dict):
-            p_type = param_config.get('type', 'int')
-            p_range = param_config.get('range', [1, 10])
-            start, end = p_range[0], p_range[1]
-        else:
-            p_type = 'int'
-            start, end = param_config[0], param_config[1]
-        
-        if p_type == 'int':
-            count = int(end) - int(start) + 1
-            search_space[param_name] = list(range(int(start), int(end) + 1))
-        elif p_type == 'float':
-            step = (end - start) / 10.0 # Fewer steps for grid search
-            if step == 0: step = 0.1
-            values = []
-            curr = start
-            while curr <= end + 1e-9:
-                values.append(round(curr, 4))
-                curr += step
-            search_space[param_name] = values
-            count = len(values)
-        else:
-            count = int(end) - int(start) + 1
-            search_space[param_name] = list(range(int(start), int(end) + 1))
-        
-        total_combinations *= count
-    
-    # Decide sampler
-    if total_combinations <= n_trials:
-        sampler = optuna.samplers.GridSampler(search_space)
-        actual_n_trials = total_combinations
-    else:
-        sampler = optuna.samplers.TPESampler()
-        actual_n_trials = n_trials
-    
-    # Define objective function
-    def objective(trial):
+class CrossValidationObjective:
+    """Picklable objective class for Optuna multi-processing"""
+    def __init__(self, data_maps, code_template, param_ranges, objective_type):
+        self.data_maps = data_maps
+        self.code_template = code_template
+        self.objective_type = objective_type
+        # param_ranges already has SL/TP injected by run_single_objective_optimization
+        self.param_ranges = param_ranges
+
+    def __call__(self, trial):
         params = {}
-        for param_name, param_config in param_ranges.items():
+        for param_name, param_config in self.param_ranges.items():
             if isinstance(param_config, dict):
                 param_type = param_config.get('type', 'int')
                 min_val, max_val = param_config['range']
@@ -168,38 +214,32 @@ def run_single_objective_optimization(data_map, code_template, param_ranges, obj
                 min_val, max_val = param_config
                 params[param_name] = trial.suggest_int(param_name, int(min_val), int(max_val))
         
-        # Replace parameters in code
-        code = code_template
-        for param_name, param_value in params.items():
-            # Support both "name = " and "name=" patterns
-            code = code.replace(f"{param_name} = ", f"{param_name} = {param_value} #")
-            code = code.replace(f"{param_name}=", f"{param_name}={param_value} #")
+        # Extract SL/TP from params (they're optimized along with other params)
+        sl_pct = params.get('sl_pct', DEFAULT_SL_PCT)
+        tp_pct = params.get('tp_pct', DEFAULT_TP_PCT)
         
-        # Safe-patch: fix index alignment bug if present in template
+        # Replace parameters in code (for strategy-specific params, not SL/TP)
+        code = self.code_template
+        for param_name, param_value in params.items():
+            if param_name not in ('sl_pct', 'tp_pct'):  # SL/TP handled via wrapper
+                code = code.replace(f"{param_name} = ", f"{param_name} = {param_value} #")
+                code = code.replace(f"{param_name}=", f"{param_name}={param_value} #")
+        
         if 'pd.Series(x).index' in code:
             code = code.replace('pd.Series(x).index', 'self.data.index')
-        
-        # Safe-patch: fix position.entry_price attribute error
         if '.position.entry_price' in code:
             code = code.replace('.position.entry_price', '.trades[0].entry_price')
         
-        # Execute strategy code
         local_scope = {
-            'Backtest': Backtest,
-            'Strategy': Strategy,
-            'crossover': crossover,
-            'SMA': SMA,
-            'pd': pd,
-            'np': np,
+            'Backtest': Backtest, 'Strategy': Strategy, 'crossover': crossover,
+            'SMA': SMA, 'pd': pd, 'np': np,
         }
         
         try:
             exec(code, local_scope)
         except Exception as e:
-            print(f"      ❌ Strategy code execution failure: {e}")
             return -9999
         
-        # Find strategy class
         from backtesting import Strategy as BTStrategy
         strategy_class = None
         for name, obj in local_scope.items():
@@ -210,62 +250,144 @@ def run_single_objective_optimization(data_map, code_template, param_ranges, obj
         if not strategy_class:
             return -9999
         
-        # Run backtest for all dataframes
-        win_rates = []
-        returns = []
-        for ticker, df_data in data_map.items():
+        # Wrap strategy with SL/TP logic (all strategies get this automatically)
+        wrapped_strategy = create_sl_tp_wrapped_strategy(strategy_class, sl_pct=sl_pct, tp_pct=tp_pct)
+        
+        # Helper function for parallel backtest execution
+        def run_single_bt(ticker_data):
+            ticker, df_data = ticker_data
             try:
-                # Inject current ticker/symbol into the strategy's global scope
-                local_scope['symbol'] = ticker
-                local_scope['ticker'] = ticker
-                
-                bt = Backtest(df_data, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
+                bt = Backtest(df_data, wrapped_strategy, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
                 stats = bt.run()
                 
-                trades = stats.get('# Trades', 0)
                 win_rate = stats.get('Win Rate [%]', 0)
                 if win_rate is None or (isinstance(win_rate, float) and win_rate != win_rate):
                     win_rate = 0
-                win_rates.append(win_rate)
                 
                 return_pct = stats.get('Return [%]', 0)
                 if return_pct is None or (isinstance(return_pct, float) and return_pct != return_pct):
                     return_pct = 0
-                returns.append(return_pct)
-            except Exception as e:
-                continue
+                
+                return (win_rate, return_pct)
+            except:
+                return None
         
-        if not win_rates:
+        from concurrent.futures import ThreadPoolExecutor
+        
+        all_win_rates = []
+        all_returns = []
+        
+        for fold_data_map in self.data_maps:
+            # Run backtests in parallel within each fold
+            with ThreadPoolExecutor(max_workers=4) as executor:
+                results = list(executor.map(run_single_bt, fold_data_map.items()))
+            
+            # Collect valid results
+            win_rates = []
+            returns = []
+            for r in results:
+                if r is not None:
+                    win_rates.append(r[0])
+                    returns.append(r[1])
+            
+            if win_rates:
+                all_win_rates.append(sum(win_rates) / len(win_rates))
+                all_returns.append(sum(returns) / len(returns))
+        
+        if not all_win_rates:
             return -9999
         
-        # Calculate objective based on type
-        avg_win_rate = sum(win_rates) / len(win_rates)
-        avg_return = sum(returns) / len(returns)
+        avg_win_rate = sum(all_win_rates) / len(all_win_rates)
+        avg_return = sum(all_returns) / len(all_returns)
 
-        if objective_type == 'win_rate':
+        if self.objective_type == 'win_rate':
             return avg_win_rate
-        elif objective_type == 'profit':
+        elif self.objective_type == 'profit':
             return avg_return
         else:  # 'balanced'
-            # Quality metric: Win rate weighted significantly + Return
             return (avg_win_rate * 2) + (avg_return / 10)
+
+def run_single_objective_optimization(data_maps, code_template, param_ranges, objective_type, n_trials, n_jobs=4):
+    """Run optimization for a single objective using smart Bayesian sampling (TPE)"""
     
-    # Run optimization
-    study = optuna.create_study(direction='maximize', sampler=sampler)
-    study.optimize(objective, n_trials=actual_n_trials, show_progress_bar=False)
+    # Inject default SL/TP param ranges if not already provided
+    # This must happen BEFORE optimization starts
+    if 'sl_pct' not in param_ranges:
+        param_ranges = param_ranges.copy()
+        param_ranges['sl_pct'] = {'type': 'float', 'range': [0.92, 0.98]}  # Tighter range
+    if 'tp_pct' not in param_ranges:
+        param_ranges = param_ranges.copy()
+        param_ranges['tp_pct'] = {'type': 'float', 'range': [1.05, 1.20]}  # Tighter range
     
-    return {
-        'best_params': study.best_params,
-        'best_value': study.best_value,
-        'n_trials': len(study.trials)
-    }
+    # Calculate rough search space size for logging
+    total_combinations = 1
+    for param_name, param_config in param_ranges.items():
+        if isinstance(param_config, dict):
+            p_range = param_config.get('range', [1, 10])
+            p_type = param_config.get('type', 'int')
+            start, end = p_range[0], p_range[1]
+            if p_type == 'float':
+                count = 5  # We'll use 5 steps max for floats
+            else:
+                count = int(end) - int(start) + 1
+        else:
+            start, end = param_config[0], param_config[1]
+            count = int(end) - int(start) + 1
+        total_combinations *= count
+    
+    # Use TPE Sampler (Bayesian) instead of GridSampler - much faster and smarter
+    sampler = optuna.samplers.TPESampler(seed=42, n_startup_trials=10)
+    
+    # Add MedianPruner for early stopping of unpromising trials
+    pruner = optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=2)
+    
+    # Cap trials at reasonable number - TPE finds good solutions in ~50-100 trials
+    actual_n_trials = min(n_trials, 100) if n_trials > 0 else min(total_combinations, 100)
+    
+    print(f"      🚀 Smart Search (TPE): {actual_n_trials} trials (vs {total_combinations} grid combinations) across {len(data_maps)} folds (Jobs: {n_jobs})")
+    
+    import tempfile
+    import os
+    
+    # Use SQLite for multi-process coordination
+    db_fd, db_path = tempfile.mkstemp(suffix='.db')
+    os.close(db_fd)
+    storage_url = f"sqlite:///{db_path}"
+    
+    try:
+        objective_func = CrossValidationObjective(data_maps, code_template, param_ranges, objective_type)
+        
+        study = optuna.create_study(
+            direction='maximize', 
+            sampler=sampler,
+            pruner=pruner,
+            storage=storage_url,
+            study_name=f"opt_{objective_type}_{datetime.now().timestamp()}"
+        )
+        study.optimize(objective_func, n_trials=actual_n_trials, n_jobs=n_jobs)
+        
+        return {
+            'best_params': study.best_params,
+            'best_value': study.best_value,
+            'n_trials': len(study.trials)
+        }
+    finally:
+        if os.path.exists(db_path):
+            try:
+                os.unlink(db_path)
+            except: pass
 
 def run_final_backtest(data_map, code_template, params):
     """Run a final backtest to get full stats and plot"""
-    # Replace parameters in code
+    # Extract SL/TP from params
+    sl_pct = params.get('sl_pct', DEFAULT_SL_PCT)
+    tp_pct = params.get('tp_pct', DEFAULT_TP_PCT)
+    
+    # Replace parameters in code (not SL/TP - handled via wrapper)
     code = code_template
     for param_name, param_value in params.items():
-        code = code.replace(f"{param_name} = ", f"{param_name} = {param_value} #")
+        if param_name not in ('sl_pct', 'tp_pct'):  # SL/TP handled via wrapper
+            code = code.replace(f"{param_name} = ", f"{param_name} = {param_value} #")
         
     local_scope = {
         'Backtest': Backtest,
@@ -287,6 +409,9 @@ def run_final_backtest(data_map, code_template, params):
                 
         if not strategy_class:
             return None
+        
+        # Wrap strategy with SL/TP logic (all strategies get this automatically)
+        wrapped_strategy = create_sl_tp_wrapped_strategy(strategy_class, sl_pct=sl_pct, tp_pct=tp_pct)
             
         # Use the first dataframe (primary symbol) for the main backtest plot/stats
         symbol = list(data_map.keys())[0]
@@ -294,7 +419,7 @@ def run_final_backtest(data_map, code_template, params):
         local_scope['ticker'] = symbol
         df = data_map[symbol]
         
-        bt = Backtest(df, strategy_class, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
+        bt = Backtest(df, wrapped_strategy, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
         stats = bt.run()
         
         # safely get plot
@@ -386,4 +511,37 @@ def run_final_backtest(data_map, code_template, params):
         print(f"Final backtest failed: {e}")
         return None, None, None
 
-        return None
+def calculate_avg_cv_stats(data_maps, code_template, params):
+    """
+    Run backtests across all data maps with the given parameters 
+    and return averaged performance metrics.
+    """
+    all_stats = []
+    
+    for dm in data_maps:
+        stats_dict, bt, plot_html = run_final_backtest(dm, code_template, params)
+        if stats_dict:
+            all_stats.append(stats_dict)
+            
+    if not all_stats:
+        return {}
+        
+    # Helper to parse formatted percentages/dollars back to floats
+    def parse_val(v):
+        if isinstance(v, (int, float)): return float(v)
+        try:
+            return float(str(v).replace('%', '').replace('$', '').replace(',', ''))
+        except:
+            return 0.0
+
+    avg_metrics = {
+        'win_rate': np.mean([parse_val(s['categorized']['Trade Metrics']['Win Rate [%]']) for s in all_stats]),
+        'return_pct': np.mean([parse_val(s['categorized']['Performance Metrics']['Return [%]']) for s in all_stats]),
+        'profit_factor': np.mean([parse_val(s['categorized']['Trade Metrics']['Profit Factor']) for s in all_stats]),
+        'sharpe': np.mean([parse_val(s['categorized']['Performance Metrics']['Sharpe Ratio']) for s in all_stats]),
+        'max_drawdown': np.mean([parse_val(s['categorized']['Risk Metrics']['Max Drawdown [%]']) for s in all_stats]),
+        'total_trades': np.sum([parse_val(s['categorized']['Trade Metrics']['Total Trades']) for s in all_stats]),
+        'avg_trades_per_fold': np.mean([parse_val(s['categorized']['Trade Metrics']['Total Trades']) for s in all_stats]),
+    }
+    
+    return avg_metrics

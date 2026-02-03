@@ -5,6 +5,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { Plus, Lightbulb, ExternalLink, Play, Code, Trash2, Info, LayoutGrid, List, Search, MoreVertical, TrendingUp, TrendingDown, Target, Zap, Filter, Beaker, FileCheck, Activity, GitCompare, Shield, BarChart3, PieChart, Flame, Rocket, Cpu, Layers, Pencil, ArrowUpDown } from 'lucide-react';
+import { toast } from 'sonner';
 
 const strategyIcons: Record<string, any> = {
     Lightbulb,
@@ -211,36 +212,53 @@ function StrategiesContent() {
         }
     };
 
+    const handleUnpublish = async (strategyId: number, scopeValue: string, scopeType: string) => {
+        if (!confirm(`Are you sure you want to unpublish the ${scopeType} strategy for ${scopeValue}?`)) return;
+
+        try {
+            await api.post(`/api/stocks/strategies/${strategyId}/unpublish_optimized/`, {
+                scope_value: scopeValue,
+                scope_type: scopeType
+            });
+            toast.success('Strategy unpublished');
+            fetchStrategies(); // Refresh list
+        } catch (error) {
+            toast.error('Failed to unpublish strategy');
+            console.error(error);
+        }
+    };
+
     if (!mounted) return null;
 
     return (
         <DashboardLayout
             title="Strategy Center"
             subtitle="Automated market analysis and algorithmic trading strategies."
+            noPadding
         >
-            <div className="space-y-6">
+            <div className="space-y-0">
 
 
-                <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-1">
-                        <TabsList className="bg-transparent p-0 gap-6">
+                <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-0">
+                    <div className="sticky top-[73px] z-10 bg-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-2 px-8 transition-all mb-6">
+                        <TabsList className="bg-gray-200/50 p-1 gap-1 rounded-lg h-auto">
                             <TabsTrigger
                                 value="my-strategies"
-                                className="bg-transparent p-0 pb-3 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none text-gray-500 font-medium"
+                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm text-gray-500 hover:text-gray-700 hover:bg-white/50"
                             >
                                 <Zap className="w-4 h-4 mr-2" />
                                 All Strategies
                             </TabsTrigger>
                             <TabsTrigger
                                 value="published"
-                                className="bg-transparent p-0 pb-3 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none text-gray-500 font-medium"
+                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm text-gray-500 hover:text-gray-700 hover:bg-white/50"
                             >
                                 <FileCheck className="w-4 h-4 mr-2" />
                                 Published
                             </TabsTrigger>
                             <TabsTrigger
                                 value="experiment-logs"
-                                className="bg-transparent p-0 pb-3 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none text-gray-500 font-medium"
+                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm text-gray-500 hover:text-gray-700 hover:bg-white/50"
                             >
                                 <Beaker className="w-4 h-4 mr-2" />
                                 Experiment Logs
@@ -248,90 +266,113 @@ function StrategiesContent() {
 
                             <TabsTrigger
                                 value="recommendations"
-                                className="bg-transparent p-0 pb-3 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:shadow-none text-gray-500 font-medium"
+                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm text-gray-500 hover:text-gray-700 hover:bg-white/50"
                             >
                                 <Target className="w-4 h-4 mr-2" />
                                 Recommendations
                             </TabsTrigger>
                         </TabsList>
 
-                        {/* Actions Area - Context aware */}
-                        {activeTab === 'my-strategies' && (
-                            <div className="flex gap-2">
-                                <Button onClick={() => router.push('/strategies/compare')} variant="outline" size="sm" className="gap-2 border-purple-200 text-purple-600 hover:bg-purple-50">
-                                    <GitCompare size={16} /> Compare
-                                </Button>
-                                <Button onClick={() => setIsCreateModalOpen(true)} size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700">
-                                    <Plus size={16} /> Create Strategy
-                                </Button>
-                            </div>
-                        )}
+
                     </div>
 
                     {/* Recommendations Content */}
-                    <TabsContent value="recommendations" className="m-0">
+                    <TabsContent value="recommendations" className="m-0 px-8 pb-8">
                         <RecommendationsTab />
                     </TabsContent>
 
-                    <TabsContent value="my-strategies" className="space-y-6 m-0">
-                        {/* Search and Filter Bar */}
-                        <div className="flex items-center gap-2">
-                            <div className="relative flex-1 max-w-sm">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                    <TabsContent value="my-strategies" className="space-y-6 m-0 px-8 pb-8">
+                        {/* Unified Toolbar */}
+                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white p-2 rounded-xl border border-gray-100 shadow-sm">
+                            {/* Left: Search */}
+                            <div className="relative flex-1 w-full sm:max-w-md">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                                 <Input
-                                    placeholder="Search your strategies..."
+                                    placeholder="Search specific strategies..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-9 bg-white"
+                                    className="pl-9 bg-gray-50 border-transparent hover:bg-white hover:border-gray-200 focus:bg-white focus:border-blue-300 transition-all h-10"
                                 />
                             </div>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" className="gap-2">
-                                        <ArrowUpDown size={14} />
-                                        Sort
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-56">
-                                    <DropdownMenuItem
-                                        onClick={() => setSortBy('created_date_desc')}
-                                        className={sortBy === 'created_date_desc' ? 'bg-blue-50 text-blue-600' : ''}
+
+                            {/* Right: Actions Group */}
+                            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                                {/* View Toggles */}
+                                <div className="flex items-center bg-gray-100 p-1 rounded-lg border border-gray-200">
+                                    <button
+                                        onClick={() => setViewMode('grid')}
+                                        className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                        title="Grid View"
                                     >
-                                        Newest First
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() => setSortBy('created_date_asc')}
-                                        className={sortBy === 'created_date_asc' ? 'bg-blue-50 text-blue-600' : ''}
+                                        <LayoutGrid size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => setViewMode('list')}
+                                        className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                        title="List View"
                                     >
-                                        Oldest First
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() => setSortBy('name_asc')}
-                                        className={sortBy === 'name_asc' ? 'bg-blue-50 text-blue-600' : ''}
-                                    >
-                                        A → Z
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() => setSortBy('name_desc')}
-                                        className={sortBy === 'name_desc' ? 'bg-blue-50 text-blue-600' : ''}
-                                    >
-                                        Z → A
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            <div className="flex items-center bg-gray-100 p-1 rounded-lg border border-gray-200">
-                                <button
-                                    onClick={() => setViewMode('grid')}
-                                    className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                        <List size={16} />
+                                    </button>
+                                </div>
+
+                                {/* Sort */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" className="gap-2 h-10 border-gray-200">
+                                            <ArrowUpDown size={14} className="text-gray-500" />
+                                            <span className="hidden sm:inline">Sort</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-48">
+                                        <DropdownMenuItem
+                                            onClick={() => setSortBy('created_date_desc')}
+                                            className={sortBy === 'created_date_desc' ? 'bg-blue-50 text-blue-600' : ''}
+                                        >
+                                            Newest First
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() => setSortBy('created_date_asc')}
+                                            className={sortBy === 'created_date_asc' ? 'bg-blue-50 text-blue-600' : ''}
+                                        >
+                                            Oldest First
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() => setSortBy('name_asc')}
+                                            className={sortBy === 'name_asc' ? 'bg-blue-50 text-blue-600' : ''}
+                                        >
+                                            A → Z
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() => setSortBy('name_desc')}
+                                            className={sortBy === 'name_desc' ? 'bg-blue-50 text-blue-600' : ''}
+                                        >
+                                            Z → A
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+
+                                {/* Divider */}
+                                <div className="h-6 w-px bg-gray-200 mx-1 hidden sm:block"></div>
+
+                                {/* Major Actions */}
+                                <Button
+                                    onClick={() => router.push('/strategies/compare')}
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2 h-10 border-purple-200 text-purple-700 hover:bg-purple-50 hidden sm:flex"
                                 >
-                                    <LayoutGrid size={16} />
-                                </button>
-                                <button
-                                    onClick={() => setViewMode('list')}
-                                    className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                    <GitCompare size={16} />
+                                    <span>Compare</span>
+                                </Button>
+                                <Button
+                                    onClick={() => setIsCreateModalOpen(true)}
+                                    size="sm"
+                                    className="gap-2 h-10 bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200"
                                 >
-                                    <List size={16} />
-                                </button>
+                                    <Plus size={18} />
+                                    <span className="hidden sm:inline">Create Strategy</span>
+                                    <span className="sm:hidden">Create</span>
+                                </Button>
                             </div>
                         </div>
 
@@ -383,20 +424,6 @@ function StrategiesContent() {
                                                                 <h3 className="text-base font-bold text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">
                                                                     {strategy.name}
                                                                 </h3>
-                                                                <div className="flex gap-1.5 flex-wrap">
-                                                                    {strategy.published_experiments && strategy.published_experiments.length > 0 && (
-                                                                        <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm">
-                                                                            <Activity size={10} className="mr-1" />
-                                                                            {strategy.published_experiments.length} Published
-                                                                        </Badge>
-                                                                    )}
-                                                                    {/* Performance Badge */}
-                                                                    {strategy.pnl_percent != null && strategy.pnl_percent !== 0 && (
-                                                                        <Badge className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${strategy.pnl_percent >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                                                                            {strategy.pnl_percent >= 0 ? '📈' : '📉'} {Number(strategy.pnl_percent).toFixed(1)}%
-                                                                        </Badge>
-                                                                    )}
-                                                                </div>
                                                             </div>
                                                             <DropdownMenu>
                                                                 <DropdownMenuTrigger asChild>
@@ -433,37 +460,11 @@ function StrategiesContent() {
                                             </div>
 
                                             {/* Description */}
-                                            <div className="px-4 py-3 flex-1 bg-white">
-                                                <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
+                                            <div className="px-4 py-1.5 flex-1 bg-white">
+                                                <p className="text-xs text-slate-600 leading-relaxed line-clamp-5">
                                                     {strategy.description}
                                                 </p>
                                             </div>
-
-                                            {/* Quick Stats */}
-                                            {(strategy.sharpe_ratio != null || strategy.win_rate != null) && (
-                                                <div className="px-4 py-2.5 bg-slate-50 border-y border-slate-100">
-                                                    <div className="grid grid-cols-3 gap-2">
-                                                        {strategy.sharpe_ratio != null && (
-                                                            <div className="text-center">
-                                                                <div className="text-xs text-slate-500 font-medium mb-0.5">Sharpe</div>
-                                                                <div className="text-sm font-bold text-slate-900">{Number(strategy.sharpe_ratio).toFixed(2)}</div>
-                                                            </div>
-                                                        )}
-                                                        {strategy.win_rate != null && (
-                                                            <div className="text-center">
-                                                                <div className="text-xs text-slate-500 font-medium mb-0.5">Win Rate</div>
-                                                                <div className="text-sm font-bold text-slate-900">{Number(strategy.win_rate).toFixed(0)}%</div>
-                                                            </div>
-                                                        )}
-                                                        {strategy.max_drawdown != null && (
-                                                            <div className="text-center">
-                                                                <div className="text-xs text-slate-500 font-medium mb-0.5">Max DD</div>
-                                                                <div className="text-sm font-bold text-red-600">{Number(strategy.max_drawdown).toFixed(1)}%</div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
 
                                             {/* Action Buttons */}
                                             <div className="px-3 py-2 flex gap-2 bg-white border-t border-slate-100">
@@ -505,8 +506,6 @@ function StrategiesContent() {
                                             <thead className="sticky top-0 z-10">
                                                 <tr className="bg-slate-50 border-b border-slate-200">
                                                     <th className="px-6 py-4 text-sm font-bold text-slate-800">Strategy</th>
-                                                    <th className="px-6 py-4 text-sm font-bold text-slate-800">Performance</th>
-                                                    <th className="px-6 py-4 text-sm font-bold text-slate-800">Key Metrics</th>
                                                     <th className="px-6 py-4 text-sm font-bold text-slate-800">Created At</th>
                                                     <th className="px-6 py-4 text-sm font-bold text-slate-800 text-right">Actions</th>
                                                 </tr>
@@ -538,42 +537,6 @@ function StrategiesContent() {
                                                             </div>
                                                         </td>
 
-                                                        {/* Performance Badge */}
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex flex-col gap-1">
-                                                                {strategy.pnl_percent != null && strategy.pnl_percent !== 0 ? (
-                                                                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black ${strategy.pnl_percent >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                                        {strategy.pnl_percent >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                                                                        {Number(strategy.pnl_percent).toFixed(1)}%
-                                                                    </div>
-                                                                ) : (
-                                                                    <span className="text-slate-300 font-bold uppercase text-[10px] tracking-widest pl-2">No Data</span>
-                                                                )}
-                                                                {strategy.published_experiments && strategy.published_experiments.length > 0 && (
-                                                                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest pl-1">
-                                                                        {strategy.published_experiments.length} Active
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </td>
-
-                                                        {/* Metrics Grid */}
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex items-center gap-6">
-                                                                {strategy.sharpe_ratio != null && (
-                                                                    <div className="flex flex-col">
-                                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sharpe</span>
-                                                                        <span className="text-xs font-bold text-slate-700">{Number(strategy.sharpe_ratio).toFixed(2)}</span>
-                                                                    </div>
-                                                                )}
-                                                                {strategy.win_rate != null && (
-                                                                    <div className="flex flex-col">
-                                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Win Rate</span>
-                                                                        <span className="text-xs font-bold text-slate-700">{Number(strategy.win_rate).toFixed(0)}%</span>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </td>
 
                                                         {/* Date */}
                                                         <td className="px-6 py-4">
@@ -768,7 +731,7 @@ function StrategiesContent() {
                         </Dialog>
                     </TabsContent>
 
-                    <TabsContent value="published" className="m-0">
+                    <TabsContent value="published" className="m-0 px-8 pb-8">
                         <Card className="border-gray-200 shadow-sm">
                             <CardHeader>
                                 <CardTitle>Published Strategies</CardTitle>
@@ -784,7 +747,6 @@ function StrategiesContent() {
                                                 <tr>
                                                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Strategy</th>
                                                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Scope</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Config ID</th>
                                                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Return</th>
                                                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Sharpe</th>
                                                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Win Rate</th>
@@ -818,35 +780,45 @@ function StrategiesContent() {
                                                                                 `📈 ${exp.scope_value}`}
                                                                     </Badge>
                                                                 </td>
+
                                                                 <td className="px-4 py-3">
-                                                                    <span className="text-xs font-mono text-gray-500">#{exp.id}</span>
+                                                                    {(() => {
+                                                                        const pnl = exp.metrics?.stats?.pnl_percent ?? exp.metrics?.stats?.return_pct ?? exp.metrics?.pnl_percent ?? null;
+                                                                        if (pnl !== null && pnl !== undefined) {
+                                                                            return (
+                                                                                <span className={`font-semibold ${pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                                    {Number(pnl).toFixed(2)}%
+                                                                                </span>
+                                                                            );
+                                                                        }
+                                                                        return <span className="text-gray-400">-</span>;
+                                                                    })()}
                                                                 </td>
                                                                 <td className="px-4 py-3">
-                                                                    {exp.metrics?.pnl_percent !== undefined ? (
-                                                                        <span className={`font-semibold ${exp.metrics.pnl_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                                            {exp.metrics.pnl_percent.toFixed(2)}%
-                                                                        </span>
-                                                                    ) : (
-                                                                        <span className="text-gray-400">-</span>
-                                                                    )}
+                                                                    {(() => {
+                                                                        const sharpe = exp.metrics?.stats?.sharpe_ratio ?? exp.metrics?.sharpe_ratio ?? null;
+                                                                        if (sharpe !== null && sharpe !== undefined) {
+                                                                            return (
+                                                                                <span className="font-semibold text-gray-900">
+                                                                                    {Number(sharpe).toFixed(2)}
+                                                                                </span>
+                                                                            );
+                                                                        }
+                                                                        return <span className="text-gray-400">-</span>;
+                                                                    })()}
                                                                 </td>
                                                                 <td className="px-4 py-3">
-                                                                    {exp.metrics?.sharpe_ratio !== undefined ? (
-                                                                        <span className="font-semibold text-gray-900">
-                                                                            {exp.metrics.sharpe_ratio.toFixed(2)}
-                                                                        </span>
-                                                                    ) : (
-                                                                        <span className="text-gray-400">-</span>
-                                                                    )}
-                                                                </td>
-                                                                <td className="px-4 py-3">
-                                                                    {exp.metrics?.win_rate !== undefined ? (
-                                                                        <span className="font-semibold text-gray-900">
-                                                                            {exp.metrics.win_rate.toFixed(0)}%
-                                                                        </span>
-                                                                    ) : (
-                                                                        <span className="text-gray-400">-</span>
-                                                                    )}
+                                                                    {(() => {
+                                                                        const winRate = exp.metrics?.stats?.win_rate ?? exp.metrics?.win_rate ?? null;
+                                                                        if (winRate !== null && winRate !== undefined) {
+                                                                            return (
+                                                                                <span className="font-semibold text-gray-900">
+                                                                                    {Number(winRate).toFixed(0)}%
+                                                                                </span>
+                                                                            );
+                                                                        }
+                                                                        return <span className="text-gray-400">-</span>;
+                                                                    })()}
                                                                 </td>
                                                                 <td className="px-4 py-3">
                                                                     <span className="text-xs text-gray-500">
@@ -854,14 +826,31 @@ function StrategiesContent() {
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-4 py-3 text-right">
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        onClick={() => router.push(`/strategies/${strategy.id}`)}
-                                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                                                    >
-                                                                        View
-                                                                    </Button>
+                                                                    <div className="flex justify-end gap-2">
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                router.push(`/strategies/${strategy.id}/experiments/${exp.id}`);
+                                                                            }}
+                                                                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                                                        >
+                                                                            View
+                                                                        </Button>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleUnpublish(strategy.id, exp.scope_value, exp.scope_type);
+                                                                            }}
+                                                                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                                            title="Unpublish"
+                                                                        >
+                                                                            <Trash2 size={14} />
+                                                                        </Button>
+                                                                    </div>
                                                                 </td>
                                                             </tr>
                                                         )) || []
@@ -881,7 +870,7 @@ function StrategiesContent() {
                         </Card>
                     </TabsContent>
 
-                    <TabsContent value="experiment-logs" className="m-0">
+                    <TabsContent value="experiment-logs" className="m-0 px-8 pb-8">
                         <Card className="border-none shadow-sm bg-white/50 backdrop-blur-sm p-0">
                             <ExperimentsTab />
                         </Card>

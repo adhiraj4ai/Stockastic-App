@@ -86,6 +86,13 @@ class PortfolioTransactionSerializer(serializers.ModelSerializer):
 class StrategySerializer(serializers.ModelSerializer):
     default_parameters = serializers.SerializerMethodField()
     published_experiments = serializers.SerializerMethodField()
+    
+    # Dynamic fields from best published experiment
+    pnl_amount = serializers.SerializerMethodField()
+    pnl_percent = serializers.SerializerMethodField()
+    max_drawdown = serializers.SerializerMethodField()
+    sharpe_ratio = serializers.SerializerMethodField()
+    win_rate = serializers.SerializerMethodField()
 
     class Meta:
         model = Strategy
@@ -93,6 +100,59 @@ class StrategySerializer(serializers.ModelSerializer):
                   'pnl_amount', 'pnl_percent', 'max_drawdown', 'sharpe_ratio', 'win_rate', 'icon', 'icon_color', 'default_parameters',
                   'published_experiments']
         read_only_fields = ['id', 'created_at', 'published_experiments']
+
+    def _get_best_published_exp(self, obj):
+        if hasattr(obj, '_best_published_exp'):
+            return obj._best_published_exp
+        
+        # Check if pre-fetched or fetch
+        if hasattr(obj, '_prefetched_objects_cache') and 'experiments' in obj._prefetched_objects_cache:
+            published = [e for e in obj.experiments.all() if e.is_published and e.status == 'SUCCESS']
+        else:
+            published = obj.experiments.filter(is_published=True, status='SUCCESS')
+            
+        if not published:
+            obj._best_published_exp = None
+            return None
+            
+        def get_return(exp):
+            m = exp.metrics or {}
+            # Try multiple common keys for return
+            return float(m.get('pnl_percent') or m.get('return_pct') or m.get('Return [%]') or 0)
+            
+        best = max(published, key=get_return)
+        obj._best_published_exp = best
+        return best
+
+    def get_pnl_amount(self, obj):
+        exp = self._get_best_published_exp(obj)
+        if exp:
+            return exp.metrics.get('total_pnl') or exp.metrics.get('Equity Final [$]') or 0
+        return obj.pnl_amount
+
+    def get_pnl_percent(self, obj):
+        exp = self._get_best_published_exp(obj)
+        if exp:
+            return exp.metrics.get('pnl_percent') or exp.metrics.get('Return [%]') or 0
+        return obj.pnl_percent
+
+    def get_max_drawdown(self, obj):
+        exp = self._get_best_published_exp(obj)
+        if exp:
+            return exp.metrics.get('max_drawdown') or exp.metrics.get('Max. Drawdown [%]') or 0
+        return obj.max_drawdown
+
+    def get_sharpe_ratio(self, obj):
+        exp = self._get_best_published_exp(obj)
+        if exp:
+            return exp.metrics.get('sharpe_ratio') or exp.metrics.get('Sharpe Ratio') or 0
+        return obj.sharpe_ratio
+
+    def get_win_rate(self, obj):
+        exp = self._get_best_published_exp(obj)
+        if exp:
+            return exp.metrics.get('win_rate') or exp.metrics.get('Win Rate [%]') or 0
+        return obj.win_rate
 
     def get_default_parameters(self, obj):
         if not obj.code:
@@ -210,32 +270,61 @@ class StrategySymbolConfigSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = StrategySymbolConfig
-        fields = ['id', 'strategy', 'symbol', 'preferred_timeframe', 'published_params', 'created_at', 'updated_at']
+        fields = ['id', 'strategy', 'symbol', 'preferred_objective', 'published_params', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
     
     def get_published_params(self, obj):
-        """Fetch all 3 published parameter sets (1Y, 3Y, 5Y) for this strategy+symbol"""
+        """Fetch all 3 published parameter flavors (Win Rate, Profit, Balanced) for the standard 3Y period"""
         result = {}
         
-        for period in ['1Y', '3Y', '5Y']:
+        for objective in ['win_rate', 'profit', 'balanced']:
             experiment = StrategyExperiment.objects.filter(
                 strategy=obj.strategy,
                 scope_type='SYMBOL',
                 scope_value=obj.symbol,
                 is_published=True,
-                metrics__period=period,
+                metrics__objective=objective,
+                metrics__period='3Y', # Everything is now 3Y based
                 status='SUCCESS'
             ).order_by('-created_at').first()
             
             if experiment:
-                result[period] = {
+                # Try to get stats from different possible paths
+                stats = experiment.metrics.get('stats', {})
+                if not stats:
+                    stats = experiment.metrics  # Fall back to direct metrics
+                
+                # Extract with multiple possible key names
+                return_pct = (
+                    stats.get('pnl_percent') or 
+                    stats.get('return_pct') or 
+                    stats.get('Return [%]') or 
+                    0
+                )
+                sharpe = (
+                    stats.get('sharpe_ratio') or 
+                    stats.get('Sharpe Ratio') or 
+                    0
+                )
+                win_rate = (
+                    stats.get('win_rate') or 
+                    stats.get('Win Rate [%]') or 
+                    0
+                )
+                max_dd = (
+                    stats.get('max_drawdown') or 
+                    stats.get('Max. Drawdown [%]') or 
+                    0
+                )
+                
+                result[objective] = {
                     'experiment_id': experiment.id,
                     'parameters': experiment.parameters,
                     'metrics': {
-                        'return_pct': experiment.metrics.get('return_pct', 0),
-                        'sharpe_ratio': experiment.metrics.get('sharpe_ratio', 0),
-                        'win_rate': experiment.metrics.get('win_rate', 0),
-                        'max_drawdown': experiment.metrics.get('max_drawdown', 0),
+                        'return_pct': float(return_pct) if return_pct else 0,
+                        'sharpe_ratio': float(sharpe) if sharpe else 0,
+                        'win_rate': float(win_rate) if win_rate else 0,
+                        'max_drawdown': float(max_dd) if max_dd else 0,
                     }
                 }
         
