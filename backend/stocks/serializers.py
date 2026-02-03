@@ -289,14 +289,42 @@ class StrategySymbolConfigSerializer(serializers.ModelSerializer):
             ).order_by('-created_at').first()
             
             if experiment:
+                # Try to get stats from different possible paths
+                stats = experiment.metrics.get('stats', {})
+                if not stats:
+                    stats = experiment.metrics  # Fall back to direct metrics
+                
+                # Extract with multiple possible key names
+                return_pct = (
+                    stats.get('pnl_percent') or 
+                    stats.get('return_pct') or 
+                    stats.get('Return [%]') or 
+                    0
+                )
+                sharpe = (
+                    stats.get('sharpe_ratio') or 
+                    stats.get('Sharpe Ratio') or 
+                    0
+                )
+                win_rate = (
+                    stats.get('win_rate') or 
+                    stats.get('Win Rate [%]') or 
+                    0
+                )
+                max_dd = (
+                    stats.get('max_drawdown') or 
+                    stats.get('Max. Drawdown [%]') or 
+                    0
+                )
+                
                 result[objective] = {
                     'experiment_id': experiment.id,
                     'parameters': experiment.parameters,
                     'metrics': {
-                        'return_pct': experiment.metrics.get('stats', {}).get('pnl_percent', 0),
-                        'sharpe_ratio': experiment.metrics.get('stats', {}).get('sharpe_ratio', 0),
-                        'win_rate': experiment.metrics.get('stats', {}).get('win_rate', 0),
-                        'max_drawdown': experiment.metrics.get('stats', {}).get('max_drawdown', 0),
+                        'return_pct': float(return_pct) if return_pct else 0,
+                        'sharpe_ratio': float(sharpe) if sharpe else 0,
+                        'win_rate': float(win_rate) if win_rate else 0,
+                        'max_drawdown': float(max_dd) if max_dd else 0,
                     }
                 }
         

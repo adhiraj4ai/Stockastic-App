@@ -927,6 +927,18 @@ class StrategyViewSet(viewsets.ModelViewSet):
         clean_stats['max_drawdown'] = safe_num(stats.get('Max. Drawdown [%]'))
         clean_stats['profit_factor'] = safe_num(stats.get('Profit Factor', 0))
         
+        # Set initial cash explicitly
+        clean_stats['Equity Initial [$]'] = initial_cash
+        
+        # Calculate Fee (commission paid on trades)
+        # Fee = Gross PnL - Net PnL (difference between trades profit and final return)
+        equity_final = safe_num(stats.get('Equity Final [$]', initial_cash))
+        trades_df = stats.get('_trades')
+        if isinstance(trades_df, pd.DataFrame) and not trades_df.empty and 'PnL' in trades_df.columns:
+            total_trade_pnl = safe_num(trades_df['PnL'].sum())
+            net_pnl = equity_final - initial_cash
+            clean_stats['Fee'] = safe_num(total_trade_pnl - net_pnl)
+        
         # Advanced trade-level stats
         trades_df = stats.get('_trades')
         if isinstance(trades_df, pd.DataFrame) and not trades_df.empty:
@@ -945,7 +957,96 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 clean_stats['Gross Loss'] = gross_loss
                 clean_stats['Average Win'] = safe_num(gross_profit / count_win) if count_win > 0 else 0
                 clean_stats['Average Loss'] = safe_num(gross_loss / count_loss) if count_loss > 0 else 0
-            except: pass
+                
+                # Average Win/Loss Ratio
+                avg_win = clean_stats['Average Win']
+                avg_loss = abs(clean_stats['Average Loss'])
+                clean_stats['Avg. Win/Loss'] = safe_num(avg_win / avg_loss) if avg_loss > 0 else 0
+                
+                # Calculate Winning/Losing Streaks
+                pnl_signs = (trades_df['PnL'] > 0).astype(int)  # 1 for win, 0 for loss
+                max_win_streak = 0
+                max_loss_streak = 0
+                current_streak = 0
+                current_is_win = None
+                
+                for is_win in pnl_signs:
+                    if is_win == 1:  # Win
+                        if current_is_win == True:
+                            current_streak += 1
+                        else:
+                            current_streak = 1
+                            current_is_win = True
+                        max_win_streak = max(max_win_streak, current_streak)
+                    else:  # Loss
+                        if current_is_win == False:
+                            current_streak += 1
+                        else:
+                            current_streak = 1
+                            current_is_win = False
+                        max_loss_streak = max(max_loss_streak, current_streak)
+                
+                clean_stats['Max. Winning Streak'] = max_win_streak
+                clean_stats['Max. Losing Streak'] = max_loss_streak
+                clean_stats['Current Streak'] = current_streak * (1 if current_is_win else -1) if current_is_win is not None else 0
+                
+                # Expectancy = (Win Rate × Avg Win) - (Loss Rate × Avg Loss)
+                win_rate_decimal = count_win / len(trades_df) if len(trades_df) > 0 else 0
+                loss_rate_decimal = 1 - win_rate_decimal
+                expectancy = (win_rate_decimal * avg_win) - (loss_rate_decimal * avg_loss)
+                clean_stats['Expected Net Profit'] = expectancy
+                
+                # Omega Ratio = Sum of gains above threshold / Sum of losses below threshold
+                threshold = 0
+                gains_above = trades_df[trades_df['PnL'] > threshold]['PnL'].sum()
+                losses_below = abs(trades_df[trades_df['PnL'] <= threshold]['PnL'].sum())
+                clean_stats['Omega Ratio'] = safe_num(gains_above / losses_below) if losses_below > 0 else 0
+                
+                # Longs/Shorts count - based on trade direction (Size > 0 = long, Size < 0 = short)
+                if 'Size' in trades_df.columns:
+                    longs = trades_df[trades_df['Size'] > 0]
+                    shorts = trades_df[trades_df['Size'] < 0]
+                    clean_stats['Longs Count'] = len(longs)
+                    clean_stats['Shorts Count'] = len(shorts)
+                else:
+                    # Default: assume all trades are longs (typical for long-only strategies)
+                    clean_stats['Longs Count'] = len(trades_df)
+                    clean_stats['Shorts Count'] = 0
+                
+            except Exception as e:
+                print(f"Trade-level stats extraction error: {e}")
+        
+        # Smart Sharpe/Sortino (adjusted for autocorrelation) using equity curve
+        equity_curve = stats.get('_equity_curve')
+        if isinstance(equity_curve, pd.DataFrame) and not equity_curve.empty:
+            try:
+                equity = equity_curve['Equity']
+                returns = equity.pct_change().dropna()
+                
+                if len(returns) > 2:
+                    # Calculate autocorrelation for first lag
+                    autocorr = returns.autocorr(lag=1)
+                    if np.isnan(autocorr):
+                        autocorr = 0
+                    
+                    # Smart Sharpe = Sharpe × sqrt((1 + (2 × rho × T)) / (1 + 2 × rho))
+                    # Simplified: Smart Sharpe ≈ Sharpe / sqrt(1 + 2*autocorr)
+                    sharpe = safe_num(stats.get('Sharpe Ratio', 0))
+                    adjustment = np.sqrt(1 + 2 * autocorr) if (1 + 2 * autocorr) > 0 else 1
+                    clean_stats['Smart Sharpe'] = safe_num(sharpe / adjustment) if adjustment > 0 else sharpe
+                    
+                    sortino = safe_num(stats.get('Sortino Ratio', 0))
+                    clean_stats['Smart Sortino'] = safe_num(sortino / adjustment) if adjustment > 0 else sortino
+                    
+                    # Serenity Index (alternative risk-adjusted return)
+                    # Serenity = (CAGR - Risk-Free) / (1 + Ulcer Index)
+                    # Simplified: Serenity ≈ Return / (1 + Max Drawdown)
+                    return_pct = safe_num(stats.get('Return [%]', 0))
+                    max_dd = abs(safe_num(stats.get('Max. Drawdown [%]', 0)))
+                    clean_stats['Serenity Index'] = safe_num(return_pct / (1 + max_dd)) if max_dd >= 0 else 0
+                    
+            except Exception as e:
+                print(f"Equity curve stats error: {e}")
 
         # Include raw stats (stringified where necessary)
         for k, v in stats_dict.items():

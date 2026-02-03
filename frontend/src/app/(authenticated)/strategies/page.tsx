@@ -744,31 +744,43 @@ function StrategiesContent() {
                                                                     <span className="text-xs font-mono text-gray-500">#{exp.id}</span>
                                                                 </td>
                                                                 <td className="px-4 py-3">
-                                                                    {exp.metrics?.pnl_percent !== undefined ? (
-                                                                        <span className={`font-semibold ${exp.metrics.pnl_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                                            {exp.metrics.pnl_percent.toFixed(2)}%
-                                                                        </span>
-                                                                    ) : (
-                                                                        <span className="text-gray-400">-</span>
-                                                                    )}
+                                                                    {(() => {
+                                                                        const pnl = exp.metrics?.stats?.pnl_percent ?? exp.metrics?.stats?.return_pct ?? exp.metrics?.pnl_percent ?? null;
+                                                                        if (pnl !== null && pnl !== undefined) {
+                                                                            return (
+                                                                                <span className={`font-semibold ${pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                                    {Number(pnl).toFixed(2)}%
+                                                                                </span>
+                                                                            );
+                                                                        }
+                                                                        return <span className="text-gray-400">-</span>;
+                                                                    })()}
                                                                 </td>
                                                                 <td className="px-4 py-3">
-                                                                    {exp.metrics?.sharpe_ratio !== undefined ? (
-                                                                        <span className="font-semibold text-gray-900">
-                                                                            {exp.metrics.sharpe_ratio.toFixed(2)}
-                                                                        </span>
-                                                                    ) : (
-                                                                        <span className="text-gray-400">-</span>
-                                                                    )}
+                                                                    {(() => {
+                                                                        const sharpe = exp.metrics?.stats?.sharpe_ratio ?? exp.metrics?.sharpe_ratio ?? null;
+                                                                        if (sharpe !== null && sharpe !== undefined) {
+                                                                            return (
+                                                                                <span className="font-semibold text-gray-900">
+                                                                                    {Number(sharpe).toFixed(2)}
+                                                                                </span>
+                                                                            );
+                                                                        }
+                                                                        return <span className="text-gray-400">-</span>;
+                                                                    })()}
                                                                 </td>
                                                                 <td className="px-4 py-3">
-                                                                    {exp.metrics?.win_rate !== undefined ? (
-                                                                        <span className="font-semibold text-gray-900">
-                                                                            {exp.metrics.win_rate.toFixed(0)}%
-                                                                        </span>
-                                                                    ) : (
-                                                                        <span className="text-gray-400">-</span>
-                                                                    )}
+                                                                    {(() => {
+                                                                        const winRate = exp.metrics?.stats?.win_rate ?? exp.metrics?.win_rate ?? null;
+                                                                        if (winRate !== null && winRate !== undefined) {
+                                                                            return (
+                                                                                <span className="font-semibold text-gray-900">
+                                                                                    {Number(winRate).toFixed(0)}%
+                                                                                </span>
+                                                                            );
+                                                                        }
+                                                                        return <span className="text-gray-400">-</span>;
+                                                                    })()}
                                                                 </td>
                                                                 <td className="px-4 py-3">
                                                                     <span className="text-xs text-gray-500">
