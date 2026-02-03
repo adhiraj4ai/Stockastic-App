@@ -3979,7 +3979,7 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def recommendations(self, request):
-        try:
+
         """
         Scan market for trading signals.
         Strategy: 'smart_cross', 'ema_cross', 'ichimoku'
@@ -4303,13 +4303,9 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
                 })
         
         # Sort by strength
+        # Sort by strength
         results.sort(key=lambda x: x['strength'], reverse=True)
         return Response(results)
-
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            return Response({'error': str(e)}, status=500)
 
 
 

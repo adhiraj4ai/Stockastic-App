@@ -46,6 +46,8 @@ export default function LoginPage() {
         setError('');
         setLoading(true);
 
+        let authSuccess = false;
+
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
             console.log('Attempting login to:', `${apiUrl}/api/token/`);
@@ -69,7 +71,7 @@ export default function LoginPage() {
             Cookies.set('refresh_token', refresh, { expires: 7, secure: isSecure, sameSite: 'lax' });
 
             console.log('Redirecting to portfolio...');
-
+            authSuccess = true;
             router.push('/portfolio');
         } catch (err: any) {
             console.error('Login failed', err);
@@ -81,7 +83,11 @@ export default function LoginPage() {
                 setError(`Error: ${err.message}`);
             }
         } finally {
-            setLoading(false);
+            // Only stop loading if we failed. If success, we are redirecting, so keep "Verifying..." or similar
+            // to prevent UI flicker/race conditions with DOM extensions.
+            if (!authSuccess) {
+                setLoading(false);
+            }
         }
     };
 
