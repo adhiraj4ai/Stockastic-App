@@ -1970,7 +1970,36 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     data_maps, code_template, param_ranges, obj_type, n_trials, n_jobs=n_jobs
                 )
                 
-                print(f"    ✅ Best CV Params: {result['best_params']} (Value: {result['best_value']})")
+                new_value = result['best_value']
+                new_params = result['best_params']
+                
+                # Compare against all-time best for this objective type
+                stored_best = strategy.best_score
+                stored_objective = strategy.best_objective
+                
+                # Only update if: (1) no stored best exists, (2) different objective, or (3) new value beats stored
+                use_new = False
+                if stored_best is None or stored_objective != obj_type:
+                    use_new = True  # No comparable stored best
+                elif new_value > stored_best:
+                    use_new = True  # New optimization beats stored best
+                
+                if use_new:
+                    # Update strategy with new all-time best
+                    strategy.best_params = new_params
+                    strategy.best_score = new_value
+                    strategy.best_objective = obj_type
+                    strategy.save(update_fields=['best_params', 'best_score', 'best_objective'])
+                    result['is_new_best'] = True
+                    result['published'] = True
+                    print(f"    ✅ NEW BEST! Params: {new_params} (Value: {new_value:.4f})")
+                else:
+                    # Use stored best params instead
+                    result['best_params'] = strategy.best_params
+                    result['best_value'] = stored_best
+                    result['is_new_best'] = False
+                    result['published'] = False
+                    print(f"    📌 USING STORED BEST (New: {new_value:.4f} vs Stored: {stored_best:.4f})")
                 
                 # 4. Run final backtest on the LAST fold (most recent) for representative display
                 # We use the parameters found by CV, but show the stats of the latest period
@@ -2047,7 +2076,9 @@ class StrategyViewSet(viewsets.ModelViewSet):
                         'experiment_id': exp.id,
                         'best_params': result['best_params'],
                         'metrics': exp.metrics,
-                        'stats': full_stats  # Explicitly expose stats at top level
+                        'stats': full_stats,  # Explicitly expose stats at top level
+                        'is_new_best': result.get('is_new_best', True),
+                        'published': result.get('published', True)
                     }
 
             clean_results = StrategyViewSet._clean_for_json(results_by_objective)

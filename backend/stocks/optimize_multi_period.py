@@ -253,30 +253,42 @@ class CrossValidationObjective:
         # Wrap strategy with SL/TP logic (all strategies get this automatically)
         wrapped_strategy = create_sl_tp_wrapped_strategy(strategy_class, sl_pct=sl_pct, tp_pct=tp_pct)
         
+        # Helper function for parallel backtest execution
+        def run_single_bt(ticker_data):
+            ticker, df_data = ticker_data
+            try:
+                bt = Backtest(df_data, wrapped_strategy, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
+                stats = bt.run()
+                
+                win_rate = stats.get('Win Rate [%]', 0)
+                if win_rate is None or (isinstance(win_rate, float) and win_rate != win_rate):
+                    win_rate = 0
+                
+                return_pct = stats.get('Return [%]', 0)
+                if return_pct is None or (isinstance(return_pct, float) and return_pct != return_pct):
+                    return_pct = 0
+                
+                return (win_rate, return_pct)
+            except:
+                return None
+        
+        from concurrent.futures import ThreadPoolExecutor
+        
         all_win_rates = []
         all_returns = []
         
         for fold_data_map in self.data_maps:
+            # Run backtests in parallel within each fold
+            with ThreadPoolExecutor(max_workers=4) as executor:
+                results = list(executor.map(run_single_bt, fold_data_map.items()))
+            
+            # Collect valid results
             win_rates = []
             returns = []
-            for ticker, df_data in fold_data_map.items():
-                try:
-                    local_scope['symbol'] = ticker
-                    local_scope['ticker'] = ticker
-                    bt = Backtest(df_data, wrapped_strategy, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
-                    stats = bt.run()
-                    
-                    win_rate = stats.get('Win Rate [%]', 0)
-                    if win_rate is None or (isinstance(win_rate, float) and win_rate != win_rate):
-                        win_rate = 0
-                    win_rates.append(win_rate)
-                    
-                    return_pct = stats.get('Return [%]', 0)
-                    if return_pct is None or (isinstance(return_pct, float) and return_pct != return_pct):
-                        return_pct = 0
-                    returns.append(return_pct)
-                except:
-                    continue
+            for r in results:
+                if r is not None:
+                    win_rates.append(r[0])
+                    returns.append(r[1])
             
             if win_rates:
                 all_win_rates.append(sum(win_rates) / len(win_rates))
@@ -296,51 +308,43 @@ class CrossValidationObjective:
             return (avg_win_rate * 2) + (avg_return / 10)
 
 def run_single_objective_optimization(data_maps, code_template, param_ranges, objective_type, n_trials, n_jobs=4):
-    """Run optimization for a single objective evaluating across multiple data folds in parallel"""
+    """Run optimization for a single objective using smart Bayesian sampling (TPE)"""
     
     # Inject default SL/TP param ranges if not already provided
-    # This must happen BEFORE the grid is created
+    # This must happen BEFORE optimization starts
     if 'sl_pct' not in param_ranges:
         param_ranges = param_ranges.copy()
-        param_ranges['sl_pct'] = {'type': 'float', 'range': [0.90, 0.98]}
+        param_ranges['sl_pct'] = {'type': 'float', 'range': [0.92, 0.98]}  # Tighter range
     if 'tp_pct' not in param_ranges:
         param_ranges = param_ranges.copy()
-        param_ranges['tp_pct'] = {'type': 'float', 'range': [1.05, 1.25]}
+        param_ranges['tp_pct'] = {'type': 'float', 'range': [1.05, 1.20]}  # Tighter range
     
-    search_space = {}
+    # Calculate rough search space size for logging
     total_combinations = 1
-    
     for param_name, param_config in param_ranges.items():
         if isinstance(param_config, dict):
-            p_type = param_config.get('type', 'int')
             p_range = param_config.get('range', [1, 10])
+            p_type = param_config.get('type', 'int')
             start, end = p_range[0], p_range[1]
+            if p_type == 'float':
+                count = 5  # We'll use 5 steps max for floats
+            else:
+                count = int(end) - int(start) + 1
         else:
-            p_type = 'int'
             start, end = param_config[0], param_config[1]
-        
-        if p_type == 'int':
             count = int(end) - int(start) + 1
-            search_space[param_name] = list(range(int(start), int(end) + 1))
-        elif p_type == 'float':
-            step = (end - start) / 10.0
-            if step == 0: step = 0.1
-            values = []
-            curr = start
-            while curr <= end + 1e-9:
-                values.append(round(curr, 4))
-                curr += step
-            search_space[param_name] = values
-            count = len(values)
-        else:
-            count = int(end) - int(start) + 1
-            search_space[param_name] = list(range(int(start), int(end) + 1))
         total_combinations *= count
     
-    sampler = optuna.samplers.GridSampler(search_space)
-    actual_n_trials = total_combinations
+    # Use TPE Sampler (Bayesian) instead of GridSampler - much faster and smarter
+    sampler = optuna.samplers.TPESampler(seed=42, n_startup_trials=10)
     
-    print(f"      🔍 Exhaustive Search: {actual_n_trials} combinations across {len(data_maps)} folds (Jobs: {n_jobs})")
+    # Add MedianPruner for early stopping of unpromising trials
+    pruner = optuna.pruners.MedianPruner(n_startup_trials=5, n_warmup_steps=2)
+    
+    # Cap trials at reasonable number - TPE finds good solutions in ~50-100 trials
+    actual_n_trials = min(n_trials, 100) if n_trials > 0 else min(total_combinations, 100)
+    
+    print(f"      🚀 Smart Search (TPE): {actual_n_trials} trials (vs {total_combinations} grid combinations) across {len(data_maps)} folds (Jobs: {n_jobs})")
     
     import tempfile
     import os
@@ -356,6 +360,7 @@ def run_single_objective_optimization(data_maps, code_template, param_ranges, ob
         study = optuna.create_study(
             direction='maximize', 
             sampler=sampler,
+            pruner=pruner,
             storage=storage_url,
             study_name=f"opt_{objective_type}_{datetime.now().timestamp()}"
         )

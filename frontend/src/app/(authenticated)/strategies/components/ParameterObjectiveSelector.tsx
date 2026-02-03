@@ -112,25 +112,24 @@ export default function ParameterObjectiveSelector({ strategyId, symbol, onParam
     }
 
     return (
-        <div className="bg-white border-2 border-slate-100 rounded-2xl overflow-hidden mb-8 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
-            <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <Settings size={14} className="text-slate-400" />
-                    <span className="text-[11px] font-black text-slate-700 uppercase tracking-widest">
-                        Performance Flavor
-                    </span>
-                </div>
-                <Badge variant="outline" className="text-[10px] font-bold text-blue-600 bg-blue-50/50 border-blue-100 h-6 px-2">
-                    {symbol}
-                </Badge>
+        <div className="mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="flex items-center gap-2 mb-3">
+                <Settings size={14} className="text-slate-400" />
+                <span className="text-[11px] font-black text-slate-700 uppercase tracking-widest">
+                    Performance Flavor
+                </span>
             </div>
 
-            <div className="p-2 space-y-1.5 bg-gradient-to-b from-white to-slate-50/30">
+            <div className="space-y-1">
                 {OBJECTIVES.map((obj) => {
                     const paramSet = config.published_params[obj.value];
                     const isSelected = selectedObjective === obj.value;
                     const isAvailable = !!paramSet;
                     const Icon = obj.icon;
+
+                    // Extract metrics with fallbacks
+                    const returnPct = paramSet?.metrics?.return_pct ?? 0;
+                    const sharpeRatio = paramSet?.metrics?.sharpe_ratio ?? 0;
 
                     return (
                         <button
@@ -138,12 +137,12 @@ export default function ParameterObjectiveSelector({ strategyId, symbol, onParam
                             onClick={() => isAvailable && handleObjectiveSelect(obj.value)}
                             disabled={!isAvailable}
                             className={`
-                                w-full group relative flex items-center gap-3 p-3 rounded-xl border-2 transition-all duration-300
+                                w-full group relative flex items-center gap-3 p-3 rounded-xl transition-all duration-300
                                 ${isSelected && isAvailable
-                                    ? 'border-blue-500 bg-white shadow-md scale-[1.02] z-10'
+                                    ? 'bg-slate-50'
                                     : isAvailable
-                                        ? 'border-transparent hover:bg-slate-50 hover:border-slate-100'
-                                        : 'opacity-40 grayscale cursor-not-allowed border-transparent'
+                                        ? 'hover:bg-slate-50/50'
+                                        : 'opacity-40 grayscale cursor-not-allowed'
                                 }
                             `}
                         >
@@ -170,22 +169,22 @@ export default function ParameterObjectiveSelector({ strategyId, symbol, onParam
                                 </p>
                             </div>
 
-                            {paramSet && (
+                            {isAvailable && (
                                 <div className="text-right ml-2">
-                                    <div className={`text-sm font-black tracking-tighter ${paramSet.metrics.return_pct >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                        {paramSet.metrics.return_pct >= 0 ? '+' : ''}{paramSet.metrics.return_pct.toFixed(1)}%
+                                    <div className={`text-sm font-black tracking-tighter ${returnPct >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                        {returnPct >= 0 ? '+' : ''}{returnPct.toFixed(1)}%
                                     </div>
                                     <div className="flex items-center justify-end gap-1 mt-0.5">
                                         <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">Sharpe</span>
                                         <span className="text-[10px] font-black text-slate-500">
-                                            {paramSet.metrics.sharpe_ratio.toFixed(2)}
+                                            {sharpeRatio.toFixed(2)}
                                         </span>
                                     </div>
                                 </div>
                             )}
 
                             {isSelected && (
-                                <div className="ml-2 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-200 animate-in zoom-in duration-300">
+                                <div className="ml-2 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
                                     <Check size={12} className="text-white" />
                                 </div>
                             )}
@@ -194,11 +193,11 @@ export default function ParameterObjectiveSelector({ strategyId, symbol, onParam
                 })}
             </div>
 
-            <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-slate-300">
+            <div className="mt-3 flex items-center justify-between text-slate-400">
+                <div className="flex items-center gap-2">
                     <Zap size={10} className="fill-current" />
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                        3Y Optimized Cloud Config
+                    <span className="text-[9px] font-bold uppercase tracking-widest">
+                        3Y Optimized Config
                     </span>
                 </div>
                 {config.updated_at && (

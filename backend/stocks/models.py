@@ -275,6 +275,11 @@ class Strategy(models.Model):
     optimization_config = models.TextField(blank=True, default="")
     icon = models.CharField(max_length=50, default="Lightbulb")
     icon_color = models.CharField(max_length=7, default="#000000")
+    
+    # All-time best optimization results (only updates if new optimization beats this)
+    best_params = models.JSONField(default=dict, blank=True)  # {sl_pct: 0.95, tp_pct: 1.12, ...}
+    best_score = models.FloatField(null=True, blank=True)     # Best objective value achieved
+    best_objective = models.CharField(max_length=50, blank=True, default='')  # 'balanced', 'profit', 'win_rate'
 
     # Recommendation / Publishing
     # Published status is now tracked on individual StrategyExperiment models (is_published=True)
