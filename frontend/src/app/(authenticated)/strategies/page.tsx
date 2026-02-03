@@ -5,6 +5,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { Plus, Lightbulb, ExternalLink, Play, Code, Trash2, Info, LayoutGrid, List, Search, MoreVertical, TrendingUp, TrendingDown, Target, Zap, Filter, Beaker, FileCheck, Activity, GitCompare, Shield, BarChart3, PieChart, Flame, Rocket, Cpu, Layers, Pencil, ArrowUpDown } from 'lucide-react';
+import { toast } from 'sonner';
 
 const strategyIcons: Record<string, any> = {
     Lightbulb,
@@ -211,19 +212,36 @@ function StrategiesContent() {
         }
     };
 
+    const handleUnpublish = async (strategyId: number, scopeValue: string, scopeType: string) => {
+        if (!confirm(`Are you sure you want to unpublish the ${scopeType} strategy for ${scopeValue}?`)) return;
+
+        try {
+            await api.post(`/api/stocks/strategies/${strategyId}/unpublish_optimized/`, {
+                scope_value: scopeValue,
+                scope_type: scopeType
+            });
+            toast.success('Strategy unpublished');
+            fetchStrategies(); // Refresh list
+        } catch (error) {
+            toast.error('Failed to unpublish strategy');
+            console.error(error);
+        }
+    };
+
     if (!mounted) return null;
 
     return (
         <DashboardLayout
             title="Strategy Center"
             subtitle="Automated market analysis and algorithmic trading strategies."
+            noPadding
         >
-            <div className="space-y-6">
+            <div className="space-y-0">
 
 
-                <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <TabsList className="bg-gray-100/80 p-1 gap-1 rounded-lg h-auto">
+                <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-0">
+                    <div className="sticky top-[73px] z-10 bg-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-2 px-8 transition-all mb-6">
+                        <TabsList className="bg-gray-200/50 p-1 gap-1 rounded-lg h-auto">
                             <TabsTrigger
                                 value="my-strategies"
                                 className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm text-gray-500 hover:text-gray-700 hover:bg-white/50"
@@ -259,11 +277,11 @@ function StrategiesContent() {
                     </div>
 
                     {/* Recommendations Content */}
-                    <TabsContent value="recommendations" className="m-0">
+                    <TabsContent value="recommendations" className="m-0 px-8 pb-8">
                         <RecommendationsTab />
                     </TabsContent>
 
-                    <TabsContent value="my-strategies" className="space-y-6 m-0">
+                    <TabsContent value="my-strategies" className="space-y-6 m-0 px-8 pb-8">
                         {/* Unified Toolbar */}
                         <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white p-2 rounded-xl border border-gray-100 shadow-sm">
                             {/* Left: Search */}
@@ -713,7 +731,7 @@ function StrategiesContent() {
                         </Dialog>
                     </TabsContent>
 
-                    <TabsContent value="published" className="m-0">
+                    <TabsContent value="published" className="m-0 px-8 pb-8">
                         <Card className="border-gray-200 shadow-sm">
                             <CardHeader>
                                 <CardTitle>Published Strategies</CardTitle>
@@ -808,17 +826,31 @@ function StrategiesContent() {
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-4 py-3 text-right">
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            router.push(`/strategies/${strategy.id}/experiments/${exp.id}`);
-                                                                        }}
-                                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                                                    >
-                                                                        View
-                                                                    </Button>
+                                                                    <div className="flex justify-end gap-2">
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                router.push(`/strategies/${strategy.id}/experiments/${exp.id}`);
+                                                                            }}
+                                                                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                                                        >
+                                                                            View
+                                                                        </Button>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleUnpublish(strategy.id, exp.scope_value, exp.scope_type);
+                                                                            }}
+                                                                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                                            title="Unpublish"
+                                                                        >
+                                                                            <Trash2 size={14} />
+                                                                        </Button>
+                                                                    </div>
                                                                 </td>
                                                             </tr>
                                                         )) || []
@@ -838,7 +870,7 @@ function StrategiesContent() {
                         </Card>
                     </TabsContent>
 
-                    <TabsContent value="experiment-logs" className="m-0">
+                    <TabsContent value="experiment-logs" className="m-0 px-8 pb-8">
                         <Card className="border-none shadow-sm bg-white/50 backdrop-blur-sm p-0">
                             <ExperimentsTab />
                         </Card>

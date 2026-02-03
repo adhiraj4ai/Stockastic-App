@@ -2395,25 +2395,28 @@ class StrategyViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def unpublish_optimized(self, request, pk=None):
         """
-        Unpublish optimized parameters for a strategy and symbol.
+        Unpublish optimized parameters for a strategy and symbol/scope.
         """
+        from .models import ScopeType
         strategy = self.get_object()
-        symbol = request.data.get('symbol', '')
+        # Accept 'symbol' (legacy) or 'scope_value'
+        scope_value = request.data.get('symbol') or request.data.get('scope_value', '')
+        scope_type = request.data.get('scope_type', ScopeType.SYMBOL)
         
-        if not symbol:
-            return Response({'error': 'Symbol is required'}, status=400)
+        if not scope_value:
+            return Response({'error': 'Symbol/Scope Value is required'}, status=400)
         
-        # Unpublish existing experiments for the same strategy and symbol
+        # Unpublish existing experiments for the same strategy and scope
         updated_count = StrategyExperiment.objects.filter(
             strategy=strategy,
-            scope_type=ScopeType.SYMBOL,
-            scope_value=symbol,
+            scope_type=scope_type,
+            scope_value=scope_value,
             is_published=True
         ).update(is_published=False)
         
         return Response({
             'success': True,
-            'message': f'Unpublished optimized config for {strategy.name} on {symbol}',
+            'message': f'Unpublished optimized config for {strategy.name} on {scope_value} ({scope_type})',
             'updated_count': updated_count
         })
 
