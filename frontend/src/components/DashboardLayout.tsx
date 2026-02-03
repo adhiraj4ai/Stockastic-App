@@ -47,7 +47,7 @@ const navItems = [
     { name: 'Financials', href: '/financials', icon: FileText },
     { name: 'Strategies', href: '/strategies', icon: Lightbulb },
     { name: 'Signals', href: '/signals', icon: Target },
-    { name: 'Forecasts', href: '/forecasts', icon: Brain },
+    // { name: 'Forecasts', href: '/forecasts', icon: Brain },
     { name: 'Recommendations', href: '/recommendations', icon: Target },
     { name: 'Pipeline', href: '/pipeline', icon: Settings },
 ];
