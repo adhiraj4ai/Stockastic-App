@@ -46,7 +46,7 @@ class WatchlistViewSet(viewsets.ModelViewSet):
                 item_data['change_pct'] = latest.diff_percent if hasattr(latest, 'diff_percent') else 0
                 
                 # RSI/ROC Calculation
-                df = pd.DataFrame(list(prices.values('close').reversed()))
+                df = pd.DataFrame(list(prices.values('close'))[::-1])
                 if len(df) >= 20:
                     item_data['rsi'] = float(ta.rsi(df['close'], length=14).iloc[-1])
                     item_data['roc'] = float(ta.roc(df['close'], length=20).iloc[-1])

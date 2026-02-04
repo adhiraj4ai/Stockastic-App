@@ -24,6 +24,7 @@ interface Recommendation {
     strength: number;
     reason: string;
     close: number;
+    price?: number; // History endpoint returns 'price'
     date: string;
 }
 
@@ -35,14 +36,8 @@ const SECTORS = [
 ];
 
 const STRATEGIES = [
-    { id: 'smart_cross', name: 'Smart Crossover (RSI + MACD)' },
-    { id: 'ema_cross', name: 'EMA Golden/Death Cross' },
-    { id: 'ichimoku', name: 'Ichimoku Cloud Breakout' },
-    { id: 'mean_reversion', name: 'Mean Reversion (Bollinger Bands)' },
-    { id: 'stochastic', name: 'Stochastic Oscillator (Momentum)' },
-    { id: 'volume_breakout', name: 'Volume Breakout (High Activity)' },
-    { id: 'supertrend', name: 'Volatility Breakout (Keltner/ATR)' },
-    { id: 'candlestick_engulfing', name: 'Candlestick Pattern (Engulfing)' },
+    { id: 'broker_accumulation', name: 'Broker Accumulation (Institutional)' },
+    { id: 'smart_accumulated_crossover', name: 'Smart Accumulated Crossover' },
 ];
 
 export default function RecommendationsPage() {
@@ -51,14 +46,22 @@ export default function RecommendationsPage() {
     // Current Signals State
     const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
     const [loadingRecs, setLoadingRecs] = useState(false);
-    const [recStrategy, setRecStrategy] = useState('smart_cross');
+    const [recStrategy, setRecStrategy] = useState('broker_accumulation');
     const [recSector, setRecSector] = useState('All');
 
     const fetchRecommendations = async () => {
         setLoadingRecs(true);
         setRecommendations([]);
         try {
-            const response = await api.get('/api/stocks/companies/recommendations/', {
+            let endpoint = '/api/stocks/companies/recommendations/';
+
+            if (recStrategy === 'broker_accumulation') {
+                endpoint = '/api/stocks/broker-accumulation-recommendations/';
+            } else if (recStrategy === 'smart_accumulated_crossover') {
+                endpoint = '/api/stocks/smart-accumulated-crossover-recommendations/';
+            }
+
+            const response = await api.get(endpoint, {
                 params: { strategy: recStrategy, sector: recSector }
             });
             const data = response.data.results || response.data;
@@ -78,11 +81,127 @@ export default function RecommendationsPage() {
         fetchRecommendations();
     }, [recStrategy, recSector]);
 
+    // History Modal State
+    const [historyModalOpen, setHistoryModalOpen] = useState(false);
+    const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
+    const [historyData, setHistoryData] = useState<Recommendation[]>([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+
+    const handleViewAction = async (symbol: string) => {
+        if (recStrategy === 'broker_accumulation' || recStrategy === 'smart_accumulated_crossover') {
+            setSelectedSymbol(symbol);
+            setHistoryModalOpen(true);
+            setLoadingHistory(true);
+            try {
+                let url = '';
+                if (recStrategy === 'broker_accumulation') {
+                    url = `/api/stocks/broker-accumulation-history/?symbol=${symbol}`;
+                } else {
+                    url = `/api/stocks/smart-accumulated-crossover-history/?symbol=${symbol}`;
+                }
+
+                const response = await api.get(url, {
+                    params: { symbol }
+                });
+                setHistoryData(response.data);
+            } catch (error) {
+                console.error("Failed to fetch history", error);
+                setHistoryData([]);
+            } finally {
+                setLoadingHistory(false);
+            }
+        } else {
+            router.push(`/stock/${symbol}`);
+        }
+    };
+
     return (
         <DashboardLayout
-            title="Market Recommendations"
-            subtitle="AI-driven market signals from current data"
+            title="Whale Watch"
+            subtitle="Track institutional accumulation and smart money signals"
         >
+            {/* History Modal */}
+            {historyModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <Card className="w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col bg-white shadow-xl border-none animate-in fade-in zoom-in-95 duration-200">
+                        <div className="p-4 border-b flex items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                    Signal History: {selectedSymbol}
+                                    <Badge variant="outline" className="text-blue-600 bg-blue-50 border-blue-200">
+                                        Broker Accumulation
+                                    </Badge>
+                                </h3>
+                                <p className="text-sm text-gray-500">Historical buy/sell signals generated by this strategy</p>
+                            </div>
+                            <Button variant="ghost" size="sm" onClick={() => setHistoryModalOpen(false)}>
+                                × Close
+                            </Button>
+                        </div>
+
+                        <div className="flex-1 overflow-auto p-0">
+                            {loadingHistory ? (
+                                <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+                                    <Target size={32} className="animate-spin mb-2 opacity-50" />
+                                    Loading history...
+                                </div>
+                            ) : historyData.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+                                    <p>No history found for {selectedSymbol}</p>
+                                </div>
+                            ) : (
+                                <Table>
+                                    <TableHeader className="bg-gray-50 sticky top-0 z-10">
+                                        <TableRow>
+                                            <TableHead>Date</TableHead>
+                                            <TableHead>Signal</TableHead>
+                                            <TableHead>Strength</TableHead>
+                                            <TableHead>Price</TableHead>
+                                            <TableHead>Reason</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {historyData.map((row, i) => (
+                                            <TableRow key={i} className="hover:bg-gray-50/50">
+                                                <TableCell className="font-mono text-gray-600">{row.date}</TableCell>
+                                                <TableCell>
+                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${row.signal === 'BUY'
+                                                        ? 'bg-green-50 text-green-700 border-green-200'
+                                                        : 'bg-red-50 text-red-700 border-red-200'
+                                                        }`}>
+                                                        {row.signal === 'BUY' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                                                        {row.signal}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="h-1.5 w-16 bg-gray-100 rounded-full overflow-hidden">
+                                                            <div
+                                                                className={`h-full rounded-full ${row.signal === 'BUY' ? 'bg-green-500' : 'bg-red-500'}`}
+                                                                style={{ width: `${row.strength}%` }}
+                                                            />
+                                                        </div>
+                                                        <span className="text-xs font-medium text-gray-600">{row.strength}%</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>Rs. {row.close?.toLocaleString() || row.price?.toLocaleString() || '-'}</TableCell>
+                                                <TableCell className="text-sm text-gray-500 max-w-xs truncate" title={row.reason}>
+                                                    {row.reason}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            )}
+                        </div>
+
+                        <div className="p-4 border-t bg-gray-50 text-right">
+                            <Button onClick={() => setHistoryModalOpen(false)}>Done</Button>
+                        </div>
+                    </Card>
+                </div>
+            )}
+
             <div className="space-y-6">
                 <Card className="border-none shadow-sm bg-white/50 backdrop-blur-sm">
                     <div className="p-4 flex flex-col md:flex-row gap-4 items-end md:items-center justify-between border-b border-gray-100">
@@ -171,9 +290,9 @@ export default function RecommendationsPage() {
                                                     variant="ghost"
                                                     size="sm"
                                                     className="text-blue-600 hover:text-blue-700"
-                                                    onClick={() => router.push(`/stock/${rec.symbol}`)}
+                                                    onClick={() => handleViewAction(rec.symbol)}
                                                 >
-                                                    View Chart
+                                                    {recStrategy === 'broker_accumulation' ? 'View History' : 'View Chart'}
                                                 </Button>
                                             </TableCell>
                                         </TableRow>

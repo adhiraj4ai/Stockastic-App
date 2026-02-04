@@ -5,3 +5,4 @@ from . import broker
 from . import pipeline
 from . import watchlist
 from . import notifications
+from . import recommendations

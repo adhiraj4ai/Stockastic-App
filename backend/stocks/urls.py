@@ -1,8 +1,9 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    market, portfolio, strategy, broker, pipeline, watchlist, notifications
+    market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations
 )
+
 
 router = DefaultRouter()
 router.register(r'portfolio', portfolio.PortfolioViewSet, basename='portfolio')
@@ -37,4 +38,20 @@ urlpatterns = [
     
     # Watchlist
     path('check_watchlist_alerts/', watchlist.check_watchlist_alerts, name='check_watchlist_alerts'),
+    
+    # Broker Accumulation Recommendations
+    path('broker-accumulation-recommendations/', 
+         recommendations.get_broker_accumulation_recommendations, 
+         name='broker_accumulation_recommendations'),
+    path('broker-accumulation-history/', 
+         recommendations.get_broker_accumulation_history, 
+         name='broker_accumulation_history'),
+    
+    # Smart Accumulated Crossover (New)
+    path('smart-accumulated-crossover-recommendations/', 
+         recommendations.get_smart_accumulated_crossover_recommendations, 
+         name='smart_accumulated_crossover_recommendations'),
+    path('smart-accumulated-crossover-history/', 
+         recommendations.get_smart_accumulated_crossover_history, 
+         name='smart_accumulated_crossover_history'),
 ]

@@ -531,7 +531,6 @@ class StrategySignal(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'strategy_signals'
         unique_together = ('strategy', 'symbol', 'date')
         ordering = ['-date', 'strategy__name']
 
