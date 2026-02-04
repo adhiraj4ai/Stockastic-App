@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import { Target, Filter, TrendingUp, TrendingDown } from 'lucide-react';
+import { Target, Filter, TrendingUp, TrendingDown, Search, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card } from '@/components/ui/card';
@@ -86,6 +86,7 @@ export default function RecommendationsPage() {
     const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
     const [historyData, setHistoryData] = useState<Recommendation[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const handleViewAction = async (symbol: string) => {
         if (recStrategy === 'broker_accumulation' || recStrategy === 'smart_accumulated_crossover') {
@@ -218,7 +219,7 @@ export default function RecommendationsPage() {
                                     {STRATEGIES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                 </select>
                             </div>
-                            <div className="space-y-1.5 min-w-[200px]">
+                            <div className="space-y-1.5 min-w-[150px]">
                                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1">
                                     <Filter size={12} /> Sector
                                 </label>
@@ -231,9 +232,35 @@ export default function RecommendationsPage() {
                                 </select>
                             </div>
                         </div>
-                        <Button variant="outline" size="sm" onClick={fetchRecommendations} disabled={loadingRecs}>
-                            {loadingRecs ? 'Scanning...' : 'Refresh Scan'}
-                        </Button>
+
+                        <div className="flex items-end gap-2 w-full md:w-auto">
+                            <div className="space-y-1.5 flex-1 md:flex-none min-w-[200px]">
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                                    <Search size={12} /> Search Symbol
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Search..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full h-9 rounded-md border border-gray-200 bg-white pl-8 pr-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:border-blue-500"
+                                    />
+                                    <Search size={14} className="absolute left-2.5 top-2.5 text-gray-400" />
+                                </div>
+                            </div>
+
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={fetchRecommendations}
+                                disabled={loadingRecs}
+                                className="h-9 w-9 shrink-0"
+                                title="Refresh Scan"
+                            >
+                                <RefreshCw size={16} className={loadingRecs ? 'animate-spin' : ''} />
+                            </Button>
+                        </div>
                     </div>
 
                     <div className="p-0">
@@ -260,43 +287,45 @@ export default function RecommendationsPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {recommendations.map((rec) => (
-                                        <TableRow key={rec.symbol} className="hover:bg-gray-50/50">
-                                            <TableCell className="font-medium text-gray-900">{rec.symbol}</TableCell>
-                                            <TableCell>
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${rec.signal === 'BUY'
-                                                    ? 'bg-green-50 text-green-700 border-green-200'
-                                                    : 'bg-red-50 text-red-700 border-red-200'
-                                                    }`}>
-                                                    {rec.signal === 'BUY' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                                                    {rec.signal}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="h-1.5 w-16 bg-gray-100 rounded-full overflow-hidden">
-                                                        <div
-                                                            className={`h-full rounded-full ${rec.signal === 'BUY' ? 'bg-green-500' : 'bg-red-500'}`}
-                                                            style={{ width: `${rec.strength}%` }}
-                                                        />
+                                    {recommendations
+                                        .filter(rec => rec.symbol.toLowerCase().includes(searchTerm.toLowerCase()))
+                                        .map((rec) => (
+                                            <TableRow key={rec.symbol} className="hover:bg-gray-50/50">
+                                                <TableCell className="font-medium text-gray-900">{rec.symbol}</TableCell>
+                                                <TableCell>
+                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${rec.signal === 'BUY'
+                                                        ? 'bg-green-50 text-green-700 border-green-200'
+                                                        : 'bg-red-50 text-red-700 border-red-200'
+                                                        }`}>
+                                                        {rec.signal === 'BUY' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                                                        {rec.signal}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="h-1.5 w-16 bg-gray-100 rounded-full overflow-hidden">
+                                                            <div
+                                                                className={`h-full rounded-full ${rec.signal === 'BUY' ? 'bg-green-500' : 'bg-red-500'}`}
+                                                                style={{ width: `${rec.strength}%` }}
+                                                            />
+                                                        </div>
+                                                        <span className="text-xs font-medium text-gray-600">{rec.strength}%</span>
                                                     </div>
-                                                    <span className="text-xs font-medium text-gray-600">{rec.strength}%</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="font-mono text-gray-700">Rs. {rec.close.toLocaleString()}</TableCell>
-                                            <TableCell className="text-sm text-gray-500">{rec.reason}</TableCell>
-                                            <TableCell className="text-right">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-blue-600 hover:text-blue-700"
-                                                    onClick={() => handleViewAction(rec.symbol)}
-                                                >
-                                                    {recStrategy === 'broker_accumulation' ? 'View History' : 'View Chart'}
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
+                                                </TableCell>
+                                                <TableCell className="font-mono text-gray-700">Rs. {rec.close.toLocaleString()}</TableCell>
+                                                <TableCell className="text-sm text-gray-500">{rec.reason}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="text-blue-600 hover:text-blue-700"
+                                                        onClick={() => handleViewAction(rec.symbol)}
+                                                    >
+                                                        {recStrategy === 'broker_accumulation' ? 'View History' : 'View Chart'}
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
                                 </TableBody>
                             </Table>
                         )}
