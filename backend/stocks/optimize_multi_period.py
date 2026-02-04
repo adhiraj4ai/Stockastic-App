@@ -9,67 +9,53 @@ from backtesting.test import SMA
 import pandas as pd
 import numpy as np
 import inspect
+import pandas_ta as ta
 
 
-# Default SL/TP values (can be overridden via params)
-DEFAULT_SL_PCT = 0.95  # 5% stop loss below entry
-DEFAULT_TP_PCT = 1.15  # 15% take profit above entry
+# Default Risk values for optimization
+DEFAULT_SL_ATR_MULT = 2.0
+DEFAULT_TP_ATR_MULT = 3.0
+DEFAULT_COMMISSION = 0.0036  # 0.36% NEPSE average brokerage
 
 
-def create_sl_tp_wrapped_strategy(original_strategy, sl_pct=None, tp_pct=None):
-    """
-    Wrap any strategy class with stop loss and take profit logic.
-    This single wrapper applies SL/TP to ALL strategies uniformly.
+# create_sl_tp_wrapped_strategy removed - logic now internal to strategies for ATR-based optimization
+
+
+class SafeIndicator:
+    """Wrapper to prevent .values crash on None indicators"""
+    def __init__(self, obj):
+        self.obj = obj
     
-    Args:
-        original_strategy: The backtesting.py Strategy class to wrap
-        sl_pct: Stop loss percentage (e.g., 0.95 = 5% loss trigger). None to disable.
-        tp_pct: Take profit percentage (e.g., 1.15 = 15% gain trigger). None to disable.
+    @property
+    def values(self):
+        if self.obj is None:
+            # Return empty numpy array to prevent backtesting.py from crashing
+            return np.array([])
+        if hasattr(self.obj, 'values'):
+            return self.obj.values
+        return self.obj
     
-    Returns:
-        A new Strategy class with SL/TP logic injected into next()
-        The class has sl_exits and tp_exits counters accessible after backtest.
-    """
-    # Use defaults if not provided
-    _sl_pct = sl_pct if sl_pct is not None else DEFAULT_SL_PCT
-    _tp_pct = tp_pct if tp_pct is not None else DEFAULT_TP_PCT
+    def __len__(self):
+        return len(self.obj) if self.obj is not None else 0
     
-    class WrappedStrategy(original_strategy):
-        # Counters for SL/TP exits - accessible after backtest (class-level)
-        sl_exits = 0
-        tp_exits = 0
+    def __getitem__(self, key):
+        if self.obj is None: return None
+        return self.obj[key]
+
+
+class SafeTa:
+    """Wrapper for pandas_ta to make indicators return SafeIndicator objects"""
+    def __init__(self, real_ta):
+        self._ta = real_ta
         
-        def init(self):
-            # Reset counters at start of each backtest
-            WrappedStrategy.sl_exits = 0
-            WrappedStrategy.tp_exits = 0
-            # Call parent init
-            super().init()
-        
-        def next(self):
-            # Run the original strategy logic first
-            super().next()
-            
-            # Apply SL/TP if in a position
-            try:
-                if self.position and len(self.trades) > 0:
-                    entry_price = self.trades[-1].entry_price
-                    current_price = self.data.Close[-1]
-                    
-                    # Stop Loss: Close if price drops below threshold
-                    if _sl_pct and current_price <= entry_price * _sl_pct:
-                        self.position.close()
-                        WrappedStrategy.sl_exits += 1
-                    # Take Profit: Close if price rises above threshold  
-                    elif _tp_pct and current_price >= entry_price * _tp_pct:
-                        self.position.close()
-                        WrappedStrategy.tp_exits += 1
-            except Exception:
-                pass  # Silently ignore SL/TP errors to not break strategy
-    
-    # Preserve the original class name for debugging
-    WrappedStrategy.__name__ = f"SL_TP_{original_strategy.__name__}"
-    return WrappedStrategy
+    def __getattr__(self, name):
+        attr = getattr(self._ta, name)
+        if callable(attr):
+            def wrapper(*args, **kwargs):
+                res = attr(*args, **kwargs)
+                return SafeIndicator(res)
+            return wrapper
+        return attr
 
 
 def calculate_3y_splits(symbol, DailyStockPrice, end_date=None):
@@ -96,14 +82,21 @@ def calculate_3y_splits(symbol, DailyStockPrice, end_date=None):
     
     while curr_start < end_date:
         curr_end = curr_start + timedelta(days=365*3)
-        if curr_end > end_date:
-            curr_end = end_date
         
+        # If the remaining period after this one would be very small (< 180 days),
+        # just extend this period to the end and stop.
+        if (end_date - curr_end).days < 180:
+            curr_end = end_date
+            
         period_name = f"{curr_start.year}-{curr_end.year} (3Y)"
         periods.append((period_name, curr_start.strftime('%Y-%m-%d'), curr_end.strftime('%Y-%m-%d')))
         
         # Move start forward
         curr_start = curr_end
+        
+        # Breakdown if we reached the end
+        if curr_start >= end_date:
+            break
         
     return periods
 
@@ -214,16 +207,18 @@ class CrossValidationObjective:
                 min_val, max_val = param_config
                 params[param_name] = trial.suggest_int(param_name, int(min_val), int(max_val))
         
-        # Extract SL/TP from params (they're optimized along with other params)
-        sl_pct = params.get('sl_pct', DEFAULT_SL_PCT)
-        tp_pct = params.get('tp_pct', DEFAULT_TP_PCT)
+        # ATR Multipliers are optimized directly as strategy parameters
+        sl_atr_mult = params.get('sl_atr_mult', DEFAULT_SL_ATR_MULT)
+        tp_atr_mult = params.get('tp_atr_mult', DEFAULT_TP_ATR_MULT)
         
-        # Replace parameters in code (for strategy-specific params, not SL/TP)
+        # Replace parameters in code using precision regex
+        import re
         code = self.code_template
         for param_name, param_value in params.items():
-            if param_name not in ('sl_pct', 'tp_pct'):  # SL/TP handled via wrapper
-                code = code.replace(f"{param_name} = ", f"{param_name} = {param_value} #")
-                code = code.replace(f"{param_name}=", f"{param_name}={param_value} #")
+            # Replace ANY param defined at the class level
+            pattern = rf"^\s*{param_name}\s*=\s*.*"
+            replacement = f"    {param_name} = {param_value} "
+            code = re.sub(pattern, replacement, code, flags=re.MULTILINE)
         
         if 'pd.Series(x).index' in code:
             code = code.replace('pd.Series(x).index', 'self.data.index')
@@ -232,7 +227,7 @@ class CrossValidationObjective:
         
         local_scope = {
             'Backtest': Backtest, 'Strategy': Strategy, 'crossover': crossover,
-            'SMA': SMA, 'pd': pd, 'np': np,
+            'SMA': SMA, 'pd': pd, 'np': np, 'ta': SafeTa(ta),
         }
         
         try:
@@ -240,24 +235,15 @@ class CrossValidationObjective:
         except Exception as e:
             return -9999
         
-        from backtesting import Strategy as BTStrategy
-        strategy_class = None
-        for name, obj in local_scope.items():
-            if inspect.isclass(obj) and issubclass(obj, BTStrategy) and obj is not BTStrategy:
-                strategy_class = obj
-                break
-        
-        if not strategy_class:
-            return -9999
-        
-        # Wrap strategy with SL/TP logic (all strategies get this automatically)
-        wrapped_strategy = create_sl_tp_wrapped_strategy(strategy_class, sl_pct=sl_pct, tp_pct=tp_pct)
+        # Strategy class now contains its own SL/TP logic based on ATR
+        strategy_class = strategy_class
         
         # Helper function for parallel backtest execution
         def run_single_bt(ticker_data):
             ticker, df_data = ticker_data
             try:
-                bt = Backtest(df_data, wrapped_strategy, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
+                # Use updated commission and exclusive orders
+                bt = Backtest(df_data, strategy_class, cash=1000000, commission=DEFAULT_COMMISSION, exclusive_orders=True, finalize_trades=True)
                 stats = bt.run()
                 
                 win_rate = stats.get('Win Rate [%]', 0)
@@ -310,14 +296,13 @@ class CrossValidationObjective:
 def run_single_objective_optimization(data_maps, code_template, param_ranges, objective_type, n_trials, n_jobs=4):
     """Run optimization for a single objective using smart Bayesian sampling (TPE)"""
     
-    # Inject default SL/TP param ranges if not already provided
-    # This must happen BEFORE optimization starts
-    if 'sl_pct' not in param_ranges:
+    # Inject ATR multiplier ranges for optimization
+    if 'sl_atr_mult' not in param_ranges:
         param_ranges = param_ranges.copy()
-        param_ranges['sl_pct'] = {'type': 'float', 'range': [0.92, 0.98]}  # Tighter range
-    if 'tp_pct' not in param_ranges:
+        param_ranges['sl_atr_mult'] = {'type': 'float', 'range': [1.0, 3.5]}
+    if 'tp_atr_mult' not in param_ranges:
         param_ranges = param_ranges.copy()
-        param_ranges['tp_pct'] = {'type': 'float', 'range': [1.05, 1.20]}  # Tighter range
+        param_ranges['tp_atr_mult'] = {'type': 'float', 'range': [1.5, 6.0]}
     
     # Calculate rough search space size for logging
     total_combinations = 1
@@ -379,16 +364,20 @@ def run_single_objective_optimization(data_maps, code_template, param_ranges, ob
 
 def run_final_backtest(data_map, code_template, params):
     """Run a final backtest to get full stats and plot"""
-    # Extract SL/TP from params
-    sl_pct = params.get('sl_pct', DEFAULT_SL_PCT)
-    tp_pct = params.get('tp_pct', DEFAULT_TP_PCT)
-    
-    # Replace parameters in code (not SL/TP - handled via wrapper)
+    # ATR Multipliers are used directly from params
+    # Replace parameters in code using precision regex
+    import re
     code = code_template
     for param_name, param_value in params.items():
-        if param_name not in ('sl_pct', 'tp_pct'):  # SL/TP handled via wrapper
-            code = code.replace(f"{param_name} = ", f"{param_name} = {param_value} #")
+        pattern = rf"^\s*{param_name}\s*=\s*.*"
+        replacement = f"    {param_name} = {param_value} "
+        code = re.sub(pattern, replacement, code, flags=re.MULTILINE)
         
+    if 'pd.Series(x).index' in code:
+        code = code.replace('pd.Series(x).index', 'self.data.index')
+    if '.position.entry_price' in code:
+        code = code.replace('.position.entry_price', '.trades[0].entry_price')
+
     local_scope = {
         'Backtest': Backtest,
         'Strategy': Strategy,
@@ -396,6 +385,7 @@ def run_final_backtest(data_map, code_template, params):
         'SMA': SMA,
         'pd': pd,
         'np': np,
+        'ta': SafeTa(ta),
     }
     
     try:
@@ -408,18 +398,15 @@ def run_final_backtest(data_map, code_template, params):
                 break
                 
         if not strategy_class:
-            return None
+            return None, None, None
         
-        # Wrap strategy with SL/TP logic (all strategies get this automatically)
-        wrapped_strategy = create_sl_tp_wrapped_strategy(strategy_class, sl_pct=sl_pct, tp_pct=tp_pct)
-            
         # Use the first dataframe (primary symbol) for the main backtest plot/stats
         symbol = list(data_map.keys())[0]
         local_scope['symbol'] = symbol
         local_scope['ticker'] = symbol
         df = data_map[symbol]
         
-        bt = Backtest(df, wrapped_strategy, cash=1000000, commission=.002, exclusive_orders=True, finalize_trades=True)
+        bt = Backtest(df, strategy_class, cash=1000000, commission=DEFAULT_COMMISSION, exclusive_orders=True, finalize_trades=True)
         stats = bt.run()
         
         # safely get plot
@@ -508,6 +495,8 @@ def run_final_backtest(data_map, code_template, params):
         return stats_dict, bt, plot_html
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         print(f"Final backtest failed: {e}")
         return None, None, None
 
