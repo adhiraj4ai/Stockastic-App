@@ -255,7 +255,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
     };
 
     if (loading) {
-        return <div className="p-12 text-center text-gray-500">Loading experiments...</div>;
+        return <div className="p-12 text-center text-gray-500 dark:text-slate-400">Loading experiments...</div>;
     }
 
     return (
@@ -274,12 +274,12 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
 
                 return (
                     <section>
-                        <h3 className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-2">
                             <Zap className="text-amber-500" size={16} /> Top Performing Configurations
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
                             {uniqueBySymbol.map((item: any, idx) => (
-                                <div key={idx} className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
+                                <div key={idx} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
                                     <div className="flex justify-between items-start mb-2">
                                         <Badge className="text-[10px] px-2 py-0 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold uppercase">
                                             {item.scope_type === 'ALL' ? 'Market' : item.scope_value}
@@ -290,18 +290,18 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="text-[10px] text-slate-500 mb-2 flex items-center justify-between">
+                                    <div className="text-[10px] text-slate-500 dark:text-slate-400 mb-2 flex items-center justify-between">
                                         <span>{format(new Date(item.created_at), 'MMM d')}</span>
                                         <Badge variant="outline" className="text-[9px] px-1 py-0 font-bold">
                                             {item.run_type}
                                         </Badge>
                                     </div>
-                                    <div className="border-t border-slate-100 pt-2">
+                                    <div className="border-t border-slate-100 dark:border-slate-800 pt-2">
                                         <div className="flex flex-wrap gap-1">
                                             {Object.entries(item.parameters || {}).map(([key, value]: [string, any]) => (
-                                                <div key={key} className="bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded text-[10px]">
-                                                    <span className="text-slate-500">{key}:</span>{' '}
-                                                    <span className="font-bold text-slate-900">{typeof value === 'number' ? (Number.isInteger(value) ? value : value.toFixed(1)) : String(value)}</span>
+                                                <div key={key} className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded text-[10px]">
+                                                    <span className="text-slate-500 dark:text-slate-400">{key}:</span>{' '}
+                                                    <span className="font-bold text-slate-900 dark:text-slate-100">{typeof value === 'number' ? (Number.isInteger(value) ? value : value.toFixed(1)) : String(value)}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -316,39 +316,39 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
             {/* Experiment History Table */}
             <section>
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 flex items-center gap-2">
                         <Beaker className="text-purple-500" size={20} />
                         {strategyId ? 'Experiment History' : 'Global Experiment Log'}
                     </h3>
                     {!strategyId && (
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                        <span className="text-xs text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded">
                             Showing latest runs across all strategies
                         </span>
                     )}
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
+                        <thead className="bg-gray-50 dark:bg-slate-800">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">ID</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Date</th>
                                 {!strategyId && (
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Strategy</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Strategy</th>
                                 )}
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scope</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Range</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Outcome</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Type</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Scope</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Range</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Outcome</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Action</th>
                                 <th className="px-6 py-3"></th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200 text-sm">
+                        <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800 text-sm">
                             {experiments.length === 0 ? (
                                 <tr>
-                                    <td colSpan={strategyId ? 8 : 9} className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan={strategyId ? 8 : 9} className="px-6 py-12 text-center text-gray-500 dark:text-slate-400">
                                         No experiments run yet. Run backtests or optimizations to populate this list.
                                     </td>
                                 </tr>
@@ -357,7 +357,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                     .map((exp) => (
                                         <Fragment key={exp.id}>
                                             <tr
-                                                className="hover:bg-gray-50 cursor-pointer"
+                                                className="hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer"
                                                 onClick={() => toggleExpand(exp.id)}
                                             >
                                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -367,34 +367,34 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                         <XCircle size={16} className="text-red-500" />
                                                     )}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-gray-500 font-mono text-xs">
+                                                <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-slate-400 font-mono text-xs">
                                                     <a
                                                         href={`/strategies/${exp.strategy}/experiments/${exp.id}`}
-                                                        className="text-blue-600 hover:underline flex items-center gap-1"
+                                                        className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                                                         onClick={(e) => e.stopPropagation()}
                                                     >
                                                         #{exp.id} <ExternalLink size={10} />
                                                     </a>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-gray-900 font-medium">
+                                                <td className="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-slate-100 font-medium">
                                                     {format(new Date(exp.created_at), 'MMM dd, HH:mm')}
                                                 </td>
                                                 {!strategyId && (
-                                                    <td className="px-6 py-4 whitespace-nowrap text-gray-900 font-bold">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-slate-100 font-bold">
                                                         {exp.strategy_name}
                                                     </td>
                                                 )}
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide
-                                                        ${exp.run_type === 'BACKTEST' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'}`}>
+                                                        ${exp.run_type === 'BACKTEST' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'}`}>
                                                         {exp.run_type}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-bold text-gray-900">{exp.scope_value}</div>
-                                                    <div className="text-xs text-gray-400 font-medium uppercase tracking-wider">{exp.scope_type}</div>
+                                                    <div className="text-sm font-bold text-gray-900 dark:text-slate-100">{exp.scope_value}</div>
+                                                    <div className="text-xs text-gray-400 dark:text-slate-500 font-medium uppercase tracking-wider">{exp.scope_type}</div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
+                                                <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500 dark:text-slate-400">
                                                     {exp.start_date}<br />{exp.end_date}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -404,7 +404,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                     <div className="flex items-center gap-2">
                                                         <a
                                                             href={`/strategies/${strategyId || exp.strategy}/experiments/${exp.id}`}
-                                                            className="text-[10px] font-bold uppercase tracking-wider text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                                                            className="text-[10px] font-bold uppercase tracking-wider text-gray-600 dark:text-slate-300 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 px-2 py-1 rounded transition-colors flex items-center gap-1"
                                                             onClick={(e) => e.stopPropagation()}
                                                         >
                                                             View
@@ -434,27 +434,27 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-gray-400">
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-gray-400 dark:text-slate-500">
                                                     {expandedId === exp.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                                 </td>
                                             </tr>
                                             {/* EXPANDED DETAILS RENDERING ... */}
                                             {expandedId === exp.id && (
                                                 <tr>
-                                                    <td colSpan={strategyId ? 8 : 9} className="px-0 py-0 border-b bg-gray-50">
+                                                    <td colSpan={strategyId ? 8 : 9} className="px-0 py-0 border-b bg-gray-50 dark:bg-slate-800/50">
                                                         {/* Content of expansion */}
                                                         {/* ... I will skip attempting to match inner content exactly to avoid large context mismatch, trusting that I replaced the wrapper Map. ... */}
                                                         {/* WAIT. Using ReplaceContent needs exact TargetContent. I should be careful. */}
                                                         <div className="flex flex-col gap-6">
                                                             {/* Batch Results Table */}
                                                             {exp.batch_id && exp.scope_type !== 'SYMBOL' && batchResults[exp.batch_id] && (
-                                                                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-                                                                    <div className="bg-gray-50 px-4 py-2 border-b">
-                                                                        <h4 className="text-xs font-bold text-gray-700 uppercase">Individual Symbol Outcomes ({batchResults[exp.batch_id].filter(e => e.scope_type === 'SYMBOL').length})</h4>
+                                                                <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm">
+                                                                    <div className="bg-gray-50 dark:bg-slate-800 px-4 py-2 border-b dark:border-slate-700">
+                                                                        <h4 className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase">Individual Symbol Outcomes ({batchResults[exp.batch_id].filter(e => e.scope_type === 'SYMBOL').length})</h4>
                                                                     </div>
                                                                     <div className="max-h-60 overflow-auto">
-                                                                        <table className="min-w-full divide-y divide-gray-200 text-xs text-left">
-                                                                            <thead className="bg-gray-50/50 sticky top-0">
+                                                                        <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800 text-xs text-left">
+                                                                            <thead className="bg-gray-50/50 dark:bg-slate-800/50 sticky top-0">
                                                                                 <tr>
                                                                                     <th className="px-4 py-2">ID</th>
                                                                                     <th className="px-4 py-2">Symbol</th>
@@ -464,20 +464,20 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                                                     <th className="px-4 py-2">Status</th>
                                                                                 </tr>
                                                                             </thead>
-                                                                            <tbody className="divide-y divide-gray-100">
+                                                                            <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                                                                                 {[...(batchResults[exp.batch_id] || [])]
                                                                                     .filter(child => child.scope_type === 'SYMBOL')
                                                                                     .sort((a, b) => (b.metrics?.pnl_percent || 0) - (a.metrics?.pnl_percent || 0))
                                                                                     .map(child => (
                                                                                         <tr
                                                                                             key={child.id}
-                                                                                            className="hover:bg-gray-50 cursor-pointer group"
+                                                                                            className="hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer group"
                                                                                             onClick={(e) => {
                                                                                                 e.stopPropagation();
                                                                                                 window.open(`/strategies/${strategyId || child.strategy}/experiments/${child.id}`, '_blank');
                                                                                             }}
                                                                                         >
-                                                                                            <td className="px-4 py-2 font-mono text-xs text-gray-500">
+                                                                                            <td className="px-4 py-2 font-mono text-xs text-gray-500 dark:text-slate-400">
                                                                                                 <a
                                                                                                     href={`/strategies/${strategyId || child.strategy}/experiments/${child.id}`}
                                                                                                     className="hover:underline flex items-center gap-1"
@@ -486,7 +486,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                                                                     #{child.id}
                                                                                                 </a>
                                                                                             </td>
-                                                                                            <td className="px-4 py-2 font-bold group-hover:text-blue-600 flex items-center gap-2">
+                                                                                            <td className="px-4 py-2 font-bold group-hover:text-blue-600 dark:group-hover:text-blue-400 flex items-center gap-2">
                                                                                                 {child.scope_value}
                                                                                                 <ExternalLink size={12} className="opacity-0 group-hover:opacity-100" />
                                                                                             </td>
@@ -498,7 +498,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                                                             <td className="px-4 py-2">
                                                                                                 <div className="flex items-center justify-between">
                                                                                                     {child.status === 'SUCCESS' ? <CheckCircle size={14} className="text-green-500" /> : <XCircle size={14} className="text-red-500" />}
-                                                                                                    <button className="text-[10px] text-blue-600 font-bold opacity-0 group-hover:opacity-100 uppercase">View Detail</button>
+                                                                                                    <button className="text-[10px] text-blue-600 dark:text-blue-400 font-bold opacity-0 group-hover:opacity-100 uppercase">View Detail</button>
                                                                                                 </div>
                                                                                             </td>
                                                                                         </tr>
@@ -511,7 +511,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
 
                                                             {/* Chart Section */}
                                                             {exp.plot_html && (
-                                                                <div className="w-full bg-white border rounded-xl overflow-hidden shadow-inner" style={{ height: '700px' }}>
+                                                                <div className="w-full bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-xl overflow-hidden shadow-inner" style={{ height: '700px' }}>
                                                                     <iframe
                                                                         title={`Backtest Plot ${exp.id}`}
                                                                         srcDoc={exp.plot_html}
@@ -524,15 +524,15 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                                 <div>
                                                                     <div className="flex justify-between items-center mb-3">
-                                                                        <h4 className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1">
+                                                                        <h4 className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase flex items-center gap-1">
                                                                             <Zap size={14} className="text-amber-500" /> Parameters
                                                                         </h4>
                                                                     </div>
                                                                     <div className="flex flex-wrap gap-2">
                                                                         {Object.entries(exp.parameters || {}).map(([key, value]: [string, any]) => (
-                                                                            <div key={key} className="bg-white border border-gray-200 px-3 py-2 rounded-lg shadow-sm flex flex-col min-w-[120px]">
-                                                                                <span className="text-[10px] text-gray-400 uppercase font-bold">{key.replace(/_/g, ' ')}</span>
-                                                                                <span className="text-sm font-semibold text-gray-800">
+                                                                            <div key={key} className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 px-3 py-2 rounded-lg shadow-sm flex flex-col min-w-[120px]">
+                                                                                <span className="text-[10px] text-gray-400 dark:text-slate-500 uppercase font-bold">{key.replace(/_/g, ' ')}</span>
+                                                                                <span className="text-sm font-semibold text-gray-800 dark:text-slate-200">
                                                                                     {typeof value === 'number' ?
                                                                                         (Number.isInteger(value) ? value : value.toFixed(2)) :
                                                                                         String(value)}
@@ -540,37 +540,37 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                                             </div>
                                                                         ))}
                                                                         {Object.keys(exp.parameters || {}).length === 0 && (
-                                                                            <span className="text-gray-400 text-sm italic">No parameters defined</span>
+                                                                            <span className="text-gray-400 dark:text-slate-500 text-sm italic">No parameters defined</span>
                                                                         )}
                                                                     </div>
                                                                 </div>
 
                                                                 <div>
-                                                                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-1">
+                                                                    <h4 className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-3 flex items-center gap-1">
                                                                         <Activity size={14} className="text-blue-500" /> Outcome Analysis
                                                                     </h4>
-                                                                    <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                                                    <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-4 shadow-sm">
                                                                         {exp.run_type === 'BACKTEST' ? (
                                                                             exp.metrics.aggregated ? (
                                                                                 <div className="space-y-4">
                                                                                     <div className="grid grid-cols-3 gap-2 border-b pb-3">
                                                                                         <div>
-                                                                                            <p className="text-[10px] text-gray-400 uppercase font-bold">Avg Return</p>
+                                                                                            <p className="text-[10px] text-gray-400 dark:text-slate-500 uppercase font-bold">Avg Return</p>
                                                                                             <p className={`text-lg font-bold ${exp.metrics.aggregated.avg_return >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                                                                                 {exp.metrics.aggregated.avg_return?.toFixed(2)}%
                                                                                             </p>
                                                                                         </div>
                                                                                         <div>
-                                                                                            <p className="text-[10px] text-gray-400 uppercase font-bold">Win Rate</p>
-                                                                                            <p className="text-lg font-bold text-gray-800">{exp.metrics.aggregated.avg_win_rate?.toFixed(1)}%</p>
+                                                                                            <p className="text-[10px] text-gray-400 dark:text-slate-500 uppercase font-bold">Win Rate</p>
+                                                                                            <p className="text-lg font-bold text-gray-800 dark:text-slate-200">{exp.metrics.aggregated.avg_win_rate?.toFixed(1)}%</p>
                                                                                         </div>
                                                                                         <div>
-                                                                                            <p className="text-[10px] text-gray-400 uppercase font-bold">Total Trades</p>
-                                                                                            <p className="text-lg font-bold text-gray-800">{exp.metrics.aggregated.total_trades}</p>
+                                                                                            <p className="text-[10px] text-gray-400 dark:text-slate-500 uppercase font-bold">Total Trades</p>
+                                                                                            <p className="text-lg font-bold text-gray-800 dark:text-slate-200">{exp.metrics.aggregated.total_trades}</p>
                                                                                         </div>
                                                                                     </div>
                                                                                     <div>
-                                                                                        <p className="text-[10px] text-gray-400 uppercase font-bold mb-2">Performance Breakdown</p>
+                                                                                        <p className="text-[10px] text-gray-400 dark:text-slate-500 uppercase font-bold mb-2">Performance Breakdown</p>
                                                                                         <div className="flex flex-col gap-2">
                                                                                             <div className="flex justify-between items-center text-sm p-2 bg-green-50 rounded border border-green-100">
                                                                                                 <span className="text-green-800 font-medium">Top Symbol</span>
@@ -592,8 +592,8 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                                                                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
                                                                                                     {Object.entries(metrics).map(([label, value]: [string, any]) => (
                                                                                                         <div key={label} className="flex flex-col">
-                                                                                                            <span className="text-[10px] text-gray-500">{label}</span>
-                                                                                                            <span className="text-xs font-bold text-gray-800 font-mono">{String(value)}</span>
+                                                                                                            <span className="text-[10px] text-gray-500 dark:text-slate-400">{label}</span>
+                                                                                                            <span className="text-xs font-bold text-gray-800 dark:text-slate-200 font-mono">{String(value)}</span>
                                                                                                         </div>
                                                                                                     ))}
                                                                                                 </div>
@@ -605,10 +605,10 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                                                         {['pnl_percent', 'win_rate', 'total_trades', 'max_drawdown', 'sharpe_ratio', 'total_pnl'].map(key => (
                                                                                             exp.metrics[key] !== undefined && (
                                                                                                 <div key={key}>
-                                                                                                    <p className="text-[10px] text-gray-400 uppercase font-bold">{key.replace(/_/g, ' ')}</p>
+                                                                                                    <p className="text-[10px] text-gray-400 dark:text-slate-500 uppercase font-bold">{key.replace(/_/g, ' ')}</p>
                                                                                                     <p className={`text-sm font-bold ${(key.includes('pnl') || key.includes('return')) ?
                                                                                                         (exp.metrics[key] >= 0 ? 'text-green-600' : 'text-red-600') :
-                                                                                                        'text-gray-800'
+                                                                                                        'text-gray-800 dark:text-slate-200'
                                                                                                         }`}>
                                                                                                         {key.includes('percent') || key.includes('rate') || key.includes('drawdown') ?
                                                                                                             `${exp.metrics[key]?.toFixed(2)}%` :
@@ -624,12 +624,12 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                                             /* Optimization Metrics */
                                                                             <div className="space-y-4">
                                                                                 <div className="flex justify-between items-center border-b pb-2">
-                                                                                    <span className="text-xs text-gray-500 font-bold uppercase">Best Return</span>
-                                                                                    <span className="text-lg font-bold text-purple-600">{exp.metrics.best_return?.toFixed(2)}%</span>
+                                                                                    <span className="text-xs text-gray-500 dark:text-slate-400 font-bold uppercase">Best Return</span>
+                                                                                    <span className="text-lg font-bold text-purple-600 dark:text-purple-400">{exp.metrics.best_return?.toFixed(2)}%</span>
                                                                                 </div>
                                                                                 <div>
-                                                                                    <p className="text-[10px] text-gray-400 uppercase font-bold mb-2">Optimal Configuration</p>
-                                                                                    <div className="bg-purple-50 p-2 rounded border border-purple-100 font-mono text-xs text-purple-900 overflow-x-auto">
+                                                                                    <p className="text-[10px] text-gray-400 dark:text-slate-500 uppercase font-bold mb-2">Optimal Configuration</p>
+                                                                                    <div className="bg-purple-50 dark:bg-purple-900/20 p-2 rounded border border-purple-100 dark:border-purple-800 font-mono text-xs text-purple-900 dark:text-purple-300 overflow-x-auto">
                                                                                         {JSON.stringify(exp.metrics.best_params, null, 2)}
                                                                                     </div>
                                                                                 </div>
@@ -658,22 +658,22 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                         </tbody>
                     </table>
                     {/* Pagination Controls */}
-                    <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50/50">
-                        <div className="text-xs text-gray-500 font-medium">
+                    <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50">
+                        <div className="text-xs text-gray-500 dark:text-slate-400 font-medium">
                             Showing page {page}
                         </div>
                         <div className="flex gap-2">
                             <button
                                 onClick={() => setPage(p => Math.max(1, p - 1))}
                                 disabled={!hasPrev || loading}
-                                className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-slate-300 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                                 Previous
                             </button>
                             <button
                                 onClick={() => setPage(p => p + 1)}
                                 disabled={!hasNext || loading}
-                                className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                                 Next
                             </button>

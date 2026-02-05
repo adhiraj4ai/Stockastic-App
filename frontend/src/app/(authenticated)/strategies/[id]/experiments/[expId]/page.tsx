@@ -171,10 +171,10 @@ export default function ExperimentDetailPage() {
             <DashboardLayout>
                 <div className="flex items-center justify-center min-h-[60vh]">
                     <div className="animate-pulse flex flex-col items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                            <Activity className="text-blue-600 animate-spin" size={24} />
+                        <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                            <Activity className="text-blue-600 dark:text-blue-400 animate-spin" size={24} />
                         </div>
-                        <p className="text-gray-500 font-medium">Loading analysis...</p>
+                        <p className="text-gray-500 dark:text-slate-400 font-medium">Loading analysis...</p>
                     </div>
                 </div>
             </DashboardLayout>
@@ -185,8 +185,8 @@ export default function ExperimentDetailPage() {
         return (
             <DashboardLayout>
                 <div className="p-12 text-center">
-                    <h2 className="text-2xl font-bold text-gray-900">Analysis not found</h2>
-                    <p className="text-gray-500 mt-2">The requested experiment could not be retrieved.</p>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Analysis not found</h2>
+                    <p className="text-gray-500 dark:text-slate-400 mt-2">The requested experiment could not be retrieved.</p>
                     <Button
                         variant="outline"
                         className="mt-6"
@@ -226,24 +226,24 @@ export default function ExperimentDetailPage() {
         >
             <div className="max-w-[1800px] mx-auto space-y-6 p-4 md:p-6">
                 {/* 1. Command Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm">
                     <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 bg-gray-100 rounded-xl flex items-center justify-center text-gray-700 font-bold text-xl border border-gray-200">
+                        <div className="h-12 w-12 bg-gray-100 dark:bg-slate-800 rounded-xl flex items-center justify-center text-gray-700 dark:text-slate-300 font-bold text-xl border border-gray-200 dark:border-slate-700">
                             {experiment.scope_value.slice(0, 2)}
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                            <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
                                 {experiment.scope_value}
-                                <Badge variant="outline" className="text-xs font-medium text-gray-500 bg-gray-50 border-gray-200">
+                                <Badge variant="outline" className="text-xs font-medium text-gray-500 dark:text-slate-400 bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700">
                                     {experiment.scope_type}
                                 </Badge>
                             </h1>
-                            <div className="flex items-center gap-3 text-sm text-gray-500 font-medium">
+                            <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-slate-400 font-medium">
                                 <span className={`flex items-center gap-1.5 ${experiment.status === 'SUCCESS' ? 'text-green-600' : 'text-red-600'}`}>
                                     {experiment.status === 'SUCCESS' ? <CheckCircle size={14} /> : <XCircle size={14} />}
                                     {experiment.status}
                                 </span>
-                                <span className="h-3 w-px bg-gray-300" />
+                                <span className="h-3 w-px bg-gray-300 dark:bg-slate-700" />
                                 <span className="flex items-center gap-1.5">
                                     <Calendar size={14} />
                                     {experiment.start_date} – {experiment.end_date}
@@ -254,8 +254,8 @@ export default function ExperimentDetailPage() {
 
                     <div className="flex items-center gap-3">
                         {experiment.siblings && experiment.siblings.length > 0 && (
-                            <div className="hidden md:flex items-center gap-2 bg-gray-50 p-1 pr-3 rounded-lg border border-gray-200">
-                                <div className="p-1.5 bg-white rounded-md shadow-sm border border-gray-100 text-gray-500">
+                            <div className="hidden md:flex items-center gap-2 bg-gray-50 dark:bg-slate-800 p-1 pr-3 rounded-lg border border-gray-200 dark:border-slate-700">
+                                <div className="p-1.5 bg-white dark:bg-slate-900 rounded-md shadow-sm border border-gray-100 dark:border-slate-700 text-gray-500 dark:text-slate-400">
                                     <Layers size={14} />
                                 </div>
                                 <Select
@@ -277,7 +277,7 @@ export default function ExperimentDetailPage() {
 
                         <Button
                             onClick={handleRerun}
-                            className="bg-gray-900 hover:bg-gray-800 text-white font-medium shadow-sm transition-all"
+                            className="bg-gray-900 dark:bg-slate-800 hover:bg-gray-800 dark:hover:bg-slate-700 text-white font-medium shadow-sm transition-all"
                         >
                             <RotateCw size={16} className="mr-2" />
                             Rerun
@@ -287,13 +287,13 @@ export default function ExperimentDetailPage() {
 
                 {batchChildren.length > 0 ? (
                     <div className="w-full">
-                        <Card className="border border-gray-200 shadow-sm bg-white rounded-xl overflow-visible">
-                            <CardHeader className="border-b border-gray-100 py-4 px-6 flex flex-row items-center justify-between">
+                        <Card className="border border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 rounded-xl overflow-visible">
+                            <CardHeader className="border-b border-gray-100 dark:border-slate-800 py-4 px-6 flex flex-row items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-1.5 bg-blue-100 text-blue-600 rounded">
+                                    <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded">
                                         <Layers size={16} />
                                     </div>
-                                    <h3 className="font-semibold text-gray-900">Batch Breakdown</h3>
+                                    <h3 className="font-semibold text-gray-900 dark:text-slate-100">Batch Breakdown</h3>
                                 </div>
                                 <Button variant="outline" size="sm" onClick={() => { }}>
                                     Export CSV
@@ -301,34 +301,34 @@ export default function ExperimentDetailPage() {
                             </CardHeader>
                             <div className="p-0 overflow-x-auto">
                                 <Table>
-                                    <thead className="bg-gray-50/50">
+                                    <thead className="bg-gray-50/50 dark:bg-slate-800/50">
                                         <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Symbol</th>
-                                            <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Return</th>
-                                            <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Win Rate</th>
-                                            <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Trades</th>
-                                            <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Symbol</th>
+                                            <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Return</th>
+                                            <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Win Rate</th>
+                                            <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Trades</th>
+                                            <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Action</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-100">
+                                    <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                                         {batchChildren
                                             .sort((a, b) => b.metrics.pnl_percent - a.metrics.pnl_percent)
                                             .map((child) => (
-                                                <TableRow key={child.id} className="hover:bg-gray-50 transition-colors">
-                                                    <TableCell className="px-6 py-3 font-medium text-gray-900">
+                                                <TableRow key={child.id} className="hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+                                                    <TableCell className="px-6 py-3 font-medium text-gray-900 dark:text-slate-100">
                                                         {child.scope_value}
                                                     </TableCell>
                                                     <TableCell className={`px-6 py-3 text-right font-mono font-semibold ${(child.metrics.pnl_percent || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                                         {(child.metrics.pnl_percent || 0).toFixed(2)}%
                                                     </TableCell>
-                                                    <TableCell className="px-6 py-3 text-right font-mono text-gray-700">
+                                                    <TableCell className="px-6 py-3 text-right font-mono text-gray-700 dark:text-slate-300">
                                                         {(child.metrics.win_rate || 0).toFixed(1)}%
                                                     </TableCell>
-                                                    <TableCell className="px-6 py-3 text-right font-mono text-gray-700">
+                                                    <TableCell className="px-6 py-3 text-right font-mono text-gray-700 dark:text-slate-300">
                                                         {child.metrics.total_trades || 0}
                                                     </TableCell>
                                                     <TableCell className="px-6 py-3 text-right">
-                                                        <a href={`/strategies/${strategyId}/experiments/${child.id}`} target="_blank" className="text-blue-600 hover:text-blue-800 text-xs font-bold">View</a>
+                                                        <a href={`/strategies/${strategyId}/experiments/${child.id}`} target="_blank" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-xs font-bold">View</a>
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
@@ -342,35 +342,35 @@ export default function ExperimentDetailPage() {
                         {/* Left Panel: Parameters & Context */}
                         <div className="xl:col-span-3 space-y-6">
                             {/* Summary Tiles */}
-                            <Card className="border border-gray-200 shadow-sm bg-white rounded-xl overflow-hidden">
-                                <CardHeader className="bg-gray-50/50 border-b border-gray-100 py-3 px-4">
-                                    <CardTitle className="text-sm font-bold text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                            <Card className="border border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 rounded-xl overflow-hidden">
+                                <CardHeader className="bg-gray-50/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800 py-3 px-4">
+                                    <CardTitle className="text-sm font-bold text-gray-800 dark:text-slate-200 uppercase tracking-widest flex items-center gap-2">
                                         <BarChart3 size={14} className="text-blue-500" /> Key Metrics
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-0">
-                                    <div className="divide-y divide-gray-100">
-                                        <div className="flex flex-col p-4 hover:bg-gray-50 transition-colors">
+                                    <div className="divide-y divide-gray-100 dark:divide-slate-800">
+                                        <div className="flex flex-col p-4 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
                                             <div className="flex items-center justify-between mb-1">
-                                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Return</span>
+                                                <span className="text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wide">Return</span>
                                                 <TrendingUp size={16} className={(displayStats.pnl_percent || displayStats['Return [%]'] || 0) >= 0 ? "text-green-500" : "text-red-500"} />
                                             </div>
                                             <span className={`text-xl font-bold font-mono ${(displayStats.pnl_percent || displayStats['Return [%]'] || 0) >= 0 ? "text-green-600" : "text-red-600"}`}>
                                                 {(displayStats.pnl_percent || displayStats['Return [%]'] || 0).toFixed(2)}%
                                             </span>
                                         </div>
-                                        <div className="flex flex-col p-4 hover:bg-gray-50 transition-colors">
+                                        <div className="flex flex-col p-4 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
                                             <div className="flex items-center justify-between mb-1">
-                                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Win Rate</span>
+                                                <span className="text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wide">Win Rate</span>
                                                 <CheckCircle size={16} className="text-blue-500" />
                                             </div>
-                                            <span className="text-xl font-bold font-mono text-gray-900">
+                                            <span className="text-xl font-bold font-mono text-gray-900 dark:text-slate-100">
                                                 {(displayStats.win_rate || displayStats['Win Rate [%]'] || 0).toFixed(1)}%
                                             </span>
                                         </div>
-                                        <div className="flex flex-col p-4 hover:bg-gray-50 transition-colors">
+                                        <div className="flex flex-col p-4 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
                                             <div className="flex items-center justify-between mb-1">
-                                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Max Drawdown</span>
+                                                <span className="text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wide">Max Drawdown</span>
                                                 <Activity size={16} className="text-red-500" />
                                             </div>
                                             <span className="text-xl font-bold font-mono text-red-600">
@@ -380,44 +380,44 @@ export default function ExperimentDetailPage() {
                                     </div>
                                 </CardContent>
                             </Card>
-                            <Card className="border border-gray-200 shadow-sm bg-white rounded-xl overflow-hidden">
-                                <CardHeader className="bg-gray-50/50 border-b border-gray-100 py-3 px-4">
-                                    <CardTitle className="text-sm font-bold text-gray-800 uppercase tracking-widest flex items-center gap-2">
+                            <Card className="border border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 rounded-xl overflow-hidden">
+                                <CardHeader className="bg-gray-50/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800 py-3 px-4">
+                                    <CardTitle className="text-sm font-bold text-gray-800 dark:text-slate-200 uppercase tracking-widest flex items-center gap-2">
                                         <Zap size={14} className="text-blue-500" /> Parameters
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-0">
-                                    <div className="divide-y divide-gray-100">
+                                    <div className="divide-y divide-gray-100 dark:divide-slate-800">
                                         {Object.entries(experiment.parameters || {}).map(([key, value]: [string, any]) => (
-                                            <div key={key} className="flex flex-col p-3 hover:bg-gray-50 transition-colors">
-                                                <span className="text-[10px] uppercase font-bold text-gray-400 mb-0.5 tracking-wider">
+                                            <div key={key} className="flex flex-col p-3 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+                                                <span className="text-[10px] uppercase font-bold text-gray-400 dark:text-slate-500 mb-0.5 tracking-wider">
                                                     {key.replace(/_/g, ' ')}
                                                 </span>
-                                                <span className="text-sm font-mono font-medium text-gray-800">
+                                                <span className="text-sm font-mono font-medium text-gray-800 dark:text-slate-200">
                                                     {String(value)}
                                                 </span>
                                             </div>
                                         ))}
                                         {Object.keys(experiment.parameters || {}).length === 0 && (
-                                            <div className="p-4 text-sm text-gray-400 text-center italic">Default Parameters</div>
+                                            <div className="p-4 text-sm text-gray-400 dark:text-slate-500 text-center italic">Default Parameters</div>
                                         )}
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            <Card className="border border-blue-100 shadow-sm bg-gradient-to-br from-blue-50 to-white rounded-xl overflow-hidden">
+                            <Card className="border border-blue-100 dark:border-blue-900/30 shadow-sm bg-gradient-to-br from-blue-50 dark:from-blue-950/30 to-white dark:to-slate-900 rounded-xl overflow-hidden">
                                 <CardContent className="p-5">
-                                    <h3 className="text-blue-900 font-semibold mb-3 flex items-center gap-2">
+                                    <h3 className="text-blue-900 dark:text-blue-300 font-semibold mb-3 flex items-center gap-2">
                                         <Info size={16} /> Run Details
                                     </h3>
                                     <dl className="space-y-2 text-sm">
                                         <div className="flex justify-between">
-                                            <dt className="text-blue-700/70">Type</dt>
-                                            <dd className="font-medium text-blue-900">{experiment.run_type}</dd>
+                                            <dt className="text-blue-700/70 dark:text-blue-400/70">Type</dt>
+                                            <dd className="font-medium text-blue-900 dark:text-blue-200">{experiment.run_type}</dd>
                                         </div>
                                         <div className="flex justify-between">
-                                            <dt className="text-blue-700/70">Engine</dt>
-                                            <dd className="font-medium text-blue-900">Backtesting.py</dd>
+                                            <dt className="text-blue-700/70 dark:text-blue-400/70">Engine</dt>
+                                            <dd className="font-medium text-blue-900 dark:text-blue-200">Backtesting.py</dd>
                                         </div>
                                     </dl>
                                 </CardContent>

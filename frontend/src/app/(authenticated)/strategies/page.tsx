@@ -871,7 +871,7 @@ function StrategiesContent() {
                     </TabsContent>
 
                     <TabsContent value="experiment-logs" className="m-0 px-8 pb-8">
-                        <Card className="border-none shadow-sm bg-white/50 backdrop-blur-sm p-0">
+                        <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-0">
                             <ExperimentsTab />
                         </Card>
                     </TabsContent>

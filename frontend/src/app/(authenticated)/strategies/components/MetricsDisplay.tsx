@@ -22,31 +22,31 @@ function SummaryTile({ title, value, value2, subtext, icon: Icon, colorClass, tr
     title: string, value: string, value2?: string, subtext: string, icon: any, colorClass: string, trend?: 'up' | 'down'
 }) {
     return (
-        <Card className="overflow-hidden border-none shadow-lg bg-white group hover:shadow-2xl transition-all duration-500">
+        <Card className="overflow-hidden border-none shadow-lg bg-white dark:bg-slate-900 group hover:shadow-2xl transition-all duration-500">
             <div className={`h-1.5 w-full ${colorClass.split(' ')[0]}`} />
             <CardContent className="p-6">
                 <div className="flex justify-between items-center mb-5">
-                    <h4 className="text-xs font-black text-gray-500 uppercase tracking-tight">{title}</h4>
-                    <div className={`p-2 rounded-xl ${colorClass.split(' ')[1]} ${colorClass.split(' ')[2]} transition-all duration-300 group-hover:rotate-6 group-hover:scale-110 shadow-sm`}>
+                    <h4 className="text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-tight">{title}</h4>
+                    <div className={`p-2 rounded-xl ${colorClass.split(' ')[1]} dark:bg-slate-800 ${colorClass.split(' ')[2]} transition-all duration-300 group-hover:rotate-6 group-hover:scale-110 shadow-sm`}>
                         <Icon size={18} />
                     </div>
                 </div>
 
                 <div className="space-y-1">
                     <div className="flex items-baseline flex-wrap gap-x-4 gap-y-1">
-                        <span className="text-3xl font-black text-gray-900 tracking-tighter transition-all group-hover:text-blue-600">
+                        <span className="text-3xl font-black text-gray-900 dark:text-slate-100 tracking-tighter transition-all group-hover:text-blue-600 dark:group-hover:text-blue-400">
                             {value}
                         </span>
                         {value2 && (
-                            <span className="text-xl font-bold text-gray-400 tracking-tight">
+                            <span className="text-xl font-bold text-gray-400 dark:text-slate-500 tracking-tight">
                                 {value2}
                             </span>
                         )}
                     </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between gap-3">
-                    <p className="text-[10px] text-gray-500 font-medium leading-tight flex-1">
+                <div className="mt-4 pt-4 border-t border-gray-50 dark:border-slate-800 flex items-center justify-between gap-3">
+                    <p className="text-[10px] text-gray-500 dark:text-slate-400 font-medium leading-tight flex-1">
                         {subtext}
                     </p>
                     {trend && (
@@ -138,16 +138,16 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
         <div className="space-y-6">
             {/* Chart Section */}
             {plotHtml && (
-                <div className="w-full bg-white border rounded-2xl overflow-hidden mb-8 shadow-sm" style={{ height: chartHeight }}>
-                    <div className="px-5 py-3 bg-gray-50/50 border-b flex justify-between items-center">
+                <div className="w-full bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl overflow-hidden mb-8 shadow-sm" style={{ height: chartHeight }}>
+                    <div className="px-5 py-3 bg-gray-50/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
                         <div className="flex items-center gap-2">
                             <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                            <span className="text-[10px] font-bold text-gray-500">Strategy Performance Visualization</span>
+                            <span className="text-[10px] font-bold text-gray-500 dark:text-slate-400">Strategy Performance Visualization</span>
                         </div>
                         <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 text-[10px] font-bold border-2 hover:bg-white hover:border-blue-200 transition-all"
+                            className="h-8 text-[10px] font-bold border-2 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-200 dark:hover:border-blue-900 transition-all"
                             onClick={() => {
                                 const newWindow = window.open('', '_blank');
                                 if (newWindow) {
@@ -213,9 +213,9 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
                 {Object.entries(categorized).map(([category, metrics]: [string, any]) => (
-                    <Card key={category} className="shadow-sm border-gray-100 overflow-hidden bg-white/50 backdrop-blur-sm">
-                        <CardHeader className="py-3 px-5 bg-gray-50/50 border-b border-gray-100">
-                            <CardTitle className="text-[11px] font-bold text-gray-600 flex items-center gap-2">
+                    <Card key={category} className="shadow-sm border-gray-100 dark:border-slate-800 overflow-hidden bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+                        <CardHeader className="py-3 px-5 bg-gray-50/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800">
+                            <CardTitle className="text-[11px] font-bold text-gray-600 dark:text-slate-400 flex items-center gap-2">
                                 {category === 'Performance Metrics' && <TrendingUp size={14} className="text-green-500" />}
                                 {category === 'Risk Metrics' && <AlertTriangle size={14} className="text-red-500" />}
                                 {category === 'Trade Metrics' && <Activity size={14} className="text-blue-500" />}
@@ -226,11 +226,11 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
                             <Table>
                                 <TableBody>
                                     {Object.entries(metrics).map(([label, value]: [string, any]) => (
-                                        <TableRow key={label} className="hover:bg-blue-50/30 border-gray-50 transition-colors">
-                                            <TableCell className="py-2.5 px-5 text-xs font-semibold text-gray-500">
+                                        <TableRow key={label} className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 border-gray-50 dark:border-slate-800 transition-colors">
+                                            <TableCell className="py-2.5 px-5 text-xs font-semibold text-gray-500 dark:text-slate-500">
                                                 {label}
                                             </TableCell>
-                                            <TableCell className="py-2.5 px-5 text-xs font-mono text-right font-black text-gray-900">
+                                            <TableCell className="py-2.5 px-5 text-xs font-mono text-right font-black text-gray-900 dark:text-slate-100">
                                                 {String(value)}
                                             </TableCell>
                                         </TableRow>
