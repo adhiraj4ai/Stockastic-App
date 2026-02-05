@@ -1,3 +1,4 @@
+from django.core.management.base import BaseCommand
 from stocks.services.strategy_service import StrategyService
 
 class Command(BaseCommand):

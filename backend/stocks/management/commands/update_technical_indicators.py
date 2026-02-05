@@ -1,3 +1,4 @@
+from django.core.management.base import BaseCommand
 from stocks.services.data_sync_service import DataSyncService
 
 class Command(BaseCommand):

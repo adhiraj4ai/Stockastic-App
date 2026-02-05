@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand
+from stocks.services.portfolio_service import PortfolioService
 from stocks.models import PortfolioTransaction, PortfolioItem, TransactionType
 from django.db import transaction
 from django.db.models import Sum

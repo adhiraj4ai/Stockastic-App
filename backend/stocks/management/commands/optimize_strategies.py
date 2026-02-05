@@ -1,3 +1,7 @@
+import pandas as pd
+from datetime import datetime, timedelta
+from django.core.management.base import BaseCommand
+from stocks.models import Strategy, Company
 from stocks.services.optimization_service import OptimizationService
 
 class Command(BaseCommand):
@@ -27,9 +31,9 @@ class Command(BaseCommand):
 
         # 1. Get Strategies
         if strategy_id:
-            strategies = StrategyModel.objects.filter(id=strategy_id)
+            strategies = Strategy.objects.filter(id=strategy_id)
         else:
-            strategies = StrategyModel.objects.all()
+            strategies = Strategy.objects.all()
 
         if not strategies.exists():
             self.stdout.write(self.style.ERROR("No strategies found!"))

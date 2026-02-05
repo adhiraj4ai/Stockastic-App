@@ -15,7 +15,8 @@ class Company(models.Model):
         return f"{self.symbol} - {self.name}"
 
 class DailyStockPrice(models.Model):
-    ticker = models.CharField(max_length=20, primary_key=True, db_column='symbol')
+    id = models.AutoField(primary_key=True)
+    ticker = models.CharField(max_length=20, db_index=True, db_column='symbol')
     date = models.DateField(db_index=True, db_column='transaction_date')
     open = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     high = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
