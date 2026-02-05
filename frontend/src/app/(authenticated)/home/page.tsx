@@ -548,17 +548,17 @@ export default function DashboardPage() {
                         </Card>
 
                         {/* Actionable Stock Lists (Tabbed) */}
-                        <Card className="xl:col-span-1 bg-white border-none shadow-xl shadow-slate-200/50 h-full flex flex-col">
+                        <Card className="xl:col-span-1 bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full flex flex-col">
                             <CardHeader className="p-3 pb-1">
-                                <CardTitle className="text-sm font-bold text-black tracking-tight flex items-center gap-2">
+                                <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
                                     <Zap size={14} /> High Alpha Signals
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-6 pt-0 flex-1 overflow-hidden flex flex-col">
                                 <Tabs defaultValue="gainers" className="w-full h-full flex flex-col">
-                                    <TabsList className="grid w-full grid-cols-2 mb-4 bg-slate-100 p-1 rounded-xl h-10">
-                                        <TabsTrigger value="gainers" className="rounded-lg font-bold text-[10px] tracking-widest data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Top Gainers</TabsTrigger>
-                                        <TabsTrigger value="losers" className="rounded-lg font-bold text-[10px] tracking-widest data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Top Losers</TabsTrigger>
+                                    <TabsList className="grid w-full grid-cols-2 mb-4 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl h-10">
+                                        <TabsTrigger value="gainers" className="rounded-lg font-bold text-[10px] tracking-widest data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Top Gainers</TabsTrigger>
+                                        <TabsTrigger value="losers" className="rounded-lg font-bold text-[10px] tracking-widest data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Top Losers</TabsTrigger>
                                     </TabsList>
                                     <div className="flex-1 overflow-auto -mx-2 px-2 scrollbar-hide">
                                         <TabsContent value="gainers" className="m-0 focus-visible:outline-none">
@@ -585,9 +585,9 @@ export default function DashboardPage() {
 
                             {/* Market Breadth Trend */}
                             <div className="lg:col-span-5">
-                                <Card className="bg-white border-none shadow-xl shadow-slate-200/50 h-full">
+                                <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full">
                                     <CardHeader className="p-3 pb-1">
-                                        <CardTitle className="text-sm font-bold text-black tracking-tight flex items-center gap-2">
+                                        <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
                                             <LineChart size={14} className="text-emerald-500" /> Breadth Trend (5D)
                                         </CardTitle>
                                     </CardHeader>
@@ -599,9 +599,9 @@ export default function DashboardPage() {
 
                             {/* Market Health Radar */}
                             <div className="lg:col-span-7">
-                                <Card className="bg-white border-none shadow-xl shadow-slate-200/50 h-full">
+                                <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full">
                                     <CardHeader className="p-3 pb-1">
-                                        <CardTitle className="text-sm font-bold text-black tracking-tight flex items-center gap-2">
+                                        <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
                                             <ActivityIcon size={14} className="text-blue-500" /> Rally Quality Matrix
                                         </CardTitle>
                                     </CardHeader>
@@ -611,13 +611,13 @@ export default function DashboardPage() {
                                                 <MarketHealthRadar data={marketHealthData} height={250} />
                                             </div>
                                             <div className="w-full md:w-48 space-y-4">
-                                                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                                                    <span className="text-[9px] font-black text-slate-900 block mb-1">Health Index</span>
+                                                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                                    <span className="text-[9px] font-black text-slate-900 dark:text-slate-100 block mb-1">Health Index</span>
                                                     <div className="text-2xl font-black text-blue-600 tracking-tighter">72.4 <span className="text-[10px] text-emerald-600 font-bold">Stable</span></div>
                                                 </div>
-                                                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                                                    <span className="text-[9px] font-black text-slate-900 block mb-1">Confirmation</span>
-                                                    <div className="text-[10px] font-bold text-slate-700 leading-tight">Price action confirmed by volume participation.</div>
+                                                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                                    <span className="text-[9px] font-black text-slate-900 dark:text-slate-100 block mb-1">Confirmation</span>
+                                                    <div className="text-[10px] font-bold text-slate-700 dark:text-slate-300 leading-tight">Price action confirmed by volume participation.</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -630,9 +630,9 @@ export default function DashboardPage() {
                         <div className="lg:col-span-3 grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                             {/* Sector Rankings */}
-                            <Card className="lg:col-span-2 bg-white border-none shadow-xl shadow-slate-200/50">
+                            <Card className="lg:col-span-2 bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
                                 <CardHeader className="p-3 pb-1">
-                                    <CardTitle className="text-sm font-bold text-black tracking-tight flex items-center gap-2">
+                                    <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
                                         <BarChart3 size={14} /> Sector Performance & Liquidity Matrix
                                     </CardTitle>
                                 </CardHeader>
@@ -641,12 +641,12 @@ export default function DashboardPage() {
                                         {(sector_summary || []).sort((a, b) => b.change - a.change).slice(0, 10).map((sector, i) => (
                                             <div key={i} className="space-y-1.5">
                                                 <div className="flex justify-between text-[11px] font-bold tracking-tight">
-                                                    <span className="text-slate-800 truncate max-w-[150px]">{sector.name}</span>
+                                                    <span className="text-slate-800 dark:text-slate-200 truncate max-w-[150px]">{sector.name}</span>
                                                     <span className={`${sector.change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                                                         {sector.change >= 0 ? '+' : ''}{sector.change.toFixed(2)}%
                                                     </span>
                                                 </div>
-                                                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                                     <div
                                                         className={`h-full ${sector.change >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`}
                                                         style={{ width: `${Math.min(100, Math.abs(sector.change) * 20)}%` }}
@@ -659,16 +659,16 @@ export default function DashboardPage() {
                             </Card>
 
                             {/* Portfolio Quick Access */}
-                            <Card className="bg-white border-none shadow-xl shadow-slate-200/50">
+                            <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
                                 <CardHeader className="p-3 pb-1">
-                                    <CardTitle className="text-sm font-bold text-black tracking-tight flex items-center gap-2">
+                                    <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
                                         <DollarSign size={14} className="text-blue-500" /> Account Exposure
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-6 pt-0 flex flex-col justify-center gap-6 h-full min-h-[300px]">
                                     <div className="space-y-1">
-                                        <span className="text-[10px] font-black text-slate-600 tracking-widest">Total Value</span>
-                                        <div className="text-3xl font-black text-black tracking-tighter">Rs. {portfolioStats.investment.toLocaleString()}</div>
+                                        <span className="text-[10px] font-black text-slate-600 dark:text-slate-400 tracking-widest">Total Value</span>
+                                        <div className="text-3xl font-black text-black dark:text-slate-100 tracking-tighter">Rs. {portfolioStats.investment.toLocaleString()}</div>
                                     </div>
 
                                     <div className="grid grid-cols-1 gap-4">
@@ -681,7 +681,7 @@ export default function DashboardPage() {
 
                                         <button
                                             onClick={() => router.push('/portfolio')}
-                                            className="w-full py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] tracking-widest hover:bg-slate-800 transition-all transform active:scale-95 shadow-lg shadow-slate-200"
+                                            className="w-full py-3 bg-slate-900 dark:bg-slate-700 text-white rounded-2xl font-black text-[10px] tracking-widest hover:bg-slate-800 dark:hover:bg-slate-600 transition-all transform active:scale-95 shadow-lg shadow-slate-200 dark:shadow-none"
                                         >
                                             View Full Portfolio
                                         </button>
@@ -693,9 +693,9 @@ export default function DashboardPage() {
                         {/* FINAL ROW: Volume Drivers & Convergence */}
                         <div className="lg:col-span-3 grid grid-cols-1 lg:grid-cols-12 gap-6">
                             <div className="lg:col-span-8">
-                                <Card className="bg-white border-none shadow-xl shadow-slate-200/50">
+                                <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
                                     <CardHeader className="p-3 pb-1">
-                                        <CardTitle className="text-sm font-bold text-black tracking-tight flex items-center gap-2">
+                                        <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
                                             <ActivityIcon size={14} className="text-indigo-500" /> Rotation & Convergence
                                         </CardTitle>
                                     </CardHeader>
