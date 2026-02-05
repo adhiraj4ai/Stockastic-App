@@ -28,7 +28,7 @@ export function IntelligenceVerdict({
     const verdict = getVerdict();
 
     return (
-        <Card className="bg-white border-slate-200 shadow-sm overflow-hidden">
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
             <CardContent className="p-0">
                 <div className={cn("px-6 py-4 border-b flex items-center justify-between", verdict.bg, verdict.border)}>
                     <div className="flex items-center gap-3">

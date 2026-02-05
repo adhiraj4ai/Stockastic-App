@@ -177,7 +177,7 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
     };
 
     return (
-        <Card className="bg-white border-slate-200 shadow-sm overflow-hidden">
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex flex-row items-center justify-between bg-slate-50/30">
                 <div className="space-y-1">
                     <CardTitle className="text-[10px] font-bold text-slate-500 flex items-center gap-2">

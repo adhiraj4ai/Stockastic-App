@@ -35,7 +35,7 @@ export function StockMetricHero({
     const progress = range > 0 ? ((price - low52w) / range) * 100 : 0;
 
     return (
-        <div className="bg-white border-b border-slate-200">
+        <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
             <div className="max-w-[1600px] mx-auto px-6 py-4">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     {/* Left: Price Action */}

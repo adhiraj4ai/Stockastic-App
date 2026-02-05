@@ -39,7 +39,7 @@ export function TechnicalPulse({
     const mStyle = getMacdStyle();
 
     return (
-        <Card className="bg-white border-slate-200 shadow-sm overflow-hidden">
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
             <div className={cn("px-6 py-4 border-b flex items-center justify-between", mStyle.bg, mStyle.border)}>
                 <div className="flex items-center gap-3">
                     <div className={cn("p-2 rounded-lg bg-white shadow-sm", mStyle.color)}>

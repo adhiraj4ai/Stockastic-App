@@ -16,7 +16,7 @@ interface FundamentalCoreProps {
 
 export function FundamentalCore({ metrics }: FundamentalCoreProps) {
     return (
-        <Card className="bg-white border-slate-200 shadow-sm overflow-hidden">
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
                 <CardTitle className="text-[10px] font-bold text-slate-500 flex items-center gap-2 uppercase">
                     <Activity size={14} className="text-blue-500" />
