@@ -13,6 +13,9 @@ interface TerminalHeaderProps {
     change: number;
     percentChange: number;
     onTrade?: (type: 'BUY' | 'SELL') => void;
+    hideDetails?: boolean;
+    hideActions?: boolean;
+    signal?: 'BUY' | 'SELL';
 }
 
 export function TerminalHeader({
@@ -22,73 +25,75 @@ export function TerminalHeader({
     price,
     change,
     percentChange,
-    onTrade
+    onTrade,
+    hideDetails = false,
+    hideActions = false,
+    signal
 }: TerminalHeaderProps) {
     const isPositive = change >= 0;
 
     return (
-        <div className="sticky top-0 z-50 glass-surface-light border-b border-slate-200/50 py-4">
-            <div className="max-w-[1700px] mx-auto px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-                {/* Identity Area */}
+        <div className={cn(
+            "sticky top-0 z-50 border-b shadow-sm bg-white/95 backdrop-blur-md border-slate-200/50 py-3",
+        )}>
+            <div className="max-w-[1700px] mx-auto px-8 flex items-center justify-center gap-6">
+                {/* Unified Identity & Price Area */}
                 <div className="flex items-center gap-6">
-                    <div className="relative">
-                        <div className={cn(
-                            "absolute -inset-2 rounded-full blur-xl opacity-30 animate-pulse",
-                            isPositive ? "bg-emerald-500" : "bg-rose-500"
-                        )} />
-                        <h1 className="relative text-3xl font-bold tracking-tighter text-slate-900 tabular-nums drop-shadow-sm">
-                            {symbol}
-                        </h1>
-                    </div>
+                    {/* Symbol & Signal */}
+                    <div className="flex items-center gap-3">
+                        <div className="relative">
+                            <div className={cn(
+                                "absolute -inset-1 rounded-full blur-lg opacity-20 animate-pulse transition-colors duration-500",
+                                signal === 'BUY' ? "bg-blue-500" :
+                                    signal === 'SELL' ? "bg-rose-500" :
+                                        (isPositive ? "bg-emerald-500" : "bg-rose-500")
+                            )} />
+                            <h1 className={cn(
+                                "relative font-bold tracking-tighter tabular-nums drop-shadow-sm transition-colors text-3xl",
+                                signal === 'BUY' ? "text-blue-600" :
+                                    signal === 'SELL' ? "text-rose-600" :
+                                        "text-slate-900"
+                            )}>
+                                {symbol}
+                            </h1>
+                        </div>
 
-                    <div className="h-8 w-px bg-slate-200 hidden md:block" />
-
-                    <div className="space-y-0.5">
-                        <div className="flex items-center gap-2">
-                            <span className="text-slate-800 font-bold text-sm">{name}</span>
-                            <Badge variant="outline" className="text-[9px] font-bold px-1.5 py-0 border-slate-200 text-slate-500 uppercase tracking-widest bg-slate-50">
-                                {sector}
+                        {signal && (
+                            <Badge
+                                className={cn(
+                                    "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border shadow-sm",
+                                    signal === 'BUY'
+                                        ? "bg-blue-50 text-blue-600 border-blue-200"
+                                        : "bg-rose-50 text-rose-600 border-rose-200"
+                                )}
+                            >
+                                {signal}
                             </Badge>
-                        </div>
-                        <div className="flex items-center gap-3 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                            <span className="flex items-center gap-1"><Clock size={10} /> Live Execution</span>
-                            <span className="flex items-center gap-1"><Layers size={10} /> Primary Tier</span>
-                        </div>
+                        )}
                     </div>
-                </div>
 
-                {/* Price Action - Focal Point */}
-                <div className="flex items-center gap-8 px-8 py-2 rounded-2xl bg-slate-100/50 border border-slate-200/50 shadow-inner">
-                    <div className="text-4xl font-bold text-slate-900 tabular-nums tracking-tighter">
-                        {price.toLocaleString()}
-                    </div>
+                    <div className="h-8 w-px bg-slate-200" />
+
+                    {/* Centered LTP Section */}
                     <div className={cn(
-                        "flex items-center gap-1.5 text-lg font-bold tabular-nums px-3 py-1 rounded-lg",
-                        isPositive ? "text-emerald-600 bg-emerald-500/10" : "text-rose-600 bg-rose-500/10"
+                        "flex items-center justify-center rounded-2xl bg-slate-100/50 border border-slate-200/50 shadow-inner px-6 py-1.5 gap-6",
                     )}>
-                        {isPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                        <span>{isPositive ? '+' : ''}{change.toFixed(2)}</span>
-                        <span className="opacity-60">({percentChange.toFixed(2)}%)</span>
+                        <div className="font-bold text-slate-900 tabular-nums tracking-tighter text-3xl">
+                            {price.toLocaleString()}
+                        </div>
+                        <div className={cn(
+                            "flex items-center gap-1.5 font-bold tabular-nums rounded-lg justify-center text-lg px-3 py-1",
+                            isPositive ? "text-emerald-600 bg-emerald-500/10" : "text-rose-600 bg-rose-500/10"
+                        )}>
+                            {isPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                            <span>{isPositive ? '+' : ''}{change.toFixed(2)}</span>
+                            <span className="opacity-60">({percentChange.toFixed(2)}%)</span>
+                        </div>
                     </div>
-                </div>
-
-                {/* Global Actions */}
-                <div className="flex items-center gap-3">
-                    <Button
-                        onClick={() => onTrade?.('BUY')}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-10 px-6 rounded-lg transition-all active:scale-95 shadow-lg shadow-emerald-600/10"
-                    >
-                        ACCUMULATE
-                    </Button>
-                    <Button
-                        onClick={() => onTrade?.('SELL')}
-                        variant="outline"
-                        className="border-slate-200 text-slate-600 hover:bg-slate-50 font-bold h-10 px-6 rounded-lg transition-all active:scale-95"
-                    >
-                        DISTRIBUTE
-                    </Button>
                 </div>
             </div>
         </div>
     );
 }
+
+

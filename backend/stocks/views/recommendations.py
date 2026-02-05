@@ -784,11 +784,64 @@ def get_broker_accumulation_history(request):
                 should_backfill = False
         
         if should_backfill:
-            history = engine.execute_history(symbol)
+            raw_history = engine.execute_history(symbol)
         else:
-            history = engine.get_history_from_db(symbol)
+            raw_history = engine.get_history_from_db(symbol)
             
-        return Response(history)
+        # --- ENRICHMENT & PNL CALCULATION ---
+        # 1. Fetch Company Metadata
+        try:
+            company = Company.objects.get(symbol=symbol)
+            company_name = company.name
+            sector = company.sector
+        except Company.DoesNotExist:
+            company_name = symbol
+            sector = "Unknown"
+            
+        # 2. Fetch Latest Price
+        latest_price_obj = DailyStockPrice.objects.filter(ticker=symbol).order_by('-date').first()
+        current_price = latest_price_obj.close if latest_price_obj else 0.0
+        
+        # 3. Calculate PnL
+        # Sort history by date ascending for calculation
+        history_asc = sorted(raw_history, key=lambda x: x['date'])
+        
+        last_buy_price = None
+        enriched_history = []
+        
+        for record in history_asc:
+            new_record = record.copy()
+            signal = record['signal']
+            price = record['price']
+            
+            if signal == 'BUY':
+                last_buy_price = price
+            elif signal == 'SELL':
+                if last_buy_price:
+                    pnl_amount = price - last_buy_price
+                    pnl_percent = (pnl_amount / last_buy_price) * 100
+                    new_record['pnl_amount'] = round(pnl_amount, 2)
+                    new_record['pnl_percent'] = round(pnl_percent, 2)
+                    last_buy_price = None # Reset cycle
+                else:
+                    # Sell without Buy (or outside window)
+                    new_record['pnl_amount'] = 0
+                    new_record['pnl_percent'] = 0
+            
+            enriched_history.append(new_record)
+            
+        # Return descending for display
+        enriched_history.reverse()
+        
+        response_data = {
+            'symbol': symbol,
+            'name': company_name,
+            'sector': sector,
+            'current_price': float(current_price),
+            'history': enriched_history
+        }
+            
+        return Response(response_data)
     except Exception as e:
         logger.exception(f"Error generating history for {symbol}")
         return Response({'error': str(e)}, status=500)
@@ -900,42 +953,60 @@ class SmartAccumulatedCrossoverRecommendationEngine:
         recommendations = []
         
         # 1. Define Universe: Accumulated Stocks ONLY
-        # Logic: Symbols with cumulative_net > 200,000 on the LATEST available accumulation date.
-        from django.db.models import Max
-        max_date_agg = DailyCumulativeAccumulation.objects.aggregate(Max('transaction_date'))
-        latest_acc_date = max_date_agg.get('transaction_date__max')
+        # Logic: Find the latest date with significant coverage, then filter symbols.
+        from django.db.models import Count, Max
+        
+        # Get dates with record counts
+        date_counts = DailyCumulativeAccumulation.objects.values('transaction_date').annotate(
+            count=Count('symbol', distinct=True)
+        ).order_by('-transaction_date')
+        
+        # Find the most recent date with > 100 symbols (comprehensive data)
+        latest_acc_date = None
+        for d in date_counts:
+            if d['count'] > 100:
+                latest_acc_date = d['transaction_date']
+                break
         
         if not latest_acc_date:
+            # Fallback to the absolute latest date if no comprehensive date found
+            latest_acc_date = date_counts[0]['transaction_date'] if date_counts else None
+            
+        if not latest_acc_date:
+            logger.warning("No accumulation data found at all.")
             return []
             
+        logger.info(f"Using accumulation data from {latest_acc_date} ({date_counts[0]['count'] if date_counts else 0} symbols available)")
+        
+        # Filter symbols with significant accumulation
+        # Use a more reasonable threshold (50k instead of 200k)
+        THRESHOLD = 50000 
         accumulated_symbols = set(
             DailyCumulativeAccumulation.objects.filter(
                 transaction_date=latest_acc_date,
-                cumulative_net__gt=200000
+                cumulative_net__gt=THRESHOLD
             ).values_list('symbol', flat=True)
         )
         
+        logger.info(f"Filtered to {len(accumulated_symbols)} symbols with net accumulation > {THRESHOLD} on {latest_acc_date}")
+            
         # Filter by sector if needed
         if sector and sector != 'All':
             sector_symbols = set(Company.objects.filter(sector=sector).values_list('symbol', flat=True))
             accumulated_symbols = accumulated_symbols.intersection(sector_symbols)
             
         if not accumulated_symbols:
+            logger.info("No accumulated symbols found after filtering.")
             return []
             
-        # 2. Load Data (optimization: load in batch or loop?)
-        # For simplicity and to reuse existing patterns, we might loop or load all.
-        # Given potential memory issues with 200+ symbols * 90 days, let's process one by one or in chunks?
-        # The user code processes grouped.
-        
-        # Let's iterate.
+        # 2. Load Data
         target_date_obj = None
         if transaction_date:
             try:
                 target_date_obj = datetime.strptime(transaction_date, '%Y-%m-%d').date()
-            except ValueError:
+            except (ValueError, TypeError):
                 pass
-        
+
         days_back = 90
         start_date = (target_date_obj or datetime.now().date()) - timedelta(days=days_back)
         
@@ -990,10 +1061,37 @@ class SmartAccumulatedCrossoverRecommendationEngine:
                 reason.append("Bearish MACD, EMA Death Cross, Price below BB Lower")
                 
             if signal_type:
+                # Find Crossover Date
+                # Look back to find when this specific signal sequence started
+                crossover_date = row.name
+                crossover_price = float(close)
+                if len(df) > 1:
+                    # Get index of current row
+                    current_idx = df.index.get_loc(row.name)
+                    # Iterate backwards from current row
+                    for i in range(current_idx - 1, -1, -1):
+                        prev_row = df.iloc[i]
+                        p_macd_hist = prev_row.get('macd_hist', 0) or 0
+                        p_rsi = prev_row.get('rsi', 50) or 50
+                        p_ema_9 = prev_row.get('ema_9', 0) or 0
+                        p_ema_26 = prev_row.get('ema_26', 0) or 0
+                        p_close = prev_row.get('close', 0)
+                        p_bb_lower = prev_row.get('bb_lower', 0) or 0
+                        
+                        p_signal = None
+                        if (p_macd_hist > 0) and (20 <= p_rsi <= 75) and (p_ema_9 > p_ema_26):
+                            p_signal = 'BUY'
+                        elif (p_macd_hist < 0) and (p_ema_9 < p_ema_26) and (p_close < p_bb_lower):
+                            p_signal = 'SELL'
+                        
+                        if p_signal == signal_type:
+                            crossover_date = prev_row.name
+                            crossover_price = float(p_close)
+                        else:
+                            break
+                
                 # Calculate Strength
                 raw_score = self._calculate_signal_strength(row, signal_type)
-                # Map to 0-100 logic: 6+ is Strong (say 80+), 4+ is Buy (60-80).
-                # Max score ~8. 
                 strength = min(100, (raw_score / 8) * 100) 
                 
                 # Save to DB
@@ -1004,7 +1102,12 @@ class SmartAccumulatedCrossoverRecommendationEngine:
                     strength=strength,
                     reason="; ".join(reason),
                     close=float(close),
-                    metadata={'rsi': float(rsi), 'macd_hist': float(macd_hist)}
+                    metadata={
+                        'rsi': float(rsi), 
+                        'macd_hist': float(macd_hist),
+                        'crossover_date': crossover_date.strftime('%Y-%m-%d'),
+                        'crossover_price': crossover_price
+                    }
                 )
                 
                 recommendations.append({
@@ -1014,6 +1117,8 @@ class SmartAccumulatedCrossoverRecommendationEngine:
                     'reason': "; ".join(reason),
                     'close': float(close),
                     'date': row.name.strftime('%Y-%m-%d'),
+                    'crossover_date': crossover_date.strftime('%Y-%m-%d'),
+                    'crossover_price': crossover_price,
                     'rsi': round(float(rsi), 1),
                     'macd_hist': round(float(macd_hist), 2)
                 })
@@ -1204,11 +1309,64 @@ def get_smart_accumulated_crossover_history(request):
                 should_backfill = False
         
         if should_backfill:
-            history = engine.execute_history(symbol)
+            raw_history = engine.execute_history(symbol)
         else:
-            history = engine.get_history_from_db(symbol)
+            raw_history = engine.get_history_from_db(symbol)
             
-        return Response(history)
+        # --- ENRICHMENT & PNL CALCULATION ---
+        # 1. Fetch Company Metadata
+        try:
+            company = Company.objects.get(symbol=symbol)
+            company_name = company.name
+            sector = company.sector
+        except Company.DoesNotExist:
+            company_name = symbol
+            sector = "Unknown"
+            
+        # 2. Fetch Latest Price
+        latest_price_obj = DailyStockPrice.objects.filter(ticker=symbol).order_by('-date').first()
+        current_price = latest_price_obj.close if latest_price_obj else 0.0
+        
+        # 3. Calculate PnL
+        # Sort history by date ascending for calculation
+        history_asc = sorted(raw_history, key=lambda x: x['date'])
+        
+        last_buy_price = None
+        enriched_history = []
+        
+        for record in history_asc:
+            new_record = record.copy()
+            signal = record['signal']
+            price = record['price']
+            
+            if signal == 'BUY':
+                last_buy_price = price
+            elif signal == 'SELL':
+                if last_buy_price:
+                    pnl_amount = price - last_buy_price
+                    pnl_percent = (pnl_amount / last_buy_price) * 100
+                    new_record['pnl_amount'] = round(pnl_amount, 2)
+                    new_record['pnl_percent'] = round(pnl_percent, 2)
+                    last_buy_price = None # Reset cycle
+                else:
+                    # Sell without Buy (or outside window)
+                    new_record['pnl_amount'] = 0
+                    new_record['pnl_percent'] = 0
+            
+            enriched_history.append(new_record)
+            
+        # Return descending for display
+        enriched_history.reverse()
+        
+        response_data = {
+            'symbol': symbol,
+            'name': company_name,
+            'sector': sector,
+            'current_price': float(current_price),
+            'history': enriched_history
+        }
+            
+        return Response(response_data)
     except Exception as e:
         logger.exception(f"Error generating smart accumulated crossover history for {symbol}")
         return Response({'error': str(e)}, status=500)

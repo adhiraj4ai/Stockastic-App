@@ -6,3 +6,4 @@ from . import pipeline
 from . import watchlist
 from . import notifications
 from . import recommendations
+from . import chart

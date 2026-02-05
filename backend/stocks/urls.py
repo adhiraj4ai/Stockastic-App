@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations
+    market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations, chart
 )
 
 
@@ -54,4 +54,7 @@ urlpatterns = [
     path('smart-accumulated-crossover-history/', 
          recommendations.get_smart_accumulated_crossover_history, 
          name='smart_accumulated_crossover_history'),
+    
+    # Chart Data (for Lightweight Charts)
+    path('chart-history/<str:ticker>/', chart.get_stock_chart_data, name='chart_history'),
 ]
