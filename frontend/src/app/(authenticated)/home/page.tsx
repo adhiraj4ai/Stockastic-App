@@ -416,27 +416,27 @@ export default function DashboardPage() {
                     <motion.div variants={itemVariants} className="xl:col-span-1 space-y-6">
 
                         {/* Market Sentiment Gauge */}
-                        <Card className="bg-white border-none shadow-xl shadow-slate-200/50 hover:shadow-2xl transition-shadow cursor-default group">
+                        <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none hover:shadow-2xl transition-shadow cursor-default group">
                             <CardHeader className="p-3 pb-1">
-                                <CardTitle className="text-sm font-bold text-black tracking-tight flex items-center gap-2">
+                                <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
                                     <HeartPulse size={14} className="text-rose-500 group-hover:animate-pulse" /> Market Sentiment
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-6 pt-0">
                                 <SentimentGauge value={marketSentiment} height={160} />
                                 <div className="mt-2 space-y-4">
-                                    <div className="h-1.5 w-full bg-slate-100 rounded-full flex overflow-hidden">
+                                    <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full flex overflow-hidden">
                                         <div className="h-full bg-emerald-500" style={{ width: `${market_summary.advancers_percent}%` }}></div>
                                         <div className="h-full bg-rose-500" style={{ width: `${market_summary.decliners_percent}%` }}></div>
                                     </div>
                                     <div className="flex justify-between text-[10px] font-black tracking-widest">
                                         <div className="flex flex-col items-start gap-1">
-                                            <span className="text-emerald-700 italic">Advancers</span>
-                                            <span className="text-xl text-black">{market_summary.advancers}</span>
+                                            <span className="text-emerald-700 dark:text-emerald-400 italic">Advancers</span>
+                                            <span className="text-xl text-black dark:text-slate-100">{market_summary.advancers}</span>
                                         </div>
                                         <div className="flex flex-col items-end gap-1 text-right">
-                                            <span className="text-rose-700 italic">Decliners</span>
-                                            <span className="text-xl text-black">{market_summary.decliners}</span>
+                                            <span className="text-rose-700 dark:text-rose-400 italic">Decliners</span>
+                                            <span className="text-xl text-black dark:text-slate-100">{market_summary.decliners}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -444,28 +444,28 @@ export default function DashboardPage() {
                         </Card>
 
                         {/* Market Snapshot Recap */}
-                        <Card className="bg-white border-none shadow-xl shadow-slate-200/50 overflow-hidden">
-                            <CardHeader className="p-4 pb-1 border-b border-slate-50">
-                                <CardTitle className="text-xs font-black text-slate-800 tracking-widest flex items-center gap-2">
+                        <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden">
+                            <CardHeader className="p-4 pb-1 border-b border-slate-50 dark:border-slate-800">
+                                <CardTitle className="text-xs font-black text-slate-800 dark:text-slate-100 tracking-widest flex items-center gap-2">
                                     <ActivityIcon size={14} className="text-blue-600" /> SNAPSHOT
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-4 space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
-                                        <span className="text-[9px] font-bold text-slate-400 uppercase">Volume</span>
-                                        <div className="font-mono font-bold text-slate-900">{(market_summary.total_volume / 1000000).toFixed(1)}M</div>
+                                        <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Volume</span>
+                                        <div className="font-mono font-bold text-slate-900 dark:text-slate-100">{(market_summary.total_volume / 1000000).toFixed(1)}M</div>
                                     </div>
                                     <div className="space-y-1 text-right">
-                                        <span className="text-[9px] font-bold text-slate-400 uppercase">Turnover</span>
-                                        <div className="font-mono font-bold text-slate-900">Rs. {(market_summary.total_turnover / 1000000).toFixed(0)}M</div>
+                                        <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Turnover</span>
+                                        <div className="font-mono font-bold text-slate-900 dark:text-slate-100">Rs. {(market_summary.total_turnover / 1000000).toFixed(0)}M</div>
                                     </div>
                                 </div>
 
-                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+                                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center justify-between">
                                     <div className="flex flex-col">
-                                        <span className="text-[9px] font-black text-slate-500 uppercase">Breadth Ratio</span>
-                                        <span className="text-lg font-black text-slate-900">{(market_summary.advancers / (market_summary.advancers + market_summary.decliners || 1)).toFixed(2)}</span>
+                                        <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase">Breadth Ratio</span>
+                                        <span className="text-lg font-black text-slate-900 dark:text-slate-100">{(market_summary.advancers / (market_summary.advancers + market_summary.decliners || 1)).toFixed(2)}</span>
                                     </div>
                                     <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${marketSentiment > 50 ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
                                         <Activity size={18} />
@@ -475,27 +475,27 @@ export default function DashboardPage() {
                         </Card>
 
                         {/* Breakout Watchlist */}
-                        <Card className="bg-white border-none shadow-xl shadow-slate-200/50">
+                        <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
                             <CardContent className="p-5">
                                 <BreakoutWatchlist stocks={allStocks} />
                             </CardContent>
                         </Card>
 
                         {/* Institutional Interest */}
-                        <Card className="bg-white border-none shadow-xl shadow-slate-200/50">
+                        <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
                             <CardContent className="p-5">
                                 <InstitutionalInterest />
                             </CardContent>
                         </Card>
 
                         {/* Major Index Card */}
-                        <Card className="bg-white border-none shadow-xl shadow-slate-200/50 overflow-hidden relative group">
+                        <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden relative group">
                             <div className={`absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
                                 {isPositive ? <TrendingUp size={120} /> : <TrendingDown size={120} />}
                             </div>
                             <CardContent className="p-6 relative">
                                 <div className="flex justify-between items-start mb-4">
-                                    <div className="p-2 bg-slate-50 rounded-lg">
+                                    <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
                                         <Zap size={20} className="text-blue-600 fill-blue-600" />
                                     </div>
                                     <div className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-widest ${isPositive ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
@@ -503,9 +503,9 @@ export default function DashboardPage() {
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <span className="text-slate-900 text-xs font-bold tracking-widest">Nepse Index</span>
+                                    <span className="text-slate-900 dark:text-slate-100 text-xs font-bold tracking-widest">Nepse Index</span>
                                     <div className="flex items-baseline gap-2">
-                                        <h2 className="text-3xl font-black text-black tracking-tighter">
+                                        <h2 className="text-3xl font-black text-black dark:text-slate-100 tracking-tighter">
                                             {market_summary.total_points.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                         </h2>
                                         <span className={`text-sm font-bold ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -524,13 +524,13 @@ export default function DashboardPage() {
                     <motion.div variants={itemVariants} className="xl:col-span-3 grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                         {/* Market Heatmap */}
-                        <Card className="lg:col-span-2 bg-white border-none shadow-xl shadow-slate-200/50 overflow-hidden group hover:shadow-2xl transition-all duration-300">
-                            <CardHeader className="p-5 border-b border-slate-50 flex flex-row items-center justify-between">
+                        <Card className="lg:col-span-2 bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden group hover:shadow-2xl transition-all duration-300">
+                            <CardHeader className="p-5 border-b border-slate-50 dark:border-slate-800 flex flex-row items-center justify-between">
                                 <div className="space-y-1">
-                                    <CardTitle className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
+                                    <CardTitle className="text-base font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
                                         <Globe size={16} className="text-blue-600 group-hover:rotate-12 transition-transform" /> Market Liquidity Map
                                     </CardTitle>
-                                    <p className="text-[10px] text-slate-500 font-medium">Size represents turnover, color represents performance</p>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Size represents turnover, color represents performance</p>
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <div className="flex items-center gap-1.5 text-[10px] font-black tracking-widest">
@@ -541,7 +541,7 @@ export default function DashboardPage() {
                                 </div>
                             </CardHeader>
                             <CardContent className="p-0">
-                                <div className="bg-white">
+                                <div className="bg-white dark:bg-slate-900">
                                     <MarketBubbleMap stocks={allStocks} height={480} />
                                 </div>
                             </CardContent>
