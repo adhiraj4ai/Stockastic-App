@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -133,206 +134,235 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="space-y-6 max-w-4xl mx-auto pb-10">
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900">Settings</h1>
-                <p className="text-slate-500">Manage your account settings and preferences.</p>
-            </div>
-
-            <Tabs defaultValue="general" className="w-full">
-                <TabsList className="mb-4">
-                    <TabsTrigger value="general" className="flex items-center gap-2">
-                        <User size={16} /> General
-                    </TabsTrigger>
-                    <TabsTrigger value="appearance" className="flex items-center gap-2">
-                        <Palette size={16} /> Appearance
-                    </TabsTrigger>
-                    <TabsTrigger value="security" className="flex items-center gap-2">
-                        <Lock size={16} /> Security
-                    </TabsTrigger>
-                </TabsList>
-
-                {/* General / Profile Tab */}
-                <TabsContent value="general">
-                    <div className="grid gap-6">
-                        {/* Profile Picture Card */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Profile Picture</CardTitle>
-                                <CardDescription>Update your profile photo.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex items-center gap-6">
-                                <div className="relative group cursor-pointer" onClick={triggerFileInput}>
-                                    <div className="h-24 w-24 rounded-full bg-slate-100 flex items-center justify-center text-slate-300 border-2 border-slate-200 overflow-hidden">
-                                        {user?.profile_picture ? (
-                                            <img src={user.profile_picture} alt="Profile" className="h-full w-full object-cover" />
-                                        ) : (
-                                            <User size={48} />
-                                        )}
-                                    </div>
-                                    <button className="absolute bottom-0 right-0 p-1.5 bg-blue-600 rounded-full text-white hover:bg-blue-700 transition-colors shadow-sm ring-2 ring-white">
-                                        <Camera size={14} />
-                                    </button>
-                                </div>
-                                <div className="space-y-1">
-                                    <h3 className="font-medium text-slate-900">Upload new photo</h3>
-                                    <p className="text-xs text-slate-500">Supports JPG, PNG or GIF. Max size 2MB.</p>
-                                    <input
-                                        type="file"
-                                        ref={fileInputRef}
-                                        onChange={handleImageChange}
-                                        accept="image/png, image/jpeg, image/gif"
-                                        className="hidden"
-                                    />
-                                    <Button variant="outline" size="sm" className="mt-2" onClick={triggerFileInput}>Select File</Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Personal Info Card */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Personal Information</CardTitle>
-                                <CardDescription>Update your personal details.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                                            <Type size={14} className="text-slate-400" /> First Name
-                                        </label>
-                                        <Input
-                                            value={user?.first_name || ''}
-                                            onChange={(e) => setUser(prev => prev ? { ...prev, first_name: e.target.value } : null)}
-                                            placeholder="Jugal"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                                            <Type size={14} className="text-slate-400" /> Last Name
-                                        </label>
-                                        <Input
-                                            value={user?.last_name || ''}
-                                            onChange={(e) => setUser(prev => prev ? { ...prev, last_name: e.target.value } : null)}
-                                            placeholder="Raj"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                                            <Fingerprint size={14} className="text-slate-400" /> Nickname
-                                        </label>
-                                        <Input
-                                            value={user?.nickname || ''}
-                                            onChange={(e) => setUser(prev => prev ? { ...prev, nickname: e.target.value } : null)}
-                                            placeholder="Jugal"
-                                        />
-                                        <p className="text-[10px] text-slate-500">Display name for community interactions.</p>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                                            <Phone size={14} className="text-slate-400" /> Phone Number
-                                        </label>
-                                        <Input
-                                            value={user?.phone_number || ''}
-                                            onChange={(e) => setUser(prev => prev ? { ...prev, phone_number: e.target.value } : null)}
-                                            placeholder="+977 98..."
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2 pt-2 border-t border-slate-100 mt-2">
-                                    <label className="text-sm font-medium text-slate-700">Email Address</label>
-                                    <Input
-                                        value={user?.email || ''}
-                                        onChange={(e) => setUser(prev => prev ? { ...prev, email: e.target.value } : null)}
-                                        placeholder="your@email.com"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-700">Username</label>
-                                    <Input value={user?.username || ''} disabled className="bg-slate-50" />
-                                    <p className="text-[10px] text-slate-400">Usernames are permanent.</p>
-                                </div>
-
-                                <div className="pt-4 flex justify-end">
-                                    <Button onClick={handleSaveProfile} disabled={saving} className="bg-blue-600 hover:bg-blue-700">
-                                        <Save size={16} className="mr-2" /> {saving ? 'Saving...' : 'Save Changes'}
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
+        <DashboardLayout>
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-8">
+                <div className="max-w-5xl mx-auto space-y-8">
+                    <div>
+                        <h1 className="text-3xl font-black tracking-tight text-slate-800">Settings</h1>
+                        <p className="text-slate-500 font-medium mt-1">Manage your account settings and preferences.</p>
                     </div>
-                </TabsContent>
 
-                {/* Appearance Tab */}
-                <TabsContent value="appearance">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Appearance</CardTitle>
-                            <CardDescription>Customize the look and feel of the application.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between p-4 border rounded-lg">
-                                <div>
-                                    <div className="font-medium">Theme</div>
-                                    <div className="text-sm text-slate-500">Select your preferred interface theme.</div>
+                    <Tabs defaultValue="general" className="w-full">
+                        <TabsList className="bg-white/50 backdrop-blur-sm p-1 rounded-xl border border-white/20 shadow-sm mb-6 h-auto">
+                            <TabsTrigger
+                                value="general"
+                                className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm px-6 py-2.5 font-bold text-sm"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <User size={16} /> General
                                 </div>
-                                <div className="flex gap-2">
-                                    <Button variant="outline" className="bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900">Dark</Button>
-                                    <Button variant="outline" className="bg-white text-slate-900 border-slate-200">Light</Button>
-                                    <Button variant="default" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200">System</Button>
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="appearance"
+                                className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm px-6 py-2.5 font-bold text-sm"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Palette size={16} /> Appearance
                                 </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="security"
+                                className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm px-6 py-2.5 font-bold text-sm"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Lock size={16} /> Security
+                                </div>
+                            </TabsTrigger>
+                        </TabsList>
 
-                {/* Security Tab */}
-                <TabsContent value="security">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Security</CardTitle>
-                            <CardDescription>Manage your password and security settings.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-slate-700">Current Password</label>
-                                <Input
-                                    type="password"
-                                    value={currentPassword}
-                                    onChange={(e) => setCurrentPassword(e.target.value)}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-slate-700">New Password</label>
-                                <Input
-                                    type="password"
-                                    value={newPassword}
-                                    onChange={(e) => setNewPassword(e.target.value)}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-slate-700">Confirm New Password</label>
-                                <Input
-                                    type="password"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                />
-                            </div>
-                            <div className="pt-2 flex justify-end">
-                                <Button onClick={handleUpdatePassword} disabled={passLoading} className="bg-blue-600 hover:bg-blue-700">
-                                    <Save size={16} className="mr-2" /> {passLoading ? 'Updating...' : 'Update Password'}
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-            </Tabs>
-        </div>
+                        {/* General / Profile Tab */}
+                        <TabsContent value="general" className="space-y-6">
+                            {/* Profile Picture Card */}
+                            <Card className="border-none shadow-xl bg-white/80 backdrop-blur-md overflow-hidden">
+                                <CardHeader className="border-b border-indigo-50/50 bg-white/40">
+                                    <CardTitle className="text-xl font-bold text-slate-800">Profile Picture</CardTitle>
+                                    <CardDescription>Update your public profile photo.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="flex items-center gap-8 p-8">
+                                    <div className="relative group cursor-pointer" onClick={triggerFileInput}>
+                                        <div className="h-28 w-28 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-300 border-4 border-white shadow-lg overflow-hidden ring-4 ring-indigo-50/50 transition-all group-hover:scale-105">
+                                            {user?.profile_picture ? (
+                                                <img src={user.profile_picture} alt="Profile" className="h-full w-full object-cover" />
+                                            ) : (
+                                                <User size={48} />
+                                            )}
+                                        </div>
+                                        <button className="absolute bottom-1 right-1 p-2 bg-indigo-600 rounded-full text-white hover:bg-indigo-700 transition-colors shadow-md ring-2 ring-white">
+                                            <Camera size={16} />
+                                        </button>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <h3 className="font-bold text-slate-900 text-lg">Upload new photo</h3>
+                                            <p className="text-sm text-slate-500">Supports JPG, PNG or GIF. Max size 2MB.</p>
+                                        </div>
+                                        <input
+                                            type="file"
+                                            ref={fileInputRef}
+                                            onChange={handleImageChange}
+                                            accept="image/png, image/jpeg, image/gif"
+                                            className="hidden"
+                                        />
+                                        <Button variant="outline" onClick={triggerFileInput} className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-800">
+                                            Select File
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Personal Info Card */}
+                            <Card className="border-none shadow-xl bg-white/80 backdrop-blur-md overflow-hidden">
+                                <CardHeader className="border-b border-indigo-50/50 bg-white/40">
+                                    <CardTitle className="text-xl font-bold text-slate-800">Personal Information</CardTitle>
+                                    <CardDescription>Update your personal details.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-6 p-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                                <Type size={14} className="text-indigo-400" /> First Name
+                                            </label>
+                                            <Input
+                                                value={user?.first_name || ''}
+                                                onChange={(e) => setUser(prev => prev ? { ...prev, first_name: e.target.value } : null)}
+                                                placeholder="First Name"
+                                                className="bg-white/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                                <Type size={14} className="text-indigo-400" /> Last Name
+                                            </label>
+                                            <Input
+                                                value={user?.last_name || ''}
+                                                onChange={(e) => setUser(prev => prev ? { ...prev, last_name: e.target.value } : null)}
+                                                placeholder="Last Name"
+                                                className="bg-white/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                                <Fingerprint size={14} className="text-indigo-400" /> Nickname
+                                            </label>
+                                            <Input
+                                                value={user?.nickname || ''}
+                                                onChange={(e) => setUser(prev => prev ? { ...prev, nickname: e.target.value } : null)}
+                                                placeholder="Nickname"
+                                                className="bg-white/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium"
+                                            />
+                                            <p className="text-[11px] font-medium text-slate-400">Display name for community interactions.</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                                <Phone size={14} className="text-indigo-400" /> Phone Number
+                                            </label>
+                                            <Input
+                                                value={user?.phone_number || ''}
+                                                onChange={(e) => setUser(prev => prev ? { ...prev, phone_number: e.target.value } : null)}
+                                                placeholder="+977 98..."
+                                                className="bg-white/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2 pt-4 border-t border-slate-100">
+                                        <label className="text-sm font-bold text-slate-700">Email Address</label>
+                                        <Input
+                                            value={user?.email || ''}
+                                            onChange={(e) => setUser(prev => prev ? { ...prev, email: e.target.value } : null)}
+                                            placeholder="your@email.com"
+                                            className="bg-white/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-slate-700">Username</label>
+                                        <Input value={user?.username || ''} disabled className="bg-slate-100/50 text-slate-500 font-medium" />
+                                        <p className="text-[11px] font-medium text-slate-400">Usernames cannot be changed.</p>
+                                    </div>
+
+                                    <div className="pt-6 flex justify-end">
+                                        <Button onClick={handleSaveProfile} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                                            <Save size={16} className="mr-2" /> {saving ? 'Saving...' : 'Save Changes'}
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        {/* Appearance Tab */}
+                        <TabsContent value="appearance">
+                            <Card className="border-none shadow-xl bg-white/80 backdrop-blur-md overflow-hidden">
+                                <CardHeader className="border-b border-indigo-50/50 bg-white/40">
+                                    <CardTitle className="text-xl font-bold text-slate-800">Appearance</CardTitle>
+                                    <CardDescription>Customize the look and feel of the application.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="p-8">
+                                    <div className="flex items-center justify-between p-6 bg-white border border-slate-100 rounded-xl shadow-sm">
+                                        <div>
+                                            <div className="font-bold text-slate-800">Theme</div>
+                                            <div className="text-sm font-medium text-slate-500">Select your preferred interface theme.</div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Button variant="outline" className="bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 shadow-md">Dark</Button>
+                                            <Button variant="outline" className="bg-white text-slate-900 border-slate-200 hover:bg-slate-50">Light</Button>
+                                            <Button variant="default" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200 shadow-sm">System</Button>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        {/* Security Tab */}
+                        <TabsContent value="security">
+                            <Card className="border-none shadow-xl bg-white/80 backdrop-blur-md overflow-hidden">
+                                <CardHeader className="border-b border-indigo-50/50 bg-white/40">
+                                    <CardTitle className="text-xl font-bold text-slate-800">Security</CardTitle>
+                                    <CardDescription>Manage your password and security settings.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-6 p-8">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-slate-700">Current Password</label>
+                                        <Input
+                                            type="password"
+                                            value={currentPassword}
+                                            onChange={(e) => setCurrentPassword(e.target.value)}
+                                            className="bg-white/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-slate-700">New Password</label>
+                                        <Input
+                                            type="password"
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            className="bg-white/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-slate-700">Confirm New Password</label>
+                                        <Input
+                                            type="password"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            className="bg-white/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                                        />
+                                    </div>
+                                    <div className="pt-4 flex justify-end">
+                                        <Button onClick={handleUpdatePassword} disabled={passLoading} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                                            <Save size={16} className="mr-2" /> {passLoading ? 'Updating...' : 'Update Password'}
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
+                </div>
+            </div>
+        </DashboardLayout>
     );
 }
 

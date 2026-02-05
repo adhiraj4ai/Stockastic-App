@@ -18,6 +18,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Cookies from 'js-cookie';
+import { SettingsDialog } from './SettingsDialog';
 
 const navItems = [
     { name: 'Home', href: '/home', icon: Home },
@@ -87,6 +88,8 @@ function DashboardContent({
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
     const [currentUser, setCurrentUser] = useState<{ id: number; username: string; email: string } | null>(null);
+
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     const isChatPage = pathname === '/chat';
 
@@ -189,7 +192,6 @@ function DashboardContent({
         <div className="min-h-screen bg-gray-50 flex">
             {/* Sidebar (unchanged) */}
             <aside
-                // ... same aside code ...
                 className={`bg-white border-r border-gray-200 flex flex-col fixed h-full z-10 transition-all duration-300 ${isSidebarCollapsed ? 'w-20' : 'w-64'
                     }`}
             >
@@ -395,11 +397,9 @@ function DashboardContent({
                                 <DropdownMenuContent align="end" className="w-56">
                                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="cursor-pointer gap-2" asChild>
-                                        <Link href="/settings" className="w-full flex items-center">
-                                            <Settings size={16} />
-                                            <span>Settings</span>
-                                        </Link>
+                                    <DropdownMenuItem className="cursor-pointer gap-2" onClick={() => setIsSettingsOpen(true)}>
+                                        <Settings size={16} />
+                                        <span>Settings</span>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
@@ -420,6 +420,8 @@ function DashboardContent({
                 </div>
             </main >
             {!isChatPage && <ChatSidebar isPinned={isChatPinned} onPinToggle={() => setIsChatPinned(!isChatPinned)} />}
+
+            <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
         </div >
     );
 }
