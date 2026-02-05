@@ -36,30 +36,18 @@ class PortfolioTransactionSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'user', 'amount', 'receivable_amount', 'commission', 'sebon_fee', 'dp_charge', 'cgt', 'created_at']
 
 class WatchlistItemSerializer(serializers.ModelSerializer):
-    current_price = serializers.SerializerMethodField()
-    day_change = serializers.SerializerMethodField()
-    day_change_percent = serializers.SerializerMethodField()
-    sector = serializers.SerializerMethodField()
+    current_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    day_change = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    day_change_percent = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    sector = serializers.CharField(read_only=True)
+    name = serializers.CharField(read_only=True)
     rsi = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
     roc = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
+    signals = serializers.JSONField(read_only=True)
 
     class Meta:
         model = WatchlistItem
-        fields = ['id', 'ticker', 'added_at', 'target_price', 'notes', 'current_price', 'day_change', 'day_change_percent', 'sector', 'rsi', 'roc']
+        fields = ['id', 'ticker', 'name', 'added_at', 'target_price', 'notes', 
+                  'current_price', 'day_change', 'day_change_percent', 
+                  'sector', 'rsi', 'roc', 'signals']
         read_only_fields = ['id', 'added_at']
-
-    def get_current_price(self, obj):
-        latest = DailyStockPrice.objects.filter(ticker=obj.ticker).order_by('-date').first()
-        return latest.close if latest else None
-
-    def get_day_change(self, obj):
-        latest = DailyStockPrice.objects.filter(ticker=obj.ticker).order_by('-date').first()
-        return latest.diff if latest else None
-
-    def get_day_change_percent(self, obj):
-        latest = DailyStockPrice.objects.filter(ticker=obj.ticker).order_by('-date').first()
-        return latest.diff_percent if latest else None
-
-    def get_sector(self, obj):
-        company = Company.objects.filter(symbol=obj.ticker).first()
-        return company.sector if company else None

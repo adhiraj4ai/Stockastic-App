@@ -10,6 +10,7 @@ from ..serializers import (
     DividendSerializer, FinancialReportSerializer, CompanySerializer
 )
 from ..technical import get_technical_indicators
+from .accumulation_mixin import AccumulationMixin
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -308,7 +309,7 @@ def _enrich_fundamental_data(data, fundamental_obj):
     data['fundamental_indicators'] = indicators
     return data
 
-class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
+class CompanyViewSet(AccumulationMixin, viewsets.ReadOnlyModelViewSet):
     queryset = Company.objects.filter(status='A').order_by('symbol')
     serializer_class = CompanySerializer
     permission_classes = [AllowAny]
