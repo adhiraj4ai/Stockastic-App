@@ -1358,6 +1358,578 @@ def get_smart_accumulated_crossover_history(request):
         # Return descending for display
         enriched_history.reverse()
         
+        return Response(response_data)
+    except Exception as e:
+        logger.exception(f"Error generating smart accumulated crossover history for {symbol}")
+        return Response({'error': str(e)}, status=500)
+
+
+# =============================================================================
+# ICHIMOKU CLOUD + ACCUMULATION STRATEGY
+# =============================================================================
+
+class IchimokuAccumulationRecommendationEngine:
+    """
+    Combines Ichimoku Cloud Trend Analysis with Broker Accumulation Data.
+    Universe: Only symbols present in DailyCumulativeAccumulation.
+    Logic:
+        BUY: Price ABOVE Cloud (close > Span A AND close > Span B)
+             AND Tenkan-sen > Kijun-sen (bullish)
+             AND RSI in healthy range (30-70)
+        SELL: Price BELOW Cloud (close < Span A OR close < Span B)
+              AND Tenkan-sen < Kijun-sen (bearish)
+    """
+
+    def _get_or_create_strategy(self) -> 'Strategy':
+        from ..models import Strategy
+        from django.contrib.auth.models import User
+        
+        user = User.objects.first()
+        strategy, _ = Strategy.objects.get_or_create(
+            name='Ichimoku Cloud + Accumulation',
+            defaults={
+                'code': 'ichimoku_accumulation_v1',
+                'user': user
+            }
+        )
+        return strategy
+
+    def _compute_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
+        if df.empty:
+            return df
+            
+        # Ensure numeric
+        for col in ['close', 'high', 'low', 'volume']:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+        
+        # Ichimoku Cloud using pandas_ta
+        # Default params: tenkan=9, kijun=26, senkou=52
+        ichimoku_result = ta.ichimoku(df['high'], df['low'], df['close'])
+        
+        if ichimoku_result is not None and len(ichimoku_result) > 0:
+            ichi_df = ichimoku_result[0]  # First element is the main ichimoku DataFrame
+            
+            if ichi_df is not None and not ichi_df.empty:
+                # Column names from pandas_ta: ISA_9 (Span A), ISB_26 (Span B), 
+                # ITS_9 (Tenkan), IKS_26 (Kijun), ICS_26 (Chikou)
+                try:
+                    isa_col = next(c for c in ichi_df.columns if c.startswith('ISA_'))
+                    isb_col = next(c for c in ichi_df.columns if c.startswith('ISB_'))
+                    its_col = next(c for c in ichi_df.columns if c.startswith('ITS_'))
+                    iks_col = next(c for c in ichi_df.columns if c.startswith('IKS_'))
+                    
+                    df['span_a'] = ichi_df[isa_col].values
+                    df['span_b'] = ichi_df[isb_col].values
+                    df['tenkan'] = ichi_df[its_col].values
+                    df['kijun'] = ichi_df[iks_col].values
+                except (StopIteration, KeyError) as e:
+                    logger.warning(f"Ichimoku column lookup failed: {e}")
+                    # Set defaults
+                    df['span_a'] = np.nan
+                    df['span_b'] = np.nan
+                    df['tenkan'] = np.nan
+                    df['kijun'] = np.nan
+        else:
+            df['span_a'] = np.nan
+            df['span_b'] = np.nan
+            df['tenkan'] = np.nan
+            df['kijun'] = np.nan
+            
+        # RSI (14)
+        df['rsi'] = df.ta.rsi(length=14)
+        
+        # Cloud top/bottom for reference
+        df['cloud_top'] = df[['span_a', 'span_b']].max(axis=1)
+        df['cloud_bottom'] = df[['span_a', 'span_b']].min(axis=1)
+        
+        return df
+
+    def _calculate_signal_strength(self, row, signal_type):
+        """Calculate strength score (0-100) based on Ichimoku components."""
+        score = 0
+        close = row.get('close', 0) or 0
+        span_a = row.get('span_a', 0) or 0
+        span_b = row.get('span_b', 0) or 0
+        tenkan = row.get('tenkan', 0) or 0
+        kijun = row.get('kijun', 0) or 0
+        rsi = row.get('rsi', 50) or 50
+        
+        if signal_type == 'BUY':
+            # Cloud distance - how far above cloud
+            cloud_top = max(span_a, span_b)
+            if cloud_top > 0 and close > cloud_top:
+                distance_pct = ((close - cloud_top) / cloud_top) * 100
+                if distance_pct > 5: score += 3
+                elif distance_pct > 2: score += 2
+                else: score += 1
+            
+            # Tenkan/Kijun spread
+            if tenkan > 0 and kijun > 0:
+                tk_spread = ((tenkan - kijun) / kijun) * 100
+                if tk_spread > 2: score += 2
+                elif tk_spread > 0.5: score += 1
+                
+            # RSI confirmation
+            if 40 <= rsi <= 60: score += 2  # Optimal
+            elif 30 <= rsi <= 70: score += 1  # Acceptable
+            
+            # Cloud thickness (thicker = stronger support)
+            cloud_thickness = abs(span_a - span_b)
+            if cloud_top > 0 and (cloud_thickness / cloud_top) > 0.02:
+                score += 1
+                
+        elif signal_type == 'SELL':
+            # Cloud distance - how far below cloud
+            cloud_bottom = min(span_a, span_b)
+            if cloud_bottom > 0 and close < cloud_bottom:
+                distance_pct = ((cloud_bottom - close) / cloud_bottom) * 100
+                if distance_pct > 5: score += 3
+                elif distance_pct > 2: score += 2
+                else: score += 1
+            
+            # Tenkan/Kijun spread (bearish)
+            if tenkan > 0 and kijun > 0:
+                tk_spread = ((kijun - tenkan) / kijun) * 100
+                if tk_spread > 2: score += 2
+                elif tk_spread > 0.5: score += 1
+                
+            # RSI confirmation
+            if rsi > 70: score += 2  # Overbought
+            elif rsi > 60: score += 1
+            
+        # Normalize to 0-100 (max score ~9)
+        return min(100, (score / 9) * 100)
+
+    def execute(self, transaction_date=None, sector=None):
+        recommendations = []
+        
+        # 1. Define Universe: Accumulated Stocks ONLY
+        from django.db.models import Count
+        
+        date_counts = DailyCumulativeAccumulation.objects.values('transaction_date').annotate(
+            count=Count('symbol', distinct=True)
+        ).order_by('-transaction_date')
+        
+        latest_acc_date = None
+        for d in date_counts:
+            if d['count'] > 100:
+                latest_acc_date = d['transaction_date']
+                break
+        
+        if not latest_acc_date:
+            latest_acc_date = date_counts[0]['transaction_date'] if date_counts else None
+            
+        if not latest_acc_date:
+            logger.warning("No accumulation data found.")
+            return []
+            
+        logger.info(f"Ichimoku strategy using accumulation data from {latest_acc_date}")
+        
+        # Filter symbols with significant accumulation
+        THRESHOLD = 20000
+        accumulated_symbols = set(
+            DailyCumulativeAccumulation.objects.filter(
+                transaction_date=latest_acc_date,
+                cumulative_net__gt=THRESHOLD
+            ).values_list('symbol', flat=True)
+        )
+        
+        logger.info(f"Filtered to {len(accumulated_symbols)} symbols with net accumulation > {THRESHOLD}")
+
+
+            
+        # Filter by sector if needed
+        if sector and sector != 'All':
+            sector_symbols = set(Company.objects.filter(sector=sector).values_list('symbol', flat=True))
+            accumulated_symbols = accumulated_symbols.intersection(sector_symbols)
+            
+        if not accumulated_symbols:
+            logger.info("No accumulated symbols found after filtering.")
+            return []
+        
+        logger.info(f"Checking Ichimoku signals for {len(accumulated_symbols)} symbols...")
+        symbol_count = 0
+
+            
+        # 2. Load Data and Analyze
+        target_date_obj = None
+        if transaction_date:
+            try:
+                target_date_obj = datetime.strptime(transaction_date, '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                pass
+
+        days_back = 180  # Increase history for better 52-period calculations
+        start_date = (target_date_obj or datetime.now().date()) - timedelta(days=days_back)
+
+        
+        for symbol in accumulated_symbols:
+            qs = DailyStockPrice.objects.filter(
+                ticker=symbol, 
+                date__gte=start_date
+            ).order_by('date').values('date', 'close', 'high', 'low', 'volume')
+            
+            df = pd.DataFrame(list(qs))
+            if df.empty or len(df) < 52:  # Need 52 for Senkou Span B
+                continue
+            
+            df['date'] = pd.to_datetime(df['date'])
+            df.set_index('date', inplace=True)
+
+            
+            # Compute Indicators
+            df = self._compute_indicators(df)
+            
+            # Analyze Last Row
+            if target_date_obj:
+                try:
+                    row = df.loc[df.index <= pd.Timestamp(target_date_obj)].iloc[-1]
+                except IndexError:
+                    continue
+            else:
+                row = df.iloc[-1]
+                
+            # Extract values with NaN handling
+            close = row.get('close', 0) or 0
+            span_a = row.get('span_a') 
+            span_b = row.get('span_b')
+            tenkan = row.get('tenkan')
+            kijun = row.get('kijun')
+            rsi = row.get('rsi', 50) or 50
+            
+            # Skip if Ichimoku not computed
+            if pd.isna(span_a) or pd.isna(span_b) or pd.isna(tenkan) or pd.isna(kijun):
+                continue
+                
+            span_a = float(span_a)
+            span_b = float(span_b)
+            tenkan = float(tenkan)
+            kijun = float(kijun)
+            
+            signal_type = None
+            reason = []
+            
+            # BUY: Price ABOVE Cloud AND Tenkan > Kijun AND RSI healthy
+            above_cloud = close > span_a and close > span_b
+            tk_bullish = tenkan > kijun
+            rsi_healthy = 30 <= rsi <= 70
+            
+            if above_cloud and tk_bullish and rsi_healthy:
+                signal_type = 'BUY'
+                reason.append("Price above Ichimoku Cloud")
+                reason.append("Tenkan-sen > Kijun-sen (Bullish)")
+                if 40 <= rsi <= 60:
+                    reason.append("RSI in optimal range")
+            
+            # Debug some symbols that ARE above cloud but miss other criteria
+            if above_cloud:
+                pass # print(f"DEBUG: {symbol} is above cloud but tk_bullish={tk_bullish} rsi_healthy={rsi_healthy}")
+
+                    
+            # SELL: Price BELOW Cloud AND Tenkan < Kijun
+            # Refining to be below BOTH spans for a stronger sell signal
+            below_cloud = close < span_a and close < span_b
+            tk_bearish = tenkan < kijun
+            
+            if below_cloud and tk_bearish:
+                signal_type = 'SELL'
+                reason.append("Price below Ichimoku Cloud")
+                reason.append("Tenkan-sen < Kijun-sen (Bearish)")
+                if rsi > 70:
+                    reason.append("RSI overbought")
+            
+            if signal_type:
+                symbol_count += 1
+                logger.info(f"Signal found for {symbol}: {signal_type}")
+
+                    
+            if signal_type:
+                # Find Crossover Date
+                crossover_date = row.name
+                crossover_price = float(close)
+                
+                if len(df) > 1:
+                    current_idx = df.index.get_loc(row.name)
+                    for i in range(current_idx - 1, -1, -1):
+                        prev_row = df.iloc[i]
+                        p_close = prev_row.get('close', 0) or 0
+                        p_span_a = prev_row.get('span_a')
+                        p_span_b = prev_row.get('span_b')
+                        p_tenkan = prev_row.get('tenkan')
+                        p_kijun = prev_row.get('kijun')
+                        p_rsi = prev_row.get('rsi', 50) or 50
+                        
+                        if pd.isna(p_span_a) or pd.isna(p_span_b):
+                            break
+                            
+                        p_above_cloud = p_close > p_span_a and p_close > p_span_b
+                        p_below_cloud = p_close < p_span_a or p_close < p_span_b
+                        p_tk_bullish = (p_tenkan or 0) > (p_kijun or 0)
+                        p_tk_bearish = (p_tenkan or 0) < (p_kijun or 0)
+                        
+                        p_signal = None
+                        if p_above_cloud and p_tk_bullish and (30 <= p_rsi <= 70):
+                            p_signal = 'BUY'
+                        elif p_below_cloud and p_tk_bearish:
+                            p_signal = 'SELL'
+                        
+                        if p_signal == signal_type:
+                            crossover_date = prev_row.name
+                            crossover_price = float(p_close)
+                        else:
+                            break
+                
+                # Calculate Strength
+                strength = self._calculate_signal_strength(row, signal_type)
+                
+                # Save to DB
+                self._save_signal(
+                    symbol=symbol,
+                    date=row.name.date(),
+                    signal=signal_type,
+                    strength=strength,
+                    reason="; ".join(reason),
+                    close=float(close),
+                    metadata={
+                        'rsi': float(rsi), 
+                        'span_a': span_a,
+                        'span_b': span_b,
+                        'crossover_date': crossover_date.strftime('%Y-%m-%d'),
+                        'crossover_price': crossover_price
+                    }
+                )
+                
+                recommendations.append({
+                    'symbol': symbol,
+                    'signal': signal_type,
+                    'strength': round(strength, 1),
+                    'reason': "; ".join(reason),
+                    'close': float(close),
+                    'date': row.name.strftime('%Y-%m-%d'),
+                    'crossover_date': crossover_date.strftime('%Y-%m-%d'),
+                    'crossover_price': crossover_price,
+                    'rsi': round(float(rsi), 1),
+                    'macd_hist': 0  # Not used but keeping for frontend compatibility
+                })
+                
+        return sorted(recommendations, key=lambda x: x['strength'], reverse=True)
+
+    def _save_signal(self, symbol, date, signal, strength, reason, close, metadata=None):
+        from ..models import StrategySignal
+        strategy = self._get_or_create_strategy()
+        
+        StrategySignal.objects.update_or_create(
+            strategy=strategy,
+            symbol=symbol,
+            date=date,
+            defaults={
+                'signal': signal,
+                'last_close': close, 
+                'metadata': {
+                    'strength': strength,
+                    'reason': reason,
+                    **(metadata or {})
+                }
+            }
+        )
+
+    def execute_history(self, symbol: str, days: int = 90) -> List[Dict]:
+        """Generate and save history for a symbol."""
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=days + 120)  # Buffer for Ichimoku
+        
+        qs = DailyStockPrice.objects.filter(
+            ticker=symbol, 
+            date__gte=start_date,
+            date__lte=end_date
+        ).order_by('date').values('date', 'close', 'high', 'low', 'volume')
+        
+        df = pd.DataFrame(list(qs))
+        if df.empty or len(df) < 60:
+            return []
+            
+        df['date'] = pd.to_datetime(df['date'])
+        df.set_index('date', inplace=True)
+        
+        df = self._compute_indicators(df)
+        
+        cutoff_dt = pd.Timestamp(end_date - timedelta(days=days))
+        valid_df = df[df.index >= cutoff_dt]
+        
+        generated_signals = []
+        
+        for date_idx, row in valid_df.iterrows():
+            close = row.get('close', 0) or 0
+            span_a = row.get('span_a')
+            span_b = row.get('span_b')
+            tenkan = row.get('tenkan')
+            kijun = row.get('kijun')
+            rsi = row.get('rsi', 50) or 50
+            
+            if pd.isna(span_a) or pd.isna(span_b):
+                continue
+                
+            span_a = float(span_a)
+            span_b = float(span_b)
+            tenkan = float(tenkan) if not pd.isna(tenkan) else 0
+            kijun = float(kijun) if not pd.isna(kijun) else 0
+            
+            signal_type = None
+            reason = ""
+            
+            above_cloud = close > span_a and close > span_b
+            below_cloud = close < span_a or close < span_b
+            tk_bullish = tenkan > kijun
+            tk_bearish = tenkan < kijun
+            
+            if above_cloud and tk_bullish and (30 <= rsi <= 70):
+                signal_type = 'BUY'
+                reason = "Price above Cloud; Bullish TK Cross"
+            elif below_cloud and tk_bearish:
+                signal_type = 'SELL'
+                reason = "Price below Cloud; Bearish TK Cross"
+            else:
+                continue
+
+            strength = self._calculate_signal_strength(row, signal_type)
+            
+            self._save_signal(
+                symbol=symbol,
+                date=date_idx.date(),
+                signal=signal_type,
+                strength=strength,
+                reason=reason,
+                close=float(close),
+                metadata={'rsi': float(rsi), 'span_a': span_a, 'span_b': span_b}
+            )
+            
+            generated_signals.append({
+                 'date': date_idx.strftime('%Y-%m-%d'),
+                 'signal': signal_type,
+                 'strength': round(strength, 1),
+                 'price': float(close),
+                 'reason': reason
+            })
+            
+        return generated_signals
+            
+    def get_history_from_db(self, symbol: str, days: int = 90) -> List[Dict]:
+        from ..models import StrategySignal
+        strategy = self._get_or_create_strategy()
+        cutoff_date = datetime.now().date() - timedelta(days=days)
+        
+        signals = StrategySignal.objects.filter(
+            strategy=strategy,
+            symbol=symbol,
+            date__gte=cutoff_date
+        ).order_by('-date')
+        
+        history = []
+        for s in signals:
+            history.append({
+                'date': s.date.strftime("%Y-%m-%d"),
+                'signal': s.signal,
+                'strength': round(s.metadata.get('strength', 0), 1),
+                'price': float(s.last_close) if s.last_close else 0,
+                'reason': s.metadata.get('reason', ''),
+                'rsi': round(s.metadata.get('rsi', 0), 1),
+                'macd_hist': 0  # Not applicable for Ichimoku
+            })
+        return history
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_ichimoku_accumulation_recommendations(request):
+    """
+    Get Ichimoku Cloud + Accumulation recommendations.
+    """
+    try:
+        transaction_date = request.query_params.get('date')
+        sector = request.query_params.get('sector')
+        
+        engine = IchimokuAccumulationRecommendationEngine()
+        recommendations = engine.execute(transaction_date=transaction_date, sector=sector)
+        return Response(recommendations)
+    except Exception as e:
+        logger.exception("Error generating ichimoku accumulation recommendations")
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_ichimoku_accumulation_history(request):
+    """
+    Get signal history for Ichimoku Cloud + Accumulation.
+    """
+    symbol = request.query_params.get('symbol')
+    if not symbol:
+        return Response({'error': 'Symbol is required'}, status=400)
+        
+    try:
+        engine = IchimokuAccumulationRecommendationEngine()
+        
+        # Check if we have recent signals
+        from ..models import StrategySignal
+        strategy = engine._get_or_create_strategy()
+        recent_signal = StrategySignal.objects.filter(
+            strategy=strategy, 
+            symbol=symbol
+        ).order_by('-date').first()
+        
+        should_backfill = True
+        if recent_signal:
+            latest_price_date = DailyStockPrice.objects.filter(ticker=symbol).order_by('-date').values_list('date', flat=True).first()
+            if latest_price_date and recent_signal.date >= (latest_price_date - timedelta(days=5)):
+                should_backfill = False
+        
+        if should_backfill:
+            raw_history = engine.execute_history(symbol)
+        else:
+            raw_history = engine.get_history_from_db(symbol)
+            
+        # Fetch Company Metadata
+        try:
+            company = Company.objects.get(symbol=symbol)
+            company_name = company.name
+            sector = company.sector
+        except Company.DoesNotExist:
+            company_name = symbol
+            sector = "Unknown"
+            
+        # Fetch Latest Price
+        latest_price_obj = DailyStockPrice.objects.filter(ticker=symbol).order_by('-date').first()
+        current_price = latest_price_obj.close if latest_price_obj else 0.0
+        
+        # Calculate PnL
+        history_asc = sorted(raw_history, key=lambda x: x['date'])
+        
+        last_buy_price = None
+        enriched_history = []
+        
+        for record in history_asc:
+            new_record = record.copy()
+            signal = record['signal']
+            price = record['price']
+            
+            if signal == 'BUY':
+                last_buy_price = price
+            elif signal == 'SELL':
+                if last_buy_price:
+                    pnl_amount = price - last_buy_price
+                    pnl_percent = (pnl_amount / last_buy_price) * 100
+                    new_record['pnl_amount'] = round(pnl_amount, 2)
+                    new_record['pnl_percent'] = round(pnl_percent, 2)
+                    last_buy_price = None
+                else:
+                    new_record['pnl_amount'] = 0
+                    new_record['pnl_percent'] = 0
+            
+            enriched_history.append(new_record)
+            
+        enriched_history.reverse()
+        
         response_data = {
             'symbol': symbol,
             'name': company_name,
@@ -1368,6 +1940,5 @@ def get_smart_accumulated_crossover_history(request):
             
         return Response(response_data)
     except Exception as e:
-        logger.exception(f"Error generating smart accumulated crossover history for {symbol}")
+        logger.exception(f"Error generating ichimoku accumulation history for {symbol}")
         return Response({'error': str(e)}, status=500)
-

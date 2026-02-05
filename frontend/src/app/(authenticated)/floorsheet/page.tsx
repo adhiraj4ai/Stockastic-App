@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +22,7 @@ interface FloorsheetEntry {
     transaction_amount: number;
 }
 
-export default function FloorsheetPage() {
+function FloorsheetContent() {
     const searchParams = useSearchParams();
     const broker = searchParams.get('broker');
     const symbol = searchParams.get('symbol');
@@ -154,5 +154,19 @@ export default function FloorsheetPage() {
                 </Card>
             </div>
         </DashboardLayout>
+    );
+}
+
+export default function FloorsheetPage() {
+    return (
+        <Suspense fallback={
+            <DashboardLayout>
+                <div className="flex h-[80vh] items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                </div>
+            </DashboardLayout>
+        }>
+            <FloorsheetContent />
+        </Suspense>
     );
 }

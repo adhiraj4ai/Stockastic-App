@@ -3,7 +3,7 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Sum, Max, Q
+from django.db.models import Sum, Max, Q, Count
 from ..models import DailyStockPrice, DailyFloorsheet, StockFundamental, Company, Dividend, FinancialReport
 from ..serializers import (
     DailyStockPriceSerializer, DailyFloorsheetSerializer, StockFundamentalSerializer, 
@@ -37,9 +37,12 @@ def stock_history(request, ticker):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def stock_summary(request):
-    # 1. Get Latest Date
-    max_date_agg = DailyStockPrice.objects.aggregate(Max('date'))
-    latest_date = max_date_agg['date__max']
+    # 1. Get Latest Date with substantial data (> 10 entries)
+    latest_date_data = DailyStockPrice.objects.values('date').annotate(
+        count=Count('ticker')
+    ).filter(count__gt=10).order_by('-date').first()
+    
+    latest_date = latest_date_data['date'] if latest_date_data else None
     
     if not latest_date:
         return Response({})

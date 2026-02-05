@@ -55,6 +55,14 @@ urlpatterns = [
          recommendations.get_smart_accumulated_crossover_history, 
          name='smart_accumulated_crossover_history'),
     
+    # Ichimoku Cloud + Accumulation
+    path('ichimoku-accumulation-recommendations/', 
+         recommendations.get_ichimoku_accumulation_recommendations, 
+         name='ichimoku_accumulation_recommendations'),
+    path('ichimoku-accumulation-history/', 
+         recommendations.get_ichimoku_accumulation_history, 
+         name='ichimoku_accumulation_history'),
+    
     # Chart Data (for Lightweight Charts)
     path('chart-history/<str:ticker>/', chart.get_stock_chart_data, name='chart_history'),
 ]

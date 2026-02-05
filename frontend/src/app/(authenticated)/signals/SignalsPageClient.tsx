@@ -7,9 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { TrendingUp, TrendingDown, Minus, Search, BarChart3, Grid3x3, List, Info, RefreshCw, Zap, ChevronDown, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, PlusCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Search, BarChart3, Grid3x3, List, Info, RefreshCw, Zap, ChevronDown, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, PlusCircle, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface StrategySignal {
     id: number;
@@ -28,6 +31,8 @@ interface ActivePosition {
     buy_signal: StrategySignal;
     buy_date: string;
     buy_price: string;
+    current_price?: string;
+    return_pct?: number;
     days_held: number;
     strategies: string[];
 }
@@ -469,29 +474,109 @@ export default function SignalsPage() {
         <DashboardLayout>
             <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 pt-2 px-4 pb-4">
                 {/* Filters and View Controls */}
-                <Card className="mb-2">
-                    <CardContent className="py-2 px-3">
-                        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                <Card className="mb-6 overflow-hidden border-none shadow-xl bg-white/80 backdrop-blur-md">
+                    <CardContent className="p-0">
+                        {/* Integrated Header and Controls */}
+                        <div className="p-6 pb-4 flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between border-b border-slate-100">
                             <div className="flex items-center gap-4">
-                                <h2 className="text-xl font-bold text-slate-800">Market Signals</h2>
-                                <Button
-                                    onClick={handleGenerateSignals}
-                                    disabled={generating}
-                                    size="sm"
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2"
-                                >
-                                    {generating ? (
-                                        <RefreshCw className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                        <Zap className="w-4 h-4 fill-current" />
-                                    )}
-                                    {generating ? 'Generating...' : 'Generate Signals'}
-                                </Button>
+                                <div className="p-2.5 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-200">
+                                    <BarChart3 className="w-6 h-6 text-white" />
+                                </div>
+                                <h2 className="text-2xl font-black text-slate-800 tracking-tight">Market Signals</h2>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                onClick={handleGenerateSignals}
+                                                disabled={generating}
+                                                size="sm"
+                                                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-4 h-9 shadow-md shadow-indigo-100 transition-all duration-300 hover:scale-105 active:scale-95"
+                                            >
+                                                {generating ? (
+                                                    <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                                                ) : (
+                                                    <Zap className="w-4 h-4 fill-white text-white mr-1.5" />
+                                                )}
+                                                {generating ? 'Processing...' : 'Generate New'}
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Scan all symbols for fresh buy/sell opportunities</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
                             </div>
 
-                            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-                                {/* Signal Type Filters */}
-                                <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-col sm:flex-row gap-3 items-center w-full lg:w-auto">
+                                {/* Search Bar */}
+                                <div className="relative w-full sm:w-64 group">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search symbol or strategy..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm h-10"
+                                    />
+                                </div>
+
+                                <Separator orientation="vertical" className="hidden sm:block h-6 mx-1" />
+
+                                {/* View Mode Toggle */}
+                                <div className="flex gap-1 bg-slate-100/80 p-1 rounded-xl w-full sm:w-auto">
+                                    <Button
+                                        variant={viewMode === 'by-symbol' ? 'secondary' : 'ghost'}
+                                        size="sm"
+                                        onClick={() => setViewMode('by-symbol')}
+                                        className={cn(
+                                            "h-8 rounded-lg px-3 text-xs font-bold transition-all",
+                                            viewMode === 'by-symbol' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-slate-700"
+                                        )}
+                                    >
+                                        <Grid3x3 className="w-3.5 h-3.5 mr-1.5" />
+                                        Nested
+                                    </Button>
+                                    <Button
+                                        variant={viewMode === 'all' ? 'secondary' : 'ghost'}
+                                        size="sm"
+                                        onClick={() => setViewMode('all')}
+                                        className={cn(
+                                            "h-8 rounded-lg px-3 text-xs font-bold transition-all",
+                                            viewMode === 'all' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-slate-700"
+                                        )}
+                                    >
+                                        <List className="w-3.5 h-3.5 mr-1.5" />
+                                        Linear
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Navigation and Filters Row */}
+                        <div className="px-6 py-3 flex flex-col md:flex-row gap-4 items-center justify-between bg-slate-50/30">
+                            <Tabs value={tabMode} onValueChange={(v) => setTabMode(v as TabMode)} className="w-full md:w-auto">
+                                <TabsList className="bg-slate-200/50 p-1 h-10 rounded-xl">
+                                    <TabsTrigger
+                                        value="signals"
+                                        className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-600 px-6 font-bold text-xs uppercase tracking-wider"
+                                    >
+                                        All Opportunity
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="tracking"
+                                        className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-600 px-6 font-bold text-xs uppercase tracking-wider"
+                                    >
+                                        Active Tracking
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+
+                            {tabMode === 'signals' && (
+                                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+                                    <div className="flex items-center mr-2 text-[10px] font-black uppercase text-slate-400 tracking-tighter">
+                                        <Filter className="w-3 h-3 mr-1" />
+                                        Filter By
+                                    </div>
                                     {(['ALL', 'BUY', 'SELL', 'HOLD'] as SignalFilter[]).map(type => (
                                         <Button
                                             key={type}
@@ -499,84 +584,23 @@ export default function SignalsPage() {
                                             size="sm"
                                             onClick={() => setSignalFilter(type)}
                                             className={cn(
-                                                'font-bold',
-                                                signalFilter === type && type === 'BUY' && 'bg-emerald-600 hover:bg-emerald-700',
-                                                signalFilter === type && type === 'SELL' && 'bg-rose-600 hover:bg-rose-700',
-                                                signalFilter === type && type === 'HOLD' && 'bg-amber-600 hover:bg-amber-700'
+                                                'h-8 px-4 rounded-full text-xs font-black transition-all border-slate-200',
+                                                signalFilter === type && type === 'BUY' && 'bg-emerald-500 hover:bg-emerald-600 border-emerald-500 shadow-lg shadow-emerald-100',
+                                                signalFilter === type && type === 'SELL' && 'bg-rose-500 hover:bg-rose-600 border-rose-500 shadow-lg shadow-rose-100',
+                                                signalFilter === type && type === 'HOLD' && 'bg-amber-500 hover:bg-amber-600 border-amber-500 shadow-lg shadow-amber-100',
+                                                signalFilter === type && type === 'ALL' && 'bg-slate-800 hover:bg-slate-900 border-slate-800 shadow-lg shadow-slate-200'
                                             )}
                                         >
-                                            {type}
+                                            {type === 'ALL' ? 'Everything' : type}
                                         </Button>
                                     ))}
                                 </div>
-
-                                {/* Search */}
-                                <div className="relative flex-1 max-w-xs">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                    <input
-                                        type="text"
-                                        placeholder="Search symbol or strategy..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
-                                </div>
-
-                                {/* View Mode Toggle */}
-                                <div className="flex gap-2 bg-slate-100 p-1 rounded-lg">
-                                    <Button
-                                        variant={viewMode === 'by-symbol' ? 'default' : 'ghost'}
-                                        size="sm"
-                                        onClick={() => setViewMode('by-symbol')}
-                                        className="gap-2"
-                                    >
-                                        <Grid3x3 className="w-4 h-4" />
-                                        By Symbol
-                                    </Button>
-                                    <Button
-                                        variant={viewMode === 'all' ? 'default' : 'ghost'}
-                                        size="sm"
-                                        onClick={() => setViewMode('all')}
-                                        className="gap-2"
-                                    >
-                                        <List className="w-4 h-4" />
-                                        All
-                                    </Button>
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Tab Navigation */}
-                <Card className="mb-3">
-                    <CardContent className="py-3 px-4">
-                        <div className="flex gap-2">
-                            <Button
-                                variant={tabMode === 'signals' ? 'default' : 'outline'}
-                                onClick={() => setTabMode('signals')}
-                                className={cn(
-                                    'font-semibold',
-                                    tabMode === 'signals' && 'bg-blue-600 hover:bg-blue-700'
-                                )}
-                            >
-                                All Signals
-                            </Button>
-                            <Button
-                                variant={tabMode === 'tracking' ? 'default' : 'outline'}
-                                onClick={() => setTabMode('tracking')}
-                                className={cn(
-                                    'font-semibold',
-                                    tabMode === 'tracking' && 'bg-blue-600 hover:bg-blue-700'
-                                )}
-                            >
-                                Signal Tracking
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Tab Content */}
+                {/* Tab Content Display */}
                 {tabMode === 'signals' && (
                     <>
                         {/* Summary Cards */}
@@ -873,6 +897,8 @@ export default function SignalsPage() {
                                                     <tr>
                                                         <th className="px-4 py-3">Symbol</th>
                                                         <th className="px-4 py-3">Buy Price</th>
+                                                        <th className="px-4 py-3">Current Price</th>
+                                                        <th className="px-4 py-3">Return</th>
                                                         <th className="px-4 py-3">Buy Date</th>
                                                         <th className="px-4 py-3">Days Held</th>
                                                         <th className="px-4 py-3">Strategy</th>
@@ -883,6 +909,20 @@ export default function SignalsPage() {
                                                         <tr key={idx} className="hover:bg-slate-50">
                                                             <td className="px-4 py-3 font-bold">{pos.symbol}</td>
                                                             <td className="px-4 py-3 font-mono">Rs. {pos.buy_price}</td>
+                                                            <td className="px-4 py-3 font-mono">
+                                                                {pos.current_price && pos.current_price !== 'N/A' ? `Rs. ${pos.current_price}` : (pos.current_price || 'Loading...')}
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                {pos.return_pct !== undefined ? (
+                                                                    <Badge className={cn(
+                                                                        pos.return_pct >= 0 ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200" : "bg-rose-100 text-rose-800 hover:bg-rose-200"
+                                                                    )}>
+                                                                        {pos.return_pct >= 0 ? "+" : ""}{pos.return_pct.toFixed(2)}%
+                                                                    </Badge>
+                                                                ) : (
+                                                                    <span className="text-slate-400">---</span>
+                                                                )}
+                                                            </td>
                                                             <td className="px-4 py-3">{new Date(pos.buy_date).toLocaleDateString()}</td>
                                                             <td className="px-4 py-3">{pos.days_held} days</td>
                                                             <td className="px-4 py-3 text-xs text-slate-500">
@@ -892,7 +932,7 @@ export default function SignalsPage() {
                                                     ))}
                                                     {(trackingData.active_positions || []).length === 0 && (
                                                         <tr>
-                                                            <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                                                            <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
                                                                 No active positions found.
                                                             </td>
                                                         </tr>

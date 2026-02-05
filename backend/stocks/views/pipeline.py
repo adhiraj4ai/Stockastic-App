@@ -12,7 +12,7 @@ import threading
 import io
 import csv
 
-from ..models import DataUploadLog, DailyStockPrice
+from ..models import DataUploadLog, DailyStockPrice, DailyFloorsheet
 from ..serializers import DailyStockPriceSerializer
 
 class PipelineViewSet(viewsets.ViewSet):
@@ -90,35 +90,101 @@ class PipelineViewSet(viewsets.ViewSet):
         threading.Thread(target=run_signals, daemon=True).start()
         return Response({'status': 'success'})
 
-    @action(detail=False, methods=['get'])
-    def trigger_indicators_stream(self, request):
-        log_entry = DataUploadLog.objects.create(file_name='Indicators Update', upload_type='INDICATORS', status='PENDING')
+    def _run_manage_command_stream(self, command_args, log_entry):
         def event_stream():
+            yield f"data: {json.dumps({'type': 'init', 'log_id': log_entry.id})}\n\n"
             manage_py = os.path.join(settings.BASE_DIR, 'manage.py')
-            cmd = ['python', manage_py, 'update_indicators']
+            cmd = ['python', manage_py] + command_args
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+            
             for line in process.stdout:
-                yield f"data: {json.dumps({'log': line.strip()})}\n\n"
+                yield f"data: {json.dumps({'type': 'log', 'message': line.strip()})}\n\n"
+            
             process.wait()
             log_entry.status = 'SUCCESS' if process.returncode == 0 else 'FAILED'
             log_entry.save()
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
+        
         return StreamingResponse(event_stream(), content_type='text/event-stream')
+
+    @action(detail=False, methods=['get'])
+    def trigger_indicators_stream(self, request):
+        log_entry = DataUploadLog.objects.create(file_name='Indicators Update', upload_type='INDICATORS', status='PENDING')
+        return self._run_manage_command_stream(['update_technical_indicators'], log_entry)
 
     @action(detail=False, methods=['get'])
     def generate_signals_stream(self, request):
         symbol = request.query_params.get('symbol', 'all')
         log_entry = DataUploadLog.objects.create(file_name=f'Signals Update ({symbol})', upload_type='SIGNALS', status='PENDING')
-        def event_stream():
-            manage_py = os.path.join(settings.BASE_DIR, 'manage.py')
-            args = ['generate_signals']
-            if symbol != 'all': args += ['--symbol', symbol]
-            process = subprocess.Popen(['python', manage_py] + args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
-            for line in process.stdout:
-                yield f"data: {json.dumps({'log': line.strip()})}\n\n"
-            process.wait()
-            log_entry.status = 'SUCCESS' if process.returncode == 0 else 'FAILED'
-            log_entry.save()
-        return StreamingResponse(event_stream(), content_type='text/event-stream')
+        args = ['generate_signals']
+        if symbol != 'all': args += ['--symbol', symbol]
+        return self._run_manage_command_stream(args, log_entry)
+
+    @action(detail=False, methods=['get'])
+    def optimize_strategies_stream(self, request):
+        all_symbols = request.query_params.get('all_symbols') == 'true'
+        log_entry = DataUploadLog.objects.create(file_name='Strategy Optimization', upload_type='OPTIMIZATION', status='PENDING')
+        args = ['optimize_strategies']
+        if all_symbols: args += ['--all-symbols']
+        return self._run_manage_command_stream(args, log_entry)
+
+    @action(detail=False, methods=['get'])
+    def update_broker_analysis_stream(self, request):
+        log_entry = DataUploadLog.objects.create(file_name='Broker Analysis', upload_type='BROKER_ANALYSIS', status='PENDING')
+        return self._run_manage_command_stream(['update_broker_analysis'], log_entry)
+
+    @action(detail=False, methods=['post'])
+    def upload_floorsheet(self, request):
+        file = request.FILES.get('file')
+        if not file: return Response({'error': 'No file uploaded'}, status=400)
+        
+        try:
+            log = DataUploadLog.objects.create(file_name=file.name, upload_type='FLOORSHEET', status='PENDING')
+            data = json.load(file)
+            
+            # Robust data extraction
+            if isinstance(data, dict):
+                # Look for common keys that might hold the transactions list
+                for key in ['data', 'floorsheet', 'rows', 'transactions']:
+                    if key in data and isinstance(data[key], list):
+                        data = data[key]
+                        break
+                else:
+                    raise ValueError("Invalid JSON format. Could not find a list of sessions/transactions in the JSON.")
+
+            if not isinstance(data, list):
+                raise ValueError("Invalid JSON format. Expected list of transactions.")
+
+            items = []
+            for row in data:
+                # Map keys based on actual JSON structure found in logs
+                tid = row.get('contractId') or row.get('transactionId') or row.get('id') or row.get('transaction_id')
+                if not tid: continue
+                
+                items.append(DailyFloorsheet(
+                    transaction_id=tid,
+                    symbol=row.get('stockSymbol') or row.get('securityCode') or row.get('symbol') or row.get('ticker'),
+                    buyer_id=row.get('buyerMemberId') or row.get('buyer_id'),
+                    seller_id=row.get('sellerMemberId') or row.get('seller_id'),
+                    transaction_quantity=row.get('contractQuantity') or row.get('quantity') or row.get('transaction_quantity'),
+                    transaction_rate=row.get('contractRate') or row.get('rate') or row.get('transaction_rate'),
+                    transaction_amount=row.get('contractAmount') or row.get('amount') or row.get('transaction_amount'),
+                    transaction_date=row.get('businessDate') or row.get('date') or row.get('transaction_date'),
+                    transaction_book_id=row.get('tradeBookId') or row.get('contractId') or row.get('book_id') or row.get('transaction_book_id') or 0,
+                    stock_id=row.get('stockId') or row.get('stock_id') or 0,
+                    buyer_name=row.get('buyerBrokerName') or row.get('buyerMemberName') or row.get('buyer_name'),
+                    seller_name=row.get('sellerBrokerName') or row.get('sellerMemberName') or row.get('seller_name'),
+                    transaction_datetime=row.get('tradeTime') or row.get('transactionTime') or row.get('datetime') or row.get('transaction_datetime'),
+                    security_name=row.get('securityName') or row.get('security_name')
+                ))
+            
+            DailyFloorsheet.objects.bulk_create(items, ignore_conflicts=True)
+            log.status, log.records_count = 'SUCCESS', len(items)
+            log.save()
+            return Response({'message': f'Successfully uploaded {len(items)} records'})
+        except Exception as e:
+            if 'log' in locals(): log.status, log.error_message = 'FAILED', str(e); log.save()
+            return Response({'error': str(e)}, status=500)
 
     @action(detail=False, methods=['post'])
     def daily_prices(self, request):
@@ -129,19 +195,49 @@ class PipelineViewSet(viewsets.ViewSet):
             log = DataUploadLog.objects.create(file_name=file.name, upload_type='PRICE', status='PENDING')
             decoded_file = file.read().decode('utf-8')
             reader = csv.DictReader(io.StringIO(decoded_file))
+            
             items = []
+            def p(v): 
+                if not v or v == '-': return 0
+                try: return float(str(v).replace(',', ''))
+                except: return 0
+
             for row in reader:
-                sym = row.get('Symbol') or row.get('Ticker')
+                # Normalize keys: strip whitespace and lowercase
+                nrow = {str(k).strip(): v for k, v in row.items() if k is not None}
+                
+                # Flexible mapping for manual upload
+                sym = nrow.get('Symbol') or nrow.get('Ticker') or nrow.get('symbol') or nrow.get('ticker')
                 if not sym: continue
+                
                 items.append(DailyStockPrice(
-                    ticker=sym, date=date_str, open=row.get('Open', 0), 
-                    high=row.get('High', 0), low=row.get('Low', 0), 
-                    close=row.get('Close', 0), volume=row.get('Volume', 0)
+                    ticker=sym, 
+                    date=date_str, 
+                    open=p(nrow.get('Open') or nrow.get('open')), 
+                    high=p(nrow.get('High') or nrow.get('high')), 
+                    low=p(nrow.get('Low') or nrow.get('low')), 
+                    close=p(nrow.get('Close') or nrow.get('close') or nrow.get('LTP') or nrow.get('ltp')), 
+                    volume=p(nrow.get('Volume') or nrow.get('volume') or nrow.get('Vol') or nrow.get('vol')),
+                    prev_close=p(nrow.get('Prev. Close') or nrow.get('prev_close')),
+                    turnover=p(nrow.get('Turnover') or nrow.get('turnover')),
+                    conf=p(nrow.get('Conf.') or nrow.get('conf')),
+                    vwap=p(nrow.get('VWAP') or nrow.get('vwap')),
+                    trans=int(p(nrow.get('Trans.') or nrow.get('trans'))),
+                    diff=p(nrow.get('Diff') or nrow.get('diff')),
+                    range=p(nrow.get('Range') or nrow.get('range')),
+                    diff_percent=p(nrow.get('Diff %') or nrow.get('diff_percent')),
+                    range_percent=p(nrow.get('Range %') or nrow.get('range_percent')),
+                    vwap_percent=p(nrow.get('VWAP %') or nrow.get('vwap_percent')),
+                    days_120=p(nrow.get('120 Days') or nrow.get('days_120')),
+                    days_180=p(nrow.get('180 Days') or nrow.get('days_180')),
+                    weeks_52_high=p(nrow.get('52 Weeks High') or nrow.get('weeks_52_high')),
+                    weeks_52_low=p(nrow.get('52 Weeks Low') or nrow.get('weeks_52_low')),
                 ))
+            
             DailyStockPrice.objects.bulk_create(items, ignore_conflicts=True)
             log.status, log.records_count = 'SUCCESS', len(items)
             log.save()
-            return Response({'message': 'Success'})
+            return Response({'message': f'Successfully loaded {len(items)} price records'})
         except Exception as e:
             if 'log' in locals(): log.status, log.error_message = 'FAILED', str(e); log.save()
             return Response({'error': str(e)}, status=500)
@@ -158,21 +254,50 @@ class PipelineViewSet(viewsets.ViewSet):
             if resp.status_code != 200:
                 log.status = 'FAILED'; log.save()
                 return Response({'error': 'Not found on GitHub'}, status=400)
-            reader = csv.DictReader(io.StringIO(resp.content.decode('utf-8')))
+            
+            decoded_content = resp.content.decode('utf-8')
+            reader = csv.DictReader(io.StringIO(decoded_content))
             items = []
-            def p(v): return float(v.replace(',', '')) if v and v != '-' else 0
+            def p(v): 
+                if not v or v == '-': return 0
+                try: return float(str(v).replace(',', ''))
+                except: return 0
+            
             for row in reader:
-                sym = row.get('Symbol')
+                # Normalize keys: strip whitespace
+                nrow = {str(k).strip(): v for k, v in row.items() if k is not None}
+                
+                sym = nrow.get('Symbol') or nrow.get('symbol') or nrow.get('Ticker') or nrow.get('ticker')
                 if not sym: continue
+                
                 items.append(DailyStockPrice(
-                    ticker=sym, date=date_str, open=p(row.get('Open')), 
-                    high=p(row.get('High')), low=p(row.get('Low')), 
-                    close=p(row.get('Close')), volume=p(row.get('Vol'))
+                    ticker=sym, 
+                    date=date_str, 
+                    open=p(nrow.get('Open') or nrow.get('open')), 
+                    high=p(nrow.get('High') or nrow.get('high')), 
+                    low=p(nrow.get('Low') or nrow.get('low')), 
+                    close=p(nrow.get('Close') or nrow.get('close') or nrow.get('LTP') or nrow.get('ltp')), 
+                    volume=p(nrow.get('Vol') or nrow.get('vol') or nrow.get('Volume') or nrow.get('volume')),
+                    prev_close=p(nrow.get('Prev. Close') or nrow.get('prev_close')),
+                    turnover=p(nrow.get('Turnover') or nrow.get('turnover')),
+                    conf=p(nrow.get('Conf.') or nrow.get('conf')),
+                    vwap=p(nrow.get('VWAP') or nrow.get('vwap')),
+                    trans=int(p(nrow.get('Trans.') or nrow.get('trans'))),
+                    diff=p(nrow.get('Diff') or nrow.get('diff')),
+                    range=p(nrow.get('Range') or nrow.get('range')),
+                    diff_percent=p(nrow.get('Diff %') or nrow.get('diff_percent')),
+                    range_percent=p(nrow.get('Range %') or nrow.get('range_percent')),
+                    vwap_percent=p(nrow.get('VWAP %') or nrow.get('vwap_percent')),
+                    days_120=p(nrow.get('120 Days') or nrow.get('days_120')),
+                    days_180=p(nrow.get('180 Days') or nrow.get('days_180')),
+                    weeks_52_high=p(nrow.get('52 Weeks High') or nrow.get('weeks_52_high')),
+                    weeks_52_low=p(nrow.get('52 Weeks Low') or nrow.get('weeks_52_low')),
                 ))
+            
             DailyStockPrice.objects.bulk_create(items, ignore_conflicts=True)
             log.status, log.records_count = 'SUCCESS', len(items)
             log.save()
-            return Response({'message': 'Success'})
+            return Response({'message': f'Successfully synced {len(items)} github price records'})
         except Exception as e:
             if 'log' in locals(): log.status, log.error_message = 'FAILED', str(e); log.save()
             return Response({'error': str(e)}, status=500)

@@ -14,6 +14,7 @@ class Strategy(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     is_public = models.BooleanField(default=False)
     pnl_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    pnl = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     pnl_percent = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
     max_drawdown = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
     sharpe_ratio = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)

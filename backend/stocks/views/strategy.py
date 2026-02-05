@@ -1,6 +1,8 @@
 import warnings
 warnings.filterwarnings('ignore', category=FutureWarning)
 
+from datetime import date, timedelta
+from django.db.models import Q, Max
 from rest_framework import status, viewsets, filters
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -683,7 +685,128 @@ class StrategySignalViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=['get'])
     def tracking(self, request):
-        # Implementation from views.py (lines 5351-5476)
-        # Excluded symbols, processing BUY-SELL pairs, etc.
-        # ... (rest of the tracking implementation)
-        return Response({}) # Placeholder, implement based on full tracking code
+        """
+        Pairs BUY and SELL signals to track positions and calculate performance.
+        """
+        signals = StrategySignal.objects.all().order_by('strategy', 'symbol', 'date')
+        
+        active_positions = []
+        closed_positions = []
+        
+        # Group signals by (strategy, symbol)
+        groups = {}
+        for sig in signals:
+            key = (sig.strategy_id, sig.symbol)
+            if key not in groups:
+                groups[key] = []
+            groups[key].append(sig)
+            
+        for key, group_signals in groups.items():
+            strategy_id, symbol = key
+            current_buy = None
+            
+            for sig in group_signals:
+                if sig.signal == 'BUY':
+                    # If we already have a buy, the previous one is essentially "superseded" 
+                    # or they are layered. For simple tracking, we'll take the latest buy 
+                    # before a sell.
+                    current_buy = sig
+                elif sig.signal == 'SELL' and current_buy:
+                    # Found a pair
+                    buy_date = current_buy.date
+                    sell_date = sig.date
+                    buy_price = float(current_buy.last_close or 0)
+                    sell_price = float(sig.last_close or 0)
+                    
+                    return_pct = 0
+                    if buy_price > 0:
+                        return_pct = ((sell_price - buy_price) / buy_price) * 100
+                        
+                    days_held = (sell_date - buy_date).days
+                    
+                    closed_positions.append({
+                        'symbol': symbol,
+                        'buy_signal': StrategySignalSerializer(current_buy).data,
+                        'sell_signal': StrategySignalSerializer(sig).data,
+                        'buy_date': buy_date.isoformat(),
+                        'sell_date': sell_date.isoformat(),
+                        'buy_price': f"{buy_price:,.2f}",
+                        'sell_price': f"{sell_price:,.2f}",
+                        'return_pct': round(return_pct, 2),
+                        'days_held': days_held,
+                        'buy_strategy': current_buy.strategy.name,
+                        'sell_strategy': sig.strategy.name,
+                    })
+                    current_buy = None
+                elif sig.signal == 'HOLD' and current_buy:
+                    # Just an update, keep current_buy
+                    pass
+            
+            # If still have a current_buy, it's an active position
+            if current_buy:
+                buy_price = float(current_buy.last_close or 0)
+                days_held = (date.today() - current_buy.date).days
+                
+                active_positions.append({
+                    'symbol': symbol,
+                    'buy_signal': StrategySignalSerializer(current_buy).data,
+                    'buy_date': current_buy.date.isoformat(),
+                    'buy_price': f"{buy_price:,.2f}",
+                    'days_held': days_held,
+                    'strategies': [current_buy.strategy.name],
+                })
+
+        # Fetch LTP for all symbols in active positions
+        active_symbols = [pos['symbol'] for pos in active_positions]
+        ltp_map = {}
+        if active_symbols:
+            # For each symbol, get the latest price
+            # Since we're on Postgres, we can use distinct('ticker')
+            latest_prices = DailyStockPrice.objects.filter(
+                ticker__in=active_symbols
+            ).order_by('ticker', '-date').distinct('ticker')
+            
+            for price in latest_prices:
+                ltp_map[price.ticker] = float(price.close)
+                
+        # Update active positions with LTP and unrealized PnL
+        for pos in active_positions:
+            symbol = pos['symbol']
+            buy_price = float(pos['buy_price'].replace(',', ''))
+            ltp = ltp_map.get(symbol, 0)
+            
+            return_pct = 0
+            if buy_price > 0 and ltp > 0:
+                return_pct = ((ltp - buy_price) / buy_price) * 100
+                
+            pos['current_price'] = f"{ltp:,.2f}" if ltp > 0 else "N/A"
+            pos['return_pct'] = round(return_pct, 2)
+
+        # Sort active positions by days held descending
+        active_positions.sort(key=lambda x: x['days_held'], reverse=True)
+
+        # Calculate summary
+        total_active = len(active_positions)
+        total_closed = len(closed_positions)
+        
+        # Combine realized and unrealized returns for avg_return
+        all_returns = [pos['return_pct'] for pos in closed_positions] + [pos['return_pct'] for pos in active_positions]
+        
+        avg_return = 0
+        if all_returns:
+            avg_return = sum(all_returns) / len(all_returns)
+            
+        avg_holding = 0
+        if total_closed > 0:
+            avg_holding = sum(pos['days_held'] for pos in closed_positions) / total_closed
+            
+        return Response({
+            'active_positions': active_positions,
+            'closed_positions': closed_positions,
+            'summary': {
+                'total_active': total_active,
+                'total_closed': total_closed,
+                'avg_return': round(avg_return, 2),
+                'avg_holding_period': round(avg_holding, 1)
+            }
+        })

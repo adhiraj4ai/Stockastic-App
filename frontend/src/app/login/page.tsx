@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import axios from 'axios';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Cookies from 'js-cookie';
-import { User, ShieldCheck, ArrowLeft, Eye, EyeOff, ChevronRight, AlertCircle } from 'lucide-react';
+import { User, ShieldCheck, ArrowLeft, Eye, EyeOff, ChevronRight, AlertCircle, LayoutDashboard } from 'lucide-react';
 
 export default function LoginPage() {
     const [selectedUser, setSelectedUser] = useState<'admin' | 'ashmi' | null>(null);
@@ -26,7 +26,7 @@ export default function LoginPage() {
             icon: ShieldCheck,
             color: 'text-blue-600',
             bg: 'bg-blue-50',
-            border: 'border-blue-100 hover:border-blue-300'
+            border: 'border-slate-100 hover:border-blue-300'
         },
         {
             id: 'ashmi',
@@ -35,7 +35,7 @@ export default function LoginPage() {
             icon: User,
             color: 'text-purple-600',
             bg: 'bg-purple-50',
-            border: 'border-purple-100 hover:border-purple-300'
+            border: 'border-slate-100 hover:border-purple-300'
         }
     ];
 
@@ -92,86 +92,95 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 flex items-center justify-center p-4">
-            <Card className="w-full max-w-md shadow-2xl border-0 ring-1 ring-black/5 bg-white/90 backdrop-blur-xl">
-                <CardHeader className="space-y-2 text-center pb-2 border-b border-slate-100/50 flex flex-col items-center pt-6">
-                    <div className="relative w-44 h-28 mb-1 hover:scale-105 transition-transform duration-500 will-change-transform">
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
+            <Card className="w-full max-w-md shadow-xl border-none ring-0 bg-white">
+                <CardHeader className="space-y-2 text-center pb-2 border-b border-slate-50 flex flex-col items-center pt-8">
+                    <div className="relative w-44 h-28 mb-2">
                         <Image
                             src="/stockastic-logo-v3.png"
                             alt="Stockastic Logo"
                             fill
-                            className="object-contain drop-shadow-sm"
+                            className="object-contain"
                             priority
                         />
                     </div>
                     <CardDescription className="font-medium text-slate-500 text-sm">
-                        {selectedUser ? `Welcome back, ${users.find(u => u.id === selectedUser)?.name}` : 'Select your workspace'}
+                        {selectedUser ? `Welcome back, ${users.find(u => u.id === selectedUser)?.name}` : 'Select your workspace to continue'}
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="pt-6 px-6 pb-6">
+                <CardContent className="pt-8 px-8 pb-8">
                     {!selectedUser ? (
-                        <div className="grid grid-cols-1 gap-3">
+                        <div className="grid grid-cols-1 gap-4">
                             {users.map((user) => (
                                 <button
                                     key={user.id}
                                     onClick={() => setSelectedUser(user.id as any)}
-                                    className={`group relative flex items-center gap-4 p-3 rounded-lg bg-white border border-slate-100 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 ${user.id === 'admin' ? 'hover:border-blue-200 hover:bg-blue-50/30' : 'hover:border-purple-200 hover:bg-purple-50/30'
-                                        }`}
+                                    className={`group relative flex items-center gap-4 p-4 rounded-xl bg-white border transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 ${user.border}`}
                                 >
-                                    <div className={`p-3 rounded-lg ${user.bg} ${user.color} transition-transform group-hover:scale-110 shadow-sm`}>
-                                        <user.icon size={22} strokeWidth={2.5} />
+                                    <div className={`p-3.5 rounded-xl ${user.bg} ${user.color} transition-transform group-hover:scale-105 shadow-sm`}>
+                                        <user.icon size={24} strokeWidth={2} />
                                     </div>
-                                    <div className="text-left flex-1 py-1">
+                                    <div className="text-left flex-1 py-0.5">
                                         <div className="font-bold text-slate-900 text-base">{user.name}</div>
                                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{user.title}</div>
                                     </div>
-                                    <div className="text-slate-200 group-hover:text-slate-400 transition-colors">
-                                        <ChevronRight size={18} />
+                                    <div className="text-slate-300 group-hover:text-slate-500 transition-colors">
+                                        <ChevronRight size={20} />
                                     </div>
                                 </button>
                             ))}
                         </div>
                     ) : (
-                        <form onSubmit={handleLogin} className="space-y-4">
+                        <form onSubmit={handleLogin} className="space-y-6">
                             <div className="space-y-1.5 relative">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5">
                                     <ShieldCheck size={12} className="text-slate-400" />
-                                    Security Clearance
+                                    Security Code
                                 </label>
                                 <div className="relative">
                                     <Input
                                         type={showPassword ? "text" : "password"}
                                         autoFocus
-                                        placeholder="Enter access key..."
+                                        placeholder="Enter access code..."
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white font-bold text-base pr-12 transition-all rounded-lg shadow-inner"
+                                        className="h-12 bg-slate-50 border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 font-bold text-base pr-12 transition-all rounded-xl"
                                         required
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 transition-colors"
+                                        className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-600 transition-colors"
                                     >
-                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                                     </button>
                                 </div>
                             </div>
 
                             {error && (
-                                <div className="bg-red-50 text-red-600 text-[10px] font-bold p-3 rounded-lg border border-red-100 flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
-                                    <AlertCircle className="h-4 w-4 shrink-0" />
+                                <div className="bg-rose-50 text-rose-600 text-[11px] font-bold p-4 rounded-xl border border-rose-100 flex items-center gap-3 animate-in fade-in slide-in-from-top-1">
+                                    <AlertCircle className="h-5 w-5 shrink-0" />
                                     {error}
                                 </div>
                             )}
 
-                            <div className="space-y-2 pt-1">
+                            <div className="space-y-3 pt-2">
                                 <Button
                                     type="submit"
-                                    className="w-full h-11 bg-slate-900 hover:bg-black text-white font-bold text-xs tracking-widest uppercase transition-all shadow-md hover:shadow-slate-900/20 active:scale-[0.98] rounded-lg"
+                                    className="w-full h-12 bg-slate-900 hover:bg-black text-white font-bold text-xs tracking-widest uppercase transition-all shadow-lg shadow-slate-200 hover:shadow-xl hover:shadow-slate-300 active:scale-[0.98] rounded-xl flex items-center gap-2"
                                     disabled={loading}
                                 >
-                                    {loading ? 'Verifying...' : 'Access Terminal'}
+                                    {loading ? (
+                                        <>
+                                            <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                            Authenticating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <LayoutDashboard size={16} />
+                                            Enter Terminal
+                                        </>
+                                    )}
                                 </Button>
                                 <button
                                     type="button"
@@ -180,9 +189,9 @@ export default function LoginPage() {
                                         setPassword('');
                                         setError('');
                                     }}
-                                    className="w-full text-[10px] font-bold text-slate-400 hover:text-slate-600 py-1.5 flex items-center justify-center gap-1.5 transition-colors uppercase tracking-wider"
+                                    className="w-full text-[10px] font-bold text-slate-400 hover:text-slate-600 py-2 flex items-center justify-center gap-1.5 transition-colors uppercase tracking-wider hover:bg-slate-50 rounded-lg"
                                 >
-                                    <ArrowLeft size={10} /> Switch Account
+                                    <ArrowLeft size={12} /> Switch Account
                                 </button>
                             </div>
                         </form>

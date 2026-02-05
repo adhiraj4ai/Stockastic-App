@@ -159,11 +159,6 @@ services:
         NEXT_PUBLIC_API_URL: http://localhost:8000
         NEXT_PUBLIC_ML_SERVICE_URL: http://localhost:8001
     container_name: stockastic-frontend
-    command: npm run dev
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
     ports:
       - "3000:3000"
     environment:
@@ -174,7 +169,7 @@ services:
     networks:
       - stockastic-network
     healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:3000 || exit 1" ]
+      test: [ "CMD-SHELL", "wget --spider http://localhost:3000 || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3

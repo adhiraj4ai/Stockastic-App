@@ -48,6 +48,7 @@ const SECTORS = [
 const STRATEGIES = [
     { id: 'broker_accumulation', name: 'Broker Accumulation (Institutional)' },
     { id: 'smart_accumulated_crossover', name: 'Smart Accumulated Crossover' },
+    { id: 'ichimoku_accumulation', name: 'Ichimoku Cloud + Accumulation' },
 ];
 
 export default function RecommendationsPage() {
@@ -73,6 +74,8 @@ export default function RecommendationsPage() {
                 endpoint = '/api/stocks/broker-accumulation-recommendations/';
             } else if (recStrategy === 'smart_accumulated_crossover') {
                 endpoint = '/api/stocks/smart-accumulated-crossover-recommendations/';
+            } else if (recStrategy === 'ichimoku_accumulation') {
+                endpoint = '/api/stocks/ichimoku-accumulation-recommendations/';
             }
 
             const response = await api.get(endpoint, {
@@ -186,7 +189,7 @@ export default function RecommendationsPage() {
     const totalHistoryPages = Math.ceil(historyData.length / historyRowsPerPage);
 
     const handleViewAction = async (symbol: string) => {
-        if (recStrategy === 'broker_accumulation' || recStrategy === 'smart_accumulated_crossover') {
+        if (recStrategy === 'broker_accumulation' || recStrategy === 'smart_accumulated_crossover' || recStrategy === 'ichimoku_accumulation') {
             setSelectedSymbol(symbol);
             setHistoryModalOpen(true);
             setLoadingHistory(true);
@@ -198,8 +201,10 @@ export default function RecommendationsPage() {
                 let url = '';
                 if (recStrategy === 'broker_accumulation') {
                     url = `/api/stocks/broker-accumulation-history/?symbol=${symbol}`;
-                } else {
+                } else if (recStrategy === 'smart_accumulated_crossover') {
                     url = `/api/stocks/smart-accumulated-crossover-history/?symbol=${symbol}`;
+                } else if (recStrategy === 'ichimoku_accumulation') {
+                    url = `/api/stocks/ichimoku-accumulation-history/?symbol=${symbol}`;
                 }
 
                 // Fetch both History and Stock Details concurrently
