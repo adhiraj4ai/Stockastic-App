@@ -306,7 +306,7 @@ export default function DashboardPage() {
     return (
         <DashboardLayout noPadding>
             {/* 1. Market Pulse Ticker */}
-            <div className="bg-slate-900 overflow-hidden py-1.5 border-b border-slate-800">
+            <div className="bg-slate-900 dark:bg-slate-950 overflow-hidden py-1.5 border-b border-slate-800 dark:border-slate-900">
                 <div className="flex animate-infinite-scroll whitespace-nowrap items-center gap-12 px-4">
                     {top_gainers.concat(top_losers).slice(0, 10).map((stock, i) => (
                         <div key={i} className="flex items-center gap-2 cursor-pointer opacity-80 hover:opacity-100 transition-opacity" onClick={() => router.push(`/stock/${stock.ticker}`)}>
@@ -330,22 +330,22 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            <div className="px-6 lg:px-12 py-8 space-y-8 bg-slate-50 relative">
+            <div className="px-6 lg:px-12 py-8 space-y-8 bg-slate-50 dark:bg-slate-950 relative transition-colors duration-300">
 
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2 mb-2">
-                            <div className="p-1.5 bg-blue-600 rounded-lg shadow-sm">
+                            <div className="p-1.5 bg-blue-600 dark:bg-blue-500 rounded-lg shadow-sm">
                                 <LayoutDashboard className="text-white h-4 w-4" />
                             </div>
-                            <span className="text-xs font-bold text-blue-700 tracking-wider uppercase">
+                            <span className="text-xs font-bold text-blue-700 dark:text-blue-400 tracking-wider uppercase">
                                 Market Intelligence
                             </span>
                         </div>
-                        <h1 className="text-4xl font-bold text-slate-900 tracking-tight">
-                            Market <span className="text-blue-600">Terminal</span>
+                        <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+                            Market <span className="text-blue-600 dark:text-blue-400">Terminal</span>
                         </h1>
-                        <p className="text-slate-500 font-medium text-base max-w-xl">
+                        <p className="text-slate-500 dark:text-slate-400 font-medium text-base max-w-xl">
                             Real-time analytics and predictive insights for your strategic operations.
                         </p>
                     </div>
@@ -353,10 +353,10 @@ export default function DashboardPage() {
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                         <div className="space-y-3 min-w-[300px]">
                             <div className="relative group">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-500 dark:group-focus-within:text-blue-400 transition-colors" />
                                 <Input
                                     placeholder="Search (Ctrl + K)..."
-                                    className="pl-10 h-12 bg-white border-slate-200 shadow-sm rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm font-medium w-full"
+                                    className="pl-10 h-12 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm rounded-2xl focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 focus:border-blue-500 dark:focus:border-blue-400 transition-all text-sm font-medium w-full text-slate-900 dark:text-slate-100"
                                     onFocus={() => setIsCommandOpen(true)}
                                     readOnly
                                 />
@@ -364,14 +364,14 @@ export default function DashboardPage() {
 
                             {recentStocks.length > 0 && (
                                 <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-                                    <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 rounded-full text-[9px] font-black text-slate-400">
+                                    <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-[9px] font-black text-slate-400 dark:text-slate-500">
                                         <Clock size={10} /> RECENT
                                     </div>
                                     {recentStocks.map(symbol => (
                                         <button
                                             key={symbol}
                                             onClick={() => handleStockClick(symbol)}
-                                            className="px-3 py-1 bg-white border border-slate-100 rounded-full text-[10px] font-bold text-slate-600 hover:border-blue-200 hover:text-blue-600 transition-all shadow-sm"
+                                            className="px-3 py-1 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-full text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:border-blue-200 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all shadow-sm"
                                         >
                                             {symbol}
                                         </button>
