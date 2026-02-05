@@ -68,22 +68,22 @@ function ThoughtContainer({ rawContent, role, isFinished }: { rawContent: string
         <div className="my-3">
             <div
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 cursor-pointer text-gray-400 hover:text-gray-600 transition-colors select-none"
+                className="flex items-center gap-2 cursor-pointer text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors select-none"
             >
                 {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                <div className="font-mono text-[10px] uppercase tracking-wider">
+                <div className="font-mono text-[10px] uppercase tracking-wider font-bold">
                     Process & Reasoning
                 </div>
             </div>
             {isOpen && (
                 <div
                     ref={containerRef}
-                    className="mt-2 pl-6 overflow-y-auto max-h-60 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent"
+                    className="mt-2 pl-6 overflow-y-auto max-h-60 custom-scrollbar"
                 >
-                    <div className="flex flex-col gap-4 text-[13px] font-mono text-gray-600 [&_div.prose]:font-mono [&_div.prose]:text-[13px] [&_div.prose]:max-w-none [&_pre]:!text-[11px] [&_pre]:!bg-white [&_pre]:!p-2 [&_pre]:!rounded-md [&_pre]:!border [&_pre]:!border-gray-200">
+                    <div className="flex flex-col gap-4 text-[13px] font-mono text-slate-600 dark:text-slate-400 [&_div.prose]:font-mono [&_div.prose]:text-[13px] [&_div.prose]:max-w-none [&_pre]:!text-[11px] [&_pre]:!bg-slate-900 [&_pre]:!p-2 [&_pre]:!rounded-md [&_pre]:!border [&_pre]:!border-slate-200 dark:[&_pre]:!border-slate-800">
                         {thoughts.map((item, idx) => (
-                            <div key={idx}>
-                                <div className="font-bold text-gray-500 mb-0.5 uppercase text-[9px] tracking-widest">{item.header}</div>
+                            <div key={idx} className="space-y-1">
+                                <div className="font-black text-slate-400 dark:text-slate-500 uppercase text-[9px] tracking-widest">{item.header}</div>
                                 <MessageRenderer content={item.content} role={role} isFinished={isFinished} />
                             </div>
                         ))}
@@ -138,7 +138,7 @@ function MessageRenderer({ content, role, isFinished }: { content: string; role:
         return (
             <div className="space-y-4">
                 <MessageRenderer content={before} role={role} isFinished={isFinished} />
-                <div className="w-full h-96 bg-white rounded-xl border border-gray-200 p-4 shadow-sm my-4">
+                <div className="w-full h-96 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm my-4">
                     <ReactECharts
                         option={option}
                         style={{ height: '100%', width: '100%' }}
@@ -220,18 +220,18 @@ function CollapsibleSQL({ sql }: { sql: string }) {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <div className="my-1 border border-blue-100 rounded-lg overflow-hidden bg-white shadow-sm transition-all hover:border-blue-200">
+        <div className="my-1 border border-indigo-100 dark:border-indigo-900/50 rounded-lg overflow-hidden bg-white dark:bg-slate-900 shadow-sm transition-all hover:border-indigo-200 dark:hover:border-indigo-800">
             <div
                 onClick={() => setIsOpen(!isOpen)}
-                className="px-4 py-2.5 bg-blue-50/50 flex items-center justify-between cursor-pointer select-none group"
+                className="px-4 py-2.5 bg-indigo-50/50 dark:bg-indigo-950/50 flex items-center justify-between cursor-pointer select-none group"
             >
-                <div className="flex items-center gap-2 text-blue-700 font-medium text-sm">
-                    <span className="p-1 bg-blue-100 rounded">
-                        <Code2 size={14} className="text-blue-600" />
+                <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400 font-bold text-sm">
+                    <span className="p-1 bg-indigo-100 dark:bg-indigo-900/50 rounded text-indigo-600 dark:text-indigo-400">
+                        <Code2 size={14} />
                     </span>
                     Database Query (PostgreSQL)
                 </div>
-                {isOpen ? <ChevronUp size={16} className="text-blue-400 group-hover:text-blue-600" /> : <ChevronDown size={16} className="text-blue-400 group-hover:text-blue-600" />}
+                {isOpen ? <ChevronUp size={16} className="text-indigo-400 group-hover:text-indigo-600" /> : <ChevronDown size={16} className="text-indigo-400 group-hover:text-indigo-600" />}
             </div>
             {isOpen && (
                 <div className="border-t border-blue-50 bg-[#1e1e1e]">
@@ -257,14 +257,14 @@ function CollapsiblePython({ code }: { code: string }) {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <div className="my-1 border border-emerald-100 rounded-lg overflow-hidden bg-white shadow-sm transition-all hover:border-emerald-200">
+        <div className="my-1 border border-emerald-100 dark:border-emerald-900/50 rounded-lg overflow-hidden bg-white dark:bg-slate-900 shadow-sm transition-all hover:border-emerald-200 dark:hover:border-emerald-800">
             <div
                 onClick={() => setIsOpen(!isOpen)}
-                className="px-4 py-2.5 bg-emerald-50/50 flex items-center justify-between cursor-pointer select-none group"
+                className="px-4 py-2.5 bg-emerald-50/50 dark:bg-emerald-950/50 flex items-center justify-between cursor-pointer select-none group"
             >
-                <div className="flex items-center gap-2 text-emerald-700 font-medium text-sm">
-                    <span className="p-1 bg-emerald-100 rounded">
-                        <Code2 size={14} className="text-emerald-600" />
+                <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold text-sm">
+                    <span className="p-1 bg-emerald-100 dark:bg-emerald-900/50 rounded text-emerald-600 dark:text-emerald-400">
+                        <Code2 size={14} />
                     </span>
                     Python Visualization Code
                 </div>
@@ -315,34 +315,34 @@ function MarkdownRenderer({ content }: { content: string }) {
                                 </SyntaxHighlighter>
                             </div>
                         ) : (
-                            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-pink-600" {...props}>
+                            <code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-sm font-mono text-pink-600 dark:text-pink-400" {...props}>
                                 {children}
                             </code>
                         );
                     },
                     table({ children }) {
                         return (
-                            <div className="overflow-x-auto my-1.5 border rounded-lg border-gray-200 max-w-xl mx-auto backdrop-blur-sm bg-white/50">
+                            <div className="overflow-x-auto my-1.5 border rounded-lg border-slate-200 dark:border-slate-800 max-w-xl mx-auto backdrop-blur-sm bg-white/50 dark:bg-slate-900/50">
                                 <table className="w-full text-left border-collapse">{children}</table>
                             </div>
                         );
                     },
                     thead({ children }) {
-                        return <thead className="bg-gray-50 border-b border-gray-200">{children}</thead>;
+                        return <thead className="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-100 dark:border-slate-800">{children}</thead>;
                     },
                     th({ children }) {
-                        return <th className="px-4 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">{children}</th>;
+                        return <th className="px-4 py-2 font-black text-slate-700 dark:text-slate-400 text-xs uppercase tracking-wider">{children}</th>;
                     },
                     td({ children }) {
-                        return <td className="px-4 py-2 border-t border-gray-100 text-gray-600">{children}</td>;
+                        return <td className="px-4 py-2 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400">{children}</td>;
                     },
                     p({ children }) {
-                        return <p className="mb-2 last:mb-0">{children}</p>;
+                        return <p className="mb-2 last:mb-0 text-slate-700 dark:text-slate-300 leading-relaxed font-medium">{children}</p>;
                     },
                     img({ node, ...props }: any) {
                         return (
                             <div className="my-4 flex justify-center">
-                                <img className="rounded-xl border border-gray-100 shadow-sm max-w-md w-full object-cover" {...props} />
+                                <img className="rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm max-w-md w-full object-cover" {...props} />
                             </div>
                         );
                     }
@@ -397,19 +397,19 @@ export function ChatInterface({
     };
 
     return (
-        <div className={`flex flex-col h-full bg-[#fafafa] shadow-sm border border-gray-100 ${className}`}>
+        <div className={`flex flex-col h-full bg-white/50 dark:bg-slate-950/50 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/50 transition-colors duration-300 ${className}`}>
             {/* Header */}
             {!hideHeader && (
-                <div className="p-4 bg-black text-white flex items-center justify-between shrink-0">
+                <div className="p-4 bg-slate-900 dark:bg-indigo-600 text-white flex items-center justify-between shrink-0 shadow-lg relative z-10">
                     <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                        <div className="h-8 w-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md">
                             <Bot size={20} className="text-white" />
                         </div>
                         <div>
-                            <h3 className="font-semibold text-base leading-tight">Stockastic AI</h3>
+                            <h3 className="font-bold text-base leading-tight">Stockastic AI</h3>
                             <div className="flex items-center gap-1.5 opacity-90">
-                                <span className="h-1.5 w-1.5 rounded-full bg-green-400"></span>
-                                <span className="text-xs">Online</span>
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span className="text-[10px] uppercase font-black tracking-widest">Online</span>
                             </div>
                         </div>
                     </div>
@@ -450,7 +450,7 @@ export function ChatInterface({
             )}
 
             {/* Content Area */}
-            <div className={`flex-1 flex flex-col min-h-0 bg-[#f5f5f5] ${isNewChat ? 'justify-center' : ''}`}>
+            <div className={`flex-1 flex flex-col min-h-0 bg-transparent ${isNewChat ? 'justify-center' : ''}`}>
                 {/* Messages Area */}
                 <div
                     className={`${isNewChat ? 'flex-none' : 'flex-1 overflow-y-auto'} p-4`}
@@ -458,12 +458,12 @@ export function ChatInterface({
                 >
                     <div className={`${isNewChat ? 'max-w-2xl text-center' : 'max-w-full'} mx-auto w-full space-y-1 py-4 px-4 sm:px-8`}>
                         {isNewChat && (
-                            <div className="space-y-2 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                                <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
-                                    {getGreeting()}, Jugal
+                            <div className="space-y-4 mb-12 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+                                <h1 className="text-5xl font-black text-slate-800 dark:text-slate-100 tracking-tight">
+                                    {getGreeting()}, <span className="text-indigo-600 dark:text-indigo-400 italic">Jugal</span>
                                 </h1>
-                                <p className="text-xl text-gray-500 font-medium">
-                                    How can I help you with your portfolio today?
+                                <p className="text-xl text-slate-500 dark:text-slate-400 font-bold max-w-lg mx-auto leading-relaxed">
+                                    The markets are moving. What's on your mind?
                                 </p>
                             </div>
                         )}
@@ -473,14 +473,14 @@ export function ChatInterface({
                                 className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} ${isNewChat ? 'items-center' : ''}`}
                             >
                                 <div
-                                    className={`rounded-2xl px-6 py-2.5 text-sm shadow-sm leading-relaxed ${msg.role === 'user'
-                                        ? 'bg-white text-gray-900 border border-gray-100 rounded-br-none max-w-[85%]'
+                                    className={`rounded-2xl px-6 py-3 text-sm shadow-sm leading-relaxed transition-all ${msg.role === 'user'
+                                        ? 'bg-slate-900 dark:bg-indigo-600 text-white border-0 rounded-br-none max-w-[85%]'
                                         : isNewChat
-                                            ? 'bg-transparent text-gray-800 border-none shadow-none w-full'
-                                            : 'bg-[#fcfafd] text-gray-800 border border-gray-100 rounded-bl-none w-full max-w-[95%] lg:max-w-[90%]'
+                                            ? 'bg-transparent text-slate-800 dark:text-slate-100 border-none shadow-none w-full'
+                                            : 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-800 rounded-bl-none w-full max-w-[95%] lg:max-w-[90%]'
                                         }`}
                                 >
-                                    <div className={isNewChat ? 'text-lg font-medium text-gray-900 mb-8' : ''}>
+                                    <div className={isNewChat ? 'text-xl font-bold text-slate-900 dark:text-slate-100 mb-8 leading-normal' : ''}>
                                         {(() => {
                                             // Extract status and finish state
                                             const statusRegex = /\[\[STATUS:(.+?)\]\]/g;
@@ -523,7 +523,7 @@ export function ChatInterface({
                                 </div>
                                 {!isNewChat && (
                                     <div className="mt-1 px-1">
-                                        <span className="text-[10px] font-medium text-gray-400">
+                                        <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">
                                             {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     </div>
@@ -534,10 +534,10 @@ export function ChatInterface({
                 </div>
 
                 {/* Input Area */}
-                <div className={`${isNewChat ? 'shrink-0' : 'p-4 bg-[#fafafa] border-t border-gray-100 shrink-0'}`}>
+                <div className={`${isNewChat ? 'shrink-0' : 'p-4 bg-white/30 dark:bg-slate-950/30 backdrop-blur-md border-t border-slate-100 dark:border-slate-800/50 shrink-0'}`}>
                     <div className={`${isNewChat ? 'max-w-2xl' : 'max-w-full'} mx-auto w-full px-4 sm:px-8`}>
-                        <div className={`flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-gray-200 focus-within:ring-4 focus-within:ring-gray-100 transition-all w-full shadow-sm ${isNewChat ? 'py-3 px-4' : ''}`}>
-                            <button className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
+                        <div className={`flex items-center gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 focus-within:ring-4 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900/20 transition-all w-full shadow-sm ${isNewChat ? 'py-4 px-6 shadow-xl border-slate-300/50 scale-105' : ''}`}>
+                            <button className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                                 <Paperclip size={18} />
                             </button>
                             <Input
@@ -545,21 +545,21 @@ export function ChatInterface({
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                                 placeholder={isLoading ? "AI is thinking..." : "Ask about your portfolio..."}
-                                className="border-none shadow-none focus-visible:ring-0 bg-transparent h-9 px-2 relative text-base"
+                                className="border-none shadow-none focus-visible:ring-0 bg-transparent h-9 px-2 relative text-base text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                 disabled={isLoading}
                             />
                             <button
                                 onClick={handleSendMessage}
                                 disabled={!inputValue.trim() || isLoading}
-                                className="p-2.5 bg-black text-white rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                                className="p-2.5 bg-slate-900 dark:bg-indigo-600 text-white rounded-xl hover:bg-slate-800 dark:hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md group"
                             >
-                                <Send size={18} className={inputValue.trim() ? 'ml-0.5' : ''} />
+                                <Send size={18} className={`${inputValue.trim() ? 'ml-0.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5' : ''} transition-transform`} />
                             </button>
                         </div>
                     </div>
                     {isNewChat && (
-                        <div className="text-center mt-4">
-                            <p className="text-[10px] text-gray-400">
+                        <div className="text-center mt-6">
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">
                                 AI can make mistakes. Check important info.
                             </p>
                         </div>

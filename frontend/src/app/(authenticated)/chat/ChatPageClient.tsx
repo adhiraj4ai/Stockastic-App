@@ -208,7 +208,7 @@ export default function ChatContent() {
             subtitle="Get insights and help with your portfolio"
             noPadding
         >
-            <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-white dark:bg-slate-950">
+            <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950 transition-colors duration-300">
                 <ChatHistorySidebar
                     history={history}
                     activeChatId={activeChatId}
@@ -217,7 +217,7 @@ export default function ChatContent() {
                     onRenameChat={handleRenameChat}
                     onDeleteChat={handleDeleteChat}
                 />
-                <main className="flex-1 relative flex flex-col min-w-0 bg-[#fafafa]">
+                <main className="flex-1 relative flex flex-col min-w-0 bg-transparent">
                     <ChatInterface
                         hideHeader
                         className="border-0 shadow-none bg-transparent h-full"
