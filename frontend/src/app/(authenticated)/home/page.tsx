@@ -225,8 +225,8 @@ export default function DashboardPage() {
             <DashboardLayout>
                 <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8">
                     <ShieldAlert className="h-12 w-12 text-red-500 mb-4" />
-                    <div className="text-red-500 text-xl font-bold mb-2">Error Loading Dashboard</div>
-                    <div className="text-gray-600 mb-6">{error}</div>
+                    <div className="text-red-500 dark:text-red-400 text-xl font-bold mb-2">Error Loading Dashboard</div>
+                    <div className="text-gray-600 dark:text-gray-400 mb-6">{error}</div>
                     <button
                         onClick={() => window.location.reload()}
                         className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-lg shadow-blue-200"
@@ -243,10 +243,10 @@ export default function DashboardPage() {
             <DashboardLayout>
                 <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
                     <div className="relative h-16 w-16">
-                        <div className="absolute inset-0 rounded-full border-4 border-blue-100"></div>
+                        <div className="absolute inset-0 rounded-full border-4 border-blue-100 dark:border-blue-900"></div>
                         <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
                     </div>
-                    <div className="text-gray-500 font-medium animate-pulse">Initializing Data Stream...</div>
+                    <div className="text-gray-500 dark:text-gray-400 font-medium animate-pulse">Initializing Data Stream...</div>
                 </div>
             </DashboardLayout>
         );
@@ -256,7 +256,7 @@ export default function DashboardPage() {
         return (
             <DashboardLayout>
                 <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8">
-                    <span className="text-gray-500">No market data available yet. Please run data ingestion.</span>
+                    <span className="text-gray-500 dark:text-gray-400">No market data available yet. Please run data ingestion.</span>
                 </div>
             </DashboardLayout>
         );
@@ -281,16 +281,16 @@ export default function DashboardPage() {
         return (
             <TableRow
                 key={stock.ticker}
-                className="cursor-pointer hover:bg-slate-50 border-transparent transition-colors group"
+                className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent transition-colors group"
                 onClick={() => handleStockClick(stock.ticker)}
             >
                 <TableCell className="py-2.5">
                     <div className="flex flex-col">
-                        <span className="font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">{stock.ticker}</span>
-                        <span className="text-[10px] text-slate-500 font-medium">{stock.sector || 'Listed Equity'}</span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{stock.ticker}</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">{stock.sector || 'Listed Equity'}</span>
                     </div>
                 </TableCell>
-                <TableCell className="text-right py-2.5 font-mono font-medium text-slate-700">
+                <TableCell className="text-right py-2.5 font-mono font-medium text-slate-700 dark:text-slate-300">
                     {Number(stock.close).toLocaleString()}
                 </TableCell>
                 <TableCell className={`text-right py-2.5 font-bold ${isStockPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -757,11 +757,11 @@ export default function DashboardPage() {
                                 className="flex items-center justify-between"
                             >
                                 <div className="flex items-center gap-2">
-                                    <div className="p-1 bg-slate-100 rounded">
+                                    <div className="p-1 bg-slate-100 dark:bg-slate-800 rounded">
                                         <TrendingUp className="h-3 w-3 text-blue-600" />
                                     </div>
                                     <span className="font-bold">{stock.ticker}</span>
-                                    <span className="text-xs text-slate-400">{stock.sector}</span>
+                                    <span className="text-xs text-slate-400 dark:text-slate-500">{stock.sector}</span>
                                 </div>
                                 <span className={stock.percent_change >= 0 ? 'text-emerald-600 font-medium' : 'text-rose-600 font-medium'}>
                                     {stock.percent_change.toFixed(2)}%
