@@ -124,7 +124,7 @@ class AccumulationMixin(viewsets.ViewSet):
         days = range_map.get(time_range, 7)
         
         query = f"""
-        WITH ref_date AS (
+        WITH floorsheet_ref AS (
             SELECT transaction_date as current_date 
             FROM daily_floorsheet 
             GROUP BY transaction_date 
@@ -132,8 +132,29 @@ class AccumulationMixin(viewsets.ViewSet):
             ORDER BY transaction_date DESC 
             LIMIT 1
         ),
+        accumulation_ref AS (
+            SELECT transaction_date as latest_acc_date 
+            FROM daily_cumulative_accumulation 
+            GROUP BY transaction_date 
+            HAVING COUNT(*) > 100 
+            ORDER BY transaction_date DESC 
+            LIMIT 1
+        ),
         target_range AS (
-            SELECT current_date - INTERVAL '{days} days' as start_date FROM ref_date
+            SELECT current_date - INTERVAL '{days} days' as start_date FROM floorsheet_ref
+        ),
+        latest_positions AS (
+            SELECT 
+                symbol, entity_id, cumulative_net,
+                ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY cumulative_net DESC) as rank
+            FROM daily_cumulative_accumulation, accumulation_ref
+            WHERE transaction_date = accumulation_ref.latest_acc_date
+            AND cumulative_net > 0 
+        ),
+        smart_money AS (
+            SELECT symbol, entity_id as broker 
+            FROM latest_positions 
+            WHERE rank <= 15 -- Top 15 Holders
         ),
         floorsheet_activity AS (
             SELECT buyer_id as broker, symbol, transaction_quantity as buy_qty, 0 as sell_qty
@@ -151,13 +172,22 @@ class AccumulationMixin(viewsets.ViewSet):
         ),
         symbol_accumulation AS (
             SELECT 
-                symbol,
-                SUM(CASE WHEN net_flow > 0 THEN net_flow ELSE 0 END) as institutional_buy,
-                SUM(CASE WHEN net_flow < 0 THEN ABS(net_flow) ELSE 0 END) as institutional_sell,
-                ARRAY_AGG(broker ORDER BY net_flow DESC) FILTER (WHERE net_flow > 0) as top_buyers,
-                ARRAY_AGG(broker ORDER BY net_flow ASC) FILTER (WHERE net_flow < 0) as top_sellers
-            FROM broker_symbol_summary
-            GROUP BY symbol
+                bn.symbol,
+                SUM(CASE WHEN sm.broker IS NOT NULL AND bn.net_flow > 0 THEN bn.net_flow ELSE 0 END) as institutional_buy,
+                SUM(CASE WHEN sm.broker IS NOT NULL AND bn.net_flow < 0 THEN ABS(bn.net_flow) ELSE 0 END) as institutional_sell,
+                ARRAY_AGG(bn.broker ORDER BY bn.net_flow DESC) FILTER (WHERE bn.net_flow > 0) as top_buyers,
+                ARRAY_AGG(bn.broker ORDER BY bn.net_flow ASC) FILTER (WHERE bn.net_flow < 0) as top_sellers
+            FROM broker_symbol_summary bn
+            LEFT JOIN smart_money sm ON bn.symbol = sm.symbol AND CAST(bn.broker AS VARCHAR) = sm.broker
+            GROUP BY bn.symbol
+        ),
+        price_ref AS (
+            SELECT transaction_date as latest_price_date 
+            FROM daily_stock_price 
+            GROUP BY transaction_date 
+            HAVING COUNT(*) > 100 
+            ORDER BY transaction_date DESC 
+            LIMIT 1
         ),
         avg_volume_cte AS (
             SELECT 
@@ -166,8 +196,8 @@ class AccumulationMixin(viewsets.ViewSet):
                 close,
                 transaction_date,
                 ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY transaction_date DESC) as rn
-            FROM daily_stock_price
-            WHERE transaction_date <= (SELECT current_date FROM ref_date)
+            FROM daily_stock_price, price_ref
+            WHERE transaction_date <= price_ref.latest_price_date
         ),
         latest_avg_vol AS (
             SELECT symbol, avg_vol_20d, close FROM avg_volume_cte WHERE rn = 1
@@ -176,7 +206,7 @@ class AccumulationMixin(viewsets.ViewSet):
             SELECT 
                 ss.symbol, c."companyName" as name, c."sectorName" as sector,
                 ss.institutional_buy, ss.institutional_sell,
-                (ss.institutional_buy - ss.institutional_sell) as net_qty,
+                (CAST(ss.institutional_buy AS NUMERIC) - ss.institutional_sell) as net_qty,
                 lav.avg_vol_20d, lav.close,
                 CASE 
                     WHEN lav.avg_vol_20d > 0 
