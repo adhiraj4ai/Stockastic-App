@@ -244,9 +244,9 @@ function DashboardContent({
                                                                 item.name === 'Accumulation' ? 'text-orange-500 dark:text-orange-400' :
                                                                     item.name === 'Financials' ? 'text-cyan-500 dark:text-cyan-400' :
                                                                         item.name === 'Strategies' ? 'text-yellow-500 dark:text-yellow-400' :
-                                                                            item.name === 'Forecasts' ? 'text-pink-500 dark:text-pink-400' :
-                                                                                item.name === 'Recommendations' ? 'text-red-500 dark:text-red-400' :
-                                                                                    item.name === 'Pipeline' ? 'text-gray-500 dark:text-slate-400' :
+                                                                            item.name === 'Signals' ? 'text-pink-500 dark:text-pink-400' :
+                                                                                item.name === 'Whale Watch' ? 'text-indigo-500 dark:text-indigo-400' :
+                                                                                    item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
                                                                                         'text-gray-400 dark:text-slate-500'
                                             } />
                                             {!isSidebarCollapsed && <span className="text-sm font-medium whitespace-nowrap">{item.name}</span>}
@@ -271,9 +271,9 @@ function DashboardContent({
                                                         item.name === 'Stocks' ? 'text-green-500 dark:text-green-400' :
                                                             item.name === 'Financials' ? 'text-cyan-500 dark:text-cyan-400' :
                                                                 item.name === 'Strategies' ? 'text-yellow-500 dark:text-yellow-400' :
-                                                                    item.name === 'Forecasts' ? 'text-pink-500 dark:text-pink-400' :
-                                                                        item.name === 'Recommendations' ? 'text-red-500 dark:text-red-400' :
-                                                                            item.name === 'Pipeline' ? 'text-gray-500 dark:text-slate-400' :
+                                                                    item.name === 'Signals' ? 'text-pink-500 dark:text-pink-400' :
+                                                                        item.name === 'Whale Watch' ? 'text-indigo-500 dark:text-indigo-400' :
+                                                                            item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
                                                                                 'text-gray-400 dark:text-slate-500'
                                         } />
                                         {!isSidebarCollapsed && <span className="text-sm font-medium whitespace-nowrap">{item.name}</span>}
@@ -291,6 +291,14 @@ function DashboardContent({
                                             // Generic active logic: match path AND tab (if present)
                                             const isActiveLink = pathname === subPath && (subTab ? currentTab === subTab : true);
 
+                                            const subIconColor = isActiveLink
+                                                ? (item.name === 'Accumulation' ? 'text-orange-600 dark:text-orange-400' :
+                                                    item.name === 'Finfolio' ? 'text-emerald-600 dark:text-emerald-400' :
+                                                        'text-blue-600 dark:text-indigo-400')
+                                                : (item.name === 'Accumulation' ? 'text-orange-500/70 dark:text-orange-400/70' :
+                                                    item.name === 'Finfolio' ? 'text-emerald-500/70 dark:text-emerald-400/70' :
+                                                        'text-gray-400 dark:text-slate-600');
+
                                             return (
                                                 <Link
                                                     key={subItem.name}
@@ -300,7 +308,7 @@ function DashboardContent({
                                                         : 'text-gray-500 dark:text-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-300'
                                                         }`}
                                                 >
-                                                    {subItem.icon && <subItem.icon size={14} className={isActiveLink ? 'text-blue-600 dark:text-indigo-400' : 'text-gray-400 dark:text-slate-600'} />}
+                                                    {subItem.icon && <subItem.icon size={14} className={subIconColor} />}
                                                     {subItem.name}
                                                 </Link>
                                             );
