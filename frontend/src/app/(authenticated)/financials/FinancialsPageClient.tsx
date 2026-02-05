@@ -164,7 +164,7 @@ export default function AdminPage() {
                         <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
                     </div>
                 ) : filteredCompanies.length > 0 ? (
-                    <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-slate-900 rounded-xl border dark:border-slate-700 shadow-sm overflow-hidden">
                         <Table>
                             <TableHeader>
                                 <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">

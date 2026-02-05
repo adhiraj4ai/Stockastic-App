@@ -195,7 +195,7 @@ export default function ForecastsPage() {
                         onPageSizeChange(Number(e.target.value));
                         onPageChange(1);
                     }}
-                    className="bg-white border border-slate-200 rounded-md px-2 py-1 text-sm font-medium text-slate-700 focus:ring-2 focus:ring-blue-100 outline-none transition-all cursor-pointer shadow-sm"
+                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-sm font-medium text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 outline-none transition-all cursor-pointer shadow-sm"
                 >
                     {[10, 20, 50, 75, 100].map(size => (
                         <option key={size} value={size}>{size}</option>
@@ -301,7 +301,7 @@ export default function ForecastsPage() {
                                     </CardContent>
                                 </Card>
                             ) : (
-                                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                                <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden shadow-sm">
                                     <table className="min-w-full divide-y divide-gray-200">
                                         <thead className="bg-gray-50">
                                             <tr>
@@ -314,7 +314,7 @@ export default function ForecastsPage() {
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200 text-sm">
+                                        <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-700 text-sm">
                                             {models.map((model) => (
                                                 <tr key={model.id} className="hover:bg-gray-50">
                                                     <td className="px-6 py-4 whitespace-nowrap text-gray-500 font-mono text-xs">
@@ -387,7 +387,7 @@ export default function ForecastsPage() {
                                     </span>
                                 </div>
 
-                                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                                <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden shadow-sm">
                                     <table className="min-w-full divide-y divide-gray-200">
                                         <thead className="bg-gray-50">
                                             <tr>
@@ -401,7 +401,7 @@ export default function ForecastsPage() {
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20"></th>
                                             </tr>
                                         </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200 text-sm">
+                                        <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-700 text-sm">
                                             {allJobs.length === 0 ? (
                                                 <tr>
                                                     <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
@@ -504,7 +504,7 @@ export default function ForecastsPage() {
                                                                 <tr>
                                                                     <td colSpan={8} className="px-0 py-0 border-b bg-gray-50/50">
                                                                         <div className="p-6">
-                                                                            <div className="bg-white border border-gray-100 rounded-lg overflow-hidden shadow-sm">
+                                                                            <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-lg overflow-hidden shadow-sm">
                                                                                 <table className="min-w-full divide-y divide-gray-100">
                                                                                     <thead className="bg-gray-50/50">
                                                                                         <tr>
