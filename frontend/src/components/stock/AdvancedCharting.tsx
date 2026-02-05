@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useTheme } from 'next-themes';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BarChart3, Maximize2, Settings2 } from 'lucide-react';
@@ -15,6 +16,8 @@ interface AdvancedChartingProps {
 }
 
 export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChartingProps) {
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
     const [timeframe, setTimeframe] = useState('1M');
 
     const filteredHistory = useMemo(() => {
@@ -52,25 +55,26 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
 
     const option = {
         backgroundColor: 'transparent',
+        textStyle: { fontFamily: 'Inter, sans-serif', color: isDark ? '#94a3b8' : '#1e293b' },
         animation: true,
         tooltip: {
             trigger: 'axis',
-            axisPointer: { type: 'cross', lineStyle: { color: '#cbd5e1', width: 1 } },
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            axisPointer: { type: 'cross', lineStyle: { color: isDark ? '#334155' : '#cbd5e1', width: 1 } },
+            backgroundColor: isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
             borderWidth: 1,
-            borderColor: '#f1f5f9',
+            borderColor: isDark ? '#334155' : '#f1f5f9',
             padding: [10, 15],
-            textStyle: { color: '#1e293b', fontSize: 12 },
+            textStyle: { color: isDark ? '#f1f5f9' : '#1e293b', fontSize: 12 },
             formatter: (params: any) => {
                 const p = params[0];
                 const d = filteredHistory[p.dataIndex];
                 if (!d) return '';
                 return `
-                    <div style="font-weight: 700; color: #64748b; margin-bottom: 5px; border-bottom: 1px solid #f1f5f9; padding-bottom: 3px;">${p.name}</div>
+                    <div style="font-weight: 700; color: ${isDark ? '#94a3b8' : '#64748b'}; margin-bottom: 5px; border-bottom: 1px solid ${isDark ? '#334155' : '#f1f5f9'}; padding-bottom: 3px;">${p.name}</div>
                     <div style="display: flex; flex-direction: column; gap: 3px;">
                         <div style="display: flex; justify-content: space-between; gap: 20px;">
                             <span style="color: #94a3b8; font-weight: 700;">OPEN</span>
-                            <span style="font-family: monospace; font-weight: 800;">${d.open.toLocaleString()}</span>
+                            <span style="font-family: monospace; font-weight: 800; color: ${isDark ? '#f1f5f9' : '#1e293b'};">${d.open.toLocaleString()}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between;">
                             <span style="color: #94a3b8; font-weight: 700;">CLOSE</span>
@@ -78,15 +82,15 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
                         </div>
                         <div style="display: flex; justify-content: space-between;">
                             <span style="color: #94a3b8; font-weight: 700;">HIGH</span>
-                            <span style="font-family: monospace; font-weight: 800;">${d.high.toLocaleString()}</span>
+                            <span style="font-family: monospace; font-weight: 800; color: ${isDark ? '#f1f5f9' : '#1e293b'};">${d.high.toLocaleString()}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between;">
                             <span style="color: #94a3b8; font-weight: 700;">LOW</span>
-                            <span style="font-family: monospace; font-weight: 800;">${d.low.toLocaleString()}</span>
+                            <span style="font-family: monospace; font-weight: 800; color: ${isDark ? '#f1f5f9' : '#1e293b'};">${d.low.toLocaleString()}</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; margin-top: 3px; border-top: 1px solid #f8fafc; padding-top: 3px;">
+                        <div style="display: flex; justify-content: space-between; margin-top: 3px; border-top: 1px solid ${isDark ? '#1e293b' : '#f8fafc'}; padding-top: 3px;">
                             <span style="color: #94a3b8; font-weight: 700;">VOLUME</span>
-                            <span style="font-family: monospace; font-weight: 800;">${d.volume.toLocaleString()}</span>
+                            <span style="font-family: monospace; font-weight: 800; color: ${isDark ? '#f1f5f9' : '#1e293b'};">${d.volume.toLocaleString()}</span>
                         </div>
                     </div>
                 `;
@@ -101,7 +105,7 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
                 type: 'category',
                 data: dates,
                 boundaryGap: false,
-                axisLine: { lineStyle: { color: '#f1f5f9' } },
+                axisLine: { lineStyle: { color: isDark ? '#334155' : '#f1f5f9' } },
                 axisLabel: { color: '#94a3b8', fontWeight: 600, fontSize: 10 },
                 splitLine: { show: false }
             },
@@ -121,7 +125,7 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
                 scale: true,
                 axisLine: { show: false },
                 axisLabel: { color: '#94a3b8', fontWeight: 600, fontSize: 10, margin: 10 },
-                splitLine: { lineStyle: { color: '#f8fafc', type: 'dashed' } },
+                splitLine: { lineStyle: { color: isDark ? '#1e293b' : '#f8fafc', type: 'dashed' } },
                 position: 'right'
             },
             {
@@ -144,10 +148,10 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
                 end: 100,
                 handleIcon: 'path://M-1.5,0.5c0-0.6,0.5-1,1-1h1c0.6,0,1,0.5,1,1v4c0,0.6-0.5,1-1,1h-1c-0.6,0-1-0.5-1-1V0.5z',
                 handleSize: '80%',
-                dataBackground: { lineStyle: { color: '#cbd5e1' }, areaStyle: { color: '#f1f5f9' } },
-                selectedDataBackground: { lineStyle: { color: '#334155' }, areaStyle: { color: '#94a3b8' } },
-                fillerColor: 'rgba(203, 213, 225, 0.3)',
-                borderColor: '#f1f5f9'
+                dataBackground: { lineStyle: { color: isDark ? '#475569' : '#cbd5e1' }, areaStyle: { color: isDark ? '#1e293b' : '#f1f5f9' } },
+                selectedDataBackground: { lineStyle: { color: isDark ? '#94a3b8' : '#334155' }, areaStyle: { color: isDark ? '#334155' : '#94a3b8' } },
+                fillerColor: isDark ? 'rgba(71, 85, 105, 0.3)' : 'rgba(203, 213, 225, 0.3)',
+                borderColor: isDark ? '#334155' : '#f1f5f9'
             }
         ],
         series: [
@@ -178,9 +182,9 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
 
     return (
         <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex flex-row items-center justify-between bg-slate-50/30">
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-row items-center justify-between bg-slate-50/30 dark:bg-slate-800/20">
                 <div className="space-y-1">
-                    <CardTitle className="text-[10px] font-bold text-slate-500 flex items-center gap-2">
+                    <CardTitle className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2">
                         <BarChart3 size={14} className="text-blue-500" />
                         Price Action & Volume Profile
                     </CardTitle>
@@ -191,8 +195,8 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
                                 variant="outline"
                                 onClick={() => setTimeframe(t)}
                                 className={cn(
-                                    "text-[9px] font-bold px-2 py-0 border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors uppercase",
-                                    t === timeframe ? "bg-slate-900 text-white border-slate-900" : "text-slate-400 bg-transparent"
+                                    "text-[9px] font-bold px-2 py-0 border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors uppercase",
+                                    t === timeframe ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100" : "text-slate-400 dark:text-slate-500 bg-transparent"
                                 )}
                             >
                                 {t}
@@ -201,10 +205,10 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-lg border border-slate-100 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors">
+                    <div className="p-2 rounded-lg border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer transition-colors">
                         <Settings2 size={16} />
                     </div>
-                    <div className="p-2 rounded-lg border border-slate-100 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors">
+                    <div className="p-2 rounded-lg border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer transition-colors">
                         <Maximize2 size={16} />
                     </div>
                 </div>
@@ -215,12 +219,12 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
                 </div>
                 {/* Integrated Stats Grid */}
                 {fundamental && (
-                    <div className="px-6 py-6 border-t border-slate-100 bg-slate-50/10">
+                    <div className="px-6 py-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/10 dark:bg-slate-800/10">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-x-12 gap-y-6">
                             {stats.map((item, idx) => (
                                 <div key={idx} className="space-y-1">
-                                    <p className="text-[9px] font-bold text-slate-400">{item.label}</p>
-                                    <p className="text-sm font-bold text-slate-900 tabular-nums">{item.value}</p>
+                                    <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500">{item.label}</p>
+                                    <p className="text-sm font-bold text-slate-900 dark:text-slate-100 tabular-nums">{item.value}</p>
                                 </div>
                             ))}
                         </div>

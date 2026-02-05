@@ -8,25 +8,25 @@ interface TechnicalDivergenceProps {
 
 export const TechnicalDivergence: React.FC<TechnicalDivergenceProps> = ({ technicalIndicators }) => {
     return (
-        <div className="glass-card-light rounded-3xl p-8 border-slate-200 bg-white border shadow-sm">
+        <div className="glass-card-light dark:bg-slate-900 rounded-3xl p-8 border-slate-200 dark:border-slate-800 bg-white border shadow-sm">
             <div className="flex items-center gap-3 mb-10">
-                <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100">
+                <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
                     <TrendingUp size={18} />
                 </div>
                 <div>
-                    <h4 className="font-bold text-slate-800 text-lg">Technical Divergence</h4>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Relative strength mapping</p>
+                    <h4 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Technical Divergence</h4>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">Relative strength mapping</p>
                 </div>
             </div>
 
             <div className="p-6">
                 <Tabs defaultValue="Momentum" className="w-full">
-                    <TabsList className="grid w-full grid-cols-4 mb-6 p-1 bg-slate-100/80 rounded-xl">
+                    <TabsList className="grid w-full grid-cols-4 mb-6 p-1 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl">
                         {['Momentum', 'Trend', 'Volatility', 'Volume'].map(cat => (
                             <TabsTrigger
                                 key={cat}
                                 value={cat}
-                                className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all duration-200 text-[10px] sm:text-xs"
+                                className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-primary dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all duration-200 text-[10px] sm:text-xs"
                             >
                                 {cat}
                             </TabsTrigger>
@@ -38,22 +38,22 @@ export const TechnicalDivergence: React.FC<TechnicalDivergenceProps> = ({ techni
 
                         return (
                             <TabsContent key={category} value={category} className="mt-0 focus-visible:outline-none ring-offset-background">
-                                <div className="overflow-hidden overflow-y-auto max-h-[500px] rounded-2xl border border-slate-100 shadow-sm relative no-scrollbar">
+                                <div className="overflow-hidden overflow-y-auto max-h-[500px] rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm relative no-scrollbar">
                                     <table className="w-full text-sm">
-                                        <thead className="bg-slate-50 border-b border-slate-100 backdrop-blur-sm sticky top-0 z-10">
+                                        <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-800 backdrop-blur-sm sticky top-0 z-10">
                                             <tr>
                                                 <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[9px]">Indicator</th>
                                                 <th className="px-6 py-4 text-center font-bold text-slate-400 uppercase tracking-widest text-[9px]">Value</th>
                                                 <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[9px]">Sector Range (Low - High)</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100 bg-white">
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
                                             {indicators.length > 0 ? (
                                                 indicators.map((indicator: any, i: number) => (
-                                                    <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
-                                                        <td className="px-6 py-4 font-bold text-slate-700 whitespace-nowrap">{indicator.name}</td>
+                                                    <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                        <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">{indicator.name}</td>
                                                         <td className="px-6 py-4 text-center">
-                                                            <span className="px-2.5 py-1 rounded bg-slate-50 text-slate-700 font-bold text-xs ring-1 ring-slate-200 group-hover:bg-white group-hover:shadow-sm transition-all">{indicator.value}</span>
+                                                            <span className="px-2.5 py-1 rounded bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs ring-1 ring-slate-200 dark:ring-slate-700 group-hover:bg-white dark:group-hover:bg-slate-700 group-hover:shadow-sm transition-all">{indicator.value}</span>
                                                         </td>
                                                         <td className="px-6 py-4">
                                                             {indicator.sector_high !== '-' ? (
@@ -61,9 +61,9 @@ export const TechnicalDivergence: React.FC<TechnicalDivergenceProps> = ({ techni
                                                                     <div className="flex flex-col min-w-[40px]">
                                                                         <span className="text-xs text-rose-500 font-bold uppercase">{indicator.sector_low}</span>
                                                                     </div>
-                                                                    <div className="flex-1 h-1.5 bg-slate-100 rounded-full relative overflow-hidden">
-                                                                        <div className="absolute inset-0 bg-gradient-to-r from-rose-100 via-slate-100 to-emerald-100 opacity-50"></div>
-                                                                        <div className="absolute top-0 bottom-0 w-1 bg-slate-400 rounded-full left-1/2 -translate-x-1/2 ring-2 ring-white"></div>
+                                                                    <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full relative overflow-hidden">
+                                                                        <div className="absolute inset-0 bg-gradient-to-r from-rose-100 dark:from-rose-900/20 via-slate-100 dark:via-slate-800 to-emerald-100 dark:to-emerald-900/20 opacity-50"></div>
+                                                                        <div className="absolute top-0 bottom-0 w-1 bg-slate-400 dark:bg-slate-500 rounded-full left-1/2 -translate-x-1/2 ring-2 ring-white dark:ring-slate-900"></div>
                                                                     </div>
                                                                     <div className="flex flex-col items-end min-w-[40px]">
                                                                         <span className="text-xs text-emerald-500 font-bold uppercase">{indicator.sector_high}</span>

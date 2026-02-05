@@ -105,9 +105,9 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
     };
 
     const SortIcon = ({ columnKey }: { columnKey: string }) => {
-        if (sortConfig?.key !== columnKey) return <ArrowUpDown className="w-3 h-3 ml-1 text-slate-300" />;
-        if (sortConfig.direction === 'asc') return <ArrowUp className="w-3 h-3 ml-1 text-blue-500" />;
-        return <ArrowDown className="w-3 h-3 ml-1 text-blue-500" />;
+        if (sortConfig?.key !== columnKey) return <ArrowUpDown className="w-3 h-3 ml-1 text-slate-300 dark:text-slate-600" />;
+        if (sortConfig.direction === 'asc') return <ArrowUp className="w-3 h-3 ml-1 text-blue-500 dark:text-blue-400" />;
+        return <ArrowDown className="w-3 h-3 ml-1 text-blue-500 dark:text-blue-400" />;
     };
 
     // Group signals by Symbol + Signal Type
@@ -168,7 +168,7 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                     </div>
                                 </th>
                                 <th
-                                    className="text-left p-3 font-bold text-slate-600 text-sm cursor-pointer hover:bg-slate-50 transition-colors"
+                                    className="text-left p-3 font-bold text-slate-600 dark:text-slate-400 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                     onClick={() => handleSort('signalType')}
                                 >
                                     <div className="flex items-center">
@@ -176,7 +176,7 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                     </div>
                                 </th>
                                 <th
-                                    className="text-left p-3 font-bold text-slate-600 text-sm cursor-pointer hover:bg-slate-50 transition-colors"
+                                    className="text-left p-3 font-bold text-slate-600 dark:text-slate-400 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                     onClick={() => handleSort('count')}
                                 >
                                     <div className="flex items-center">
@@ -184,7 +184,7 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                     </div>
                                 </th>
                                 <th
-                                    className="text-left p-3 font-bold text-slate-600 text-sm cursor-pointer hover:bg-slate-50 transition-colors"
+                                    className="text-left p-3 font-bold text-slate-600 dark:text-slate-400 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                     onClick={() => handleSort('lastClose')}
                                 >
                                     <div className="flex items-center">
@@ -192,17 +192,17 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                     </div>
                                 </th>
                                 <th
-                                    className="text-left p-3 font-bold text-slate-600 text-sm cursor-pointer hover:bg-slate-50 transition-colors"
+                                    className="text-left p-3 font-bold text-slate-600 dark:text-slate-400 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                     onClick={() => handleSort('date')}
                                 >
                                     <div className="flex items-center">
                                         Date <SortIcon columnKey="date" />
                                     </div>
                                 </th>
-                                <th className="text-left p-3 font-bold text-slate-600 text-sm w-32">Action</th>
+                                <th className="text-left p-3 font-bold text-slate-600 dark:text-slate-400 text-sm w-32">Action</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                             {sortedGroups.map(group => (
                                 <Fragment key={group.id}>
                                     <tr
@@ -229,7 +229,7 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
-                                                    className="h-8 text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-200 px-2 shadow-sm"
+                                                    className="h-8 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border-blue-200 dark:border-blue-800 px-2 shadow-sm"
                                                     onClick={(e) => handleAddToWatchlist(group.symbol, e)}
                                                     title="Add to Watchlist"
                                                 >
@@ -309,16 +309,16 @@ function StrategyCard({ signal }: { signal: StrategySignal }) {
                         </DialogHeader>
                         <div className="space-y-4">
                             <div>
-                                <h4 className="text-sm font-bold text-slate-600 mb-2">Description</h4>
-                                <p className="text-slate-700">{signal.strategy_description}</p>
+                                <h4 className="text-sm font-bold text-slate-600 dark:text-slate-400 mb-2">Description</h4>
+                                <p className="text-slate-700 dark:text-slate-300">{signal.strategy_description}</p>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-600 mb-1">Symbol</h4>
-                                    <p className="text-lg font-bold text-slate-800">{signal.symbol}</p>
+                                    <h4 className="text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">Symbol</h4>
+                                    <p className="text-lg font-bold text-slate-800 dark:text-slate-100">{signal.symbol}</p>
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-600 mb-1">Signal</h4>
+                                    <h4 className="text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">Signal</h4>
                                     <Badge className={cn(
                                         'font-bold',
                                         signal.signal === 'BUY' && 'bg-emerald-600',
@@ -329,19 +329,19 @@ function StrategyCard({ signal }: { signal: StrategySignal }) {
                                     </Badge>
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-600 mb-1">Last Close</h4>
-                                    <p className="text-slate-800">Rs. {signal.last_close}</p>
+                                    <h4 className="text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">Last Close</h4>
+                                    <p className="text-slate-800 dark:text-slate-200">Rs. {signal.last_close}</p>
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-600 mb-1">Date</h4>
-                                    <p className="text-slate-800">{signal.date}</p>
+                                    <h4 className="text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">Date</h4>
+                                    <p className="text-slate-800 dark:text-slate-200">{signal.date}</p>
                                 </div>
                             </div>
                             {signal.metadata && (
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-600 mb-2">Metadata</h4>
-                                    <div className="bg-slate-50 p-3 rounded-lg">
-                                        <pre className="text-xs text-slate-700">
+                                    <h4 className="text-sm font-bold text-slate-600 dark:text-slate-400 mb-2">Metadata</h4>
+                                    <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border dark:border-slate-800">
+                                        <pre className="text-xs text-slate-700 dark:text-slate-300">
                                             {JSON.stringify(signal.metadata, null, 2)}
                                         </pre>
                                     </div>
@@ -805,81 +805,81 @@ export default function SignalsPage() {
                 {tabMode === 'tracking' && (
                     <>
                         {trackingLoading ? (
-                            <Card>
+                            <Card className="dark:bg-slate-900 dark:border-slate-800">
                                 <CardContent className="p-12 text-center">
-                                    <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                                    <p className="text-slate-600">Loading tracking data...</p>
+                                    <div className="animate-spin w-8 h-8 border-4 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full mx-auto mb-4"></div>
+                                    <p className="text-slate-600 dark:text-slate-400">Loading tracking data...</p>
                                 </CardContent>
                             </Card>
                         ) : trackingData ? (
                             <>
                                 {/* Tracking Summary Cards */}
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
-                                    <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-white">
+                                    <Card className="border-blue-200 dark:border-blue-900/50 bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-slate-900">
                                         <CardContent className="p-3">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <p className="text-sm font-medium text-blue-600 mb-0.5">Active Positions</p>
-                                                    <p className="text-3xl font-bold text-blue-700">{trackingData.summary?.total_active ?? 0}</p>
-                                                    <p className="text-xs text-blue-600 mt-0.5">Awaiting SELL signal</p>
+                                                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-0.5">Active Positions</p>
+                                                    <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">{trackingData.summary?.total_active ?? 0}</p>
+                                                    <p className="text-xs text-blue-600 dark:text-blue-500 mt-0.5">Awaiting SELL signal</p>
                                                 </div>
-                                                <div className="p-2 bg-blue-100 rounded-lg">
-                                                    <Zap className="w-5 h-5 text-blue-600" />
+                                                <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
+                                                    <Zap className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                                 </div>
                                             </div>
                                         </CardContent>
                                     </Card>
-                                    <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-white">
+                                    <Card className="border-purple-200 dark:border-purple-900/50 bg-gradient-to-br from-purple-50 to-white dark:from-purple-950/30 dark:to-slate-900">
                                         <CardContent className="p-3">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <p className="text-sm font-medium text-purple-600 mb-0.5">Closed Positions</p>
-                                                    <p className="text-3xl font-bold text-purple-700">{trackingData.summary?.total_closed ?? 0}</p>
-                                                    <p className="text-xs text-purple-600 mt-0.5">Completed cycles</p>
+                                                    <p className="text-sm font-medium text-purple-600 dark:text-purple-400 mb-0.5">Closed Positions</p>
+                                                    <p className="text-3xl font-bold text-purple-700 dark:text-purple-300">{trackingData.summary?.total_closed ?? 0}</p>
+                                                    <p className="text-xs text-purple-600 dark:text-purple-500 mt-0.5">Completed cycles</p>
                                                 </div>
-                                                <div className="p-2 bg-purple-100 rounded-lg">
-                                                    <CheckCircle2 className="w-5 h-5 text-purple-600" />
+                                                <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
+                                                    <CheckCircle2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                                                 </div>
                                             </div>
                                         </CardContent>
                                     </Card>
-                                    <Card className={cn("border bg-gradient-to-br to-white",
-                                        (trackingData.summary?.avg_return ?? 0) >= 0 ? "border-emerald-200 from-emerald-50" : "border-rose-200 from-rose-50"
+                                    <Card className={cn("border bg-gradient-to-br to-white dark:to-slate-900",
+                                        (trackingData.summary?.avg_return ?? 0) >= 0 ? "border-emerald-200 from-emerald-50 dark:border-emerald-900/50 dark:from-emerald-950/30" : "border-rose-200 from-rose-50 dark:border-rose-900/50 dark:from-rose-950/30"
                                     )}>
                                         <CardContent className="p-3">
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <p className={cn("text-sm font-medium mb-0.5",
-                                                        (trackingData.summary?.avg_return ?? 0) >= 0 ? "text-emerald-600" : "text-rose-600"
+                                                        (trackingData.summary?.avg_return ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
                                                     )}>Avg Return</p>
                                                     <p className={cn("text-3xl font-bold",
-                                                        (trackingData.summary?.avg_return ?? 0) >= 0 ? "text-emerald-700" : "text-rose-700"
+                                                        (trackingData.summary?.avg_return ?? 0) >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"
                                                     )}>{trackingData.summary?.avg_return?.toFixed(2) ?? '0.00'}%</p>
                                                     <p className={cn("text-xs mt-0.5",
-                                                        (trackingData.summary?.avg_return ?? 0) >= 0 ? "text-emerald-600" : "text-rose-600"
+                                                        (trackingData.summary?.avg_return ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-500" : "text-rose-600 dark:text-rose-500"
                                                     )}>Per trade</p>
                                                 </div>
                                                 <div className={cn("p-2 rounded-lg",
-                                                    (trackingData.summary?.avg_return ?? 0) >= 0 ? "bg-emerald-100" : "bg-rose-100"
+                                                    (trackingData.summary?.avg_return ?? 0) >= 0 ? "bg-emerald-100 dark:bg-emerald-900/50" : "bg-rose-100 dark:bg-rose-900/50"
                                                 )}>
                                                     <TrendingUp className={cn("w-5 h-5",
-                                                        (trackingData.summary?.avg_return ?? 0) >= 0 ? "text-emerald-600" : "text-rose-600"
+                                                        (trackingData.summary?.avg_return ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
                                                     )} />
                                                 </div>
                                             </div>
                                         </CardContent>
                                     </Card>
 
-                                    <Card className="border-slate-200 bg-gradient-to-br from-slate-50 to-white">
+                                    <Card className="border-slate-200 dark:border-slate-800 bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-950">
                                         <CardContent className="p-3">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <p className="text-sm font-medium text-slate-600 mb-0.5">Avg Holding Period</p>
-                                                    <p className="text-3xl font-bold text-slate-700">{trackingData.summary?.avg_holding_period?.toFixed(1) ?? '0.0'}</p>
-                                                    <p className="text-xs text-slate-600 mt-0.5">Days</p>
+                                                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-0.5">Avg Holding Period</p>
+                                                    <p className="text-3xl font-bold text-slate-700 dark:text-slate-200">{trackingData.summary?.avg_holding_period?.toFixed(1) ?? '0.0'}</p>
+                                                    <p className="text-xs text-slate-600 dark:text-slate-500 mt-0.5">Days</p>
                                                 </div>
-                                                <div className="p-2 bg-slate-100 rounded-lg">
-                                                    <Clock className="w-5 h-5 text-slate-600" />
+                                                <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                                                    <Clock className="w-5 h-5 text-slate-600 dark:text-slate-400" />
                                                 </div>
                                             </div>
                                         </CardContent>
@@ -887,14 +887,14 @@ export default function SignalsPage() {
                                 </div>
 
                                 {/* Active Positions Table */}
-                                <Card className="mb-6">
+                                <Card className="mb-6 dark:bg-slate-900 dark:border-slate-800">
                                     <CardHeader>
-                                        <CardTitle className="text-lg font-bold text-slate-800">Active Positions</CardTitle>
+                                        <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-100">Active Positions</CardTitle>
                                     </CardHeader>
                                     <CardContent className="p-0">
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-sm text-left">
-                                                <thead className="bg-slate-50 text-slate-600 uppercase text-xs">
+                                                <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 uppercase text-xs">
                                                     <tr>
                                                         <th className="px-4 py-3">Symbol</th>
                                                         <th className="px-4 py-3">Buy Price</th>
@@ -905,9 +905,9 @@ export default function SignalsPage() {
                                                         <th className="px-4 py-3">Strategy</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-slate-100">
+                                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                                     {(trackingData.active_positions || []).map((pos, idx) => (
-                                                        <tr key={idx} className="hover:bg-slate-50">
+                                                        <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                                                             <td className="px-4 py-3 font-bold">{pos.symbol}</td>
                                                             <td className="px-4 py-3 font-mono">Rs. {pos.buy_price}</td>
                                                             <td className="px-4 py-3 font-mono">
@@ -916,7 +916,9 @@ export default function SignalsPage() {
                                                             <td className="px-4 py-3">
                                                                 {pos.return_pct !== undefined ? (
                                                                     <Badge className={cn(
-                                                                        pos.return_pct >= 0 ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200" : "bg-rose-100 text-rose-800 hover:bg-rose-200"
+                                                                        pos.return_pct >= 0
+                                                                            ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50"
+                                                                            : "bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-400 hover:bg-rose-200 dark:hover:bg-rose-900/50"
                                                                     )}>
                                                                         {pos.return_pct >= 0 ? "+" : ""}{pos.return_pct.toFixed(2)}%
                                                                     </Badge>
@@ -945,14 +947,14 @@ export default function SignalsPage() {
                                 </Card>
 
                                 {/* Closed Positions Table */}
-                                <Card>
+                                <Card className="dark:bg-slate-900 dark:border-slate-800">
                                     <CardHeader>
-                                        <CardTitle className="text-lg font-bold text-slate-800">Closed Positions</CardTitle>
+                                        <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-100">Closed Positions</CardTitle>
                                     </CardHeader>
                                     <CardContent className="p-0">
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-sm text-left">
-                                                <thead className="bg-slate-50 text-slate-600 uppercase text-xs">
+                                                <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 uppercase text-xs">
                                                     <tr>
                                                         <th className="px-4 py-3">Symbol</th>
                                                         <th className="px-4 py-3">Buy</th>
@@ -964,15 +966,17 @@ export default function SignalsPage() {
                                                         <th className="px-4 py-3">Strategy</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-slate-100">
+                                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                                     {(trackingData.closed_positions || []).map((pos, idx) => (
-                                                        <tr key={idx} className="hover:bg-slate-50">
+                                                        <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                                                             <td className="px-4 py-3 font-bold">{pos.symbol}</td>
                                                             <td className="px-4 py-3 font-mono">Rs. {pos.buy_price}</td>
                                                             <td className="px-4 py-3 font-mono">Rs. {pos.sell_price}</td>
                                                             <td className="px-4 py-3">
                                                                 <Badge className={cn(
-                                                                    pos.return_pct >= 0 ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200" : "bg-rose-100 text-rose-800 hover:bg-rose-200"
+                                                                    pos.return_pct >= 0
+                                                                        ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50"
+                                                                        : "bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-400 hover:bg-rose-200 dark:hover:bg-rose-900/50"
                                                                 )}>
                                                                     {pos.return_pct >= 0 ? "+" : ""}{pos.return_pct.toFixed(2)}%
                                                                 </Badge>
@@ -980,7 +984,7 @@ export default function SignalsPage() {
                                                             <td className="px-4 py-3 text-xs">{new Date(pos.buy_date).toLocaleDateString()}</td>
                                                             <td className="px-4 py-3 text-xs">{new Date(pos.sell_date).toLocaleDateString()}</td>
                                                             <td className="px-4 py-3 text-xs">{pos.days_held} days</td>
-                                                            <td className="px-4 py-3 text-xs text-slate-500">
+                                                            <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
                                                                 In: {pos.buy_strategy}<br />Out: {pos.sell_strategy}
                                                             </td>
                                                         </tr>

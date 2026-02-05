@@ -254,7 +254,7 @@ export default function RecommendationsPage() {
             {/* TradingView Chart Modal (90% layout for validation hub) */}
             <Dialog open={chartOpen} onOpenChange={setChartOpen}>
                 <DialogContent
-                    className="p-0 overflow-hidden flex flex-col bg-white border-slate-200 shadow-2xl rounded-2xl"
+                    className="p-0 overflow-hidden flex flex-col bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-2xl rounded-2xl"
                     style={{ maxWidth: '90vw', width: '90vw', height: '90vh', maxHeight: '90vh' }}
                 >
                     <DialogHeader className="sr-only">
@@ -263,19 +263,19 @@ export default function RecommendationsPage() {
                     </DialogHeader>
                     {selectedRec && (
                         <>
-                            <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex flex-row items-center justify-between shrink-0">
+                            <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex flex-row items-center justify-between shrink-0">
                                 <div className="flex items-center gap-4">
                                     <div className="flex flex-col">
-                                        <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                                        <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
                                             {selectedRec.symbol}
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${selectedRec.signal === 'BUY' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-rose-50 text-rose-600 border-rose-200'}`}>
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${selectedRec.signal === 'BUY' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800'}`}>
                                                 {selectedRec.signal} SIGNAL
                                             </span>
                                         </h2>
                                         <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Advanced Validation Hub</p>
                                     </div>
 
-                                    <div className="h-8 w-[1px] bg-slate-200 mx-2 hidden sm:block" />
+                                    <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-700 mx-2 hidden sm:block" />
 
                                     <div className="hidden sm:flex items-center gap-6">
                                         <div className="flex flex-col">
@@ -283,8 +283,8 @@ export default function RecommendationsPage() {
                                             <span className="text-xs font-bold text-blue-600">{selectedRec.crossover_date}</span>
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Crossover Price</span>
-                                            <span className="text-xs font-bold text-slate-900">Rs. {selectedRec.crossover_price?.toLocaleString()}</span>
+                                            <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Crossover Price</span>
+                                            <span className="text-xs font-bold text-slate-900 dark:text-slate-100">Rs. {selectedRec.crossover_price?.toLocaleString()}</span>
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Current LTP</span>
@@ -303,18 +303,18 @@ export default function RecommendationsPage() {
                                 />
                             </div>
 
-                            <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
+                            <div className="px-6 py-3 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between shrink-0">
                                 <div className="flex items-center gap-4 py-1">
-                                    <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-lg border border-blue-100">
+                                    <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-100 dark:border-blue-800">
                                         <div className="w-2 h-2 rounded-full bg-blue-500" />
-                                        <span className="text-[10px] font-bold text-blue-700">RSI: {selectedRec.rsi}</span>
+                                        <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400">RSI: {selectedRec.rsi}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 px-3 py-1 bg-purple-50 rounded-lg border border-purple-100">
+                                    <div className="flex items-center gap-2 px-3 py-1 bg-purple-50 dark:bg-purple-900/30 rounded-lg border border-purple-100 dark:border-purple-800">
                                         <div className="w-2 h-2 rounded-full bg-purple-500" />
-                                        <span className="text-[10px] font-bold text-purple-700">MACD HIST: {selectedRec.macd_hist}</span>
+                                        <span className="text-[10px] font-bold text-purple-700 dark:text-purple-400">MACD HIST: {selectedRec.macd_hist}</span>
                                     </div>
                                 </div>
-                                <p className="text-[10px] text-slate-500 font-medium hidden md:block">
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium hidden md:block">
                                     * Indicators are calculated on NEPSE adjusted prices. Validate crossover event on chart.
                                 </p>
                             </div>
@@ -377,17 +377,17 @@ export default function RecommendationsPage() {
                     <div className="flex-1 overflow-hidden bg-slate-50/50 flex flex-col">
                         <Tabs defaultValue="performance" className="h-full flex flex-col">
                             <div className="px-6 pt-4 shrink-0">
-                                <TabsList className="grid w-full grid-cols-2 max-w-[400px] h-9 bg-slate-200/50 p-1 rounded-lg">
+                                <TabsList className="grid w-full grid-cols-2 max-w-[400px] h-9 bg-slate-200/50 dark:bg-slate-800/50 p-1 rounded-lg">
                                     <TabsTrigger
                                         value="performance"
-                                        className="text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm rounded-md transition-all"
+                                        className="text-xs font-semibold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:shadow-sm rounded-md transition-all"
                                     >
                                         <TrendingUp size={14} className="mr-2" />
                                         Analysis & Performance
                                     </TabsTrigger>
                                     <TabsTrigger
                                         value="history"
-                                        className="text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm rounded-md transition-all"
+                                        className="text-xs font-semibold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:shadow-sm rounded-md transition-all"
                                     >
                                         <Target size={14} className="mr-2" />
                                         Complete Signal Log
@@ -409,7 +409,7 @@ export default function RecommendationsPage() {
                                         </Badge>
                                     </div>
 
-                                    <Card className="border border-slate-200 shadow-sm overflow-hidden bg-white rounded-xl">
+                                    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden bg-white dark:bg-slate-900 rounded-xl">
                                         {completedTrades.length === 0 ? (
                                             <div className="flex flex-col items-center justify-center py-12 text-slate-400 space-y-2">
                                                 <TrendingDown size={32} className="opacity-20" />
@@ -420,40 +420,40 @@ export default function RecommendationsPage() {
                                             </div>
                                         ) : (
                                             <Table>
-                                                <TableHeader className="bg-slate-50">
-                                                    <TableRow className="border-b border-slate-100 hover:bg-transparent">
-                                                        <TableHead className="font-semibold text-xs text-slate-500 h-10 w-32">Buy Date</TableHead>
-                                                        <TableHead className="font-semibold text-xs text-slate-500 h-10 w-32">Sell Date</TableHead>
-                                                        <TableHead className="font-semibold text-xs text-slate-500 h-10 text-right">Entry Price</TableHead>
-                                                        <TableHead className="font-semibold text-xs text-slate-500 h-10 text-right">Exit Price</TableHead>
-                                                        <TableHead className="font-semibold text-xs text-slate-500 h-10 text-center">PnL %</TableHead>
-                                                        <TableHead className="font-semibold text-xs text-slate-500 h-10 text-right pr-6">Profit/Loss</TableHead>
+                                                <TableHeader className="bg-slate-50 dark:bg-slate-800/50">
+                                                    <TableRow className="border-b border-slate-100 dark:border-slate-800 hover:bg-transparent">
+                                                        <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 w-32">Buy Date</TableHead>
+                                                        <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 w-32">Sell Date</TableHead>
+                                                        <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 text-right">Entry Price</TableHead>
+                                                        <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 text-right">Exit Price</TableHead>
+                                                        <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 text-center">PnL %</TableHead>
+                                                        <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 text-right pr-6">Profit/Loss</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
                                                     {completedTrades.map((trade: any, i: number) => (
-                                                        <TableRow key={i} className={`hover:bg-slate-50 border-b border-slate-50 last:border-0 ${trade.status === 'OPEN' ? 'bg-blue-50/30' : ''}`}>
-                                                            <TableCell className="font-mono text-xs text-slate-600">
+                                                        <TableRow key={i} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-50 dark:border-slate-800 last:border-0 ${trade.status === 'OPEN' ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}`}>
+                                                            <TableCell className="font-mono text-xs text-slate-600 dark:text-slate-400">
                                                                 {trade.buyDate}
-                                                                {trade.status === 'OPEN' && <Badge className="ml-2 bg-blue-100 text-blue-700 text-[9px] h-4 px-1 shadow-none">Active</Badge>}
+                                                                {trade.status === 'OPEN' && <Badge className="ml-2 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 text-[9px] h-4 px-1 shadow-none">Active</Badge>}
                                                             </TableCell>
-                                                            <TableCell className="font-mono text-xs text-slate-600">
+                                                            <TableCell className="font-mono text-xs text-slate-600 dark:text-slate-400">
                                                                 {trade.sellDate === 'Present' ? (
-                                                                    <span className="text-blue-600 font-bold uppercase text-[10px] tracking-wider">LTP (Unrealized)</span>
+                                                                    <span className="text-blue-600 dark:text-blue-400 font-bold uppercase text-[10px] tracking-wider">LTP (Unrealized)</span>
                                                                 ) : trade.sellDate}
                                                             </TableCell>
-                                                            <TableCell className="font-mono text-sm text-slate-700 font-medium text-right">
+                                                            <TableCell className="font-mono text-sm text-slate-700 dark:text-slate-300 font-medium text-right">
                                                                 Rs. {trade.buyPrice?.toLocaleString()}
                                                             </TableCell>
-                                                            <TableCell className="font-mono text-sm text-slate-900 font-medium text-right">
+                                                            <TableCell className="font-mono text-sm text-slate-900 dark:text-slate-100 font-medium text-right">
                                                                 Rs. {trade.sellPrice?.toLocaleString()}
                                                             </TableCell>
                                                             <TableCell className="text-center">
-                                                                <Badge className={`${trade.pnlPercent >= 0 ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100' : 'bg-rose-100 text-rose-800 hover:bg-rose-100'} border-none shadow-none font-bold text-xs px-2`}>
+                                                                <Badge className={`${trade.pnlPercent >= 0 ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-400 hover:bg-emerald-100' : 'bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-400 hover:bg-rose-100'} border-none shadow-none font-bold text-xs px-2`}>
                                                                     {trade.pnlPercent >= 0 ? '+' : ''}{trade.pnlPercent}%
                                                                 </Badge>
                                                             </TableCell>
-                                                            <TableCell className={`text-right pr-6 font-mono text-sm font-bold ${trade.pnlAmount >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                            <TableCell className={`text-right pr-6 font-mono text-sm font-bold ${trade.pnlAmount >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                                                 {trade.pnlAmount >= 0 ? '+' : ''}{trade.pnlAmount?.toLocaleString()}
                                                             </TableCell>
                                                         </TableRow>
@@ -472,12 +472,12 @@ export default function RecommendationsPage() {
                             </TabsContent>
 
                             <TabsContent value="history" className="flex-1 overflow-hidden p-6 pt-2 h-full flex flex-col data-[state=active]:animate-in data-[state=active]:fade-in-0 duration-300">
-                                <Card className="border border-slate-200 shadow-sm flex flex-col bg-white mt-0 rounded-xl flex-1 overflow-hidden">
-                                    <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50/50">
+                                <Card className="border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col bg-white dark:bg-slate-900 mt-0 rounded-xl flex-1 overflow-hidden">
+                                    <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xs text-slate-500 font-medium">Rows per page:</span>
+                                            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Rows per page:</span>
                                             <select
-                                                className="h-8 text-xs border border-slate-200 rounded-md bg-white px-2 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                                                className="h-8 text-xs border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-800 px-2 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-slate-700 dark:text-slate-200"
                                                 value={historyRowsPerPage}
                                                 onChange={(e) => {
                                                     setHistoryRowsPerPage(Number(e.target.value));
@@ -490,13 +490,13 @@ export default function RecommendationsPage() {
                                             </select>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xs text-slate-500 font-medium mr-2">
+                                            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium mr-2">
                                                 Page {historyPage} of {totalHistoryPages || 1}
                                             </span>
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                className="h-8 w-8 p-0"
+                                                className="h-8 w-8 p-0 dark:border-slate-800 dark:bg-slate-900"
                                                 onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
                                                 disabled={historyPage === 1}
                                             >
@@ -505,7 +505,7 @@ export default function RecommendationsPage() {
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                className="h-8 w-8 p-0"
+                                                className="h-8 w-8 p-0 dark:border-slate-800 dark:bg-slate-900"
                                                 onClick={() => setHistoryPage(p => Math.min(totalHistoryPages, p + 1))}
                                                 disabled={historyPage >= totalHistoryPages}
                                             >
@@ -519,37 +519,37 @@ export default function RecommendationsPage() {
                                             <div className="p-12 text-center text-slate-400 text-sm">No raw signals found.</div>
                                         ) : (
                                             <Table>
-                                                <TableHeader className="bg-slate-50 sticky top-0 z-10 shadow-sm">
-                                                    <TableRow className="border-b border-slate-200 hover:bg-transparent">
-                                                        <TableHead className="font-semibold text-xs text-slate-500 h-10 w-32 py-3 pl-6">Date</TableHead>
-                                                        <TableHead className="font-semibold text-xs text-slate-500 h-10 w-24 py-3">Signal</TableHead>
-                                                        <TableHead className="font-semibold text-xs text-slate-500 h-10 w-32 py-3 text-right">Price</TableHead>
-                                                        <TableHead className="font-semibold text-xs text-slate-500 h-10 w-32 py-3 pl-8">Strength</TableHead>
-                                                        <TableHead className="font-semibold text-xs text-slate-500 h-10 py-3">Intelligence Reasoning</TableHead>
+                                                <TableHeader className="bg-slate-50 dark:bg-slate-800/80 sticky top-0 z-10 shadow-sm">
+                                                    <TableRow className="border-b border-slate-200 dark:border-slate-700 hover:bg-transparent">
+                                                        <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 w-32 py-3 pl-6">Date</TableHead>
+                                                        <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 w-24 py-3">Signal</TableHead>
+                                                        <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 w-32 py-3 text-right">Price</TableHead>
+                                                        <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 w-32 py-3 pl-8">Strength</TableHead>
+                                                        <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 py-3">Intelligence Reasoning</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
                                                     {paginatedHistory.map((row, i) => (
-                                                        <TableRow key={i} className="hover:bg-slate-50 border-b border-slate-100 last:border-0 group h-12">
-                                                            <TableCell className="font-mono text-xs text-slate-500 pl-6">{row.date}</TableCell>
+                                                        <TableRow key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 last:border-0 group h-12">
+                                                            <TableCell className="font-mono text-xs text-slate-500 dark:text-slate-400 pl-6">{row.date}</TableCell>
                                                             <TableCell>
-                                                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${row.signal === 'BUY' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-rose-50 text-rose-600 border border-rose-100'
+                                                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${row.signal === 'BUY' ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800' : 'bg-rose-50 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800'
                                                                     }`}>
                                                                     {row.signal}
                                                                 </span>
                                                             </TableCell>
-                                                            <TableCell className="font-mono text-xs font-semibold text-slate-700 text-right">
+                                                            <TableCell className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300 text-right">
                                                                 Rs. {row.close?.toLocaleString() || row.price?.toLocaleString()}
                                                             </TableCell>
                                                             <TableCell className="pl-8">
                                                                 <div className="flex items-center gap-2">
-                                                                    <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                                    <div className="w-12 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                                                         <div
-                                                                            className={`h-full rounded-full ${row.strength > 70 ? 'bg-blue-500' : 'bg-slate-400'}`}
+                                                                            className={`h-full rounded-full ${row.strength > 70 ? 'bg-blue-500' : 'bg-slate-400 dark:bg-slate-600'}`}
                                                                             style={{ width: `${row.strength}%` }}
                                                                         ></div>
                                                                     </div>
-                                                                    <span className="text-[10px] font-medium text-slate-400">{row.strength}%</span>
+                                                                    <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">{row.strength}%</span>
                                                                 </div>
                                                             </TableCell>
                                                             <TableCell className="max-w-md">
@@ -560,12 +560,12 @@ export default function RecommendationsPage() {
 
                                                                         // Colors for different reasoning types or just variety
                                                                         const colors = [
-                                                                            'bg-blue-50 text-blue-700 border-blue-200/50',
-                                                                            'bg-emerald-50 text-emerald-700 border-emerald-200/50',
-                                                                            'bg-slate-50 text-slate-700 border-slate-200/50',
-                                                                            'bg-indigo-50 text-indigo-700 border-indigo-200/50',
-                                                                            'bg-violet-50 text-violet-700 border-violet-200/50',
-                                                                            'bg-sky-50 text-sky-700 border-sky-200/50',
+                                                                            'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200/50 dark:border-blue-800',
+                                                                            'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-800',
+                                                                            'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200/50 dark:border-slate-700',
+                                                                            'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border-indigo-200/50 dark:border-indigo-800',
+                                                                            'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 border-violet-200/50 dark:border-violet-800',
+                                                                            'bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 border-sky-200/50 dark:border-sky-800',
                                                                         ];
                                                                         const colorClass = colors[trimmed.length % colors.length];
 
@@ -573,7 +573,7 @@ export default function RecommendationsPage() {
                                                                             <span
                                                                                 key={idx}
                                                                                 className={cn(
-                                                                                    "px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-tight border shadow-sm transition-all hover:bg-white",
+                                                                                    "px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-tight border shadow-sm transition-all hover:bg-white dark:hover:bg-slate-800",
                                                                                     colorClass
                                                                                 )}
                                                                             >
@@ -597,29 +597,29 @@ export default function RecommendationsPage() {
             </Dialog >
 
             <div className="space-y-6">
-                <Card className="border-none shadow-sm bg-white/50 backdrop-blur-sm">
-                    <div className="p-4 flex flex-col md:flex-row gap-4 items-end md:items-center justify-between border-b border-gray-100">
+                <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+                    <div className="p-4 flex flex-col md:flex-row gap-4 items-end md:items-center justify-between border-b border-gray-100 dark:border-slate-800">
                         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
                             <div className="space-y-1.5 min-w-[200px]">
-                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                                <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
                                     <Target size={12} /> Strategy Model
                                 </label>
                                 <select
                                     value={recStrategy}
                                     onChange={(e) => setRecStrategy(e.target.value)}
-                                    className="w-full h-9 rounded-md border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:border-blue-500"
+                                    className="w-full h-9 rounded-md border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:border-blue-500 dark:text-slate-200"
                                 >
                                     {STRATEGIES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                 </select>
                             </div>
                             <div className="space-y-1.5 min-w-[150px]">
-                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                                <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
                                     <Filter size={12} /> Sector
                                 </label>
                                 <select
                                     value={recSector}
                                     onChange={(e) => setRecSector(e.target.value)}
-                                    className="w-full h-9 rounded-md border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:border-blue-500"
+                                    className="w-full h-9 rounded-md border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:border-blue-500 dark:text-slate-200"
                                 >
                                     {SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
                                 </select>
@@ -628,22 +628,22 @@ export default function RecommendationsPage() {
 
                         <div className="flex items-end gap-2 w-full md:w-auto">
                             <div className="space-y-1.5 flex-1 md:flex-none min-w-[200px]">
-                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                                <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
                                     <Search size={12} /> Search Symbol
                                 </label>
                                 <div className="relative group flex items-center">
-                                    <Search size={14} className="absolute left-3.5 text-gray-400 group-focus-within:text-blue-500 transition-colors z-10" />
+                                    <Search size={14} className="absolute left-3.5 text-gray-400 dark:text-slate-500 group-focus-within:text-blue-500 transition-colors z-10" />
                                     <input
                                         type="text"
                                         placeholder="Search symbol..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full h-10 rounded-xl border border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white pl-10 pr-10 py-2 text-sm shadow-sm transition-all focus-visible:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 placeholder:text-gray-400/80"
+                                        className="w-full h-10 rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 hover:bg-white dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 pl-10 pr-10 py-2 text-sm shadow-sm transition-all focus-visible:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 placeholder:text-gray-400/80 dark:text-slate-200"
                                     />
                                     {searchTerm && (
                                         <button
                                             onClick={() => setSearchTerm('')}
-                                            className="absolute right-3 p-1 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-all active:scale-90 z-10"
+                                            className="absolute right-3 p-1 rounded-full text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all active:scale-90 z-10"
                                             title="Clear search"
                                         >
                                             <X size={12} strokeWidth={3} />
@@ -657,7 +657,7 @@ export default function RecommendationsPage() {
                                 size="icon"
                                 onClick={fetchRecommendations}
                                 disabled={loadingRecs}
-                                className="h-9 w-9 shrink-0"
+                                className="h-9 w-9 shrink-0 dark:border-slate-800 dark:bg-slate-900/50"
                                 title="Refresh Scan"
                             >
                                 <RefreshCw size={16} className={loadingRecs ? 'animate-spin' : ''} />
@@ -678,30 +678,30 @@ export default function RecommendationsPage() {
                             </div>
                         ) : (
                             <Table>
-                                <TableHeader className="bg-gray-50/50">
-                                    <TableRow>
-                                        <TableHead>Symbol</TableHead>
-                                        <TableHead>Signal</TableHead>
-                                        <TableHead>Crossover Date</TableHead>
-                                        <TableHead>Crossover Price</TableHead>
-                                        <TableHead>Strength</TableHead>
-                                        <TableHead>LTP</TableHead>
-                                        <TableHead className="w-[30%]">Reason</TableHead>
-                                        <TableHead className="text-right">Action</TableHead>
+                                <TableHeader className="bg-gray-50/50 dark:bg-slate-800/50">
+                                    <TableRow className="border-b dark:border-slate-800">
+                                        <TableHead className="dark:text-slate-400">Symbol</TableHead>
+                                        <TableHead className="dark:text-slate-400">Signal</TableHead>
+                                        <TableHead className="dark:text-slate-400">Crossover Date</TableHead>
+                                        <TableHead className="dark:text-slate-400">Crossover Price</TableHead>
+                                        <TableHead className="dark:text-slate-400">Strength</TableHead>
+                                        <TableHead className="dark:text-slate-400">LTP</TableHead>
+                                        <TableHead className="w-[30%] dark:text-slate-400">Reason</TableHead>
+                                        <TableHead className="text-right dark:text-slate-400">Action</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {recommendations
                                         .filter(rec => rec.symbol.toLowerCase().includes(searchTerm.toLowerCase()))
                                         .map((rec) => (
-                                            <TableRow key={rec.symbol} className="hover:bg-gray-50/50">
-                                                <TableCell className="font-medium text-gray-900">
+                                            <TableRow key={rec.symbol} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/50 border-b dark:border-slate-800">
+                                                <TableCell className="font-medium text-gray-900 dark:text-slate-100">
                                                     <span>{rec.symbol}</span>
                                                 </TableCell>
                                                 <TableCell>
                                                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${rec.signal === 'BUY'
-                                                        ? 'bg-green-50 text-green-700 border-green-200'
-                                                        : 'bg-red-50 text-red-700 border-red-200'
+                                                        ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800'
+                                                        : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'
                                                         }`}>
                                                         {rec.signal === 'BUY' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                                                         {rec.signal}
@@ -709,37 +709,37 @@ export default function RecommendationsPage() {
                                                 </TableCell>
                                                 <TableCell>
                                                     {rec.crossover_date ? (
-                                                        <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded w-fit italic">
+                                                        <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded w-fit italic">
                                                             {rec.crossover_date}
                                                         </span>
                                                     ) : (
-                                                        <span className="text-gray-300">-</span>
+                                                        <span className="text-gray-300 dark:text-slate-700">-</span>
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
                                                     {rec.crossover_price ? (
-                                                        <span className="text-[11px] font-mono text-gray-700">Rs. {rec.crossover_price.toLocaleString()}</span>
+                                                        <span className="text-[11px] font-mono text-gray-700 dark:text-slate-300">Rs. {rec.crossover_price.toLocaleString()}</span>
                                                     ) : (
-                                                        <span className="text-gray-300">-</span>
+                                                        <span className="text-gray-300 dark:text-slate-700">-</span>
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-2">
-                                                        <div className="h-1.5 w-16 bg-gray-100 rounded-full overflow-hidden">
+                                                        <div className="h-1.5 w-16 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                                             <div
                                                                 className={`h-full rounded-full ${rec.signal === 'BUY' ? 'bg-green-500' : 'bg-red-500'}`}
                                                                 style={{ width: `${rec.strength}%` }}
                                                             />
                                                         </div>
-                                                        <span className="text-xs font-medium text-gray-600">{rec.strength}%</span>
+                                                        <span className="text-xs font-medium text-gray-600 dark:text-slate-400">{rec.strength}%</span>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="font-mono text-gray-700">Rs. {rec.close.toLocaleString()}</TableCell>
-                                                <TableCell className="text-sm text-gray-500">
+                                                <TableCell className="font-mono text-gray-700 dark:text-slate-300">Rs. {rec.close.toLocaleString()}</TableCell>
+                                                <TableCell className="text-sm text-gray-500 dark:text-slate-400">
                                                     <div className="flex flex-col gap-1">
-                                                        <span>{rec.reason}</span>
+                                                        <span className="text-slate-600 dark:text-slate-300">{rec.reason}</span>
                                                         {(rec.rsi !== undefined || rec.macd_hist !== undefined) && (
-                                                            <div className="flex items-center gap-3 text-[10px] text-gray-400 font-medium">
+                                                            <div className="flex items-center gap-3 text-[10px] text-gray-400 dark:text-slate-500 font-medium">
                                                                 {rec.rsi !== undefined && (
                                                                     <span className="flex items-center gap-1">
                                                                         <span className="w-1 h-1 rounded-full bg-blue-400" />
@@ -761,7 +761,7 @@ export default function RecommendationsPage() {
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
-                                                            className="text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1.5"
+                                                            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-bold flex items-center gap-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                                                             onClick={() => {
                                                                 setSelectedRec(rec);
                                                                 setChartOpen(true);
@@ -774,7 +774,7 @@ export default function RecommendationsPage() {
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
-                                                            className="text-blue-600 hover:text-blue-700"
+                                                            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                                                             onClick={() => handleViewAction(rec.symbol)}
                                                         >
                                                             {recStrategy === 'broker_accumulation' ? 'View History' : 'View Chart'}

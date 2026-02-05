@@ -34,7 +34,7 @@ export function TerminalHeader({
 
     return (
         <div className={cn(
-            "sticky top-0 z-50 border-b shadow-sm bg-white/95 backdrop-blur-md border-slate-200/50 py-3",
+            "sticky top-0 z-50 border-b shadow-sm bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-slate-200/50 dark:border-slate-800/50 py-3",
         )}>
             <div className="max-w-[1700px] mx-auto px-8 flex items-center justify-center gap-6">
                 {/* Unified Identity & Price Area */}
@@ -45,7 +45,7 @@ export function TerminalHeader({
                             "font-bold tracking-tight tabular-nums text-3xl",
                             signal === 'BUY' ? "text-blue-600" :
                                 signal === 'SELL' ? "text-rose-600" :
-                                    "text-slate-900"
+                                    "text-slate-900 dark:text-slate-100"
                         )}>
                             {symbol}
                         </h1>
@@ -55,8 +55,8 @@ export function TerminalHeader({
                                 className={cn(
                                     "px-2 py-0.5 rounded text-[10px] font-bold border",
                                     signal === 'BUY'
-                                        ? "bg-blue-50 text-blue-600 border-blue-200"
-                                        : "bg-rose-50 text-rose-600 border-rose-200"
+                                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800"
+                                        : "bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800"
                                 )}
                             >
                                 {signal}
@@ -64,18 +64,18 @@ export function TerminalHeader({
                         )}
                     </div>
 
-                    <div className="h-8 w-px bg-slate-200" />
+                    <div className="h-8 w-px bg-slate-200 dark:bg-slate-800" />
 
                     {/* Centered LTP Section */}
                     <div className={cn(
-                        "flex items-center justify-center rounded-2xl bg-slate-100/50 border border-slate-200/50 shadow-inner px-6 py-1.5 gap-6",
+                        "flex items-center justify-center rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50 shadow-inner px-6 py-1.5 gap-6",
                     )}>
-                        <div className="font-bold text-slate-900 tabular-nums tracking-tighter text-3xl">
+                        <div className="font-bold text-slate-900 dark:text-slate-100 tabular-nums tracking-tighter text-3xl">
                             {price.toLocaleString()}
                         </div>
                         <div className={cn(
                             "flex items-center gap-1.5 font-bold tabular-nums rounded-lg justify-center text-lg px-3 py-1",
-                            isPositive ? "text-emerald-600 bg-emerald-500/10" : "text-rose-600 bg-rose-500/10"
+                            isPositive ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10" : "text-rose-600 dark:text-rose-500/10 bg-rose-500/10"
                         )}>
                             {isPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
                             <span>{isPositive ? '+' : ''}{change.toFixed(2)}</span>

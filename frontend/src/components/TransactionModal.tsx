@@ -179,27 +179,27 @@ export default function TransactionModal({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100">
+            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100">
 
                 {/* Header */}
-                <div className="flex justify-between items-center p-6 border-b border-gray-100">
-                    <h2 className="text-xl font-bold text-gray-800">New Transaction</h2>
-                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100 transition-colors">
-                        <X className="h-5 w-5 text-gray-500" />
+                <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-slate-800">
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">New Transaction</h2>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+                        <X className="h-5 w-5 text-gray-500 dark:text-slate-400" />
                     </button>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex border-b border-gray-100 bg-gray-50/50">
+                <div className="flex border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50">
                     {(['BUY', 'SELL', 'BONUS', 'DIVIDEND'] as TransactionType[]).map((type) => (
                         <button
                             key={type}
                             onClick={() => setActiveTab(type)}
                             className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === type
-                                ? type === 'BUY' ? 'border-green-500 text-green-600 bg-green-50/50'
-                                    : type === 'SELL' ? 'border-red-500 text-red-600 bg-red-50/50'
-                                        : 'border-blue-500 text-blue-600 bg-blue-50/50'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                                ? type === 'BUY' ? 'border-green-500 text-green-600 dark:text-green-400 bg-green-50/50 dark:bg-green-900/20'
+                                    : type === 'SELL' ? 'border-red-500 text-red-600 dark:text-red-400 bg-red-50/50 dark:bg-red-900/20'
+                                        : 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20'
+                                : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800'
                                 }`}
                         >
                             {type === 'BONUS' ? 'BONUS SHARE' : type === 'DIVIDEND' ? 'CASH DIVIDEND' : type}
@@ -216,13 +216,13 @@ export default function TransactionModal({
                             <div className="space-y-2">
                                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Portfolio Account</label>
                                 <select
-                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-slate-100"
                                     value={formData.account}
                                     onChange={(e) => setFormData({ ...formData, account: e.target.value })}
                                 >
-                                    <option value="">Select Account (Default)</option>
+                                    <option value="" className="dark:bg-slate-900">Select Account (Default)</option>
                                     {accounts.map(acc => (
-                                        <option key={acc.id} value={acc.id}>{acc.name}</option>
+                                        <option key={acc.id} value={acc.id} className="dark:bg-slate-900">{acc.name}</option>
                                     ))}
                                 </select>
                             </div>
@@ -247,7 +247,7 @@ export default function TransactionModal({
                             <input
                                 type="date"
                                 required
-                                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-slate-100"
                                 value={formData.transaction_date}
                                 onChange={(e) => setFormData({ ...formData, transaction_date: e.target.value })}
                             />
@@ -262,7 +262,7 @@ export default function TransactionModal({
                                 required
                                 min="1"
                                 placeholder="0"
-                                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-slate-100"
                                 value={formData.quantity}
                                 onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                             />
@@ -276,7 +276,7 @@ export default function TransactionModal({
                                 required
                                 step="0.01"
                                 placeholder="0.00"
-                                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-slate-100"
                                 value={formData.rate}
                                 onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
                             />
@@ -285,31 +285,31 @@ export default function TransactionModal({
 
                     {/* Estimates Panel */}
                     {(activeTab === 'BUY' || activeTab === 'SELL') && estimates && (
-                        <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                            <div className="flex items-center gap-2 mb-3 text-gray-700 font-medium text-sm">
+                        <div className="mt-4 p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-100 dark:border-slate-700">
+                            <div className="flex items-center gap-2 mb-3 text-gray-700 dark:text-slate-200 font-medium text-sm">
                                 <Calculator className="h-4 w-4" />
                                 <span>Estimated Breakdown</span>
                             </div>
                             <div className="space-y-1 text-sm">
-                                <div className="flex justify-between text-gray-500">
+                                <div className="flex justify-between text-gray-500 dark:text-slate-400">
                                     <span>Broker Commission</span>
                                     <span>Rs. {estimates.commission.toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between text-gray-500">
+                                <div className="flex justify-between text-gray-500 dark:text-slate-400">
                                     <span>SEBON Fee</span>
                                     <span>Rs. {estimates.sebon.toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between text-gray-500">
+                                <div className="flex justify-between text-gray-500 dark:text-slate-400">
                                     <span>DP Charge</span>
                                     <span>Rs. {estimates.dp.toFixed(2)}</span>
                                 </div>
-                                <div className="h-px bg-gray-200 my-2"></div>
-                                <div className="flex justify-between font-bold text-gray-900">
+                                <div className="h-px bg-gray-200 dark:bg-slate-700 my-2"></div>
+                                <div className="flex justify-between font-bold text-gray-900 dark:text-slate-100">
                                     <span>Net {activeTab === 'BUY' ? 'Payable' : 'Receivable'}</span>
                                     <span>Rs. {estimates.total.toFixed(2)}</span>
                                 </div>
                             </div>
-                            <p className="text-xs text-gray-400 mt-2 italic">* Actual calculation may vary slightly on server.</p>
+                            <p className="text-xs text-gray-400 dark:text-slate-500 mt-2 italic">* Actual calculation may vary slightly on server.</p>
                         </div>
                     )}
 
