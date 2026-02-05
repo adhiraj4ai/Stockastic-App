@@ -142,9 +142,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 <Tabs defaultValue="general" className="flex-row w-full h-full" orientation="vertical">
 
                     {/* Left Sidebar (Full Height) */}
-                    <div className="w-64 flex-none border-r border-slate-200/60 bg-slate-50/50 flex flex-col h-full">
+                    <div className="w-64 flex-none border-r border-slate-200/60 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col h-full">
                         {/* Header within sidebar */}
-                        <div className="p-6 pb-4 border-b border-slate-200/50 bg-white/50 backdrop-blur-md">
+                        <div className="p-6 pb-4 border-b border-slate-200/50 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md">
                             <DialogTitle className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100 flex items-center gap-2">
                                 Settings
                             </DialogTitle>
@@ -203,7 +203,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                     </div>
 
                     {/* Right Content Area (Full Height) */}
-                    <div className="flex-1 flex flex-col bg-white/30 h-full overflow-hidden relative">
+                    <div className="flex-1 flex flex-col bg-white/30 dark:bg-slate-950/30 h-full overflow-hidden relative">
                         <div className="flex-1 overflow-y-auto p-8 lg:p-10">
                             {/* General / Profile Tab */}
                             <TabsContent value="general" className="space-y-6 focus-visible:outline-none mt-0 max-w-3xl mx-auto animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
@@ -219,7 +219,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                         </div>
 
                                         {/* Profile Picture Section */}
-                                        <div className="flex flex-col sm:flex-row items-center gap-8 p-8 bg-white rounded-2xl shadow-sm border border-slate-100/80">
+                                        <div className="flex flex-col sm:flex-row items-center gap-8 p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100/80 dark:border-slate-700">
                                             <div className="relative group cursor-pointer" onClick={triggerFileInput}>
                                                 <div className="h-24 w-24 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-300 border-[3px] border-white shadow-lg overflow-hidden ring-4 ring-indigo-50/60 transition-all group-hover:scale-105 group-hover:ring-indigo-100">
                                                     {user?.profile_picture ? (
@@ -253,186 +253,186 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                         </div>
 
                                         {/* Personal Info Section */}
-                                        <div className="space-y-6 bg-white p-8 rounded-2xl shadow-sm border border-slate-100/80">
-                                            <h3 className="font-bold text-slate-900 dark:text-slate-100 border-b pb-3 mb-6 text-base">Personal Information</h3>Personal Information</h3>
+                                        <div className="space-y-6 bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-100/80 dark:border-slate-700">
+                                            <h3 className="font-bold text-slate-900 dark:text-slate-100 border-b pb-3 mb-6 text-base">Personal Information</h3>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="space-y-2">
-                                                <label className="text-xss uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 ml-1">
-                                                    First Name
-                                                </label>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="space-y-2">
+                                                    <label className="text-xss uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 ml-1">
+                                                        First Name
+                                                    </label>
+                                                    <Input
+                                                        value={user?.first_name || ''}
+                                                        onChange={(e) => setUser(prev => prev ? { ...prev, first_name: e.target.value } : null)}
+                                                        placeholder="e.g. John"
+                                                        className="bg-slate-50/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-xss uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 ml-1">
+                                                        Last Name
+                                                    </label>
+                                                    <Input
+                                                        value={user?.last_name || ''}
+                                                        onChange={(e) => setUser(prev => prev ? { ...prev, last_name: e.target.value } : null)}
+                                                        placeholder="e.g. Doe"
+                                                        className="bg-slate-50/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-xss uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 ml-1">
+                                                        Nickname
+                                                    </label>
+                                                    <Input
+                                                        value={user?.nickname || ''}
+                                                        onChange={(e) => setUser(prev => prev ? { ...prev, nickname: e.target.value } : null)}
+                                                        placeholder="e.g. Johnny"
+                                                        className="bg-slate-50/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-xss uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 ml-1">
+                                                        Phone
+                                                    </label>
+                                                    <Input
+                                                        value={user?.phone_number || ''}
+                                                        onChange={(e) => setUser(prev => prev ? { ...prev, phone_number: e.target.value } : null)}
+                                                        placeholder="+1 (555) 000-0000"
+                                                        className="bg-slate-50/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2 pt-2">
+                                                <label className="text-xss uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 ml-1">Email Address</label>
                                                 <Input
-                                                    value={user?.first_name || ''}
-                                                    onChange={(e) => setUser(prev => prev ? { ...prev, first_name: e.target.value } : null)}
-                                                    placeholder="e.g. John"
+                                                    value={user?.email || ''}
+                                                    onChange={(e) => setUser(prev => prev ? { ...prev, email: e.target.value } : null)}
+                                                    placeholder="your@email.com"
                                                     className="bg-slate-50/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
                                                 />
                                             </div>
+
                                             <div className="space-y-2">
-                                                <label className="text-xss uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 ml-1">
-                                                    Last Name
-                                                </label>
-                                                <Input
-                                                    value={user?.last_name || ''}
-                                                    onChange={(e) => setUser(prev => prev ? { ...prev, last_name: e.target.value } : null)}
-                                                    placeholder="e.g. Doe"
-                                                    className="bg-slate-50/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
-                                                />
+                                                <label className="text-xss uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 ml-1">Username</label>
+                                                <Input value={user?.username || ''} disabled className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium cursor-not-allowed border-slate-200 dark:border-slate-700" />
+                                                <p className="text-xs text-slate-400 dark:text-slate-500 ml-1">Username cannot be changed.</p>
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xss uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 ml-1">
-                                                    Nickname
-                                                </label>
-                                                <Input
-                                                    value={user?.nickname || ''}
-                                                    onChange={(e) => setUser(prev => prev ? { ...prev, nickname: e.target.value } : null)}
-                                                    placeholder="e.g. Johnny"
-                                                    className="bg-slate-50/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xss uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 ml-1">
-                                                    Phone
-                                                </label>
-                                                <Input
-                                                    value={user?.phone_number || ''}
-                                                    onChange={(e) => setUser(prev => prev ? { ...prev, phone_number: e.target.value } : null)}
-                                                    placeholder="+1 (555) 000-0000"
-                                                    className="bg-slate-50/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
-                                                />
+
+                                            <div className="pt-6 flex justify-end border-t border-slate-100 mt-2">
+                                                <Button onClick={handleSaveProfile} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200/50 transition-all hover:scale-[1.02] active:scale-[0.98] px-6">
+                                                    <Save size={16} className="mr-2" /> {saving ? 'Saving Changes...' : 'Save Profile Changes'}
+                                                </Button>
                                             </div>
                                         </div>
+                                    </>
+                                )}
+                            </TabsContent>
 
-                                        <div className="space-y-2 pt-2">
-                                            <label className="text-xss uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 ml-1">Email Address</label>
-                                            <Input
-                                                value={user?.email || ''}
-                                                onChange={(e) => setUser(prev => prev ? { ...prev, email: e.target.value } : null)}
-                                                placeholder="your@email.com"
-                                                className="bg-slate-50/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
-                                            />
+                            {/* Appearance Tab */}
+                            <TabsContent value="appearance" className="focus-visible:outline-none mt-0 max-w-3xl mx-auto animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
+                                <div className="mb-8">
+                                    <h2 className="text-2xl font-black text-slate-800 tracking-tight">Appearance</h2>
+                                    <p className="text-slate-500 mt-1">Customize the look and feel of the application.</p>
+                                </div>
+
+                                <div className="space-y-6 bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-100/80 dark:border-slate-700">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <div className="font-bold text-slate-800 dark:text-slate-100">Theme Preference</div>
+                                            <div className="text-sm text-slate-500 dark:text-slate-400 mt-1">Select your preferred interface theme.</div>
                                         </div>
-
-                                        <div className="space-y-2">
-                                            <label className="text-xss uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 ml-1">Username</label>
-                                            <Input value={user?.username || ''} disabled className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium cursor-not-allowed border-slate-200 dark:border-slate-700" />
-                                            <p className="text-xs text-slate-400 dark:text-slate-500 ml-1">Username cannot be changed.</p>
-                                        </div>
-
-                                        <div className="pt-6 flex justify-end border-t border-slate-100 mt-2">
-                                            <Button onClick={handleSaveProfile} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200/50 transition-all hover:scale-[1.02] active:scale-[0.98] px-6">
-                                                <Save size={16} className="mr-2" /> {saving ? 'Saving Changes...' : 'Save Profile Changes'}
+                                        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setTheme("dark")}
+                                                className={`h-8 text-xs font-medium hover:shadow-sm ${theme === 'dark' ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5 dark:bg-slate-600 dark:text-indigo-400 dark:ring-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-white dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700'}`}
+                                            >
+                                                Dark
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setTheme("light")}
+                                                className={`h-8 text-xs font-medium hover:shadow-sm ${theme === 'light' ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5 dark:bg-slate-600 dark:text-indigo-400 dark:ring-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-white dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700'}`}
+                                            >
+                                                Light
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setTheme("system")}
+                                                className={`h-8 text-xs font-medium hover:shadow-sm ${theme === 'system' ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5 dark:bg-slate-600 dark:text-indigo-400 dark:ring-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-white dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700'}`}
+                                            >
+                                                System
                                             </Button>
                                         </div>
                                     </div>
-                            </>
-                                )}
-                        </TabsContent>
-
-                        {/* Appearance Tab */}
-                        <TabsContent value="appearance" className="focus-visible:outline-none mt-0 max-w-3xl mx-auto animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
-                            <div className="mb-8">
-                                <h2 className="text-2xl font-black text-slate-800 tracking-tight">Appearance</h2>
-                                <p className="text-slate-500 mt-1">Customize the look and feel of the application.</p>
-                            </div>
-
-                            <div className="space-y-6 bg-white p-8 rounded-2xl shadow-sm border border-slate-100/80">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <div className="font-bold text-slate-800 dark:text-slate-100">Theme Preference</div>
-                                        <div className="text-sm text-slate-500 dark:text-slate-400 mt-1">Select your preferred interface theme.</div>
-                                    </div>
-                                    <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setTheme("dark")}
-                                            className={`h-8 text-xs font-medium hover:shadow-sm ${theme === 'dark' ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5 dark:bg-slate-600 dark:text-indigo-400 dark:ring-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-white dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700'}`}
-                                        >
-                                            Dark
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setTheme("light")}
-                                            className={`h-8 text-xs font-medium hover:shadow-sm ${theme === 'light' ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5 dark:bg-slate-600 dark:text-indigo-400 dark:ring-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-white dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700'}`}
-                                        >
-                                            Light
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setTheme("system")}
-                                            className={`h-8 text-xs font-medium hover:shadow-sm ${theme === 'system' ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5 dark:bg-slate-600 dark:text-indigo-400 dark:ring-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-white dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700'}`}
-                                        >
-                                            System
-                                        </Button>
-                                    </div>
                                 </div>
-                            </div>
-                        </TabsContent>
+                            </TabsContent>
 
-                        {/* Security Tab */}
-                        <TabsContent value="security" className="focus-visible:outline-none mt-0 max-w-3xl mx-auto animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
-                            <div className="mb-8">
-                                <h2 className="text-2xl font-black text-slate-800 tracking-tight">Security</h2>
-                                <p className="text-slate-500 mt-1">Manage your password and security settings.</p>
-                            </div>
-
-                            <div className="space-y-6 bg-white p-8 rounded-2xl shadow-sm border border-slate-100/80">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
-                                        <Lock size={20} />
-                                    </div>
-                                    <h3 className="font-bold text-slate-900 text-lg">Change Password</h3>
+                            {/* Security Tab */}
+                            <TabsContent value="security" className="focus-visible:outline-none mt-0 max-w-3xl mx-auto animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
+                                <div className="mb-8">
+                                    <h2 className="text-2xl font-black text-slate-800 tracking-tight">Security</h2>
+                                    <p className="text-slate-500 mt-1">Manage your password and security settings.</p>
                                 </div>
 
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700 ml-1">Current Password</label>
-                                        <Input
-                                            type="password"
-                                            value={currentPassword}
-                                            onChange={(e) => setCurrentPassword(e.target.value)}
-                                            placeholder="Enter your current password"
-                                            className="bg-slate-50/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500"
-                                        />
+                                <div className="space-y-6 bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-100/80 dark:border-slate-700">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                                            <Lock size={20} />
+                                        </div>
+                                        <h3 className="font-bold text-slate-900 text-lg">Change Password</h3>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                    <div className="space-y-4">
                                         <div className="space-y-2">
-                                            <label className="text-sm font-bold text-slate-700 ml-1">New Password</label>
+                                            <label className="text-sm font-bold text-slate-700 ml-1">Current Password</label>
                                             <Input
                                                 type="password"
-                                                value={newPassword}
-                                                onChange={(e) => setNewPassword(e.target.value)}
-                                                placeholder="Create a new password"
+                                                value={currentPassword}
+                                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                                placeholder="Enter your current password"
                                                 className="bg-slate-50/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500"
                                             />
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-slate-700 ml-1">Confirm New Password</label>
-                                            <Input
-                                                type="password"
-                                                value={confirmPassword}
-                                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                                placeholder="Confirm your new password"
-                                                className="bg-slate-50/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500"
-                                            />
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-bold text-slate-700 ml-1">New Password</label>
+                                                <Input
+                                                    type="password"
+                                                    value={newPassword}
+                                                    onChange={(e) => setNewPassword(e.target.value)}
+                                                    placeholder="Create a new password"
+                                                    className="bg-slate-50/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-bold text-slate-700 ml-1">Confirm New Password</label>
+                                                <Input
+                                                    type="password"
+                                                    value={confirmPassword}
+                                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                                    placeholder="Confirm your new password"
+                                                    className="bg-slate-50/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="pt-6 flex justify-end border-t border-slate-100 mt-2">
-                                    <Button onClick={handleUpdatePassword} disabled={passLoading} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200/50 transition-all hover:scale-[1.02] active:scale-[0.98] px-6">
-                                        <Save size={16} className="mr-2" /> {passLoading ? 'Updating Password...' : 'Update Password'}
-                                    </Button>
+                                    <div className="pt-6 flex justify-end border-t border-slate-100 mt-2">
+                                        <Button onClick={handleUpdatePassword} disabled={passLoading} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200/50 transition-all hover:scale-[1.02] active:scale-[0.98] px-6">
+                                            <Save size={16} className="mr-2" /> {passLoading ? 'Updating Password...' : 'Update Password'}
+                                        </Button>
+                                    </div>
                                 </div>
-                            </div>
-                        </TabsContent>
+                            </TabsContent>
+                        </div>
                     </div>
-                </div>
-            </Tabs>
-        </DialogContent>
+                </Tabs>
+            </DialogContent>
         </Dialog >
     );
 }
