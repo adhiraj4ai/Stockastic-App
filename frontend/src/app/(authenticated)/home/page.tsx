@@ -542,7 +542,7 @@ export default function DashboardPage() {
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="bg-white">
-                                    <MarketHeatmap stocks={allStocks} height={480} />
+                                    <MarketBubbleMap stocks={allStocks} height={480} />
                                 </div>
                             </CardContent>
                         </Card>
