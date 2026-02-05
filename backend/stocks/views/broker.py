@@ -30,7 +30,12 @@ class BrokerViewSet(viewsets.ViewSet):
 
         query = f"""
         WITH ref_date AS (
-            SELECT MAX(transaction_date) as max_date FROM daily_cumulative_accumulation
+            SELECT transaction_date as max_date 
+            FROM daily_cumulative_accumulation 
+            GROUP BY transaction_date 
+            HAVING COUNT(*) > 100 
+            ORDER BY transaction_date DESC 
+            LIMIT 1
         ),
         ranked_holders AS (
             SELECT 
@@ -46,7 +51,13 @@ class BrokerViewSet(viewsets.ViewSet):
             WHERE rank <= 15 -- Top 15 Holders
         ),
         fs_target AS (
-             SELECT (MAX(transaction_date) - INTERVAL '{days} days') as start_date FROM daily_floorsheet
+             SELECT (transaction_date - INTERVAL '{days} days') as start_date 
+             FROM daily_floorsheet 
+             WHERE transaction_date = (
+                 SELECT transaction_date FROM daily_floorsheet 
+                 GROUP BY transaction_date HAVING COUNT(*) > 100 
+                 ORDER BY transaction_date DESC LIMIT 1
+             )
         ),
         floorsheet_activity AS (
             SELECT 
@@ -124,7 +135,12 @@ class BrokerViewSet(viewsets.ViewSet):
         
         query = f"""
         WITH ref_date AS (
-            SELECT MAX(transaction_date) as current_date FROM daily_floorsheet
+            SELECT transaction_date as current_date 
+            FROM daily_floorsheet 
+            GROUP BY transaction_date 
+            HAVING COUNT(*) > 100 
+            ORDER BY transaction_date DESC 
+            LIMIT 1
         ),
         target_range AS (
             SELECT current_date - INTERVAL '{days} days' as start_date FROM ref_date
@@ -210,7 +226,10 @@ class BrokerViewSet(viewsets.ViewSet):
                 ca.cumulative_net - LAG(ca.cumulative_net, 10) OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date) AS net_10d,
                 ca.cumulative_net - LAG(ca.cumulative_net, 20) OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date) AS net_20d,
                 ca.cumulative_net - LAG(ca.cumulative_net, 50) OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date) AS net_50d,
-                MAX(ca.transaction_date) OVER () AS latest_date
+                MAX(ca.transaction_date) FILTER (WHERE ca.transaction_date IN (
+                    SELECT transaction_date FROM daily_cumulative_accumulation 
+                    GROUP BY transaction_date HAVING COUNT(*) > 100
+                )) OVER () AS latest_date
             FROM daily_cumulative_accumulation ca
             INNER JOIN companies c ON ca.symbol = c.symbol
             WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
@@ -244,7 +263,14 @@ class BrokerViewSet(viewsets.ViewSet):
             return Response({'error': 'broker ID is required'}, status=400)
 
         query = """
-        WITH ref_date AS (SELECT MAX(transaction_date) as current_date FROM daily_floorsheet),
+        WITH ref_date AS (
+            SELECT transaction_date as current_date 
+            FROM daily_floorsheet 
+            GROUP BY transaction_date 
+            HAVING COUNT(*) > 100 
+            ORDER BY transaction_date DESC 
+            LIMIT 1
+        ),
         broker_activity AS (
             SELECT symbol, transaction_date, transaction_quantity as net_qty, (transaction_quantity * transaction_rate) as net_amt
             FROM daily_floorsheet WHERE buyer_id = %s
@@ -288,8 +314,9 @@ class BrokerViewSet(viewsets.ViewSet):
         if not symbol:
             return Response({'error': 'Symbol is required'}, status=400)
             
-        max_date_agg = DailyStockPrice.objects.aggregate(Max('date'))
-        today = max_date_agg['date__max'] or timezone.now().date()
+        from django.db.models import Count
+        max_date_res = DailyStockPrice.objects.values('date').annotate(cnt=Count('date')).filter(cnt__gt=100).order_by('-date').first()
+        today = max_date_res['date'] if max_date_res else (DailyStockPrice.objects.aggregate(Max('date'))['date__max'] or timezone.now().date())
         range_map = {'1W': 7, '1M': 30, '1Y': 365, 'ALL': 3650}
         days = range_map.get(time_range, 365)
         start_date = today - timedelta(days=days)
@@ -297,7 +324,11 @@ class BrokerViewSet(viewsets.ViewSet):
         with connections['default'].cursor() as cursor:
             cursor.execute("""
                 SELECT entity_id FROM daily_cumulative_accumulation 
-                WHERE symbol = %s AND transaction_date = (SELECT MAX(transaction_date) FROM daily_cumulative_accumulation)
+                WHERE symbol = %s AND transaction_date = (
+                    SELECT transaction_date FROM daily_cumulative_accumulation 
+                    GROUP BY transaction_date HAVING COUNT(*) > 100 
+                    ORDER BY transaction_date DESC LIMIT 1
+                )
                 ORDER BY cumulative_net DESC LIMIT 5
             """, [symbol])
             top_brokers = [row[0] for row in cursor.fetchall()]
