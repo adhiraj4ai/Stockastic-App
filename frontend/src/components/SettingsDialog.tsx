@@ -137,7 +137,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="w-[90vw] max-w-[90vw] sm:max-w-[90vw] h-[90vh] max-h-[90vh] overflow-hidden flex flex-col bg-slate-50/95 backdrop-blur-xl border-white/20 shadow-2xl p-0 gap-0">
-                <Tabs defaultValue="general" className="flex w-full h-full" orientation="vertical">
+                <Tabs defaultValue="general" className="flex-row w-full h-full" orientation="vertical">
 
                     {/* Left Sidebar (Full Height) */}
                     <div className="w-64 flex-none border-r border-slate-200/60 bg-slate-50/50 flex flex-col h-full">
