@@ -708,9 +708,9 @@ export default function DashboardPage() {
                             </div>
 
                             <div className="lg:col-span-4 h-full">
-                                <Card className="bg-white border-none shadow-xl shadow-slate-200/50 h-full">
+                                <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full">
                                     <CardHeader className="p-3 pb-1">
-                                        <CardTitle className="text-sm font-bold text-black tracking-tight flex items-center gap-2">
+                                        <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
                                             <Zap size={14} /> Volume Shockers
                                         </CardTitle>
                                     </CardHeader>
