@@ -17,7 +17,9 @@ import {
     ArrowRight,
     Loader2,
     Calendar,
-    Layers
+    Layers,
+    ExternalLink,
+    History
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -581,7 +583,7 @@ function AccumulationContent() {
         return (
             <div className={`flex flex-col items-center px-2 py-1 rounded border ${color}`}>
                 <span className="text-[10px] font-bold uppercase">{trend}</span>
-                <span className="text-[9px] font-mono">{change.toFixed(2)}%</span>
+                <span className="text-[9px] font-mono">{(change ?? 0).toFixed(2)}%</span>
             </div>
         );
     };
@@ -1012,9 +1014,9 @@ function AccumulationContent() {
                                                                 <TrendBadge trend={row.trend_50d} change={row.change_50d} />
                                                             </TableCell>
                                                             <TableCell className="text-center">
-                                                                <Link href={`/floorsheet?broker=${row.broker}&symbol=${row.symbol}`}>
-                                                                    <Button variant="ghost" size="icon" className="group-hover:text-blue-600 rounded-full">
-                                                                        <ArrowRight className="w-4 h-4" />
+                                                                <Link href={`/accumulation?tab=history&symbol=${row.symbol}&broker=${row.broker}`}>
+                                                                    <Button variant="ghost" size="icon" className="group-hover:text-blue-600 rounded-full" title="View historical accumulation">
+                                                                        <History className="w-4 h-4" />
                                                                     </Button>
                                                                 </Link>
                                                             </TableCell>
@@ -1124,9 +1126,9 @@ function AccumulationContent() {
                                                                         {changeValue > 0 ? '+' : ''}{changeValue.toLocaleString()}
                                                                     </TableCell>
                                                                     <TableCell className="text-center">
-                                                                        <Link href={`/floorsheet?broker=${selectedBroker}&symbol=${fav.symbol}`}>
-                                                                            <Button variant="ghost" size="icon" className="group-hover:text-blue-600 rounded-full transition-all">
-                                                                                <ArrowRight className="w-4 h-4" />
+                                                                        <Link href={`/accumulation?tab=history&symbol=${fav.symbol}&broker=${selectedBroker}`}>
+                                                                            <Button variant="ghost" size="icon" className="group-hover:text-blue-600 rounded-full transition-all" title="View historical accumulation">
+                                                                                <History className="w-4 h-4" />
                                                                             </Button>
                                                                         </Link>
                                                                     </TableCell>
@@ -1332,6 +1334,14 @@ function AccumulationContent() {
                                         className="h-9 border-gray-200 bg-gray-50 text-sm font-bold"
                                     />
                                 </div>
+                                {selectedGraphSymbol && (
+                                    <Link href={`/floorsheet?symbol=${selectedGraphSymbol}&broker=${selectedBroker || ''}`}>
+                                        <Button variant="outline" size="sm" className="bg-white gap-2 font-medium text-slate-700 hover:text-blue-600 border-slate-200">
+                                            <ExternalLink className="w-4 h-4" />
+                                            Floorsheet
+                                        </Button>
+                                    </Link>
+                                )}
                             </div>
                         </div>
 
@@ -1382,9 +1392,18 @@ function AccumulationContent() {
                                             </TableRow>
                                         ) : (
                                             historyData.map((item, idx) => (
-                                                <TableRow key={idx} className="hover:bg-gray-50 transition-colors border-b last:border-0">
+                                                <TableRow key={idx} className="hover:bg-gray-50 transition-colors border-b last:border-0 group">
                                                     <TableCell className="text-xs text-gray-600 font-medium whitespace-nowrap">
-                                                        {item.date}
+                                                        <div className="flex items-center gap-2">
+                                                            {item.date}
+                                                            <Link
+                                                                href={`/floorsheet?symbol=${selectedGraphSymbol}&broker=${selectedBroker}&date=${item.date}`}
+                                                                className="text-blue-500 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                title="View daily floorsheet"
+                                                            >
+                                                                <ExternalLink className="w-3 h-3" />
+                                                            </Link>
+                                                        </div>
                                                     </TableCell>
                                                     <TableCell className="text-right font-mono text-green-700">
                                                         {item.buy_qty > 0 ? item.buy_qty.toLocaleString() : '-'}

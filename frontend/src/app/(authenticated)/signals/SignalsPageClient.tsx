@@ -879,7 +879,7 @@ export default function SignalsPage() {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-100">
-                                                    {trackingData.active_positions.map((pos, idx) => (
+                                                    {(trackingData.active_positions || []).map((pos, idx) => (
                                                         <tr key={idx} className="hover:bg-slate-50">
                                                             <td className="px-4 py-3 font-bold">{pos.symbol}</td>
                                                             <td className="px-4 py-3 font-mono">Rs. {pos.buy_price}</td>
@@ -890,7 +890,7 @@ export default function SignalsPage() {
                                                             </td>
                                                         </tr>
                                                     ))}
-                                                    {trackingData.active_positions.length === 0 && (
+                                                    {(trackingData.active_positions || []).length === 0 && (
                                                         <tr>
                                                             <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
                                                                 No active positions found.
@@ -924,7 +924,7 @@ export default function SignalsPage() {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-100">
-                                                    {trackingData.closed_positions.map((pos, idx) => (
+                                                    {(trackingData.closed_positions || []).map((pos, idx) => (
                                                         <tr key={idx} className="hover:bg-slate-50">
                                                             <td className="px-4 py-3 font-bold">{pos.symbol}</td>
                                                             <td className="px-4 py-3 font-mono">Rs. {pos.buy_price}</td>
@@ -944,7 +944,7 @@ export default function SignalsPage() {
                                                             </td>
                                                         </tr>
                                                     ))}
-                                                    {trackingData.closed_positions.length === 0 && (
+                                                    {(trackingData.closed_positions || []).length === 0 && (
                                                         <tr>
                                                             <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
                                                                 No closed positions found.

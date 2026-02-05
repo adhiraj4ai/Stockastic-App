@@ -194,6 +194,7 @@ def floorsheet_list(request):
     """
     broker = request.query_params.get('broker')
     symbol = request.query_params.get('symbol')
+    date = request.query_params.get('date')
     limit = int(request.query_params.get('limit', 100))
 
     try:
@@ -202,6 +203,9 @@ def floorsheet_list(request):
             queryset = queryset.filter(symbol=symbol)
         if broker:
             queryset = queryset.filter(Q(buyer_id=broker) | Q(seller_id=broker))
+        if date:
+            queryset = queryset.filter(transaction_date=date)
+            
         queryset = queryset.order_by('-transaction_date')[:limit]
         serializer = DailyFloorsheetSerializer(queryset, many=True)
         return Response(serializer.data)

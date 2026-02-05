@@ -350,7 +350,53 @@ def get_broker_portfolio(request):
 def accumulation_history(request):
     broker = request.query_params.get('broker')
     symbol = request.query_params.get('symbol')
+    page = int(request.query_params.get('page', 1))
+    page_size = int(request.query_params.get('page_size', 250))
+
     if not broker or not symbol:
         return Response({'error': 'Params required'}, status=400)
+
+    # Fetch history
     history = DailyCumulativeAccumulation.objects.filter(entity_id=broker, symbol=symbol).order_by('transaction_date')
-    return Response([{'date': h.transaction_date, 'net': h.cumulative_net} for h in history])
+    
+    # Calculate all deltas
+    results = []
+    prev_h = None
+    
+    for h in history:
+        if prev_h:
+            buy_qty = float(h.cumulative_buy - prev_h.cumulative_buy)
+            buy_amt = float(h.cumulative_buy_amount - prev_h.cumulative_buy_amount)
+            sell_qty = float(h.cumulative_sell - prev_h.cumulative_sell)
+            sell_amt = float(h.cumulative_sell_amount - prev_h.cumulative_sell_amount)
+            net_qty = float(h.cumulative_net - prev_h.cumulative_net)
+        else:
+            # First day in history (start state)
+            buy_qty = float(h.cumulative_buy)
+            buy_amt = float(h.cumulative_buy_amount)
+            sell_qty = float(h.cumulative_sell)
+            sell_amt = float(h.cumulative_sell_amount)
+            net_qty = float(h.cumulative_net)
+            
+        results.append({
+            'date': h.transaction_date.strftime('%Y-%m-%d'),
+            'buy_qty': buy_qty,
+            'buy_rate': buy_amt / buy_qty if buy_qty > 0 else 0,
+            'buy_amount': buy_amt,
+            'sell_qty': sell_qty,
+            'sell_rate': sell_amt / sell_qty if sell_qty > 0 else 0,
+            'sell_amount': sell_amt,
+            'net_quantity': net_qty,
+            'cumulative_qty': float(h.cumulative_net),
+            'wac': float(h.cumulative_buy_amount / h.cumulative_buy) if h.cumulative_buy > 0 else 0
+        })
+        prev_h = h
+    
+    # Reverse to show newest first for the table
+    results.reverse()
+    
+    # Paginate
+    start = (page - 1) * page_size
+    end = start + page_size
+    
+    return Response(results[start:end])

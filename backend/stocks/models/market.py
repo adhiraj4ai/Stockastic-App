@@ -145,8 +145,6 @@ class DailyCumulativeAccumulation(models.Model):
     cumulative_buy_amount = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     cumulative_sell_amount = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     cumulative_net = models.DecimalField(max_digits=20, decimal_places=2, default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         managed = False
