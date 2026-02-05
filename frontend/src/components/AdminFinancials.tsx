@@ -204,8 +204,8 @@ export default function AdminFinancials({ ticker, onHasReports }: AdminFinancial
                             <TooltipTrigger asChild>
                                 <Button
                                     variant="ghost"
-                                    className={`h-12 w-full flex flex-col gap-1 hover:bg-blue-50 border border-transparent hover:border-blue-200 
-                                        ${report.is_audited ? 'text-green-600' : 'text-blue-600'}`}
+                                    className={`h-12 w-full flex flex-col gap-1 hover:bg-blue-50 dark:hover:bg-blue-900/10 border border-transparent hover:border-blue-200 dark:hover:border-blue-900/30
+                                        ${report.is_audited ? 'text-green-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`}
                                     onClick={() => handleEdit(report!.id)}
                                 >
                                     {report.is_audited ? <CheckCircle2 className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
@@ -214,7 +214,7 @@ export default function AdminFinancials({ ticker, onHasReports }: AdminFinancial
                                     </span>
                                 </Button>
                             </TooltipTrigger>
-                            <TooltipContent>
+                            <TooltipContent className="dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300">
                                 <p>Net Profit: {report.net_profit?.toLocaleString()}</p>
                                 <p>Status: {report.is_audited ? 'Audited' : 'Unaudited'}</p>
                             </TooltipContent>
@@ -229,7 +229,7 @@ export default function AdminFinancials({ ticker, onHasReports }: AdminFinancial
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-full"
+                    className="h-8 w-8 text-gray-300 dark:text-slate-700 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full"
                     onClick={() => handleAdd(year, type, quarter)}
                 >
                     <Plus className="w-5 h-5" />
@@ -261,17 +261,17 @@ export default function AdminFinancials({ ticker, onHasReports }: AdminFinancial
                 </Button>
             </div>
 
-            <div className="overflow-hidden bg-white border rounded-xl shadow-sm">
+            <div className="overflow-hidden bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-xl shadow-sm transition-colors duration-500">
                 <div className="p-0">
                     <Table>
                         <TableHeader>
-                            <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
-                                <TableHead className="w-[150px] font-bold text-sm uppercase tracking-widest text-gray-500 py-4 px-6">Fiscal Year</TableHead>
-                                <TableHead className="text-center font-bold text-sm uppercase tracking-widest text-gray-500 py-4 w-[100px]">Q1</TableHead>
-                                <TableHead className="text-center font-bold text-sm uppercase tracking-widest text-gray-500 py-4 w-[100px]">Q2</TableHead>
-                                <TableHead className="text-center font-bold text-sm uppercase tracking-widest text-gray-500 py-4 w-[100px]">Q3</TableHead>
-                                <TableHead className="text-center font-bold text-sm uppercase tracking-widest text-gray-500 py-4 w-[100px]">Q4</TableHead>
-                                <TableHead className="text-center font-bold text-sm uppercase tracking-widest text-gray-500 py-4 w-[120px] bg-blue-50/50 text-blue-600">Annual</TableHead>
+                            <TableRow className="bg-gray-50/50 dark:bg-slate-800/50 hover:bg-gray-50/50 dark:hover:bg-slate-800/50 border-b dark:border-slate-800">
+                                <TableHead className="w-[150px] font-bold text-sm uppercase tracking-widest text-gray-500 dark:text-slate-500 py-4 px-6">Fiscal Year</TableHead>
+                                <TableHead className="text-center font-bold text-sm uppercase tracking-widest text-gray-500 dark:text-slate-500 py-4 w-[100px]">Q1</TableHead>
+                                <TableHead className="text-center font-bold text-sm uppercase tracking-widest text-gray-500 dark:text-slate-500 py-4 w-[100px]">Q2</TableHead>
+                                <TableHead className="text-center font-bold text-sm uppercase tracking-widest text-gray-500 dark:text-slate-500 py-4 w-[100px]">Q3</TableHead>
+                                <TableHead className="text-center font-bold text-sm uppercase tracking-widest text-gray-500 dark:text-slate-500 py-4 w-[100px]">Q4</TableHead>
+                                <TableHead className="text-center font-bold text-sm uppercase tracking-widest text-gray-500 dark:text-slate-500 py-4 w-[120px] bg-blue-50/50 dark:bg-blue-900/10 text-blue-600 dark:text-blue-400">Annual</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -288,33 +288,33 @@ export default function AdminFinancials({ ticker, onHasReports }: AdminFinancial
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center py-24">
                                         <div className="flex flex-col items-center gap-3">
-                                            <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-300">
+                                            <div className="w-12 h-12 rounded-full bg-gray-50 dark:bg-slate-800 flex items-center justify-center text-gray-300 dark:text-slate-700">
                                                 <FileText className="w-6 h-6" />
                                             </div>
-                                            <p className="text-gray-500 font-medium">No records found</p>
-                                            <Button variant="outline" size="sm" onClick={handleAddNextYear}>Start with a new Year</Button>
+                                            <p className="text-gray-500 dark:text-slate-400 font-medium">No records found</p>
+                                            <Button variant="outline" size="sm" onClick={handleAddNextYear} className="dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">Start with a new Year</Button>
                                         </div>
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 sortedYears.map(year => (
-                                    <TableRow key={year} className="hover:bg-gray-50/30 group">
-                                        <TableCell className="font-bold text-gray-700 px-6 py-4">
+                                    <TableRow key={year} className="hover:bg-gray-50/30 dark:hover:bg-slate-800/20 group border-b dark:border-slate-800/50">
+                                        <TableCell className="font-bold text-gray-700 dark:text-slate-300 px-6 py-4">
                                             {year}
                                         </TableCell>
-                                        <TableCell className="p-0 border-l border-gray-100">
+                                        <TableCell className="p-0 border-l dark:border-slate-800 border-gray-100">
                                             {renderCell(year, 'QUARTERLY', 1)}
                                         </TableCell>
-                                        <TableCell className="p-0 border-l border-gray-100">
+                                        <TableCell className="p-0 border-l dark:border-slate-800 border-gray-100">
                                             {renderCell(year, 'QUARTERLY', 2)}
                                         </TableCell>
-                                        <TableCell className="p-0 border-l border-gray-100">
+                                        <TableCell className="p-0 border-l dark:border-slate-800 border-gray-100">
                                             {renderCell(year, 'QUARTERLY', 3)}
                                         </TableCell>
-                                        <TableCell className="p-0 border-l border-gray-100">
+                                        <TableCell className="p-0 border-l dark:border-slate-800 border-gray-100">
                                             {renderCell(year, 'QUARTERLY', 4)}
                                         </TableCell>
-                                        <TableCell className="p-0 border-l border-gray-100 bg-blue-50/20">
+                                        <TableCell className="p-0 border-l dark:border-slate-800 border-gray-100 bg-blue-50/20 dark:bg-blue-900/5">
                                             {renderCell(year, 'ANNUAL')}
                                         </TableCell>
                                     </TableRow>
@@ -326,30 +326,30 @@ export default function AdminFinancials({ ticker, onHasReports }: AdminFinancial
             </div>
             {/* Add Fiscal Year Modal */}
             <Dialog open={isAddYearDialogOpen} onOpenChange={setIsAddYearDialogOpen}>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[425px] dark:bg-slate-900 dark:border-slate-800">
                     <DialogHeader>
-                        <DialogTitle>Add New Fiscal Year</DialogTitle>
-                        <DialogDescription>
+                        <DialogTitle className="dark:text-slate-100">Add New Fiscal Year</DialogTitle>
+                        <DialogDescription className="dark:text-slate-400">
                             Enter the fiscal year label (e.g., 2081/82 or 081-082). Only years not already present will be added.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="fy" className="text-right">
+                            <Label htmlFor="fy" className="text-right dark:text-slate-400">
                                 Fiscal Year
                             </Label>
                             <Input
                                 id="fy"
                                 value={newFiscalYear}
                                 onChange={(e) => setNewFiscalYear(e.target.value)}
-                                className="col-span-3"
+                                className="col-span-3 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                                 placeholder="2081/82"
                             />
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="secondary" onClick={() => setIsAddYearDialogOpen(false)}>Cancel</Button>
-                        <Button type="submit" onClick={handleConfirmAddYear}>Add Row</Button>
+                        <Button type="button" variant="secondary" onClick={() => setIsAddYearDialogOpen(false)} className="dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border-none">Cancel</Button>
+                        <Button type="submit" onClick={handleConfirmAddYear} className="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600">Add Row</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

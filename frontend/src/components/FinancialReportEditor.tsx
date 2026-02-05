@@ -284,24 +284,24 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
     }
 
     return (
-        <div className="flex flex-col h-full bg-white rounded-2xl overflow-hidden border shadow-sm">
+        <div className="flex flex-col h-full bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border dark:border-slate-800 shadow-sm transition-colors duration-500">
             {/* Header */}
-            <div className="px-6 py-4 bg-white border-b flex items-center justify-between sticky top-0 z-10 shadow-sm">
+            <div className="px-6 py-4 bg-white dark:bg-slate-900 border-b dark:border-slate-800 flex items-center justify-between sticky top-0 z-10 shadow-sm">
                 <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="sm" onClick={onClose} className="rounded-full hover:bg-gray-100 h-10 w-10 p-0 text-gray-500">
+                    <Button variant="ghost" size="sm" onClick={onClose} className="rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 h-10 w-10 p-0 text-gray-500 dark:text-slate-400">
                         <ArrowLeft className="w-5 h-5" />
                     </Button>
                     <div className="flex items-center gap-3">
-                        <span className="text-lg font-bold text-blue-600">
+                        <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
                             {fiscalYear || 'FY ????'} {reportType === 'QUARTERLY' ? `Q${quarter}` : 'Annual'}
                         </span>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={onClose} size="sm" className="font-semibold text-gray-600">
+                    <Button variant="outline" onClick={onClose} size="sm" className="font-semibold text-gray-600 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800">
                         Discard
                     </Button>
-                    <Button onClick={handleSave} disabled={saving} size="sm" className="bg-blue-600 hover:bg-blue-700 font-bold gap-2 min-w-[120px] shadow-sm">
+                    <Button onClick={handleSave} disabled={saving} size="sm" className="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 font-bold gap-2 min-w-[120px] shadow-sm">
                         {saving ? 'Saving...' : <><Save className="w-4 h-4" /> Save Changes</>}
                     </Button>
                 </div>
@@ -311,15 +311,15 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
             <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 w-full">
                 {/* Granular Data Tabs - Compact */}
                 <Tabs defaultValue="bs" className="w-full">
-                    <TabsList className="bg-white p-1 rounded-xl h-10 border inline-flex shadow-sm mb-2">
-                        <TabsTrigger value="bs" className="px-6 rounded-lg data-[state=active]:bg-gray-100 data-[state=active]:text-blue-600 font-bold text-sm uppercase tracking-wider">
+                    <TabsList className="bg-white dark:bg-slate-900 p-1 rounded-xl h-10 border dark:border-slate-800 inline-flex shadow-sm mb-2">
+                        <TabsTrigger value="bs" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
                             Balance Sheet
                         </TabsTrigger>
-                        <TabsTrigger value="pl" className="px-6 rounded-lg data-[state=active]:bg-gray-100 data-[state=active]:text-blue-600 font-bold text-sm uppercase tracking-wider">
+                        <TabsTrigger value="pl" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
                             Profit & Loss
                         </TabsTrigger>
                         {template.sections.cash_flow && (
-                            <TabsTrigger value="cf" className="px-6 rounded-lg data-[state=active]:bg-gray-100 data-[state=active]:text-blue-600 font-bold text-sm uppercase tracking-wider">
+                            <TabsTrigger value="cf" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
                                 Cash Flow
                             </TabsTrigger>
                         )}
@@ -327,23 +327,23 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
 
                     <TabsContent value="bs" className="mt-0 space-y-2 animate-in fade-in duration-300">
                         {template.sections.balance_sheet.map(section => (
-                            <div key={section.key} className="bg-white rounded-2xl border shadow-sm p-4 pt-4 overflow-hidden">
+                            <div key={section.key} className="bg-white dark:bg-slate-900 rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="w-1 h-5 bg-blue-500 rounded-full" />
-                                    <h4 className="text-sm font-black uppercase text-gray-900 tracking-wider">{section.label}</h4>
+                                    <h4 className="text-sm font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">{section.label}</h4>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
                                     {section.particulars.map(p => (
                                         <div key={p.key} className="flex items-center justify-between gap-6 py-0.5 group">
                                             <div className="flex-1">
-                                                <Label className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors leading-tight">
+                                                <Label className="text-sm font-medium text-gray-700 dark:text-slate-300 group-hover:text-gray-900 dark:group-hover:text-slate-100 transition-colors leading-tight">
                                                     {p.label}
                                                 </Label>
-                                                {p.description && <p className="text-[10px] text-gray-400 mt-0.5">{p.description}</p>}
+                                                {p.description && <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">{p.description}</p>}
                                             </div>
                                             <div className="relative w-40">
                                                 <Input
-                                                    className="h-10 text-right font-mono text-sm focus:ring-blue-500 border-gray-200"
+                                                    className="h-10 text-right font-mono text-sm focus:ring-blue-500 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 dark:text-slate-100"
                                                     value={balanceSheet[`${section.key}.${p.key}`] || ''}
                                                     onChange={(e) => setBalanceSheet(prev => ({ ...prev, [`${section.key}.${p.key}`]: e.target.value }))}
                                                 />
@@ -358,58 +358,58 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                     <TabsContent value="pl" className="mt-0 space-y-2 animate-in fade-in duration-300">
                         {/* Report Identity (Editable Only) - Compact 3 Columns */}
                         {(!reportId && !initialData?.fiscalYear) && (
-                            <div className="bg-white rounded-2xl border shadow-sm p-4 pt-4 overflow-hidden">
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="w-1 h-5 bg-blue-500 rounded-full" />
-                                    <h4 className="text-sm font-black uppercase text-gray-900 tracking-wider">Report Identity</h4>
+                                    <h4 className="text-sm font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">Report Identity</h4>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
                                     <div className="flex items-center justify-between gap-6 py-0.5 group">
                                         <div className="flex-1">
-                                            <Label className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors leading-tight">Fiscal Year</Label>
+                                            <Label className="text-sm font-medium text-gray-700 dark:text-slate-300 group-hover:text-gray-900 dark:group-hover:text-slate-100 transition-colors leading-tight">Fiscal Year</Label>
                                         </div>
                                         <div className="relative w-40">
                                             <Input
                                                 placeholder="e.g. 081/82"
                                                 value={fiscalYear}
                                                 onChange={(e) => setFiscalYear(e.target.value)}
-                                                className="h-9 text-right font-mono text-xs border-gray-200 focus:ring-blue-500"
+                                                className="h-9 text-right font-mono text-xs border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100 focus:ring-blue-500"
                                             />
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-between gap-6 py-0.5 group">
                                         <div className="flex-1">
-                                            <Label className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors leading-tight">Report Type</Label>
+                                            <Label className="text-sm font-medium text-gray-700 dark:text-slate-300 group-hover:text-gray-900 dark:group-hover:text-slate-100 transition-colors leading-tight">Report Type</Label>
                                         </div>
                                         <div className="relative w-40">
                                             <Select value={reportType} onValueChange={setReportType}>
-                                                <SelectTrigger className="h-9 font-mono text-xs border-gray-200">
+                                                <SelectTrigger className="h-9 font-mono text-xs border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                                                     <SelectValue />
                                                 </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="QUARTERLY">Quarterly</SelectItem>
-                                                    <SelectItem value="ANNUAL">Annual</SelectItem>
+                                                <SelectContent className="dark:bg-slate-900 dark:border-slate-800">
+                                                    <SelectItem value="QUARTERLY" className="dark:text-slate-300 dark:focus:bg-slate-800">Quarterly</SelectItem>
+                                                    <SelectItem value="ANNUAL" className="dark:text-slate-300 dark:focus:bg-slate-800">Annual</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-between gap-6 py-0.5 group">
                                         <div className="flex-1">
-                                            <Label className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors leading-tight">
+                                            <Label className="text-sm font-medium text-gray-700 dark:text-slate-300 group-hover:text-gray-900 dark:group-hover:text-slate-100 transition-colors leading-tight">
                                                 {reportType === 'QUARTERLY' ? 'Quarter' : 'Status'}
                                             </Label>
                                         </div>
                                         <div className="relative w-40 flex justify-end">
                                             {reportType === 'QUARTERLY' ? (
                                                 <Select value={quarter} onValueChange={setQuarter}>
-                                                    <SelectTrigger className="h-9 font-mono text-xs border-gray-200">
+                                                    <SelectTrigger className="h-9 font-mono text-xs border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                                                         <SelectValue />
                                                     </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="1">Q1</SelectItem>
-                                                        <SelectItem value="2">Q2</SelectItem>
-                                                        <SelectItem value="3">Q3</SelectItem>
-                                                        <SelectItem value="4">Q4</SelectItem>
+                                                    <SelectContent className="dark:bg-slate-900 dark:border-slate-800">
+                                                        <SelectItem value="1" className="dark:text-slate-300">Q1</SelectItem>
+                                                        <SelectItem value="2" className="dark:text-slate-300">Q2</SelectItem>
+                                                        <SelectItem value="3" className="dark:text-slate-300">Q3</SelectItem>
+                                                        <SelectItem value="4" className="dark:text-slate-300">Q4</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                             ) : (
@@ -418,9 +418,9 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                                         id="audited-top"
                                                         checked={isAudited}
                                                         onCheckedChange={(c) => setIsAudited(c as boolean)}
-                                                        className="h-4 w-4 data-[state=checked]:bg-amber-600 border-gray-300"
+                                                        className="h-4 w-4 data-[state=checked]:bg-amber-600 border-gray-300 dark:border-slate-700"
                                                     />
-                                                    <label htmlFor="audited-top" className="text-[10px] font-bold text-gray-400 uppercase cursor-pointer">Audited</label>
+                                                    <label htmlFor="audited-top" className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase cursor-pointer">Audited</label>
                                                 </div>
                                             )}
                                         </div>
@@ -430,10 +430,10 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                         )}
 
                         {/* Key Metrics - Compact 3 Columns */}
-                        <div className="bg-white rounded-2xl border shadow-sm p-4 pt-4 overflow-hidden">
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
                             <div className="flex items-center gap-3 mb-2">
                                 <div className="w-1 h-5 bg-indigo-500 rounded-full" />
-                                <h4 className="text-sm font-black uppercase text-gray-900 tracking-wider">Key Metrics</h4>
+                                <h4 className="text-sm font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">Key Metrics</h4>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
                                 {[
@@ -443,7 +443,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                 ].map((item, idx) => (
                                     <div key={item.label} className="flex items-center justify-between gap-6 py-0.5 group">
                                         <div className="flex-1">
-                                            <Label className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors leading-tight">
+                                            <Label className="text-sm font-medium text-gray-700 dark:text-slate-300 group-hover:text-gray-900 dark:group-hover:text-slate-100 transition-colors leading-tight">
                                                 {item.label}
                                             </Label>
                                         </div>
@@ -451,12 +451,12 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                             <Input
                                                 type="number"
                                                 step={item.label.includes('EPS') ? '0.01' : '1'}
-                                                className="h-9 text-right font-mono text-xs focus:ring-indigo-500 border-gray-200"
+                                                className="h-9 text-right font-mono text-xs focus:ring-indigo-500 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100"
                                                 value={item.value}
                                                 onChange={(e) => item.onChange(e.target.value)}
                                             />
                                             {item.suffix && (
-                                                <div className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-300 pointer-events-none">
+                                                <div className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-300 dark:text-slate-600 pointer-events-none">
                                                     {item.suffix}
                                                 </div>
                                             )}
@@ -468,40 +468,40 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
 
                         {/* Report Status (Annual Only) - Compact */}
                         {(reportType === 'ANNUAL' && (reportId || initialData?.fiscalYear)) && (
-                            <div className="bg-white rounded-2xl border shadow-sm p-4 overflow-hidden flex flex-col justify-center">
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl border dark:border-slate-800 shadow-sm p-4 overflow-hidden flex flex-col justify-center">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="w-1 h-5 bg-amber-500 rounded-full" />
-                                    <h4 className="text-sm font-black uppercase text-gray-900 tracking-wider">Report Status</h4>
+                                    <h4 className="text-sm font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">Report Status</h4>
                                 </div>
                                 <label className="flex items-center justify-between gap-6 pb-1 cursor-pointer group">
-                                    <span className="text-[11px] font-semibold text-gray-500 group-hover:text-gray-900 transition-colors">Mark as Audited Report</span>
+                                    <span className="text-[11px] font-semibold text-gray-500 dark:text-slate-400 group-hover:text-gray-900 dark:group-hover:text-slate-100 transition-colors">Mark as Audited Report</span>
                                     <div className="w-40 flex justify-end">
                                         <Checkbox
                                             checked={isAudited}
                                             onCheckedChange={(c) => setIsAudited(c as boolean)}
-                                            className="h-5 w-5 data-[state=checked]:bg-amber-600 border-gray-300"
+                                            className="h-5 w-5 data-[state=checked]:bg-amber-600 border-gray-300 dark:border-slate-700"
                                         />
                                     </div>
                                 </label>
                             </div>
                         )}
                         {template.sections.profit_loss.map(section => (
-                            <div key={section.key} className="bg-white rounded-2xl border shadow-sm p-4 pt-4 overflow-hidden">
+                            <div key={section.key} className="bg-white dark:bg-slate-900 rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="w-1 h-5 bg-indigo-500 rounded-full" />
-                                    <h4 className="text-sm font-black uppercase text-gray-900 tracking-wider">{section.label}</h4>
+                                    <h4 className="text-sm font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">{section.label}</h4>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
                                     {section.particulars.map(p => (
                                         <div key={p.key} className="flex items-center justify-between gap-6 py-0.5 group">
                                             <div className="flex-1">
-                                                <Label className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors leading-tight">
+                                                <Label className="text-sm font-medium text-gray-700 dark:text-slate-300 group-hover:text-gray-900 dark:group-hover:text-slate-100 transition-colors leading-tight">
                                                     {p.label}
                                                 </Label>
                                             </div>
                                             <div className="relative w-40">
                                                 <Input
-                                                    className="h-9 text-right font-mono text-xs focus:ring-indigo-500 border-gray-200"
+                                                    className="h-9 text-right font-mono text-xs focus:ring-indigo-500 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100"
                                                     value={profitLoss[`${section.key}.${p.key}`] || ''}
                                                     onChange={(e) => setProfitLoss(prev => ({ ...prev, [`${section.key}.${p.key}`]: e.target.value }))}
                                                 />
@@ -515,22 +515,22 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
 
                     <TabsContent value="cf" className="mt-0 space-y-2 animate-in fade-in duration-300">
                         {template.sections.cash_flow?.map(section => (
-                            <div key={section.key} className="bg-white rounded-2xl border shadow-sm p-4 pt-4 overflow-hidden">
+                            <div key={section.key} className="bg-white dark:bg-slate-900 rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="w-1 h-5 bg-emerald-500 rounded-full" />
-                                    <h4 className="text-sm font-black uppercase text-gray-900 tracking-wider">{section.label}</h4>
+                                    <h4 className="text-sm font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">{section.label}</h4>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
                                     {section.particulars.map(p => (
                                         <div key={p.key} className="flex items-center justify-between gap-6 py-0.5 group">
                                             <div className="flex-1">
-                                                <Label className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors leading-tight">
+                                                <Label className="text-sm font-medium text-gray-700 dark:text-slate-300 group-hover:text-gray-900 dark:group-hover:text-slate-100 transition-colors leading-tight">
                                                     {p.label}
                                                 </Label>
                                             </div>
                                             <div className="relative w-40">
                                                 <Input
-                                                    className="h-9 text-right font-mono text-xs focus:ring-emerald-500 border-gray-200"
+                                                    className="h-9 text-right font-mono text-xs focus:ring-emerald-500 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100"
                                                     value={cashFlow[`${section.key}.${p.key}`] || ''}
                                                     onChange={(e) => setCashFlow(prev => ({ ...prev, [`${section.key}.${p.key}`]: e.target.value }))}
                                                 />

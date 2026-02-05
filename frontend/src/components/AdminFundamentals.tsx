@@ -96,29 +96,29 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
     };
 
     return (
-        <div className="bg-white border rounded-2xl shadow-sm overflow-hidden mb-8">
+        <div className="bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden mb-8 transition-colors duration-500">
             {/* Market Summary - Full Width Row */}
-            <div className="bg-gray-50/50 border-b px-8 py-6">
+            <div className="bg-gray-50/50 dark:bg-slate-800/30 border-b dark:border-slate-800 px-8 py-6">
                 <div className="flex flex-wrap items-center justify-between gap-y-6">
                     <div className="flex flex-col gap-1 min-w-[140px]">
-                        <Label className="text-xs font-black uppercase tracking-wider text-gray-400">Listed Date</Label>
-                        <span className="text-sm font-bold text-gray-900">{fundamental?.listed_date || '2019-01-01'}</span>
+                        <Label className="text-xs font-black uppercase tracking-wider text-gray-400 dark:text-slate-500">Listed Date</Label>
+                        <span className="text-sm font-bold text-gray-900 dark:text-slate-100">{fundamental?.listed_date || '2019-01-01'}</span>
                     </div>
                     <div className="flex flex-col gap-1 min-w-[160px]">
-                        <Label className="text-xs font-black uppercase tracking-wider text-gray-400">Market Capitalization</Label>
-                        <span className="text-sm font-bold text-gray-900">{formatCurrencyShort(fundamental?.market_cap)}</span>
+                        <Label className="text-xs font-black uppercase tracking-wider text-gray-400 dark:text-slate-500">Market Capitalization</Label>
+                        <span className="text-sm font-bold text-gray-900 dark:text-slate-100">{formatCurrencyShort(fundamental?.market_cap)}</span>
                     </div>
                     <div className="flex flex-col gap-1 min-w-[160px]">
-                        <Label className="text-xs font-black uppercase tracking-wider text-gray-400">Free Float Market Capitalization</Label>
-                        <span className="text-sm font-bold text-gray-900">{formatCurrencyShort(fundamental?.free_float_market_cap)}</span>
+                        <Label className="text-xs font-black uppercase tracking-wider text-gray-400 dark:text-slate-500">Free Float Market Capitalization</Label>
+                        <span className="text-sm font-bold text-gray-900 dark:text-slate-100">{formatCurrencyShort(fundamental?.free_float_market_cap)}</span>
                     </div>
                     <div className="flex flex-col gap-1 min-w-[160px]">
-                        <Label className="text-xs font-black uppercase tracking-wider text-gray-400">Shares Outstanding</Label>
-                        <span className="text-sm font-bold text-gray-900">{formatQuantity(fundamental?.shares_outstanding)}</span>
+                        <Label className="text-xs font-black uppercase tracking-wider text-gray-400 dark:text-slate-500">Shares Outstanding</Label>
+                        <span className="text-sm font-bold text-gray-900 dark:text-slate-100">{formatQuantity(fundamental?.shares_outstanding)}</span>
                     </div>
                     <div className="flex flex-col gap-1 min-w-[160px]">
-                        <Label className="text-xs font-black uppercase tracking-wider text-gray-400">Public Shares</Label>
-                        <span className="text-sm font-bold text-gray-900">{formatQuantity(fundamental?.public_shares)}</span>
+                        <Label className="text-xs font-black uppercase tracking-wider text-gray-400 dark:text-slate-500">Public Shares</Label>
+                        <span className="text-sm font-bold text-gray-900 dark:text-slate-100">{formatQuantity(fundamental?.public_shares)}</span>
                     </div>
                 </div>
             </div>
@@ -130,7 +130,7 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                     <div className="space-y-6">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="w-1 h-5 bg-blue-500 rounded-full" />
-                            <h3 className="text-xs font-black uppercase text-gray-900 tracking-wider">Valuation</h3>
+                            <h3 className="text-xs font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">Valuation</h3>
                         </div>
                         <div className="space-y-4">
                             {[
@@ -141,8 +141,8 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                                 { label: 'Graham Diff', value: fundamental?.graham_number_diff, suffix: '%' },
                             ].map((item, idx) => (
                                 <div key={idx} className="flex justify-between items-center group py-0.5">
-                                    <Label className="text-xs font-semibold text-gray-400 group-hover:text-gray-600 transition-colors uppercase tracking-tight">{item.label}</Label>
-                                    <span className="text-sm font-bold text-gray-900 tabular-nums">
+                                    <Label className="text-xs font-semibold text-gray-400 dark:text-slate-500 group-hover:text-gray-600 dark:group-hover:text-slate-400 transition-colors uppercase tracking-tight">{item.label}</Label>
+                                    <span className="text-sm font-bold text-gray-900 dark:text-slate-100 tabular-nums">
                                         {item.value || '-'}{item.value && item.suffix}
                                     </span>
                                 </div>
@@ -154,18 +154,18 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                     <div className="space-y-6">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="w-1 h-5 bg-green-500 rounded-full" />
-                            <h3 className="text-xs font-black uppercase text-gray-900 tracking-wider">Return</h3>
+                            <h3 className="text-xs font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">Return</h3>
                         </div>
                         <div className="space-y-4">
                             {[
-                                { label: 'ROE (TTM)', value: fundamental?.ro_equity, color: 'text-green-600' },
-                                { label: 'ROA (TTM)', value: fundamental?.ro_assets, color: 'text-green-600' },
-                                { label: 'Dividend Yield', value: fundamental?.dividend_yield, color: 'text-green-600' },
+                                { label: 'ROE (TTM)', value: fundamental?.ro_equity, color: 'text-green-600 dark:text-emerald-400' },
+                                { label: 'ROA (TTM)', value: fundamental?.ro_assets, color: 'text-green-600 dark:text-emerald-400' },
+                                { label: 'Dividend Yield', value: fundamental?.dividend_yield, color: 'text-green-600 dark:text-emerald-400' },
                                 { label: 'Payout Ratio', value: fundamental?.dividend_payout_ratio },
                             ].map((item, idx) => (
                                 <div key={idx} className="flex justify-between items-center group py-0.5">
-                                    <Label className="text-xs font-semibold text-gray-400 group-hover:text-gray-600 transition-colors uppercase tracking-tight">{item.label}</Label>
-                                    <span className={`text-sm font-bold tabular-nums ${item.color || 'text-gray-900'}`}>
+                                    <Label className="text-xs font-semibold text-gray-400 dark:text-slate-500 group-hover:text-gray-600 dark:group-hover:text-slate-400 transition-colors uppercase tracking-tight">{item.label}</Label>
+                                    <span className={`text-sm font-bold tabular-nums ${item.color || 'text-gray-900 dark:text-slate-100'}`}>
                                         {item.value ? `${item.value}%` : '-'}
                                     </span>
                                 </div>
@@ -177,32 +177,32 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                     <div className="space-y-6">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="w-1 h-5 bg-purple-500 rounded-full" />
-                            <h3 className="text-xs font-black uppercase text-gray-900 tracking-wider">Growth & Performance</h3>
+                            <h3 className="text-xs font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">Growth & Performance</h3>
                         </div>
                         <div className="space-y-4">
                             <div className="flex justify-between items-center group py-0.5">
-                                <Label className="text-xs font-semibold text-gray-400 uppercase tracking-tight">EPS (TTM)</Label>
-                                <span className="text-sm font-bold text-gray-900 tabular-nums">{fundamental?.eps || '-'}</span>
+                                <Label className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-tight">EPS (TTM)</Label>
+                                <span className="text-sm font-bold text-gray-900 dark:text-slate-100 tabular-nums">{fundamental?.eps || '-'}</span>
                             </div>
                             <div className="flex justify-between items-center group py-0.5">
-                                <Label className="text-xs font-semibold text-gray-400 uppercase tracking-tight">Book Value</Label>
-                                <span className="text-sm font-bold text-gray-900 tabular-nums">{fundamental?.book_value || '-'}</span>
+                                <Label className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-tight">Book Value</Label>
+                                <span className="text-sm font-bold text-gray-900 dark:text-slate-100 tabular-nums">{fundamental?.book_value || '-'}</span>
                             </div>
                             <div className="flex justify-between items-center group py-0.5">
-                                <Label className="text-xs font-semibold text-gray-400 uppercase tracking-tight">EPS Growth (QoQ)</Label>
-                                <span className={`text-sm font-bold tabular-nums ${fundamental?.qoq_earnings_growth >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                <Label className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-tight">EPS Growth (QoQ)</Label>
+                                <span className={`text-sm font-bold tabular-nums ${fundamental?.qoq_earnings_growth >= 0 ? 'text-green-600 dark:text-emerald-400' : 'text-red-500 dark:text-rose-400'}`}>
                                     {fundamental?.qoq_earnings_growth ? `${fundamental.qoq_earnings_growth}%` : '-'}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center group py-0.5">
-                                <Label className="text-xs font-semibold text-gray-400 uppercase tracking-tight">EPS Growth (YoY)</Label>
-                                <span className={`text-sm font-bold tabular-nums ${fundamental?.yoy_earnings_growth >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                <Label className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-tight">EPS Growth (YoY)</Label>
+                                <span className={`text-sm font-bold tabular-nums ${fundamental?.yoy_earnings_growth >= 0 ? 'text-green-600 dark:text-emerald-400' : 'text-red-500 dark:text-rose-400'}`}>
                                     {fundamental?.yoy_earnings_growth ? `${fundamental.yoy_earnings_growth}%` : '-'}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center group py-0.5">
-                                <Label className="text-xs font-semibold text-gray-400 uppercase tracking-tight">Debt to Equity</Label>
-                                <span className="text-sm font-bold text-gray-900 tabular-nums">{fundamental?.debt_to_equity || '-'}</span>
+                                <Label className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-tight">Debt to Equity</Label>
+                                <span className="text-sm font-bold text-gray-900 dark:text-slate-100 tabular-nums">{fundamental?.debt_to_equity || '-'}</span>
                             </div>
                         </div>
                     </div>
@@ -210,11 +210,11 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                     {/* Status & Info */}
                     <div className="space-y-6">
                         <div className="flex items-center gap-3 mb-2">
-                            <div className="w-1 h-5 bg-gray-400 rounded-full" />
-                            <h3 className="text-xs font-black uppercase text-gray-900 tracking-wider">Insights</h3>
+                            <div className="w-1 h-5 bg-gray-400 dark:bg-slate-600 rounded-full" />
+                            <h3 className="text-xs font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">Insights</h3>
                         </div>
-                        <div className="bg-gray-50/50 rounded-xl p-5 border border-dashed border-gray-200">
-                            <p className="text-xs text-gray-500 leading-relaxed font-medium mb-4">
+                        <div className="bg-gray-50/50 dark:bg-slate-800/30 rounded-xl p-5 border border-dashed border-gray-200 dark:border-slate-700">
+                            <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed font-medium mb-4">
                                 {hasFinancials
                                     ? "Fundamentals are automatically derived from the latest verified financial reports and market prices."
                                     : "No financial reports found. Add reports below to enable automatic metric calculation."
@@ -225,7 +225,7 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                                 size="sm"
                                 onClick={handleRefresh}
                                 disabled={calculating || !hasFinancials}
-                                className="w-full text-xs font-bold gap-2"
+                                className="w-full text-xs font-bold gap-2 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
                             >
                                 <RefreshCw className={`w-3.5 h-3.5 ${calculating ? 'animate-spin' : ''}`} />
                                 {calculating ? 'Recalculating...' : hasFinancials ? 'Refresh Metrics' : 'Add Reports to Enable'}
