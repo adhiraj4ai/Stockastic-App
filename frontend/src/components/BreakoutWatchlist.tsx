@@ -28,10 +28,10 @@ export const BreakoutWatchlist = ({ stocks }: BreakoutWatchlistProps) => {
         <div className="space-y-4">
             <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-amber-100 rounded-md">
-                        <Zap size={14} className="text-amber-600 fill-amber-600" />
+                    <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-md">
+                        <Zap size={14} className="text-amber-600 dark:text-amber-400 fill-amber-600 dark:fill-amber-400" />
                     </div>
-                    <span className="text-[11px] font-black text-slate-900 tracking-widest">Momentum Breakouts</span>
+                    <span className="text-[11px] font-black text-slate-900 dark:text-slate-100 tracking-widest">Momentum Breakouts</span>
                 </div>
             </div>
 
@@ -41,23 +41,23 @@ export const BreakoutWatchlist = ({ stocks }: BreakoutWatchlistProps) => {
                         breakouts.map((stock) => (
                             <TableRow
                                 key={stock.ticker}
-                                className="border-transparent hover:bg-slate-50 cursor-pointer group"
+                                className="border-transparent hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer group"
                                 onClick={() => router.push(`/stock/${stock.ticker}`)}
                             >
                                 <TableCell className="py-2 px-1">
                                     <div className="flex items-center gap-2">
-                                        <span className="font-bold text-slate-900 text-[11px] group-hover:text-blue-600 transition-colors">{stock.ticker}</span>
+                                        <span className="font-bold text-slate-900 dark:text-slate-100 text-[11px] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{stock.ticker}</span>
                                         <TrendingUp size={10} className="text-emerald-500" />
                                     </div>
                                 </TableCell>
                                 <TableCell className="py-2 px-1 text-right">
-                                    <span className="text-[10px] font-mono font-bold text-emerald-700">+{stock.percent_change.toFixed(2)}%</span>
+                                    <span className="text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-400">+{stock.percent_change.toFixed(2)}%</span>
                                 </TableCell>
                             </TableRow>
                         ))
                     ) : (
                         <TableRow>
-                            <TableCell className="text-center py-4 text-[10px] text-slate-500 italic">No breakouts detected</TableCell>
+                            <TableCell className="text-center py-4 text-[10px] text-slate-500 dark:text-slate-400 italic">No breakouts detected</TableCell>
                         </TableRow>
                     )}
                 </TableBody>

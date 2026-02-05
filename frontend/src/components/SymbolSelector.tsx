@@ -68,18 +68,18 @@ export function SymbolSelector({ value, onChange, className }: SymbolSelectorPro
                     role="combobox"
                     aria-expanded={open}
                     className={cn(
-                        "h-9 px-4 hover:bg-gray-100 border border-gray-200 bg-white shadow-sm transition-all hover:shadow-md justify-between",
+                        "h-9 px-4 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm transition-all hover:shadow-md justify-between",
                         className
                     )}
                 >
                     <div className="flex items-center gap-2 overflow-hidden">
                         <TrendingUp size={16} className="text-green-500 shrink-0" />
                         <div className="flex flex-col items-start overflow-hidden">
-                            <span className="text-sm font-bold text-gray-900 truncate">
+                            <span className="text-sm font-bold text-gray-900 dark:text-slate-100 truncate">
                                 {value || "Select Symbol"}
                             </span>
                             {selectedCompany && (
-                                <span className="text-[10px] text-gray-500 truncate max-w-[200px]">
+                                <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate max-w-[200px]">
                                     {selectedCompany.name}
                                 </span>
                             )}
@@ -117,8 +117,8 @@ export function SymbolSelector({ value, onChange, className }: SymbolSelectorPro
                                         )}
                                     />
                                     <div className="flex flex-col flex-1">
-                                        <span className="font-bold text-sm">{company.symbol}</span>
-                                        <span className="text-xs text-gray-500 truncate">{company.name}</span>
+                                        <span className="font-bold text-sm dark:text-slate-100">{company.symbol}</span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{company.name}</span>
                                     </div>
                                 </CommandItem>
                             ))}
