@@ -136,7 +136,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[90vw] max-w-[90vw] h-[90vh] max-h-[90vh] overflow-hidden flex flex-col bg-slate-50/95 backdrop-blur-xl border-white/20 shadow-2xl p-0 gap-0">
+            <DialogContent className="w-[90vw] max-w-[90vw] sm:max-w-[90vw] h-[90vh] max-h-[90vh] overflow-hidden flex flex-col bg-slate-50/95 backdrop-blur-xl border-white/20 shadow-2xl p-0 gap-0">
                 <DialogHeader className="p-6 pb-4 border-b border-slate-200/50 bg-white/50 sticky top-0 z-10 backdrop-blur-md">
                     <DialogTitle className="text-xl font-bold tracking-tight text-slate-800 flex items-center gap-2">
                         Settings
