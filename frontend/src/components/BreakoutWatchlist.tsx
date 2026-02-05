@@ -42,7 +42,7 @@ export const BreakoutWatchlist = ({ stocks }: BreakoutWatchlistProps) => {
                             <TableRow
                                 key={stock.ticker}
                                 className="border-transparent hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer group"
-                                onClick={() => router.push(`/stock/${stock.ticker}`)}
+                                onClick={() => router.push(`/ticker/${stock.ticker}`)}
                             >
                                 <TableCell className="py-2 px-1">
                                     <div className="flex items-center gap-2">

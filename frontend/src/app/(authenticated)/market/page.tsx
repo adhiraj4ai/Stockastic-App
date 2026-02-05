@@ -273,7 +273,7 @@ export default function DashboardPage() {
 
     const handleStockClick = (ticker: string) => {
         addToRecent(ticker);
-        router.push(`/stock/${ticker}`);
+        router.push(`/ticker/${ticker}`);
     };
 
     const StockRow = ({ stock }: { stock: StockData }) => {
@@ -309,7 +309,7 @@ export default function DashboardPage() {
             <div className="bg-slate-900 dark:bg-black/80 overflow-hidden py-1.5 border-b border-slate-800 dark:border-slate-900 transition-colors duration-500">
                 <div className="flex animate-infinite-scroll whitespace-nowrap items-center gap-12 px-4">
                     {top_gainers.concat(top_losers).slice(0, 10).map((stock, i) => (
-                        <div key={i} className="flex items-center gap-2 cursor-pointer opacity-80 hover:opacity-100 transition-opacity" onClick={() => router.push(`/stock/${stock.ticker}`)}>
+                        <div key={i} className="flex items-center gap-2 cursor-pointer opacity-80 hover:opacity-100 transition-opacity" onClick={() => router.push(`/ticker/${stock.ticker}`)}>
                             <span className="font-bold text-xs text-slate-200 dark:text-slate-300 tracking-wider">{stock.ticker}</span>
                             <span className="font-mono text-xs text-slate-400 dark:text-slate-500">{stock.close}</span>
                             <span className={`text-[10px] font-bold px-1.5 rounded-sm ${stock.change >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
@@ -319,7 +319,7 @@ export default function DashboardPage() {
                     ))}
                     {/* Duplicate for seamless scroll */}
                     {top_gainers.concat(top_losers).slice(0, 10).map((stock, i) => (
-                        <div key={`d-${i}`} className="flex items-center gap-2 cursor-pointer opacity-80 hover:opacity-100 transition-opacity" onClick={() => router.push(`/stock/${stock.ticker}`)}>
+                        <div key={`d-${i}`} className="flex items-center gap-2 cursor-pointer opacity-80 hover:opacity-100 transition-opacity" onClick={() => router.push(`/ticker/${stock.ticker}`)}>
                             <span className="font-bold text-xs text-slate-200 dark:text-slate-300 tracking-wider">{stock.ticker}</span>
                             <span className="font-mono text-xs text-slate-400 dark:text-slate-500">{stock.close}</span>
                             <span className={`text-[10px] font-bold px-1.5 rounded-sm ${stock.change >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>

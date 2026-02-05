@@ -10,10 +10,10 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { TerminalHeader } from '@/components/stock/TerminalHeader';
-import { BentoMetrics } from '@/components/stock/BentoMetrics';
-import { FundamentalBenchmarks } from '@/components/stock/FundamentalBenchmarks';
-import { TechnicalDivergence } from '@/components/stock/TechnicalDivergence';
+import { TerminalHeader } from '@/components/ticker/TerminalHeader';
+import { BentoMetrics } from '@/components/ticker/BentoMetrics';
+import { FundamentalBenchmarks } from '@/components/ticker/FundamentalBenchmarks';
+import { TechnicalDivergence } from '@/components/ticker/TechnicalDivergence';
 import {
     Dialog,
     DialogContent,
@@ -22,7 +22,7 @@ import {
     DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FullFeaturedChart } from '@/components/stock/FullFeaturedChart';
+import { FullFeaturedChart } from '@/components/ticker/FullFeaturedChart';
 
 interface Recommendation {
     symbol: string;
@@ -242,7 +242,7 @@ export default function RecommendationsPage() {
                 setLoadingHistory(false);
             }
         } else {
-            router.push(`/stock/${symbol}`);
+            router.push(`/ticker/${symbol}`);
         }
     };
 

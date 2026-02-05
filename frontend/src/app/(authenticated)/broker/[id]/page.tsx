@@ -186,7 +186,7 @@ export default function BrokerPage() {
                                     {profile.holdings.map((h) => (
                                         <TableRow key={h.symbol} className="hover:bg-blue-50/50 transition-colors">
                                             <TableCell className="font-bold text-blue-700">
-                                                <Link href={`/stock/${h.symbol}`} className="hover:underline">
+                                                <Link href={`/ticker/${h.symbol}`} className="hover:underline">
                                                     {h.symbol}
                                                 </Link>
                                                 <div className="text-[10px] text-gray-400 font-normal truncate max-w-[150px]">{h.name}</div>

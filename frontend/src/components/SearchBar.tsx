@@ -8,7 +8,7 @@ export function SearchBar() {
 
     const handleTickerChange = (ticker: string) => {
         if (ticker) {
-            router.push(`/stock/${ticker}`);
+            router.push(`/ticker/${ticker}`);
         }
     };
 

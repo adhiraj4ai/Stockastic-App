@@ -100,7 +100,7 @@ export const MarketBubbleMap = ({ stocks, height = 400 }: MarketBubbleMapProps) 
 
     const onChartClick = (params: any) => {
         if (params.name) {
-            router.push(`/stock/${params.name}`);
+            router.push(`/ticker/${params.name}`);
         }
     };
 

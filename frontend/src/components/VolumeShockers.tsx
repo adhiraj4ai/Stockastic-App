@@ -38,7 +38,7 @@ export const VolumeShockers = ({ stocks }: VolumeShockersProps) => {
                     <TableRow
                         key={stock.ticker}
                         className="border-transparent hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
-                        onClick={() => router.push(`/stock/${stock.ticker}`)}
+                        onClick={() => router.push(`/ticker/${stock.ticker}`)}
                     >
                         <TableCell className="py-2.5 px-0 text-[11px] font-bold text-slate-900 dark:text-slate-100">{stock.ticker}</TableCell>
                         <TableCell className="py-2.5 px-0 text-right">

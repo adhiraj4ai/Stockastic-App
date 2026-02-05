@@ -751,7 +751,7 @@ function AccumulationContent() {
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="text-center">
-                                                        <Link href={`/stock/${item.symbol}`}>
+                                                        <Link href={`/ticker/${item.symbol}`}>
                                                             <Button variant="ghost" size="icon" className="group-hover:text-blue-600 dark:group-hover:text-indigo-400 group-hover:bg-blue-100 dark:group-hover:bg-indigo-900/30 rounded-full transition-all">
                                                                 <ArrowRight className="w-4 h-4" />
                                                             </Button>

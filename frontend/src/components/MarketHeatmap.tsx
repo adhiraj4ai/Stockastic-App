@@ -148,7 +148,7 @@ export const MarketHeatmap: React.FC<MarketHeatmapProps> = ({
 
     const onChartClick = (params: any) => {
         if (params.data && params.data.ticker) {
-            router.push(`/stock/${params.data.ticker}`);
+            router.push(`/ticker/${params.data.ticker}`);
         }
     };
 

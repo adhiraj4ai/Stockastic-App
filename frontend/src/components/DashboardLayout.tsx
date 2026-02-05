@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Flame, Users, BarChart3, History, Star, TrendingDown, Brain, Radar } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Flame, Users, BarChart3, History, Star, TrendingDown, Brain, Radar, Landmark, ScanLine } from 'lucide-react';
 import { SearchBar } from './SearchBar';
 import { ChatSidebar } from './ChatSidebar';
 import { AlertsDropdown } from './AlertsDropdown';
@@ -21,9 +21,9 @@ import Cookies from 'js-cookie';
 import { SettingsDialog } from './SettingsDialog';
 
 const navItems = [
-    { name: 'Home', href: '/home', icon: Home },
-    { name: 'Chat', href: '/chat', icon: MessageSquare },
-    { name: 'Stocks', href: '/stock/NABIL', icon: TrendingUp },
+    { name: 'Market', href: '/market', icon: Landmark },
+    // Chat moved to top nav
+    { name: 'Ticker', href: '/ticker/NABIL', icon: ScanLine },
     {
         name: 'Finfolio',
         icon: Wallet,
@@ -198,7 +198,7 @@ function DashboardContent({
                 <div className={`p-4 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between ${isSidebarCollapsed ? 'flex-col gap-4' : ''}`}>
                     {!isSidebarCollapsed && (
                         <div className="w-full flex justify-center py-0">
-                            <Link href="/home">
+                            <Link href="/market">
                                 <Image
                                     src="/stockastic-logo-v3.png"
                                     alt="Stockastic Logo"
@@ -222,7 +222,7 @@ function DashboardContent({
                     {filteredNavItems.map((item) => {
                         const hasSubItems = 'subItems' in item && item.subItems && item.subItems.length > 0;
                         const isExpanded = expandedMenus.includes(item.name);
-                        const isActive = 'href' in item && item.href ? (pathname.startsWith(item.href) && item.href !== '/home' || pathname === item.href) : false;
+                        const isActive = 'href' in item && item.href ? (pathname.startsWith(item.href) && item.href !== '/market' || pathname === item.href) : false;
 
                         return (
                             <div
@@ -266,9 +266,9 @@ function DashboardContent({
                                     >
                                         <item.icon size={18} className={
                                             isActive ? 'text-white' :
-                                                item.name === 'Home' ? 'text-blue-500 dark:text-blue-400' :
+                                                item.name === 'Market' ? 'text-blue-500 dark:text-blue-400' :
                                                     item.name === 'Chat' ? 'text-purple-500 dark:text-purple-400' :
-                                                        item.name === 'Stocks' ? 'text-green-500 dark:text-green-400' :
+                                                        item.name === 'Ticker' ? 'text-green-500 dark:text-green-400' :
                                                             item.name === 'Financials' ? 'text-cyan-500 dark:text-cyan-400' :
                                                                 item.name === 'Strategies' ? 'text-yellow-500 dark:text-yellow-400' :
                                                                     item.name === 'Signals' ? 'text-pink-500 dark:text-pink-400' :
@@ -360,7 +360,7 @@ function DashboardContent({
                                 ) : (
                                     <div className="flex flex-col min-w-0">
                                         <h2 className="text-xl font-semibold text-gray-800 dark:text-slate-100 capitalize truncate">
-                                            {title || (pathname.includes('/stock/') ? 'Stock Details' : pathname.split('/').pop())}
+                                            {title || (pathname.includes('/ticker/') ? 'Stock Details' : pathname.split('/').pop())}
                                         </h2>
                                         {subtitle && (
                                             <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{subtitle}</p>
@@ -371,12 +371,12 @@ function DashboardContent({
                         )}
 
                         <div className="w-1/3 flex justify-center">
-                            {pathname.startsWith('/stock/') && (() => {
-                                const currentTicker = pathname.split('/stock/')[1]?.split('/')[0];
+                            {pathname.startsWith('/ticker/') && (() => {
+                                const currentTicker = pathname.split('/ticker/')[1]?.split('/')[0];
                                 return (
                                     <SymbolSelector
                                         value={currentTicker}
-                                        onChange={(symbol) => router.push(`/stock/${symbol}`)}
+                                        onChange={(symbol) => router.push(`/ticker/${symbol}`)}
                                     />
                                 );
                             })()}
@@ -384,6 +384,18 @@ function DashboardContent({
 
                         <div className="w-1/3 flex justify-end gap-4 items-center">
                             <AlertsDropdown />
+
+                            {(!currentUser || currentUser.username !== 'ashmi') && (
+                                <Link href="/chat">
+                                    <button
+                                        className="p-2 rounded-full text-purple-500 hover:text-purple-600 dark:text-purple-400 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all relative"
+                                        title="Chat"
+                                    >
+                                        <MessageSquare size={20} />
+                                    </button>
+                                </Link>
+                            )}
+
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <button className="flex items-center gap-3 p-1.5 pr-2 rounded-full border border-slate-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-indigo-500/50 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all group outline-none">

@@ -76,7 +76,7 @@ export function AlertsDropdown() {
     return (
         <DropdownMenu onOpenChange={(open) => open && triggerCheck()}>
             <DropdownMenuTrigger asChild>
-                <button className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors relative outline-none focus:ring-2 focus:ring-blue-100">
+                <button className="p-2 rounded-full hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-500 hover:text-amber-600 dark:text-amber-400 transition-colors relative outline-none focus:ring-2 focus:ring-amber-100">
                     <Bell size={20} />
                     {unreadCount > 0 && (
                         <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />

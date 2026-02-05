@@ -29,9 +29,9 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from '@/lib/utils';
 
 // Terminal Suite Components
-import { IntelligenceGlass } from '@/components/stock/IntelligenceGlass';
-import { BentoMetrics } from '@/components/stock/BentoMetrics';
-import { AdvancedCharting } from '@/components/stock/AdvancedCharting';
+import { IntelligenceGlass } from '@/components/ticker/IntelligenceGlass';
+import { BentoMetrics } from '@/components/ticker/BentoMetrics';
+import { AdvancedCharting } from '@/components/ticker/AdvancedCharting';
 import SignalDashboard from '@/components/SignalDashboard';
 
 interface StockDetailData {
@@ -584,7 +584,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
             <div className="flex flex-col items-center justify-center min-h-[50vh] text-center space-y-4">
                 <div className="text-red-500 dark:text-red-400 text-xl font-bold">Stock Not Found</div>
                 <p className="text-gray-500 dark:text-gray-400">Could not find data for ticker: {ticker}</p>
-                <Button variant="outline" onClick={() => router.push('/home')}>Go Home</Button>
+                <Button variant="outline" onClick={() => router.push('/market')}>Go Home</Button>
             </div>
         </DashboardLayout>
     );
