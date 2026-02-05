@@ -600,8 +600,8 @@ export default function PipelinePage() {
                     {/* Main Pipeline Steps */}
                     <div className="space-y-3">
                         <div className="flex items-center gap-3 mb-2 px-2">
-                            <Activity className="w-5 h-5 text-blue-600" />
-                            <h2 className="font-bold text-gray-900 text-lg uppercase tracking-widest text-[11px]">Active Pipeline Steps</h2>
+                            <Activity className="w-5 h-5 text-blue-600 dark:text-indigo-400" />
+                            <h2 className="font-bold text-gray-900 dark:text-slate-100 text-lg uppercase tracking-widest text-[11px]">Active Pipeline Steps</h2>
                         </div>
 
                         {/* Step 1: Floorsheet */}
@@ -610,7 +610,7 @@ export default function PipelinePage() {
                                 {...getRootProps()}
                                 className={cn(
                                     "group relative rounded-2xl border-2 border-dashed p-4 transition-all duration-300",
-                                    isDragActive ? "border-blue-500 bg-blue-50/50 scale-[1.01]" : "border-gray-100 bg-white hover:border-blue-200",
+                                    isDragActive ? "border-blue-500 bg-blue-50/50 dark:border-indigo-500 dark:bg-indigo-900/20 scale-[1.01]" : "border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-200 dark:hover:border-indigo-700",
                                     uploading && "opacity-50 pointer-events-none"
                                 )}
                             >
@@ -618,15 +618,15 @@ export default function PipelinePage() {
                                 <div className="flex items-start gap-4">
                                     <div className={cn(
                                         "p-3 rounded-2xl transition-colors",
-                                        isDragActive ? "bg-blue-600 text-white" : "bg-gray-50 text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500"
+                                        isDragActive ? "bg-blue-600 text-white" : "bg-gray-50 dark:bg-slate-800 text-gray-400 dark:text-slate-500 group-hover:bg-blue-50 dark:group-hover:bg-indigo-900/30 group-hover:text-blue-500 dark:group-hover:text-indigo-400"
                                     )}>
                                         <FileJson className="w-6 h-6" />
                                     </div>
                                     <div className="space-y-1">
-                                        <h3 className="text-lg font-bold text-gray-900">1. Upload Floorsheet</h3>
-                                        <p className="text-sm text-gray-500">Drag and drop the latest floorsheet JSON to update accumulation data.</p>
+                                        <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100">1. Upload Floorsheet</h3>
+                                        <p className="text-sm text-gray-500 dark:text-slate-400">Drag and drop the latest floorsheet JSON to update accumulation data.</p>
                                         {uploading && (
-                                            <div className="flex items-center gap-2 mt-4 text-sm font-bold text-blue-600 animate-pulse">
+                                            <div className="flex items-center gap-2 mt-4 text-sm font-bold text-blue-600 dark:text-indigo-400 animate-pulse">
                                                 <Loader2 className="w-4 h-4 animate-spin" />
                                                 PROCESSING JSON...
                                             </div>
@@ -637,14 +637,14 @@ export default function PipelinePage() {
                         </Card>
 
                         {/* Step 2: Daily Prices (Simplified View) */}
-                        <div className="group bg-white rounded-2xl border border-gray-100 p-3 space-y-2 shadow-sm hover:border-blue-200 transition-colors">
+                        <div className="group bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-3 space-y-2 shadow-sm hover:border-blue-200 dark:hover:border-indigo-700 transition-colors">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-gray-50 text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+                                <div className="p-2 rounded-xl bg-gray-50 dark:bg-slate-800 text-gray-400 dark:text-slate-500 group-hover:bg-blue-50 dark:group-hover:bg-indigo-900/30 group-hover:text-blue-500 dark:group-hover:text-indigo-400 transition-colors">
                                     <Clock className="w-5 h-5" />
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="font-bold text-gray-900 text-sm">2. Sync Daily Prices</h3>
-                                    <p className="text-xs text-gray-500">Ingest previous day market close data.</p>
+                                    <h3 className="font-bold text-gray-900 dark:text-slate-100 text-sm">2. Sync Daily Prices</h3>
+                                    <p className="text-xs text-gray-500 dark:text-slate-400">Ingest previous day market close data.</p>
                                 </div>
                             </div>
 
@@ -707,8 +707,8 @@ export default function PipelinePage() {
                     {/* Upload History */}
                     <div className="space-y-6">
                         <div className="flex items-center gap-3 mb-2 px-2">
-                            <History className="w-5 h-5 text-blue-600" />
-                            <h2 className="font-bold text-gray-900 text-lg uppercase tracking-widest text-[11px]">Pipeline History</h2>
+                            <History className="w-5 h-5 text-blue-600 dark:text-indigo-400" />
+                            <h2 className="font-bold text-gray-900 dark:text-slate-100 text-lg uppercase tracking-widest text-[11px]">Pipeline History</h2>
                         </div>
 
                         <UploadHistoryTable
@@ -758,15 +758,15 @@ function DailyPriceUpload({ onSuccess }: { onSuccess?: () => void }) {
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-col gap-3 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+            <div className="flex flex-col gap-3 bg-gray-50/50 dark:bg-slate-800/50 p-4 rounded-xl border border-gray-100 dark:border-slate-800">
                 <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Trading Date</label>
+                    <label className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">Trading Date</label>
                 </div>
                 <div className="flex gap-2">
                     <Popover>
                         <PopoverTrigger asChild>
-                            <Button variant="outline" className="flex-1 justify-start font-medium rounded-xl border-gray-200">
-                                <CalendarIcon className="mr-2 h-4 w-4 text-blue-500" />
+                            <Button variant="outline" className="flex-1 justify-start font-medium rounded-xl border-gray-200 dark:border-slate-800 dark:bg-slate-900">
+                                <CalendarIcon className="mr-2 h-4 w-4 text-blue-500 dark:text-indigo-400" />
                                 {date ? format(date, "PPP") : "Select date..."}
                             </Button>
                         </PopoverTrigger>
@@ -782,7 +782,7 @@ function DailyPriceUpload({ onSuccess }: { onSuccess?: () => void }) {
                     <Button
                         onClick={handleGithubFetch}
                         disabled={fetchingGithub || !date}
-                        className="bg-blue-600 hover:bg-blue-700 rounded-xl"
+                        className="bg-blue-600 hover:bg-blue-700 dark:bg-indigo-600 dark:hover:bg-indigo-700 rounded-xl"
                     >
                         {fetchingGithub ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
                     </Button>

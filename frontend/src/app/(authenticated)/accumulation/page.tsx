@@ -622,10 +622,10 @@ function AccumulationContent() {
             <div className="space-y-4 animate-in fade-in duration-500 pb-10">
 
                 {activeTab === 'overview' && (
-                    <div className="bg-white rounded-xl border shadow-sm">
-                        <div className="p-4 border-b bg-white flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sticky top-[73px] z-20 rounded-t-xl">
+                    <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm">
+                        <div className="p-4 border-b dark:border-slate-800 bg-white dark:bg-slate-900/80 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sticky top-[73px] z-20 rounded-t-xl">
                             <div className="flex flex-wrap items-center gap-3">
-                                <span className="text-[10px] font-black text-gray-400 uppercase px-2">Analysis Range</span>
+                                <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-2">Analysis Range</span>
                                 <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1 md:pb-0">
                                     {timeRanges.map((t) => (
                                         <Button
@@ -634,8 +634,8 @@ function AccumulationContent() {
                                             variant={range === t.value ? "default" : "outline"}
                                             size="sm"
                                             className={`rounded-xl px-4 py-2 font-bold transition-all ${range === t.value
-                                                ? 'bg-blue-600 text-white shadow-lg scale-105'
-                                                : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-gray-200'
+                                                ? 'bg-blue-600 dark:bg-indigo-600 text-white shadow-lg scale-105'
+                                                : 'text-gray-600 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-slate-200 border-gray-200 dark:border-slate-800'
                                                 }`}
                                         >
                                             {t.label}
@@ -646,20 +646,20 @@ function AccumulationContent() {
 
                             <div className="flex items-center gap-3 w-full lg:w-auto">
                                 <div className="relative flex-grow lg:w-64">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
                                     <Input
                                         placeholder="Search symbol..."
                                         value={search}
                                         onChange={(e) => setSearch(e.target.value)}
-                                        className="pl-10 h-10 rounded-xl bg-white border-gray-200 shadow-none focus:ring-1 focus:ring-blue-500 transition-all"
+                                        className="pl-10 h-10 rounded-xl bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 shadow-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-indigo-500 transition-all dark:text-slate-100"
                                     />
                                 </div>
-                                <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-gray-200 shadow-sm">
-                                    <span className="text-[10px] font-black text-gray-400 uppercase px-2">Sector</span>
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm">
+                                    <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-2">Sector</span>
                                     <select
                                         value={sector}
                                         onChange={(e) => setSector(e.target.value)}
-                                        className="bg-transparent border-none text-sm font-bold text-gray-700 outline-none min-w-[100px] pr-4"
+                                        className="bg-transparent border-none text-sm font-bold text-gray-700 dark:text-slate-300 outline-none min-w-[100px] pr-4"
                                     >
                                         {sectors.map(s => (
                                             <option key={s} value={s}>{s}</option>
@@ -670,25 +670,25 @@ function AccumulationContent() {
                         </div>
                         {loading ? (
                             <div className="flex flex-col items-center justify-center p-20 space-y-4">
-                                <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-                                <p className="text-gray-500 font-medium tracking-wide">Analyzing market accumulation...</p>
+                                <Loader2 className="w-10 h-10 text-blue-500 dark:text-indigo-400 animate-spin" />
+                                <p className="text-gray-500 dark:text-slate-400 font-medium tracking-wide">Analyzing market accumulation...</p>
                             </div>
                         ) : (
                             <div>
                                 <table className="w-full caption-bottom text-sm">
-                                    <TableHeader className="bg-gray-50 sticky top-[146px] z-10 shadow-sm border-b">
+                                    <TableHeader className="bg-gray-50 dark:bg-slate-900 sticky top-[146px] z-10 shadow-sm border-b dark:border-slate-800">
                                         <TableRow>
-                                            <TableHead className="w-[120px] cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('symbol')}>
+                                            <TableHead className="w-[120px] cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleSort('symbol')}>
                                                 <div className="flex items-center gap-1">Symbol <SortIcon column="symbol" /></div>
                                             </TableHead>
                                             <TableHead className="hidden lg:table-cell">Company</TableHead>
-                                            <TableHead className="text-right cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('close')}>
+                                            <TableHead className="text-right cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleSort('close')}>
                                                 <div className="flex items-center justify-end gap-1">Price <SortIcon column="close" /></div>
                                             </TableHead>
-                                            <TableHead className="text-right cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('net_qty')}>
+                                            <TableHead className="text-right cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleSort('net_qty')}>
                                                 <div className="flex items-center justify-end gap-1">Net Acc. <SortIcon column="net_qty" /></div>
                                             </TableHead>
-                                            <TableHead className="text-center w-[200px] cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('accumulation_ratio')}>
+                                            <TableHead className="text-center w-[200px] cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleSort('accumulation_ratio')}>
                                                 <div className="flex items-center justify-center gap-1">Intensity <SortIcon column="accumulation_ratio" /></div>
                                             </TableHead>
                                             <TableHead className="text-center hidden md:table-cell">Buyers</TableHead>
@@ -699,44 +699,44 @@ function AccumulationContent() {
                                     <TableBody>
                                         {sortedData.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={8} className="h-40 text-center text-gray-500">
+                                                <TableCell colSpan={8} className="h-40 text-center text-gray-500 dark:text-slate-400">
                                                     No accumulation data found matching your criteria.
                                                 </TableCell>
                                             </TableRow>
                                         ) : (
                                             sortedData.map((item) => (
-                                                <TableRow key={item.symbol} className="hover:bg-blue-50/40 transition-colors group">
-                                                    <TableCell className="font-bold text-blue-700 bg-blue-50/20">{item.symbol}</TableCell>
+                                                <TableRow key={item.symbol} className="hover:bg-blue-50/40 dark:hover:bg-slate-900/50 transition-colors group border-b dark:border-slate-800">
+                                                    <TableCell className="font-bold text-blue-700 dark:text-indigo-400 bg-blue-50/20 dark:bg-indigo-900/10">{item.symbol}</TableCell>
                                                     <TableCell className="hidden lg:table-cell">
                                                         <div className="flex flex-col max-w-[200px]">
-                                                            <span className="text-sm font-medium text-gray-900 truncate">{item.name}</span>
-                                                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{item.sector}</span>
+                                                            <span className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{item.name}</span>
+                                                            <span className="text-[10px] text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider">{item.sector}</span>
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="text-right font-mono font-medium">
+                                                    <TableCell className="text-right font-mono font-medium dark:text-slate-300">
                                                         Rs. {item.close.toLocaleString()}
                                                     </TableCell>
                                                     <TableCell className="text-right">
-                                                        <span className={`font-mono font-bold ${item.net_qty >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                        <span className={`font-mono font-bold ${item.net_qty >= 0 ? 'text-green-600 dark:text-emerald-400' : 'text-red-600 dark:text-rose-400'}`}>
                                                             {item.net_qty >= 0 ? '+' : ''}{item.net_qty.toLocaleString()}
                                                         </span>
                                                     </TableCell>
                                                     <TableCell>
                                                         <div className="flex flex-col items-center gap-1 px-4">
-                                                            <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden shadow-inner border border-gray-200/50">
+                                                            <div className="w-full bg-gray-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden shadow-inner border border-gray-200/50 dark:border-slate-700">
                                                                 <div
                                                                     className={`h-full transition-all duration-1000 ease-out ${item.net_qty >= 0 ? 'bg-gradient-to-r from-green-400 to-green-600' : 'bg-gradient-to-r from-red-400 to-red-600'}`}
                                                                     style={{ width: `${Math.min(item.accumulation_ratio, 100)}%` }}
                                                                 />
                                                             </div>
-                                                            <span className="text-[10px] font-bold text-gray-400">{item.accumulation_ratio.toFixed(1)}% Strength</span>
+                                                            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500">{item.accumulation_ratio.toFixed(1)}% Strength</span>
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="hidden md:table-cell">
                                                         <div className="flex justify-center gap-1">
                                                             {item.top_buyers?.map(b => (
                                                                 <Link href={`/broker/${b}`} key={b}>
-                                                                    <span className="px-2 py-0.5 bg-green-50 text-green-700 rounded text-[10px] font-bold border border-green-100 hover:bg-green-100 cursor-pointer transition-colors">#{b}</span>
+                                                                    <span className="px-2 py-0.5 bg-green-50 dark:bg-emerald-900/30 text-green-700 dark:text-emerald-400 rounded text-[10px] font-bold border border-green-100 dark:border-emerald-800/30 hover:bg-green-100 dark:hover:bg-emerald-800 cursor-pointer transition-colors">#{b}</span>
                                                                 </Link>
                                                             ))}
                                                         </div>
@@ -745,14 +745,14 @@ function AccumulationContent() {
                                                         <div className="flex justify-center gap-1">
                                                             {item.top_sellers?.map(b => (
                                                                 <Link href={`/broker/${b}`} key={b}>
-                                                                    <span className="px-2 py-0.5 bg-red-50 text-red-700 rounded text-[10px] font-bold border border-red-100 hover:bg-red-100 cursor-pointer transition-colors">#{b}</span>
+                                                                    <span className="px-2 py-0.5 bg-red-50 dark:bg-rose-900/30 text-red-700 dark:text-rose-400 rounded text-[10px] font-bold border border-red-100 dark:border-rose-800/30 hover:bg-red-100 dark:hover:bg-rose-800 cursor-pointer transition-colors">#{b}</span>
                                                                 </Link>
                                                             ))}
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="text-center">
                                                         <Link href={`/stock/${item.symbol}`}>
-                                                            <Button variant="ghost" size="icon" className="group-hover:text-blue-600 group-hover:bg-blue-100 rounded-full transition-all">
+                                                            <Button variant="ghost" size="icon" className="group-hover:text-blue-600 dark:group-hover:text-indigo-400 group-hover:bg-blue-100 dark:group-hover:bg-indigo-900/30 rounded-full transition-all">
                                                                 <ArrowRight className="w-4 h-4" />
                                                             </Button>
                                                         </Link>
@@ -768,10 +768,10 @@ function AccumulationContent() {
                 )}
 
                 {activeTab === 'aggressive' && (
-                    <div className="bg-white rounded-xl border shadow-sm">
-                        <div className="p-4 border-b bg-white flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sticky top-[73px] z-10 rounded-t-xl">
+                    <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm">
+                        <div className="p-4 border-b dark:border-slate-800 bg-white dark:bg-slate-900/80 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sticky top-[73px] z-10 rounded-t-xl">
                             <div className="flex flex-wrap items-center gap-3">
-                                <span className="text-[10px] font-black text-gray-400 uppercase px-2">Analysis Range</span>
+                                <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-2">Analysis Range</span>
                                 <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1 md:pb-0">
                                     {timeRanges.filter(t => ['1D', '1W', '2W', '1M', '3M'].includes(t.value)).map((t) => (
                                         <Button
@@ -780,8 +780,8 @@ function AccumulationContent() {
                                             variant={range === t.value ? "default" : "outline"}
                                             size="sm"
                                             className={`rounded-xl px-4 py-2 font-bold transition-all ${range === t.value
-                                                ? 'bg-blue-600 text-white shadow-lg scale-105'
-                                                : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-gray-200'
+                                                ? 'bg-blue-600 dark:bg-indigo-600 text-white shadow-lg scale-105'
+                                                : 'text-gray-600 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-slate-200 border-gray-200 dark:border-slate-800'
                                                 }`}
                                         >
                                             {t.label}
@@ -792,20 +792,20 @@ function AccumulationContent() {
 
                             <div className="flex items-center gap-3 w-full lg:w-auto">
                                 <div className="relative flex-grow lg:w-64">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
                                     <Input
                                         placeholder="Search symbol..."
                                         value={search}
                                         onChange={(e) => setSearch(e.target.value)}
-                                        className="pl-10 h-10 rounded-xl bg-white border-gray-200 shadow-none focus:ring-1 focus:ring-blue-500 transition-all"
+                                        className="pl-10 h-10 rounded-xl bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 shadow-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-indigo-500 transition-all dark:text-slate-100"
                                     />
                                 </div>
-                                <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-gray-200 shadow-sm">
-                                    <span className="text-[10px] font-black text-gray-400 uppercase px-2">Sector</span>
+                                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm">
+                                    <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-2">Sector</span>
                                     <select
                                         value={sector}
                                         onChange={(e) => setSector(e.target.value)}
-                                        className="bg-transparent border-none text-sm font-bold text-gray-700 outline-none min-w-[100px] pr-4"
+                                        className="bg-transparent border-none text-sm font-bold text-gray-700 dark:text-slate-300 outline-none min-w-[100px] pr-4"
                                     >
                                         {sectors.map(s => (
                                             <option key={s} value={s}>{s}</option>
@@ -817,61 +817,61 @@ function AccumulationContent() {
                         <div className="p-6">
                             {aggressiveLoading ? (
                                 <div className="flex flex-col items-center justify-center p-20 space-y-4">
-                                    <Loader2 className="w-10 h-10 text-orange-500 animate-spin" />
-                                    <p className="text-gray-500 font-medium tracking-wide">Scanning for aggressive patterns...</p>
+                                    <Loader2 className="w-10 h-10 text-orange-500 dark:text-orange-400 animate-spin" />
+                                    <p className="text-gray-500 dark:text-slate-400 font-medium tracking-wide">Scanning for aggressive patterns...</p>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     {/* Accumulators List */}
                                     <div className="space-y-4">
-                                        <h3 className="text-lg font-bold text-green-700 flex items-center gap-2 px-1">
+                                        <h3 className="text-lg font-bold text-green-700 dark:text-emerald-400 flex items-center gap-2 px-1">
                                             <ChevronUp className="w-5 h-5" />
                                             Aggressive Accumulators
                                         </h3>
                                         {aggressiveData.accumulators?.length === 0 ? (
-                                            <Card className="p-10 text-center text-gray-400 bg-white/50">No aggressive accumulation detected.</Card>
+                                            <Card className="p-10 text-center text-gray-400 dark:text-slate-500 bg-white/50 dark:bg-slate-900/50">No aggressive accumulation detected.</Card>
                                         ) : (
                                             aggressiveData.accumulators.map((sym, idx) => (
-                                                <Card key={idx} className="group hover:border-green-200 transition-all shadow-sm hover:shadow-md bg-white overflow-hidden">
+                                                <Card key={idx} className="group hover:border-green-200 dark:hover:border-emerald-500/30 transition-all shadow-sm hover:shadow-md bg-white dark:bg-slate-900 overflow-hidden border-slate-100 dark:border-slate-800">
                                                     <div className="p-4">
                                                         <div className="flex justify-between items-start mb-4">
                                                             <div className="flex flex-col">
                                                                 <div className="flex items-center gap-2">
-                                                                    <span className="text-xl font-black text-gray-900 group-hover:text-green-600 transition-colors tracking-tight">{sym.symbol}</span>
-                                                                    <span className="text-sm font-bold text-gray-400">Rs. {sym.close?.toLocaleString()}</span>
+                                                                    <span className="text-xl font-black text-gray-900 dark:text-slate-100 group-hover:text-green-600 dark:group-hover:text-emerald-400 transition-colors tracking-tight">{sym.symbol}</span>
+                                                                    <span className="text-sm font-bold text-gray-400 dark:text-slate-500">Rs. {sym.close?.toLocaleString()}</span>
                                                                 </div>
-                                                                <span className="text-xs font-semibold text-gray-400 uppercase truncate max-w-[180px]">{sym.name}</span>
+                                                                <span className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase truncate max-w-[180px]">{sym.name}</span>
                                                             </div>
                                                             <div className="flex flex-col items-end">
-                                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Buy Intensity</span>
-                                                                <div className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm font-black border border-green-200 shadow-sm flex items-center gap-1">
+                                                                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-1">Buy Intensity</span>
+                                                                <div className="px-3 py-1 bg-green-100 dark:bg-emerald-900/30 text-green-700 dark:text-emerald-400 rounded-lg text-sm font-black border border-green-200 dark:border-emerald-800/30 shadow-sm flex items-center gap-1">
                                                                     +{sym.intensity.toFixed(1)}%
                                                                 </div>
                                                             </div>
                                                         </div>
 
-                                                        <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                                        <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-700/50">
                                                             <div>
-                                                                <span className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Inst. Buy Qty</span>
-                                                                <span className="text-sm font-bold text-gray-700">{sym.institutional_buy.toLocaleString()}</span>
+                                                                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase block mb-1">Inst. Buy Qty</span>
+                                                                <span className="text-sm font-bold text-gray-700 dark:text-slate-300">{sym.institutional_buy.toLocaleString()}</span>
                                                             </div>
                                                             <div>
-                                                                <span className="text-[10px] font-bold text-gray-400 uppercase block mb-1">20D Avg Vol</span>
-                                                                <span className="text-sm font-bold text-gray-700">{Math.round(sym.avg_vol_20d).toLocaleString()}</span>
+                                                                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase block mb-1">20D Avg Vol</span>
+                                                                <span className="text-sm font-bold text-gray-700 dark:text-slate-300">{Math.round(sym.avg_vol_20d).toLocaleString()}</span>
                                                             </div>
                                                         </div>
 
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex gap-1 items-center overflow-hidden">
-                                                                <span className="text-[10px] font-bold text-gray-400 uppercase mr-1">Top Buyers</span>
+                                                                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase mr-1">Top Buyers</span>
                                                                 {sym.producers?.map(p => (
                                                                     <Link href={`/broker/${p}`} key={p}>
-                                                                        <span className="px-1.5 py-0.5 bg-white text-gray-600 rounded text-[10px] font-bold border border-gray-100 hover:bg-green-50 hover:text-green-600 cursor-pointer transition-colors shadow-sm">#{p}</span>
+                                                                        <span className="px-1.5 py-0.5 bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-400 rounded text-[10px] font-bold border border-gray-100 dark:border-slate-700 hover:bg-green-50 dark:hover:bg-emerald-900/30 hover:text-green-600 dark:hover:text-emerald-400 cursor-pointer transition-colors shadow-sm">#{p}</span>
                                                                     </Link>
                                                                 ))}
                                                             </div>
                                                             <Link href={`/floorsheet?symbol=${sym.symbol}`}>
-                                                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-bold text-blue-600 hover:bg-blue-50 gap-1 rounded-lg">
+                                                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-bold text-blue-600 dark:text-indigo-400 hover:bg-blue-50 dark:hover:bg-indigo-900/30 gap-1 rounded-lg">
                                                                     Analyze <ArrowRight className="w-3 h-3" />
                                                                 </Button>
                                                             </Link>
@@ -884,54 +884,54 @@ function AccumulationContent() {
 
                                     {/* Distributors List */}
                                     <div className="space-y-4">
-                                        <h3 className="text-lg font-bold text-red-700 flex items-center gap-2 px-1">
+                                        <h3 className="text-lg font-bold text-red-700 dark:text-rose-400 flex items-center gap-2 px-1">
                                             <ChevronDown className="w-5 h-5" />
                                             Aggressive Distributors
                                         </h3>
                                         {aggressiveData.distributors?.length === 0 ? (
-                                            <Card className="p-10 text-center text-gray-400 bg-white/50">No aggressive distribution detected.</Card>
+                                            <Card className="p-10 text-center text-gray-400 dark:text-slate-500 bg-white/50 dark:bg-slate-900/50">No aggressive distribution detected.</Card>
                                         ) : (
                                             aggressiveData.distributors.map((sym, idx) => (
-                                                <Card key={idx} className="group hover:border-red-200 transition-all shadow-sm hover:shadow-md bg-white overflow-hidden">
+                                                <Card key={idx} className="group hover:border-red-200 dark:hover:border-rose-500/30 transition-all shadow-sm hover:shadow-md bg-white dark:bg-slate-900 overflow-hidden border-slate-100 dark:border-slate-800">
                                                     <div className="p-4">
                                                         <div className="flex justify-between items-start mb-4">
                                                             <div className="flex flex-col">
                                                                 <div className="flex items-center gap-2">
-                                                                    <span className="text-xl font-black text-gray-900 group-hover:text-red-600 transition-colors tracking-tight">{sym.symbol}</span>
-                                                                    <span className="text-sm font-bold text-gray-400">Rs. {sym.close?.toLocaleString()}</span>
+                                                                    <span className="text-xl font-black text-gray-900 dark:text-slate-100 group-hover:text-red-600 dark:group-hover:text-rose-400 transition-colors tracking-tight">{sym.symbol}</span>
+                                                                    <span className="text-sm font-bold text-gray-400 dark:text-slate-500">Rs. {sym.close?.toLocaleString()}</span>
                                                                 </div>
-                                                                <span className="text-xs font-semibold text-gray-400 uppercase truncate max-w-[180px]">{sym.name}</span>
+                                                                <span className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase truncate max-w-[180px]">{sym.name}</span>
                                                             </div>
                                                             <div className="flex flex-col items-end">
-                                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Sell Intensity</span>
-                                                                <div className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-sm font-black border border-red-200 shadow-sm flex items-center gap-1">
+                                                                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-1">Sell Intensity</span>
+                                                                <div className="px-3 py-1 bg-red-100 dark:bg-rose-900/30 text-red-700 dark:text-rose-400 rounded-lg text-sm font-black border border-red-200 dark:border-rose-800/30 shadow-sm flex items-center gap-1">
                                                                     {sym.intensity.toFixed(1)}%
                                                                 </div>
                                                             </div>
                                                         </div>
 
-                                                        <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                                        <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-700/50">
                                                             <div>
-                                                                <span className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Inst. Sell Qty</span>
-                                                                <span className="text-sm font-bold text-gray-700">{sym.institutional_sell.toLocaleString()}</span>
+                                                                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase block mb-1">Inst. Sell Qty</span>
+                                                                <span className="text-sm font-bold text-gray-700 dark:text-slate-300">{sym.institutional_sell.toLocaleString()}</span>
                                                             </div>
                                                             <div>
-                                                                <span className="text-[10px] font-bold text-gray-400 uppercase block mb-1">20D Avg Vol</span>
-                                                                <span className="text-sm font-bold text-gray-700">{Math.round(sym.avg_vol_20d).toLocaleString()}</span>
+                                                                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase block mb-1">20D Avg Vol</span>
+                                                                <span className="text-sm font-bold text-gray-700 dark:text-slate-300">{Math.round(sym.avg_vol_20d).toLocaleString()}</span>
                                                             </div>
                                                         </div>
 
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex gap-1 items-center overflow-hidden">
-                                                                <span className="text-[10px] font-bold text-gray-400 uppercase mr-1">Offloaders</span>
+                                                                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase mr-1">Offloaders</span>
                                                                 {sym.offloaders?.map(p => (
                                                                     <Link href={`/broker/${p}`} key={p}>
-                                                                        <span className="px-1.5 py-0.5 bg-white text-gray-600 rounded text-[10px] font-bold border border-gray-100 hover:bg-red-50 hover:text-red-600 cursor-pointer transition-colors shadow-sm">#{p}</span>
+                                                                        <span className="px-1.5 py-0.5 bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-400 rounded text-[10px] font-bold border border-gray-100 dark:border-slate-700 hover:bg-red-50 dark:hover:bg-rose-900/30 hover:text-red-600 dark:hover:text-rose-400 cursor-pointer transition-colors shadow-sm">#{p}</span>
                                                                     </Link>
                                                                 ))}
                                                             </div>
                                                             <Link href={`/floorsheet?symbol=${sym.symbol}`}>
-                                                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-bold text-blue-600 hover:bg-blue-50 gap-1 rounded-lg">
+                                                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs font-bold text-blue-600 dark:text-indigo-400 hover:bg-blue-50 dark:hover:bg-indigo-900/30 gap-1 rounded-lg">
                                                                     Analyze <ArrowRight className="w-3 h-3" />
                                                                 </Button>
                                                             </Link>
@@ -948,28 +948,28 @@ function AccumulationContent() {
                 )}
 
                 {activeTab === 'trends' && (
-                    <div className="bg-white rounded-xl border shadow-sm">
-                        <div className="p-4 border-b bg-white flex items-center justify-end gap-4 sticky top-[73px] z-20 rounded-t-xl">
+                    <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm">
+                        <div className="p-4 border-b dark:border-slate-800 bg-white dark:bg-slate-900/80 flex items-center justify-end gap-4 sticky top-[73px] z-20 rounded-t-xl">
                             <div className="relative w-64">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
                                 <Input
                                     placeholder="Filter symbols or brokers..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    className="pl-10 h-9 rounded-lg bg-white border-gray-200 shadow-none text-sm focus:ring-1 focus:ring-blue-500"
+                                    className="pl-10 h-9 rounded-lg bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 shadow-none text-sm focus:ring-1 focus:ring-blue-500 dark:focus:ring-indigo-500 dark:text-slate-100"
                                 />
                             </div>
                         </div>
                         <div className="p-0">
                             {trendsLoading ? (
                                 <div className="flex flex-col items-center justify-center p-20 space-y-4">
-                                    <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-                                    <p className="text-gray-500 font-medium">Calculating broker trends...</p>
+                                    <Loader2 className="w-10 h-10 text-blue-500 dark:text-indigo-400 animate-spin" />
+                                    <p className="text-gray-500 dark:text-slate-400 font-medium">Calculating broker trends...</p>
                                 </div>
                             ) : (
                                 <div>
                                     <table className="w-full caption-bottom text-sm">
-                                        <TableHeader className="bg-gray-50 sticky top-[146px] z-10 shadow-sm border-b">
+                                        <TableHeader className="bg-gray-50 dark:bg-slate-900 sticky top-[146px] z-10 shadow-sm border-b dark:border-slate-800">
                                             <TableRow>
                                                 <TableHead className="w-[120px]">Symbol</TableHead>
                                                 <TableHead>Broker ID</TableHead>
@@ -989,7 +989,7 @@ function AccumulationContent() {
                                                 String(t.broker).includes(search)
                                             ).length === 0 ? (
                                                 <TableRow>
-                                                    <TableCell colSpan={9} className="h-40 text-center text-gray-500">
+                                                    <TableCell colSpan={9} className="h-40 text-center text-gray-500 dark:text-slate-400">
                                                         No broker trends found matching "{search}".
                                                     </TableCell>
                                                 </TableRow>
@@ -1000,22 +1000,22 @@ function AccumulationContent() {
                                                         String(t.broker).includes(search)
                                                     )
                                                     .map((row, idx) => (
-                                                        <TableRow key={idx} className="hover:bg-blue-50/40 transition-colors group">
-                                                            <TableCell className="font-bold text-blue-700">{row.symbol}</TableCell>
+                                                        <TableRow key={idx} className="hover:bg-blue-50/40 dark:hover:bg-slate-900/50 transition-colors group border-b dark:border-slate-800">
+                                                            <TableCell className="font-bold text-blue-700 dark:text-indigo-400">{row.symbol}</TableCell>
                                                             <TableCell>
                                                                 <Link href={`/broker/${row.broker}`}>
-                                                                    <span className="px-2 py-1 bg-gray-100 rounded text-xs font-bold border border-gray-200 hover:bg-blue-50 hover:text-blue-600 cursor-pointer transition-all">
+                                                                    <span className="px-2 py-1 bg-gray-100 dark:bg-slate-800 rounded text-xs font-bold border border-gray-200 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-indigo-900/30 hover:text-blue-600 dark:hover:text-indigo-400 cursor-pointer transition-all">
                                                                         Broker {row.broker}
                                                                     </span>
                                                                 </Link>
                                                             </TableCell>
-                                                            <TableCell className="text-right font-mono font-bold text-blue-800">
+                                                            <TableCell className="text-right font-mono font-bold text-blue-800 dark:text-indigo-400">
                                                                 {row.cumulative_net.toLocaleString()}
                                                             </TableCell>
-                                                            <TableCell className="text-right font-mono font-bold text-gray-900">
+                                                            <TableCell className="text-right font-mono font-bold text-gray-900 dark:text-slate-100">
                                                                 {row.ltp?.toLocaleString()}
                                                             </TableCell>
-                                                            <TableCell className="text-right font-mono font-bold text-gray-700">
+                                                            <TableCell className="text-right font-mono font-bold text-gray-700 dark:text-slate-300">
                                                                 {row.wac?.toLocaleString()}
                                                             </TableCell>
                                                             <TableCell className="text-center">
@@ -1032,7 +1032,7 @@ function AccumulationContent() {
                                                             </TableCell>
                                                             <TableCell className="text-center">
                                                                 <Link href={`/accumulation?tab=history&symbol=${row.symbol}&broker=${row.broker}`}>
-                                                                    <Button variant="ghost" size="icon" className="group-hover:text-blue-600 rounded-full" title="View historical accumulation">
+                                                                    <Button variant="ghost" size="icon" className="group-hover:text-blue-600 dark:group-hover:text-indigo-400 rounded-full" title="View historical accumulation">
                                                                         <History className="w-4 h-4" />
                                                                     </Button>
                                                                 </Link>
@@ -1043,8 +1043,8 @@ function AccumulationContent() {
                                         </TableBody>
                                     </table>
                                     {historyLoading && historyPage > 1 && (
-                                        <div className="py-4 flex justify-center w-full bg-gray-50 border-t">
-                                            <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+                                        <div className="py-4 flex justify-center w-full bg-gray-50 dark:bg-slate-900 border-t dark:border-slate-800">
+                                            <Loader2 className="w-6 h-6 text-blue-500 dark:text-indigo-400 animate-spin" />
                                         </div>
                                     )}
                                 </div>
@@ -1055,15 +1055,15 @@ function AccumulationContent() {
 
                 {
                     activeTab === 'favorites' && (
-                        <div className="bg-white rounded-xl border shadow-sm">
-                            <div className="p-4 border-b bg-white flex flex-col md:flex-row justify-between items-center gap-4 sticky top-[73px] z-10 rounded-t-xl">
+                        <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm">
+                            <div className="p-4 border-b dark:border-slate-800 bg-white dark:bg-slate-900/80 flex flex-col md:flex-row justify-between items-center gap-4 sticky top-[73px] z-10 rounded-t-xl">
                                 <div className="flex flex-wrap items-center gap-3 w-full justify-between md:justify-end">
-                                    <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-gray-200 shadow-sm">
-                                        <span className="text-[10px] font-black text-gray-400 uppercase px-2">Broker</span>
+                                    <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm">
+                                        <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-2">Broker</span>
                                         <select
                                             value={selectedBroker}
                                             onChange={(e) => handleBrokerChange(e.target.value)}
-                                            className="bg-transparent border-none text-sm font-bold text-blue-700 outline-none pr-4 min-w-[80px]"
+                                            className="bg-transparent border-none text-sm font-bold text-blue-700 dark:text-indigo-400 outline-none pr-4 min-w-[80px]"
                                         >
                                             <option value="">Select ID</option>
                                             {allBrokers.map(b => <option key={b} value={b}>{b}</option>)}
@@ -1077,7 +1077,7 @@ function AccumulationContent() {
                                                 variant={favPeriod === p ? "default" : "outline"}
                                                 size="sm"
                                                 onClick={() => setFavPeriod(p)}
-                                                className={`rounded-lg px-3 py-1 h-8 text-xs font-bold transition-all ${favPeriod === p ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-blue-50 border-gray-200'
+                                                className={`rounded-lg px-3 py-1 h-8 text-xs font-bold transition-all ${favPeriod === p ? 'bg-blue-600 dark:bg-indigo-600 text-white shadow-sm' : 'text-gray-600 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-slate-800 border-gray-200 dark:border-slate-800'
                                                     }`}
                                             >
                                                 {p}
@@ -1089,33 +1089,33 @@ function AccumulationContent() {
                             <div className="p-0">
                                 {favoritesLoading ? (
                                     <div className="flex flex-col items-center justify-center p-20 space-y-4">
-                                        <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-                                        <p className="text-gray-500 font-medium tracking-wide">Analyzing broker favorites...</p>
+                                        <Loader2 className="w-10 h-10 text-blue-500 dark:text-indigo-400 animate-spin" />
+                                        <p className="text-gray-500 dark:text-slate-400 font-medium tracking-wide">Analyzing broker favorites...</p>
                                     </div>
                                 ) : !selectedBroker ? (
                                     <div className="p-20 text-center flex flex-col items-center gap-3">
-                                        <div className="w-16 h-16 bg-blue-50 text-blue-400 rounded-full flex items-center justify-center">
+                                        <div className="w-16 h-16 bg-blue-50 dark:bg-indigo-900/30 text-blue-400 dark:text-indigo-400 rounded-full flex items-center justify-center">
                                             <Search className="w-8 h-8" />
                                         </div>
-                                        <p className="text-gray-500 font-medium">Please select a Broker ID to view their favorites.</p>
+                                        <p className="text-gray-500 dark:text-slate-400 font-medium">Please select a Broker ID to view their favorites.</p>
                                     </div>
                                 ) : (
                                     <div>
                                         <table className="w-full caption-bottom text-sm">
-                                            <TableHeader className="bg-gray-50 sticky top-[146px] z-10 shadow-sm border-b">
+                                            <TableHeader className="bg-gray-50 dark:bg-slate-900 sticky top-[146px] z-10 shadow-sm border-b dark:border-slate-800">
                                                 <TableRow>
                                                     <TableHead className="w-[120px]">Symbol</TableHead>
                                                     <TableHead className="hidden lg:table-cell">Company</TableHead>
                                                     <TableHead className="text-right">Total Net Holding</TableHead>
                                                     <TableHead className="text-right">WAC</TableHead>
-                                                    <TableHead className="text-right bg-blue-50/50">Qty Accumulated ({favPeriod})</TableHead>
+                                                    <TableHead className="text-right bg-blue-50/50 dark:bg-indigo-900/20">Qty Accumulated ({favPeriod})</TableHead>
                                                     <TableHead className="w-[100px]"></TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {favorites.length === 0 ? (
                                                     <TableRow>
-                                                        <TableCell colSpan={6} className="h-40 text-center text-gray-500">
+                                                        <TableCell colSpan={6} className="h-40 text-center text-gray-500 dark:text-slate-400">
                                                             No favorites data found for this broker.
                                                         </TableCell>
                                                     </TableRow>
@@ -1130,21 +1130,21 @@ function AccumulationContent() {
                                                             const changeValue = (fav[changeKey] as number) ?? 0;
 
                                                             return (
-                                                                <TableRow key={idx} className="hover:bg-blue-50/30 transition-colors group">
-                                                                    <TableCell className="font-bold text-blue-700">{fav.symbol}</TableCell>
-                                                                    <TableCell className="hidden lg:table-cell text-sm text-gray-600 truncate max-w-[200px]">{fav.name}</TableCell>
-                                                                    <TableCell className="text-right font-mono font-medium text-gray-400">
+                                                                <TableRow key={idx} className="hover:bg-blue-50/30 dark:hover:bg-slate-900/50 transition-colors group border-b dark:border-slate-800">
+                                                                    <TableCell className="font-bold text-blue-700 dark:text-indigo-400">{fav.symbol}</TableCell>
+                                                                    <TableCell className="hidden lg:table-cell text-sm text-gray-600 dark:text-slate-400 truncate max-w-[200px]">{fav.name}</TableCell>
+                                                                    <TableCell className="text-right font-mono font-medium text-gray-400 dark:text-slate-500">
                                                                         {fav.current_net.toLocaleString()}
                                                                     </TableCell>
-                                                                    <TableCell className="text-right font-mono font-bold text-orange-600">
+                                                                    <TableCell className="text-right font-mono font-bold text-orange-600 dark:text-orange-400">
                                                                         {fav.wac?.toLocaleString() || '-'}
                                                                     </TableCell>
-                                                                    <TableCell className={`text-right font-mono font-bold bg-blue-50/20 ${changeValue > 0 ? 'text-green-600' : changeValue < 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                                                                    <TableCell className={`text-right font-mono font-bold bg-blue-50/20 dark:bg-indigo-900/20 ${changeValue > 0 ? 'text-green-600 dark:text-emerald-400' : changeValue < 0 ? 'text-red-600 dark:text-rose-400' : 'text-gray-400 dark:text-slate-500'}`}>
                                                                         {changeValue > 0 ? '+' : ''}{changeValue.toLocaleString()}
                                                                     </TableCell>
                                                                     <TableCell className="text-center">
                                                                         <Link href={`/accumulation?tab=history&symbol=${fav.symbol}&broker=${selectedBroker}`}>
-                                                                            <Button variant="ghost" size="icon" className="group-hover:text-blue-600 rounded-full transition-all" title="View historical accumulation">
+                                                                            <Button variant="ghost" size="icon" className="group-hover:text-blue-600 dark:group-hover:text-indigo-400 rounded-full transition-all" title="View historical accumulation">
                                                                                 <History className="w-4 h-4" />
                                                                             </Button>
                                                                         </Link>
@@ -1164,9 +1164,9 @@ function AccumulationContent() {
 
                 {activeTab === 'accumulators' && (
                     <>
-                        <div className="bg-white rounded-xl border shadow-sm p-4 mb-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sticky top-[73px] z-20">
+                        <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm p-4 mb-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sticky top-[73px] z-20">
                             <div className="flex flex-wrap items-center gap-3">
-                                <span className="text-[10px] font-black text-gray-400 uppercase px-2">Analysis Range</span>
+                                <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-2">Analysis Range</span>
                                 <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1 md:pb-0">
                                     {timeRanges
                                         .filter(t => t.value !== '1D')
@@ -1177,8 +1177,8 @@ function AccumulationContent() {
                                                 variant={range === t.value ? "default" : "outline"}
                                                 size="sm"
                                                 className={`rounded-xl px-4 py-2 font-bold transition-all ${range === t.value
-                                                    ? 'bg-blue-600 text-white shadow-lg scale-105'
-                                                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-gray-200'
+                                                    ? 'bg-blue-600 dark:bg-indigo-600 text-white shadow-lg scale-105'
+                                                    : 'text-gray-600 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-slate-200 border-gray-200 dark:border-slate-800'
                                                     }`}
                                             >
                                                 {t.label}
@@ -1198,24 +1198,24 @@ function AccumulationContent() {
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-xl border shadow-sm h-[45vh] flex flex-col">
-                            <div className="p-4 border-b bg-white rounded-t-xl">
-                                <h3 className="text-lg font-bold text-gray-800">Accumulation Trend</h3>
+                        <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm h-[45vh] flex flex-col">
+                            <div className="p-4 border-b dark:border-slate-800 bg-white dark:bg-slate-900/80 rounded-t-xl">
+                                <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100">Accumulation Trend</h3>
                             </div>
 
                             <div className="flex-1 p-4 min-h-0">
                                 {!selectedGraphSymbol ? (
-                                    <div className="h-full flex flex-col items-center justify-center space-y-4 text-gray-400">
+                                    <div className="h-full flex flex-col items-center justify-center space-y-4 text-gray-400 dark:text-slate-500">
                                         <BarChart2 className="w-16 h-16 opacity-20" />
                                         <p className="font-bold text-lg">Enter a symbol to visualize top accumulators</p>
                                     </div>
                                 ) : graphLoading ? (
                                     <div className="h-full flex flex-col items-center justify-center space-y-4">
-                                        <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-                                        <p className="text-gray-500 font-medium">Fetching accumulation data...</p>
+                                        <Loader2 className="w-10 h-10 text-blue-500 dark:text-indigo-400 animate-spin" />
+                                        <p className="text-gray-500 dark:text-slate-400 font-medium">Fetching accumulation data...</p>
                                     </div>
                                 ) : graphData.length === 0 ? (
-                                    <div className="h-full flex flex-col items-center justify-center space-y-4 text-gray-400">
+                                    <div className="h-full flex flex-col items-center justify-center space-y-4 text-gray-400 dark:text-slate-500">
                                         <p className="font-medium">No data found for {selectedGraphSymbol}</p>
                                     </div>
                                 ) : (
@@ -1311,24 +1311,24 @@ function AccumulationContent() {
                 )}
 
                 {activeTab === 'history' && (
-                    <div className="bg-white rounded-xl border shadow-sm relative h-[calc(100vh-140px)] flex flex-col">
+                    <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm relative h-[calc(100vh-140px)] flex flex-col">
                         {/* Header & Filters */}
-                        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 p-5 border-b bg-white rounded-t-xl shrink-0">
+                        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 p-5 border-b dark:border-slate-800 bg-white dark:bg-slate-900/80 rounded-t-xl shrink-0">
                             <div className="flex items-center gap-4">
                                 <div>
-                                    <h2 className="text-lg font-bold text-gray-900">Historical Flows</h2>
-                                    <p className="text-xs text-gray-500 font-medium">Detailed transaction logs</p>
+                                    <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100">Historical Flows</h2>
+                                    <p className="text-xs text-gray-500 dark:text-slate-400 font-medium">Detailed transaction logs</p>
                                 </div>
                             </div>
 
                             <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
                                 {/* Broker Selector */}
-                                <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-200">
-                                    <span className="text-[10px] font-black text-gray-400 uppercase px-2">Broker</span>
+                                <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-900 p-1.5 rounded-xl border border-gray-200 dark:border-slate-800">
+                                    <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-2">Broker</span>
                                     <select
                                         value={selectedBroker}
                                         onChange={(e) => handleBrokerChange(e.target.value)}
-                                        className="bg-transparent border-none text-sm font-bold text-blue-700 outline-none pr-4 min-w-[80px]"
+                                        className="bg-transparent border-none text-sm font-bold text-blue-700 dark:text-indigo-400 outline-none pr-4 min-w-[80px]"
                                     >
                                         <option value="">Select ID</option>
                                         {selectedBroker && !allBrokers.includes(selectedBroker) && (
@@ -1348,12 +1348,12 @@ function AccumulationContent() {
                                             params.set('symbol', val);
                                             router.push(`/accumulation?${params.toString()}`, { scroll: false });
                                         }}
-                                        className="h-9 border-gray-200 bg-gray-50 text-sm font-bold"
+                                        className="h-9 border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 text-sm font-bold"
                                     />
                                 </div>
                                 {selectedGraphSymbol && (
                                     <Link href={`/floorsheet?symbol=${selectedGraphSymbol}&broker=${selectedBroker || ''}`}>
-                                        <Button variant="outline" size="sm" className="bg-white gap-2 font-medium text-slate-700 hover:text-blue-600 border-slate-200">
+                                        <Button variant="outline" size="sm" className="bg-white dark:bg-slate-900 gap-2 font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-indigo-400 border-slate-200 dark:border-slate-800">
                                             <ExternalLink className="w-4 h-4" />
                                             Floorsheet
                                         </Button>
@@ -1363,8 +1363,8 @@ function AccumulationContent() {
                         </div>
 
                         {(!selectedBroker || !selectedGraphSymbol) ? (
-                            <div className="flex flex-col items-center justify-center flex-1 text-gray-400 space-y-4">
-                                <div className="p-4 bg-gray-50 rounded-full">
+                            <div className="flex flex-col items-center justify-center flex-1 text-gray-400 dark:text-slate-500 space-y-4">
+                                <div className="p-4 bg-gray-50 dark:bg-slate-900 rounded-full">
                                     <Filter className="w-8 h-8 opacity-50" />
                                 </div>
                                 <p className="font-bold text-lg">Please select both Broker and Symbol</p>
@@ -1372,11 +1372,11 @@ function AccumulationContent() {
                             </div>
                         ) : historyLoading ? (
                             <div className="flex flex-col items-center justify-center p-20 space-y-4 flex-1">
-                                <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-                                <p className="text-gray-500 font-medium">Loading history...</p>
+                                <Loader2 className="w-10 h-10 text-blue-500 dark:text-indigo-400 animate-spin" />
+                                <p className="text-gray-500 dark:text-slate-400 font-medium">Loading history...</p>
                             </div>
                         ) : historyError ? (
-                            <div className="flex flex-col items-center justify-center flex-1 p-20 text-center text-red-500 font-medium space-y-2">
+                            <div className="flex flex-col items-center justify-center flex-1 p-20 text-center text-red-500 dark:text-rose-400 font-medium space-y-2">
                                 <p>{historyError}</p>
                                 <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Retry</Button>
                             </div>
@@ -1386,67 +1386,67 @@ function AccumulationContent() {
                                 onScroll={handleHistoryScroll}
                             >
                                 <table className="w-full caption-bottom text-sm relative">
-                                    <TableHeader className="bg-gray-50 sticky top-0 z-10 shadow-sm border-b">
+                                    <TableHeader className="bg-gray-50 dark:bg-slate-900 sticky top-0 z-10 shadow-sm border-b dark:border-slate-800">
                                         <TableRow>
                                             <TableHead className="w-[110px] whitespace-nowrap">Date</TableHead>
-                                            <TableHead className="text-right text-green-700 font-bold whitespace-nowrap">Buy Qty</TableHead>
-                                            <TableHead className="text-right text-green-700 font-bold whitespace-nowrap">Buy Rate</TableHead>
-                                            <TableHead className="text-right text-green-700 font-bold whitespace-nowrap">Buy Amt</TableHead>
-                                            <TableHead className="text-right text-red-700 font-bold whitespace-nowrap">Sell Qty</TableHead>
-                                            <TableHead className="text-right text-red-700 font-bold whitespace-nowrap">Sell Rate</TableHead>
-                                            <TableHead className="text-right text-red-700 font-bold whitespace-nowrap">Sell Amt</TableHead>
+                                            <TableHead className="text-right text-green-700 dark:text-emerald-400 font-bold whitespace-nowrap">Buy Qty</TableHead>
+                                            <TableHead className="text-right text-green-700 dark:text-emerald-400 font-bold whitespace-nowrap">Buy Rate</TableHead>
+                                            <TableHead className="text-right text-green-700 dark:text-emerald-400 font-bold whitespace-nowrap">Buy Amt</TableHead>
+                                            <TableHead className="text-right text-red-700 dark:text-rose-400 font-bold whitespace-nowrap">Sell Qty</TableHead>
+                                            <TableHead className="text-right text-red-700 dark:text-rose-400 font-bold whitespace-nowrap">Sell Rate</TableHead>
+                                            <TableHead className="text-right text-red-700 dark:text-rose-400 font-bold whitespace-nowrap">Sell Amt</TableHead>
                                             <TableHead className="text-right font-bold whitespace-nowrap">Net Qty</TableHead>
-                                            <TableHead className="text-right font-bold bg-blue-50/50 whitespace-nowrap">Cum. Qty</TableHead>
-                                            <TableHead className="text-right font-bold bg-yellow-50/50 whitespace-nowrap">WAC</TableHead>
+                                            <TableHead className="text-right font-bold bg-blue-50/50 dark:bg-indigo-900/20 whitespace-nowrap">Cum. Qty</TableHead>
+                                            <TableHead className="text-right font-bold bg-yellow-50/50 dark:bg-yellow-900/20 whitespace-nowrap">WAC</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {historyData.length === 0 ? (
                                             <TableRow>
-                                                <TableCell colSpan={10} className="h-40 text-center text-gray-500">
+                                                <TableCell colSpan={10} className="h-40 text-center text-gray-500 dark:text-slate-400">
                                                     No accumulation data found for this selection.
                                                 </TableCell>
                                             </TableRow>
                                         ) : (
                                             historyData.map((item, idx) => (
-                                                <TableRow key={idx} className="hover:bg-gray-50 transition-colors border-b last:border-0 group">
-                                                    <TableCell className="text-xs text-gray-600 font-medium whitespace-nowrap">
+                                                <TableRow key={idx} className="hover:bg-gray-50 dark:hover:bg-slate-900/50 transition-colors border-b dark:border-slate-800 last:border-0 group">
+                                                    <TableCell className="text-xs text-gray-600 dark:text-slate-400 font-medium whitespace-nowrap">
                                                         <div className="flex items-center gap-2">
                                                             {item.date}
                                                             <Link
                                                                 href={`/floorsheet?symbol=${selectedGraphSymbol}&broker=${selectedBroker}&date=${item.date}`}
-                                                                className="text-blue-500 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                className="text-blue-500 dark:text-indigo-400 hover:text-blue-700 dark:hover:text-indigo-300 opacity-0 group-hover:opacity-100 transition-opacity"
                                                                 title="View daily floorsheet"
                                                             >
                                                                 <ExternalLink className="w-3 h-3" />
                                                             </Link>
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="text-right font-mono text-green-700">
+                                                    <TableCell className="text-right font-mono text-green-700 dark:text-emerald-400">
                                                         {item.buy_qty > 0 ? item.buy_qty.toLocaleString() : '-'}
                                                     </TableCell>
-                                                    <TableCell className="text-right font-mono text-xs text-gray-500">
+                                                    <TableCell className="text-right font-mono text-xs text-gray-500 dark:text-slate-500">
                                                         {item.buy_qty > 0 ? item.buy_rate.toFixed(2) : '-'}
                                                     </TableCell>
-                                                    <TableCell className="text-right font-mono text-xs text-gray-500">
+                                                    <TableCell className="text-right font-mono text-xs text-gray-500 dark:text-slate-500">
                                                         {item.buy_qty > 0 ? Math.round(item.buy_amount).toLocaleString() : '-'}
                                                     </TableCell>
-                                                    <TableCell className="text-right font-mono text-red-700">
+                                                    <TableCell className="text-right font-mono text-red-700 dark:text-rose-400">
                                                         {item.sell_qty > 0 ? item.sell_qty.toLocaleString() : '-'}
                                                     </TableCell>
-                                                    <TableCell className="text-right font-mono text-xs text-gray-500">
+                                                    <TableCell className="text-right font-mono text-xs text-gray-500 dark:text-slate-500">
                                                         {item.sell_qty > 0 ? item.sell_rate.toFixed(2) : '-'}
                                                     </TableCell>
-                                                    <TableCell className="text-right font-mono text-xs text-gray-500">
+                                                    <TableCell className="text-right font-mono text-xs text-gray-500 dark:text-slate-500">
                                                         {item.sell_qty > 0 ? Math.round(item.sell_amount).toLocaleString() : '-'}
                                                     </TableCell>
-                                                    <TableCell className={`text-right font-mono font-bold ${item.net_quantity > 0 ? 'text-green-600' : item.net_quantity < 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                                                    <TableCell className={`text-right font-mono font-bold ${item.net_quantity > 0 ? 'text-green-600 dark:text-emerald-400' : item.net_quantity < 0 ? 'text-red-600 dark:text-rose-400' : 'text-gray-400 dark:text-slate-500'}`}>
                                                         {item.net_quantity !== 0 ? (item.net_quantity > 0 ? '+' : '') + item.net_quantity.toLocaleString() : '0'}
                                                     </TableCell>
-                                                    <TableCell className="text-right font-mono font-bold bg-blue-50/30 text-blue-800">
+                                                    <TableCell className="text-right font-mono font-bold bg-blue-50/30 dark:bg-indigo-900/20 text-blue-800 dark:text-indigo-400">
                                                         {item.cumulative_qty.toLocaleString()}
                                                     </TableCell>
-                                                    <TableCell className="text-right font-mono font-bold bg-yellow-50/30 text-gray-800">
+                                                    <TableCell className="text-right font-mono font-bold bg-yellow-50/30 dark:bg-yellow-900/20 text-gray-800 dark:text-yellow-400">
                                                         {item.wac ? item.wac.toLocaleString() : '-'}
                                                     </TableCell>
                                                 </TableRow>
