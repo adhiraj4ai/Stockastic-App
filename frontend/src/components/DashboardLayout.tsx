@@ -395,9 +395,11 @@ function DashboardContent({
                                 <DropdownMenuContent align="end" className="w-56">
                                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="cursor-pointer gap-2">
-                                        <Settings size={16} />
-                                        <span>Settings</span>
+                                    <DropdownMenuItem className="cursor-pointer gap-2" asChild>
+                                        <Link href="/settings" className="w-full flex items-center">
+                                            <Settings size={16} />
+                                            <span>Settings</span>
+                                        </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem

@@ -45,3 +45,4 @@ skfolio
 optuna
 joblib
 scikit-learn
+django-cryptography==1.1
