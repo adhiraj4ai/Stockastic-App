@@ -16,10 +16,10 @@ export const InstitutionalInterest = () => {
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-indigo-100 rounded-md">
-                        <ShieldCheck size={14} className="text-indigo-600" />
+                    <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-md">
+                        <ShieldCheck size={14} className="text-indigo-600 dark:text-indigo-400" />
                     </div>
-                    <span className="text-[11px] font-black text-slate-900 tracking-widest">Institutional Participation</span>
+                    <span className="text-[11px] font-black text-slate-900 dark:text-slate-100 tracking-widest">Institutional Participation</span>
                 </div>
                 <TooltipProvider>
                     <Tooltip>
@@ -37,10 +37,10 @@ export const InstitutionalInterest = () => {
                 {metrics.map((m, i) => (
                     <div key={i} className="space-y-1.5">
                         <div className="flex justify-between text-[10px] font-bold">
-                            <span className="text-slate-900 tracking-tighter">{m.label}</span>
-                            <span className="text-indigo-600 font-black">{m.value}%</span>
+                            <span className="text-slate-900 dark:text-slate-300 tracking-tighter">{m.label}</span>
+                            <span className="text-indigo-600 dark:text-indigo-400 font-black">{m.value}%</span>
                         </div>
-                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                             <div
                                 className="h-full bg-indigo-600 rounded-full transition-all duration-1000"
                                 style={{ width: `${m.value}%` }}
@@ -50,9 +50,9 @@ export const InstitutionalInterest = () => {
                 ))}
             </div>
 
-            <div className="mt-4 p-2.5 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                <p className="text-[9px] text-slate-600 leading-relaxed">
-                    <span className="font-black text-slate-900">Analyst Note:</span> "Major accumulation visible in <span className="font-bold text-blue-700">Commercial Banks</span> sector. Turnover suggests institutional support levels forming."
+            <div className="mt-4 p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+                <p className="text-[9px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                    <span className="font-black text-slate-900 dark:text-slate-200">Analyst Note:</span> "Major accumulation visible in <span className="font-bold text-blue-700 dark:text-blue-400">Commercial Banks</span> sector. Turnover suggests institutional support levels forming."
                 </p>
             </div>
         </div>

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
+import { useTheme } from 'next-themes';
 
 interface MarketHealthRadarProps {
     data: {
@@ -15,6 +16,9 @@ interface MarketHealthRadarProps {
 }
 
 export const MarketHealthRadar = ({ data, height = 300 }: MarketHealthRadarProps) => {
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
+
     const option = {
         radar: {
             indicator: [
@@ -27,7 +31,7 @@ export const MarketHealthRadar = ({ data, height = 300 }: MarketHealthRadarProps
             shape: 'circle',
             splitNumber: 5,
             axisName: {
-                color: '#0f172a',
+                color: isDark ? '#94a3b8' : '#0f172a',
                 fontSize: 10,
                 fontWeight: 'bold'
             },
@@ -37,8 +41,8 @@ export const MarketHealthRadar = ({ data, height = 300 }: MarketHealthRadarProps
                         'rgba(203, 213, 225, 0.4)',
                         'rgba(203, 213, 225, 0.6)',
                         'rgba(203, 213, 225, 0.8)',
-                        'rgba(148, 163, 184, 0.5)',
-                        'rgba(15, 23, 42, 0.1)'
+                        isDark ? 'rgba(51, 65, 85, 0.5)' : 'rgba(148, 163, 184, 0.5)',
+                        isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(15, 23, 42, 0.1)'
                     ].reverse()
                 }
             },
@@ -47,7 +51,7 @@ export const MarketHealthRadar = ({ data, height = 300 }: MarketHealthRadarProps
             },
             axisLine: {
                 lineStyle: {
-                    color: 'rgba(15, 23, 42, 0.2)'
+                    color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(15, 23, 42, 0.2)'
                 }
             }
         },
@@ -66,10 +70,10 @@ export const MarketHealthRadar = ({ data, height = 300 }: MarketHealthRadarProps
                         ],
                         name: 'Current Market State',
                         itemStyle: {
-                            color: '#2563eb'
+                            color: isDark ? '#60a5fa' : '#2563eb'
                         },
                         areaStyle: {
-                            color: 'rgba(37, 99, 235, 0.3)'
+                            color: isDark ? 'rgba(96, 165, 250, 0.3)' : 'rgba(37, 99, 235, 0.3)'
                         },
                         lineStyle: {
                             width: 2

@@ -92,9 +92,9 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
-            <Card className="w-full max-w-md shadow-xl border-none ring-0 bg-white">
-                <CardHeader className="space-y-2 text-center pb-2 border-b border-slate-50 flex flex-col items-center pt-8">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 font-sans transition-colors duration-500">
+            <Card className="w-full max-w-md shadow-xl border-none ring-0 bg-white dark:bg-slate-900 overflow-hidden">
+                <CardHeader className="space-y-2 text-center pb-2 border-b border-slate-50 dark:border-slate-800 flex flex-col items-center pt-8">
                     <div className="relative w-44 h-28 mb-2">
                         <Image
                             src="/stockastic-logo-v3.png"
@@ -104,7 +104,7 @@ export default function LoginPage() {
                             priority
                         />
                     </div>
-                    <CardDescription className="font-medium text-slate-500 text-sm">
+                    <CardDescription className="font-medium text-slate-500 dark:text-slate-400 text-sm">
                         {selectedUser ? `Welcome back, ${users.find(u => u.id === selectedUser)?.name}` : 'Select your workspace to continue'}
                     </CardDescription>
                 </CardHeader>
@@ -115,16 +115,16 @@ export default function LoginPage() {
                                 <button
                                     key={user.id}
                                     onClick={() => setSelectedUser(user.id as any)}
-                                    className={`group relative flex items-center gap-4 p-4 rounded-xl bg-white border transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 ${user.border}`}
+                                    className={`group relative flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-slate-800/40 border transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 ${user.border} dark:border-slate-800 dark:hover:border-slate-700`}
                                 >
-                                    <div className={`p-3.5 rounded-xl ${user.bg} ${user.color} transition-transform group-hover:scale-105 shadow-sm`}>
+                                    <div className={`p-3.5 rounded-xl ${user.bg} dark:bg-slate-800 ${user.color} dark:text-indigo-400 transition-transform group-hover:scale-105 shadow-sm`}>
                                         <user.icon size={24} strokeWidth={2} />
                                     </div>
                                     <div className="text-left flex-1 py-0.5">
-                                        <div className="font-bold text-slate-900 text-base">{user.name}</div>
-                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{user.title}</div>
+                                        <div className="font-bold text-slate-900 dark:text-slate-100 text-base">{user.name}</div>
+                                        <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{user.title}</div>
                                     </div>
-                                    <div className="text-slate-300 group-hover:text-slate-500 transition-colors">
+                                    <div className="text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400 transition-colors">
                                         <ChevronRight size={20} />
                                     </div>
                                 </button>
@@ -144,13 +144,13 @@ export default function LoginPage() {
                                         placeholder="Enter access code..."
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="h-12 bg-slate-50 border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 font-bold text-base pr-12 transition-all rounded-xl"
+                                        className="h-12 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/20 focus:border-blue-400 dark:focus:border-blue-500 font-bold text-base pr-12 transition-all rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
                                         required
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-600 transition-colors"
+                                        className="absolute right-4 top-3.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                                     >
                                         {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                                     </button>
@@ -158,7 +158,7 @@ export default function LoginPage() {
                             </div>
 
                             {error && (
-                                <div className="bg-rose-50 text-rose-600 text-[11px] font-bold p-4 rounded-xl border border-rose-100 flex items-center gap-3 animate-in fade-in slide-in-from-top-1">
+                                <div className="bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 text-[11px] font-bold p-4 rounded-xl border border-rose-100 dark:border-rose-900/30 flex items-center gap-3 animate-in fade-in slide-in-from-top-1">
                                     <AlertCircle className="h-5 w-5 shrink-0" />
                                     {error}
                                 </div>
@@ -167,7 +167,7 @@ export default function LoginPage() {
                             <div className="space-y-3 pt-2">
                                 <Button
                                     type="submit"
-                                    className="w-full h-12 bg-slate-900 hover:bg-black text-white font-bold text-xs tracking-widest uppercase transition-all shadow-lg shadow-slate-200 hover:shadow-xl hover:shadow-slate-300 active:scale-[0.98] rounded-xl flex items-center gap-2"
+                                    className="w-full h-12 bg-slate-900 dark:bg-slate-100 hover:bg-black dark:hover:bg-white text-white dark:text-slate-900 font-bold text-xs tracking-widest uppercase transition-all shadow-lg shadow-slate-200 dark:shadow-none hover:shadow-xl hover:shadow-slate-300 dark:hover:shadow-none active:scale-[0.98] rounded-xl flex items-center gap-2"
                                     disabled={loading}
                                 >
                                     {loading ? (
@@ -189,7 +189,7 @@ export default function LoginPage() {
                                         setPassword('');
                                         setError('');
                                     }}
-                                    className="w-full text-[10px] font-bold text-slate-400 hover:text-slate-600 py-2 flex items-center justify-center gap-1.5 transition-colors uppercase tracking-wider hover:bg-slate-50 rounded-lg"
+                                    className="w-full text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 py-2 flex items-center justify-center gap-1.5 transition-colors uppercase tracking-wider hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg"
                                 >
                                     <ArrowLeft size={12} /> Switch Account
                                 </button>

@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 
 interface StockData {
     ticker: string;
@@ -22,6 +23,8 @@ export const MarketHeatmap: React.FC<MarketHeatmapProps> = ({
     height = 500
 }) => {
     const router = useRouter();
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
 
     const chartData = useMemo(() => {
         const sectors: Record<string, any[]> = {};
@@ -56,17 +59,22 @@ export const MarketHeatmap: React.FC<MarketHeatmapProps> = ({
                 const color = change >= 0 ? '#10b981' : '#ef4444';
 
                 return [
-                    `<div style="font-weight:bold; font-size:16px; margin-bottom:4px;">${ticker}</div>`,
-                    `<div style="display:flex; justify-content:space-between; gap:20px;">`,
+                    `<div style="font-weight:bold; font-size:16px; margin-bottom:4px; color: ${isDark ? '#f8fafc' : '#0f172a'};">${ticker}</div>`,
+                    `<div style="display:flex; justify-content:space-between; gap:20px; color: ${isDark ? '#cbd5e1' : '#475569'};">`,
                     `<span>Change:</span> <span style="color:${color}; font-weight:bold;">${change.toFixed(2)}%</span>`,
                     `</div>`,
-                    `<div style="display:flex; justify-content:space-between; gap:20px;">`,
+                    `<div style="display:flex; justify-content:space-between; gap:20px; color: ${isDark ? '#cbd5e1' : '#475569'};">`,
                     `<span>Turnover:</span> <span>Rs. ${turnover}M</span>`,
                     `</div>`,
-                    `<div style="display:flex; justify-content:space-between; gap:20px;">`,
+                    `<div style="display:flex; justify-content:space-between; gap:20px; color: ${isDark ? '#cbd5e1' : '#475569'};">`,
                     `<span>LTP:</span> <span>Rs. ${value[2]}</span>`,
                     `</div>`
                 ].join('');
+            },
+            backgroundColor: isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+            borderColor: isDark ? '#1e293b' : '#e2e8f0',
+            textStyle: {
+                color: isDark ? '#f8fafc' : '#0f172a'
             }
         },
         series: [{
@@ -96,9 +104,9 @@ export const MarketHeatmap: React.FC<MarketHeatmapProps> = ({
             upperLabel: {
                 show: true,
                 height: 30,
-                color: '#333',
+                color: isDark ? '#e2e8f0' : '#333',
                 fontWeight: 'bold',
-                backgroundColor: '#f1f5f9',
+                backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
             },
             itemStyle: {
                 borderColor: '#fff',

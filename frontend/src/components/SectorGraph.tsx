@@ -5,6 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import axios from 'axios';
 import { TrendingUp } from 'lucide-react';
+import { useTheme } from 'next-themes';
 
 interface HistoryPoint {
     date: string;
@@ -12,6 +13,8 @@ interface HistoryPoint {
 }
 
 export function SectorGraph() {
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
     const [data, setData] = useState<HistoryPoint[]>([]);
     const [sector, setSector] = useState('NEPSE');
     const [loading, setLoading] = useState(false);
@@ -41,7 +44,7 @@ export function SectorGraph() {
         <Card className="h-full">
             <CardHeader>
                 <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 text-slate-800 dark:text-slate-100">
                         {sector} Index History
                         <TrendingUp className={`h-4 w-4 ${isPositive ? 'text-green-500' : 'text-red-500'}`} />
                     </CardTitle>
@@ -70,24 +73,35 @@ export function SectorGraph() {
                                         <stop offset="95%" stopColor={color} stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#1e293b' : '#E5E7EB'} />
                                 <XAxis
                                     dataKey="date"
-                                    tick={{ fontSize: 12, fill: '#6B7280' }}
+                                    tick={{ fontSize: 10, fill: isDark ? '#64748b' : '#94a3b8', fontWeight: 'bold' }}
                                     tickLine={false}
                                     axisLine={false}
                                     minTickGap={30}
                                 />
                                 <YAxis
                                     domain={['auto', 'auto']}
-                                    tick={{ fontSize: 12, fill: '#6B7280' }}
+                                    tick={{ fontSize: 10, fill: isDark ? '#64748b' : '#94a3b8', fontWeight: 'bold' }}
                                     tickLine={false}
                                     axisLine={false}
                                     tickFormatter={(val) => val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val}
                                 />
                                 <Tooltip
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                    formatter={(value: number) => [value.toLocaleString(), 'Index Value']}
+                                    contentStyle={{
+                                        borderRadius: '8px',
+                                        border: 'none',
+                                        boxShadow: isDark ? '0 10px 15px -3px rgba(0, 0, 0, 0.4)' : '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                                        backgroundColor: isDark ? '#0f172a' : '#fff',
+                                        color: isDark ? '#f8fafc' : '#0f172a'
+                                    }}
+                                    itemStyle={{ color: isDark ? '#f8fafc' : '#0f172a' }}
+                                    labelStyle={{ color: isDark ? '#94a3b8' : '#64748b', fontWeight: 'bold', marginBottom: '4px' }}
+                                    formatter={(value: number | string | (number | string)[] | undefined) => {
+                                        if (value === undefined) return ['', 'Index Value'];
+                                        return [Number(value).toLocaleString(), 'Index Value'];
+                                    }}
                                 />
                                 <Area
                                     type="monotone"

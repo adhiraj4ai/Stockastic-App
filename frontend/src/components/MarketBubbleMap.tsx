@@ -3,6 +3,7 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
 import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 
 interface StockData {
     ticker: string;
@@ -18,6 +19,8 @@ interface MarketBubbleMapProps {
 
 export const MarketBubbleMap = ({ stocks, height = 400 }: MarketBubbleMapProps) => {
     const router = useRouter();
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
 
     // Grouping by sector or just showing bubbles
     // Map data for ECharts graph
@@ -28,10 +31,10 @@ export const MarketBubbleMap = ({ stocks, height = 400 }: MarketBubbleMapProps) 
         itemStyle: {
             color: stock.percent_change > 0 ? '#10b981' : (stock.percent_change < 0 ? '#f43f5e' : '#94a3b8'),
             opacity: 0.8,
-            borderColor: '#fff',
+            borderColor: isDark ? '#1e293b' : '#fff',
             borderWidth: 1,
             shadowBlur: 10,
-            shadowColor: 'rgba(0,0,0,0.1)'
+            shadowColor: isDark ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.1)'
         },
         label: {
             show: true,
@@ -48,23 +51,23 @@ export const MarketBubbleMap = ({ stocks, height = 400 }: MarketBubbleMapProps) 
                 const stock = stocks.find(s => s.ticker === params.name);
                 if (!stock) return params.name;
                 return `
-                    <div style="padding: 8px; font-family: sans-serif;">
-                        <div style="font-weight: bold; font-size: 14px; margin-bottom: 4px; color: #0f172a;">${stock.ticker}</div>
-                        <div style="display: flex; justify-between; gap: 12px; font-size: 11px;">
-                            <span style="color: #64748b;">Change:</span>
+                    <div style="padding: 12px; font-family: sans-serif; background: ${isDark ? '#0f172a' : '#fff'}; border-radius: 8px;">
+                        <div style="font-weight: bold; font-size: 14px; margin-bottom: 6px; color: ${isDark ? '#f8fafc' : '#0f172a'};">${stock.ticker}</div>
+                        <div style="display: flex; justify-between; gap: 16px; font-size: 11px;">
+                            <span style="color: ${isDark ? '#94a3b8' : '#64748b'};">Change:</span>
                             <span style="color: ${stock.percent_change >= 0 ? '#10b981' : '#f43f5e'}; font-weight: bold;">
                                 ${stock.percent_change >= 0 ? '+' : ''}${stock.percent_change.toFixed(2)}%
                             </span>
                         </div>
-                        <div style="display: flex; justify-between; gap: 12px; font-size: 11px; margin-top: 4px;">
-                            <span style="color: #64748b;">Turnover:</span>
-                            <span style="color: #0f172a; font-weight: bold;">Rs. ${(stock.turnover / 1000000).toFixed(2)}M</span>
+                        <div style="display: flex; justify-between; gap: 16px; font-size: 11px; margin-top: 6px;">
+                            <span style="color: ${isDark ? '#94a3b8' : '#64748b'};">Turnover:</span>
+                            <span style="color: ${isDark ? '#f1f5f9' : '#0f172a'}; font-weight: bold;">Rs. ${(stock.turnover / 1000000).toFixed(2)}M</span>
                         </div>
                     </div>
                 `;
             },
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            borderColor: '#e2e8f0',
+            backgroundColor: isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+            borderColor: isDark ? '#1e293b' : '#e2e8f0',
             borderWidth: 1,
             padding: 0
         },

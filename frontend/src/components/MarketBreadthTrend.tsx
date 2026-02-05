@@ -2,12 +2,16 @@
 
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
+import { useTheme } from 'next-themes';
 
 interface MarketBreadthTrendProps {
     height?: number | string;
 }
 
 export const MarketBreadthTrend = ({ height = 180 }: MarketBreadthTrendProps) => {
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
+
     // Simulated 5-day history of Advancers vs Decliners
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
     const advancers = [120, 145, 110, 160, 147];
@@ -20,7 +24,7 @@ export const MarketBreadthTrend = ({ height = 180 }: MarketBreadthTrendProps) =>
         legend: {
             data: ['Advancers', 'Decliners'],
             bottom: 0,
-            textStyle: { fontSize: 10, color: '#94a3b8' },
+            textStyle: { fontSize: 10, color: isDark ? '#64748b' : '#94a3b8' },
             icon: 'circle'
         },
         grid: {
@@ -33,13 +37,13 @@ export const MarketBreadthTrend = ({ height = 180 }: MarketBreadthTrendProps) =>
         xAxis: {
             type: 'category',
             data: days,
-            axisLine: { lineStyle: { color: '#e2e8f0' } },
-            axisLabel: { fontSize: 10, color: '#94a3b8' }
+            axisLine: { lineStyle: { color: isDark ? '#1e293b' : '#e2e8f0' } },
+            axisLabel: { fontSize: 10, color: isDark ? '#64748b' : '#94a3b8' }
         },
         yAxis: {
             type: 'value',
-            splitLine: { lineStyle: { type: 'dashed', color: '#f1f5f9' } },
-            axisLabel: { fontSize: 10, color: '#94a3b8' }
+            splitLine: { lineStyle: { type: 'dashed', color: isDark ? '#1e293b' : '#f1f5f9' } },
+            axisLabel: { fontSize: 10, color: isDark ? '#64748b' : '#94a3b8' }
         },
         series: [
             {

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
+import { useTheme } from 'next-themes';
 
 interface SentimentGaugeProps {
     value: number; // 0 to 100
@@ -9,6 +10,9 @@ interface SentimentGaugeProps {
 }
 
 export const SentimentGauge = ({ value, height = 200 }: SentimentGaugeProps) => {
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
+
     const option = {
         series: [
             {
@@ -56,7 +60,7 @@ export const SentimentGauge = ({ value, height = 200 }: SentimentGaugeProps) => 
                     }
                 },
                 axisLabel: {
-                    color: '#0f172a',
+                    color: isDark ? '#94a3b8' : '#0f172a',
                     fontSize: 10,
                     distance: -50,
                     formatter: function (value: number) {
@@ -70,7 +74,7 @@ export const SentimentGauge = ({ value, height = 200 }: SentimentGaugeProps) => 
                     offsetCenter: [0, '-20%'],
                     fontSize: 12,
                     fontWeight: 'bold',
-                    color: '#0f172a'
+                    color: isDark ? '#f1f5f9' : '#0f172a'
                 },
                 detail: {
                     fontSize: 24,
