@@ -152,15 +152,15 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
     });
 
     return (
-        <Card>
+        <Card className="dark:bg-slate-900 dark:border-slate-800">
             <CardContent className="p-6">
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>
-                            <tr className="border-b border-slate-200">
+                            <tr className="border-b border-slate-200 dark:border-slate-700">
                                 <th className="text-left p-3 font-bold text-slate-600 text-sm w-12"></th>
                                 <th
-                                    className="text-left p-3 font-bold text-slate-600 text-sm cursor-pointer hover:bg-slate-50 transition-colors"
+                                    className="text-left p-3 font-bold text-slate-600 dark:text-slate-300 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                     onClick={() => handleSort('symbol')}
                                 >
                                     <div className="flex items-center">
@@ -207,7 +207,7 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                 <Fragment key={group.id}>
                                     <tr
                                         onClick={() => toggleGroup(group.id)}
-                                        className="hover:bg-slate-50 transition-colors cursor-pointer group"
+                                        className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group"
                                     >
                                         <td className="p-3 text-slate-400">
                                             {expandedGroups.has(group.id) ?
@@ -215,15 +215,15 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                                 <ChevronRight className="w-4 h-4 group-hover:text-blue-500 transition-colors" />
                                             }
                                         </td>
-                                        <td className="p-3 font-bold text-slate-800">{group.symbol}</td>
+                                        <td className="p-3 font-bold text-slate-800 dark:text-slate-100">{group.symbol}</td>
                                         <td className="p-3">{getSignalBadge(group.signalType)}</td>
                                         <td className="p-3">
-                                            <Badge variant="outline" className="bg-slate-50">
+                                            <Badge variant="outline" className="bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300">
                                                 {group.signals.length} Strategies
                                             </Badge>
                                         </td>
-                                        <td className="p-3 text-slate-600">Rs. {group.lastClose}</td>
-                                        <td className="p-3 text-slate-500 text-sm">{group.date}</td>
+                                        <td className="p-3 text-slate-600 dark:text-slate-300">Rs. {group.lastClose}</td>
+                                        <td className="p-3 text-slate-500 dark:text-slate-400 text-sm">{group.date}</td>
                                         <td className="p-3">
                                             {group.signalType === 'BUY' && (
                                                 <Button
@@ -242,20 +242,20 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
 
                                     {/* Expanded Details Row */}
                                     {expandedGroups.has(group.id) && (
-                                        <tr className="bg-slate-50/50">
+                                        <tr className="bg-slate-50/50 dark:bg-slate-800/50">
                                             <td colSpan={7} className="p-0">
-                                                <div className="px-12 py-4 space-y-2 border-l-4 border-l-slate-200 ml-6 my-2">
-                                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
+                                                <div className="px-12 py-4 space-y-2 border-l-4 border-l-slate-200 dark:border-l-slate-700 ml-6 my-2">
+                                                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">
                                                         Contributing Strategies
                                                     </p>
                                                     {group.signals.map(sig => (
-                                                        <div key={sig.id} className="bg-white p-3 rounded-lg border border-slate-100 shadow-sm flex justify-between items-center">
+                                                        <div key={sig.id} className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm flex justify-between items-center">
                                                             <div>
-                                                                <p className="font-bold text-sm text-slate-800">{sig.strategy_name}</p>
-                                                                <p className="text-xs text-slate-500">{sig.strategy_description}</p>
+                                                                <p className="font-bold text-sm text-slate-800 dark:text-slate-100">{sig.strategy_name}</p>
+                                                                <p className="text-xs text-slate-500 dark:text-slate-400">{sig.strategy_description}</p>
                                                             </div>
                                                             {sig.metadata && (
-                                                                <div className="text-xs font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded">
+                                                                <div className="text-xs font-mono text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded">
                                                                     {/* Simplified metadata display */}
                                                                     orders: {sig.metadata.orders ?? 0}
                                                                 </div>
@@ -281,9 +281,9 @@ function StrategyCard({ signal }: { signal: StrategySignal }) {
     const [open, setOpen] = useState(false);
 
     const getSignalColor = (sig: string) => {
-        if (sig === 'BUY') return 'border-emerald-300 bg-white hover:shadow-sm hover:border-emerald-400';
-        if (sig === 'SELL') return 'border-rose-300 bg-white hover:shadow-sm hover:border-rose-400';
-        return 'border-amber-300 bg-white hover:shadow-sm hover:border-amber-400';
+        if (sig === 'BUY') return 'border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-800 hover:shadow-sm hover:border-emerald-400 dark:hover:border-emerald-600';
+        if (sig === 'SELL') return 'border-rose-300 dark:border-rose-700 bg-white dark:bg-slate-800 hover:shadow-sm hover:border-rose-400 dark:hover:border-rose-600';
+        return 'border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-800 hover:shadow-sm hover:border-amber-400 dark:hover:border-amber-600';
     };
 
     return (
@@ -292,18 +292,18 @@ function StrategyCard({ signal }: { signal: StrategySignal }) {
             getSignalColor(signal.signal)
         )}>
             <div className="flex items-center justify-between gap-1">
-                <h4 className="font-medium text-slate-800 text-xs flex-1 truncate">
+                <h4 className="font-medium text-slate-800 dark:text-slate-100 text-xs flex-1 truncate">
                     {signal.strategy_name}
                 </h4>
                 <Dialog open={open} onOpenChange={setOpen}>
                     <DialogTrigger asChild>
-                        <button className="p-1 rounded-full hover:bg-slate-100 transition-colors flex-shrink-0">
-                            <Info className="w-3 h-3 text-slate-600" />
+                        <button className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex-shrink-0">
+                            <Info className="w-3 h-3 text-slate-600 dark:text-slate-400" />
                         </button>
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl">
                         <DialogHeader>
-                            <DialogTitle className="text-xl font-bold text-slate-800">
+                            <DialogTitle className="text-xl font-bold text-slate-800 dark:text-slate-100">
                                 {signal.strategy_name}
                             </DialogTitle>
                         </DialogHeader>
@@ -453,9 +453,9 @@ export default function SignalsPage() {
 
     const getSignalBadge = (signal: string) => {
         const styles = {
-            BUY: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-            SELL: 'bg-rose-50 text-rose-700 border-rose-200',
-            HOLD: 'bg-amber-50 text-amber-700 border-amber-200'
+            BUY: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
+            SELL: 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800',
+            HOLD: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
         };
         return (
             <Badge className={cn('border font-bold', styles[signal as keyof typeof styles])}>
@@ -472,17 +472,17 @@ export default function SignalsPage() {
 
     return (
         <DashboardLayout>
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 pt-2 px-4 pb-4">
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950 pt-2 px-4 pb-4 transition-colors duration-300">
                 {/* Filters and View Controls */}
-                <Card className="mb-6 overflow-hidden border-none shadow-xl bg-white/80 backdrop-blur-md">
+                <Card className="mb-6 overflow-hidden border-none shadow-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
                     <CardContent className="p-0">
                         {/* Integrated Header and Controls */}
-                        <div className="p-6 pb-4 flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between border-b border-slate-100">
+                        <div className="p-6 pb-4 flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between border-b border-slate-100 dark:border-slate-800">
                             <div className="flex items-center gap-4">
-                                <div className="p-2.5 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-200">
+                                <div className="p-2.5 bg-indigo-600 dark:bg-indigo-500 rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none">
                                     <BarChart3 className="w-6 h-6 text-white" />
                                 </div>
-                                <h2 className="text-2xl font-black text-slate-800 tracking-tight">Market Signals</h2>
+                                <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Market Signals</h2>
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
@@ -490,7 +490,7 @@ export default function SignalsPage() {
                                                 onClick={handleGenerateSignals}
                                                 disabled={generating}
                                                 size="sm"
-                                                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-4 h-9 shadow-md shadow-indigo-100 transition-all duration-300 hover:scale-105 active:scale-95"
+                                                className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-full px-4 h-9 shadow-md shadow-indigo-100 dark:shadow-none transition-all duration-300 hover:scale-105 active:scale-95"
                                             >
                                                 {generating ? (
                                                     <RefreshCw className="w-4 h-4 animate-spin text-white" />
@@ -510,27 +510,27 @@ export default function SignalsPage() {
                             <div className="flex flex-col sm:flex-row gap-3 items-center w-full lg:w-auto">
                                 {/* Search Bar */}
                                 <div className="relative w-full sm:w-64 group">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 group-focus-within:text-indigo-500 dark:group-focus-within:text-indigo-400 transition-colors" />
                                     <input
                                         type="text"
                                         placeholder="Search symbol or strategy..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm h-10"
+                                        className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all text-sm h-10 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                     />
                                 </div>
 
-                                <Separator orientation="vertical" className="hidden sm:block h-6 mx-1" />
+                                <Separator orientation="vertical" className="hidden sm:block h-6 mx-1 bg-slate-200 dark:bg-slate-700" />
 
                                 {/* View Mode Toggle */}
-                                <div className="flex gap-1 bg-slate-100/80 p-1 rounded-xl w-full sm:w-auto">
+                                <div className="flex gap-1 bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl w-full sm:w-auto">
                                     <Button
                                         variant={viewMode === 'by-symbol' ? 'secondary' : 'ghost'}
                                         size="sm"
                                         onClick={() => setViewMode('by-symbol')}
                                         className={cn(
                                             "h-8 rounded-lg px-3 text-xs font-bold transition-all",
-                                            viewMode === 'by-symbol' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-slate-700"
+                                            viewMode === 'by-symbol' ? "bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-300" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                                         )}
                                     >
                                         <Grid3x3 className="w-3.5 h-3.5 mr-1.5" />
@@ -542,7 +542,7 @@ export default function SignalsPage() {
                                         onClick={() => setViewMode('all')}
                                         className={cn(
                                             "h-8 rounded-lg px-3 text-xs font-bold transition-all",
-                                            viewMode === 'all' ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-slate-700"
+                                            viewMode === 'all' ? "bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-300" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                                         )}
                                     >
                                         <List className="w-3.5 h-3.5 mr-1.5" />
@@ -553,18 +553,18 @@ export default function SignalsPage() {
                         </div>
 
                         {/* Navigation and Filters Row */}
-                        <div className="px-6 py-3 flex flex-col md:flex-row gap-4 items-center justify-between bg-slate-50/30">
+                        <div className="px-6 py-3 flex flex-col md:flex-row gap-4 items-center justify-between bg-slate-50/30 dark:bg-slate-900/30">
                             <Tabs value={tabMode} onValueChange={(v) => setTabMode(v as TabMode)} className="w-full md:w-auto">
-                                <TabsList className="bg-slate-200/50 p-1 h-10 rounded-xl">
+                                <TabsList className="bg-slate-200/50 dark:bg-slate-800/50 p-1 h-10 rounded-xl">
                                     <TabsTrigger
                                         value="signals"
-                                        className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-600 px-6 font-bold text-xs uppercase tracking-wider"
+                                        className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-300 px-6 font-bold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-400"
                                     >
                                         All Opportunity
                                     </TabsTrigger>
                                     <TabsTrigger
                                         value="tracking"
-                                        className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-600 px-6 font-bold text-xs uppercase tracking-wider"
+                                        className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-300 px-6 font-bold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-400"
                                     >
                                         Active Tracking
                                     </TabsTrigger>
@@ -573,7 +573,7 @@ export default function SignalsPage() {
 
                             {tabMode === 'signals' && (
                                 <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
-                                    <div className="flex items-center mr-2 text-[10px] font-black uppercase text-slate-400 tracking-tighter">
+                                    <div className="flex items-center mr-2 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-tighter">
                                         <Filter className="w-3 h-3 mr-1" />
                                         Filter By
                                     </div>
@@ -584,11 +584,12 @@ export default function SignalsPage() {
                                             size="sm"
                                             onClick={() => setSignalFilter(type)}
                                             className={cn(
-                                                'h-8 px-4 rounded-full text-xs font-black transition-all border-slate-200',
-                                                signalFilter === type && type === 'BUY' && 'bg-emerald-500 hover:bg-emerald-600 border-emerald-500 shadow-lg shadow-emerald-100',
-                                                signalFilter === type && type === 'SELL' && 'bg-rose-500 hover:bg-rose-600 border-rose-500 shadow-lg shadow-rose-100',
-                                                signalFilter === type && type === 'HOLD' && 'bg-amber-500 hover:bg-amber-600 border-amber-500 shadow-lg shadow-amber-100',
-                                                signalFilter === type && type === 'ALL' && 'bg-slate-800 hover:bg-slate-900 border-slate-800 shadow-lg shadow-slate-200'
+                                                'h-8 px-4 rounded-full text-xs font-black transition-all border-slate-200 dark:border-slate-700',
+                                                signalFilter === type && type === 'BUY' && 'bg-emerald-500 hover:bg-emerald-600 border-emerald-500 shadow-lg shadow-emerald-100 dark:shadow-none text-white',
+                                                signalFilter === type && type === 'SELL' && 'bg-rose-500 hover:bg-rose-600 border-rose-500 shadow-lg shadow-rose-100 dark:shadow-none text-white',
+                                                signalFilter === type && type === 'HOLD' && 'bg-amber-500 hover:bg-amber-600 border-amber-500 shadow-lg shadow-amber-100 dark:shadow-none text-white',
+                                                signalFilter === type && type === 'ALL' && 'bg-slate-800 hover:bg-slate-900 border-slate-800 shadow-lg shadow-slate-200 dark:shadow-none text-white',
+                                                signalFilter !== type && 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                                             )}
                                         >
                                             {type === 'ALL' ? 'Everything' : type}
@@ -605,69 +606,69 @@ export default function SignalsPage() {
                     <>
                         {/* Summary Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
-                            <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-white">
+                            <Card className="border-emerald-200 dark:border-emerald-900/50 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/30 dark:to-slate-900">
                                 <CardContent className="p-3">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm font-medium text-emerald-600 mb-0.5">BUY Signals</p>
-                                            <p className="text-3xl font-bold text-emerald-700">{buyCount}</p>
-                                            <p className="text-xs text-emerald-600 mt-0.5">
+                                            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-0.5">BUY Signals</p>
+                                            <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">{buyCount}</p>
+                                            <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-0.5">
                                                 {total > 0 ? ((buyCount / total) * 100).toFixed(1) : 0}% of total
                                             </p>
                                         </div>
-                                        <div className="p-2 bg-emerald-100 rounded-lg">
-                                            <TrendingUp className="w-5 h-5 text-emerald-600" />
+                                        <div className="p-2 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg">
+                                            <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                                         </div>
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            <Card className="border-rose-200 bg-gradient-to-br from-rose-50 to-white">
+                            <Card className="border-rose-200 dark:border-rose-900/50 bg-gradient-to-br from-rose-50 to-white dark:from-rose-950/30 dark:to-slate-900">
                                 <CardContent className="p-3">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm font-medium text-rose-600 mb-0.5">SELL Signals</p>
-                                            <p className="text-3xl font-bold text-rose-700">{sellCount}</p>
-                                            <p className="text-xs text-rose-600 mt-0.5">
+                                            <p className="text-sm font-medium text-rose-600 dark:text-rose-400 mb-0.5">SELL Signals</p>
+                                            <p className="text-3xl font-bold text-rose-700 dark:text-rose-300">{sellCount}</p>
+                                            <p className="text-xs text-rose-600 dark:text-rose-500 mt-0.5">
                                                 {total > 0 ? ((sellCount / total) * 100).toFixed(1) : 0}% of total
                                             </p>
                                         </div>
-                                        <div className="p-2 bg-rose-100 rounded-lg">
-                                            <TrendingDown className="w-5 h-5 text-rose-600" />
+                                        <div className="p-2 bg-rose-100 dark:bg-rose-900/50 rounded-lg">
+                                            <TrendingDown className="w-5 h-5 text-rose-600 dark:text-rose-400" />
                                         </div>
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-white">
+                            <Card className="border-amber-200 dark:border-amber-900/50 bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/30 dark:to-slate-900">
                                 <CardContent className="p-3">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm font-medium text-amber-600 mb-0.5">HOLD Signals</p>
-                                            <p className="text-3xl font-bold text-amber-700">{holdCount}</p>
-                                            <p className="text-xs text-amber-600 mt-0.5">
+                                            <p className="text-sm font-medium text-amber-600 dark:text-amber-400 mb-0.5">HOLD Signals</p>
+                                            <p className="text-3xl font-bold text-amber-700 dark:text-amber-300">{holdCount}</p>
+                                            <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">
                                                 {total > 0 ? ((holdCount / total) * 100).toFixed(1) : 0}% of total
                                             </p>
                                         </div>
-                                        <div className="p-2 bg-amber-100 rounded-lg">
-                                            <Minus className="w-5 h-5 text-amber-600" />
+                                        <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-lg">
+                                            <Minus className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                                         </div>
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-white">
+                            <Card className="border-blue-200 dark:border-blue-900/50 bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-slate-900">
                                 <CardContent className="p-3">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm font-medium text-blue-600 mb-0.5">Total Signals</p>
-                                            <p className="text-3xl font-bold text-blue-700">{total}</p>
-                                            <p className="text-xs text-blue-600 mt-0.5">
+                                            <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-0.5">Total Signals</p>
+                                            <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">{total}</p>
+                                            <p className="text-xs text-blue-600 dark:text-blue-500 mt-0.5">
                                                 {Object.keys(groupedBySymbol).length} symbols
                                             </p>
                                         </div>
-                                        <div className="p-2 bg-blue-100 rounded-lg">
-                                            <BarChart3 className="w-5 h-5 text-blue-600" />
+                                        <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
+                                            <BarChart3 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                         </div>
                                     </div>
                                 </CardContent>
@@ -676,10 +677,10 @@ export default function SignalsPage() {
 
                         {/* Signals Display */}
                         {loading ? (
-                            <Card>
+                            <Card className="dark:bg-slate-900 dark:border-slate-800">
                                 <CardContent className="p-12 text-center">
                                     <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                                    <p className="text-slate-600">Loading signals...</p>
+                                    <p className="text-slate-600 dark:text-slate-400">Loading signals...</p>
                                 </CardContent>
                             </Card>
                         ) : (
@@ -692,27 +693,27 @@ export default function SignalsPage() {
                                             const holdSignals = symbolSignals.filter(s => s.signal === 'HOLD' || s.signal.startsWith('HOLD'));
 
                                             return (
-                                                <Card key={symbol} className="overflow-hidden">
-                                                    <CardHeader className="bg-white border-b py-2 px-4">
+                                                <Card key={symbol} className="overflow-hidden dark:bg-slate-900 dark:border-slate-800">
+                                                    <CardHeader className="bg-white dark:bg-slate-900 border-b dark:border-slate-800 py-2 px-4">
                                                         <div className="flex items-center justify-between">
                                                             <div>
-                                                                <CardTitle className="text-lg font-bold text-slate-800">{symbol}</CardTitle>
-                                                                <p className="text-xs text-slate-500 mt-0.5">
+                                                                <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-100">{symbol}</CardTitle>
+                                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                                                                     {symbolSignals.length} strategies
                                                                 </p>
                                                             </div>
                                                             <div className="flex gap-2">
-                                                                <div className="text-center px-3 py-1 bg-emerald-50 rounded border border-emerald-200">
-                                                                    <p className="text-xs text-emerald-600 font-medium">BUY</p>
-                                                                    <p className="text-sm font-bold text-emerald-700">{buySignals.length}</p>
+                                                                <div className="text-center px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 rounded border border-emerald-200 dark:border-emerald-800">
+                                                                    <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">BUY</p>
+                                                                    <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">{buySignals.length}</p>
                                                                 </div>
-                                                                <div className="text-center px-3 py-1 bg-rose-50 rounded border border-rose-200">
-                                                                    <p className="text-xs text-rose-600 font-medium">SELL</p>
-                                                                    <p className="text-sm font-bold text-rose-700">{sellSignals.length}</p>
+                                                                <div className="text-center px-3 py-1 bg-rose-50 dark:bg-rose-900/20 rounded border border-rose-200 dark:border-rose-800">
+                                                                    <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">SELL</p>
+                                                                    <p className="text-sm font-bold text-rose-700 dark:text-rose-300">{sellSignals.length}</p>
                                                                 </div>
-                                                                <div className="text-center px-3 py-1 bg-amber-50 rounded border border-amber-200">
-                                                                    <p className="text-xs text-amber-600 font-medium">HOLD</p>
-                                                                    <p className="text-sm font-bold text-amber-700">{holdSignals.length}</p>
+                                                                <div className="text-center px-3 py-1 bg-amber-50 dark:bg-amber-900/20 rounded border border-amber-200 dark:border-amber-800">
+                                                                    <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">HOLD</p>
+                                                                    <p className="text-sm font-bold text-amber-700 dark:text-amber-300">{holdSignals.length}</p>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -722,9 +723,9 @@ export default function SignalsPage() {
                                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                                             {/* BUY Column */}
                                                             <div className="space-y-3">
-                                                                <div className="flex items-center gap-2 pb-3 border-b-2 border-emerald-200">
-                                                                    <TrendingUp className="w-5 h-5 text-emerald-600" />
-                                                                    <h3 className="text-sm font-bold text-emerald-700 uppercase tracking-wide">
+                                                                <div className="flex items-center gap-2 pb-3 border-b-2 border-emerald-200 dark:border-emerald-800">
+                                                                    <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                                                    <h3 className="text-sm font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">
                                                                         BUY ({buySignals.length})
                                                                     </h3>
                                                                 </div>
@@ -734,16 +735,16 @@ export default function SignalsPage() {
                                                                             <StrategyCard key={sig.id} signal={sig} />
                                                                         ))
                                                                     ) : (
-                                                                        <p className="text-xs text-slate-400 text-center py-4 w-full">No BUY signals</p>
+                                                                        <p className="text-xs text-slate-400 dark:text-slate-600 text-center py-4 w-full">No BUY signals</p>
                                                                     )}
                                                                 </div>
                                                             </div>
 
                                                             {/* SELL Column */}
                                                             <div className="space-y-3">
-                                                                <div className="flex items-center gap-2 pb-3 border-b-2 border-rose-200">
-                                                                    <TrendingDown className="w-5 h-5 text-rose-600" />
-                                                                    <h3 className="text-sm font-bold text-rose-700 uppercase tracking-wide">
+                                                                <div className="flex items-center gap-2 pb-3 border-b-2 border-rose-200 dark:border-rose-800">
+                                                                    <TrendingDown className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+                                                                    <h3 className="text-sm font-bold text-rose-700 dark:text-rose-400 uppercase tracking-wide">
                                                                         SELL ({sellSignals.length})
                                                                     </h3>
                                                                 </div>
@@ -753,16 +754,16 @@ export default function SignalsPage() {
                                                                             <StrategyCard key={sig.id} signal={sig} />
                                                                         ))
                                                                     ) : (
-                                                                        <p className="text-xs text-slate-400 text-center py-4 w-full">No SELL signals</p>
+                                                                        <p className="text-xs text-slate-400 dark:text-slate-600 text-center py-4 w-full">No SELL signals</p>
                                                                     )}
                                                                 </div>
                                                             </div>
 
                                                             {/* HOLD Column */}
                                                             <div className="space-y-3">
-                                                                <div className="flex items-center gap-2 pb-3 border-b-2 border-amber-200">
-                                                                    <Minus className="w-5 h-5 text-amber-600" />
-                                                                    <h3 className="text-sm font-bold text-amber-700 uppercase tracking-wide">
+                                                                <div className="flex items-center gap-2 pb-3 border-b-2 border-amber-200 dark:border-amber-800">
+                                                                    <Minus className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                                                                    <h3 className="text-sm font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
                                                                         HOLD ({holdSignals.length})
                                                                     </h3>
                                                                 </div>
@@ -772,7 +773,7 @@ export default function SignalsPage() {
                                                                             <StrategyCard key={sig.id} signal={sig} />
                                                                         ))
                                                                     ) : (
-                                                                        <p className="text-xs text-slate-400 text-center py-4 w-full">No HOLD signals</p>
+                                                                        <p className="text-xs text-slate-400 dark:text-slate-600 text-center py-4 w-full">No HOLD signals</p>
                                                                     )}
                                                                 </div>
                                                             </div>
@@ -789,9 +790,9 @@ export default function SignalsPage() {
                                 )}
 
                                 {filteredSignals.length === 0 && (
-                                    <Card>
+                                    <Card className="dark:bg-slate-900 dark:border-slate-800">
                                         <CardContent className="p-12 text-center">
-                                            <p className="text-slate-600">No signals found matching your filters.</p>
+                                            <p className="text-slate-600 dark:text-slate-400">No signals found matching your filters.</p>
                                         </CardContent>
                                     </Card>
                                 )}
