@@ -374,26 +374,27 @@ function DashboardContent({
 
                         <div className="w-1/3 flex justify-end gap-4 items-center">
                             <AlertsDropdown />
-                            <div className="flex flex-col items-end mr-2">
-                                <span className="text-sm font-semibold text-gray-800">Hi {currentUser?.username === 'admin' ? 'Jugal' : currentUser?.username === 'ashmi' ? 'Ashmi' : 'Guest'}</span>
-                                <span className="text-[10px] text-green-500 font-medium flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                                    Online
-                                </span>
-                            </div>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <button className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shadow-sm hover:ring-2 hover:ring-blue-400 transition-all outline-none uppercase">
-                                        {currentUser?.username?.[0] || 'G'}
+                                    <button className="flex items-center gap-3 p-1.5 pr-2 rounded-full border border-slate-200 hover:border-blue-200 hover:bg-white hover:shadow-sm transition-all group outline-none">
+                                        <div className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shadow-sm group-hover:scale-105 transition-transform uppercase">
+                                            {(currentUser?.username === 'admin' ? 'J' : currentUser?.username === 'ashmi' ? 'A' : 'G')}
+                                        </div>
+                                        <div className="flex flex-col items-start mr-1">
+                                            <span className="text-xs font-bold text-gray-700 group-hover:text-blue-700 transition-colors">
+                                                Hi, {currentUser?.username === 'admin' ? 'Jugal' : currentUser?.username === 'ashmi' ? 'Ashmi' : 'Guest'}
+                                            </span>
+                                            <span className="text-[9px] text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 px-1.5 rounded-full mt-0.5">
+                                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                                Online
+                                            </span>
+                                        </div>
+                                        <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600" />
                                     </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-56">
                                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="cursor-pointer gap-2">
-                                        <User size={16} />
-                                        <span>Profile</span>
-                                    </DropdownMenuItem>
                                     <DropdownMenuItem className="cursor-pointer gap-2">
                                         <Settings size={16} />
                                         <span>Settings</span>
