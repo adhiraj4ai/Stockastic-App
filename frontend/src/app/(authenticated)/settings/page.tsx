@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,10 +25,14 @@ export default function SettingsPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
+    // File Upload Ref
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     // Security Form State
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [passLoading, setPassLoading] = useState(false);
 
     useEffect(() => {
         api.get('/api/users/me/')
@@ -56,6 +60,72 @@ export default function SettingsPage() {
         } finally {
             setSaving(false);
         }
+    };
+
+    const handleUpdatePassword = async () => {
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            toast.error("Please fill in all password fields.");
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            toast.error("New passwords do not match.");
+            return;
+        }
+
+        setPassLoading(true);
+        try {
+            await api.post('/api/users/change_password/', {
+                current_password: currentPassword,
+                new_password: newPassword
+            });
+            toast.success("Password updated successfully!");
+            // Clear fields on success
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+        } catch (error: any) {
+            console.error("Password update failed", error);
+            const msg = error.response?.data?.error || "Failed to update password.";
+            toast.error(msg);
+        } finally {
+            setPassLoading(false);
+        }
+    };
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            // Check size (2MB limit)
+            if (file.size > 2 * 1024 * 1024) {
+                toast.error("File size too large. Max 2MB.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+                const base64String = reader.result as string;
+                if (user) {
+                    // Update local state immediately for UI feedback
+                    const updatedUser = { ...user, profile_picture: base64String };
+                    setUser(updatedUser);
+
+                    // Auto-save to backend
+                    try {
+                        toast.info("Uploading profile picture...");
+                        await api.put('/api/users/me/', updatedUser);
+                        toast.success("Profile picture updated!");
+                    } catch (error) {
+                        console.error("Failed to upload profile picture", error);
+                        toast.error("Failed to upload profile picture.");
+                    }
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const triggerFileInput = () => {
+        fileInputRef.current?.click();
     };
 
     if (loading) {
@@ -92,7 +162,7 @@ export default function SettingsPage() {
                                 <CardDescription>Update your profile photo.</CardDescription>
                             </CardHeader>
                             <CardContent className="flex items-center gap-6">
-                                <div className="relative group">
+                                <div className="relative group cursor-pointer" onClick={triggerFileInput}>
                                     <div className="h-24 w-24 rounded-full bg-slate-100 flex items-center justify-center text-slate-300 border-2 border-slate-200 overflow-hidden">
                                         {user?.profile_picture ? (
                                             <img src={user.profile_picture} alt="Profile" className="h-full w-full object-cover" />
@@ -107,7 +177,14 @@ export default function SettingsPage() {
                                 <div className="space-y-1">
                                     <h3 className="font-medium text-slate-900">Upload new photo</h3>
                                     <p className="text-xs text-slate-500">Supports JPG, PNG or GIF. Max size 2MB.</p>
-                                    <Button variant="outline" size="sm" className="mt-2">Select File</Button>
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleImageChange}
+                                        accept="image/png, image/jpeg, image/gif"
+                                        className="hidden"
+                                    />
+                                    <Button variant="outline" size="sm" className="mt-2" onClick={triggerFileInput}>Select File</Button>
                                 </div>
                             </CardContent>
                         </Card>
@@ -247,8 +324,8 @@ export default function SettingsPage() {
                                 />
                             </div>
                             <div className="pt-2 flex justify-end">
-                                <Button className="bg-blue-600 hover:bg-blue-700">
-                                    <Save size={16} className="mr-2" /> Update Password
+                                <Button onClick={handleUpdatePassword} disabled={passLoading} className="bg-blue-600 hover:bg-blue-700">
+                                    <Save size={16} className="mr-2" /> {passLoading ? 'Updating...' : 'Update Password'}
                                 </Button>
                             </div>
                         </CardContent>
@@ -258,3 +335,4 @@ export default function SettingsPage() {
         </div>
     );
 }
+

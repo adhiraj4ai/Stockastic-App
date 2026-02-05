@@ -65,3 +65,24 @@ def get_current_user(request):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    user = request.user
+    current_password = request.data.get('current_password')
+    new_password = request.data.get('new_password')
+    
+    if not user.check_password(current_password):
+        return Response({"error": "Incorrect current password"}, status=400)
+    
+    if not new_password or len(new_password) < 6:
+        return Response({"error": "New password must be at least 6 characters"}, status=400)
+        
+    user.set_password(new_password)
+    user.save()
+    
+    # Keep user logged in? JWT usually doesn't care about password change unless we rotate secrets or track password version.
+    # But usually good practice to re-issue tokens or let them stay valid until expiry.
+    # For now, just return success.
+    return Response({"message": "Password updated successfully"})

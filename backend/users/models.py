@@ -12,7 +12,8 @@ class Profile(models.Model):
     # Encrypted fields
     phone_number = EncryptedField(blank=True, null=True)
     encrypted_email = EncryptedField(blank=True, null=True)
-    profile_picture = models.CharField(max_length=500, blank=True, help_text="URL to profile picture")
+    # Changed to TextField to support Base64 strings directly
+    profile_picture = models.TextField(blank=True, help_text="Base64 encoded profile picture")
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
