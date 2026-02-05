@@ -517,50 +517,50 @@ function PortfolioContent() {
                                             placeholder="Search items..."
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="pl-9 h-9 w-64 text-xs font-medium bg-gray-50/50 border-gray-200 focus:bg-white transition-all"
+                                            className="pl-9 h-9 w-64 text-xs font-medium bg-gray-50/50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-900 dark:text-slate-200 transition-all"
                                         />
                                     </div>
-                                    {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>}
+                                    {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 dark:border-slate-100"></div>}
                                 </div>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
                             {displayedItems.length === 0 && !loading ? (
-                                <div className="text-center py-10 text-gray-500 flex flex-col items-center gap-2">
-                                    <Wallet className="h-10 w-10 text-gray-200" />
+                                <div className="text-center py-10 text-gray-500 dark:text-gray-400 flex flex-col items-center gap-2">
+                                    <Wallet className="h-10 w-10 text-gray-200 dark:text-gray-700" />
                                     <p>No stocks in portfolio. Add a transaction to get started.</p>
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto">
                                     <Table>
                                         <TableHeader>
-                                            <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
-                                                <TableHead className="w-[50px] font-bold text-gray-900 py-4 px-6 text-center">SN</TableHead>
-                                                <TableHead className="font-bold text-gray-900 cursor-pointer select-none py-4" onClick={() => handleSort('ticker')}>
+                                            <TableRow className="bg-gray-50/50 dark:bg-slate-800/30 hover:bg-gray-50/50 dark:hover:bg-slate-800/30">
+                                                <TableHead className="w-[50px] font-bold text-gray-900 dark:text-slate-100 py-4 px-6 text-center">SN</TableHead>
+                                                <TableHead className="font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('ticker')}>
                                                     <div className="flex items-center gap-1">Ticker <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none py-4" onClick={() => handleSort('quantity')}>
+                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('quantity')}>
                                                     <div className="flex items-center justify-end gap-1">Quantity <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none py-4" onClick={() => handleSort('wacc')}>
+                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('wacc')}>
                                                     <div className="flex items-center justify-end gap-1">WACC (Rs.) <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none py-4" onClick={() => handleSort('current_price')}>
+                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('current_price')}>
                                                     <div className="flex items-center justify-end gap-1">LTP (Rs.) <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none py-4" onClick={() => handleSort('current_value')}>
+                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('current_value')}>
                                                     <div className="flex items-center justify-end gap-1">Total Value (Rs.) <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none py-4" onClick={() => handleSort('gain_loss')}>
+                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('gain_loss')}>
                                                     <div className="flex items-center justify-end gap-1">Profit/Loss <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none py-4" onClick={() => handleSort('value_yield')}>
+                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('value_yield')}>
                                                     <div className="flex items-center justify-end gap-1" title="Profit to Total Value Ratio">Value Yield <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 cursor-pointer select-none py-4" onClick={() => handleSort('day_gain_loss')}>
+                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('day_gain_loss')}>
                                                     <div className="flex items-center justify-end gap-1">Today's P/L <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900">Signal</TableHead>
+                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">Signal</TableHead>
                                                 <TableHead className="w-[50px]"></TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -585,13 +585,13 @@ function PortfolioContent() {
                                                 return (
                                                     <React.Fragment key={`${item.ticker}-${idx}`}>
                                                         <TableRow
-                                                            className={`transition-all duration-300 cursor-pointer border-l-4 ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-blue-50/30 border-l-blue-500' : isUnderwater ? 'border-l-red-500/50 hover:bg-red-50/10' : hasStrategy ? 'border-l-green-500/50 hover:bg-gray-50' : 'border-l-transparent hover:bg-gray-50'}`}
+                                                            className={`transition-all duration-300 cursor-pointer border-l-4 ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-blue-50/30 dark:bg-blue-900/20 border-l-blue-500' : isUnderwater ? 'border-l-red-500/50 hover:bg-red-50/10 dark:hover:bg-red-900/10' : hasStrategy ? 'border-l-green-500/50 hover:bg-gray-50 dark:hover:bg-slate-800' : 'border-l-transparent hover:bg-gray-50 dark:hover:bg-slate-800'}`}
                                                             onClick={() => {
                                                                 setSelectedPortfolioItem(item);
                                                                 setIsExitPlanDialogOpen(true);
                                                             }}
                                                         >
-                                                            <TableCell className="text-center font-bold text-gray-400 text-sm py-4 px-6">
+                                                            <TableCell className="text-center font-bold text-gray-400 dark:text-gray-500 text-sm py-4 px-6">
                                                                 {(currentPage - 1) * pageSize + idx + 1}
                                                             </TableCell>
                                                             <TableCell className="font-semibold py-4">
