@@ -240,25 +240,25 @@ function StrategiesContent() {
 
 
                 <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-0">
-                    <div className="sticky top-[73px] z-10 bg-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-2 px-8 transition-all mb-6">
-                        <TabsList className="bg-gray-200/50 p-1 gap-1 rounded-lg h-auto">
+                    <div className="sticky top-[73px] z-10 bg-white dark:bg-slate-950 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 py-2 px-8 transition-all mb-6 border-b dark:border-slate-800">
+                        <TabsList className="bg-gray-200/50 dark:bg-slate-800/50 p-1 gap-1 rounded-lg h-auto">
                             <TabsTrigger
                                 value="my-strategies"
-                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm text-gray-500 hover:text-gray-700 hover:bg-white/50"
+                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                             >
                                 <Zap className="w-4 h-4 mr-2" />
                                 All Strategies
                             </TabsTrigger>
                             <TabsTrigger
                                 value="published"
-                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm text-gray-500 hover:text-gray-700 hover:bg-white/50"
+                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                             >
                                 <FileCheck className="w-4 h-4 mr-2" />
                                 Published
                             </TabsTrigger>
                             <TabsTrigger
                                 value="experiment-logs"
-                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm text-gray-500 hover:text-gray-700 hover:bg-white/50"
+                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                             >
                                 <Beaker className="w-4 h-4 mr-2" />
                                 Experiment Logs
@@ -266,7 +266,7 @@ function StrategiesContent() {
 
                             <TabsTrigger
                                 value="recommendations"
-                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm text-gray-500 hover:text-gray-700 hover:bg-white/50"
+                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                             >
                                 <Target className="w-4 h-4 mr-2" />
                                 Recommendations
@@ -283,32 +283,32 @@ function StrategiesContent() {
 
                     <TabsContent value="my-strategies" className="space-y-6 m-0 px-8 pb-8">
                         {/* Unified Toolbar */}
-                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white p-2 rounded-xl border border-gray-100 shadow-sm">
+                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm">
                             {/* Left: Search */}
                             <div className="relative flex-1 w-full sm:max-w-md">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-slate-500" />
                                 <Input
                                     placeholder="Search specific strategies..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-9 bg-gray-50 border-transparent hover:bg-white hover:border-gray-200 focus:bg-white focus:border-blue-300 transition-all h-10"
+                                    className="pl-9 bg-gray-50 dark:bg-slate-800/50 border-transparent hover:bg-white dark:hover:bg-slate-800 hover:border-gray-200 dark:hover:border-slate-700 focus:bg-white dark:focus:bg-slate-800 focus:border-blue-300 transition-all h-10"
                                 />
                             </div>
 
                             {/* Right: Actions Group */}
                             <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                                 {/* View Toggles */}
-                                <div className="flex items-center bg-gray-100 p-1 rounded-lg border border-gray-200">
+                                <div className="flex items-center bg-gray-100 dark:bg-slate-800 p-1 rounded-lg border border-gray-200 dark:border-slate-700">
                                     <button
                                         onClick={() => setViewMode('grid')}
-                                        className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                        className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-slate-400'}`}
                                         title="Grid View"
                                     >
                                         <LayoutGrid size={16} />
                                     </button>
                                     <button
                                         onClick={() => setViewMode('list')}
-                                        className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                        className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-slate-400'}`}
                                         title="List View"
                                     >
                                         <List size={16} />
@@ -318,8 +318,8 @@ function StrategiesContent() {
                                 {/* Sort */}
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" size="sm" className="gap-2 h-10 border-gray-200">
-                                            <ArrowUpDown size={14} className="text-gray-500" />
+                                        <Button variant="outline" size="sm" className="gap-2 h-10 border-gray-200 dark:border-slate-800 dark:bg-slate-900">
+                                            <ArrowUpDown size={14} className="text-gray-500 dark:text-slate-400" />
                                             <span className="hidden sm:inline">Sort</span>
                                         </Button>
                                     </DropdownMenuTrigger>
@@ -352,14 +352,14 @@ function StrategiesContent() {
                                 </DropdownMenu>
 
                                 {/* Divider */}
-                                <div className="h-6 w-px bg-gray-200 mx-1 hidden sm:block"></div>
+                                <div className="h-6 w-px bg-gray-200 dark:bg-slate-800 mx-1 hidden sm:block"></div>
 
                                 {/* Major Actions */}
                                 <Button
                                     onClick={() => router.push('/strategies/compare')}
                                     variant="outline"
                                     size="sm"
-                                    className="gap-2 h-10 border-purple-200 text-purple-700 hover:bg-purple-50 hidden sm:flex"
+                                    className="gap-2 h-10 border-purple-200 dark:border-purple-900 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 dark:bg-slate-900 hidden sm:flex"
                                 >
                                     <GitCompare size={16} />
                                     <span>Compare</span>
@@ -377,20 +377,20 @@ function StrategiesContent() {
                         </div>
 
                         {strategiesError && (
-                            <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200">
+                            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-lg border border-red-200 dark:border-red-900/50">
                                 {strategiesError}
                             </div>
                         )}
 
                         {loadingStrategies ? (
-                            <div className="p-8 text-center text-gray-500 animate-pulse">Loading your strategies...</div>
+                            <div className="p-8 text-center text-gray-500 dark:text-slate-400 animate-pulse">Loading your strategies...</div>
                         ) : strategies.length === 0 && !strategiesError ? (
-                            <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-300">
-                                <div className="mx-auto h-12 w-12 text-gray-300 mb-4">
+                            <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-gray-300 dark:border-slate-800">
+                                <div className="mx-auto h-12 w-12 text-gray-300 dark:text-slate-700 mb-4">
                                     <Lightbulb size={48} />
                                 </div>
-                                <h3 className="text-lg font-medium text-gray-900">No strategies yet</h3>
-                                <p className="mt-1 text-gray-500">Get started by creating your first automated strategy.</p>
+                                <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100">No strategies yet</h3>
+                                <p className="mt-1 text-gray-500 dark:text-slate-400">Get started by creating your first automated strategy.</p>
                                 <div className="mt-6">
                                     <Button onClick={() => setIsCreateModalOpen(true)} variant="outline">
                                         Create Strategy
@@ -403,14 +403,14 @@ function StrategiesContent() {
                                     {filteredStrategies.map((strategy) => (
                                         <Card
                                             key={strategy.id}
-                                            className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-slate-200 hover:border-blue-300 flex flex-col cursor-pointer bg-white rounded-xl"
+                                            className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-slate-200 dark:border-slate-800 hover:border-blue-300 flex flex-col cursor-pointer bg-white dark:bg-slate-900 rounded-xl"
                                             onClick={() => router.push(`/strategies/${strategy.id}`)}
                                         >
                                             {/* Gradient Top Border */}
                                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-400" />
 
                                             {/* Header */}
-                                            <div className="p-4 border-b border-slate-100 bg-gradient-to-br from-blue-50/20 via-white to-purple-50/10">
+                                            <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-br from-blue-50/20 dark:from-blue-900/10 via-white dark:via-slate-900 to-purple-50/10 dark:to-purple-900/10">
                                                 <div className="flex items-start gap-3">
                                                     <div className="h-11 w-11 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-md group-hover:scale-105 transition-all duration-300" style={{ backgroundColor: strategy.icon_color || "#000000" }}>
                                                         {(() => {
@@ -421,14 +421,14 @@ function StrategiesContent() {
                                                     <div className="min-w-0 flex-1">
                                                         <div className="flex items-start justify-between gap-2 mb-1.5">
                                                             <div className="flex flex-col gap-1.5 min-w-0 flex-1">
-                                                                <h3 className="text-base font-bold text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">
+                                                                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                                                     {strategy.name}
                                                                 </h3>
                                                             </div>
                                                             <DropdownMenu>
                                                                 <DropdownMenuTrigger asChild>
                                                                     <button
-                                                                        className="h-8 w-8 rounded-lg hover:bg-white hover:shadow-sm flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all flex-shrink-0"
+                                                                        className="h-8 w-8 rounded-lg hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all flex-shrink-0"
                                                                         onClick={(e) => e.stopPropagation()}
                                                                     >
                                                                         <MoreVertical size={16} />
@@ -440,14 +440,14 @@ function StrategiesContent() {
                                                                             e.stopPropagation();
                                                                             handleRenameClick(strategy);
                                                                         }}
-                                                                        className="cursor-pointer rounded-lg m-1"
+                                                                        className="cursor-pointer rounded-lg m-1 dark:hover:bg-slate-800"
                                                                     >
                                                                         <Pencil size={14} className="mr-2" />
                                                                         Rename Strategy
                                                                     </DropdownMenuItem>
                                                                     <DropdownMenuItem
                                                                         onSelect={() => handleDelete(strategy.id, strategy.name)}
-                                                                        className="text-rose-600 focus:text-rose-600 focus:bg-rose-50 cursor-pointer rounded-lg m-1"
+                                                                        className="text-rose-600 focus:text-rose-600 focus:bg-rose-50 dark:focus:bg-rose-900/20 cursor-pointer rounded-lg m-1"
                                                                     >
                                                                         <Trash2 size={14} className="mr-2" />
                                                                         Delete Strategy
@@ -460,14 +460,14 @@ function StrategiesContent() {
                                             </div>
 
                                             {/* Description */}
-                                            <div className="px-4 py-1.5 flex-1 bg-white">
-                                                <p className="text-xs text-slate-600 leading-relaxed line-clamp-5">
+                                            <div className="px-4 py-1.5 flex-1 bg-white dark:bg-slate-900">
+                                                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-5">
                                                     {strategy.description}
                                                 </p>
                                             </div>
 
                                             {/* Action Buttons */}
-                                            <div className="px-3 py-2 flex gap-2 bg-white border-t border-slate-100">
+                                            <div className="px-3 py-2 flex gap-2 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -482,7 +482,7 @@ function StrategiesContent() {
                                                         e.stopPropagation();
                                                         router.push(`/strategies/${strategy.id}/optimize`);
                                                     }}
-                                                    className="flex-1 py-2 flex items-center justify-center gap-1.5 text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-100 transition-all active:scale-95 rounded-lg"
+                                                    className="flex-1 py-2 flex items-center justify-center gap-1.5 text-xs font-bold text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 border border-purple-100 dark:border-purple-900 transition-all active:scale-95 rounded-lg"
                                                 >
                                                     <Zap size={14} /> Optimize
                                                 </button>
@@ -491,7 +491,7 @@ function StrategiesContent() {
                                                         e.stopPropagation();
                                                         router.push(`/strategies/${strategy.id}/editor`);
                                                     }}
-                                                    className="flex-1 py-2 flex items-center justify-center gap-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-all active:scale-95 rounded-lg"
+                                                    className="flex-1 py-2 flex items-center justify-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition-all active:scale-95 rounded-lg"
                                                 >
                                                     <Code size={14} /> Edit
                                                 </button>
@@ -500,21 +500,21 @@ function StrategiesContent() {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm flex flex-col max-h-[calc(100vh-320px)]">
+                                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden shadow-sm flex flex-col max-h-[calc(100vh-320px)]">
                                     <div className="overflow-x-auto overflow-y-auto">
                                         <table className="w-full text-sm text-left border-collapse">
                                             <thead className="sticky top-0 z-10">
-                                                <tr className="bg-slate-50 border-b border-slate-200">
-                                                    <th className="px-6 py-4 text-sm font-bold text-slate-800">Strategy</th>
-                                                    <th className="px-6 py-4 text-sm font-bold text-slate-800">Created At</th>
-                                                    <th className="px-6 py-4 text-sm font-bold text-slate-800 text-right">Actions</th>
+                                                <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                                                    <th className="px-6 py-4 text-sm font-bold text-slate-800 dark:text-slate-100">Strategy</th>
+                                                    <th className="px-6 py-4 text-sm font-bold text-slate-800 dark:text-slate-100">Created At</th>
+                                                    <th className="px-6 py-4 text-sm font-bold text-slate-800 dark:text-slate-100 text-right">Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-slate-100">
+                                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                                 {filteredStrategies.map((strategy) => (
                                                     <tr
                                                         key={strategy.id}
-                                                        className="hover:bg-blue-50/50 group cursor-pointer transition-colors duration-200"
+                                                        className="hover:bg-blue-50/50 dark:hover:bg-blue-900/20 group cursor-pointer transition-colors duration-200"
                                                         onClick={() => router.push(`/strategies/${strategy.id}`)}
                                                     >
                                                         {/* Strategy Name & Info */}
@@ -527,10 +527,10 @@ function StrategiesContent() {
                                                                     })()}
                                                                 </div>
                                                                 <div className="min-w-0">
-                                                                    <div className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate">
+                                                                    <div className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
                                                                         {strategy.name}
                                                                     </div>
-                                                                    <div className="text-[11px] text-slate-500 truncate max-w-[240px] font-medium leading-relaxed">
+                                                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[240px] font-medium leading-relaxed">
                                                                         {strategy.description}
                                                                     </div>
                                                                 </div>
@@ -541,10 +541,10 @@ function StrategiesContent() {
                                                         {/* Date */}
                                                         <td className="px-6 py-4">
                                                             <div className="flex flex-col">
-                                                                <span className="text-xs font-bold text-slate-600">
+                                                                <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
                                                                     {new Date(strategy.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                                                                 </span>
-                                                                <span className="text-[10px] text-slate-400 font-medium">
+                                                                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
                                                                     {new Date(strategy.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                                                                 </span>
                                                             </div>
@@ -556,7 +556,7 @@ function StrategiesContent() {
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="icon"
-                                                                    className="h-9 w-9 text-slate-400 hover:text-blue-600 hover:bg-white hover:shadow-sm rounded-xl transition-all"
+                                                                    className="h-9 w-9 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm rounded-xl transition-all"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         router.push(`/strategies/${strategy.id}/backtest`);
@@ -568,7 +568,7 @@ function StrategiesContent() {
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="icon"
-                                                                    className="h-9 w-9 text-slate-400 hover:text-blue-600 hover:bg-white hover:shadow-sm rounded-xl transition-all"
+                                                                    className="h-9 w-9 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm rounded-xl transition-all"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         router.push(`/strategies/${strategy.id}/editor`);
@@ -582,7 +582,7 @@ function StrategiesContent() {
                                                                         <Button
                                                                             variant="ghost"
                                                                             size="icon"
-                                                                            className="h-9 w-9 text-slate-400 hover:text-slate-600 transition-all rounded-xl"
+                                                                            className="h-9 w-9 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-all rounded-xl"
                                                                             onClick={(e) => e.stopPropagation()}
                                                                         >
                                                                             <MoreVertical size={16} />
@@ -645,7 +645,7 @@ function StrategiesContent() {
                                 </DialogHeader>
                                 <div className="space-y-4 py-4">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-700">Strategy Name</label>
+                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Strategy Name</label>
                                         <Input
                                             value={newName}
                                             onChange={(e) => setNewName(e.target.value)}
@@ -661,7 +661,7 @@ function StrategiesContent() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-700">Icon</label>
+                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Icon</label>
                                         <div className="grid grid-cols-6 gap-2">
                                             {Object.keys(strategyIcons).map((iconName) => {
                                                 const Icon = strategyIcons[iconName];
@@ -673,7 +673,7 @@ function StrategiesContent() {
                                                         onClick={() => setSelectedIcon(iconName)}
                                                         className={`h-12 w-12 rounded-lg flex items-center justify-center transition-all ${isSelected
                                                             ? 'bg-gradient-to-br from-sky-400 to-blue-500 text-white shadow-md scale-110'
-                                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:scale-105'
+                                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-105'
                                                             }`}
                                                         title={iconName}
                                                     >
@@ -685,7 +685,7 @@ function StrategiesContent() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-700">Icon Color</label>
+                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Icon Color</label>
                                         <div className="grid grid-cols-8 gap-2">
                                             {iconColors.map((color) => {
                                                 const isSelected = selectedIconColor === color.value;
@@ -696,7 +696,7 @@ function StrategiesContent() {
                                                         onClick={() => setSelectedIconColor(color.value)}
                                                         className={`h-10 w-10 rounded-lg flex items-center justify-center transition-all border-2 ${isSelected
                                                             ? "border-blue-500 scale-110 shadow-md"
-                                                            : "border-slate-200 hover:border-slate-300 hover:scale-105"
+                                                            : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:scale-105"
                                                             }`}
                                                         style={{ backgroundColor: color.value }}
                                                         title={color.name}
@@ -732,47 +732,47 @@ function StrategiesContent() {
                     </TabsContent>
 
                     <TabsContent value="published" className="m-0 px-8 pb-8">
-                        <Card className="border-gray-200 shadow-sm">
+                        <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
                             <CardHeader>
-                                <CardTitle>Published Strategies</CardTitle>
-                                <CardDescription>All active configurations used for generating market recommendations</CardDescription>
+                                <CardTitle className="dark:text-slate-100">Published Strategies</CardTitle>
+                                <CardDescription className="dark:text-slate-400">All active configurations used for generating market recommendations</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {loadingStrategies ? (
-                                    <div className="p-8 text-center text-gray-500 animate-pulse">Loading published strategies...</div>
+                                    <div className="p-8 text-center text-gray-500 dark:text-slate-400 animate-pulse">Loading published strategies...</div>
                                 ) : strategies.filter(s => s.published_experiments && s.published_experiments.length > 0).length > 0 ? (
                                     <div className="overflow-x-auto">
                                         <table className="w-full">
-                                            <thead className="bg-gray-50 border-b border-gray-200">
+                                            <thead className="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
                                                 <tr>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Strategy</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Scope</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Return</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Sharpe</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Win Rate</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Published</th>
-                                                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase tracking-wider">Strategy</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase tracking-wider">Scope</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase tracking-wider">Return</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase tracking-wider">Sharpe</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase tracking-wider">Win Rate</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase tracking-wider">Published</th>
+                                                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase tracking-wider">Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="bg-white divide-y divide-gray-100">
+                                            <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-100 dark:divide-slate-800">
                                                 {strategies
                                                     .filter(s => s.published_experiments && s.published_experiments.length > 0)
                                                     .flatMap((strategy) =>
                                                         strategy.published_experiments?.map((exp: any) => (
-                                                            <tr key={`${strategy.id}-${exp.id}`} className="hover:bg-gray-50 transition-colors">
+                                                            <tr key={`${strategy.id}-${exp.id}`} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
                                                                 <td className="px-4 py-3">
                                                                     <div className="flex flex-col">
-                                                                        <span className="font-medium text-gray-900">{strategy.name}</span>
-                                                                        <span className="text-xs text-gray-500 truncate max-w-xs">{strategy.description}</span>
+                                                                        <span className="font-medium text-gray-900 dark:text-slate-100">{strategy.name}</span>
+                                                                        <span className="text-xs text-gray-500 dark:text-slate-400 truncate max-w-xs">{strategy.description}</span>
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-4 py-3">
                                                                     <Badge
                                                                         variant="outline"
                                                                         className={
-                                                                            exp.scope_type === 'ALL' ? 'bg-purple-50 text-purple-700 border-purple-200 font-semibold' :
-                                                                                exp.scope_type === 'SECTOR' ? 'bg-blue-50 text-blue-700 border-blue-200 font-semibold' :
-                                                                                    'bg-green-50 text-green-700 border-green-200 font-semibold'
+                                                                            exp.scope_type === 'ALL' ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800 font-semibold' :
+                                                                                exp.scope_type === 'SECTOR' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 font-semibold' :
+                                                                                    'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800 font-semibold'
                                                                         }
                                                                     >
                                                                         {exp.scope_type === 'ALL' ? '🌐 ALL MARKET' :
