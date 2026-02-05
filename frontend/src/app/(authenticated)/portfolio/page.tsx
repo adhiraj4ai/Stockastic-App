@@ -358,8 +358,8 @@ function PortfolioContent() {
                 {activeTab === 'holdings' && (
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900">My Portfolio</h1>
-                            <p className="text-gray-500">Track and manage your investments</p>
+                            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">My Portfolio</h1>
+                            <p className="text-gray-500 dark:text-gray-400">Track and manage your investments</p>
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -368,7 +368,7 @@ function PortfolioContent() {
                                 <select
                                     value={selectedAccount}
                                     onChange={(e) => setSelectedAccount(e.target.value)}
-                                    className="appearance-none bg-white border border-gray-300 text-gray-700 py-2.5 pl-4 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium shadow-sm cursor-pointer"
+                                    className="appearance-none bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-300 py-2.5 pl-4 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium shadow-sm cursor-pointer"
                                 >
                                     <option value="all">All Accounts</option>
                                     <option disabled>──────────</option>
@@ -383,7 +383,7 @@ function PortfolioContent() {
 
                             <button
                                 onClick={() => setIsCreateAccountOpen(true)}
-                                className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 p-2.5 rounded-lg shadow-sm transition-all"
+                                className="bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300 p-2.5 rounded-lg shadow-sm transition-all"
                                 title="Create New Portfolio Account"
                             >
                                 <FolderPlus className="h-5 w-5" />
@@ -421,39 +421,39 @@ function PortfolioContent() {
                 {/* Summary Cards - Only for Holdings */}
                 {activeTab === 'holdings' && (
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <Card className="bg-white border-blue-100 shadow-sm hover:shadow-md transition-shadow">
+                        <Card className="bg-white dark:bg-slate-900 border-blue-100 dark:border-blue-900/30 shadow-sm hover:shadow-md transition-shadow">
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium text-gray-500">Capital Deployed</CardTitle>
+                                <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Capital Deployed</CardTitle>
                                 <Wallet className="h-4 w-4 text-blue-500" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold text-gray-900">
+                                <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">
                                     Rs. {totalInvestment.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </div>
-                                <div className="text-xs text-gray-400 mt-1 uppercase font-bold tracking-wider">
+                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 uppercase font-bold tracking-wider">
                                     Across {displayedItems.length} Holdings
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-white border-purple-100 shadow-sm hover:shadow-md transition-shadow">
+                        <Card className="bg-white dark:bg-slate-900 border-purple-100 dark:border-purple-900/30 shadow-sm hover:shadow-md transition-shadow">
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium text-gray-500">Portfolio Value</CardTitle>
+                                <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Portfolio Value</CardTitle>
                                 <DollarSign className="h-4 w-4 text-purple-500" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold text-gray-900">
+                                <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">
                                     Rs. {totalCurrentValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </div>
-                                <div className="text-xs text-gray-400 mt-1 uppercase font-bold tracking-wider">
+                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 uppercase font-bold tracking-wider">
                                     Real-time Valuation
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Card className={`bg-white shadow-sm hover:shadow-md transition-shadow ${totalGainLoss >= 0 ? "border-green-100" : "border-red-100"}`}>
+                        <Card className={`bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow ${totalGainLoss >= 0 ? "border-green-100 dark:border-green-900/30" : "border-red-100 dark:border-red-900/30"}`}>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium text-gray-500">Total Returns</CardTitle>
+                                <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Returns</CardTitle>
                                 {totalGainLoss >= 0 ? <TrendingUp className="h-4 w-4 text-green-500" /> : <TrendingDown className="h-4 w-4 text-red-500" />}
                             </CardHeader>
                             <CardContent>
@@ -475,16 +475,16 @@ function PortfolioContent() {
                             </CardContent>
                         </Card>
 
-                        <Card className={`bg-white shadow-sm hover:shadow-md transition-shadow ${totalDayGainLoss >= 0 ? "border-green-100" : "border-red-100"}`}>
+                        <Card className={`bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow ${totalDayGainLoss >= 0 ? "border-green-100 dark:border-green-900/30" : "border-red-100 dark:border-red-900/30"}`}>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium text-gray-500">Session Swing</CardTitle>
+                                <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Session Swing</CardTitle>
                                 <Zap className={`h-4 w-4 ${totalDayGainLoss >= 0 ? 'text-amber-500' : 'text-red-400'}`} />
                             </CardHeader>
                             <CardContent>
                                 <div className={`text-2xl font-bold ${totalDayGainLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                     Rs. {Math.abs(totalDayGainLoss).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </div>
-                                <div className="text-xs text-gray-400 mt-1 uppercase font-bold tracking-wider">
+                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 uppercase font-bold tracking-wider">
                                     Intraday Movement
                                 </div>
                             </CardContent>

@@ -208,7 +208,7 @@ export default function ChatContent() {
             subtitle="Get insights and help with your portfolio"
             noPadding
         >
-            <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-white">
+            <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-white dark:bg-slate-950">
                 <ChatHistorySidebar
                     history={history}
                     activeChatId={activeChatId}
