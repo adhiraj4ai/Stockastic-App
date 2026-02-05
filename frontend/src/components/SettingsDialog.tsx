@@ -138,7 +138,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[70vw] max-w-[70vw] sm:max-w-[70vw] h-[90vh] max-h-[90vh] overflow-hidden flex flex-col bg-slate-50/95 backdrop-blur-xl border-white/20 shadow-2xl p-0 gap-0">
+            <DialogContent className="w-[70vw] max-w-[70vw] sm:max-w-[70vw] h-[90vh] max-h-[90vh] overflow-hidden flex flex-col bg-slate-50/98 dark:bg-slate-950/98 backdrop-blur-xl border-white/20 dark:border-slate-800 shadow-2xl p-0 gap-0">
                 <Tabs defaultValue="general" className="flex-row w-full h-full" orientation="vertical">
 
                     {/* Left Sidebar (Full Height) */}
@@ -185,9 +185,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                         </div>
 
                         {/* User Mini Profile at bottom of sidebar */}
-                        <div className="p-4 border-t border-slate-200/50 bg-slate-100/30">
+                        <div className="p-4 border-t border-slate-200/50 dark:border-slate-800 bg-slate-100/30 dark:bg-slate-800/30">
                             <div className="flex items-center gap-3">
-                                <div className="h-9 w-9 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center">
+                                <div className="h-9 w-9 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden flex items-center justify-center">
                                     {user?.profile_picture ? (
                                         <img src={user.profile_picture} alt={user.username} className="h-full w-full object-cover" />
                                     ) : (
@@ -265,7 +265,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                         value={user?.first_name || ''}
                                                         onChange={(e) => setUser(prev => prev ? { ...prev, first_name: e.target.value } : null)}
                                                         placeholder="e.g. John"
-                                                        className="bg-slate-50/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                        className="bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
@@ -309,7 +309,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                     value={user?.email || ''}
                                                     onChange={(e) => setUser(prev => prev ? { ...prev, email: e.target.value } : null)}
                                                     placeholder="your@email.com"
-                                                    className="bg-slate-50/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                    className="bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
                                                 />
                                             </div>
 
@@ -395,7 +395,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                 value={currentPassword}
                                                 onChange={(e) => setCurrentPassword(e.target.value)}
                                                 placeholder="Enter your current password"
-                                                className="bg-slate-50/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500"
+                                                className="bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500"
                                             />
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

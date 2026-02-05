@@ -800,23 +800,23 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                 </TabsContent>
 
                                 <TabsContent value="financials" className="mt-0 space-y-8">
-                                    <div className="glass-card-light rounded-2xl p-8 border-slate-200">
+                                    <div className="glass-card-light rounded-2xl p-8">
                                         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
                                             <div className="flex items-center gap-3">
-                                                <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
+                                                <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
                                                     <BarChart2 size={18} />
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-bold text-slate-800">Financial Performance Matrix</h4>
-                                                    <p className="text-[10px] text-slate-400 font-semibold">Multi-year trend analysis</p>
+                                                    <h4 className="font-bold text-slate-800 dark:text-slate-100">Financial Performance Matrix</h4>
+                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">Multi-year trend analysis</p>
                                                 </div>
                                             </div>
-                                            <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-inner">
+                                            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner">
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => setReportType('ANNUAL')}
-                                                    className={cn("rounded-lg px-4 font-bold text-[10px] transition-all", reportType === 'ANNUAL' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400")}
+                                                    className={cn("rounded-lg px-4 font-bold text-[10px] transition-all", reportType === 'ANNUAL' ? "bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm" : "text-slate-400 dark:text-slate-500")}
                                                 >
                                                     Annual
                                                 </Button>
@@ -824,7 +824,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => setReportType('QUARTERLY')}
-                                                    className={cn("rounded-lg px-4 font-bold text-[10px] transition-all", reportType === 'QUARTERLY' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400")}
+                                                    className={cn("rounded-lg px-4 font-bold text-[10px] transition-all", reportType === 'QUARTERLY' ? "bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm" : "text-slate-400 dark:text-slate-500")}
                                                 >
                                                     Quarterly
                                                 </Button>
@@ -832,13 +832,13 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                         </div>
 
                                         {/* Financial Summary Chart */}
-                                        <div className="bg-white rounded-2xl border border-slate-100 p-6 mb-8 shadow-sm">
+                                        <div className="bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 p-6 mb-8 shadow-sm">
                                             <div className="h-[400px]">
                                                 <ReactECharts
                                                     key={`${reportType}-${visibleMetrics.join('-')}`}
                                                     option={getFinancialsTrendOption()}
                                                     style={{ height: '100%', width: '100%' }}
-                                                    theme="light"
+                                                    theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
                                                 />
                                             </div>
                                         </div>
@@ -853,44 +853,44 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                         if (!sectionData) return null;
 
                                                         return (
-                                                            <div key={section} className="border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
+                                                            <div key={section} className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
                                                                 <button
                                                                     onClick={() => toggleCollapse(`section-${section}`)}
-                                                                    className="w-full flex items-center justify-between px-6 py-4 bg-slate-50 hover:bg-slate-100/50 transition-colors"
+                                                                    className="w-full flex items-center justify-between px-6 py-4 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100/50 dark:hover:bg-slate-700/50 transition-colors"
                                                                 >
-                                                                    <span className="font-bold text-slate-800 flex items-center gap-2">
+                                                                    <span className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                                                                         {section.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                                                                     </span>
-                                                                    <ChevronDown size={16} className={cn("text-slate-400 transition-transform", !collapsedItems.has(`section-${section}`) && "rotate-180")} />
+                                                                    <ChevronDown size={16} className={cn("text-slate-400 dark:text-slate-500 transition-transform", !collapsedItems.has(`section-${section}`) && "rotate-180")} />
                                                                 </button>
                                                                 {!collapsedItems.has(`section-${section}`) && (
-                                                                    <div className="p-6 bg-white overflow-x-auto no-scrollbar">
+                                                                    <div className="p-6 bg-white/50 dark:bg-slate-900/50 overflow-x-auto no-scrollbar">
                                                                         <table className="w-full text-sm">
                                                                             <thead>
-                                                                                <tr className="border-b border-slate-50">
-                                                                                    <th className="text-left py-2 font-semibold text-slate-400 text-[10px]">Metadata/Metric</th>
+                                                                                <tr className="border-b border-slate-50 dark:border-slate-800">
+                                                                                    <th className="text-left py-2 font-semibold text-slate-400 dark:text-slate-500 text-[10px]">Metadata/Metric</th>
                                                                                     {financials.filter(f => f.report_type === reportType)
                                                                                         .sort((a, b) => b.fiscal_year.localeCompare(a.fiscal_year))
                                                                                         .map((f, idx) => (
-                                                                                            <th key={`${f.fiscal_year}-${idx}`} className="text-right px-4 font-bold text-slate-800">{f.fiscal_year}</th>
+                                                                                            <th key={`${f.fiscal_year}-${idx}`} className="text-right px-4 font-bold text-slate-800 dark:text-slate-200">{f.fiscal_year}</th>
                                                                                         ))}
                                                                                 </tr>
                                                                             </thead>
                                                                             <tbody>
                                                                                 {Object.entries(sectionData).map(([category, items]: [string, any]) => (
                                                                                     <React.Fragment key={category}>
-                                                                                        <tr className="bg-slate-50/30">
-                                                                                            <td colSpan={100} className="py-2 px-2 font-bold text-blue-600/70 text-[10px]">{category}</td>
+                                                                                        <tr className="bg-slate-50/30 dark:bg-slate-800/20">
+                                                                                            <td colSpan={100} className="py-2 px-2 font-bold text-blue-600/70 dark:text-blue-400/70 text-[10px]">{category}</td>
                                                                                         </tr>
                                                                                         {Object.entries(items).map(([key, val]: [string, any]) => (
-                                                                                            <tr key={key} className="hover:bg-slate-50/30 border-b border-slate-50 last:border-0 transition-colors group">
-                                                                                                <td className="py-3 px-2 font-medium text-slate-600 group-hover:text-slate-900">{key}</td>
+                                                                                            <tr key={key} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/30 border-b border-slate-50 dark:border-slate-800 last:border-0 transition-colors group">
+                                                                                                <td className="py-3 px-2 font-medium text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-100">{key}</td>
                                                                                                 {financials.filter(f => f.report_type === reportType)
                                                                                                     .sort((a, b) => b.fiscal_year.localeCompare(a.fiscal_year))
                                                                                                     .map((f, idx) => {
                                                                                                         const v = f[section]?.[category]?.[key];
                                                                                                         return (
-                                                                                                            <td key={`${f.fiscal_year}-${idx}`} className="text-right px-4 font-mono text-slate-700">
+                                                                                                            <td key={`${f.fiscal_year}-${idx}`} className="text-right px-4 font-mono text-slate-700 dark:text-slate-300">
                                                                                                                 {typeof v === 'number' ? (v >= 10000000 ? (v / 10000000).toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' Cr' : v.toLocaleString()) : (v || '-')}
                                                                                                             </td>
                                                                                                         );
@@ -918,27 +918,27 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                 <TabsContent value="indicators" className="mt-0">
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                         {/* Fundamental Benchmarks */}
-                                        <div className="glass-card-light rounded-2xl p-8 border-slate-200">
+                                        <div className="glass-card-light rounded-2xl p-8">
                                             <div className="flex items-center gap-3 mb-10">
-                                                <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
+                                                <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
                                                     <BarChart2 size={18} />
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-bold text-slate-800 text-lg">Fundamental Benchmarks</h4>
-                                                    <p className="text-[10px] text-slate-400 font-semibold">Sector-wide comparison</p>
+                                                    <h4 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Fundamental Benchmarks</h4>
+                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">Sector-wide comparison</p>
                                                 </div>
                                             </div>
 
-                                            <div className="overflow-hidden rounded-2xl border border-slate-100">
+                                            <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800">
                                                 <table className="w-full text-sm">
-                                                    <thead className="bg-slate-50 border-b border-slate-100">
+                                                    <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
                                                         <tr>
-                                                            <th className="px-6 py-4 text-left font-semibold text-slate-400 text-[9px]">Metric</th>
-                                                            <th className="px-6 py-4 text-center font-semibold text-slate-400 text-[9px]">Value</th>
-                                                            <th className="px-6 py-4 text-left font-semibold text-slate-400 text-[9px]">Sector Range (Low - High)</th>
+                                                            <th className="px-6 py-4 text-left font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Metric</th>
+                                                            <th className="px-6 py-4 text-center font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Value</th>
+                                                            <th className="px-6 py-4 text-left font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Sector Range (Low - High)</th>
                                                         </tr>
                                                     </thead>
-                                                    <tbody className="divide-y divide-slate-100 bg-white/50">
+                                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/30 dark:bg-slate-950/40">
                                                         {[
                                                             { name: 'P/E Ratio', key: 'pe_ratio', label: 'P/E' },
                                                             { name: 'P/B Ratio', key: 'pb_ratio', label: 'P/B' },
@@ -954,23 +954,23 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                             const displayValue = indicator?.value || (rawValue ? (typeof rawValue === 'number' && rawValue > 10000000 ? (rawValue / 10000000).toFixed(2) + ' Cr' : rawValue.toString()) : '-');
 
                                                             return (
-                                                                <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
-                                                                    <td className="px-6 py-4 font-bold text-slate-700 whitespace-nowrap">{metric.name}</td>
+                                                                <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                                    <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">{metric.name}</td>
                                                                     <td className="px-6 py-4 text-center">
-                                                                        <span className="px-2.5 py-1 rounded bg-blue-50 text-blue-600 font-bold text-xs ring-1 ring-blue-100">{displayValue}</span>
+                                                                        <span className="px-2.5 py-1 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold text-xs ring-1 ring-blue-100 dark:ring-blue-800">{displayValue}</span>
                                                                     </td>
                                                                     <td className="px-6 py-4">
                                                                         <div className="flex items-center gap-4">
                                                                             <div className="flex flex-col min-w-[40px]">
                                                                                 <span className="text-xs text-rose-500 font-bold uppercase">{indicator?.sector_low || '-'}</span>
-                                                                                <span className="text-[8px] text-slate-400 font-mono leading-tight">{indicator?.sector_low_ticker || ''}</span>
+                                                                                <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono leading-tight">{indicator?.sector_low_ticker || ''}</span>
                                                                             </div>
-                                                                            <div className="flex-1 h-1 bg-slate-100 rounded-full relative">
+                                                                            <div className="flex-1 h-1 bg-slate-100 dark:bg-slate-800 rounded-full relative">
                                                                                 <div className="absolute top-1/2 left-1/4 w-1.5 h-1.5 -translate-y-1/2 bg-blue-500 rounded-full shadow-sm" />
                                                                             </div>
                                                                             <div className="flex flex-col items-end min-w-[40px]">
                                                                                 <span className="text-xs text-emerald-500 font-bold uppercase">{indicator?.sector_high || '-'}</span>
-                                                                                <span className="text-[8px] text-slate-400 font-mono leading-tight">{indicator?.sector_high_ticker || ''}</span>
+                                                                                <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono leading-tight">{indicator?.sector_high_ticker || ''}</span>
                                                                             </div>
                                                                         </div>
                                                                     </td>
@@ -983,25 +983,25 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                         </div>
 
                                         {/* Technical Divergence */}
-                                        <div className="glass-card-light rounded-2xl p-8 border-slate-200">
+                                        <div className="glass-card-light rounded-2xl p-8">
                                             <div className="flex items-center gap-3 mb-10">
-                                                <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                                <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
                                                     <TrendingUp size={18} />
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-bold text-slate-800 text-lg">Technical Divergence</h4>
-                                                    <p className="text-[10px] text-slate-400 font-semibold">Relative strength mapping</p>
+                                                    <h4 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Technical Divergence</h4>
+                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">Relative strength mapping</p>
                                                 </div>
                                             </div>
 
                                             <div className="p-6">
                                                 <Tabs defaultValue="Momentum" className="w-full">
-                                                    <TabsList className="grid w-full grid-cols-4 mb-6 p-1 bg-slate-100/80 rounded-xl">
+                                                    <TabsList className="grid w-full grid-cols-4 mb-6 p-1 bg-slate-100 dark:bg-slate-900 rounded-xl">
                                                         {['Momentum', 'Trend', 'Volatility', 'Volume'].map(cat => (
                                                             <TabsTrigger
                                                                 key={cat}
                                                                 value={cat}
-                                                                className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all duration-200 text-[10px] sm:text-xs"
+                                                                className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-primary dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all duration-200 text-[10px] sm:text-xs"
                                                             >
                                                                 {cat}
                                                             </TabsTrigger>
@@ -1013,22 +1013,22 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
 
                                                         return (
                                                             <TabsContent key={category} value={category} className="mt-0 focus-visible:outline-none ring-offset-background">
-                                                                <div className="overflow-hidden overflow-y-auto max-h-[500px] rounded-2xl border border-slate-100 shadow-sm relative no-scrollbar">
+                                                                <div className="overflow-hidden overflow-y-auto max-h-[500px] rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm relative no-scrollbar">
                                                                     <table className="w-full text-sm">
-                                                                        <thead className="bg-slate-50 border-b border-slate-100 backdrop-blur-sm sticky top-0 z-10">
+                                                                        <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 backdrop-blur-sm sticky top-0 z-10">
                                                                             <tr>
-                                                                                <th className="px-6 py-4 text-left font-semibold text-slate-400 text-[9px]">Indicator</th>
-                                                                                <th className="px-6 py-4 text-center font-semibold text-slate-400 text-[9px]">Value</th>
-                                                                                <th className="px-6 py-4 text-left font-semibold text-slate-400 text-[9px]">Sector Range (Low - High)</th>
+                                                                                <th className="px-6 py-4 text-left font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Indicator</th>
+                                                                                <th className="px-6 py-4 text-center font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Value</th>
+                                                                                <th className="px-6 py-4 text-left font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Sector Range (Low - High)</th>
                                                                             </tr>
                                                                         </thead>
-                                                                        <tbody className="divide-y divide-slate-100 bg-white">
+                                                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/30 dark:bg-slate-950/40">
                                                                             {indicators.length > 0 ? (
                                                                                 indicators.map((indicator: any, i: number) => (
-                                                                                    <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
-                                                                                        <td className="px-6 py-4 font-bold text-slate-700 whitespace-nowrap">{indicator.name}</td>
+                                                                                    <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                                                        <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">{indicator.name}</td>
                                                                                         <td className="px-6 py-4 text-center">
-                                                                                            <span className="px-2.5 py-1 rounded bg-slate-50 text-slate-700 font-bold text-xs ring-1 ring-slate-200 group-hover:bg-white group-hover:shadow-sm transition-all">{indicator.value}</span>
+                                                                                            <span className="px-2.5 py-1 rounded bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs ring-1 ring-slate-200 dark:ring-slate-700 group-hover:bg-white dark:group-hover:bg-slate-700 group-hover:shadow-sm transition-all">{indicator.value}</span>
                                                                                         </td>
                                                                                         <td className="px-6 py-4">
                                                                                             {indicator.sector_high !== '-' ? (
@@ -1037,10 +1037,10 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                                                                         <span className="text-xs text-rose-500 font-bold uppercase">{indicator.sector_low}</span>
                                                                                                         {/* <span className="text-[8px] text-slate-400 font-mono leading-tight">{indicator.sector_low_ticker}</span> */}
                                                                                                     </div>
-                                                                                                    <div className="flex-1 h-1.5 bg-slate-100 rounded-full relative overflow-hidden">
-                                                                                                        <div className="absolute inset-0 bg-gradient-to-r from-rose-100 via-slate-100 to-emerald-100 opacity-50"></div>
+                                                                                                    <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full relative overflow-hidden">
+                                                                                                        <div className="absolute inset-0 bg-gradient-to-r from-rose-100 dark:from-rose-900/20 via-slate-100 dark:via-slate-800 to-emerald-100 dark:to-emerald-900/20 opacity-50"></div>
                                                                                                         {/* Calculate position based on math if possible, else center or use simplified visual */}
-                                                                                                        <div className="absolute top-0 bottom-0 w-1 bg-slate-400 rounded-full left-1/2 -translate-x-1/2 ring-2 ring-white"></div>
+                                                                                                        <div className="absolute top-0 bottom-0 w-1 bg-slate-400 dark:bg-slate-500 rounded-full left-1/2 -translate-x-1/2 ring-2 ring-white dark:ring-slate-900"></div>
                                                                                                     </div>
                                                                                                     <div className="flex flex-col items-end min-w-[40px]">
                                                                                                         <span className="text-xs text-emerald-500 font-bold uppercase">{indicator.sector_high}</span>
@@ -1084,17 +1084,17 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                     <p className="text-[10px] text-slate-400 font-semibold">Ohlcv historical logs</p>
                                                 </div>
                                             </div>
-                                            <div className="flex bg-slate-100/80 rounded-lg p-1 gap-1">
+                                            <div className="flex bg-slate-100/80 dark:bg-slate-800/80 rounded-lg p-1 gap-1">
                                                 <button
                                                     onClick={() => setHistoryView('graph')}
-                                                    className={`p-2 rounded-md transition-all flex items-center gap-2 ${historyView === 'graph' ? 'bg-white shadow-sm text-blue-600 font-bold' : 'text-slate-400 hover:text-slate-600'}`}
+                                                    className={`p-2 rounded-md transition-all flex items-center gap-2 ${historyView === 'graph' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400 font-bold' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                                                 >
                                                     <LineChart size={16} />
                                                     <span className="text-xs">Graph</span>
                                                 </button>
                                                 <button
                                                     onClick={() => setHistoryView('table')}
-                                                    className={`p-2 rounded-md transition-all flex items-center gap-2 ${historyView === 'table' ? 'bg-white shadow-sm text-slate-800 font-bold' : 'text-slate-400 hover:text-slate-600'}`}
+                                                    className={`p-2 rounded-md transition-all flex items-center gap-2 ${historyView === 'table' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-slate-100 font-bold' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                                                 >
                                                     <Table2 size={16} />
                                                     <span className="text-xs">Table</span>
@@ -1103,9 +1103,9 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                         </div>
 
                                         {historyView === 'table' ? (
-                                            <div className="overflow-hidden overflow-y-auto max-h-[500px] rounded-2xl border border-slate-100 shadow-sm relative no-scrollbar">
+                                            <div className="overflow-hidden overflow-y-auto max-h-[500px] rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm relative no-scrollbar">
                                                 <table className="w-full text-sm text-left">
-                                                    <thead className="bg-slate-50 text-slate-400 border-b border-slate-100 sticky top-0 z-10">
+                                                    <thead className="bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-10">
                                                         <tr>
                                                             <th className="px-6 py-4 font-semibold text-[10px]">Date</th>
                                                             <th className="px-6 py-4 font-semibold text-[10px]">Open</th>
@@ -1115,25 +1115,25 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                             <th className="px-6 py-4 font-semibold text-[10px] text-right">Volume</th>
                                                         </tr>
                                                     </thead>
-                                                    <tbody className="divide-y divide-slate-50">
+                                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800 bg-white/30 dark:bg-slate-950/40">
                                                         {[...history]
                                                             .filter(row => new Date(row.date) > new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))
                                                             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                                                             .map((row, i) => (
-                                                                <tr key={i} className="hover:bg-slate-50 transition-colors">
-                                                                    <td className="px-6 py-4 font-bold text-slate-800">{row.date}</td>
-                                                                    <td className="px-6 py-4 text-slate-600">{row.open}</td>
-                                                                    <td className="px-6 py-4 text-emerald-600 font-medium">{row.high}</td>
-                                                                    <td className="px-6 py-4 text-rose-600 font-medium">{row.low}</td>
-                                                                    <td className="px-6 py-4 font-bold text-slate-900">{row.close}</td>
-                                                                    <td className="px-6 py-4 text-right font-mono text-xs text-slate-400">{row.volume.toLocaleString()}</td>
+                                                                <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                                    <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-100">{row.date}</td>
+                                                                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{row.open}</td>
+                                                                    <td className="px-6 py-4 text-emerald-600 dark:text-emerald-400 font-medium">{row.high}</td>
+                                                                    <td className="px-6 py-4 text-rose-600 dark:text-rose-400 font-medium">{row.low}</td>
+                                                                    <td className="px-6 py-4 font-bold text-slate-900 dark:text-slate-100">{row.close}</td>
+                                                                    <td className="px-6 py-4 text-right font-mono text-xs text-slate-400 dark:text-slate-500">{row.volume.toLocaleString()}</td>
                                                                 </tr>
                                                             ))}
                                                     </tbody>
                                                 </table>
                                             </div>
                                         ) : (
-                                            <div className="h-[500px] w-full bg-slate-50/50 rounded-2xl border border-slate-100 p-4 relative">
+                                            <div className="h-[500px] w-full bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 relative">
                                                 {(() => {
                                                     // 1. Prepare Data
                                                     const historyData = [...history]
@@ -1200,7 +1200,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                                         <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                                                                     </linearGradient>
                                                                 </defs>
-                                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={document.documentElement.classList.contains('dark') ? '#334155' : '#e2e8f0'} />
                                                                 <XAxis
                                                                     dataKey="date"
                                                                     tickFormatter={(str) => {
@@ -1209,25 +1209,25 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                                     }}
                                                                     axisLine={false}
                                                                     tickLine={false}
-                                                                    tick={{ fontSize: 10, fill: '#94a3b8' }}
+                                                                    tick={{ fontSize: 10, fill: document.documentElement.classList.contains('dark') ? '#64748b' : '#94a3b8' }}
                                                                     minTickGap={30}
                                                                 />
                                                                 <YAxis
                                                                     domain={[finalMin, finalMax]}
                                                                     axisLine={false}
                                                                     tickLine={false}
-                                                                    tick={{ fontSize: 10, fill: '#94a3b8' }}
+                                                                    tick={{ fontSize: 10, fill: document.documentElement.classList.contains('dark') ? '#64748b' : '#94a3b8' }}
                                                                     width={40}
                                                                 />
                                                                 <RechartsTooltip
                                                                     contentStyle={{
-                                                                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                                                        backgroundColor: document.documentElement.classList.contains('dark') ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)',
                                                                         borderRadius: '12px',
-                                                                        border: '1px solid #e2e8f0',
+                                                                        border: `1px solid ${document.documentElement.classList.contains('dark') ? '#334155' : '#e2e8f0'}`,
                                                                         boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                                                                     }}
-                                                                    itemStyle={{ color: '#1e293b', fontWeight: 'bold', fontSize: '12px' }}
-                                                                    labelStyle={{ color: '#64748b', fontSize: '10px', marginBottom: '4px' }}
+                                                                    itemStyle={{ color: document.documentElement.classList.contains('dark') ? '#f1f5f9' : '#1e293b', fontWeight: 'bold', fontSize: '12px' }}
+                                                                    labelStyle={{ color: document.documentElement.classList.contains('dark') ? '#94a3b8' : '#64748b', fontSize: '10px', marginBottom: '4px' }}
                                                                 />
                                                                 <Area
                                                                     type="monotone"

@@ -157,10 +157,10 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>
-                            <tr className="border-b border-slate-200 dark:border-slate-700">
-                                <th className="text-left p-3 font-bold text-slate-600 text-sm w-12"></th>
+                            <tr className="border-b border-slate-200 dark:border-slate-800">
+                                <th className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase w-12"></th>
                                 <th
-                                    className="text-left p-3 font-bold text-slate-600 dark:text-slate-300 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                     onClick={() => handleSort('symbol')}
                                 >
                                     <div className="flex items-center">
@@ -168,23 +168,23 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                     </div>
                                 </th>
                                 <th
-                                    className="text-left p-3 font-bold text-slate-600 dark:text-slate-400 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                     onClick={() => handleSort('signalType')}
                                 >
                                     <div className="flex items-center">
-                                        Signal Type <SortIcon columnKey="signalType" />
+                                        Signal <SortIcon columnKey="signalType" />
                                     </div>
                                 </th>
                                 <th
-                                    className="text-left p-3 font-bold text-slate-600 dark:text-slate-400 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                     onClick={() => handleSort('count')}
                                 >
                                     <div className="flex items-center">
-                                        Triggered By <SortIcon columnKey="count" />
+                                        Strategies <SortIcon columnKey="count" />
                                     </div>
                                 </th>
                                 <th
-                                    className="text-left p-3 font-bold text-slate-600 dark:text-slate-400 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                     onClick={() => handleSort('lastClose')}
                                 >
                                     <div className="flex items-center">
@@ -192,14 +192,14 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                     </div>
                                 </th>
                                 <th
-                                    className="text-left p-3 font-bold text-slate-600 dark:text-slate-400 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                     onClick={() => handleSort('date')}
                                 >
                                     <div className="flex items-center">
                                         Date <SortIcon columnKey="date" />
                                     </div>
                                 </th>
-                                <th className="text-left p-3 font-bold text-slate-600 dark:text-slate-400 text-sm w-32">Action</th>
+                                <th className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase w-32">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -474,7 +474,7 @@ export default function SignalsPage() {
         <DashboardLayout>
             <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950 pt-2 px-4 pb-4 transition-colors duration-300">
                 {/* Filters and View Controls */}
-                <Card className="mb-6 overflow-hidden border-none shadow-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
+                <Card className="mb-6 overflow-hidden border-none shadow-xl glass-card-light">
                     <CardContent className="p-0">
                         {/* Integrated Header and Controls */}
                         <div className="p-6 pb-4 flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between border-b border-slate-100 dark:border-slate-800">
@@ -575,7 +575,7 @@ export default function SignalsPage() {
                                 <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
                                     <div className="flex items-center mr-2 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-tighter">
                                         <Filter className="w-3 h-3 mr-1" />
-                                        Filter By
+                                        Refine By
                                     </div>
                                     {(['ALL', 'BUY', 'SELL', 'HOLD'] as SignalFilter[]).map(type => (
                                         <Button
@@ -815,52 +815,48 @@ export default function SignalsPage() {
                             <>
                                 {/* Tracking Summary Cards */}
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
-                                    <Card className="border-blue-200 dark:border-blue-900/50 bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-slate-900">
-                                        <CardContent className="p-3">
+                                    <Card className="glass-card-light overflow-hidden border-none shadow-md">
+                                        <CardContent className="p-4">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-0.5">Active Positions</p>
-                                                    <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">{trackingData.summary?.total_active ?? 0}</p>
-                                                    <p className="text-xs text-blue-600 dark:text-blue-500 mt-0.5">Awaiting SELL signal</p>
+                                                    <p className="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-1">Active Positions</p>
+                                                    <p className="text-3xl font-black text-slate-800 dark:text-slate-100">{trackingData.summary?.total_active ?? 0}</p>
+                                                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase">Awaiting SELL signal</p>
                                                 </div>
-                                                <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
+                                                <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-2xl border border-blue-100 dark:border-blue-800/30">
                                                     <Zap className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                                 </div>
                                             </div>
                                         </CardContent>
                                     </Card>
-                                    <Card className="border-purple-200 dark:border-purple-900/50 bg-gradient-to-br from-purple-50 to-white dark:from-purple-950/30 dark:to-slate-900">
-                                        <CardContent className="p-3">
+                                    <Card className="glass-card-light overflow-hidden border-none shadow-md">
+                                        <CardContent className="p-4">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <p className="text-sm font-medium text-purple-600 dark:text-purple-400 mb-0.5">Closed Positions</p>
-                                                    <p className="text-3xl font-bold text-purple-700 dark:text-purple-300">{trackingData.summary?.total_closed ?? 0}</p>
-                                                    <p className="text-xs text-purple-600 dark:text-purple-500 mt-0.5">Completed cycles</p>
+                                                    <p className="text-[10px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400 mb-1">Closed Positions</p>
+                                                    <p className="text-3xl font-black text-slate-800 dark:text-slate-100">{trackingData.summary?.total_closed ?? 0}</p>
+                                                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase">Completed cycles</p>
                                                 </div>
-                                                <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
+                                                <div className="p-3 bg-purple-50 dark:bg-purple-900/30 rounded-2xl border border-purple-100 dark:border-purple-800/30">
                                                     <CheckCircle2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                                                 </div>
                                             </div>
                                         </CardContent>
                                     </Card>
-                                    <Card className={cn("border bg-gradient-to-br to-white dark:to-slate-900",
-                                        (trackingData.summary?.avg_return ?? 0) >= 0 ? "border-emerald-200 from-emerald-50 dark:border-emerald-900/50 dark:from-emerald-950/30" : "border-rose-200 from-rose-50 dark:border-rose-900/50 dark:from-rose-950/30"
-                                    )}>
-                                        <CardContent className="p-3">
+                                    <Card className="glass-card-light overflow-hidden border-none shadow-md">
+                                        <CardContent className="p-4">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <p className={cn("text-sm font-medium mb-0.5",
+                                                    <p className={cn("text-[10px] font-black uppercase tracking-wider mb-1",
                                                         (trackingData.summary?.avg_return ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
                                                     )}>Avg Return</p>
-                                                    <p className={cn("text-3xl font-bold",
+                                                    <p className={cn("text-3xl font-black",
                                                         (trackingData.summary?.avg_return ?? 0) >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"
                                                     )}>{trackingData.summary?.avg_return?.toFixed(2) ?? '0.00'}%</p>
-                                                    <p className={cn("text-xs mt-0.5",
-                                                        (trackingData.summary?.avg_return ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-500" : "text-rose-600 dark:text-rose-500"
-                                                    )}>Per trade</p>
+                                                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase">Per trade</p>
                                                 </div>
-                                                <div className={cn("p-2 rounded-lg",
-                                                    (trackingData.summary?.avg_return ?? 0) >= 0 ? "bg-emerald-100 dark:bg-emerald-900/50" : "bg-rose-100 dark:bg-rose-900/50"
+                                                <div className={cn("p-3 rounded-2xl border",
+                                                    (trackingData.summary?.avg_return ?? 0) >= 0 ? "bg-emerald-50 dark:bg-emerald-900/30 border-emerald-100 dark:border-emerald-800/30" : "bg-rose-50 dark:bg-rose-900/30 border-rose-100 dark:border-rose-800/30"
                                                 )}>
                                                     <TrendingUp className={cn("w-5 h-5",
                                                         (trackingData.summary?.avg_return ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
@@ -870,15 +866,15 @@ export default function SignalsPage() {
                                         </CardContent>
                                     </Card>
 
-                                    <Card className="border-slate-200 dark:border-slate-800 bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-950">
-                                        <CardContent className="p-3">
+                                    <Card className="glass-card-light overflow-hidden border-none shadow-md">
+                                        <CardContent className="p-4">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-0.5">Avg Holding Period</p>
-                                                    <p className="text-3xl font-bold text-slate-700 dark:text-slate-200">{trackingData.summary?.avg_holding_period?.toFixed(1) ?? '0.0'}</p>
-                                                    <p className="text-xs text-slate-600 dark:text-slate-500 mt-0.5">Days</p>
+                                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">Avg Holding Period</p>
+                                                    <p className="text-3xl font-black text-slate-800 dark:text-slate-100">{trackingData.summary?.avg_holding_period?.toFixed(1) ?? '0.0'}</p>
+                                                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase">Days</p>
                                                 </div>
-                                                <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                                                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700">
                                                     <Clock className="w-5 h-5 text-slate-600 dark:text-slate-400" />
                                                 </div>
                                             </div>
@@ -887,25 +883,25 @@ export default function SignalsPage() {
                                 </div>
 
                                 {/* Active Positions Table */}
-                                <Card className="mb-6 dark:bg-slate-900 dark:border-slate-800">
+                                <Card className="mb-6 glass-card-light overflow-hidden border-none">
                                     <CardHeader>
                                         <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-100">Active Positions</CardTitle>
                                     </CardHeader>
                                     <CardContent className="p-0">
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-sm text-left">
-                                                <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 uppercase text-xs">
+                                                <thead className="bg-slate-50/50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 uppercase text-[10px] font-black border-b border-slate-100 dark:border-slate-800">
                                                     <tr>
-                                                        <th className="px-4 py-3">Symbol</th>
-                                                        <th className="px-4 py-3">Buy Price</th>
-                                                        <th className="px-4 py-3">Current Price</th>
-                                                        <th className="px-4 py-3">Return</th>
-                                                        <th className="px-4 py-3">Buy Date</th>
-                                                        <th className="px-4 py-3">Days Held</th>
-                                                        <th className="px-4 py-3">Strategy</th>
+                                                        <th className="px-4 py-4">Symbol</th>
+                                                        <th className="px-4 py-4">Buy Price</th>
+                                                        <th className="px-4 py-4">Current Price</th>
+                                                        <th className="px-4 py-4">Return</th>
+                                                        <th className="px-4 py-4">Buy Date</th>
+                                                        <th className="px-4 py-4">Days Held</th>
+                                                        <th className="px-4 py-4">Strategy</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/20 dark:bg-slate-950/40">
                                                     {(trackingData.active_positions || []).map((pos, idx) => (
                                                         <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                                                             <td className="px-4 py-3 font-bold">{pos.symbol}</td>
@@ -947,26 +943,26 @@ export default function SignalsPage() {
                                 </Card>
 
                                 {/* Closed Positions Table */}
-                                <Card className="dark:bg-slate-900 dark:border-slate-800">
+                                <Card className="glass-card-light overflow-hidden border-none">
                                     <CardHeader>
                                         <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-100">Closed Positions</CardTitle>
                                     </CardHeader>
                                     <CardContent className="p-0">
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-sm text-left">
-                                                <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 uppercase text-xs">
+                                                <thead className="bg-slate-50/50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 uppercase text-[10px] font-black border-b border-slate-100 dark:border-slate-800">
                                                     <tr>
-                                                        <th className="px-4 py-3">Symbol</th>
-                                                        <th className="px-4 py-3">Buy</th>
-                                                        <th className="px-4 py-3">Sell</th>
-                                                        <th className="px-4 py-3">Return</th>
-                                                        <th className="px-4 py-3">Start</th>
-                                                        <th className="px-4 py-3">End</th>
-                                                        <th className="px-4 py-3">Held</th>
-                                                        <th className="px-4 py-3">Strategy</th>
+                                                        <th className="px-4 py-4">Symbol</th>
+                                                        <th className="px-4 py-4">Buy</th>
+                                                        <th className="px-4 py-4">Sell</th>
+                                                        <th className="px-4 py-4">Return</th>
+                                                        <th className="px-4 py-4">Start</th>
+                                                        <th className="px-4 py-4">End</th>
+                                                        <th className="px-4 py-4">Held</th>
+                                                        <th className="px-4 py-4">Strategy</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/20 dark:bg-slate-950/40">
                                                     {(trackingData.closed_positions || []).map((pos, idx) => (
                                                         <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                                                             <td className="px-4 py-3 font-bold">{pos.symbol}</td>

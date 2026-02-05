@@ -326,7 +326,7 @@ function DashboardContent({
             >
                 {/* Top Navigation Bar */}
                 {!hideHeader && (
-                    <header className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-0 z-20 px-8 py-4 flex justify-between items-center shadow-sm dark:shadow-none">
+                    <header className="bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 sticky top-0 z-20 px-8 py-4 flex justify-between items-center shadow-sm dark:shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
                         {headerContent ? (
                             <div className="flex-1 mr-4">
                                 {headerContent}
@@ -428,8 +428,8 @@ function DashboardContent({
 
 export default function DashboardLayout(props: any) {
     return (
-        <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-gray-50">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
         </div>}>
             <DashboardContent {...props} />
         </Suspense>
