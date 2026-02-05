@@ -795,7 +795,7 @@ export default function SignalsPage() {
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <p className="text-sm font-medium text-blue-600 mb-0.5">Active Positions</p>
-                                                    <p className="text-3xl font-bold text-blue-700">{trackingData.summary.total_active}</p>
+                                                    <p className="text-3xl font-bold text-blue-700">{trackingData.summary?.total_active ?? 0}</p>
                                                     <p className="text-xs text-blue-600 mt-0.5">Awaiting SELL signal</p>
                                                 </div>
                                                 <div className="p-2 bg-blue-100 rounded-lg">
@@ -809,7 +809,7 @@ export default function SignalsPage() {
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <p className="text-sm font-medium text-purple-600 mb-0.5">Closed Positions</p>
-                                                    <p className="text-3xl font-bold text-purple-700">{trackingData.summary.total_closed}</p>
+                                                    <p className="text-3xl font-bold text-purple-700">{trackingData.summary?.total_closed ?? 0}</p>
                                                     <p className="text-xs text-purple-600 mt-0.5">Completed cycles</p>
                                                 </div>
                                                 <div className="p-2 bg-purple-100 rounded-lg">
@@ -819,26 +819,26 @@ export default function SignalsPage() {
                                         </CardContent>
                                     </Card>
                                     <Card className={cn("border bg-gradient-to-br to-white",
-                                        trackingData.summary.avg_return >= 0 ? "border-emerald-200 from-emerald-50" : "border-rose-200 from-rose-50"
+                                        (trackingData.summary?.avg_return ?? 0) >= 0 ? "border-emerald-200 from-emerald-50" : "border-rose-200 from-rose-50"
                                     )}>
                                         <CardContent className="p-3">
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <p className={cn("text-sm font-medium mb-0.5",
-                                                        trackingData.summary.avg_return >= 0 ? "text-emerald-600" : "text-rose-600"
+                                                        (trackingData.summary?.avg_return ?? 0) >= 0 ? "text-emerald-600" : "text-rose-600"
                                                     )}>Avg Return</p>
                                                     <p className={cn("text-3xl font-bold",
-                                                        trackingData.summary.avg_return >= 0 ? "text-emerald-700" : "text-rose-700"
-                                                    )}>{trackingData.summary.avg_return?.toFixed(2)}%</p>
+                                                        (trackingData.summary?.avg_return ?? 0) >= 0 ? "text-emerald-700" : "text-rose-700"
+                                                    )}>{trackingData.summary?.avg_return?.toFixed(2) ?? '0.00'}%</p>
                                                     <p className={cn("text-xs mt-0.5",
-                                                        trackingData.summary.avg_return >= 0 ? "text-emerald-600" : "text-rose-600"
+                                                        (trackingData.summary?.avg_return ?? 0) >= 0 ? "text-emerald-600" : "text-rose-600"
                                                     )}>Per trade</p>
                                                 </div>
                                                 <div className={cn("p-2 rounded-lg",
-                                                    trackingData.summary.avg_return >= 0 ? "bg-emerald-100" : "bg-rose-100"
+                                                    (trackingData.summary?.avg_return ?? 0) >= 0 ? "bg-emerald-100" : "bg-rose-100"
                                                 )}>
                                                     <TrendingUp className={cn("w-5 h-5",
-                                                        trackingData.summary.avg_return >= 0 ? "text-emerald-600" : "text-rose-600"
+                                                        (trackingData.summary?.avg_return ?? 0) >= 0 ? "text-emerald-600" : "text-rose-600"
                                                     )} />
                                                 </div>
                                             </div>
@@ -850,7 +850,7 @@ export default function SignalsPage() {
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <p className="text-sm font-medium text-slate-600 mb-0.5">Avg Holding Period</p>
-                                                    <p className="text-3xl font-bold text-slate-700">{trackingData.summary.avg_holding_period?.toFixed(1)}</p>
+                                                    <p className="text-3xl font-bold text-slate-700">{trackingData.summary?.avg_holding_period?.toFixed(1) ?? '0.0'}</p>
                                                     <p className="text-xs text-slate-600 mt-0.5">Days</p>
                                                 </div>
                                                 <div className="p-2 bg-slate-100 rounded-lg">

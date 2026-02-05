@@ -1104,11 +1104,11 @@ function AccumulationContent() {
                                                     [...favorites]
                                                         .sort((a, b) => {
                                                             const key = `change_${favPeriod.toLowerCase()}` as keyof BrokerFavorite;
-                                                            return (b[key] as number) - (a[key] as number);
+                                                            return ((b[key] as number) ?? 0) - ((a[key] as number) ?? 0);
                                                         })
                                                         .map((fav, idx) => {
                                                             const changeKey = `change_${favPeriod.toLowerCase()}` as keyof BrokerFavorite;
-                                                            const changeValue = fav[changeKey] as number;
+                                                            const changeValue = (fav[changeKey] as number) ?? 0;
 
                                                             return (
                                                                 <TableRow key={idx} className="hover:bg-blue-50/30 transition-colors group">
