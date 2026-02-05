@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Lock, Palette, Save, Camera, Phone, Type, Fingerprint } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import { useTheme } from "next-themes";
 
 interface UserSettings {
     id: number;
@@ -29,6 +30,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     const [user, setUser] = useState<UserSettings | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const { theme, setTheme } = useTheme();
 
     // File Upload Ref
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -337,13 +339,34 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                 <div className="space-y-6 bg-white p-8 rounded-2xl shadow-sm border border-slate-100/80">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <div className="font-bold text-slate-800">Theme Preference</div>
-                                            <div className="text-sm text-slate-500 mt-1">Select your preferred interface theme.</div>
+                                            <div className="font-bold text-slate-800 dark:text-slate-100">Theme Preference</div>
+                                            <div className="text-sm text-slate-500 dark:text-slate-400 mt-1">Select your preferred interface theme.</div>
                                         </div>
-                                        <div className="flex bg-slate-100 p-1 rounded-lg">
-                                            <Button variant="ghost" size="sm" className="h-8 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-white hover:shadow-sm">Dark</Button>
-                                            <Button variant="ghost" size="sm" className="h-8 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-white hover:shadow-sm">Light</Button>
-                                            <Button variant="ghost" size="sm" className="h-8 text-xs font-bold bg-white text-indigo-600 shadow-sm ring-1 ring-black/5">System</Button>
+                                        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setTheme("dark")}
+                                                className={`h-8 text-xs font-medium hover:shadow-sm ${theme === 'dark' ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5 dark:bg-slate-600 dark:text-indigo-400 dark:ring-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-white dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700'}`}
+                                            >
+                                                Dark
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setTheme("light")}
+                                                className={`h-8 text-xs font-medium hover:shadow-sm ${theme === 'light' ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5 dark:bg-slate-600 dark:text-indigo-400 dark:ring-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-white dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700'}`}
+                                            >
+                                                Light
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setTheme("system")}
+                                                className={`h-8 text-xs font-medium hover:shadow-sm ${theme === 'system' ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5 dark:bg-slate-600 dark:text-indigo-400 dark:ring-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-white dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700'}`}
+                                            >
+                                                System
+                                            </Button>
                                         </div>
                                     </div>
                                 </div>
