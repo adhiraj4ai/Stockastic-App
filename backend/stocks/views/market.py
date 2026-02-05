@@ -9,6 +9,7 @@ from ..serializers import (
     DailyStockPriceSerializer, DailyFloorsheetSerializer, StockFundamentalSerializer, 
     DividendSerializer, FinancialReportSerializer, CompanySerializer
 )
+from ..technical import get_technical_indicators
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -251,9 +252,15 @@ def stock_detail(request, ticker):
     except Company.DoesNotExist:
         company_data = None
 
+    technical_indicators = fundamental.technical_indicators if fundamental and fundamental.technical_indicators else []
+    if not technical_indicators:
+        # Calculate on the fly if missing from database
+        technical_indicators = get_technical_indicators(ticker)
+
     return Response({
         'company': company_data,
         'fundamental': _enrich_fundamental_data(fundamental_data, fundamental),
+        'technical_indicators': technical_indicators,
         'price': price_data
     })
 
