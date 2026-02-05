@@ -189,13 +189,13 @@ function DashboardContent({
 
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
-            {/* Sidebar (unchanged) */}
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex transition-colors duration-300">
+            {/* Sidebar */}
             <aside
-                className={`bg-white border-r border-gray-200 flex flex-col fixed h-full z-10 transition-all duration-300 ${isSidebarCollapsed ? 'w-20' : 'w-64'
+                className={`bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 flex flex-col fixed h-full z-10 transition-all duration-300 ${isSidebarCollapsed ? 'w-20' : 'w-64'
                     }`}
             >
-                <div className={`p-4 border-b border-gray-200 flex items-center justify-between ${isSidebarCollapsed ? 'flex-col gap-4' : ''}`}>
+                <div className={`p-4 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between ${isSidebarCollapsed ? 'flex-col gap-4' : ''}`}>
                     {!isSidebarCollapsed && (
                         <div className="w-full flex justify-center py-0">
                             <Link href="/home">
@@ -204,7 +204,7 @@ function DashboardContent({
                                     alt="Stockastic Logo"
                                     width={144}
                                     height={108}
-                                    className="object-contain"
+                                    className="object-contain dark:brightness-110"
                                     priority
                                 />
                             </Link>
@@ -212,13 +212,13 @@ function DashboardContent({
                     )}
                     <button
                         onClick={toggleSidebar}
-                        className={`p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors ${isSidebarCollapsed ? '' : ''}`}
+                        className={`p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors ${isSidebarCollapsed ? '' : ''}`}
                         title={isSidebarCollapsed ? "Expand" : "Collapse"}
                     >
                         {isSidebarCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
                     </button>
                 </div>
-                <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+                <nav className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar">
                     {filteredNavItems.map((item) => {
                         const hasSubItems = 'subItems' in item && item.subItems && item.subItems.length > 0;
                         const isExpanded = expandedMenus.includes(item.name);
@@ -232,49 +232,49 @@ function DashboardContent({
                                 {hasSubItems ? (
                                     <button
                                         onClick={() => toggleMenu(item.name)}
-                                        className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900 ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}
+                                        className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-200 ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}
                                         title={isSidebarCollapsed ? item.name : ''}
                                     >
                                         <div className="flex items-center gap-3">
                                             <item.icon size={18} className={
-                                                item.name === 'Home' ? 'text-blue-500' :
-                                                    item.name === 'Chat' ? 'text-purple-500' :
-                                                        item.name === 'Stocks' ? 'text-green-500' :
-                                                            item.name === 'Finfolio' ? 'text-emerald-500' :
-                                                                item.name === 'Accumulation' ? 'text-orange-500' :
-                                                                    item.name === 'Financials' ? 'text-cyan-500' :
-                                                                        item.name === 'Strategies' ? 'text-yellow-500' :
-                                                                            item.name === 'Forecasts' ? 'text-pink-500' :
-                                                                                item.name === 'Recommendations' ? 'text-red-500' :
-                                                                                    item.name === 'Pipeline' ? 'text-gray-500' :
-                                                                                        'text-gray-400'
+                                                item.name === 'Home' ? 'text-blue-500 dark:text-blue-400' :
+                                                    item.name === 'Chat' ? 'text-purple-500 dark:text-purple-400' :
+                                                        item.name === 'Stocks' ? 'text-green-500 dark:text-green-400' :
+                                                            item.name === 'Finfolio' ? 'text-emerald-500 dark:text-emerald-400' :
+                                                                item.name === 'Accumulation' ? 'text-orange-500 dark:text-orange-400' :
+                                                                    item.name === 'Financials' ? 'text-cyan-500 dark:text-cyan-400' :
+                                                                        item.name === 'Strategies' ? 'text-yellow-500 dark:text-yellow-400' :
+                                                                            item.name === 'Forecasts' ? 'text-pink-500 dark:text-pink-400' :
+                                                                                item.name === 'Recommendations' ? 'text-red-500 dark:text-red-400' :
+                                                                                    item.name === 'Pipeline' ? 'text-gray-500 dark:text-slate-400' :
+                                                                                        'text-gray-400 dark:text-slate-500'
                                             } />
                                             {!isSidebarCollapsed && <span className="text-sm font-medium whitespace-nowrap">{item.name}</span>}
                                         </div>
                                         {!isSidebarCollapsed && (
-                                            isExpanded ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />
+                                            isExpanded ? <ChevronDown size={14} className="text-gray-400 dark:text-slate-500" /> : <ChevronRight size={14} className="text-gray-400 dark:text-slate-500" />
                                         )}
                                     </button>
                                 ) : (
                                     <Link
                                         href={('href' in item ? item.href : '#') as string}
                                         className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${isActive
-                                            ? 'bg-gray-900 text-white shadow-md'
-                                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                            ? 'bg-gray-900 dark:bg-indigo-600 text-white shadow-md'
+                                            : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-200'
                                             } ${isSidebarCollapsed ? 'justify-center' : ''}`}
                                         title={isSidebarCollapsed ? item.name : ''}
                                     >
                                         <item.icon size={18} className={
                                             isActive ? 'text-white' :
-                                                item.name === 'Home' ? 'text-blue-500' :
-                                                    item.name === 'Chat' ? 'text-purple-500' :
-                                                        item.name === 'Stocks' ? 'text-green-500' :
-                                                            item.name === 'Financials' ? 'text-cyan-500' :
-                                                                item.name === 'Strategies' ? 'text-yellow-500' :
-                                                                    item.name === 'Forecasts' ? 'text-pink-500' :
-                                                                        item.name === 'Recommendations' ? 'text-red-500' :
-                                                                            item.name === 'Pipeline' ? 'text-gray-500' :
-                                                                                'text-gray-400'
+                                                item.name === 'Home' ? 'text-blue-500 dark:text-blue-400' :
+                                                    item.name === 'Chat' ? 'text-purple-500 dark:text-purple-400' :
+                                                        item.name === 'Stocks' ? 'text-green-500 dark:text-green-400' :
+                                                            item.name === 'Financials' ? 'text-cyan-500 dark:text-cyan-400' :
+                                                                item.name === 'Strategies' ? 'text-yellow-500 dark:text-yellow-400' :
+                                                                    item.name === 'Forecasts' ? 'text-pink-500 dark:text-pink-400' :
+                                                                        item.name === 'Recommendations' ? 'text-red-500 dark:text-red-400' :
+                                                                            item.name === 'Pipeline' ? 'text-gray-500 dark:text-slate-400' :
+                                                                                'text-gray-400 dark:text-slate-500'
                                         } />
                                         {!isSidebarCollapsed && <span className="text-sm font-medium whitespace-nowrap">{item.name}</span>}
                                     </Link>
@@ -282,7 +282,7 @@ function DashboardContent({
 
                                 {/* Render Sub-items */}
                                 {hasSubItems && isExpanded && !isSidebarCollapsed && (
-                                    <div className="ml-9 space-y-1 animate-in slide-in-from-left-2 duration-200">
+                                    <div className="ml-9 space-y-1 animate-in slide-in-from-left-2 duration-200 border-l border-gray-100 dark:border-slate-800 pl-1">
                                         {(item as any).subItems.map((subItem: any) => {
                                             const subPath = subItem.href.split('?')[0];
                                             const subTab = new URLSearchParams(subItem.href.split('?')[1]).get('tab');
@@ -296,11 +296,11 @@ function DashboardContent({
                                                     key={subItem.name}
                                                     href={subItem.href}
                                                     className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${isActiveLink
-                                                        ? 'bg-blue-50 text-blue-700'
-                                                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                                                        ? 'bg-blue-50 dark:bg-indigo-900/40 text-blue-700 dark:text-indigo-300'
+                                                        : 'text-gray-500 dark:text-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-300'
                                                         }`}
                                                 >
-                                                    {subItem.icon && <subItem.icon size={14} className={isActiveLink ? 'text-blue-600' : 'text-gray-400'} />}
+                                                    {subItem.icon && <subItem.icon size={14} className={isActiveLink ? 'text-blue-600 dark:text-indigo-400' : 'text-gray-400 dark:text-slate-600'} />}
                                                     {subItem.name}
                                                 </Link>
                                             );
@@ -311,7 +311,7 @@ function DashboardContent({
                         );
                     })}
                 </nav>
-                <div className="p-3 border-t border-gray-200">
+                <div className="p-3 border-t border-gray-200 dark:border-slate-800">
                     <div className={`flex flex-col gap-1 ${isSidebarCollapsed ? 'items-center' : ''}`}>
 
 
@@ -326,7 +326,7 @@ function DashboardContent({
             >
                 {/* Top Navigation Bar */}
                 {!hideHeader && (
-                    <header className="bg-white border-b border-gray-200 sticky top-0 z-20 px-8 py-4 flex justify-between items-center shadow-sm">
+                    <header className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-0 z-20 px-8 py-4 flex justify-between items-center shadow-sm dark:shadow-none">
                         {headerContent ? (
                             <div className="flex-1 mr-4">
                                 {headerContent}
@@ -336,7 +336,7 @@ function DashboardContent({
                                 {showBack && (
                                     <button
                                         onClick={() => router.back()}
-                                        className="p-1.5 rounded-full hover:bg-gray-100 text-gray-600 transition-colors"
+                                        className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-400 transition-colors"
                                         title="Go Back"
                                     >
                                         <ArrowLeft size={20} />
@@ -344,18 +344,18 @@ function DashboardContent({
                                 )}
                                 {pathname === '/signals' ? (
                                     <div className="flex flex-col min-w-0">
-                                        <h2 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                                        <h2 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
                                             Strategy Signals Dashboard
                                         </h2>
-                                        <p className="text-xs text-slate-500">Real-time trading signals from all active strategies</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Real-time trading signals from all active strategies</p>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col min-w-0">
-                                        <h2 className="text-xl font-semibold text-gray-800 capitalize truncate">
+                                        <h2 className="text-xl font-semibold text-gray-800 dark:text-slate-100 capitalize truncate">
                                             {title || (pathname.includes('/stock/') ? 'Stock Details' : pathname.split('/').pop())}
                                         </h2>
                                         {subtitle && (
-                                            <p className="text-xs text-gray-500 truncate">{subtitle}</p>
+                                            <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{subtitle}</p>
                                         )}
                                     </div>
                                 )}
@@ -378,20 +378,20 @@ function DashboardContent({
                             <AlertsDropdown />
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <button className="flex items-center gap-3 p-1.5 pr-2 rounded-full border border-slate-200 hover:border-blue-200 hover:bg-white hover:shadow-sm transition-all group outline-none">
-                                        <div className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shadow-sm group-hover:scale-105 transition-transform uppercase">
+                                    <button className="flex items-center gap-3 p-1.5 pr-2 rounded-full border border-slate-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-indigo-500/50 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all group outline-none">
+                                        <div className="h-9 w-9 rounded-full bg-blue-100 dark:bg-indigo-900/50 flex items-center justify-center text-blue-600 dark:text-indigo-400 font-bold border border-blue-200 dark:border-indigo-800 shadow-sm group-hover:scale-105 transition-transform uppercase">
                                             {(currentUser?.username === 'admin' ? 'J' : currentUser?.username === 'ashmi' ? 'A' : 'G')}
                                         </div>
                                         <div className="flex flex-col items-start mr-1">
-                                            <span className="text-xs font-bold text-gray-700 group-hover:text-blue-700 transition-colors">
+                                            <span className="text-xs font-bold text-gray-700 dark:text-slate-200 group-hover:text-blue-700 dark:group-hover:text-indigo-400 transition-colors">
                                                 Hi, {currentUser?.username === 'admin' ? 'Jugal' : currentUser?.username === 'ashmi' ? 'Ashmi' : 'Guest'}
                                             </span>
-                                            <span className="text-[9px] text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 px-1.5 rounded-full mt-0.5">
+                                            <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 rounded-full mt-0.5">
                                                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                                                 Online
                                             </span>
                                         </div>
-                                        <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600" />
+                                        <ChevronDown size={14} className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300" />
                                     </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-56">
@@ -404,7 +404,7 @@ function DashboardContent({
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
                                         onClick={handleLogout}
-                                        className="cursor-pointer gap-2 text-red-600 focus:text-red-600 focus:bg-red-50"
+                                        className="cursor-pointer gap-2 text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
                                     >
                                         <LogOut size={16} />
                                         <span>Logout</span>
