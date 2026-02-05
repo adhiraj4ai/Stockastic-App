@@ -76,6 +76,7 @@ interface AggressiveTrader {
     sell_qty: number;
     buy_rate: number;
     sell_rate: number;
+    net_amt?: number; // Added for market-wide analysis
 }
 
 
@@ -132,7 +133,7 @@ function AccumulationContent() {
     const [trends, setTrends] = useState<BrokerTrend[]>([]);
     const [loading, setLoading] = useState(true);
     const [trendsLoading, setTrendsLoading] = useState(true);
-    const [range, setRange] = useState('1D');
+    const [range, setRange] = useState('3M');
     const [sector, setSector] = useState('All');
     const [sectors, setSectors] = useState<string[]>([]);
 
@@ -172,9 +173,15 @@ function AccumulationContent() {
     // Set default range based on tab
     useEffect(() => {
         if (activeTab === 'aggressive-trader') {
-            setRange('1W');
+            setRange('1D'); // Keep 1D default for trader view
+            // Default to 'All' symbol if not set
+            if (!selectedGraphSymbol) setSelectedGraphSymbol('All');
         } else if (activeTab === 'accumulators') {
             setRange('1Y');
+        } else if (activeTab === 'aggressive') {
+            setRange('1D');
+        } else if (activeTab === 'overview') {
+            setRange('3M');
         }
     }, [activeTab]);
 
@@ -472,8 +479,13 @@ function AccumulationContent() {
         const leaders = type === 'buy' ? buyLeaders : sellLeaders;
         if (!leaders.length) return {};
 
+        const isAll = selectedGraphSymbol === 'All';
+        const valueKey = isAll ? 'net_amt' : 'net_qty';
+
         const color = type === 'buy' ? '#16a34a' : '#dc2626'; // Green vs Red
-        const title = type === 'buy' ? 'Top Aggressive Buyers (Net Qty)' : 'Top Aggressive Sellers (Net Qty)';
+        const title = type === 'buy'
+            ? `Top Aggressive Buyers (${isAll ? 'Net Amt' : 'Net Qty'})`
+            : `Top Aggressive Sellers (${isAll ? 'Net Amt' : 'Net Qty'})`;
 
         return {
             title: { text: title, left: 'center', textStyle: { fontSize: 14, color: '#374151' } },
@@ -490,9 +502,9 @@ function AccumulationContent() {
                     return `
                         <div class="font-bold mb-1 border-b pb-1">Broker ${data.broker}</div>
                         <div class="flex justify-between gap-4 py-1">
-                            <span class="text-gray-500">Net Qty:</span>
-                            <span class="font-mono font-bold ${type === 'buy' ? 'text-green-600' : 'text-red-600'}">
-                                ${data.net_qty > 0 ? '+' : ''}${data.net_qty.toLocaleString()}
+                            <span className="text-gray-500">${isAll ? 'Net Amt:' : 'Net Qty:'}</span>
+                            <span className="font-mono font-bold ${type === 'buy' ? 'text-green-600' : 'text-red-600'}">
+                                ${isAll ? 'Rs. ' : ''}${(((data as any)[valueKey] ?? 0) > 0 ? '+' : '') + ((data as any)[valueKey] ?? 0).toLocaleString()}
                             </span>
                         </div>
                         <div class="flex justify-between gap-4 py-1">
@@ -529,7 +541,7 @@ function AccumulationContent() {
                 name: 'Net Qty',
                 type: 'bar',
                 barWidth: '60%',
-                data: leaders.map(v => Math.abs(v.net_qty)), // Show magnitude
+                data: leaders.map(v => Math.abs((v as any)[valueKey] ?? 0)), // Show magnitude
                 itemStyle: {
                     color: color,
                     borderRadius: [0, 4, 4, 0]
@@ -537,7 +549,12 @@ function AccumulationContent() {
                 label: {
                     show: true,
                     position: 'right',
-                    formatter: (p: any) => leaders[p.dataIndex].net_qty.toLocaleString(), // Show real value string
+                    formatter: (p: any) => {
+                        const val = (leaders[p.dataIndex] as any)[valueKey] ?? 0;
+                        return isAll
+                            ? `Rs. ${(Math.abs(val) / 10000000).toFixed(2)} Cr`
+                            : val.toLocaleString();
+                    }, // Show real value string
                     fontSize: 10,
                     fontWeight: 'bold',
                     color: color
@@ -756,7 +773,7 @@ function AccumulationContent() {
                             <div className="flex flex-wrap items-center gap-3">
                                 <span className="text-[10px] font-black text-gray-400 uppercase px-2">Analysis Range</span>
                                 <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1 md:pb-0">
-                                    {timeRanges.filter(t => ['1W', '2W', '1M', '3M'].includes(t.value)).map((t) => (
+                                    {timeRanges.filter(t => ['1D', '1W', '2W', '1M', '3M'].includes(t.value)).map((t) => (
                                         <Button
                                             key={t.value}
                                             onClick={() => setRange(t.value)}
@@ -1221,7 +1238,7 @@ function AccumulationContent() {
                                 <span className="text-[10px] font-black text-gray-400 uppercase px-2">Analysis Range</span>
                                 <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1 md:pb-0">
                                     {timeRanges
-                                        .filter(t => ['1W', '2W', '1M', '3M'].includes(t.value))
+                                        .filter(t => ['1D', '1W', '2W', '1M', '3M'].includes(t.value))
                                         .map((t) => (
                                             <Button
                                                 key={t.value}

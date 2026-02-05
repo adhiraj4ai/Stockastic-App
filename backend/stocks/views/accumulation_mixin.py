@@ -240,39 +240,88 @@ class AccumulationMixin(viewsets.ViewSet):
 
     @action(detail=False, methods=['get'])
     def broker_trends(self, request):
+        # robust implementation using floorsheet aggregation for trends
+        # and accumulation snapshot for total position
         query = """
-        WITH trend_data AS (
+        WITH valid_dates AS (
+            SELECT transaction_date 
+            FROM daily_floorsheet 
+            GROUP BY transaction_date 
+            HAVING COUNT(*) > 100 
+            ORDER BY transaction_date DESC 
+            LIMIT 51
+        ),
+        date_milestones AS (
             SELECT 
-                ca.*,
-                ca.cumulative_net - LAG(ca.cumulative_net, 5) OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date) AS net_5d,
-                ca.cumulative_net - LAG(ca.cumulative_net, 10) OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date) AS net_10d,
-                ca.cumulative_net - LAG(ca.cumulative_net, 20) OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date) AS net_20d,
-                ca.cumulative_net - LAG(ca.cumulative_net, 50) OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date) AS net_50d,
-                MAX(ca.transaction_date) FILTER (WHERE ca.transaction_date IN (
-                    SELECT transaction_date FROM daily_cumulative_accumulation 
-                    GROUP BY transaction_date HAVING COUNT(*) > 100
-                )) OVER () AS latest_date
-            FROM daily_cumulative_accumulation ca
-            INNER JOIN companies c ON ca.symbol = c.symbol
-            WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
-            AND c.status = 'A'
-            AND c."sectorName" != 'Unknown' AND c."sectorName" IS NOT NULL
+                (SELECT transaction_date FROM valid_dates LIMIT 1) as latest_date,
+                (SELECT transaction_date FROM valid_dates OFFSET 5 LIMIT 1) as date_5d,
+                (SELECT transaction_date FROM valid_dates OFFSET 10 LIMIT 1) as date_10d,
+                (SELECT transaction_date FROM valid_dates OFFSET 20 LIMIT 1) as date_20d,
+                (SELECT transaction_date FROM valid_dates OFFSET 50 LIMIT 1) as date_50d
+        ),
+        floorsheet_net AS (
+            SELECT 
+                symbol, 
+                buyer_id as broker, 
+                transaction_quantity as qty, 
+                transaction_date
+            FROM daily_floorsheet
+            WHERE transaction_date > (SELECT date_50d FROM date_milestones)
+            UNION ALL
+            SELECT 
+                symbol, 
+                seller_id as broker, 
+                -transaction_quantity as qty, 
+                transaction_date
+            FROM daily_floorsheet
+            WHERE transaction_date > (SELECT date_50d FROM date_milestones)
+        ),
+        trend_stats AS (
+            SELECT 
+                fn.symbol, 
+                fn.broker,
+                SUM(CASE WHEN fn.transaction_date > dm.date_5d THEN fn.qty ELSE 0 END) as net_5d,
+                SUM(CASE WHEN fn.transaction_date > dm.date_10d THEN fn.qty ELSE 0 END) as net_10d,
+                SUM(CASE WHEN fn.transaction_date > dm.date_20d THEN fn.qty ELSE 0 END) as net_20d,
+                SUM(CASE WHEN fn.transaction_date > dm.date_50d THEN fn.qty ELSE 0 END) as net_50d
+            FROM floorsheet_net fn, date_milestones dm
+            GROUP BY fn.symbol, fn.broker
+        ),
+        latest_accumulation AS (
+            SELECT DISTINCT ON (symbol, entity_id)
+                symbol, entity_id, cumulative_net, cumulative_buy, cumulative_buy_amount
+            FROM daily_cumulative_accumulation
+            ORDER BY symbol, entity_id, transaction_date DESC
         )
         SELECT 
-            td.symbol, td.entity_id as broker, td.cumulative_net,
-            ROUND(td.cumulative_buy_amount / NULLIF(td.cumulative_buy, 0), 2) as wac,
-            CASE WHEN td.net_5d > 0 THEN 'Increasing' WHEN td.net_5d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_5d,
-            ROUND(ABS(COALESCE(td.net_5d, 0)) / NULLIF(ABS(td.cumulative_net), 1) * 100, 2) AS change_5d,
-            CASE WHEN td.net_10d > 0 THEN 'Increasing' WHEN td.net_10d < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_10d,
+            la.symbol, la.entity_id as broker, la.cumulative_net,
+            ROUND(la.cumulative_buy_amount / NULLIF(la.cumulative_buy, 0), 2) as wac,
+            CASE WHEN COALESCE(ts.net_5d, 0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_5d, 0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_5d,
+            ROUND(ABS(COALESCE(ts.net_5d, 0)) / NULLIF(ABS(la.cumulative_net), 1) * 100, 2) AS change_5d,
+            
+            CASE WHEN COALESCE(ts.net_10d, 0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_10d, 0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_10d,
+            ROUND(ABS(COALESCE(ts.net_10d, 0)) / NULLIF(ABS(la.cumulative_net), 1) * 100, 2) AS change_10d,
+
+            CASE WHEN COALESCE(ts.net_20d, 0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_20d, 0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_20d,
+            ROUND(ABS(COALESCE(ts.net_20d, 0)) / NULLIF(ABS(la.cumulative_net), 1) * 100, 2) AS change_20d,
+
+            CASE WHEN COALESCE(ts.net_50d, 0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_50d, 0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_50d,
+            ROUND(ABS(COALESCE(ts.net_50d, 0)) / NULLIF(ABS(la.cumulative_net), 1) * 100, 2) AS change_50d,
+            
             dsp.close as ltp
-        FROM trend_data td
+        FROM latest_accumulation la
+        LEFT JOIN trend_stats ts ON la.symbol = ts.symbol AND la.entity_id = CAST(ts.broker AS VARCHAR)
+        INNER JOIN companies c ON la.symbol = c.symbol
         LEFT JOIN (
             SELECT DISTINCT ON (symbol) symbol, close 
             FROM daily_stock_price ORDER BY symbol, transaction_date DESC
-        ) dsp ON td.symbol = dsp.symbol
-        WHERE td.transaction_date = td.latest_date
-        AND td.cumulative_net > 250000
-        ORDER BY td.cumulative_net DESC;
+        ) dsp ON la.symbol = dsp.symbol
+        WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
+        AND c.status = 'A'
+        AND c."sectorName" != 'Unknown' AND c."sectorName" IS NOT NULL
+        AND la.cumulative_net > 250000
+        ORDER BY la.cumulative_net DESC
+        LIMIT 200;
         """
         with connections['default'].cursor() as cursor:
             cursor.execute(query)
@@ -329,84 +378,116 @@ class AccumulationMixin(viewsets.ViewSet):
         """
         with connections['default'].cursor() as cursor:
             cursor.execute(query, [broker, broker, broker])
-            columns = [col[0] for col in cursor.description]
             results = [dict(zip(columns, row)) for row in cursor.fetchall()]
         return Response(results)
 
     @action(detail=False, methods=['get'])
     def brokers_graph(self, request):
         symbol = request.query_params.get('symbol')
+        
         time_range = request.query_params.get('range', '1Y')
         if not symbol:
             return Response({'error': 'Symbol is required'}, status=400)
+        
+        is_all = symbol == 'All'
             
         from django.db.models import Count
         max_date_res = DailyStockPrice.objects.values('date').annotate(cnt=Count('date')).filter(cnt__gt=100).order_by('-date').first()
         today = max_date_res['date'] if max_date_res else (DailyStockPrice.objects.aggregate(Max('date'))['date__max'] or timezone.now().date())
-        range_map = {'1W': 7, '1M': 30, '1Y': 365, 'ALL': 3650}
+        range_map = {'1D': 1, '1W': 7, '1M': 30, '1Y': 365, 'ALL': 3650}
         days = range_map.get(time_range, 365)
         start_date = today - timedelta(days=days)
         
-        with connections['default'].cursor() as cursor:
-            cursor.execute("""
-                SELECT entity_id FROM daily_cumulative_accumulation 
-                WHERE symbol = %s AND transaction_date = (
-                    SELECT transaction_date FROM daily_cumulative_accumulation 
-                    GROUP BY transaction_date HAVING COUNT(*) > 100 
-                    ORDER BY transaction_date DESC LIMIT 1
-                )
-                ORDER BY cumulative_net DESC LIMIT 5
-            """, [symbol])
-            top_brokers = [row[0] for row in cursor.fetchall()]
-            
-            if not top_brokers: 
-                return Response({
-                    'data': [], 
-                    'brokers': [],
-                    'buy_leaders': [],
-                    'sell_leaders': []
-                })
-            
-            placeholders = ', '.join(['%s'] * len(top_brokers))
-            query = f"SELECT transaction_date, entity_id, cumulative_net FROM daily_cumulative_accumulation WHERE symbol = %s AND entity_id IN ({placeholders}) AND transaction_date >= %s"
-            cursor.execute(query, [symbol] + top_brokers + [start_date])
-            rows = cursor.fetchall()
+        if not is_all:
+            with connections['default'].cursor() as cursor:
+                cursor.execute("""
+                    SELECT entity_id FROM daily_cumulative_accumulation 
+                    WHERE symbol = %s AND transaction_date = (
+                        SELECT transaction_date FROM daily_cumulative_accumulation 
+                        GROUP BY transaction_date HAVING COUNT(*) > 100 
+                        ORDER BY transaction_date DESC LIMIT 1
+                    )
+                    ORDER BY cumulative_net DESC LIMIT 5
+                """, [symbol])
+                top_brokers = [row[0] for row in cursor.fetchall()]
+                
+                if not top_brokers: 
+                    return Response({
+                        'data': [], 
+                        'brokers': [],
+                        'buy_leaders': [],
+                        'sell_leaders': []
+                    })
+                
+                placeholders = ', '.join(['%s'] * len(top_brokers))
+                query = f"SELECT transaction_date, entity_id, cumulative_net FROM daily_cumulative_accumulation WHERE symbol = %s AND entity_id IN ({placeholders}) AND transaction_date >= %s"
+                cursor.execute(query, [symbol] + top_brokers + [start_date])
+                rows = cursor.fetchall()
 
-        # Proccess into Recharts format (Simplified for now - can enhance later)
-        # We need to pivot data: date, broker1, broker2...
-        data_map = {}
-        for row in rows:
-            date_str = row[0].strftime('%Y-%m-%d')
-            broker, net = row[1], row[2]
-            if date_str not in data_map: data_map[date_str] = {'date': date_str}
-            data_map[date_str][broker] = net
-            
-        sorted_data = sorted(list(data_map.values()), key=lambda x: x['date'])
+            # Proccess into Recharts format (Simplified for now - can enhance later)
+            # We need to pivot data: date, broker1, broker2...
+            data_map = {}
+            for row in rows:
+                date_str = row[0].strftime('%Y-%m-%d')
+                broker, net = row[1], row[2]
+                if date_str not in data_map: data_map[date_str] = {'date': date_str}
+                data_map[date_str][broker] = net
+                
+            sorted_data = sorted(list(data_map.values()), key=lambda x: x['date'])
+        else:
+            top_brokers = []
+            sorted_data = []
 
         # Calculate Buy/Sell Leaders for the period
         with connections['default'].cursor() as cursor:
-            fs_query = f"""
-            SELECT 
-                buyer_id as broker, 
-                SUM(transaction_quantity) as buy_qty,
-                SUM(transaction_quantity * transaction_rate) as buy_amt
-            FROM daily_floorsheet 
-            WHERE symbol = %s AND transaction_date >= %s
-            GROUP BY buyer_id
-            """
-            cursor.execute(fs_query, [symbol, start_date])
+            if is_all:
+                fs_query = f"""
+                SELECT 
+                    buyer_id as broker, 
+                    SUM(transaction_quantity) as buy_qty,
+                    SUM(transaction_quantity * transaction_rate) as buy_amt
+                FROM daily_floorsheet 
+                WHERE transaction_date >= %s
+                GROUP BY buyer_id
+                """
+                cursor.execute(fs_query, [start_date])
+            else:
+                fs_query = f"""
+                SELECT 
+                    buyer_id as broker, 
+                    SUM(transaction_quantity) as buy_qty,
+                    SUM(transaction_quantity * transaction_rate) as buy_amt
+                FROM daily_floorsheet 
+                WHERE symbol = %s AND transaction_date >= %s
+                GROUP BY buyer_id
+                """
+                cursor.execute(fs_query, [symbol, start_date])
+                
             buyers = {row[0]: {'buy_qty': row[1], 'buy_amt': row[2]} for row in cursor.fetchall()}
 
-            fs_query_sell = f"""
-            SELECT 
-                seller_id as broker, 
-                SUM(transaction_quantity) as sell_qty,
-                SUM(transaction_quantity * transaction_rate) as sell_amt
-            FROM daily_floorsheet 
-            WHERE symbol = %s AND transaction_date >= %s
-            GROUP BY seller_id
-            """
-            cursor.execute(fs_query_sell, [symbol, start_date])
+            if is_all:
+                fs_query_sell = f"""
+                SELECT 
+                    seller_id as broker, 
+                    SUM(transaction_quantity) as sell_qty,
+                    SUM(transaction_quantity * transaction_rate) as sell_amt
+                FROM daily_floorsheet 
+                WHERE transaction_date >= %s
+                GROUP BY seller_id
+                """
+                cursor.execute(fs_query_sell, [start_date])
+            else:
+                fs_query_sell = f"""
+                SELECT 
+                    seller_id as broker, 
+                    SUM(transaction_quantity) as sell_qty,
+                    SUM(transaction_quantity * transaction_rate) as sell_amt
+                FROM daily_floorsheet 
+                WHERE symbol = %s AND transaction_date >= %s
+                GROUP BY seller_id
+                """
+                cursor.execute(fs_query_sell, [symbol, start_date])
+                
             sellers = {row[0]: {'sell_qty': row[1], 'sell_amt': row[2]} for row in cursor.fetchall()}
 
         # Combine and rank
@@ -416,18 +497,23 @@ class AccumulationMixin(viewsets.ViewSet):
            b_data = buyers.get(b, {'buy_qty': 0, 'buy_amt': 0})
            s_data = sellers.get(b, {'sell_qty': 0, 'sell_amt': 0})
            net_qty = b_data['buy_qty'] - s_data['sell_qty']
+           net_amt = b_data['buy_amt'] - s_data['sell_amt']
            
            leader_stats.append({
                'broker': b,
                'net_qty': net_qty,
+               'net_amt': net_amt,
                'buy_qty': b_data['buy_qty'],
                'sell_qty': s_data['sell_qty'],
                'buy_rate': round(b_data['buy_amt'] / b_data['buy_qty'], 2) if b_data['buy_qty'] > 0 else 0,
                'sell_rate': round(s_data['sell_amt'] / s_data['sell_qty'], 2) if s_data['sell_qty'] > 0 else 0
            })
            
-        buy_leaders = sorted([l for l in leader_stats if l['net_qty'] > 0], key=lambda x: x['net_qty'], reverse=True)[:10]
-        sell_leaders = sorted([l for l in leader_stats if l['net_qty'] < 0], key=lambda x: x['net_qty'])[:10]
+        # If is_all, rank by net_amt, else net_qty
+        sort_key = 'net_amt' if is_all else 'net_qty'
+        
+        buy_leaders = sorted([l for l in leader_stats if l[sort_key] > 0], key=lambda x: x[sort_key], reverse=True)[:10]
+        sell_leaders = sorted([l for l in leader_stats if l[sort_key] < 0], key=lambda x: x[sort_key])[:10]
 
         return Response({
             'data': sorted_data, 
