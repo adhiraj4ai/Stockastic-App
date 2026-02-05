@@ -9,7 +9,7 @@ export const FundamentalBenchmarks: React.FC<FundamentalBenchmarksProps> = ({ fu
     if (!fundamental) return null;
 
     return (
-        <div className="glass-card-light dark:bg-slate-900 rounded-3xl p-8 border-slate-200 dark:border-slate-800 bg-white border shadow-sm">
+        <div className="glass-card-light rounded-3xl p-8">
             <div className="flex items-center gap-3 mb-10">
                 <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
                     <BarChart2 size={18} />

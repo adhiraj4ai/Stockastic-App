@@ -34,7 +34,7 @@ export function TerminalHeader({
 
     return (
         <div className={cn(
-            "sticky top-0 z-50 border-b shadow-sm bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-slate-200/50 dark:border-slate-800/50 py-3",
+            "sticky top-0 z-50 border-b glass-card-light dark:bg-slate-900/95 rounded-none backdrop-blur-md border-slate-200/50 dark:border-slate-800/50 py-3",
         )}>
             <div className="max-w-[1700px] mx-auto px-8 flex items-center justify-center gap-6">
                 {/* Unified Identity & Price Area */}

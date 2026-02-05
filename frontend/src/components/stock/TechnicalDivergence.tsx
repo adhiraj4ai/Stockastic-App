@@ -8,7 +8,7 @@ interface TechnicalDivergenceProps {
 
 export const TechnicalDivergence: React.FC<TechnicalDivergenceProps> = ({ technicalIndicators }) => {
     return (
-        <div className="glass-card-light dark:bg-slate-900 rounded-3xl p-8 border-slate-200 dark:border-slate-800 bg-white border shadow-sm">
+        <div className="glass-card-light rounded-3xl p-8">
             <div className="flex items-center gap-3 mb-10">
                 <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
                     <TrendingUp size={18} />
@@ -47,7 +47,7 @@ export const TechnicalDivergence: React.FC<TechnicalDivergenceProps> = ({ techni
                                                 <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[9px]">Sector Range (Low - High)</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/50 dark:bg-slate-900/50">
                                             {indicators.length > 0 ? (
                                                 indicators.map((indicator: any, i: number) => (
                                                     <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">

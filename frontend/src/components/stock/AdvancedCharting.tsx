@@ -181,8 +181,8 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
     };
 
     return (
-        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-row items-center justify-between bg-slate-50/30 dark:bg-slate-800/20">
+        <Card className="glass-card-light rounded-3xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-row items-center justify-between bg-white/50 dark:bg-slate-900/50">
                 <div className="space-y-1">
                     <CardTitle className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2">
                         <BarChart3 size={14} className="text-blue-500" />
@@ -219,7 +219,7 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
                 </div>
                 {/* Integrated Stats Grid */}
                 {fundamental && (
-                    <div className="px-6 py-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/10 dark:bg-slate-800/10">
+                    <div className="px-6 py-6 border-t border-slate-100 dark:border-slate-800 bg-white/30 dark:bg-slate-900/10">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-x-12 gap-y-6">
                             {stats.map((item, idx) => (
                                 <div key={idx} className="space-y-1">

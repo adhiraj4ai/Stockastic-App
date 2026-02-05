@@ -44,7 +44,7 @@ export function IntelligenceGlass({
     const verdict = getVerdict();
 
     return (
-        <div className="glass-card-light dark:bg-slate-900 rounded-2xl overflow-hidden p-6 space-y-6 h-full relative group dark:border-slate-800">
+        <div className="glass-card-light rounded-2xl overflow-hidden p-6 space-y-6 h-full relative group">
             <div className="absolute top-0 right-0 p-4 opacity-50">
                 <Zap size={20} className="text-slate-200 group-hover:text-amber-500/40 transition-colors" />
             </div>

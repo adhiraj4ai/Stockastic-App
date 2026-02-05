@@ -262,7 +262,7 @@
 }
 
 .glass-card-light {
-  @apply backdrop-blur-md bg-white/80 border border-slate-200/50 hover:border-blue-200/50 transition-all duration-300 shadow-sm hover:shadow-md;
+  @apply backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border border-slate-200/50 dark:border-slate-800/50 hover:border-blue-200/50 dark:hover:border-blue-500/30 transition-all duration-300 shadow-sm hover:shadow-md;
 }
 
 .neon-glow-emerald {
@@ -292,4 +292,9 @@
   background-image: 
     radial-gradient(circle at 1px 1px, rgba(0,0,0,0.03) 1px, transparent 0);
   background-size: 24px 24px;
+}
+
+.dark .terminal-grid-light {
+  background-image: 
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,0.02) 1px, transparent 0);
 }

@@ -39,10 +39,10 @@ export function TechnicalPulse({
     const mStyle = getMacdStyle();
 
     return (
-        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-            <div className={cn("px-6 py-4 border-b dark:border-slate-800 flex items-center justify-between", mStyle.bg, mStyle.border)}>
+        <Card className="glass-card-light rounded-3xl overflow-hidden">
+            <div className={cn("px-6 py-4 border-b border-white/10 dark:border-slate-800/50 flex items-center justify-between", mStyle.bg, mStyle.border)}>
                 <div className="flex items-center gap-3">
-                    <div className={cn("p-2 rounded-lg bg-white dark:bg-slate-900 shadow-sm", mStyle.color)}>
+                    <div className={cn("p-2 rounded-lg bg-white/80 dark:bg-slate-900/80 shadow-sm", mStyle.color)}>
                         <mStyle.icon size={18} />
                     </div>
                     <div className="space-y-0.5">
@@ -51,7 +51,7 @@ export function TechnicalPulse({
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="font-bold text-[9px] px-2 py-0.5 rounded-md border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900">
+                    <Badge variant="outline" className="font-bold text-[9px] px-2 py-0.5 rounded-md border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 bg-white/50 dark:bg-slate-900/50">
                         <Zap size={10} className="mr-1 inline text-amber-500" />
                         LIVE SIGNAL
                     </Badge>
