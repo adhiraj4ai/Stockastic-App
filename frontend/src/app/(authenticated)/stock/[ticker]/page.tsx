@@ -29,7 +29,6 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from '@/lib/utils';
 
 // Terminal Suite Components
-import { TerminalHeader } from '@/components/stock/TerminalHeader';
 import { IntelligenceGlass } from '@/components/stock/IntelligenceGlass';
 import { BentoMetrics } from '@/components/stock/BentoMetrics';
 import { AdvancedCharting } from '@/components/stock/AdvancedCharting';
@@ -597,30 +596,18 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
     return (
         <DashboardLayout noPadding>
             <div className="bg-slate-50 text-slate-900 terminal-grid-light selection:bg-blue-500/10 font-sans relative">
-                {/* Immersive Blur Backgrounds (Light Mode) */}
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/5 rounded-full blur-[120px]" />
-                    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/5 rounded-full blur-[120px]" />
-                </div>
 
-                <TerminalHeader
-                    symbol={data.company?.symbol || data.fundamental?.ticker || ticker}
-                    name={data.company?.name || data.fundamental?.company_name || 'N/A'}
-                    sector={data.company?.sector || data.fundamental?.sector || 'Unknown'}
-                    price={data.price.close}
-                    change={data.price.change}
-                    percentChange={data.price.percent_change}
-                    onTrade={(type) => {
-                        setTxnType(type);
-                        setModalOpen(true);
-                    }}
-                />
 
                 <div className="max-w-[1700px] mx-auto px-8 py-10 space-y-10 relative z-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">
                     {/* 1. TOP INTELLIGENCE ROW */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
                         <div className="lg:col-span-4">
                             <IntelligenceGlass
+                                symbol={data.company?.symbol || data.fundamental?.ticker || ticker}
+                                name={data.company?.name || data.fundamental?.company_name || 'N/A'}
+                                price={data.price.close}
+                                change={data.price.change}
+                                percentChange={data.price.percent_change}
                                 fundamentalScore={intelligence.fundamentalScore}
                                 technicalScore={intelligence.technicalScore}
                                 riskLevel={intelligence.riskLevel}
@@ -644,12 +631,12 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                             <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-4 mb-8">
                                 <div className="flex items-center gap-6">
                                     <TabsList className="bg-slate-100 border border-slate-200 p-1 h-9 rounded-xl">
-                                        <TabsTrigger value="indicators" className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Indicators</TabsTrigger>
-                                        <TabsTrigger value="signals" className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Signals</TabsTrigger>
-                                        <TabsTrigger value="floorsheet" className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Floorsheet</TabsTrigger>
-                                        <TabsTrigger value="financials" className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Financials</TabsTrigger>
-                                        <TabsTrigger value="dividends" className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Dividends</TabsTrigger>
-                                        <TabsTrigger value="history" className="rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">History</TabsTrigger>
+                                        <TabsTrigger value="indicators" className="rounded-lg px-4 text-xs font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Indicators</TabsTrigger>
+                                        <TabsTrigger value="signals" className="rounded-lg px-4 text-xs font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Signals</TabsTrigger>
+                                        <TabsTrigger value="floorsheet" className="rounded-lg px-4 text-xs font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Floorsheet</TabsTrigger>
+                                        <TabsTrigger value="financials" className="rounded-lg px-4 text-xs font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Financials</TabsTrigger>
+                                        <TabsTrigger value="dividends" className="rounded-lg px-4 text-xs font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">Dividends</TabsTrigger>
+                                        <TabsTrigger value="history" className="rounded-lg px-4 text-xs font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm">History</TabsTrigger>
                                     </TabsList>
                                 </div>
                             </div>
@@ -673,8 +660,8 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                 <table className="w-full text-sm">
                                                     <thead className="bg-slate-50 border-b border-slate-100">
                                                         <tr>
-                                                            <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[10px]">Broker</th>
-                                                            <th className="px-6 py-4 text-right font-bold text-slate-400 uppercase tracking-widest text-[10px]">Quantity</th>
+                                                            <th className="px-6 py-4 text-left font-semibold text-slate-500 text-xs">Broker</th>
+                                                            <th className="px-6 py-4 text-right font-semibold text-slate-500 text-xs">Quantity</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-slate-50">
@@ -705,8 +692,8 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                 <table className="w-full text-sm">
                                                     <thead className="bg-slate-50 border-b border-slate-100">
                                                         <tr>
-                                                            <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[10px]">Broker</th>
-                                                            <th className="px-6 py-4 text-right font-bold text-slate-400 uppercase tracking-widest text-[10px]">Quantity</th>
+                                                            <th className="px-6 py-4 text-left font-semibold text-slate-500 text-xs">Broker</th>
+                                                            <th className="px-6 py-4 text-right font-semibold text-slate-500 text-xs">Quantity</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-slate-50">
@@ -735,7 +722,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                 </div>
                                                 <div>
                                                     <h4 className="font-bold text-slate-800">Live Transaction Stream</h4>
-                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Real-time market depth</p>
+                                                    <p className="text-[10px] text-slate-400 font-semibold">Real-time market depth</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
@@ -746,12 +733,12 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                             <table className="w-full text-sm text-left">
                                                 <thead className="bg-slate-50 text-slate-400 border-b border-slate-100">
                                                     <tr>
-                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Trans #</th>
-                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Buyer</th>
-                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Seller</th>
-                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Qty</th>
-                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Rate</th>
-                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px] text-right">Total</th>
+                                                        <th className="px-6 py-4 font-semibold text-[10px]">Trans #</th>
+                                                        <th className="px-6 py-4 font-semibold text-[10px]">Buyer</th>
+                                                        <th className="px-6 py-4 font-semibold text-[10px]">Seller</th>
+                                                        <th className="px-6 py-4 font-semibold text-[10px]">Qty</th>
+                                                        <th className="px-6 py-4 font-semibold text-[10px]">Rate</th>
+                                                        <th className="px-6 py-4 font-semibold text-[10px] text-right">Total</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-50">
@@ -772,25 +759,25 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                 </TabsContent>
 
                                 <TabsContent value="dividends" className="mt-0">
-                                    <div className="glass-card-light rounded-3xl p-8 border-slate-200">
+                                    <div className="glass-card-light rounded-2xl p-8 border-slate-200">
                                         <div className="flex items-center gap-3 mb-8">
                                             <div className="p-2 rounded-xl bg-amber-50 text-amber-600 border border-amber-100">
                                                 <PieChart size={18} />
                                             </div>
                                             <div>
                                                 <h4 className="font-bold text-slate-800">Dividend Distribution History</h4>
-                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Shareholder rewards timeline</p>
+                                                <p className="text-[10px] text-slate-400 font-semibold">Shareholder rewards timeline</p>
                                             </div>
                                         </div>
                                         <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
                                             <table className="w-full text-sm text-left">
                                                 <thead className="bg-slate-50 text-slate-400 border-b border-slate-100">
                                                     <tr>
-                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Fiscal Year</th>
-                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Bonus (%)</th>
-                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Cash (%)</th>
-                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Total (%)</th>
-                                                        <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px] text-right">Declaration Date</th>
+                                                        <th className="px-6 py-4 font-semibold text-[10px]">Fiscal Year</th>
+                                                        <th className="px-6 py-4 font-semibold text-[10px]">Bonus (%)</th>
+                                                        <th className="px-6 py-4 font-semibold text-[10px]">Cash (%)</th>
+                                                        <th className="px-6 py-4 font-semibold text-[10px]">Total (%)</th>
+                                                        <th className="px-6 py-4 font-semibold text-[10px] text-right">Declaration Date</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-50">
@@ -813,7 +800,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                 </TabsContent>
 
                                 <TabsContent value="financials" className="mt-0 space-y-8">
-                                    <div className="glass-card-light rounded-3xl p-8 border-slate-200">
+                                    <div className="glass-card-light rounded-2xl p-8 border-slate-200">
                                         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
                                             <div className="flex items-center gap-3">
                                                 <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
@@ -821,7 +808,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                 </div>
                                                 <div>
                                                     <h4 className="font-bold text-slate-800">Financial Performance Matrix</h4>
-                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Multi-year trend analysis</p>
+                                                    <p className="text-[10px] text-slate-400 font-semibold">Multi-year trend analysis</p>
                                                 </div>
                                             </div>
                                             <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-inner">
@@ -829,7 +816,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => setReportType('ANNUAL')}
-                                                    className={cn("rounded-lg px-4 font-bold text-[10px] uppercase transition-all", reportType === 'ANNUAL' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400")}
+                                                    className={cn("rounded-lg px-4 font-bold text-[10px] transition-all", reportType === 'ANNUAL' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400")}
                                                 >
                                                     Annual
                                                 </Button>
@@ -837,7 +824,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => setReportType('QUARTERLY')}
-                                                    className={cn("rounded-lg px-4 font-bold text-[10px] uppercase transition-all", reportType === 'QUARTERLY' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400")}
+                                                    className={cn("rounded-lg px-4 font-bold text-[10px] transition-all", reportType === 'QUARTERLY' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400")}
                                                 >
                                                     Quarterly
                                                 </Button>
@@ -881,7 +868,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                                         <table className="w-full text-sm">
                                                                             <thead>
                                                                                 <tr className="border-b border-slate-50">
-                                                                                    <th className="text-left py-2 font-bold text-slate-400 text-[10px] uppercase tracking-widest">Metadata/Metric</th>
+                                                                                    <th className="text-left py-2 font-semibold text-slate-400 text-[10px]">Metadata/Metric</th>
                                                                                     {financials.filter(f => f.report_type === reportType)
                                                                                         .sort((a, b) => b.fiscal_year.localeCompare(a.fiscal_year))
                                                                                         .map((f, idx) => (
@@ -893,7 +880,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                                                 {Object.entries(sectionData).map(([category, items]: [string, any]) => (
                                                                                     <React.Fragment key={category}>
                                                                                         <tr className="bg-slate-50/30">
-                                                                                            <td colSpan={100} className="py-2 px-2 font-bold text-blue-600/70 text-[10px] uppercase tracking-widest">{category}</td>
+                                                                                            <td colSpan={100} className="py-2 px-2 font-bold text-blue-600/70 text-[10px]">{category}</td>
                                                                                         </tr>
                                                                                         {Object.entries(items).map(([key, val]: [string, any]) => (
                                                                                             <tr key={key} className="hover:bg-slate-50/30 border-b border-slate-50 last:border-0 transition-colors group">
@@ -931,14 +918,14 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                 <TabsContent value="indicators" className="mt-0">
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                         {/* Fundamental Benchmarks */}
-                                        <div className="glass-card-light rounded-3xl p-8 border-slate-200">
+                                        <div className="glass-card-light rounded-2xl p-8 border-slate-200">
                                             <div className="flex items-center gap-3 mb-10">
                                                 <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
                                                     <BarChart2 size={18} />
                                                 </div>
                                                 <div>
                                                     <h4 className="font-bold text-slate-800 text-lg">Fundamental Benchmarks</h4>
-                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Sector-wide comparison</p>
+                                                    <p className="text-[10px] text-slate-400 font-semibold">Sector-wide comparison</p>
                                                 </div>
                                             </div>
 
@@ -946,9 +933,9 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                 <table className="w-full text-sm">
                                                     <thead className="bg-slate-50 border-b border-slate-100">
                                                         <tr>
-                                                            <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[9px]">Metric</th>
-                                                            <th className="px-6 py-4 text-center font-bold text-slate-400 uppercase tracking-widest text-[9px]">Value</th>
-                                                            <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[9px]">Sector Range (Low - High)</th>
+                                                            <th className="px-6 py-4 text-left font-semibold text-slate-400 text-[9px]">Metric</th>
+                                                            <th className="px-6 py-4 text-center font-semibold text-slate-400 text-[9px]">Value</th>
+                                                            <th className="px-6 py-4 text-left font-semibold text-slate-400 text-[9px]">Sector Range (Low - High)</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-slate-100 bg-white/50">
@@ -996,14 +983,14 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                         </div>
 
                                         {/* Technical Divergence */}
-                                        <div className="glass-card-light rounded-3xl p-8 border-slate-200">
+                                        <div className="glass-card-light rounded-2xl p-8 border-slate-200">
                                             <div className="flex items-center gap-3 mb-10">
                                                 <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100">
                                                     <TrendingUp size={18} />
                                                 </div>
                                                 <div>
                                                     <h4 className="font-bold text-slate-800 text-lg">Technical Divergence</h4>
-                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Relative strength mapping</p>
+                                                    <p className="text-[10px] text-slate-400 font-semibold">Relative strength mapping</p>
                                                 </div>
                                             </div>
 
@@ -1030,9 +1017,9 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                                     <table className="w-full text-sm">
                                                                         <thead className="bg-slate-50 border-b border-slate-100 backdrop-blur-sm sticky top-0 z-10">
                                                                             <tr>
-                                                                                <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[9px]">Indicator</th>
-                                                                                <th className="px-6 py-4 text-center font-bold text-slate-400 uppercase tracking-widest text-[9px]">Value</th>
-                                                                                <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[9px]">Sector Range (Low - High)</th>
+                                                                                <th className="px-6 py-4 text-left font-semibold text-slate-400 text-[9px]">Indicator</th>
+                                                                                <th className="px-6 py-4 text-center font-semibold text-slate-400 text-[9px]">Value</th>
+                                                                                <th className="px-6 py-4 text-left font-semibold text-slate-400 text-[9px]">Sector Range (Low - High)</th>
                                                                             </tr>
                                                                         </thead>
                                                                         <tbody className="divide-y divide-slate-100 bg-white">
@@ -1086,7 +1073,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                 </TabsContent>
 
                                 <TabsContent value="history" className="mt-0">
-                                    <div className="glass-card-light rounded-3xl p-8 border-slate-200">
+                                    <div className="glass-card-light rounded-2xl p-8 border-slate-200">
                                         <div className="flex items-center justify-between mb-8">
                                             <div className="flex items-center gap-3">
                                                 <div className="p-2 rounded-xl bg-slate-50 text-slate-600 border border-slate-100">
@@ -1094,7 +1081,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                 </div>
                                                 <div>
                                                     <h4 className="font-bold text-slate-800">Historical Price Action</h4>
-                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Ohlcv historical logs</p>
+                                                    <p className="text-[10px] text-slate-400 font-semibold">Ohlcv historical logs</p>
                                                 </div>
                                             </div>
                                             <div className="flex bg-slate-100/80 rounded-lg p-1 gap-1">
@@ -1120,12 +1107,12 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                 <table className="w-full text-sm text-left">
                                                     <thead className="bg-slate-50 text-slate-400 border-b border-slate-100 sticky top-0 z-10">
                                                         <tr>
-                                                            <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Date</th>
-                                                            <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Open</th>
-                                                            <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">High</th>
-                                                            <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Low</th>
-                                                            <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px]">Close</th>
-                                                            <th className="px-6 py-4 font-bold uppercase tracking-widest text-[10px] text-right">Volume</th>
+                                                            <th className="px-6 py-4 font-semibold text-[10px]">Date</th>
+                                                            <th className="px-6 py-4 font-semibold text-[10px]">Open</th>
+                                                            <th className="px-6 py-4 font-semibold text-[10px]">High</th>
+                                                            <th className="px-6 py-4 font-semibold text-[10px]">Low</th>
+                                                            <th className="px-6 py-4 font-semibold text-[10px]">Close</th>
+                                                            <th className="px-6 py-4 font-semibold text-[10px] text-right">Volume</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-slate-50">

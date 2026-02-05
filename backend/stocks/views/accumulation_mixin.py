@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django.db import connections
 from datetime import timedelta
 from django.utils import timezone
+from django.db.models import Max
 from ..models import DailyStockPrice, DailyFloorsheet
 
 class AccumulationMixin(viewsets.ViewSet):
@@ -30,7 +31,10 @@ class AccumulationMixin(viewsets.ViewSet):
         WITH ref_date AS (
             SELECT MAX(transaction_date) as max_date FROM daily_cumulative_accumulation
         ),
-        ranked_holders AS (
+        target_date AS (
+            SELECT (max_date - INTERVAL '{days} days') as start_date FROM ref_date
+        ),
+        latest_positions AS (
             SELECT 
                 symbol, entity_id, cumulative_net,
                 ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY cumulative_net DESC) as rank
@@ -38,39 +42,33 @@ class AccumulationMixin(viewsets.ViewSet):
             WHERE transaction_date = ref_date.max_date
             AND cumulative_net > 0 
         ),
+        past_positions AS (
+            SELECT DISTINCT ON (dca.symbol, dca.entity_id) 
+                dca.symbol, dca.entity_id, dca.cumulative_net
+            FROM daily_cumulative_accumulation dca, target_date
+            WHERE dca.transaction_date <= target_date.start_date
+            ORDER BY dca.symbol, dca.entity_id, dca.transaction_date DESC
+        ),
         smart_money AS (
             SELECT symbol, entity_id as broker 
-            FROM ranked_holders 
+            FROM latest_positions 
             WHERE rank <= 15 -- Top 15 Holders
-        ),
-        fs_target AS (
-            SELECT (MAX(transaction_date) - INTERVAL '{days} days') as start_date FROM daily_floorsheet
-        ),
-        floorsheet_activity AS (
-            SELECT 
-                buyer_id as broker, symbol, transaction_quantity as buy_qty, 0 as sell_qty
-            FROM daily_floorsheet, fs_target
-            WHERE transaction_date > fs_target.start_date
-            UNION ALL
-            SELECT 
-                seller_id as broker, symbol, 0 as buy_qty, transaction_quantity as sell_qty
-            FROM daily_floorsheet, fs_target
-            WHERE transaction_date > fs_target.start_date
         ),
         broker_net AS (
             SELECT 
-                broker, symbol, (SUM(buy_qty) - SUM(sell_qty)) as net_flow,
-                SUM(buy_qty) as total_buy,
-                SUM(sell_qty) as total_sell
-            FROM floorsheet_activity
-            GROUP BY broker, symbol
-            HAVING (SUM(buy_qty) - SUM(sell_qty)) != 0
+                l.symbol, l.entity_id as broker,
+                (l.cumulative_net - COALESCE(p.cumulative_net, 0)) as net_flow,
+                0 as total_buy, 
+                0 as total_sell
+            FROM latest_positions l
+            LEFT JOIN past_positions p ON l.symbol = p.symbol AND l.entity_id = p.entity_id
+            WHERE (l.cumulative_net - COALESCE(p.cumulative_net, 0)) != 0
         ),
         symbol_agg AS (
             SELECT 
                 bn.symbol,
                 SUM(CASE WHEN sm.broker IS NOT NULL THEN bn.net_flow ELSE 0 END) as smart_net_qty,
-                SUM(bn.total_buy) as total_vol,
+                0 as total_vol,
                 ARRAY_AGG(bn.broker ORDER BY bn.net_flow DESC) FILTER (WHERE bn.net_flow > 0) as top_buyers,
                 ARRAY_AGG(bn.broker ORDER BY bn.net_flow ASC) FILTER (WHERE bn.net_flow < 0) as top_sellers
             FROM broker_net bn
@@ -82,11 +80,9 @@ class AccumulationMixin(viewsets.ViewSet):
             CASE WHEN sa.smart_net_qty > 0 THEN sa.smart_net_qty ELSE 0 END as buy_qty,
             CASE WHEN sa.smart_net_qty < 0 THEN ABS(sa.smart_net_qty) ELSE 0 END as sell_qty,
             sa.smart_net_qty as net_qty,
-            CASE WHEN sa.total_vol > 0 
-            THEN (ABS(sa.smart_net_qty) / sa.total_vol) * 100 
-            ELSE 0 END as accumulation_ratio,
-            COALESCE(sa.top_buyers[1:3], ARRAY[]::integer[]) as top_buyers,
-            COALESCE(sa.top_sellers[1:3], ARRAY[]::integer[]) as top_sellers,
+            0 as accumulation_ratio,
+            COALESCE(sa.top_buyers[1:3], ARRAY[]::text[]) as top_buyers,
+            COALESCE(sa.top_sellers[1:3], ARRAY[]::text[]) as top_sellers,
             COALESCE(dsp.close, 0) as close
         FROM symbol_agg sa
         INNER JOIN companies c ON sa.symbol = c.symbol
@@ -96,6 +92,8 @@ class AccumulationMixin(viewsets.ViewSet):
             ORDER BY symbol, transaction_date DESC
         ) dsp ON sa.symbol = dsp.symbol
         WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
+        AND c.status = 'A'
+        AND c."sectorName" != 'Unknown' AND c."sectorName" IS NOT NULL
         {"" if sector.lower() == 'all' else f"AND c.\"sectorName\" = '{sector}'"}
         ORDER BY net_qty DESC;
         """
@@ -181,7 +179,9 @@ class AccumulationMixin(viewsets.ViewSet):
             INNER JOIN companies c ON ss.symbol = c.symbol
             INNER JOIN latest_avg_vol lav ON ss.symbol = lav.symbol
             WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
-            {"" if sector.lower() == 'all' else f"AND c.\\\"sectorName\\\" = '{sector}'"}
+            AND c.status = 'A'
+            AND c."sectorName" != 'Unknown' AND c."sectorName" IS NOT NULL
+            {"" if sector.lower() == 'all' else f"AND c.\"sectorName\" = '{sector}'"}
         )
         SELECT * FROM intensity_cte
         WHERE ABS(intensity) > 5
@@ -212,6 +212,8 @@ class AccumulationMixin(viewsets.ViewSet):
             FROM daily_cumulative_accumulation ca
             INNER JOIN companies c ON ca.symbol = c.symbol
             WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
+            AND c.status = 'A'
+            AND c."sectorName" != 'Unknown' AND c."sectorName" IS NOT NULL
         )
         SELECT 
             td.symbol, td.entity_id as broker, td.cumulative_net,
@@ -271,6 +273,8 @@ class AccumulationMixin(viewsets.ViewSet):
             ORDER BY transaction_date DESC LIMIT 1
         ) ca ON true
         WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
+        AND c.status = 'A'
+        AND c."sectorName" != 'Unknown' AND c."sectorName" IS NOT NULL
         ORDER BY current_net DESC;
         """
         with connections['default'].cursor() as cursor:
@@ -300,7 +304,13 @@ class AccumulationMixin(viewsets.ViewSet):
             """, [symbol])
             top_brokers = [row[0] for row in cursor.fetchall()]
             
-            if not top_brokers: return Response({'data': [], 'brokers': []})
+            if not top_brokers: 
+                return Response({
+                    'data': [], 
+                    'brokers': [],
+                    'buy_leaders': [],
+                    'sell_leaders': []
+                })
             
             placeholders = ', '.join(['%s'] * len(top_brokers))
             query = f"SELECT transaction_date, entity_id, cumulative_net FROM daily_cumulative_accumulation WHERE symbol = %s AND entity_id IN ({placeholders}) AND transaction_date >= %s"
@@ -318,7 +328,58 @@ class AccumulationMixin(viewsets.ViewSet):
             
         sorted_data = sorted(list(data_map.values()), key=lambda x: x['date'])
 
-        return Response({'data': sorted_data, 'brokers': top_brokers})
+        # Calculate Buy/Sell Leaders for the period
+        with connections['default'].cursor() as cursor:
+            fs_query = f"""
+            SELECT 
+                buyer_id as broker, 
+                SUM(transaction_quantity) as buy_qty,
+                SUM(transaction_quantity * transaction_rate) as buy_amt
+            FROM daily_floorsheet 
+            WHERE symbol = %s AND transaction_date >= %s
+            GROUP BY buyer_id
+            """
+            cursor.execute(fs_query, [symbol, start_date])
+            buyers = {row[0]: {'buy_qty': row[1], 'buy_amt': row[2]} for row in cursor.fetchall()}
+
+            fs_query_sell = f"""
+            SELECT 
+                seller_id as broker, 
+                SUM(transaction_quantity) as sell_qty,
+                SUM(transaction_quantity * transaction_rate) as sell_amt
+            FROM daily_floorsheet 
+            WHERE symbol = %s AND transaction_date >= %s
+            GROUP BY seller_id
+            """
+            cursor.execute(fs_query_sell, [symbol, start_date])
+            sellers = {row[0]: {'sell_qty': row[1], 'sell_amt': row[2]} for row in cursor.fetchall()}
+
+        # Combine and rank
+        all_brokers = set(buyers.keys()) | set(sellers.keys())
+        leader_stats = []
+        for b in all_brokers:
+           b_data = buyers.get(b, {'buy_qty': 0, 'buy_amt': 0})
+           s_data = sellers.get(b, {'sell_qty': 0, 'sell_amt': 0})
+           net_qty = b_data['buy_qty'] - s_data['sell_qty']
+           
+           leader_stats.append({
+               'broker': b,
+               'net_qty': net_qty,
+               'buy_qty': b_data['buy_qty'],
+               'sell_qty': s_data['sell_qty'],
+               'buy_rate': round(b_data['buy_amt'] / b_data['buy_qty'], 2) if b_data['buy_qty'] > 0 else 0,
+               'sell_rate': round(s_data['sell_amt'] / s_data['sell_qty'], 2) if s_data['sell_qty'] > 0 else 0
+           })
+           
+        buy_leaders = sorted([l for l in leader_stats if l['net_qty'] > 0], key=lambda x: x['net_qty'], reverse=True)[:10]
+        sell_leaders = sorted([l for l in leader_stats if l['net_qty'] < 0], key=lambda x: x['net_qty'])[:10]
+
+        return Response({
+            'data': sorted_data, 
+            'brokers': top_brokers,
+            'buy_leaders': buy_leaders,
+            'sell_leaders': sell_leaders
+        })
 
     @action(detail=False, methods=['get'])
     def accumulation_brokers(self, request):

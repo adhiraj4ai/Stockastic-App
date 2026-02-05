@@ -1,9 +1,16 @@
 'use client';
 
-import { BrainCircuit, Info, ShieldCheck, AlertTriangle, Zap, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { BrainCircuit, Info, ShieldCheck, AlertTriangle, Zap, ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 interface IntelligenceGlassProps {
+    symbol?: string;
+    name?: string;
+    price?: number;
+    change?: number;
+    percentChange?: number;
+    signal?: 'BUY' | 'SELL';
     fundamentalScore: number;
     technicalScore: number;
     riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
@@ -12,6 +19,12 @@ interface IntelligenceGlassProps {
 }
 
 export function IntelligenceGlass({
+    symbol,
+    name,
+    price,
+    change,
+    percentChange,
+    signal,
     fundamentalScore,
     technicalScore,
     riskLevel,
@@ -19,6 +32,7 @@ export function IntelligenceGlass({
     reason
 }: IntelligenceGlassProps) {
     const combinedScore = (fundamentalScore + technicalScore) / 2;
+    const isPositive = (change || 0) >= 0;
 
     const getVerdict = () => {
         if (combinedScore > 75) return { label: 'Strong Outperform', color: 'text-emerald-600', glow: 'soft-glow-emerald', icon: ShieldCheck, status: 'OPTIMAL' };
@@ -30,41 +44,75 @@ export function IntelligenceGlass({
     const verdict = getVerdict();
 
     return (
-        <div className="glass-card-light rounded-3xl overflow-hidden p-8 space-y-8 h-full relative group">
-            <div className="absolute top-0 right-0 p-4">
-                <Zap size={24} className="text-slate-100 group-hover:text-amber-500/20 transition-colors" />
+        <div className="glass-card-light rounded-2xl overflow-hidden p-6 space-y-6 h-full relative group">
+            <div className="absolute top-0 right-0 p-4 opacity-50">
+                <Zap size={20} className="text-slate-200 group-hover:text-amber-500/40 transition-colors" />
             </div>
 
-            {/* Header: Dynamic Status */}
+            {/* Combined Header: Identity + Intelligence */}
             <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                    <div className={cn("p-2.5 rounded-2xl bg-white border border-slate-200 shadow-sm", verdict.color)}>
-                        <verdict.icon size={22} />
+                {symbol ? (
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-2xl font-bold tracking-tight text-slate-900">{symbol}</h1>
+                                {signal && (
+                                    <Badge className={cn(
+                                        "px-1.5 py-0 rounded-[4px] text-[9px] font-bold border h-5",
+                                        signal === 'BUY' ? "bg-blue-50 text-blue-600 border-blue-200" : "bg-rose-50 text-rose-600 border-rose-200"
+                                    )}>
+                                        {signal}
+                                    </Badge>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                                <div className={cn("p-1 rounded bg-white border border-slate-100 shadow-sm", verdict.color)}>
+                                    <verdict.icon size={14} />
+                                </div>
+                                <span className={cn("text-sm font-bold", verdict.color)}>{verdict.label}</span>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-2xl font-bold text-slate-900 tabular-nums">
+                                {price?.toLocaleString()}
+                            </div>
+                            <div className={cn("flex items-center justify-end gap-1 text-xs font-bold", isPositive ? "text-emerald-600" : "text-rose-600")}>
+                                {isPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                                <span>{isPositive ? '+' : ''}{change?.toFixed(2)}</span>
+                                <span className="opacity-60">({percentChange?.toFixed(2)}%)</span>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cognitive Intelligence</p>
-                        <h2 className={cn("text-2xl font-bold tracking-tight uppercase", verdict.color)}>{verdict.label}</h2>
-                        {reason && <p className="text-[10px] font-bold text-slate-500 mt-1 flex items-center gap-1"><Zap size={10} className="text-amber-500" /> {reason}</p>}
+                ) : (
+                    // Fallback for loading/no data - just Verdict
+                    <div className="flex items-center gap-3">
+                        <div className={cn("p-2.5 rounded-2xl bg-white border border-slate-200 shadow-sm", verdict.color)}>
+                            <verdict.icon size={22} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-semibold text-slate-400">Cognitive Intelligence</p>
+                            <h2 className={cn("text-2xl font-bold tracking-tight", verdict.color)}>{verdict.label}</h2>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
             {/* Data Layer */}
-            <div className="grid grid-cols-1 gap-6">
-                <div className="space-y-2">
+            <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-1.5">
                     <div className="flex justify-between items-end">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">Fundamental Alpha</span>
-                        <span className="text-lg font-bold text-slate-900 tabular-nums">{fundamentalScore}%</span>
+                        <span className="text-[10px] font-semibold text-slate-400">Fundamental Alpha</span>
+                        <span className="text-base font-bold text-slate-900 tabular-nums">{fundamentalScore}%</span>
                     </div>
                     <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div className="h-full bg-blue-500 rounded-full transition-all duration-1500" style={{ width: `${fundamentalScore}%` }} />
                     </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                     <div className="flex justify-between items-end">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">Technical Strength</span>
-                        <span className="text-lg font-bold text-slate-900 tabular-nums">{technicalScore}%</span>
+                        <span className="text-[10px] font-semibold text-slate-400">Technical Strength</span>
+                        <span className="text-base font-bold text-slate-900 tabular-nums">{technicalScore}%</span>
                     </div>
                     <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div className="h-full bg-emerald-500 rounded-full transition-all duration-1500" style={{ width: `${technicalScore}%` }} />
@@ -73,22 +121,22 @@ export function IntelligenceGlass({
             </div>
 
             {/* Signals Grid */}
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
-                <div className="p-4 rounded-2xl bg-slate-50/50 border border-slate-100 space-y-1">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase">Trend Signal</p>
-                    <div className="flex items-center gap-2">
+            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100">
+                <div className="p-3 rounded-xl bg-slate-50/50 border border-slate-100 space-y-0.5">
+                    <p className="text-[9px] font-semibold text-slate-400">Trend</p>
+                    <div className="flex items-center gap-1.5">
                         {macd === 'BULLISH' ? <ArrowUpRight size={14} className="text-emerald-500" /> : <ArrowDownRight size={14} className="text-rose-500" />}
-                        <span className="font-bold text-sm text-slate-800">{macd}</span>
+                        <span className="font-bold text-xs text-slate-800">{macd}</span>
                     </div>
                 </div>
-                <div className="p-4 rounded-2xl bg-slate-50/50 border border-slate-100 space-y-1">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase">Risk Latency</p>
-                    <div className="flex items-center gap-2">
+                <div className="p-3 rounded-xl bg-slate-50/50 border border-slate-100 space-y-0.5">
+                    <p className="text-[9px] font-semibold text-slate-400">Risk</p>
+                    <div className="flex items-center gap-1.5">
                         <div className={cn(
                             "w-1.5 h-1.5 rounded-full",
                             riskLevel === 'LOW' ? "bg-emerald-500" : riskLevel === 'MEDIUM' ? "bg-amber-500" : "bg-rose-500"
                         )} />
-                        <span className="font-bold text-sm text-slate-800 uppercase">{riskLevel}</span>
+                        <span className="font-bold text-xs text-slate-800 uppercase">{riskLevel}</span>
                     </div>
                 </div>
             </div>

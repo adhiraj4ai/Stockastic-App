@@ -41,27 +41,19 @@ export function TerminalHeader({
                 <div className="flex items-center gap-6">
                     {/* Symbol & Signal */}
                     <div className="flex items-center gap-3">
-                        <div className="relative">
-                            <div className={cn(
-                                "absolute -inset-1 rounded-full blur-lg opacity-20 animate-pulse transition-colors duration-500",
-                                signal === 'BUY' ? "bg-blue-500" :
-                                    signal === 'SELL' ? "bg-rose-500" :
-                                        (isPositive ? "bg-emerald-500" : "bg-rose-500")
-                            )} />
-                            <h1 className={cn(
-                                "relative font-bold tracking-tighter tabular-nums drop-shadow-sm transition-colors text-3xl",
-                                signal === 'BUY' ? "text-blue-600" :
-                                    signal === 'SELL' ? "text-rose-600" :
-                                        "text-slate-900"
-                            )}>
-                                {symbol}
-                            </h1>
-                        </div>
+                        <h1 className={cn(
+                            "font-bold tracking-tight tabular-nums text-3xl",
+                            signal === 'BUY' ? "text-blue-600" :
+                                signal === 'SELL' ? "text-rose-600" :
+                                    "text-slate-900"
+                        )}>
+                            {symbol}
+                        </h1>
 
                         {signal && (
                             <Badge
                                 className={cn(
-                                    "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border shadow-sm",
+                                    "px-2 py-0.5 rounded text-[10px] font-bold border",
                                     signal === 'BUY'
                                         ? "bg-blue-50 text-blue-600 border-blue-200"
                                         : "bg-rose-50 text-rose-600 border-rose-200"

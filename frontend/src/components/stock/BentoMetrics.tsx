@@ -51,7 +51,7 @@ export function BentoMetrics({ fundamental }: BentoMetricsProps) {
                         <div className={cn("absolute -top-4 -right-4 w-12 h-12 rounded-full opacity-5 transition-transform group-hover:scale-150", m.color.replace('text', 'bg'))} />
                         <m.icon size={16} className={m.color} />
                         <div>
-                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest truncate">{m.label}</p>
+                            <p className="text-xs font-semibold text-slate-500 truncate">{m.label}</p>
                             <p className="text-xl font-bold text-slate-900 tabular-nums tracking-tight truncate">{m.value}</p>
                             <p className="text-[10px] font-medium text-slate-400 italic truncate">{m.sub}</p>
                         </div>
@@ -63,12 +63,12 @@ export function BentoMetrics({ fundamental }: BentoMetricsProps) {
             <div className="md:col-span-4 glass-card-light rounded-2xl p-6 flex flex-col justify-start space-y-6">
                 <div className="flex items-center gap-2 mb-2">
                     <Globe size={14} className="text-slate-400" />
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Network Benchmarks</span>
+                    <span className="text-xs font-semibold text-slate-500">Network Benchmarks</span>
                 </div>
                 <div className="grid grid-cols-1 gap-4">
                     {secondary.map((s, i) => (
                         <div key={i} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
-                            <span className="text-xs font-bold text-slate-500 uppercase">{s.label}</span>
+                            <span className="text-xs font-medium text-slate-500">{s.label}</span>
                             <span className="text-sm font-bold text-slate-800 tabular-nums tracking-wide">{s.value}</span>
                         </div>
                     ))}

@@ -180,7 +180,7 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
         <Card className="bg-white border-slate-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex flex-row items-center justify-between bg-slate-50/30">
                 <div className="space-y-1">
-                    <CardTitle className="text-[10px] font-bold text-slate-500 flex items-center gap-2 uppercase">
+                    <CardTitle className="text-[10px] font-bold text-slate-500 flex items-center gap-2">
                         <BarChart3 size={14} className="text-blue-500" />
                         Price Action & Volume Profile
                     </CardTitle>
@@ -219,7 +219,7 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-x-12 gap-y-6">
                             {stats.map((item, idx) => (
                                 <div key={idx} className="space-y-1">
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase">{item.label}</p>
+                                    <p className="text-[9px] font-bold text-slate-400">{item.label}</p>
                                     <p className="text-sm font-bold text-slate-900 tabular-nums">{item.value}</p>
                                 </div>
                             ))}
