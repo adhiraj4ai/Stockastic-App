@@ -29,8 +29,11 @@ import {
     CheckCircle2,
     Calculator,
     Info,
-    ArrowRight
+    ArrowRight,
+    Download,
+    Upload
 } from 'lucide-react';
+import { downloadJsonTemplate } from '@/lib/jsonTemplates';
 import { toast } from 'sonner';
 import { FINANCIAL_TEMPLATES, SECTOR_TO_TEMPLATE } from '@/constants/financialTemplates';
 import { formatNepaliNumber, parseNepaliNumber } from '@/lib/formatters';
@@ -222,6 +225,81 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
         return value;
     };
 
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const json = JSON.parse(event.target?.result as string);
+
+                // Map Metadata if present
+                if (json.metadata) {
+                    if (json.metadata.fiscal_year) setFiscalYear(json.metadata.fiscal_year);
+                    if (json.metadata.report_type) setReportType(json.metadata.report_type);
+                    if (json.metadata.quarter) setQuarter(json.metadata.quarter.toString());
+                    if (json.metadata.template_id) setReportTemplate(json.metadata.template_id);
+                }
+
+                // Map Balance Sheet
+                const newBS: Record<string, string> = { ...balanceSheet };
+                if (json.balance_sheet) {
+                    Object.entries(json.balance_sheet).forEach(([section, values]: [string, any]) => {
+                        Object.entries(values).forEach(([key, val]: [string, any]) => {
+                            // Treat 0 or '0' as empty to cleaner UI
+                            if (val === 0 || val === '0') {
+                                newBS[`${section}.${key}`] = '';
+                            } else {
+                                const strVal = val?.toString() || '';
+                                newBS[`${section}.${key}`] = strVal;
+                            }
+                        });
+                    });
+                }
+                setBalanceSheet(newBS);
+
+                // Map Profit Loss
+                const newPL: Record<string, string> = { ...profitLoss };
+                if (json.profit_loss) {
+                    Object.entries(json.profit_loss).forEach(([section, values]: [string, any]) => {
+                        Object.entries(values).forEach(([key, val]: [string, any]) => {
+                            if (val === 0 || val === '0') {
+                                newPL[`${section}.${key}`] = '';
+                            } else {
+                                const strVal = val?.toString() || '';
+                                newPL[`${section}.${key}`] = strVal;
+                            }
+                        });
+                    });
+                }
+                setProfitLoss(newPL);
+
+                // Map Cash Flow
+                const newCF: Record<string, string> = { ...cashFlow };
+                if (json.cash_flow) {
+                    Object.entries(json.cash_flow).forEach(([section, values]: [string, any]) => {
+                        Object.entries(values).forEach(([key, val]: [string, any]) => {
+                            if (val === 0 || val === '0') {
+                                newCF[`${section}.${key}`] = '';
+                            } else {
+                                const strVal = val?.toString() || '';
+                                newCF[`${section}.${key}`] = strVal;
+                            }
+                        });
+                    });
+                }
+                setCashFlow(newCF);
+
+                toast.success('Report data imported from JSON successfully');
+            } catch (err) {
+                console.error('Failed to parse JSON', err);
+                toast.error('Failed to parse JSON file');
+            }
+        };
+        reader.readAsText(file);
+    };
+
     const handleSave = async () => {
         if (!fiscalYear) {
             toast.error('Fiscal Year is required');
@@ -349,6 +427,44 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                         </Button>
                     ) : (
                         <>
+                            <div className="flex items-center gap-2 mr-4 border-r dark:border-slate-700 pr-4">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-[10px] font-bold h-8 uppercase tracking-wider text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 gap-2"
+                                    onClick={() => downloadJsonTemplate(reportTemplate, `${ticker}_${reportType}_Template.json`, {
+                                        ticker,
+                                        fiscal_year: fiscalYear,
+                                        report_type: reportType,
+                                        quarter: reportType === 'QUARTERLY' ? quarter : undefined,
+                                        template_id: reportTemplate
+                                    })}
+                                >
+                                    <Download size={14} />
+                                    Download Template
+                                </Button>
+
+                                <div className="relative">
+                                    <input
+                                        type="file"
+                                        accept=".json"
+                                        className="hidden"
+                                        id="json-upload"
+                                        onChange={handleFileUpload}
+                                    />
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        asChild
+                                        className="text-[10px] font-bold h-8 uppercase tracking-wider text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 gap-2 cursor-pointer"
+                                    >
+                                        <label htmlFor="json-upload">
+                                            <Upload size={14} />
+                                            Upload JSON
+                                        </label>
+                                    </Button>
+                                </div>
+                            </div>
                             {reportId && (
                                 <Button variant="outline" onClick={() => setIsEditing(false)} size="sm" className="font-semibold text-gray-600 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800">
                                     Cancel
@@ -378,9 +494,11 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                 Cash Flow
                             </TabsTrigger>
                         )}
-                        <TabsTrigger value="dividend" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
-                            Dividend
-                        </TabsTrigger>
+                        {reportType === 'ANNUAL' && (
+                            <TabsTrigger value="dividend" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
+                                Dividend
+                            </TabsTrigger>
+                        )}
                     </TabsList>
 
                     <TabsContent value="bs" className="mt-0 space-y-2 animate-in fade-in duration-300">
@@ -494,6 +612,21 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        )}
+
+                        {/* Quarterly Selection (Editable Only) */}
+                        {(!reportId && !initialData?.fiscalYear && reportType === 'QUARTERLY') && (
+                            <div className="bg-blue-50/30 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/30 p-4 mb-2 flex items-center justify-between">
+                                <span className="text-sm font-bold text-blue-800 dark:text-blue-300">Select Quarter for Unaudited Report</span>
+                                <Tabs value={quarter} onValueChange={setQuarter} className="h-8">
+                                    <TabsList className="bg-white dark:bg-slate-800 border dark:border-slate-700 h-8">
+                                        <TabsTrigger value="1" className="text-[10px] px-3">Q1</TabsTrigger>
+                                        <TabsTrigger value="2" className="text-[10px] px-3">Q2</TabsTrigger>
+                                        <TabsTrigger value="3" className="text-[10px] px-3">Q3</TabsTrigger>
+                                        <TabsTrigger value="4" className="text-[10px] px-3">Q4</TabsTrigger>
+                                    </TabsList>
+                                </Tabs>
                             </div>
                         )}
 

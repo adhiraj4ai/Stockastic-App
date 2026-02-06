@@ -284,10 +284,14 @@ export const FINANCIAL_TEMPLATES: Record<string, FinancialTemplate> = {
                     key: 'LIABILITIES',
                     particulars: [
                         { label: 'Share Capital', key: 'share_capital' },
+                        { label: 'Share Premium', key: 'share_premium' },
+                        { label: 'Retained Earnings', key: 'retained_earnings' },
                         { label: 'Reserve and Surplus', key: 'reserves' },
                         { label: 'Long Term Loans & Borrowings', key: 'long_term_loans' },
+                        { label: 'Other Non-Current Liabilities', key: 'other_nc_liabilities' },
                         { label: 'Short Term Loans & Borrowings', key: 'short_term_loans' },
                         { label: 'Trade Payables', key: 'payables' },
+                        { label: 'Other Current Liabilities', key: 'other_current_liabilities' },
                     ]
                 }
             ],
@@ -304,6 +308,17 @@ export const FINANCIAL_TEMPLATES: Record<string, FinancialTemplate> = {
                         { label: 'Finance Costs', key: 'finance_costs' },
                         { label: 'Operating Profit', key: 'operating_profit' },
                         { label: 'Net Profit', key: 'net_profit' },
+                    ]
+                }
+            ],
+            cash_flow: [
+                {
+                    label: 'CASH FLOW STATEMENT',
+                    key: 'CF',
+                    particulars: [
+                        { label: 'Cash Flows From Operating Activities', key: 'operating_cash_flow' },
+                        { label: 'Cash Flows From Investing Activities', key: 'investing_cash_flow' },
+                        { label: 'Cash Flows From Financing Activities', key: 'financing_cash_flow' },
                     ]
                 }
             ]
