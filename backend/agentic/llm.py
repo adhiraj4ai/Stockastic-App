@@ -91,7 +91,9 @@ class GeminiProvider(LLMProvider):
 from langchain_ollama import ChatOllama
 
 class OllamaProvider(LLMProvider):
-    def __init__(self, model_name: str = "llama3", base_url: str = "http://localhost:11434"):
+    def __init__(self, model_name: str = "llama3", base_url: str = None):
+        if base_url is None:
+            base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         self.llm = ChatOllama(
             model=model_name,
             base_url=base_url,
