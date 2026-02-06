@@ -17,11 +17,16 @@ class EquityManager(models.Manager):
         )
 
 class Company(models.Model):
-    symbol = models.CharField(max_length=20, primary_key=True, db_index=True)
+    id = models.AutoField(primary_key=True)
+    symbol = models.CharField(max_length=20, unique=True, db_index=True)
     name = models.CharField(max_length=255, db_column='companyName')
-    sector = models.CharField(max_length=100, db_column='sectorName')
+    security_name = models.CharField(max_length=255, db_column='securityName', null=True, blank=True)
+    status = models.CharField(max_length=50, null=True, blank=True)
+    email = models.CharField(max_length=255, db_column='companyEmail', null=True, blank=True)
+    website = models.CharField(max_length=255, null=True, blank=True)
+    sector = models.CharField(max_length=100, db_column='sectorName', null=True, blank=True)
+    regulatory_body = models.CharField(max_length=100, db_column='regulatoryBody', null=True, blank=True)
     instrument_type = models.CharField(max_length=100, db_column='instrumentType', null=True, blank=True)
-    status = models.CharField(max_length=1, default='A')
 
     # Use custom manager as default
     objects = EquityManager()
