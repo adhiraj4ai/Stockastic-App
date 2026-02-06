@@ -69,10 +69,10 @@ class OptimizationService:
     def fetch_data(scope_type, scope_val, start_date, end_date):
         """Generalized data fetching for backtesting."""
         if scope_type == 'ALL':
-            companies = Company.objects.filter(status='A').values_list('symbol', flat=True)
+            companies = Company.objects.all().values_list('symbol', flat=True)
             queryset = DailyStockPrice.objects.filter(ticker__in=companies, date__range=[start_date, end_date]).order_by('date')
         elif scope_type == 'SECTOR':
-            companies = Company.objects.filter(sector__iexact=scope_val, status='A').values_list('symbol', flat=True)
+            companies = Company.objects.filter(sector__iexact=scope_val).values_list('symbol', flat=True)
             queryset = DailyStockPrice.objects.filter(ticker__in=companies, date__range=[start_date, end_date]).order_by('date')
         else: # SYMBOL
             queryset = DailyStockPrice.objects.filter(ticker=scope_val, date__range=[start_date, end_date]).order_by('date')

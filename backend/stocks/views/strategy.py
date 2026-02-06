@@ -96,7 +96,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
         published_experiments = StrategyExperiment.objects.filter(is_published=True).select_related('strategy')
         
         # NEPSE context: Usually want recommendations for active symbols
-        active_companies = Company.objects.filter(status='A')
+        active_companies = Company.objects.all()
         
         recommendations = []
         
@@ -152,7 +152,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
 
         if sector:
             # Sector-wide backtest
-            companies = Company.objects.filter(sector=sector, status='A')
+            companies = Company.objects.filter(sector=sector)
             results = []
             
             # Batch ID for tracking multi-stock runs

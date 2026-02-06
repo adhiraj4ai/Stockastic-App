@@ -497,7 +497,7 @@ class BrokerAccumulationRecommendationEngine:
         symbols = None
         if sector and sector != 'All':
             symbols = list(
-                Company.objects.filter(sector=sector, status='A')
+                Company.objects.filter(sector=sector)
                 .values_list('symbol', flat=True)
             )
             if not symbols:

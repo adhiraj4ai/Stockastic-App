@@ -17,9 +17,8 @@ from .accumulation_mixin import AccumulationMixin
 def search_stocks(request):
     query = request.GET.get('q', '')
     
-    companies = Company.objects.filter(status='A').exclude(
-        instrument_type__in=['Mutual Funds', 'Non-Convertible Debentures', 'Corporate Debentures', 'Debentures']
-    )
+    # EquityManager automatically filters out non-equity instruments
+    companies = Company.objects.all()
     
     if query:
         companies = companies.filter(symbol__icontains=query)
@@ -317,7 +316,7 @@ def _enrich_fundamental_data(data, fundamental_obj):
     return data
 
 class CompanyViewSet(AccumulationMixin, viewsets.ReadOnlyModelViewSet):
-    queryset = Company.objects.filter(status='A').order_by('symbol')
+    queryset = Company.objects.all().order_by('symbol')
     serializer_class = CompanySerializer
     permission_classes = [AllowAny]
     search_fields = ['symbol', 'name']
@@ -328,7 +327,7 @@ class CompanyViewSet(AccumulationMixin, viewsets.ReadOnlyModelViewSet):
         return Response({'status': 'fundamentals refreshed'})
 
     def get_queryset(self):
-        queryset = Company.objects.filter(status='A').order_by('symbol')
+        queryset = Company.objects.all().order_by('symbol')
         search = self.request.query_params.get('search', None)
         if search:
             queryset = queryset.filter(Q(symbol__icontains=search) | Q(name__icontains=search))
@@ -337,7 +336,7 @@ class CompanyViewSet(AccumulationMixin, viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def sectors(self, request):
         from django.db.models import Count
-        sectors = Company.objects.filter(status='A').values('sector').annotate(
+        sectors = Company.objects.all().values('sector').annotate(
             count=Count('symbol')
         ).order_by('sector')
         return Response([{'name': s['sector'], 'count': s['count']} for s in sectors])

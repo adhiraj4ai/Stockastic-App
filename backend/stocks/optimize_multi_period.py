@@ -106,14 +106,14 @@ def fetch_period_data(symbol, sector, period_start, period_end, DailyStockPrice,
     data_map = {}
     
     if symbol == 'ALL' or (sector and sector.upper() == 'ALL'):
-        companies = Company.objects.filter(status='A').values_list('symbol', flat=True)
+        companies = Company.objects.all().values_list('symbol', flat=True)
         queryset = DailyStockPrice.objects.filter(ticker__in=companies)
         queryset = queryset.filter(date__range=[period_start, period_end])
         queryset = queryset.order_by('date')
         all_data = list(queryset.values('ticker', 'date', 'open', 'high', 'low', 'close', 'volume'))
         
     elif sector:
-        companies = Company.objects.filter(sector__iexact=sector, status='A').values_list('symbol', flat=True)
+        companies = Company.objects.filter(sector__iexact=sector).values_list('symbol', flat=True)
         if not companies:
             return None, f'No active companies in sector: {sector}'
         

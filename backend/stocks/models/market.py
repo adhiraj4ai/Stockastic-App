@@ -1,11 +1,32 @@
 from django.db import models
 
+class EquityManager(models.Manager):
+    """
+    Custom manager that returns only equity instruments.
+    Automatically excludes Debentures and Mutual Funds.
+    """
+    def get_queryset(self):
+        return super().get_queryset().filter(status='A').exclude(
+            instrument_type__in=[
+                'Mutual Funds', 
+                'Mutual Fund',
+                'Non-Convertible Debentures', 
+                'Corporate Debentures', 
+                'Debentures'
+            ]
+        )
+
 class Company(models.Model):
     symbol = models.CharField(max_length=20, primary_key=True, db_index=True)
     name = models.CharField(max_length=255, db_column='companyName')
     sector = models.CharField(max_length=100, db_column='sectorName')
     instrument_type = models.CharField(max_length=100, db_column='instrumentType', null=True, blank=True)
     status = models.CharField(max_length=1, default='A')
+
+    # Use custom manager as default
+    objects = EquityManager()
+    # Keep unfiltered manager for admin/special cases
+    all_objects = models.Manager()
 
     class Meta:
         managed = False

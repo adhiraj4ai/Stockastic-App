@@ -49,12 +49,12 @@ class Command(BaseCommand):
                 scopes.append(('SECTOR', sector_arg))
             else:
                 scopes.append(('ALL', 'ALL'))
-                sectors = Company.objects.filter(status='A').values_list('sector', flat=True).distinct()
+                sectors = Company.objects.all().values_list('sector', flat=True).distinct()
                 for s in sectors:
                     if s: scopes.append(('SECTOR', s))
                 
                 if options['all_symbols']:
-                    symbols = Company.objects.filter(status='A').values_list('symbol', flat=True).distinct()
+                    symbols = Company.objects.all().values_list('symbol', flat=True).distinct()
                     for sym in symbols:
                         scopes.append(('SYMBOL', sym))
 
