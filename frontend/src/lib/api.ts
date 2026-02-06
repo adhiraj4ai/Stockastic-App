@@ -88,11 +88,18 @@ export const chatApi = {
     addMessage: (sessionId: string, role: string, content: string) =>
         api.post<ChatMessage[]>(`/api/chat/sessions/${sessionId}/add_message/`, { role, content }),
     streamMessage: async (sessionId: string, role: string, content: string, onChunk: (chunk: string) => void) => {
-        const token = localStorage.getItem('access_token');
+        // Check cookies first, then localStorage (same as axios interceptor)
+        const token = Cookies.get('access_token') || localStorage.getItem('access_token');
         const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+        if (!token) {
+            console.error('No authentication token found');
+            throw new Error('Authentication required');
+        }
 
         const response = await fetch(`${baseURL}/api/chat/sessions/${sessionId}/stream_message/`, {
             method: 'POST',
+            credentials: 'include', // Important for CORS with cookies
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
