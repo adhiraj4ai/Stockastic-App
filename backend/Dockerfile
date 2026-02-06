@@ -35,13 +35,17 @@ RUN uv pip install --system --no-cache \
 # Copy application code
 COPY . .
 
-# Make init script executable
-RUN chmod +x /app/init-db.sh || true
+# Copy entrypoint script
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
 
 # Expose port
 EXPOSE 8000
 
-# Default command (can be overridden in docker-compose)
+# Set entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+# Default command
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
 

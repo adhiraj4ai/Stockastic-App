@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:15-alpine
+    image: postgres:17-alpine
     container_name: stockastic-postgres
     env_file:
       - .env.docker
@@ -175,12 +175,26 @@ services:
       retries: 3
       start_period: 40s
 
+  # Ollama for Local LLM
+  ollama:
+    image: ollama/ollama:latest
+    container_name: stockastic-ollama
+    ports:
+      - "11435:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - stockastic-network
+    restart: always
+
 volumes:
   postgres_data:
     driver: local
   redis_data:
     driver: local
   ml_models:
+    driver: local
+  ollama_data:
     driver: local
 
 networks:
