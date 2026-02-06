@@ -936,7 +936,8 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                     <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
                                                         <tr>
                                                             <th className="px-6 py-4 text-left font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Metric</th>
-                                                            <th className="px-6 py-4 text-center font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Value</th>
+                                                            <th className="px-6 py-4 text-center font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Audited</th>
+                                                            <th className="px-6 py-4 text-center font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Unaudited</th>
                                                             <th className="px-6 py-4 text-left font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Sector Range (Low - High)</th>
                                                         </tr>
                                                     </thead>
@@ -944,7 +945,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                         {[
                                                             { name: 'P/E Ratio', key: 'pe_ratio', label: 'P/E' },
                                                             { name: 'P/B Ratio', key: 'pb_ratio', label: 'P/B' },
-                                                            { name: 'ROE (%)', key: 'roe', label: 'ROE' },
+                                                            { name: 'ROE (%)', key: 'ro_equity', label: 'ROE' },
                                                             { name: 'EPS', key: 'eps', label: 'EPS' },
                                                             { name: 'Dividend Yield', key: 'dividend_yield', label: 'Div Yield' },
                                                             { name: 'Book Value', key: 'book_value', label: 'Book Value' },
@@ -952,14 +953,27 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                         ].map((metric, i) => {
                                                             const indicator = data.fundamental?.fundamental_indicators?.find(ind => ind.name.toLowerCase().includes(metric.label.toLowerCase())) ||
                                                                 data.fundamental?.fundamental_indicators?.find(ind => ind.name === metric.name);
-                                                            const rawValue = (data.fundamental as any)?.[metric.key];
-                                                            const displayValue = indicator?.value || (rawValue ? (typeof rawValue === 'number' && rawValue > 10000000 ? (rawValue / 10000000).toFixed(2) + ' Cr' : rawValue.toString()) : '-');
+
+                                                            const auditedValue = (data.fundamental as any)?.[metric.key];
+                                                            const unauditedValue = (data.fundamental as any)?.[`${metric.key}_unaudited`] || auditedValue;
+
+                                                            const formatVal = (val: any) => {
+                                                                if (val === null || val === undefined) return '-';
+                                                                if (typeof val === 'number') {
+                                                                    if (val > 10000000) return (val / 10000000).toFixed(2) + ' Cr';
+                                                                    return val.toFixed(2);
+                                                                }
+                                                                return val.toString();
+                                                            };
 
                                                             return (
                                                                 <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
                                                                     <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">{metric.name}</td>
                                                                     <td className="px-6 py-4 text-center">
-                                                                        <span className="px-2.5 py-1 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold text-xs ring-1 ring-blue-100 dark:ring-blue-800">{displayValue}</span>
+                                                                        <span className="px-2.5 py-1 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold text-[11px] ring-1 ring-blue-100 dark:ring-blue-800">{formatVal(auditedValue)}</span>
+                                                                    </td>
+                                                                    <td className="px-6 py-4 text-center">
+                                                                        <span className="px-2.5 py-1 rounded bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 font-bold text-[11px] ring-1 ring-amber-100 dark:ring-amber-800">{formatVal(unauditedValue)}</span>
                                                                     </td>
                                                                     <td className="px-6 py-4">
                                                                         <div className="flex items-center gap-4">

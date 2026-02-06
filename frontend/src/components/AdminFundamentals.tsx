@@ -256,14 +256,15 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                         </div>
                         <div className="space-y-4">
                             {[
-                                { label: 'P/E Ratio (TTM)', value: fundamental?.pe_ratio },
+                                { label: 'P/E Ratio (Audited)', value: fundamental?.pe_ratio },
+                                { label: 'P/E Ratio (Unaudited)', value: fundamental?.pe_ratio_unaudited },
                                 { label: 'P/B Ratio', value: fundamental?.price_to_book },
                                 { label: 'PEG Ratio', value: fundamental?.peg_ratio },
                                 { label: 'Price to Sales', value: fundamental?.price_to_sales },
                                 { label: 'Graham Diff', value: fundamental?.graham_number_diff, suffix: '%' },
                             ].map((item, idx) => (
                                 <div key={idx} className="flex justify-between items-center group py-0.5">
-                                    <Label className="text-xs font-semibold text-gray-400 dark:text-slate-500 group-hover:text-gray-600 dark:group-hover:text-slate-400 transition-colors uppercase tracking-tight">{item.label}</Label>
+                                    <Label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 group-hover:text-gray-600 dark:group-hover:text-slate-400 transition-colors uppercase tracking-tight">{item.label}</Label>
                                     <span className="text-sm font-bold text-gray-900 dark:text-slate-100 tabular-nums">
                                         {item.value || '-'}{item.value && item.suffix}
                                     </span>
@@ -303,12 +304,20 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                         </div>
                         <div className="space-y-4">
                             <div className="flex justify-between items-center group py-0.5">
-                                <Label className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-tight">EPS (TTM)</Label>
+                                <Label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-tight">EPS (Audited)</Label>
                                 <span className="text-sm font-bold text-gray-900 dark:text-slate-100 tabular-nums">{fundamental?.eps || '-'}</span>
                             </div>
                             <div className="flex justify-between items-center group py-0.5">
-                                <Label className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-tight">Book Value</Label>
+                                <Label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-tight">EPS (Unaudited)</Label>
+                                <span className="text-sm font-bold text-gray-900 dark:text-slate-100 tabular-nums">{fundamental?.eps_unaudited || '-'}</span>
+                            </div>
+                            <div className="flex justify-between items-center group py-0.5">
+                                <Label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-tight">Book Value (Audited)</Label>
                                 <span className="text-sm font-bold text-gray-900 dark:text-slate-100 tabular-nums">{fundamental?.book_value || '-'}</span>
+                            </div>
+                            <div className="flex justify-between items-center group py-0.5">
+                                <Label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-tight">Book Value (Unaudited)</Label>
+                                <span className="text-sm font-bold text-gray-900 dark:text-slate-100 tabular-nums">{fundamental?.book_value_unaudited || '-'}</span>
                             </div>
                             <div className="flex justify-between items-center group py-0.5">
                                 <Label className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-tight">EPS Growth (QoQ)</Label>

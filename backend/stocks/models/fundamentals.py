@@ -14,10 +14,16 @@ class StockFundamental(models.Model):
     public_shares = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
     listed_date = models.DateField(null=True, blank=True)
     
-    # Key Metrics
+    # Key Metrics (Audited/Annual)
     pe_ratio = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     eps = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     book_value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    
+    # Key Metrics (Unaudited/Quarterly)
+    pe_ratio_unaudited = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    eps_unaudited = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    book_value_unaudited = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    
     dividend_yield = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     peg_ratio = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     price_to_book = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)

@@ -471,6 +471,22 @@ class CompanyViewSet(AccumulationMixin, viewsets.ReadOnlyModelViewSet):
             if share_capital:
                 fundamental.paid_up_capital = round(Decimal(share_capital), 2)
             
+            # === UNAUDITED METRICS (LATEST QUARTERLY) ===
+            latest_quarterly = FinancialReport.objects.filter(
+                ticker=ticker,
+                report_type='QUARTERLY'
+            ).order_by('-fiscal_year', '-quarter').first()
+
+            if latest_quarterly:
+                fundamental.eps_unaudited = latest_quarterly.eps
+                fundamental.book_value_unaudited = latest_quarterly.book_value
+                if current_price and latest_quarterly.eps and latest_quarterly.eps > 0:
+                    fundamental.pe_ratio_unaudited = round(Decimal(current_price / float(latest_quarterly.eps)), 2)
+            else:
+                fundamental.eps_unaudited = fundamental.eps
+                fundamental.book_value_unaudited = fundamental.book_value
+                fundamental.pe_ratio_unaudited = fundamental.pe_ratio
+
             # 11. Dividend Yield = (Latest Cash Dividend per Share / Market Price) * 100
             # Search for the latest report WITH a cash dividend, not necessarily the latest report overall
             latest_div_report = FinancialReport.objects.filter(
