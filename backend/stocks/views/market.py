@@ -471,6 +471,20 @@ class CompanyViewSet(AccumulationMixin, viewsets.ReadOnlyModelViewSet):
             if share_capital:
                 fundamental.paid_up_capital = round(Decimal(share_capital), 2)
             
+            # 11. Dividend Yield = (Latest Cash Dividend per Share / Market Price) * 100
+            # Search for the latest report WITH a cash dividend, not necessarily the latest report overall
+            latest_div_report = FinancialReport.objects.filter(
+                ticker=ticker,
+                cash_dividend__gt=0
+            ).order_by('-fiscal_year', '-quarter').first()
+            
+            if latest_div_report and current_price and current_price > 0:
+                # cash_dividend is a percentage of face value (100)
+                cash_amount = float(latest_div_report.cash_dividend)
+                fundamental.dividend_yield = round(Decimal((cash_amount / current_price) * 100), 2)
+            else:
+                fundamental.dividend_yield = 0
+            
             fundamental.save()
             
             # Return updated data
