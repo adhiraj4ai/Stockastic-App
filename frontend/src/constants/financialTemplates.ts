@@ -93,7 +93,7 @@ export const FINANCIAL_TEMPLATES: Record<string, FinancialTemplate> = {
                         { label: 'Net Fee and Commission Income', key: 'net_fee_income' },
                         { label: 'Net Interest, Fee & Commission Income', key: 'net_int_fee_income' },
                         { label: 'Net Trading Income', key: 'trading_income' },
-                        { label: 'Other Operating Income', key: 'other_access_income' },
+                        { label: 'Other Operating Income', key: 'other_operating_income' },
                         { label: 'Total Operating Income', key: 'total_operating_income' },
                     ]
                 },
@@ -118,12 +118,84 @@ export const FINANCIAL_TEMPLATES: Record<string, FinancialTemplate> = {
                     label: 'REGULATORY & OTHERS',
                     key: 'REGULATORY',
                     particulars: [
-                        { label: 'Credit To Deposit Ratio', key: 'cd_ratio' },
-                        { label: 'NPL to Total Loans', key: 'npl_ratio' },
-                        { label: 'Base Rate', key: 'base_rate' },
-                        { label: 'Interest Rate Spread', key: 'spread' },
-                        { label: 'Core Capital (Tier 1)', key: 'core_capital' },
-                        { label: 'Total Capital Fund', key: 'capital_fund' },
+                        { label: 'Credit To Deposit Ratio (%)', key: 'cd_ratio' },
+                        { label: 'NPL to Total Loans (%)', key: 'npl_ratio' },
+                        { label: 'Total Loan Loss Provision to Total NPL (%)', key: 'loan_loss_provision_ratio' },
+                        { label: 'Liquidity (CRR) (%)', key: 'liquidity_crr' },
+                        { label: 'Cost of Funds (%)', key: 'cost_of_funds' },
+                        { label: 'Base Rate (%)', key: 'base_rate' },
+                        { label: 'Interest Rate Spread (%)', key: 'spread' },
+                        { label: 'Core Capital - Tier 1 (%)', key: 'core_capital' },
+                        { label: 'Supplementary Capital (%)', key: 'supplementary_capital' },
+                        { label: 'Total Capital Fund (%)', key: 'capital_fund' },
+                        { label: 'Total No. of Employees', key: 'total_employees' },
+                        { label: 'No. of Branches', key: 'branches' },
+                        { label: 'No. of ATMs', key: 'atms' },
+                    ]
+                }
+            ],
+            cash_flow: [
+                {
+                    label: 'OPERATING ACTIVITIES',
+                    key: 'OPERATING',
+                    particulars: [
+                        { label: 'Interest Received', key: 'interest_received' },
+                        { label: 'Fees and Other Income Received', key: 'fees_received' },
+                        { label: 'Receipts From Other Operating Activities', key: 'other_receipts' },
+                        { label: 'Interest Paid', key: 'interest_paid' },
+                        { label: 'Commission and Fees Paid', key: 'fees_paid' },
+                        { label: 'Cash Payment To Employees', key: 'employee_payments' },
+                        { label: 'Other Expense Paid', key: 'other_payments' },
+                        { label: 'Operating Cash Before Changes', key: 'operating_cash_before_changes' },
+                        { label: 'Change in Due From NRB', key: 'change_nrb' },
+                        { label: 'Change in Placements with BFIs', key: 'change_placements' },
+                        { label: 'Change in Trading Assets', key: 'change_trading_assets' },
+                        { label: 'Change in Loans to BFIs', key: 'change_loans_bfis' },
+                        { label: 'Change in Loans to Customers', key: 'change_loans_customers' },
+                        { label: 'Change in Other Assets', key: 'change_other_assets' },
+                        { label: 'Change in Due To BFIs', key: 'change_due_bfis' },
+                        { label: 'Change in Due To NRB', key: 'change_due_nrb' },
+                        { label: 'Change in Deposits From Customers', key: 'change_deposits' },
+                        { label: 'Change in Borrowings', key: 'change_borrowings' },
+                        { label: 'Change in Other Liabilities', key: 'change_other_liabilities' },
+                        { label: 'Operating Cash Before Tax', key: 'operating_cash_before_tax' },
+                        { label: 'Income Taxes Paid', key: 'tax_paid' },
+                        { label: 'Net Cash From Operating Activities', key: 'net_operating_cash' },
+                    ]
+                },
+                {
+                    label: 'INVESTING ACTIVITIES',
+                    key: 'INVESTING',
+                    particulars: [
+                        { label: 'Purchase Of Investment Securities', key: 'purchase_investments' },
+                        { label: 'Sale Of Investment Securities', key: 'sale_investments' },
+                        { label: 'Purchase Of Property and Equipment', key: 'purchase_ppe' },
+                        { label: 'Sale Of Property and Equipment', key: 'sale_ppe' },
+                        { label: 'Purchase Of Intangible Assets', key: 'purchase_intangibles' },
+                        { label: 'Sale Of Intangible Assets', key: 'sale_intangibles' },
+                        { label: 'Net Cash Used In Investing Activities', key: 'net_investing_cash' },
+                    ]
+                },
+                {
+                    label: 'FINANCING ACTIVITIES',
+                    key: 'FINANCING',
+                    particulars: [
+                        { label: 'Receipt From Issue Of Debt Securities', key: 'issue_debt_securities' },
+                        { label: 'Repayment Of Debt Securities', key: 'repay_debt_securities' },
+                        { label: 'Receipt From Issue Of Subordinated Liabilities', key: 'issue_subordinated' },
+                        { label: 'Repayment Of Subordinated Liabilities', key: 'repay_subordinated' },
+                        { label: 'Receipt From Issue Of Shares', key: 'issue_shares' },
+                        { label: 'Dividends Paid', key: 'dividends_paid' },
+                        { label: 'Net Cash From Financing Activities', key: 'net_financing_cash' },
+                    ]
+                },
+                {
+                    label: 'SUMMARY',
+                    key: 'SUMMARY',
+                    particulars: [
+                        { label: 'Net Increase (Decrease) In Cash', key: 'net_change_cash' },
+                        { label: 'Cash At Beginning Of Period', key: 'cash_beginning' },
+                        { label: 'Cash At End Of Period', key: 'cash_ending' },
                     ]
                 }
             ]

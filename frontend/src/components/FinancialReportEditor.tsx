@@ -33,6 +33,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { FINANCIAL_TEMPLATES, SECTOR_TO_TEMPLATE } from '@/constants/financialTemplates';
+import { formatNepaliNumber, parseNepaliNumber } from '@/lib/formatters';
+
 
 interface FinancialReportEditorProps {
     ticker: string;
@@ -49,6 +51,7 @@ interface FinancialReportEditorProps {
 export default function FinancialReportEditor({ ticker, reportId, initialData, onClose, onSaveSuccess }: FinancialReportEditorProps) {
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [isEditing, setIsEditing] = useState(!reportId); // Edit mode for new reports, view mode for existing
 
     // Basic Report State
     const [fiscalYear, setFiscalYear] = useState('');
@@ -153,27 +156,33 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
             if (report.balance_sheet) {
                 Object.entries(report.balance_sheet).forEach(([section, particulars]: [string, any]) => {
                     Object.entries(particulars).forEach(([key, val]: [string, any]) => {
-                        bsData[`${section}.${key}`] = val?.toString() || '';
+                        const value = val?.toString() || '';
+                        bsData[`${section}.${key}`] = value ? formatNepaliNumber(value) : '';
                     });
                 });
             }
             setBalanceSheet(bsData);
 
+
             const plData: Record<string, string> = {};
             if (report.profit_loss) {
                 Object.entries(report.profit_loss).forEach(([section, particulars]: [string, any]) => {
                     Object.entries(particulars).forEach(([key, val]: [string, any]) => {
-                        plData[`${section}.${key}`] = val?.toString() || '';
+                        const value = val?.toString() || '';
+                        // Don't format REGULATORY fields - they're percentages/small numbers
+                        plData[`${section}.${key}`] = (section === 'REGULATORY') ? value : (value ? formatNepaliNumber(value) : '');
                     });
                 });
             }
             setProfitLoss(plData);
 
+
             const cfData: Record<string, string> = {};
             if (report.cash_flow) {
                 Object.entries(report.cash_flow).forEach(([section, particulars]: [string, any]) => {
                     Object.entries(particulars).forEach(([key, val]: [string, any]) => {
-                        cfData[`${section}.${key}`] = val?.toString() || '';
+                        const value = val?.toString() || '';
+                        cfData[`${section}.${key}`] = value ? formatNepaliNumber(value) : '';
                     });
                 });
             }
@@ -183,6 +192,22 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
         } finally {
             setLoading(false);
         }
+    };
+
+    // Helper function to handle input change with Nepali formatting
+    const handleNumberInput = (value: string) => {
+        // Allow user to type freely, only parse commas
+        return value;
+    };
+
+    // Helper function to format number on blur
+    const formatInputValue = (value: string) => {
+        if (!value) return '';
+        const parsed = parseNepaliNumber(value);
+        if (parsed && !isNaN(Number(parsed))) {
+            return formatNepaliNumber(parsed);
+        }
+        return value;
     };
 
     const handleSave = async () => {
@@ -295,15 +320,29 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                         <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
                             {fiscalYear || 'FY ????'} {reportType === 'QUARTERLY' ? `Q${quarter}` : 'Annual'}
                         </span>
+                        <span className="text-sm text-gray-500 dark:text-slate-400 font-medium">{ticker}</span>
+                        {reportId && !isEditing && (
+                            <span className="px-3 py-1 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 text-xs font-semibold rounded-full">View Only</span>
+                        )}
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={onClose} size="sm" className="font-semibold text-gray-600 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800">
-                        Discard
-                    </Button>
-                    <Button onClick={handleSave} disabled={saving} size="sm" className="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 font-bold gap-2 min-w-[120px] shadow-sm">
-                        {saving ? 'Saving...' : <><Save className="w-4 h-4" /> Save Changes</>}
-                    </Button>
+                    {reportId && !isEditing ? (
+                        <Button onClick={() => setIsEditing(true)} size="sm" className="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 font-bold shadow-sm">
+                            Edit Report
+                        </Button>
+                    ) : (
+                        <>
+                            {reportId && (
+                                <Button variant="outline" onClick={() => setIsEditing(false)} size="sm" className="font-semibold text-gray-600 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800">
+                                    Cancel
+                                </Button>
+                            )}
+                            <Button onClick={handleSave} disabled={saving} size="sm" className="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 font-bold gap-2 min-w-[120px] shadow-sm">
+                                {saving ? 'Saving...' : <><Save className="w-4 h-4" /> Save Changes</>}
+                            </Button>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -342,11 +381,21 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                                 {p.description && <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">{p.description}</p>}
                                             </div>
                                             <div className="relative w-40">
-                                                <Input
-                                                    className="h-10 text-right font-mono text-sm focus:ring-blue-500 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 dark:text-slate-100"
-                                                    value={balanceSheet[`${section.key}.${p.key}`] || ''}
-                                                    onChange={(e) => setBalanceSheet(prev => ({ ...prev, [`${section.key}.${p.key}`]: e.target.value }))}
-                                                />
+                                                {isEditing ? (
+                                                    <Input
+                                                        className="h-10 text-right font-mono text-sm focus:ring-blue-500 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 dark:text-slate-100"
+                                                        value={balanceSheet[`${section.key}.${p.key}`] || ''}
+                                                        onChange={(e) => setBalanceSheet(prev => ({ ...prev, [`${section.key}.${p.key}`]: e.target.value }))}
+                                                        onBlur={(e) => {
+                                                            const formatted = formatInputValue(e.target.value);
+                                                            setBalanceSheet(prev => ({ ...prev, [`${section.key}.${p.key}`]: formatted }));
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div className="h-10 px-3 flex items-center justify-end text-right font-mono text-sm text-gray-900 dark:text-slate-100 bg-gray-50 dark:bg-slate-800/50 rounded-md border border-gray-200 dark:border-slate-700">
+                                                        {balanceSheet[`${section.key}.${p.key}`] || '-'}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -500,11 +549,23 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                                 </Label>
                                             </div>
                                             <div className="relative w-40">
-                                                <Input
-                                                    className="h-9 text-right font-mono text-xs focus:ring-indigo-500 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100"
-                                                    value={profitLoss[`${section.key}.${p.key}`] || ''}
-                                                    onChange={(e) => setProfitLoss(prev => ({ ...prev, [`${section.key}.${p.key}`]: e.target.value }))}
-                                                />
+                                                {isEditing ? (
+                                                    <Input
+                                                        className="h-9 text-right font-mono text-xs focus:ring-indigo-500 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100"
+                                                        value={profitLoss[`${section.key}.${p.key}`] || ''}
+                                                        onChange={(e) => setProfitLoss(prev => ({ ...prev, [`${section.key}.${p.key}`]: e.target.value }))}
+                                                        onBlur={(e) => {
+                                                            // Don't format REGULATORY fields - they're percentages/small numbers
+                                                            if (section.key === 'REGULATORY') return;
+                                                            const formatted = formatInputValue(e.target.value);
+                                                            setProfitLoss(prev => ({ ...prev, [`${section.key}.${p.key}`]: formatted }));
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div className="h-9 px-3 flex items-center justify-end text-right font-mono text-xs text-gray-900 dark:text-slate-100 bg-gray-50 dark:bg-slate-800/50 rounded-md border border-gray-200 dark:border-slate-700">
+                                                        {profitLoss[`${section.key}.${p.key}`] || '-'}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -529,11 +590,21 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                                 </Label>
                                             </div>
                                             <div className="relative w-40">
-                                                <Input
-                                                    className="h-9 text-right font-mono text-xs focus:ring-emerald-500 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100"
-                                                    value={cashFlow[`${section.key}.${p.key}`] || ''}
-                                                    onChange={(e) => setCashFlow(prev => ({ ...prev, [`${section.key}.${p.key}`]: e.target.value }))}
-                                                />
+                                                {isEditing ? (
+                                                    <Input
+                                                        className="h-9 text-right font-mono text-xs focus:ring-emerald-500 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100"
+                                                        value={cashFlow[`${section.key}.${p.key}`] || ''}
+                                                        onChange={(e) => setCashFlow(prev => ({ ...prev, [`${section.key}.${p.key}`]: e.target.value }))}
+                                                        onBlur={(e) => {
+                                                            const formatted = formatInputValue(e.target.value);
+                                                            setCashFlow(prev => ({ ...prev, [`${section.key}.${p.key}`]: formatted }));
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div className="h-9 px-3 flex items-center justify-end text-right font-mono text-xs text-gray-900 dark:text-slate-100 bg-gray-50 dark:bg-slate-800/50 rounded-md border border-gray-200 dark:border-slate-700">
+                                                        {cashFlow[`${section.key}.${p.key}`] || '-'}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
