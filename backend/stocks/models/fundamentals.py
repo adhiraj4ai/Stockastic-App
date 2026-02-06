@@ -75,6 +75,12 @@ class FinancialReport(models.Model):
     pe_ratio = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     book_value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     return_on_equity = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    
+    # Dividends (expressed as percentages)
+    bonus_share = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    cash_dividend = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    dividend_announced_date = models.DateField(null=True, blank=True)
+    dividend_book_close_date = models.DateField(null=True, blank=True)
 
     balance_sheet = models.JSONField(null=True, blank=True)
     profit_loss = models.JSONField(null=True, blank=True)

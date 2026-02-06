@@ -814,6 +814,20 @@ class Command(BaseCommand):
             },
         }
 
+        # ADBL Dividend Data (FY 072-073 to 081-082)
+        dividend_data = {
+            '072/073': {'bonus': 20, 'cash': 1.05, 'announced': '2016-12-15', 'book_close': '2017-01-05'},
+            '073/074': {'bonus': 20, 'cash': 1.05, 'announced': '2017-12-10', 'book_close': '2017-12-25'},
+            '074/075': {'bonus': 6, 'cash': 15.053, 'announced': '2019-01-05', 'book_close': '2019-01-20'},
+            '075/076': {'bonus': 20, 'cash': 1.053, 'announced': '2019-12-15', 'book_close': '2019-12-30'},
+            '076/077': {'bonus': 15, 'cash': 0.789, 'announced': '2020-12-20', 'book_close': '2021-01-10'},
+            '077/078': {'bonus': 20, 'cash': 1.053, 'announced': '2021-12-05', 'book_close': '2021-12-20'},
+            '078/079': {'bonus': 2, 'cash': 11, 'announced': '2023-01-10', 'book_close': '2023-01-25'},
+            '079/080': {'bonus': 0, 'cash': 0, 'announced': None, 'book_close': None},
+            '080/081': {'bonus': 0, 'cash': 0, 'announced': None, 'book_close': None},
+            '081/082': {'bonus': 0, 'cash': 0, 'announced': None, 'book_close': None},
+        }
+
         # ADBL Cash Flow Data (FY 077-078 to 081-082)
         # Note: Cash flow data only available for recent 5 years
         cash_flow_data = {
@@ -1066,7 +1080,28 @@ class Command(BaseCommand):
             # Extract key metrics
             total_assets = data['ASSETS']['total_assets']
             total_equity = data['EQUITY']['total_equity']
+            share_capital = data['EQUITY'].get('share_capital')
             net_profit = profit_loss_data.get(fiscal_year, {}).get('EXPENSES', {}).get('net_profit')
+            
+            # Calculate derived metrics
+            eps = None
+            book_value = None
+            roe = None
+            
+            if share_capital and share_capital > 0:
+                # EPS = Net Profit / Number of Shares
+                # Share capital is in NPR, face value is typically 100
+                num_shares = share_capital / 100
+                if net_profit and num_shares > 0:
+                    eps = round(net_profit / num_shares, 2)
+                
+                # Book Value = Total Equity / Number of Shares
+                if total_equity and num_shares > 0:
+                    book_value = round(total_equity / num_shares, 2)
+            
+            # ROE = (Net Profit / Total Equity) * 100
+            if net_profit and total_equity and total_equity > 0:
+                roe = round((net_profit / total_equity) * 100, 2)
             
             # Create or update the financial report
             report, created = FinancialReport.objects.update_or_create(
@@ -1080,9 +1115,16 @@ class Command(BaseCommand):
                     'balance_sheet': balance_sheet,
                     'profit_loss': profit_loss,
                     'cash_flow': cash_flow if cash_flow else None,
-                    'paid_up_capital': data['EQUITY'].get('share_capital'),
+                    'paid_up_capital': share_capital,
                     'reserves_and_surplus': data['EQUITY'].get('reserves_reserves'),
                     'net_profit': net_profit,
+                    'eps': eps,
+                    'book_value': book_value,
+                    'return_on_equity': roe,
+                    'bonus_share': dividend_data.get(fiscal_year, {}).get('bonus'),
+                    'cash_dividend': dividend_data.get(fiscal_year, {}).get('cash'),
+                    'dividend_announced_date': dividend_data.get(fiscal_year, {}).get('announced'),
+                    'dividend_book_close_date': dividend_data.get(fiscal_year, {}).get('book_close'),
                 }
             )
             

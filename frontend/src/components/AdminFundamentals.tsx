@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { Button } from "@/components/ui/button";
@@ -8,7 +6,10 @@ import {
     PieChart,
     Loader2,
     TrendingUp,
-    RefreshCw
+    RefreshCw,
+    Pencil,
+    Check,
+    X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,15 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
     const [fundamental, setFundamental] = useState<any>(data || null);
     const [loading, setLoading] = useState(!data);
     const [calculating, setCalculating] = useState(false);
+    const [editingMetadata, setEditingMetadata] = useState(false);
+    const [savingMetadata, setSavingMetadata] = useState(false);
+    const [metadataForm, setMetadataForm] = useState({
+        listed_date: '',
+        market_cap: '',
+        free_float_market_cap: '',
+        shares_outstanding: '',
+        public_shares: ''
+    });
 
     // ... existing fetchFundamental ...
     const fetchFundamental = async () => {
@@ -57,6 +67,21 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
         }
     };
 
+    const handleSaveMetadata = async () => {
+        setSavingMetadata(true);
+        try {
+            const res = await api.patch(`/api/stocks/fundamentals/${ticker}/`, metadataForm);
+            setFundamental(res.data);
+            setEditingMetadata(false);
+            toast.success("Company metadata updated successfully");
+        } catch (err: any) {
+            console.error('Failed to save metadata', err);
+            toast.error("Failed to save company metadata");
+        } finally {
+            setSavingMetadata(false);
+        }
+    };
+
     // ... existing useEffect ...
     useEffect(() => {
         if (data) {
@@ -66,6 +91,19 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
             fetchFundamental();
         }
     }, [ticker, data]);
+
+    // Initialize metadata form when fundamental data loads
+    useEffect(() => {
+        if (fundamental) {
+            setMetadataForm({
+                listed_date: fundamental.listed_date || '',
+                market_cap: fundamental.market_cap || '',
+                free_float_market_cap: fundamental.free_float_market_cap || '',
+                shares_outstanding: fundamental.shares_outstanding || '',
+                public_shares: fundamental.public_shares || ''
+            });
+        }
+    }, [fundamental]);
 
     // ... existing loading check ...
     if (loading) {
@@ -99,26 +137,110 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
         <div className="bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden mb-8 transition-colors duration-500">
             {/* Market Summary - Full Width Row */}
             <div className="bg-gray-50/50 dark:bg-slate-800/30 border-b dark:border-slate-800 px-8 py-6">
+                <div className="flex items-center mb-6">
+                    <div className="flex items-center gap-3">
+                        <h3 className="text-xs font-black uppercase tracking-wider text-gray-700 dark:text-slate-300">Company Information</h3>
+                        {editingMetadata ? (
+                            <div className="flex items-center gap-1">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleSaveMetadata}
+                                    disabled={savingMetadata}
+                                    className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-950/30"
+                                >
+                                    <Check className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setEditingMetadata(false)}
+                                    className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30"
+                                >
+                                    <X className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        ) : (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setEditingMetadata(true)}
+                                className="h-7 w-7 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-slate-500 dark:hover:text-slate-300 dark:hover:bg-slate-800"
+                            >
+                                <Pencil className="w-3.5 h-3.5" />
+                            </Button>
+                        )}
+                    </div>
+                </div>
                 <div className="flex flex-wrap items-center justify-between gap-y-6">
                     <div className="flex flex-col gap-1 min-w-[140px]">
                         <Label className="text-xs font-black uppercase tracking-wider text-gray-400 dark:text-slate-500">Listed Date</Label>
-                        <span className="text-sm font-bold text-gray-900 dark:text-slate-100">{fundamental?.listed_date || '2019-01-01'}</span>
+                        {editingMetadata ? (
+                            <Input
+                                type="date"
+                                value={metadataForm.listed_date}
+                                onChange={(e) => setMetadataForm(prev => ({ ...prev, listed_date: e.target.value }))}
+                                className="h-8 text-sm font-bold dark:bg-slate-800 dark:border-slate-700"
+                            />
+                        ) : (
+                            <span className="text-sm font-bold text-gray-900 dark:text-slate-100">{fundamental?.listed_date || '-'}</span>
+                        )}
                     </div>
                     <div className="flex flex-col gap-1 min-w-[160px]">
                         <Label className="text-xs font-black uppercase tracking-wider text-gray-400 dark:text-slate-500">Market Capitalization</Label>
-                        <span className="text-sm font-bold text-gray-900 dark:text-slate-100">{formatCurrencyShort(fundamental?.market_cap)}</span>
+                        {editingMetadata ? (
+                            <Input
+                                type="number"
+                                value={metadataForm.market_cap}
+                                onChange={(e) => setMetadataForm(prev => ({ ...prev, market_cap: e.target.value }))}
+                                placeholder="NPR"
+                                className="h-8 text-sm font-bold dark:bg-slate-800 dark:border-slate-700"
+                            />
+                        ) : (
+                            <span className="text-sm font-bold text-gray-900 dark:text-slate-100">{formatCurrencyShort(fundamental?.market_cap)}</span>
+                        )}
                     </div>
                     <div className="flex flex-col gap-1 min-w-[160px]">
                         <Label className="text-xs font-black uppercase tracking-wider text-gray-400 dark:text-slate-500">Free Float Market Capitalization</Label>
-                        <span className="text-sm font-bold text-gray-900 dark:text-slate-100">{formatCurrencyShort(fundamental?.free_float_market_cap)}</span>
+                        {editingMetadata ? (
+                            <Input
+                                type="number"
+                                value={metadataForm.free_float_market_cap}
+                                onChange={(e) => setMetadataForm(prev => ({ ...prev, free_float_market_cap: e.target.value }))}
+                                placeholder="NPR"
+                                className="h-8 text-sm font-bold dark:bg-slate-800 dark:border-slate-700"
+                            />
+                        ) : (
+                            <span className="text-sm font-bold text-gray-900 dark:text-slate-100">{formatCurrencyShort(fundamental?.free_float_market_cap)}</span>
+                        )}
                     </div>
                     <div className="flex flex-col gap-1 min-w-[160px]">
                         <Label className="text-xs font-black uppercase tracking-wider text-gray-400 dark:text-slate-500">Shares Outstanding</Label>
-                        <span className="text-sm font-bold text-gray-900 dark:text-slate-100">{formatQuantity(fundamental?.shares_outstanding)}</span>
+                        {editingMetadata ? (
+                            <Input
+                                type="number"
+                                value={metadataForm.shares_outstanding}
+                                onChange={(e) => setMetadataForm(prev => ({ ...prev, shares_outstanding: e.target.value }))}
+                                placeholder="Number of shares"
+                                className="h-8 text-sm font-bold dark:bg-slate-800 dark:border-slate-700"
+                            />
+                        ) : (
+                            <span className="text-sm font-bold text-gray-900 dark:text-slate-100">{formatQuantity(fundamental?.shares_outstanding)}</span>
+                        )}
                     </div>
                     <div className="flex flex-col gap-1 min-w-[160px]">
                         <Label className="text-xs font-black uppercase tracking-wider text-gray-400 dark:text-slate-500">Public Shares</Label>
-                        <span className="text-sm font-bold text-gray-900 dark:text-slate-100">{formatQuantity(fundamental?.public_shares)}</span>
+                        {editingMetadata ? (
+                            <Input
+                                type="number"
+                                value={metadataForm.public_shares}
+                                onChange={(e) => setMetadataForm(prev => ({ ...prev, public_shares: e.target.value }))}
+                                placeholder="Number of shares"
+                                className="h-8 text-sm font-bold dark:bg-slate-800 dark:border-slate-700"
+                            />
+                        ) : (
+                            <span className="text-sm font-bold text-gray-900 dark:text-slate-100">{formatQuantity(fundamental?.public_shares)}</span>
+                        )}
                     </div>
                 </div>
             </div>

@@ -177,9 +177,56 @@ def stock_floorsheet(request, ticker):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def stock_dividends(request, ticker):
-    data = Dividend.objects.filter(ticker=ticker).order_by('-fiscal_year')
-    serializer = DividendSerializer(data, many=True)
-    return Response(serializer.data)
+    from django.db.models import Q
+    
+    # Fetch from FinancialReport
+    financial_dividends = FinancialReport.objects.filter(
+        ticker=ticker
+    ).filter(
+        Q(bonus_share__gt=0) | Q(cash_dividend__gt=0) | Q(dividend_announced_date__isnull=False) | Q(dividend_book_close_date__isnull=False)
+    ).order_by('-fiscal_year', '-quarter')
+    
+    results = []
+    seen_fy = set()
+    
+    for report in financial_dividends:
+        # Prefer annual reports if available, but keep the first one we find for a fiscal year
+        if report.fiscal_year in seen_fy:
+            continue
+            
+        bonus = float(report.bonus_share or 0)
+        cash = float(report.cash_dividend or 0)
+        
+        results.append({
+            'fiscal_year': report.fiscal_year,
+            'bonus_percent': bonus,
+            'cash_percent': cash,
+            'total_percent': bonus + cash,
+            'date': report.dividend_announced_date, # Primary date for display
+            'announced_date': report.dividend_announced_date,
+            'book_close_date': report.dividend_book_close_date,
+        })
+        seen_fy.add(report.fiscal_year)
+        
+    # Also fetch from Dividend model for legacy data
+    dividend_objs = Dividend.objects.filter(ticker=ticker).order_by('-fiscal_year')
+    for d in dividend_objs:
+        if d.fiscal_year not in seen_fy:
+            results.append({
+                'fiscal_year': d.fiscal_year,
+                'bonus_percent': float(d.bonus_percent),
+                'cash_percent': float(d.cash_percent),
+                'total_percent': float(d.total_percent),
+                'date': d.date,
+                'announced_date': d.date,
+                'book_close_date': None,
+            })
+            seen_fy.add(d.fiscal_year)
+            
+    # Sort results by fiscal year descending
+    results.sort(key=lambda x: x['fiscal_year'], reverse=True)
+    
+    return Response(results)
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -323,8 +370,119 @@ class CompanyViewSet(AccumulationMixin, viewsets.ReadOnlyModelViewSet):
     
     @action(detail=True, methods=['post'], permission_classes=[AllowAny])
     def refresh_fundamentals(self, request, pk=None):
-        # Implementation from views.py (simplified or re-used)
-        return Response({'status': 'fundamentals refreshed'})
+        """Recalculate ALL fundamental metrics dynamically from latest financial reports"""
+        from rest_framework import status
+        from decimal import Decimal
+        
+        company = self.get_object()
+        ticker = company.symbol
+        
+        try:
+            # Get latest ANNUAL financial report
+            latest_report = FinancialReport.objects.filter(
+                ticker=ticker,
+                report_type='ANNUAL'
+            ).order_by('-fiscal_year').first()
+            
+            if not latest_report:
+                return Response(
+                    {'error': 'No financial reports found for this company'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Get latest market price
+            latest_price = DailyStockPrice.objects.filter(ticker=ticker).order_by('-date').first()
+            current_price = float(latest_price.close) if latest_price and latest_price.close else None
+            
+            # Extract data from JSON fields
+            balance_sheet = latest_report.balance_sheet or {}
+            profit_loss = latest_report.profit_loss or {}
+            
+            # Get or create fundamental record
+            fundamental, _ = StockFundamental.objects.get_or_create(
+                ticker=ticker,
+                defaults={
+                    'company_name': company.name,
+                    'sector': company.sector
+                }
+            )
+            
+            # === CALCULATE ALL METRICS FROM JSON DATA ===
+            
+            # Extract key values from balance sheet
+            equity_data = balance_sheet.get('EQUITY', {})
+            assets_data = balance_sheet.get('ASSETS', {})
+            liabilities_data = balance_sheet.get('LIABILITIES', {})
+            
+            share_capital = equity_data.get('share_capital')
+            total_equity = equity_data.get('total_equity')
+            total_assets = assets_data.get('total_assets')
+            total_liabilities = liabilities_data.get('total_liabilities')
+            
+            # Extract from profit & loss
+            income_data = profit_loss.get('INCOME', {})
+            expenses_data = profit_loss.get('EXPENSES', {})
+            
+            total_revenue = income_data.get('total_operating_income') or income_data.get('net_interest_income')
+            net_profit = expenses_data.get('net_profit')
+            
+            # Calculate number of shares (face value = 100)
+            num_shares = share_capital / 100 if share_capital else None
+            
+            # 1. EPS = Net Profit / Number of Shares
+            if net_profit and num_shares:
+                fundamental.eps = round(Decimal(net_profit / num_shares), 2)
+            
+            # 2. Book Value = Total Equity / Number of Shares
+            if total_equity and num_shares:
+                fundamental.book_value = round(Decimal(total_equity / num_shares), 2)
+            
+            # 3. ROE = (Net Profit / Total Equity) * 100
+            if net_profit and total_equity and total_equity > 0:
+                fundamental.ro_equity = round(Decimal((net_profit / total_equity) * 100), 2)
+            
+            # 4. ROA = (Net Profit / Total Assets) * 100
+            if net_profit and total_assets and total_assets > 0:
+                fundamental.ro_assets = round(Decimal((net_profit / total_assets) * 100), 2)
+            
+            # 5. P/E Ratio = Market Price / EPS
+            if current_price and fundamental.eps and fundamental.eps > 0:
+                fundamental.pe_ratio = round(Decimal(current_price / float(fundamental.eps)), 2)
+            
+            # 6. P/B Ratio = Market Price / Book Value
+            if current_price and fundamental.book_value and fundamental.book_value > 0:
+                fundamental.price_to_book = round(Decimal(current_price / float(fundamental.book_value)), 2)
+            
+            # 7. Price to Sales = Market Cap / Revenue
+            if current_price and num_shares and total_revenue and total_revenue > 0:
+                market_cap = current_price * num_shares
+                fundamental.market_cap = round(Decimal(market_cap), 2)
+                fundamental.price_to_sales = round(Decimal(market_cap / total_revenue), 2)
+            
+            # 8. Debt to Equity = Total Liabilities / Total Equity
+            if total_liabilities and total_equity and total_equity > 0:
+                fundamental.debt_to_equity = round(Decimal(total_liabilities / total_equity), 2)
+            
+            # 9. Shares Outstanding
+            if num_shares:
+                fundamental.shares_outstanding = round(Decimal(num_shares), 2)
+            
+            # 10. Paid Up Capital
+            if share_capital:
+                fundamental.paid_up_capital = round(Decimal(share_capital), 2)
+            
+            fundamental.save()
+            
+            # Return updated data
+            serializer = StockFundamentalSerializer(fundamental)
+            return Response(serializer.data)
+            
+        except Exception as e:
+            import traceback
+            return Response(
+                {'error': str(e), 'traceback': traceback.format_exc()},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     def get_queryset(self):
         queryset = Company.objects.all().order_by('symbol')
@@ -341,9 +499,44 @@ class CompanyViewSet(AccumulationMixin, viewsets.ReadOnlyModelViewSet):
         ).order_by('sector')
         return Response([{'name': s['sector'], 'count': s['count']} for s in sectors])
 
-class FinancialReportViewSet(viewsets.ReadOnlyModelViewSet):
+class FinancialReportViewSet(viewsets.ModelViewSet):
     queryset = FinancialReport.objects.all().order_by('-fiscal_year', '-quarter')
     serializer_class = FinancialReportSerializer
     permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['ticker', 'report_type', 'fiscal_year']
+
+class StockFundamentalViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing StockFundamental metadata"""
+    queryset = StockFundamental.objects.all()
+    serializer_class = StockFundamentalSerializer
+    permission_classes = [AllowAny]
+    lookup_field = 'ticker'
+    
+    def partial_update(self, request, ticker=None):
+        """Update company metadata fields"""
+        from rest_framework import status
+        
+        try:
+            fundamental = self.get_object()
+            
+            # Update allowed fields
+            allowed_fields = ['listed_date', 'market_cap', 'free_float_market_cap', 'shares_outstanding', 'public_shares']
+            for field in allowed_fields:
+                if field in request.data:
+                    setattr(fundamental, field, request.data[field])
+            
+            fundamental.save()
+            
+            serializer = self.get_serializer(fundamental)
+            return Response(serializer.data)
+        except StockFundamental.DoesNotExist:
+            return Response(
+                {'error': 'Fundamental data not found for this ticker'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

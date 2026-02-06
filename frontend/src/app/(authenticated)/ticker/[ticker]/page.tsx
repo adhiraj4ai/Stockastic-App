@@ -777,7 +777,8 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                         <th className="px-6 py-4 font-semibold text-[10px]">Bonus (%)</th>
                                                         <th className="px-6 py-4 font-semibold text-[10px]">Cash (%)</th>
                                                         <th className="px-6 py-4 font-semibold text-[10px]">Total (%)</th>
-                                                        <th className="px-6 py-4 font-semibold text-[10px] text-right">Declaration Date</th>
+                                                        <th className="px-6 py-4 font-semibold text-[10px]">Announced Date</th>
+                                                        <th className="px-6 py-4 font-semibold text-[10px] text-right">Book Close Date</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -787,7 +788,8 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                             <td className="px-6 py-4"><Badge variant="outline" className="text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800/50 bg-emerald-50/30 dark:bg-emerald-900/20">{div.bonus_percent}%</Badge></td>
                                                             <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{div.cash_percent}%</td>
                                                             <td className="px-6 py-4 font-bold text-blue-600">{div.total_percent}%</td>
-                                                            <td className="px-6 py-4 text-right text-slate-400 text-xs font-mono">{div.date}</td>
+                                                            <td className="px-6 py-4 text-slate-400 text-xs font-mono">{div.announced_date || div.date || '-'}</td>
+                                                            <td className="px-6 py-4 text-right text-slate-400 text-xs font-mono">{div.book_close_date || '-'}</td>
                                                         </tr>
                                                     ))}
                                                     {dividends.length === 0 && (

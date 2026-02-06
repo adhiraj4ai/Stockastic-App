@@ -16,9 +16,11 @@ def sync_financials_to_fundamental(sender, instance, created, **kwargs):
     ticker = instance.ticker
     logger.info(f"FinancialReport saved for {ticker}. Checking for sync...")
 
-    # 1. Check if this is the latest report for this ticker
-    # We sort by fiscal_year desc, then quarter desc
-    latest_report = FinancialReport.objects.filter(ticker=ticker).order_by('-fiscal_year', '-quarter').first()
+    # 1. Get the latest ANNUAL report for this ticker (not quarterly)
+    latest_report = FinancialReport.objects.filter(
+        ticker=ticker,
+        report_type='ANNUAL'
+    ).order_by('-fiscal_year').first()
 
     if not latest_report:
         return

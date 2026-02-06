@@ -65,6 +65,10 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
     const [revenue, setRevenue] = useState('');
     const [netProfit, setNetProfit] = useState('');
     const [eps, setEps] = useState('');
+    const [bonusShare, setBonusShare] = useState('');
+    const [cashDividend, setCashDividend] = useState('');
+    const [announcedDate, setAnnouncedDate] = useState('');
+    const [bookCloseDate, setBookCloseDate] = useState('');
 
     // JSON Data State
     const [balanceSheet, setBalanceSheet] = useState<Record<string, string>>({});
@@ -114,6 +118,10 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
             setRevenue('');
             setNetProfit('');
             setEps('');
+            setBonusShare('');
+            setCashDividend('');
+            setAnnouncedDate('');
+            setBookCloseDate('');
             setBalanceSheet({});
             setProfitLoss({});
             setCashFlow({});
@@ -151,6 +159,10 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
             setRevenue(report.revenue?.toString() || '');
             setNetProfit(report.net_profit?.toString() || '');
             setEps(report.eps?.toString() || '');
+            setBonusShare(report.bonus_share?.toString() || '');
+            setCashDividend(report.cash_dividend?.toString() || '');
+            setAnnouncedDate(report.dividend_announced_date || '');
+            setBookCloseDate(report.dividend_book_close_date || '');
 
             const bsData: Record<string, string> = {};
             if (report.balance_sheet) {
@@ -253,6 +265,10 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
             revenue: revenue ? parseFloat(revenue) : null,
             net_profit: netProfit ? parseFloat(netProfit) : null,
             eps: eps ? parseFloat(eps) : null,
+            bonus_share: bonusShare ? parseFloat(bonusShare) : null,
+            cash_dividend: cashDividend ? parseFloat(cashDividend) : null,
+            dividend_announced_date: announcedDate || null,
+            dividend_book_close_date: bookCloseDate || null,
         };
 
         const formattedBS: any = {};
@@ -362,6 +378,9 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                 Cash Flow
                             </TabsTrigger>
                         )}
+                        <TabsTrigger value="dividend" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
+                            Dividend
+                        </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="bs" className="mt-0 space-y-2 animate-in fade-in duration-300">
@@ -611,6 +630,101 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                 </div>
                             </div>
                         ))}
+                    </TabsContent>
+
+                    <TabsContent value="dividend" className="mt-0 space-y-2 animate-in fade-in duration-300">
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="w-1 h-5 bg-green-500 rounded-full" />
+                                <h4 className="text-sm font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">Dividend Information</h4>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
+                                <div className="flex items-center justify-between gap-6 py-0.5 group">
+                                    <div className="flex-1">
+                                        <Label className="text-sm font-medium text-gray-700 dark:text-slate-300 group-hover:text-gray-900 dark:group-hover:text-slate-100 transition-colors leading-tight">
+                                            Bonus Share (%)
+                                        </Label>
+                                    </div>
+                                    <div className="relative w-40">
+                                        {isEditing ? (
+                                            <Input
+                                                className="h-10 text-right font-mono text-sm focus:ring-green-500 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 dark:text-slate-100"
+                                                value={bonusShare}
+                                                onChange={(e) => setBonusShare(e.target.value)}
+                                                placeholder="%"
+                                            />
+                                        ) : (
+                                            <div className="h-10 px-3 flex items-center justify-end text-right font-mono text-sm text-gray-900 dark:text-slate-100 bg-gray-50 dark:bg-slate-800/50 rounded-md border border-gray-200 dark:border-slate-700">
+                                                {bonusShare ? `${bonusShare}%` : '-'}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between gap-6 py-0.5 group">
+                                    <div className="flex-1">
+                                        <Label className="text-sm font-medium text-gray-700 dark:text-slate-300 group-hover:text-gray-900 dark:group-hover:text-slate-100 transition-colors leading-tight">
+                                            Cash Dividend (%)
+                                        </Label>
+                                    </div>
+                                    <div className="relative w-40">
+                                        {isEditing ? (
+                                            <Input
+                                                className="h-10 text-right font-mono text-sm focus:ring-green-500 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 dark:text-slate-100"
+                                                value={cashDividend}
+                                                onChange={(e) => setCashDividend(e.target.value)}
+                                                placeholder="%"
+                                            />
+                                        ) : (
+                                            <div className="h-10 px-3 flex items-center justify-end text-right font-mono text-sm text-gray-900 dark:text-slate-100 bg-gray-50 dark:bg-slate-800/50 rounded-md border border-gray-200 dark:border-slate-700">
+                                                {cashDividend ? `${cashDividend}%` : '-'}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between gap-6 py-0.5 group">
+                                    <div className="flex-1">
+                                        <Label className="text-sm font-medium text-gray-700 dark:text-slate-300 group-hover:text-gray-900 dark:group-hover:text-slate-100 transition-colors leading-tight">
+                                            Announced Date
+                                        </Label>
+                                    </div>
+                                    <div className="relative w-40">
+                                        {isEditing ? (
+                                            <Input
+                                                type="date"
+                                                className="h-10 text-right font-mono text-sm focus:ring-green-500 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 dark:text-slate-100 dark:[color-scheme:dark]"
+                                                value={announcedDate}
+                                                onChange={(e) => setAnnouncedDate(e.target.value)}
+                                            />
+                                        ) : (
+                                            <div className="h-10 px-3 flex items-center justify-end text-right font-mono text-sm text-gray-900 dark:text-slate-100 bg-gray-50 dark:bg-slate-800/50 rounded-md border border-gray-200 dark:border-slate-700">
+                                                {announcedDate || '-'}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between gap-6 py-0.5 group">
+                                    <div className="flex-1">
+                                        <Label className="text-sm font-medium text-gray-700 dark:text-slate-300 group-hover:text-gray-900 dark:group-hover:text-slate-100 transition-colors leading-tight">
+                                            Book Close Date
+                                        </Label>
+                                    </div>
+                                    <div className="relative w-40">
+                                        {isEditing ? (
+                                            <Input
+                                                type="date"
+                                                className="h-10 text-right font-mono text-sm focus:ring-green-500 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 dark:text-slate-100 dark:[color-scheme:dark]"
+                                                value={bookCloseDate}
+                                                onChange={(e) => setBookCloseDate(e.target.value)}
+                                            />
+                                        ) : (
+                                            <div className="h-10 px-3 flex items-center justify-end text-right font-mono text-sm text-gray-900 dark:text-slate-100 bg-gray-50 dark:bg-slate-800/50 rounded-md border border-gray-200 dark:border-slate-700">
+                                                {bookCloseDate || '-'}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </TabsContent>
                 </Tabs>
             </div>
