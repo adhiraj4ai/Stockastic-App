@@ -28,6 +28,8 @@ import { Sparkline } from '@/components/Sparkline';
 import { MarketBubbleMap } from '@/components/MarketBubbleMap';
 import { MarketHeatmap } from '@/components/MarketHeatmap';
 import { SentimentGauge } from '@/components/SentimentGauge';
+import { SectorTreemap } from '@/components/SectorTreemap';
+import { BrokerFlowChart } from '@/components/BrokerFlowChart';
 import { MarketHealthRadar } from '@/components/MarketHealthRadar';
 import { VolumeShockers } from '@/components/VolumeShockers';
 import { MiniSectorCard } from '@/components/MiniSectorCard';
@@ -114,6 +116,8 @@ export default function DashboardPage() {
     const [viewMetric, setViewMetric] = useState<'gainers' | 'volume'>('gainers');
     const [mounted, setMounted] = useState(false);
 
+    const [indexHistory, setIndexHistory] = useState<{ date: string, value: number, volume: number, turnover: number }[]>([]);
+
     const router = useRouter();
     // Load Recently Viewed
     useEffect(() => {
@@ -146,6 +150,14 @@ export default function DashboardPage() {
                 // Fetch Market Summary
                 const summaryResponse = await api.get('/api/stocks/summary/');
                 setData(summaryResponse.data);
+
+                // Fetch Index History (NEPSE Proxy)
+                try {
+                    const historyResponse = await api.get('/api/stocks/sector-history/NEPSE/');
+                    setIndexHistory(historyResponse.data);
+                } catch (hErr) {
+                    console.error("Failed to fetch index history", hErr);
+                }
 
                 // Fetch Portfolio for Stats
                 const portfolioResponse = await api.get('/api/stocks/portfolio/');
@@ -189,9 +201,15 @@ export default function DashboardPage() {
         fetchData();
     }, [router]);
 
-    // Simulated Sparkline Data (Since historical index point is not in summary)
+    // Trend Sparkline Data (Real or Fallback)
     const indexSparkData = useMemo(() => {
+        if (indexHistory.length > 0) {
+            // Take last 20 points for sparkline
+            return indexHistory.slice(-20).map(d => d.value);
+        }
+
         if (!data || !data.market_summary) return [];
+        // Fallback simulation if real data fails
         const points = 10;
         const current = data.market_summary.total_points;
         const change = data.market_summary.points_change;
@@ -202,7 +220,7 @@ export default function DashboardPage() {
             return start + (change * progress) + noise;
         });
         return trend;
-    }, [data]);
+    }, [data, indexHistory]);
 
     // Calculate Market Sentiment (0 to 100)
     const marketSentiment = useMemo(() => {
@@ -215,17 +233,52 @@ export default function DashboardPage() {
         return Math.max(0, Math.min(100, breadthRatio + momentumBonus));
     }, [data]);
 
-    // Market Health radar data
-    const marketHealthData = useMemo(() => {
-        if (!data || !data.market_summary) return { volume: 50, turnover: 50, breadth: 50, volatility: 50, participation: 50 };
+    // Real Market Health Data
+    const marketHealth = useMemo(() => {
+        if (!data || !data.market_summary || indexHistory.length < 30) {
+            // Fallback if not enough history
+            return {
+                scores: { volume: 50, turnover: 50, breadth: 50, volatility: 50, participation: 50 },
+                raw: null
+            };
+        }
+
+        // Calculate 30-day averages
+        const last30 = indexHistory.slice(-30);
+        const avgVol = last30.reduce((sum, d) => sum + (d.volume || 0), 0) / last30.length;
+        const avgTurn = last30.reduce((sum, d) => sum + (d.turnover || 0), 0) / last30.length;
+
+        const todayVol = data.market_summary.total_volume;
+        const todayTurn = data.market_summary.total_turnover;
+
+        // Relative Score (50 = Average, 100 = 2x Average)
+        // Cap at 100
+        const volScore = Math.min(100, (todayVol / (avgVol || 1)) * 50);
+        const turnScore = Math.min(100, (todayTurn / (avgTurn || 1)) * 50);
+
+        const breadthScore = data.market_summary.advancers_percent;
+
+        // Volatility Score (Stability): Lower daily range % is better? 
+        // Or actually, consistent uptrend is "Healthy". 
+        // Let's use simple Breadth Ratio for now as "Stability/Participation" proxy
+        const participationScore = (data.market_summary.advancers / (data.market_summary.advancers + data.market_summary.decliners || 1)) * 100;
+
         return {
-            volume: 75, // Simulated high volume
-            turnover: 65,
-            breadth: data.market_summary.advancers_percent,
-            volatility: 80, // Higher stability = higher score
-            participation: 70
+            scores: {
+                volume: volScore,
+                turnover: turnScore,
+                breadth: breadthScore,
+                volatility: 75, // Placeholder until IV data
+                participation: participationScore
+            },
+            raw: {
+                volume: todayVol,
+                avgVolume: avgVol,
+                turnover: todayTurn,
+                avgTurnover: avgTurn
+            }
         };
-    }, [data]);
+    }, [data, indexHistory]);
 
     if (!mounted) return null;
 
@@ -376,7 +429,7 @@ export default function DashboardPage() {
                 >
 
                     {/* LEFT COLUMN: Deep Analysis & Watchlists */}
-                    <motion.div variants={itemVariants} className="xl:col-span-1 space-y-6">
+                    <motion.div variants={itemVariants} className="xl:col-span-1 space-y-6 sticky top-24 self-start">
 
                         {/* Market Sentiment Gauge */}
                         <Card className="bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none hover:shadow-2xl transition-all duration-500 cursor-default group backdrop-blur-xl relative overflow-hidden">
@@ -450,6 +503,19 @@ export default function DashboardPage() {
                         <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
                             <CardContent className="p-5">
                                 <InstitutionalInterest />
+                            </CardContent>
+                        </Card>
+
+                        {/* Broker Flow / Whale Watch (Moved from Main Grid) */}
+                        <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
+                            <CardHeader className="p-3 pb-1">
+                                <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
+                                    <Wallet size={14} className="text-blue-500" /> Smart Money Flow
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-4 pt-0">
+                                {/* Using any type for data because WhaleWatchData interface isn't exported yet contextually */}
+                                <BrokerFlowChart data={(data as any).whale_watch || []} height={320} />
                             </CardContent>
                         </Card>
 
@@ -562,7 +628,11 @@ export default function DashboardPage() {
                                     <CardContent className="p-6 pt-0">
                                         <div className="flex flex-col md:flex-row items-center gap-6">
                                             <div className="flex-1">
-                                                <MarketHealthRadar data={marketHealthData} height={250} />
+                                                <MarketHealthRadar
+                                                    data={marketHealth.scores}
+                                                    rawData={marketHealth.raw || undefined}
+                                                    height={250}
+                                                />
                                             </div>
                                             <div className="w-full md:w-48 space-y-4">
                                                 <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:border-blue-500/20">
@@ -583,65 +653,18 @@ export default function DashboardPage() {
                         {/* DETAILED STATISTICS ROW */}
                         <div className="lg:col-span-3 grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                            {/* Sector Rankings */}
-                            <Card className="lg:col-span-2 bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
-                                <CardHeader className="p-3 pb-1">
+                            {/* Sector Rankings (Full Width) */}
+                            <Card className="lg:col-span-3 bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none min-h-[400px]">
+                                <CardHeader className="p-3 pb-1 flex flex-row items-center justify-between">
                                     <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
                                         <BarChart3 size={14} /> Sector Performance & Liquidity Matrix
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="p-6 pt-0">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 mt-6">
-                                        {(sector_summary || []).sort((a, b) => b.change - a.change).slice(0, 10).map((sector, i) => (
-                                            <div key={i} className="space-y-1.5 group/item">
-                                                <div className="flex justify-between text-[11px] font-bold tracking-tight">
-                                                    <span className="text-slate-800 dark:text-slate-300 truncate max-w-[150px] group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400 transition-colors uppercase tracking-wider">{sector.name}</span>
-                                                    <span className={`${sector.change >= 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
-                                                        {sector.change >= 0 ? '+' : ''}{sector.change.toFixed(2)}%
-                                                    </span>
-                                                </div>
-                                                <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200/50 dark:border-slate-800">
-                                                    <div
-                                                        className={`h-full ${sector.change >= 0 ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-rose-50 dark:bg-rose-400 opacity-80'}`}
-                                                        style={{ width: `${Math.min(100, Math.abs(sector.change) * 20)}%` }}
-                                                    ></div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                <CardContent className="p-6 pt-0 h-[350px]">
+                                    <SectorTreemap sectors={sector_summary || []} height={350} />
                                 </CardContent>
                             </Card>
 
-                            {/* Portfolio Quick Access */}
-                            <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
-                                <CardHeader className="p-3 pb-1">
-                                    <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                        <DollarSign size={14} className="text-blue-500" /> Account Exposure
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-6 pt-0 flex flex-col justify-center gap-6 h-full min-h-[300px]">
-                                    <div className="space-y-1">
-                                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 tracking-widest">Total Value</span>
-                                        <div className="text-3xl font-bold text-black dark:text-slate-100 tracking-tighter">Rs. {portfolioStats.investment.toLocaleString()}</div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 gap-4">
-                                        <div className={`p-4 rounded-3xl ${portfolioStats.dailyPLPositive ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/30' : 'bg-rose-50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/30'} border transition-colors duration-500`}>
-                                            <span className={`text-[9px] font-bold tracking-widest block mb-1 ${portfolioStats.dailyPLPositive ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>Day Gain/Loss</span>
-                                            <div className={`text-xl font-bold ${portfolioStats.dailyPLPositive ? 'text-emerald-800 dark:text-emerald-500' : 'text-rose-800 dark:text-rose-500'}`}>
-                                                {portfolioStats.dailyPLPositive ? '+' : ''}{portfolioStats.dayPL.toLocaleString()}
-                                            </div>
-                                        </div>
-
-                                        <button
-                                            onClick={() => router.push('/portfolio')}
-                                            className="w-full py-3 bg-slate-900 dark:bg-slate-700 text-white rounded-2xl font-bold text-[10px] tracking-widest hover:bg-slate-800 dark:hover:bg-slate-600 transition-all transform active:scale-95 shadow-lg shadow-slate-200 dark:shadow-none"
-                                        >
-                                            View Full Portfolio
-                                        </button>
-                                    </div>
-                                </CardContent>
-                            </Card>
                         </div>
 
                         {/* FINAL ROW: Volume Drivers & Convergence */}

@@ -466,7 +466,11 @@ def sector_history(request, sector_name):
         tickers = StockFundamental.objects.filter(sector__iexact=sector_name).values_list('ticker', flat=True)
         queryset = queryset.filter(ticker__in=tickers)
     
-    history = queryset.values('date').annotate(value=Sum('close')).order_by('date')
+    history = queryset.values('date').annotate(
+        value=Sum('close'),
+        volume=Sum('volume'),
+        turnover=Sum('turnover')
+    ).order_by('date')
     history_list = list(history)[-100:] 
     
     return Response(history_list)

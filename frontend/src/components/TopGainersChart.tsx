@@ -100,9 +100,19 @@ export const TopGainersChart = ({ gainers, height = 300, metricTitle = 'One-Mont
         return `rgba(${r}, ${g}, ${b}, ${opacity})`;
     };
 
-    const series = targetGainers.map((stock, index) => {
+    // Deterministic color generation based on ticker string
+    const getStockColor = (ticker: string) => {
+        let hash = 0;
+        for (let i = 0; i < ticker.length; i++) {
+            hash = ticker.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const index = Math.abs(hash) % colors.length;
+        return colors[index];
+    };
+
+    const series = targetGainers.map((stock) => {
         const data = historyData[stock.ticker] || [];
-        const color = colors[index % colors.length];
+        const color = getStockColor(stock.ticker);
 
         // Map data to the sorted dates to ensure alignment
         const chartValues = sortedDates.map(dateStr => {
