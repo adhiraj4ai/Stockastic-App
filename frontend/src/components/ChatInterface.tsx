@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Paperclip, Bot, Pin, PinOff, Maximize2, ChevronDown, ChevronRight, ChevronUp, Code2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MessageSquare, X, Send, Paperclip, Bot, Pin, PinOff, Maximize2, ChevronDown, ChevronRight, ChevronUp, Code2, Sparkles, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import ReactMarkdown from 'react-markdown';
@@ -19,7 +20,7 @@ interface Message {
     id: string;
     role: 'user' | 'assistant';
     content: string;
-    timestamp: Date;
+    timestamp: string | Date;
     metadata?: any;
 }
 
@@ -46,7 +47,6 @@ function ThoughtContainer({ rawContent, role, isFinished }: { rawContent: string
         }
     }, [isFinished]);
 
-    // Parse all thoughts from the raw block
     const thoughts: { header: string; content: string }[] = [];
     const regex = /<<<THOUGHT_START:(.*?)>>>([\s\S]*?)<<<THOUGHT_END>>>/g;
     let match;
@@ -54,7 +54,6 @@ function ThoughtContainer({ rawContent, role, isFinished }: { rawContent: string
         thoughts.push({ header: match[1], content: match[2].trim() });
     }
 
-    // Auto-scroll to bottom of thoughts
     const containerRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
         if (isOpen && containerRef.current) {
@@ -97,16 +96,13 @@ function ThoughtContainer({ rawContent, role, isFinished }: { rawContent: string
 function MessageRenderer({ content, role, isFinished }: { content: string; role: 'user' | 'assistant'; isFinished?: boolean }) {
     if (!content) return null;
 
-    // 1. Check for Thought/Narration Sequence (One or more blocks matches)
-    // Regex matches the whole group of thoughts including newlines between them
     const thoughtSequenceMatch = content.match(/((?:<<<THOUGHT_START:[\s\S]*?>>>[\s\S]*?<<<THOUGHT_END>>>\s*)+)/);
 
     if (thoughtSequenceMatch && role === 'assistant') {
-        console.log("Rendering thought block:", thoughtSequenceMatch[0].substring(0, 50) + "...");
         const matchIndex = thoughtSequenceMatch.index!;
         const matchLength = thoughtSequenceMatch[0].length;
         const before = content.substring(0, matchIndex);
-        const rawThoughtBlock = thoughtSequenceMatch[0]; // Contains all thoughts
+        const rawThoughtBlock = thoughtSequenceMatch[0];
         const after = content.substring(matchIndex + matchLength);
 
         return (
@@ -118,7 +114,6 @@ function MessageRenderer({ content, role, isFinished }: { content: string; role:
         );
     }
 
-    // 2. Check for ECharts JSON (Python-generated Chart)
     const echartMatch = content.match(/<<<ECHART_JSON:([\s\S]*?)>>>/);
     if (echartMatch && role === 'assistant') {
         const matchIndex = echartMatch.index!;
@@ -128,30 +123,19 @@ function MessageRenderer({ content, role, isFinished }: { content: string; role:
         const after = content.substring(matchIndex + matchLength);
 
         let option = {};
-        try {
-            option = JSON.parse(jsonStr);
-            console.log("ECharts JSON:", option);
-        } catch (e) {
-            console.error("Failed to parse ECharts JSON", e);
-        }
+        try { option = JSON.parse(jsonStr); } catch (e) { }
 
         return (
             <div className="space-y-4">
                 <MessageRenderer content={before} role={role} isFinished={isFinished} />
                 <div className="w-full h-96 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm my-4">
-                    <ReactECharts
-                        option={option}
-                        style={{ height: '100%', width: '100%' }}
-                        notMerge={true}
-                        lazyUpdate={true}
-                    />
+                    <ReactECharts option={option} style={{ height: '100%', width: '100%' }} notMerge={true} lazyUpdate={true} />
                 </div>
                 <MessageRenderer content={after} role={role} isFinished={isFinished} />
             </div>
         );
     }
 
-    // 3. Check for Data Table
     const tableMatch = content.match(/<<<DATA_TABLE:([\s\S]*?)>>>/);
     if (tableMatch && role === 'assistant') {
         const matchIndex = tableMatch.index!;
@@ -161,11 +145,7 @@ function MessageRenderer({ content, role, isFinished }: { content: string; role:
         const after = content.substring(matchIndex + matchLength);
 
         let data = [];
-        try {
-            data = JSON.parse(jsonStr);
-        } catch (e) {
-            console.error("Failed to parse Table JSON", e);
-        }
+        try { data = JSON.parse(jsonStr); } catch (e) { }
 
         return (
             <div className="space-y-4">
@@ -176,7 +156,6 @@ function MessageRenderer({ content, role, isFinished }: { content: string; role:
         );
     }
 
-    // 4. Check for Collapsible Python
     const pythonMatch = content.match(/<<<COLLAPSIBLE_PYTHON_START>>>([\s\S]*?)<<<COLLAPSIBLE_PYTHON_END>>>/);
     if (pythonMatch && role === 'assistant') {
         const matchIndex = pythonMatch.index!;
@@ -194,7 +173,6 @@ function MessageRenderer({ content, role, isFinished }: { content: string; role:
         );
     }
 
-    // 5. Check for Collapsible SQL
     const sqlMatch = content.match(/<<<COLLAPSIBLE_SQL_START>>>([\s\S]*?)<<<COLLAPSIBLE_SQL_END>>>/);
     if (sqlMatch && role === 'assistant') {
         const matchIndex = sqlMatch.index!;
@@ -215,38 +193,20 @@ function MessageRenderer({ content, role, isFinished }: { content: string; role:
     return <MarkdownRenderer content={content} />;
 }
 
-
 function CollapsibleSQL({ sql }: { sql: string }) {
     const [isOpen, setIsOpen] = useState(false);
-
     return (
         <div className="my-1 border border-indigo-100 dark:border-indigo-900/50 rounded-lg overflow-hidden bg-white dark:bg-slate-900 shadow-sm transition-all hover:border-indigo-200 dark:hover:border-indigo-800">
-            <div
-                onClick={() => setIsOpen(!isOpen)}
-                className="px-4 py-2.5 bg-indigo-50/50 dark:bg-indigo-950/50 flex items-center justify-between cursor-pointer select-none group"
-            >
+            <div onClick={() => setIsOpen(!isOpen)} className="px-4 py-2.5 bg-indigo-50/50 dark:bg-indigo-950/50 flex items-center justify-between cursor-pointer select-none group">
                 <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400 font-bold text-sm">
-                    <span className="p-1 bg-indigo-100 dark:bg-indigo-900/50 rounded text-indigo-600 dark:text-indigo-400">
-                        <Code2 size={14} />
-                    </span>
+                    <span className="p-1 bg-indigo-100 dark:bg-indigo-900/50 rounded text-indigo-600 dark:text-indigo-400"><Code2 size={14} /></span>
                     Database Query (PostgreSQL)
                 </div>
-                {isOpen ? <ChevronUp size={16} className="text-indigo-400 group-hover:text-indigo-600" /> : <ChevronDown size={16} className="text-indigo-400 group-hover:text-indigo-600" />}
+                {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </div>
             {isOpen && (
                 <div className="border-t border-blue-50 bg-[#1e1e1e]">
-                    <SyntaxHighlighter
-                        language="sql"
-                        style={vscDarkPlus}
-                        customStyle={{
-                            margin: 0,
-                            padding: '1rem',
-                            fontSize: '0.85rem',
-                            backgroundColor: 'transparent'
-                        }}
-                    >
-                        {sql}
-                    </SyntaxHighlighter>
+                    <SyntaxHighlighter language="sql" style={vscDarkPlus} customStyle={{ margin: 0, padding: '1rem', fontSize: '0.85rem', backgroundColor: 'transparent' }}>{sql}</SyntaxHighlighter>
                 </div>
             )}
         </div>
@@ -255,35 +215,18 @@ function CollapsibleSQL({ sql }: { sql: string }) {
 
 function CollapsiblePython({ code }: { code: string }) {
     const [isOpen, setIsOpen] = useState(false);
-
     return (
         <div className="my-1 border border-emerald-100 dark:border-emerald-900/50 rounded-lg overflow-hidden bg-white dark:bg-slate-900 shadow-sm transition-all hover:border-emerald-200 dark:hover:border-emerald-800">
-            <div
-                onClick={() => setIsOpen(!isOpen)}
-                className="px-4 py-2.5 bg-emerald-50/50 dark:bg-emerald-950/50 flex items-center justify-between cursor-pointer select-none group"
-            >
+            <div onClick={() => setIsOpen(!isOpen)} className="px-4 py-2.5 bg-emerald-50/50 dark:bg-emerald-950/50 flex items-center justify-between cursor-pointer select-none group">
                 <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold text-sm">
-                    <span className="p-1 bg-emerald-100 dark:bg-emerald-900/50 rounded text-emerald-600 dark:text-emerald-400">
-                        <Code2 size={14} />
-                    </span>
+                    <span className="p-1 bg-emerald-100 dark:bg-emerald-900/50 rounded text-emerald-600 dark:text-emerald-400"><Code2 size={14} /></span>
                     Python Visualization Code
                 </div>
-                {isOpen ? <ChevronUp size={16} className="text-emerald-400 group-hover:text-emerald-600" /> : <ChevronDown size={16} className="text-emerald-400 group-hover:text-emerald-600" />}
+                {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </div>
             {isOpen && (
                 <div className="border-t border-emerald-50 bg-[#1e1e1e]">
-                    <SyntaxHighlighter
-                        language="python"
-                        style={vscDarkPlus}
-                        customStyle={{
-                            margin: 0,
-                            padding: '1rem',
-                            fontSize: '0.85rem',
-                            backgroundColor: 'transparent'
-                        }}
-                    >
-                        {code}
-                    </SyntaxHighlighter>
+                    <SyntaxHighlighter language="python" style={vscDarkPlus} customStyle={{ margin: 0, padding: '1rem', fontSize: '0.85rem', backgroundColor: 'transparent' }}>{code}</SyntaxHighlighter>
                 </div>
             )}
         </div>
@@ -301,51 +244,19 @@ function MarkdownRenderer({ content }: { content: string }) {
                         const match = /language-(\w+)/.exec(className || '');
                         return match ? (
                             <div className="rounded-lg overflow-hidden my-1.5 border border-gray-800 max-w-full overflow-x-auto">
-                                <div className="bg-gray-800 px-4 py-1 text-[10px] text-gray-400 font-mono flex justify-between items-center">
-                                    <span>{match[1].toUpperCase()}</span>
-                                </div>
-                                <SyntaxHighlighter
-                                    language={match[1]}
-                                    style={vscDarkPlus}
-                                    PreTag="div"
-                                    customStyle={{ margin: 0, padding: '1rem', fontSize: '12px' }}
-                                    {...props}
-                                >
-                                    {String(children).replace(/\n$/, '')}
-                                </SyntaxHighlighter>
+                                <div className="bg-gray-800 px-4 py-1 text-[10px] text-gray-400 font-mono flex justify-between items-center"><span>{match[1].toUpperCase()}</span></div>
+                                <SyntaxHighlighter language={match[1]} style={vscDarkPlus} PreTag="div" customStyle={{ margin: 0, padding: '1rem', fontSize: '12px' }} {...props}>{String(children).replace(/\n$/, '')}</SyntaxHighlighter>
                             </div>
                         ) : (
-                            <code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-sm font-mono text-pink-600 dark:text-pink-400" {...props}>
-                                {children}
-                            </code>
+                            <code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-sm font-mono text-pink-600 dark:text-pink-400" {...props}>{children}</code>
                         );
                     },
-                    table({ children }) {
-                        return (
-                            <div className="overflow-x-auto my-1.5 border rounded-lg border-slate-200 dark:border-slate-800 max-w-xl mx-auto backdrop-blur-sm bg-white/50 dark:bg-slate-900/50">
-                                <table className="w-full text-left border-collapse">{children}</table>
-                            </div>
-                        );
-                    },
-                    thead({ children }) {
-                        return <thead className="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-100 dark:border-slate-800">{children}</thead>;
-                    },
-                    th({ children }) {
-                        return <th className="px-4 py-2 font-black text-slate-700 dark:text-slate-400 text-xs uppercase tracking-wider">{children}</th>;
-                    },
-                    td({ children }) {
-                        return <td className="px-4 py-2 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400">{children}</td>;
-                    },
-                    p({ children }) {
-                        return <p className="mb-2 last:mb-0 text-slate-700 dark:text-slate-300 leading-relaxed font-medium">{children}</p>;
-                    },
-                    img({ node, ...props }: any) {
-                        return (
-                            <div className="my-4 flex justify-center">
-                                <img className="rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm max-w-md w-full object-cover" {...props} />
-                            </div>
-                        );
-                    }
+                    table({ children }) { return <div className="overflow-x-auto my-1.5 border rounded-lg border-slate-200 dark:border-slate-800 max-w-xl mx-auto backdrop-blur-sm bg-white/50 dark:bg-slate-900/50"><table className="w-full text-left border-collapse">{children}</table></div>; },
+                    thead({ children }) { return <thead className="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-100 dark:border-slate-800">{children}</thead>; },
+                    th({ children }) { return <th className="px-4 py-2 font-black text-slate-700 dark:text-slate-400 text-xs uppercase tracking-wider">{children}</th>; },
+                    td({ children }) { return <td className="px-4 py-2 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400">{children}</td>; },
+                    p({ children }) { return <p className="mb-2 last:mb-0 text-slate-700 dark:text-slate-300 leading-relaxed font-medium">{children}</p>; },
+                    img({ node, ...props }: any) { return <div className="my-4 flex justify-center"><img className="rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm max-w-md w-full object-cover" {...props} /></div>; }
                 }}
             >
                 {content}
@@ -354,30 +265,88 @@ function MarkdownRenderer({ content }: { content: string }) {
     );
 }
 
-export function ChatInterface({
-    isPinned = false,
-    onPinToggle,
-    onClose,
-    onMaximize,
-    className = '',
-    hideHeader = false,
-    messages = [],
-    onSendMessage,
-    isLoading = false
-}: ChatInterfaceProps) {
+export function ChatInterface({ hideHeader = false, messages = [], onSendMessage, isLoading = false, className = '' }: ChatInterfaceProps) {
     const [mounted, setMounted] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    useEffect(() => { setMounted(true); }, []);
 
+    // Keep track of previous message count to detect new messages
+    const prevMsgCountRef = useRef(messages.length);
+
+    // Auto-scroll logic
     useEffect(() => {
         if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+            const isAtBottom = scrollHeight - scrollTop - clientHeight < 150; // 150px tolerance
+            const isNewMessage = messages.length > prevMsgCountRef.current;
+
+            // Scroll if we are already at the bottom OR if a new message arrived
+            if (isAtBottom || isNewMessage) {
+                // Use immediate scroll for responsiveness
+                scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+
+                // Double check for layout shifts
+                setTimeout(() => {
+                    if (scrollRef.current) {
+                        scrollRef.current.scrollTo({
+                            top: scrollRef.current.scrollHeight,
+                            behavior: 'smooth'
+                        });
+                    }
+                }, 100);
+            }
+            prevMsgCountRef.current = messages.length;
         }
-    }, [messages]);
+    }, [messages, isLoading]);
+
+    // Navigation Rail Logic
+    const [activeMessageId, setActiveMessageId] = useState<string>('');
+    const userMessages = messages.filter(m => m.role === 'user');
+
+    const scrollToMessage = (msgId: string) => {
+        const element = document.getElementById(`msg-${msgId}`);
+        if (element && scrollRef.current) {
+            // Calculate position relative to container
+            const containerTop = scrollRef.current.getBoundingClientRect().top;
+            const elementTop = element.getBoundingClientRect().top;
+            const offset = elementTop - containerTop + scrollRef.current.scrollTop - 20; // 20px padding
+
+            scrollRef.current.scrollTo({ top: offset, behavior: 'smooth' });
+            setActiveMessageId(msgId);
+        }
+    };
+
+    // Scroll Spy
+    useEffect(() => {
+        const container = scrollRef.current;
+        if (!container) return;
+
+        const handleScroll = () => {
+            const containerTop = container.getBoundingClientRect().top;
+            let currentActiveId = '';
+
+            // Find the user message closest to the top (but not too far below)
+            for (const msg of userMessages) {
+                const element = document.getElementById(`msg-${msg.id}`);
+                if (element) {
+                    const rect = element.getBoundingClientRect();
+                    const distance = rect.top - containerTop;
+
+                    if (distance < 300 && distance > -rect.height) {
+                        currentActiveId = msg.id;
+                    }
+                }
+            }
+            if (currentActiveId && currentActiveId !== activeMessageId) {
+                setActiveMessageId(currentActiveId);
+            }
+        };
+
+        container.addEventListener('scroll', handleScroll, { passive: true });
+        return () => container.removeEventListener('scroll', handleScroll);
+    }, [userMessages, activeMessageId]);
 
     const handleSendMessage = () => {
         if (!inputValue.trim()) return;
@@ -388,182 +357,174 @@ export function ChatInterface({
     if (!mounted) return null;
 
     const isNewChat = (messages?.length || 0) === 0;
-
-    const getGreeting = () => {
-        const hour = new Date().getHours();
-        if (hour < 12) return 'Good morning';
-        if (hour < 17) return 'Good afternoon';
-        return 'Good evening';
-    };
+    const lastUserIndex = messages.findLastIndex(m => m.role === 'user');
 
     return (
-        <div className={`flex flex-col h-full bg-white/50 dark:bg-slate-950/50 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/50 transition-colors duration-300 ${className}`}>
-            {/* Header */}
-            {!hideHeader && (
-                <div className="p-4 bg-slate-900 dark:bg-indigo-600 text-white flex items-center justify-between shrink-0 shadow-lg relative z-10">
-                    <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md">
-                            <Bot size={20} className="text-white" />
-                        </div>
-                        <div>
-                            <h3 className="font-bold text-base leading-tight">Stockastic AI</h3>
-                            <div className="flex items-center gap-1.5 opacity-90">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                                <span className="text-[10px] uppercase font-black tracking-widest">Online</span>
+        <div className={`flex h-full bg-transparent relative overflow-hidden font-sans ${className}`}>
+            {/* Ambient Ambient Background Glimmer (Pseudo-layer) */}
+            <div className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-20 transition-opacity duration-1000">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] animate-float" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px] animate-float" style={{ animationDelay: '-3s' }} />
+            </div>
+
+            {/* Right Floating Navigation Rail (The Glowing Line) */}
+            {!isNewChat && (
+                <div className="absolute right-6 top-1/2 -translate-y-1/2 z-50 flex flex-col items-end gap-3 pointer-events-none">
+                    {userMessages.map((msg) => {
+                        const isActive = msg.id === activeMessageId;
+                        return (
+                            <div key={msg.id} className="group flex items-center gap-4 pointer-events-auto">
+                                <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0 bg-background/80 backdrop-blur-md text-[10px] py-1.5 px-3 rounded-full border border-border/50 text-foreground/70 font-mono tracking-widest uppercase shadow-2xl pointer-events-none truncate max-w-[180px]">
+                                    {msg.content}
+                                </div>
+                                <button
+                                    onClick={() => scrollToMessage(msg.id)}
+                                    className={`h-4 rounded-full transition-all duration-500 pointer-events-auto relative ${isActive
+                                            ? 'w-1 bg-primary horizon-glow'
+                                            : 'w-0.5 bg-border/40 hover:w-0.5 hover:bg-primary/50'
+                                        }`}
+                                />
                             </div>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        {/* Maximize Button */}
-                        {onMaximize && (
-                            <button
-                                onClick={onMaximize}
-                                className="p-1.5 hover:bg-white/20 rounded-full transition-colors"
-                                title="Full Screen Chat"
-                            >
-                                <Maximize2 size={18} />
-                            </button>
-                        )}
-
-                        {/* Pin Button */}
-                        {onPinToggle && (
-                            <button
-                                onClick={onPinToggle}
-                                className={`p-1.5 rounded-full transition-colors ${isPinned ? 'bg-white/20 text-white' : 'hover:bg-white/10 text-white/80'}`}
-                                title={isPinned ? "Unpin Sidebar" : "Pin Sidebar"}
-                            >
-                                {isPinned ? <PinOff size={18} /> : <Pin size={18} />}
-                            </button>
-                        )}
-
-                        {/* Close Button */}
-                        {onClose && (
-                            <button
-                                onClick={onClose}
-                                className="p-1.5 hover:bg-white/20 rounded-full transition-colors"
-                            >
-                                <X size={20} />
-                            </button>
-                        )}
-                    </div>
+                        );
+                    })}
                 </div>
             )}
 
-            {/* Content Area */}
-            <div className={`flex-1 flex flex-col min-h-0 bg-transparent ${isNewChat ? 'justify-center' : ''}`}>
-                {/* Messages Area */}
-                <div
-                    className={`${isNewChat ? 'flex-none' : 'flex-1 overflow-y-auto'} p-4`}
-                    ref={scrollRef}
-                >
-                    <div className={`${isNewChat ? 'max-w-2xl text-center' : 'max-w-full'} mx-auto w-full space-y-1 py-4 px-4 sm:px-8`}>
-                        {isNewChat && (
-                            <div className="space-y-4 mb-12 animate-in fade-in slide-in-from-bottom-6 duration-1000">
-                                <h1 className="text-5xl font-black text-slate-800 dark:text-slate-100 tracking-tight">
-                                    {getGreeting()}, <span className="text-indigo-600 dark:text-indigo-400 italic">Jugal</span>
-                                </h1>
-                                <p className="text-xl text-slate-500 dark:text-slate-400 font-bold max-w-lg mx-auto leading-relaxed">
-                                    The markets are moving. What's on your mind?
-                                </p>
-                            </div>
-                        )}
-                        {messages.map((msg) => (
-                            <div
-                                key={msg.id}
-                                className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} ${isNewChat ? 'items-center' : ''}`}
+            <div className="flex-1 flex flex-col min-h-0 relative z-10 overflow-hidden">
+                {/* Minimal Header */}
+                {!hideHeader && !isNewChat && (
+                    <header className="px-8 py-5 flex items-center justify-between shrink-0 backdrop-blur-sm bg-background/5 border-b border-border/10">
+                        <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-primary horizon-glow animate-pulse" />
+                            <span className="text-xs font-black tracking-[0.2em] uppercase text-foreground/40 font-mono">
+                                Stockastic Horizon • <span className="text-primary italic">Gemini 2.0</span>
+                            </span>
+                        </div>
+                    </header>
+                )}
+
+                <div className="flex-1 flex flex-col min-h-0 bg-transparent relative">
+                    {isNewChat ? (
+                        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="space-y-12 max-w-xl"
                             >
-                                <div
-                                    className={`rounded-2xl px-6 py-3 text-sm shadow-sm leading-relaxed transition-all ${msg.role === 'user'
-                                        ? 'bg-slate-900 dark:bg-indigo-600 text-white border-0 rounded-br-none max-w-[85%]'
-                                        : isNewChat
-                                            ? 'bg-transparent text-slate-800 dark:text-slate-100 border-none shadow-none w-full'
-                                            : 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-800 rounded-bl-none w-full max-w-[95%] lg:max-w-[90%]'
-                                        }`}
-                                >
-                                    <div className={isNewChat ? 'text-xl font-bold text-slate-900 dark:text-slate-100 mb-8 leading-normal' : ''}>
-                                        {(() => {
-                                            // Extract status and finish state
-                                            const statusRegex = /\[\[STATUS:(.+?)\]\]/g;
-                                            const finishMarker = '[[FINISH]]';
+                                <div className="space-y-4">
+                                    <h1 className="text-5xl lg:text-7xl font-bold text-foreground tracking-tighter leading-none">
+                                        Horizon
+                                    </h1>
+                                    <p className="text-muted-foreground/60 text-lg font-medium tracking-tight">
+                                        Your predictive vantage point for global markets.
+                                    </p>
+                                </div>
 
-                                            // Check if finished
-                                            const isFinished = msg.content.includes(finishMarker);
-
-                                            // Find last status
-                                            let lastStatus = null;
-                                            let match;
-                                            // Reset regex state just in case
-                                            statusRegex.lastIndex = 0;
-                                            while ((match = statusRegex.exec(msg.content)) !== null) {
-                                                lastStatus = match[1];
-                                            }
-
-                                            // Clean content for display: Remove tags
-                                            let cleanContent = msg.content
-                                                .replace(/\[\[STATUS:.*?\]\]/g, '')
-                                                .replace(/\[\[FINISH\]\]/g, '')
-                                                .trim();
-
-                                            // Special case: Initial legacy "Thinking..."
-                                            if (cleanContent === 'Thinking...') cleanContent = '';
+                                <div className="grid grid-cols-2 gap-3">
+                                    {['Market Breadth', 'TSLA Sentiment', 'NVDA Technicals', 'Portfolio Yield'].map((action) => (
+                                        <button
+                                            key={action}
+                                            onClick={() => onSendMessage(action)}
+                                            className="px-6 py-4 rounded-2xl bg-foreground/5 hover:bg-foreground/10 border border-border/10 text-sm font-bold text-foreground/60 transition-all hover:scale-[1.02] active:scale-[0.98] text-left group"
+                                        >
+                                            <span className="block text-[10px] text-primary uppercase tracking-widest mb-1 opacity-50 group-hover:opacity-100 transition-opacity">Insight</span>
+                                            {action}
+                                        </button>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        </div>
+                    ) : (
+                        <div className="flex-1 flex flex-col min-h-0">
+                            <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar pt-12 pb-32 scroll-smooth">
+                                <div className="max-w-4xl mx-auto space-y-24 px-8">
+                                    <AnimatePresence initial={false}>
+                                        {messages.map((msg, index) => {
+                                            const isUser = msg.role === 'user';
+                                            const isLastUser = index === lastUserIndex;
 
                                             return (
-                                                <div className="flex flex-col gap-1.5">
-                                                    {cleanContent && <MessageRenderer content={cleanContent} role={msg.role} isFinished={isFinished} />}
+                                                <motion.div
+                                                    id={`msg-${msg.id}`}
+                                                    key={msg.id}
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className={`group relative ${isUser ? 'flex items-center justify-end' : 'w-full'}`}
+                                                >
+                                                    {isUser ? (
+                                                        <div className={`px-6 py-3 rounded-full border bg-foreground/5 dark:bg-white/5 border-border/40 backdrop-blur-md transition-all ${isLastUser ? 'border-primary/30 horizon-glow' : 'opacity-60'}`}>
+                                                            <span className="text-sm font-bold tracking-tight text-foreground/80">{msg.content}</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="space-y-6 w-full">
+                                                            <div className="prose dark:prose-invert max-w-none">
+                                                                {(() => {
+                                                                    const isFinished = msg.content.includes('[[FINISH]]');
+                                                                    const cleanContent = msg.content.replace(/\[\[STATUS:.*?\]\]/g, '').replace(/\[\[FINISH\]\]/g, '').trim();
+                                                                    const isThinking = cleanContent === 'Thinking...' || !cleanContent;
 
-                                                    {!isFinished && msg.role === 'assistant' && (
-                                                        <div className="mt-2">
-                                                            <StockLoader status={lastStatus || "Thinking..."} />
+                                                                    if (isThinking && !isFinished) return null;
+
+                                                                    return (
+                                                                        <div className="space-y-4">
+                                                                            <MessageRenderer content={cleanContent} role={msg.role} isFinished={isFinished} />
+                                                                            {!isFinished && (
+                                                                                <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-[0.2em] text-primary/60">
+                                                                                    <div className="w-1.5 h-1.5 rounded-full bg-primary horizon-glow animate-pulse" />
+                                                                                    Synthesizing Data...
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })()}
+                                                            </div>
                                                         </div>
                                                     )}
-                                                </div>
+                                                </motion.div>
                                             );
-                                        })()}
-                                    </div>
-                                </div>
-                                {!isNewChat && (
-                                    <div className="mt-1 px-1">
-                                        <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">
-                                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                                        })}
 
-                {/* Input Area */}
-                <div className={`${isNewChat ? 'shrink-0' : 'p-4 bg-white/30 dark:bg-slate-950/30 backdrop-blur-md border-t border-slate-100 dark:border-slate-800/50 shrink-0'}`}>
-                    <div className={`${isNewChat ? 'max-w-2xl' : 'max-w-full'} mx-auto w-full px-4 sm:px-8`}>
-                        <div className={`flex items-center gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 focus-within:ring-4 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900/20 transition-all w-full shadow-sm ${isNewChat ? 'py-4 px-6 shadow-xl border-slate-300/50 scale-105' : ''}`}>
-                            <button className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                                <Paperclip size={18} />
-                            </button>
-                            <Input
-                                value={inputValue}
-                                onChange={(e) => setInputValue(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                                placeholder={isLoading ? "AI is thinking..." : "Ask about your portfolio..."}
-                                className="border-none shadow-none focus-visible:ring-0 bg-transparent h-9 px-2 relative text-base text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                                disabled={isLoading}
-                            />
-                            <button
-                                onClick={handleSendMessage}
-                                disabled={!inputValue.trim() || isLoading}
-                                className="p-2.5 bg-slate-900 dark:bg-indigo-600 text-white rounded-xl hover:bg-slate-800 dark:hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md group"
-                            >
-                                <Send size={18} className={`${inputValue.trim() ? 'ml-0.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5' : ''} transition-transform`} />
-                            </button>
-                        </div>
-                    </div>
-                    {isNewChat && (
-                        <div className="text-center mt-6">
-                            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">
-                                AI can make mistakes. Check important info.
-                            </p>
+                                        {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
+                                            <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-[0.2em] text-primary/60">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-primary horizon-glow animate-pulse" />
+                                                Aligning Horizon...
+                                            </div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            </div>
                         </div>
                     )}
+
+                    {/* The Floating Pill Input */}
+                    <div className="absolute bottom-10 left-0 right-0 z-40 px-6 pointer-events-none">
+                        <div className="max-w-3xl mx-auto pointer-events-auto">
+                            <div className="horizon-glass rounded-[2rem] p-2 pr-4 flex items-center transition-all focus-within:horizon-glow group border-border/20 shadow-2xl">
+                                <div className="p-3 text-muted-foreground/40 group-focus-within:text-primary/60 transition-colors">
+                                    <Sparkles size={20} />
+                                </div>
+                                <Input
+                                    value={inputValue}
+                                    onChange={(e) => setInputValue(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                                    placeholder="Consult the Horizon..."
+                                    className="border-none shadow-none focus-visible:ring-0 bg-transparent px-2 text-lg font-medium placeholder:text-muted-foreground/30 placeholder:italic placeholder:font-normal h-14"
+                                    disabled={isLoading}
+                                    autoFocus
+                                />
+                                <button
+                                    onClick={handleSendMessage}
+                                    disabled={!inputValue.trim() || isLoading}
+                                    className={`ml-2 p-3.5 rounded-2xl transition-all ${inputValue.trim()
+                                            ? 'bg-primary text-white scale-100 opacity-100 shadow-xl'
+                                            : 'bg-foreground/5 text-foreground/20 scale-90 opacity-50'
+                                        }`}
+                                >
+                                    <Send size={18} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,5 +1,8 @@
+'use client';
+
 import { useState, useEffect } from 'react';
-import { Plus, MessageSquare, Clock, Calendar, ChevronRight, MoreVertical, Edit2, Trash2, Check, X as CloseIcon } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MessageSquare, MoreVertical, Edit2, Trash2, ChevronRight, PlusCircle, Clock, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -7,6 +10,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from '@/components/ui/input';
 
 interface ChatHistoryItem {
     id: string;
@@ -16,10 +20,10 @@ interface ChatHistoryItem {
 
 interface ChatHistorySidebarProps {
     history: ChatHistoryItem[];
-    activeChatId?: string;
+    activeChatId: string;
     onSelectChat: (id: string) => void;
     onNewChat: () => void;
-    onRenameChat?: (id: string, newTitle: string) => void;
+    onRenameChat?: (id: string, title: string) => void;
     onDeleteChat?: (id: string) => void;
 }
 
@@ -31,165 +35,138 @@ export function ChatHistorySidebar({
     onRenameChat,
     onDeleteChat
 }: ChatHistorySidebarProps) {
-    const [mounted, setMounted] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editValue, setEditValue] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
 
-    useEffect(() => {
-        setMounted(true);
-    }, []);
-
-    if (!mounted) return null;
-
-    // Group history by date
-    const groupedHistory = history.reduce((acc: { [key: string]: ChatHistoryItem[] }, item) => {
-        const today = new Date();
-        const yesterday = new Date();
-        yesterday.setDate(today.getDate() - 1);
-
-        let section = 'Previous';
-        if (item.date.toDateString() === today.toDateString()) {
-            section = 'Today';
-        } else if (item.date.toDateString() === yesterday.toDateString()) {
-            section = 'Yesterday';
-        } else if (item.date > new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)) {
-            section = 'Last 7 Days';
-        }
-
-        if (!acc[section]) acc[section] = [];
-        acc[section].push(item);
-        return acc;
-    }, {});
-
-    const sectionOrder = ['Today', 'Yesterday', 'Last 7 Days', 'Previous'];
+    const filteredHistory = history.filter(item =>
+        item.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
-        <aside className="w-64 bg-white/20 dark:bg-slate-900/20 backdrop-blur-xl border-r border-slate-200/50 dark:border-slate-800 flex flex-col h-full shrink-0">
-            <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30">
+        <div className="w-80 h-full border-r border-border/10 bg-background/20 backdrop-blur-3xl flex flex-col relative z-20 overflow-hidden">
+            {/* Sidebar Header */}
+            <div className="p-8 pb-6 space-y-6">
                 <Button
                     onClick={onNewChat}
-                    className="w-full justify-start gap-2 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-700 text-white rounded-xl py-5 shadow-md active:scale-[0.98] transition-all"
+                    className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-sm horizon-glow transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] border-none"
                 >
-                    <Plus size={18} />
-                    <span className="font-semibold text-sm">New Chat</span>
+                    <PlusCircle className="mr-2" size={18} />
+                    New Horizon
                 </Button>
+
+                <div className="relative group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/40 group-focus-within:text-primary transition-colors" size={14} />
+                    <Input
+                        placeholder="Search history..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10 h-11 bg-foreground/5 border-none rounded-2xl text-[13px] font-medium placeholder:text-muted-foreground/30 focus-visible:ring-1 focus-visible:ring-primary/20 transition-all"
+                    />
+                </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-                <div className="p-1 space-y-1">
-                    {sectionOrder.map(section => {
-                        const items = groupedHistory[section];
-                        if (!items || items.length === 0) return null;
+            {/* History List */}
+            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1 custom-scrollbar">
+                <div className="px-4 py-2">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 mb-4 px-1 flex items-center gap-2">
+                        <Clock size={10} />
+                        Recorded Vantages
+                    </h4>
+                </div>
 
-                        return (
-                            <div key={section} className="space-y-0.5">
-                                <h3 className="px-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 mt-2 first:mt-0">
-                                    {section}
-                                </h3>
-                                <div className="space-y-0.5">
-                                    {items.map(item => (
-                                        <div key={item.id} className="relative group/item w-full px-1">
-                                            {editingId === item.id ? (
-                                                <div className="flex items-center gap-2 pl-4 pr-2 py-1.5 bg-white dark:bg-slate-800 rounded-lg w-full border border-indigo-400 shadow-sm ring-2 ring-indigo-50 dark:ring-indigo-900/20">
-                                                    <input
-                                                        autoFocus
-                                                        value={editValue}
-                                                        onChange={(e) => setEditValue(e.target.value)}
-                                                        onBlur={() => setEditingId(null)}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') {
-                                                                onRenameChat?.(item.id, editValue);
-                                                                setEditingId(null);
-                                                            } else if (e.key === 'Escape') {
-                                                                setEditingId(null);
-                                                            }
-                                                        }}
-                                                        className="flex-1 bg-transparent text-sm border-none focus:ring-0 p-0 font-medium text-slate-900 dark:text-slate-100"
-                                                    />
-                                                    <div className="flex items-center gap-1">
-                                                        <button
-                                                            onMouseDown={(e) => {
-                                                                e.preventDefault();
-                                                                onRenameChat?.(item.id, editValue);
-                                                                setEditingId(null);
-                                                            }}
-                                                            className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 p-0.5"
-                                                        >
-                                                            <Check size={14} />
-                                                        </button>
-                                                        <button
-                                                            onMouseDown={(e) => {
-                                                                e.preventDefault();
-                                                                setEditingId(null);
-                                                            }}
-                                                            className="text-gray-400 hover:text-gray-600 p-0.5"
-                                                        >
-                                                            <CloseIcon size={14} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-0 w-full relative">
-                                                    <button
-                                                        onClick={() => onSelectChat(item.id)}
-                                                        className={`flex-1 text-left pl-4 pr-3 py-1.5 rounded-lg text-sm transition-all duration-200 group flex items-center justify-between min-w-0 ${activeChatId === item.id
-                                                            ? 'bg-slate-900 dark:bg-indigo-600 text-white shadow-lg'
-                                                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
-                                                            }`}
-                                                    >
-                                                        <div className="flex items-center gap-2.5 overflow-hidden w-full">
-                                                            <MessageSquare size={14} className={activeChatId === item.id ? 'text-indigo-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'} />
-                                                            <span className="truncate font-semibold flex-1 tracking-tight">{item.title}</span>
-                                                        </div>
-                                                        {activeChatId !== item.id && (
-                                                            <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-300 shrink-0 ml-1" />
-                                                        )}
-                                                    </button>
-
-                                                    <div className={`absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-opacity ${activeChatId === item.id ? 'bg-slate-900/95 dark:bg-indigo-600/95 shadow-lg' : 'bg-slate-100/95 dark:bg-slate-800/95 backdrop-blur-sm'} rounded-md px-0.5 z-10`}>
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <button className={`p-1 rounded-md hover:bg-white/10 ${activeChatId === item.id ? 'text-white' : 'text-gray-500 hover:text-gray-700'}`}>
-                                                                    <MoreVertical size={14} />
-                                                                </button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end" className="w-32 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-xl z-[100]">
-                                                                <DropdownMenuItem onSelect={() => {
-                                                                    setEditingId(item.id);
-                                                                    setEditValue(item.title);
-                                                                }}>
-                                                                    <Edit2 size={14} className="mr-2" />
-                                                                    <span>Rename</span>
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem
-                                                                    onSelect={() => onDeleteChat?.(item.id)}
-                                                                    className="text-red-600 focus:text-red-700 hover:bg-red-50"
-                                                                >
-                                                                    <Trash2 size={14} className="mr-2" />
-                                                                    <span>Delete</span>
-                                                                </DropdownMenuItem>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
+                <AnimatePresence initial={false}>
+                    {filteredHistory.map((item) => (
+                        <motion.div
+                            key={item.id}
+                            initial={{ opacity: 0, x: -5 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -5 }}
+                            className="relative group/item"
+                        >
+                            {editingId === item.id ? (
+                                <div className="px-2 py-1">
+                                    <Input
+                                        autoFocus
+                                        value={editValue}
+                                        onChange={(e) => setEditValue(e.target.value)}
+                                        onBlur={() => {
+                                            if (editValue.trim() && editValue !== item.title) {
+                                                onRenameChat?.(item.id, editValue);
+                                            }
+                                            setEditingId(null);
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                if (editValue.trim() && editValue !== item.title) {
+                                                    onRenameChat?.(item.id, editValue);
+                                                }
+                                                setEditingId(null);
+                                            }
+                                            if (e.key === 'Escape') setEditingId(null);
+                                        }}
+                                        className="h-10 bg-background border-primary/30 rounded-xl text-sm"
+                                    />
                                 </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                            ) : (
+                                <div className="flex items-center gap-0 w-full relative">
+                                    <button
+                                        onClick={() => onSelectChat(item.id)}
+                                        className={`flex-1 text-left px-4 py-4 rounded-2xl text-sm transition-all duration-300 flex items-center justify-between min-w-0 ${activeChatId === item.id
+                                            ? 'bg-foreground/5 text-foreground font-bold shadow-sm'
+                                            : 'text-muted-foreground/60 hover:text-foreground/80 hover:bg-foreground/5'
+                                            }`}
+                                    >
+                                        <div className="flex items-center gap-4 overflow-hidden w-full">
+                                            <div className={`w-1.5 h-1.5 rounded-full shrink-0 transition-all ${activeChatId === item.id ? 'bg-primary horizon-glow' : 'bg-transparent'}`} />
+                                            <span className="truncate tracking-tight">{item.title}</span>
+                                        </div>
+                                        {activeChatId !== item.id && (
+                                            <ChevronRight size={14} className="opacity-0 group-hover/item:opacity-100 -translate-x-2 group-hover/item:translate-x-0 transition-all text-muted-foreground/30 shrink-0 ml-1" />
+                                        )}
+                                    </button>
+
+                                    <div className={`absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-all duration-200 bg-background/80 backdrop-blur-md border border-border/50 rounded-lg p-0.5 z-10 shadow-xl`}>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <button className="p-1.5 rounded-md hover:bg-foreground/10 text-muted-foreground/60 hover:text-foreground">
+                                                    <MoreVertical size={14} />
+                                                </button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="horizon-glass border-border/30 rounded-2xl p-1 z-[100] shadow-2xl">
+                                                <DropdownMenuItem
+                                                    className="rounded-xl p-3 font-bold text-[11px] uppercase tracking-widest text-muted-foreground/70"
+                                                    onSelect={() => { setEditingId(item.id); setEditValue(item.title); }}
+                                                >
+                                                    <Edit2 size={12} className="mr-3" />
+                                                    <span>Rename</span>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    className="rounded-xl p-3 font-bold text-[11px] uppercase tracking-widest text-rose-500 focus:text-rose-600 focus:bg-rose-50/10"
+                                                    onSelect={() => onDeleteChat?.(item.id)}
+                                                >
+                                                    <Trash2 size={12} className="mr-3" />
+                                                    <span>Delete</span>
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+                                </div>
+                            )}
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
             </div>
 
-            <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/10 dark:bg-slate-900/10">
-                <div className="bg-indigo-50/50 dark:bg-indigo-900/20 p-3 rounded-xl border border-indigo-100/50 dark:border-indigo-800/30">
-                    <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-tight mb-1">Stockastic AI</p>
-                    <p className="text-[11px] text-indigo-500 dark:text-indigo-300 leading-snug">
-                        Ask about portfolio optimization, risk analysis, or market trends.
-                    </p>
+            {/* Footer info */}
+            <div className="p-6 border-t border-border/5 bg-foreground/[0.02]">
+                <div className="flex items-center justify-between px-2">
+                    <span className="text-[10px] font-black text-muted-foreground/30 uppercase tracking-[0.2em] font-mono">Horizon Stable</span>
+                    <div className="flex gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary/40 horizon-glow animate-pulse" />
+                    </div>
                 </div>
             </div>
-        </aside>
+        </div>
     );
 }

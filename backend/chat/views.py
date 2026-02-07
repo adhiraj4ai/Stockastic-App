@@ -79,6 +79,16 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
         user_msg = serializer.save(session=session)
         session.save() # Update updated_at
 
+        # Pre-fetch history to ensure the latest message is included and avoid DB race conditions
+        history_data = []
+        for msg in session.messages.all().order_by('timestamp'):
+            history_data.append({"role": msg.role, "content": msg.content})
+            
+        # Defensive: If for some reason the DB query didn't catch the just-saved message (transaction timing),
+        # force append it.
+        if not history_data or history_data[-1]['content'] != user_msg.content:
+            history_data.append({"role": user_msg.role, "content": user_msg.content})
+
         def stream_generator():
             from agentic.agents import SupervisorAgent
             
@@ -86,14 +96,9 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
                 # Use the Supervisor Agent to route and handle the request
                 agent = SupervisorAgent()
                 
-                # Prepare history
-                history = []
-                for msg in session.messages.all().order_by('timestamp'):
-                    history.append({"role": msg.role, "content": msg.content})
-                
                 full_content = ""
                 # process_request determines the correct sub-agent and streams its response
-                for chunk in agent.process_request(history):
+                for chunk in agent.process_request(history_data):
                     if chunk:
                         # Defensive: Ensure chunk is a string
                         if not isinstance(chunk, str):
@@ -110,6 +115,10 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
                         role='assistant',
                         content=full_content
                     )
+                    
+                # Signal completion to frontend
+                yield f"data: {json.dumps({'content': '[[FINISH]]'})}\n\n"
+
             except Exception as e:
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
