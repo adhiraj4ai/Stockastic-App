@@ -33,6 +33,7 @@ import { VolumeShockers } from '@/components/VolumeShockers';
 import { MiniSectorCard } from '@/components/MiniSectorCard';
 import { BreakoutWatchlist } from '@/components/BreakoutWatchlist';
 import { TopGainersChart } from '@/components/TopGainersChart';
+import { IndividualStockChart } from '@/components/IndividualStockChart';
 import { MarketBreadthTrend } from '@/components/MarketBreadthTrend';
 import { InstitutionalInterest } from '@/components/InstitutionalInterest';
 import { Badge } from '@/components/ui/badge';
@@ -503,14 +504,32 @@ export default function DashboardPage() {
                                         <TabsTrigger value="losers" className="rounded-lg font-bold text-[10px] tracking-widest data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Top Losers</TabsTrigger>
                                     </TabsList>
                                     <div className="flex-1 overflow-auto -mx-2 px-2 scrollbar-hide">
-                                        <TabsContent value="gainers" className="m-0 focus-visible:outline-none">
+                                        <TabsContent value="gainers" className="m-0 focus-visible:outline-none space-y-6">
+                                            {/* Individual Gainer Trend Grid */}
+                                            <div className="grid grid-cols-2 gap-4 pb-4 border-b border-slate-100 dark:border-white/5">
+                                                {top_gainers.slice(0, 4).map((stock, i) => (
+                                                    <div key={stock.ticker} className="p-3 bg-slate-50/50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 transition-all hover:bg-white dark:hover:bg-white/10 hover:border-blue-500/20 group">
+                                                        <IndividualStockChart stock={stock} color={['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'][i % 4]} />
+                                                    </div>
+                                                ))}
+                                            </div>
+
                                             <Table>
                                                 <TableBody>
                                                     {top_gainers.slice(0, 8).map((stock) => <StockRow key={stock.ticker} stock={stock} />)}
                                                 </TableBody>
                                             </Table>
                                         </TabsContent>
-                                        <TabsContent value="losers" className="m-0 focus-visible:outline-none">
+                                        <TabsContent value="losers" className="m-0 focus-visible:outline-none space-y-6">
+                                            {/* Individual Loser Trend Grid */}
+                                            <div className="grid grid-cols-2 gap-4 pb-4 border-b border-slate-100 dark:border-white/5">
+                                                {top_losers.slice(0, 4).map((stock, i) => (
+                                                    <div key={stock.ticker} className="p-3 bg-slate-50/50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 transition-all hover:bg-white dark:hover:bg-white/10 hover:border-blue-500/20 group">
+                                                        <IndividualStockChart stock={stock} color={['#f43f5e', '#fb7185', '#fda4af', '#fecdd3'][i % 4]} />
+                                                    </div>
+                                                ))}
+                                            </div>
+
                                             <Table>
                                                 <TableBody>
                                                     {top_losers.slice(0, 8).map((stock) => <StockRow key={stock.ticker} stock={stock} />)}
