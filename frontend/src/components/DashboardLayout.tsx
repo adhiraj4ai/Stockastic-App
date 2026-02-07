@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Flame, Users, BarChart3, History, Star, TrendingDown, Brain, Radar, Landmark, ScanLine } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Flame, Users, BarChart3, History, Star, TrendingDown, Brain, Radar, Landmark, ScanLine, Zap } from 'lucide-react';
 import { SearchBar } from './SearchBar';
 import { ChatSidebar } from './ChatSidebar';
 import { AlertsDropdown } from './AlertsDropdown';
@@ -21,7 +21,14 @@ import Cookies from 'js-cookie';
 import { SettingsDialog } from './SettingsDialog';
 
 const navItems = [
-    { name: 'Market', href: '/market', icon: Landmark },
+    {
+        name: 'Market',
+        icon: Landmark,
+        subItems: [
+            { name: 'Overview', href: '/market', icon: LayoutDashboard },
+            { name: 'Movers & Shakers', href: '/market/movers', icon: Zap },
+        ]
+    },
     // Chat moved to top nav
     { name: 'Ticker', href: '/ticker/NABIL', icon: ScanLine },
     {
