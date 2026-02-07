@@ -227,6 +227,34 @@ def stock_summary(request):
     total_stocks = len(summary_list)
     advancers_percent = (advancers_count / total_stocks * 100) if total_stocks else 0
 
+    # 6. Fetch Top Buyers for "Rocket List" candidates (Top 20 absolute movers)
+    # We want to show who is buying the stocks that are hitting circuits
+    rocket_candidates = by_change[-10:] + by_change[:10]
+    rocket_tickers = [s['ticker'] for s in rocket_candidates]
+    
+    # Fetch floorsheet for these stocks on the latest date
+    # Optimization: One query to group by symbol and buyer
+    floorsheet_qs = DailyFloorsheet.objects.filter(
+        symbol__in=rocket_tickers,
+        transaction_date=latest_date
+    ).values('symbol', 'buyer_id').annotate(
+        total_qty=Sum('quantity')
+    ).order_by('symbol', '-total_qty')
+    
+    # Process into map: ticker -> list of top 3 brokers
+    top_buyers_map = {}
+    for entry in floorsheet_qs:
+        sym = entry['symbol']
+        if sym not in top_buyers_map: top_buyers_map[sym] = []
+        if len(top_buyers_map[sym]) < 3:
+            top_buyers_map[sym].append({'broker': entry['buyer_id'], 'qty': entry['total_qty']})
+            
+    # Attach to stock data objects in the lists
+    # Note: We need to update the dictionaries in the lists (by_change, summary_list, etc refer to same dict objects)
+    for stock in summary_list:
+        if stock['ticker'] in top_buyers_map:
+            stock['top_buyers'] = top_buyers_map[stock['ticker']]
+
     response_data = {
         'market_summary': {
             'date': latest_date,

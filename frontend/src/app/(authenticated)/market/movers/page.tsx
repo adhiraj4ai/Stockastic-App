@@ -10,7 +10,6 @@ import { TrendingUp, TrendingDown, Zap, Activity, Filter, Rocket, Magnet, Drople
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
-import { Progress } from '@/components/ui/progress';
 
 interface StockData {
     ticker: string;
@@ -25,6 +24,7 @@ interface StockData {
     weeks_52_high?: number;
     weeks_52_low?: number;
     sparkline?: number[];
+    top_buyers?: { broker: string; qty: number }[];
 }
 
 interface MarketSummaryData {
@@ -206,6 +206,7 @@ export default function MoversShakersPage() {
                                                     <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-6">Ticker</TableHead>
                                                     <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sector</TableHead>
                                                     <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Trend (7D)</TableHead>
+                                                    <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Top Buyers</TableHead>
                                                     <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Price</TableHead>
                                                     <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Change</TableHead>
                                                     <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right pr-6">Status</TableHead>
@@ -227,6 +228,16 @@ export default function MoversShakersPage() {
                                                                 data={stock.sparkline}
                                                                 color={stock.percent_change > 0 ? '#10b981' : '#f43f5e'}
                                                             />
+                                                        </TableCell>
+                                                        <TableCell className="py-3">
+                                                            <div className="flex gap-1 flex-wrap max-w-[120px]">
+                                                                {stock.top_buyers?.slice(0, 3).map((b, i) => (
+                                                                    <Badge key={i} variant="secondary" className="text-[9px] px-1 h-4 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                                                                        {b.broker}
+                                                                    </Badge>
+                                                                ))}
+                                                                {!stock.top_buyers?.length && <span className="text-[9px] text-slate-300">-</span>}
+                                                            </div>
                                                         </TableCell>
                                                         <TableCell className="py-3 text-right font-mono text-xs">Rs. {stock.close}</TableCell>
                                                         <TableCell className={`py-3 text-right font-mono text-xs font-bold ${stock.percent_change > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -273,7 +284,7 @@ export default function MoversShakersPage() {
                                             <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                                 <div
                                                     className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full"
-                                                    style={{ width: `${(stock.turnover / scanners.maxTurnover) * 100}%` }}
+                                                    style={{ width: `${(stock.turnover / (scanners.maxTurnover || 1)) * 100}%` }}
                                                 />
                                             </div>
                                         </div>
@@ -303,7 +314,7 @@ export default function MoversShakersPage() {
                                             <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                                 <div
                                                     className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full"
-                                                    style={{ width: `${(stock.volume / scanners.maxVolume) * 100}%` }}
+                                                    style={{ width: `${(stock.volume / (scanners.maxVolume || 1)) * 100}%` }}
                                                 />
                                             </div>
                                         </div>
