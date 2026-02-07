@@ -136,14 +136,6 @@ const SectorHeatmap = ({ sectors }: { sectors: any[] }) => {
 
 // ... inside main component return ...
 
-{/* WHALE WATCH */ }
-{ data?.whale_watch && <WhaleWatchCard data={data.whale_watch} /> }
-
-{/* SECTOR HEATMAP */ }
-{ data?.sector_summary && <SectorHeatmap sectors={data.sector_summary} /> }
-
-{/* 4. VOLATILITY RADAR */ }
-
 // Mini Sparkline Component
 const Sparkline = ({ data, color, width = 60, height = 20 }: { data?: number[], color: string, width?: number, height?: number }) => {
     if (!data || data.length < 2) return <div style={{ width, height }} className="bg-slate-100 dark:bg-slate-800/30 rounded" />;
