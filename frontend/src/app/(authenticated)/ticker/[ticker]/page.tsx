@@ -298,10 +298,20 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
             return Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose));
         };
         // Simplified ADX-like volatility check
-        const atr14 = sortedHistory.slice(-14).reduce((acc, _, i) => acc + getTR(sortedHistory.length - 14 + i), 0) / 14;
+        const adxPeriod = 14;
+        const adxSlice = sortedHistory.slice(-adxPeriod);
+        const adxStartIndex = sortedHistory.length - adxSlice.length;
+
+        const atr14 = adxSlice.reduce((acc, _, i) => {
+            const idx = adxStartIndex + i;
+            if (idx < 0 || idx >= sortedHistory.length) return acc;
+            return acc + getTR(idx);
+        }, 0) / (adxSlice.length || 1);
+
         const trendStrength = (atr14 / currentPrice) * 100; // Volatility % as proxy for trend potential
         if (trendStrength > 2) techScore += 10; // High volatility/momentum
-        if (currentPrice > sortedHistory[sortedHistory.length - 5].close) techScore += 5; // 5-day momentum
+
+        if (sortedHistory.length >= 5 && currentPrice > sortedHistory[sortedHistory.length - 5].close) techScore += 5; // 5-day momentum
 
         // RSI Momentum (Max 25)
         const getRSI = (period = 14) => {
