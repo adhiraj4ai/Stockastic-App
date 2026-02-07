@@ -24,6 +24,7 @@ interface StockData {
     sector: string;
     weeks_52_high?: number;
     weeks_52_low?: number;
+    sparkline?: number[];
 }
 
 interface MarketSummaryData {
@@ -39,6 +40,62 @@ interface MarketSummaryData {
     };
     all_stocks?: StockData[];
 }
+
+// Mini Sparkline Component
+const Sparkline = ({ data, color, width = 60, height = 20 }: { data?: number[], color: string, width?: number, height?: number }) => {
+    if (!data || data.length < 2) return <div style={{ width, height }} className="bg-slate-100 dark:bg-slate-800/30 rounded" />;
+
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    const range = max - min || 1;
+
+    // Create points string
+    const points = data.map((val, i) => {
+        const x = (i / (data.length - 1)) * width;
+        const y = height - ((val - min) / range) * height;
+        return `${x},${y}`;
+    }).join(' ');
+
+    return (
+        <svg width={width} height={height} className="overflow-visible">
+            <polyline
+                points={points}
+                fill="none"
+                stroke={color}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+        </svg>
+    );
+};
+
+const SectorBadge = ({ sector }: { sector: string }) => {
+    // Deterministic color based on string hash or explicit map
+    const sectorColors: Record<string, string> = {
+        'Commercial Banks': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+        'Development Banks': 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
+        'Hydro Power': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
+        'Finance': 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
+        'Life Insurance': 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+        'Non Life Insurance': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+        'Manufacturing': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+        'Hotels': 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300',
+        'Investment': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+        'Microfinance': 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
+        'Others': 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    };
+
+    // Fuzzy match or default
+    const match = Object.keys(sectorColors).find(s => sector?.includes(s)) || 'Others';
+    const className = sectorColors[match];
+
+    return (
+        <Badge variant="outline" className={`border-none ${className} text-[9px] px-1.5 py-0 rounded`}>
+            {sector || 'N/A'}
+        </Badge>
+    );
+};
 
 export default function MoversShakersPage() {
     const [data, setData] = useState<MarketSummaryData | null>(null);
@@ -147,6 +204,8 @@ export default function MoversShakersPage() {
                                             <TableHeader>
                                                 <TableRow className="border-none hover:bg-transparent bg-slate-50/50 dark:bg-white/5">
                                                     <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-6">Ticker</TableHead>
+                                                    <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sector</TableHead>
+                                                    <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Trend (7D)</TableHead>
                                                     <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Price</TableHead>
                                                     <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Change</TableHead>
                                                     <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right pr-6">Status</TableHead>
@@ -160,6 +219,15 @@ export default function MoversShakersPage() {
                                                         onClick={() => router.push(`/ticker/${stock.ticker}`)}
                                                     >
                                                         <TableCell className="py-3 font-bold text-xs pl-6">{stock.ticker}</TableCell>
+                                                        <TableCell className="py-3">
+                                                            <SectorBadge sector={stock.sector} />
+                                                        </TableCell>
+                                                        <TableCell className="py-3">
+                                                            <Sparkline
+                                                                data={stock.sparkline}
+                                                                color={stock.percent_change > 0 ? '#10b981' : '#f43f5e'}
+                                                            />
+                                                        </TableCell>
                                                         <TableCell className="py-3 text-right font-mono text-xs">Rs. {stock.close}</TableCell>
                                                         <TableCell className={`py-3 text-right font-mono text-xs font-bold ${stock.percent_change > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                             {stock.percent_change > 0 ? '+' : ''}{stock.percent_change.toFixed(2)}%
@@ -195,7 +263,11 @@ export default function MoversShakersPage() {
                                     {scanners.magnets.map((stock, i) => (
                                         <div key={stock.ticker} className="space-y-1.5 cursor-pointer group" onClick={() => router.push(`/ticker/${stock.ticker}`)}>
                                             <div className="flex justify-between items-center text-xs">
-                                                <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-blue-600 transition-colors">{i + 1}. {stock.ticker}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-slate-700 dark:text-slate-300 w-6 text-right text-[10px] text-slate-400">#{i + 1}</span>
+                                                    <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-blue-600 transition-colors">{stock.ticker}</span>
+                                                    <SectorBadge sector={stock.sector} />
+                                                </div>
                                                 <span className="font-mono text-[10px] text-slate-500">{(stock.turnover / 10000000).toFixed(2)} Cr</span>
                                             </div>
                                             <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -221,7 +293,11 @@ export default function MoversShakersPage() {
                                     {scanners.guzzlers.map((stock, i) => (
                                         <div key={stock.ticker} className="space-y-1.5 cursor-pointer group" onClick={() => router.push(`/ticker/${stock.ticker}`)}>
                                             <div className="flex justify-between items-center text-xs">
-                                                <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-cyan-600 transition-colors">{i + 1}. {stock.ticker}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-slate-700 dark:text-slate-300 w-6 text-right text-[10px] text-slate-400">#{i + 1}</span>
+                                                    <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-cyan-600 transition-colors">{stock.ticker}</span>
+                                                    <SectorBadge sector={stock.sector} />
+                                                </div>
                                                 <span className="font-mono text-[10px] text-slate-500">{stock.volume.toLocaleString()} Qty</span>
                                             </div>
                                             <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -257,6 +333,9 @@ export default function MoversShakersPage() {
                                                         onClick={() => router.push(`/ticker/${stock.ticker}`)}
                                                     >
                                                         <TableCell className="py-3 font-bold text-xs">{stock.ticker}</TableCell>
+                                                        <TableCell className="py-3">
+                                                            <Sparkline data={stock.sparkline} color="#10b981" width={40} height={15} />
+                                                        </TableCell>
                                                         <TableCell className="py-3 text-right">
                                                             <div className="flex flex-col items-end">
                                                                 <span className="text-xs font-mono">Rs. {stock.close}</span>
@@ -295,6 +374,9 @@ export default function MoversShakersPage() {
                                                         onClick={() => router.push(`/ticker/${stock.ticker}`)}
                                                     >
                                                         <TableCell className="py-3 font-bold text-xs">{stock.ticker}</TableCell>
+                                                        <TableCell className="py-3">
+                                                            <Sparkline data={stock.sparkline} color="#f43f5e" width={40} height={15} />
+                                                        </TableCell>
                                                         <TableCell className="py-3 text-right">
                                                             <div className="flex flex-col items-end">
                                                                 <span className="text-xs font-mono">Rs. {stock.close}</span>
@@ -329,7 +411,7 @@ export default function MoversShakersPage() {
                                         <div key={stock.ticker} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-white/5 cursor-pointer hover:border-orange-500/30 transition-all group" onClick={() => router.push(`/ticker/${stock.ticker}`)}>
                                             <div className="flex justify-between items-start mb-2">
                                                 <span className="text-xs font-bold text-slate-900 dark:text-slate-100 group-hover:text-orange-600 transition-colors">{stock.ticker}</span>
-                                                <TrendingUp size={12} className="text-slate-400" />
+                                                <Sparkline data={stock.sparkline} color="#f97316" width={50} height={20} />
                                             </div>
                                             <div className="space-y-0.5">
                                                 <div className="text-lg font-bold text-orange-600 dark:text-orange-400 font-mono">{stock.volatility.toFixed(1)}%</div>

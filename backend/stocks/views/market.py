@@ -105,6 +105,24 @@ def stock_summary(request):
     near_high_list = []
     near_low_list = []
 
+    # 4. Fetch Sparkline Data (Last 10 trading days)
+    # We fetch a bit more range (e.g. 20 days) to ensure we get 10 points even with holidays
+    sparkline_start = latest_date - datetime.timedelta(days=20)
+    sparkline_qs = DailyStockPrice.objects.filter(
+        date__gte=sparkline_start, 
+        date__lte=latest_date
+    ).values('ticker', 'date', 'close').order_by('date')
+    
+    sparkline_map = {}
+    for item in sparkline_qs:
+        t = item['ticker']
+        if t not in sparkline_map: sparkline_map[t] = []
+        sparkline_map[t].append(item['close'])
+    
+    # Keep only last 10 points
+    for t in sparkline_map:
+        sparkline_map[t] = sparkline_map[t][-10:]
+
     for stock in latest_prices:
         # Determine comparison price
         if not is_daily and stock.ticker in ref_prices_map:
@@ -168,7 +186,8 @@ def stock_summary(request):
             'diff': diff,
             'sector': sector,
             'weeks_52_high': stock.weeks_52_high,
-            'weeks_52_low': stock.weeks_52_low
+            'weeks_52_low': stock.weeks_52_low,
+            'sparkline': sparkline_map.get(stock.ticker, [])
         }
         summary_list.append(stock_data)
         
