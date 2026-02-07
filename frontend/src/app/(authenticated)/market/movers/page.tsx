@@ -101,7 +101,7 @@ const SectorHeatmap = ({ sectors }: { sectors: any[] }) => {
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Size = Turnover, Color = Change %</p>
             </CardHeader>
             <CardContent className="p-5">
-                <div className="flex flex-wrap gap-1 h-[300px] w-full content-start">
+                <div className="flex flex-wrap gap-1 min-h-[300px] w-full content-start">
                     {sectors.map((sector) => {
                         // Sizing logic: crude treemap simulation using flex-basis
                         // const items = sectors.length;
