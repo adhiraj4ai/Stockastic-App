@@ -227,21 +227,17 @@ def stock_summary(request):
     total_stocks = len(summary_list)
     advancers_percent = (advancers_count / total_stocks * 100) if total_stocks else 0
 
-    # 6. Fetch Top Buyers for "Rocket List" candidates (Top 20 absolute movers)
-    # We want to show who is buying the stocks that are hitting circuits
+    # 6. Fetch Top Buyers for "Rocket List" (Existing logic)
     rocket_candidates = by_change[-10:] + by_change[:10]
     rocket_tickers = [s['ticker'] for s in rocket_candidates]
     
-    # Fetch floorsheet for these stocks on the latest date
-    # Optimization: One query to group by symbol and buyer
     floorsheet_qs = DailyFloorsheet.objects.filter(
         symbol__in=rocket_tickers,
         transaction_date=latest_date
     ).values('symbol', 'buyer_id').annotate(
-        total_qty=Sum('quantity')
+        total_qty=Sum('transaction_quantity')
     ).order_by('symbol', '-total_qty')
     
-    # Process into map: ticker -> list of top 3 brokers
     top_buyers_map = {}
     for entry in floorsheet_qs:
         sym = entry['symbol']
@@ -249,11 +245,40 @@ def stock_summary(request):
         if len(top_buyers_map[sym]) < 3:
             top_buyers_map[sym].append({'broker': entry['buyer_id'], 'qty': entry['total_qty']})
             
-    # Attach to stock data objects in the lists
-    # Note: We need to update the dictionaries in the lists (by_change, summary_list, etc refer to same dict objects)
     for stock in summary_list:
         if stock['ticker'] in top_buyers_map:
             stock['top_buyers'] = top_buyers_map[stock['ticker']]
+
+    # 7. Whale Watch: Top 5 Brokers by Total Buy Volume -> Top 3 Stocks for each
+    # Step A: Find top 5 brokers by total volume
+    top_brokers_qs = DailyFloorsheet.objects.filter(
+        transaction_date=latest_date
+    ).values('buyer_id').annotate(
+        total_buy_vol=Sum('transaction_quantity'),
+        total_buy_turnover=Sum(F('transaction_quantity') * F('transaction_rate'))
+    ).order_by('-total_buy_turnover')[:5]
+    
+    whale_watch = []
+    for broker_entry in top_brokers_qs:
+        broker_id = broker_entry['buyer_id']
+        
+        # Step B: For each top broker, find their top 3 stocks
+        top_picks_qs = DailyFloorsheet.objects.filter(
+            transaction_date=latest_date,
+            buyer_id=broker_id
+        ).values('symbol').annotate(
+            qty=Sum('transaction_quantity'),
+            turnover=Sum(F('transaction_quantity') * F('transaction_rate'))
+        ).order_by('-turnover')[:3]
+        
+        whale_watch.append({
+            'broker': broker_id,
+            'total_turnover': broker_entry['total_buy_turnover'],
+            'top_picks': [
+                {'ticker': p['symbol'], 'turnover': p['turnover']} 
+                for p in top_picks_qs
+            ]
+        })
 
     response_data = {
         'market_summary': {
@@ -278,7 +303,8 @@ def stock_summary(request):
         'bottom_turnover': by_turnover[:10],
         'top_losers': by_change[:10],
         'near_52_high': near_high_list[:10],
-        'near_52_low': near_low_list[:10]
+        'near_52_low': near_low_list[:10],
+        'whale_watch': whale_watch
     }
     
     return Response(response_data)

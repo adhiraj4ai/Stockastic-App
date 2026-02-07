@@ -27,7 +27,14 @@ interface StockData {
     top_buyers?: { broker: string; qty: number }[];
 }
 
+interface WhaleWatchData {
+    broker: string;
+    total_turnover: number;
+    top_picks: { ticker: string; turnover: number }[];
+}
+
 interface MarketSummaryData {
+    // ... existing fields
     top_gainers: StockData[];
     top_losers: StockData[];
     top_volume: StockData[];
@@ -39,7 +46,103 @@ interface MarketSummaryData {
         date?: string;
     };
     all_stocks?: StockData[];
+    whale_watch?: WhaleWatchData[];
+    sector_summary?: { name: string; change: number; turnover: number; count: number }[];
 }
+
+const WhaleWatchCard = ({ data }: { data: WhaleWatchData[] }) => {
+    if (!data || data.length === 0) return null;
+
+    return (
+        <Card className="bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden relative backdrop-blur-xl">
+            <div className="absolute -right-10 -top-10 w-40 h-40 bg-blue-500/10 blur-3xl opacity-50" />
+            <CardHeader className="p-5 border-b border-slate-50 dark:border-slate-800 relative z-10">
+                <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-2">
+                    <Zap size={14} className="text-blue-600" /> WHALE WATCH (SMART MONEY)
+                </CardTitle>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Top Brokers & Their Accumulation</p>
+            </CardHeader>
+            <CardContent className="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 relative z-10">
+                {data.map((broker, i) => (
+                    <div key={i} className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 border border-slate-100 dark:border-white/5 space-y-3">
+                        <div className="flex justify-between items-center border-b border-slate-100 dark:border-white/5 pb-2">
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-none text-[10px] px-2">
+                                Broker {broker.broker}
+                            </Badge>
+                            <span className="text-[10px] font-mono text-slate-400">Total: {(broker.total_turnover / 10000000).toFixed(1)}Cr</span>
+                        </div>
+                        <div className="space-y-1">
+                            {broker.top_picks.map((pick, j) => (
+                                <div key={j} className="flex justify-between items-center text-xs">
+                                    <span className="font-bold text-slate-700 dark:text-slate-300">{pick.ticker}</span>
+                                    <span className="text-[10px] text-slate-500 font-mono">{(pick.turnover / 10000000).toFixed(2)}Cr</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </CardContent>
+        </Card>
+    );
+};
+
+const SectorHeatmap = ({ sectors }: { sectors: any[] }) => {
+    if (!sectors || sectors.length === 0) return null;
+
+    // Normalize turnover for sizing
+    const maxTurnover = Math.max(...sectors.map(s => s.turnover));
+
+    return (
+        <Card className="bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden relative backdrop-blur-xl">
+            <CardHeader className="p-5 border-b border-slate-50 dark:border-slate-800">
+                <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-2">
+                    <Activity size={14} className="text-teal-600" /> SECTOR HEATMAP
+                </CardTitle>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Size = Turnover, Color = Change %</p>
+            </CardHeader>
+            <CardContent className="p-5">
+                <div className="flex flex-wrap gap-1 h-[300px] w-full content-start">
+                    {sectors.map((sector) => {
+                        // Sizing logic: crude treemap simulation using flex-basis
+                        // const items = sectors.length;
+                        const weight = (sector.turnover / maxTurnover) * 100;
+                        const width = Math.max(10, Math.min(100, weight * 2)); // heuristic
+
+                        // Color logic
+                        let bgClass = 'bg-slate-100';
+                        if (sector.change > 2) bgClass = 'bg-emerald-500 text-white';
+                        else if (sector.change > 0.5) bgClass = 'bg-emerald-400/80 text-white';
+                        else if (sector.change > -0.5) bgClass = 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300';
+                        else if (sector.change > -2) bgClass = 'bg-rose-400/80 text-white';
+                        else bgClass = 'bg-rose-500 text-white';
+
+                        return (
+                            <div
+                                key={sector.name}
+                                className={`${bgClass} rounded-lg flex flex-col items-center justify-center p-2 transition-all hover:scale-105 cursor-pointer flex-grow`}
+                                style={{ flexBasis: `${width}%`, minHeight: '60px' }}
+                            >
+                                <span className="text-[10px] font-bold text-center leading-tight line-clamp-2">{sector.name}</span>
+                                <span className="text-[10px] font-mono font-bold mt-1">{sector.change > 0 ? '+' : ''}{sector.change.toFixed(2)}%</span>
+                            </div>
+                        );
+                    })}
+                </div>
+            </CardContent>
+        </Card>
+    );
+};
+
+
+// ... inside main component return ...
+
+{/* WHALE WATCH */ }
+{ data?.whale_watch && <WhaleWatchCard data={data.whale_watch} /> }
+
+{/* SECTOR HEATMAP */ }
+{ data?.sector_summary && <SectorHeatmap sectors={data.sector_summary} /> }
+
+{/* 4. VOLATILITY RADAR */ }
 
 // Mini Sparkline Component
 const Sparkline = ({ data, color, width = 60, height = 20 }: { data?: number[], color: string, width?: number, height?: number }) => {
@@ -407,6 +510,12 @@ export default function MoversShakersPage() {
                                 </CardContent>
                             </Card>
                         </div>
+
+                        {/* WHALE WATCH */}
+                        {data?.whale_watch && <WhaleWatchCard data={data.whale_watch} />}
+
+                        {/* SECTOR HEATMAP */}
+                        {data?.sector_summary && <SectorHeatmap sectors={data.sector_summary} />}
 
                         {/* 4. VOLATILITY RADAR */}
                         <Card className="bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden relative backdrop-blur-xl">
