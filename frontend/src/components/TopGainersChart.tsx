@@ -46,10 +46,6 @@ export const TopGainersChart = ({ gainers, height = 300 }: TopGainersChartProps)
             data.unshift(prevPrice);
         }
 
-        // Convert to percentage change relative to 30 days ago
-        const basePrice = data[0];
-        const relativeData = data.map(p => ((p - basePrice) / basePrice) * 100);
-
         const colors = [
             '#3b82f6', // blue
             '#10b981', // emerald
@@ -61,7 +57,7 @@ export const TopGainersChart = ({ gainers, height = 300 }: TopGainersChartProps)
         return {
             name: stock.ticker,
             type: 'line',
-            data: relativeData,
+            data: data,
             smooth: true,
             symbol: 'none',
             lineStyle: { width: 3, color: colors[index % colors.length] },
@@ -88,8 +84,8 @@ export const TopGainersChart = ({ gainers, height = 300 }: TopGainersChartProps)
                                 <span style="width: 8px; height: 8px; border-radius: 50%; background: ${item.color};"></span>
                                 ${item.seriesName}
                             </span>
-                            <span style="font-weight: bold; color: ${item.value >= 0 ? '#10b981' : '#f43f5e'}">
-                                ${item.value >= 0 ? '+' : ''}${item.value.toFixed(2)}%
+                            <span style="font-weight: bold; color: ${isDark ? '#f1f5f9' : '#1e293b'}">
+                                Rs. ${item.value.toFixed(2)}
                             </span>
                         </div>
                     `;
@@ -123,7 +119,7 @@ export const TopGainersChart = ({ gainers, height = 300 }: TopGainersChartProps)
         yAxis: {
             type: 'value',
             axisLabel: {
-                formatter: '{value}%',
+                formatter: (val: number) => `Rs.${val.toFixed(0)}`,
                 fontSize: 9,
                 color: isDark ? '#64748b' : '#94a3b8'
             },
