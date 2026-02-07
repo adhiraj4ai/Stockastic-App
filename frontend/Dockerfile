@@ -24,9 +24,9 @@ ENV NEXT_PUBLIC_ML_SERVICE_URL=${NEXT_PUBLIC_ML_SERVICE_URL}
 ENV PORT 3000
 
 # Build the Next.js application
-RUN npm run build
+# RUN npm run build
 
 # Start the application in production mode
-CMD ["npm", "run", "start"]
+CMD ["npm", "run", "dev"]
 
 

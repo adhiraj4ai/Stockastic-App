@@ -163,7 +163,7 @@ export function ChatHistorySidebar({
                 <div className="flex items-center justify-between px-2">
                     <span className="text-[10px] font-black text-muted-foreground/30 uppercase tracking-[0.2em] font-mono">Horizon Stable</span>
                     <div className="flex gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary/40 horizon-glow animate-pulse" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary/40 horizon-glow" />
                     </div>
                 </div>
             </div>

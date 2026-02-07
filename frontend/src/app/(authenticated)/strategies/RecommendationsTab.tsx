@@ -45,7 +45,7 @@ export default function RecommendationsTab() {
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">Market Recommendations</h2>
-                    <p className="text-sm text-gray-500 dark:text-slate-400">Live signals from your published strategies running on latest market data.</p>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">Active signals from your published strategies running on latest market data.</p>
                 </div>
                 <Button variant="outline" size="sm" onClick={fetchRecommendations} disabled={loading} className="dark:border-slate-800 dark:bg-slate-900">
                     Referesh Signals

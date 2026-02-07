@@ -53,7 +53,7 @@ export function TechnicalPulse({
                 <div className="flex items-center gap-2">
                     <Badge variant="outline" className="font-bold text-[9px] px-2 py-0.5 rounded-md border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 bg-white/50 dark:bg-slate-900/50">
                         <Zap size={10} className="mr-1 inline text-amber-500" />
-                        LIVE SIGNAL
+                        REAL-TIME SIGNAL
                     </Badge>
                 </div>
             </div>

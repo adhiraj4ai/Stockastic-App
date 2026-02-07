@@ -45,8 +45,8 @@ export function StockMetricHero({
                                 <Badge variant="outline" className="bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800 font-semibold text-[9px] px-1.5 py-0 uppercase">
                                     {sector}
                                 </Badge>
-                                <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></span>
-                                <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase">Live</span>
+                                <span className="w-1 h-1 rounded-full bg-emerald-500"></span>
+                                <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase">Real-time</span>
                             </div>
                             <div className="flex items-baseline gap-4">
                                 <span className="text-3xl font-bold text-slate-900 dark:text-slate-100 tabular-nums leading-none">

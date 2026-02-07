@@ -43,7 +43,7 @@ export default function Home() {
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Real-Time Data</h3>
               <p className="text-gray-600">
-                Access live stock prices and market data updated in real-time.
+                Access real-time stock prices and market data updated in real-time.
               </p>
             </div>
 

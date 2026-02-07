@@ -60,14 +60,32 @@ export const SentimentGauge = ({ value, height = 200 }: SentimentGaugeProps) => 
                     }
                 },
                 axisLabel: {
-                    color: isDark ? '#94a3b8' : '#0f172a',
-                    fontSize: 10,
-                    distance: -50,
+                    distance: -30,
                     formatter: function (value: number) {
-                        if (value === 0) return 'Fear';
-                        if (value === 50) return 'Neutral';
-                        if (value === 100) return 'Greed';
+                        if (value === 0) return '{fear|FEAR}';
+                        if (value === 50) return '{neutral|NEUTRAL}';
+                        if (value === 100) return '{greed|GREED}';
                         return '';
+                    },
+                    rich: {
+                        fear: {
+                            color: '#f43f5e',
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            padding: [0, 0, -20, 0]
+                        },
+                        neutral: {
+                            color: isDark ? '#94a3b8' : '#64748b',
+                            fontSize: 10,
+                            fontWeight: 'bold',
+                            padding: [0, 0, -20, 0]
+                        },
+                        greed: {
+                            color: '#10b981',
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            padding: [0, 0, -20, 0]
+                        }
                     }
                 },
                 title: {

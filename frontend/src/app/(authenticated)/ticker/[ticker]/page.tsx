@@ -721,12 +721,12 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                     <Activity size={18} />
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-bold text-slate-800 dark:text-slate-100">Live Transaction Stream</h4>
+                                                    <h4 className="font-bold text-slate-800 dark:text-slate-100">Transaction Stream</h4>
                                                     <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">Real-time market depth</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-none px-3">Live Feed</Badge>
+                                                <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-none px-3">Direct Feed</Badge>
                                             </div>
                                         </div>
                                         <div className="overflow-x-auto no-scrollbar rounded-2xl border border-slate-100 dark:border-slate-800">

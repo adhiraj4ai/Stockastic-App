@@ -71,7 +71,8 @@ function DashboardContent({
     noPadding,
     showBack,
     hideHeader = false,
-    headerContent
+    headerContent,
+    extraHeaderItems
 }: {
     children: React.ReactNode;
     title?: React.ReactNode;
@@ -80,6 +81,7 @@ function DashboardContent({
     showBack?: boolean;
     hideHeader?: boolean;
     headerContent?: React.ReactNode;
+    extraHeaderItems?: React.ReactNode;
 }) {
     const pathname = usePathname();
     const router = useRouter();
@@ -189,16 +191,22 @@ function DashboardContent({
 
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex transition-colors duration-300">
+        <div className="min-h-screen bg-white dark:bg-[#020617] flex transition-colors duration-300 relative overflow-hidden">
+            {/* Ambient Background Glows */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/5 dark:bg-indigo-500/10 blur-[120px] rounded-full" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/5 dark:bg-blue-500/10 blur-[120px] rounded-full" />
+            </div>
+
             {/* Sidebar */}
             <aside
-                className={`bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 flex flex-col fixed h-full z-10 transition-all duration-300 ${isSidebarCollapsed ? 'w-20' : 'w-64'
+                className={`bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border-r border-gray-200/50 dark:border-white/5 flex flex-col fixed h-full z-30 transition-all duration-500 ${isSidebarCollapsed ? 'w-20' : 'w-64'
                     }`}
             >
-                <div className={`p-4 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between ${isSidebarCollapsed ? 'flex-col gap-4' : ''}`}>
+                <div className={`p-4 border-b border-gray-200/50 dark:border-white/5 flex items-center justify-between ${isSidebarCollapsed ? 'flex-col gap-4' : ''}`}>
                     {!isSidebarCollapsed && (
                         <div className="w-full flex justify-center py-0">
-                            <Link href="/market">
+                            <Link href="/market" className="hover:scale-105 transition-transform duration-300">
                                 <Image
                                     src="/stockastic-logo-v3.png"
                                     alt="Stockastic Logo"
@@ -212,13 +220,13 @@ function DashboardContent({
                     )}
                     <button
                         onClick={toggleSidebar}
-                        className={`p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors ${isSidebarCollapsed ? '' : ''}`}
+                        className={`p-2 rounded-xl bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-all duration-300 ${isSidebarCollapsed ? '' : ''}`}
                         title={isSidebarCollapsed ? "Expand" : "Collapse"}
                     >
-                        {isSidebarCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
+                        {isSidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
                     </button>
                 </div>
-                <nav className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar">
+                <nav className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar relative z-10">
                     {filteredNavItems.map((item) => {
                         const hasSubItems = 'subItems' in item && item.subItems && item.subItems.length > 0;
                         const isExpanded = expandedMenus.includes(item.name);
@@ -232,57 +240,61 @@ function DashboardContent({
                                 {hasSubItems ? (
                                     <button
                                         onClick={() => toggleMenu(item.name)}
-                                        className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-200 ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}
+                                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 text-gray-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-slate-200 group ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}
                                         title={isSidebarCollapsed ? item.name : ''}
                                     >
                                         <div className="flex items-center gap-3">
-                                            <item.icon size={18} className={
-                                                item.name === 'Home' ? 'text-blue-500 dark:text-blue-400' :
-                                                    item.name === 'Chat' ? 'text-purple-500 dark:text-purple-400' :
-                                                        item.name === 'Stocks' ? 'text-green-500 dark:text-green-400' :
-                                                            item.name === 'Finfolio' ? 'text-emerald-500 dark:text-emerald-400' :
-                                                                item.name === 'Accumulation' ? 'text-orange-500 dark:text-orange-400' :
-                                                                    item.name === 'Financials' ? 'text-cyan-500 dark:text-cyan-400' :
-                                                                        item.name === 'Strategies' ? 'text-yellow-500 dark:text-yellow-400' :
-                                                                            item.name === 'Signals' ? 'text-pink-500 dark:text-pink-400' :
-                                                                                item.name === 'Whale Watch' ? 'text-indigo-500 dark:text-indigo-400' :
-                                                                                    item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
-                                                                                        'text-gray-400 dark:text-slate-500'
-                                            } />
-                                            {!isSidebarCollapsed && <span className="text-sm font-medium whitespace-nowrap">{item.name}</span>}
+                                            <div className={`p-1.5 rounded-lg transition-all duration-300 ${isExpanded ? 'bg-slate-100 dark:bg-white/10' : 'bg-transparent'}`}>
+                                                <item.icon size={18} className={
+                                                    item.name === 'Home' ? 'text-blue-500 dark:text-blue-400' :
+                                                        item.name === 'Chat' ? 'text-purple-500 dark:text-purple-400' :
+                                                            item.name === 'Stocks' ? 'text-green-500 dark:text-green-400' :
+                                                                item.name === 'Finfolio' ? 'text-emerald-500 dark:text-emerald-400' :
+                                                                    item.name === 'Accumulation' ? 'text-orange-500 dark:text-orange-400' :
+                                                                        item.name === 'Financials' ? 'text-cyan-500 dark:text-cyan-400' :
+                                                                            item.name === 'Strategies' ? 'text-yellow-500 dark:text-yellow-400' :
+                                                                                item.name === 'Signals' ? 'text-pink-500 dark:text-pink-400' :
+                                                                                    item.name === 'Whale Watch' ? 'text-indigo-500 dark:text-indigo-400' :
+                                                                                        item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
+                                                                                            'text-gray-400 dark:text-slate-500'
+                                                } />
+                                            </div>
+                                            {!isSidebarCollapsed && <span className="text-sm font-bold tracking-tight">{item.name}</span>}
                                         </div>
                                         {!isSidebarCollapsed && (
-                                            isExpanded ? <ChevronDown size={14} className="text-gray-400 dark:text-slate-500" /> : <ChevronRight size={14} className="text-gray-400 dark:text-slate-500" />
+                                            <ChevronDown size={14} className={`text-gray-400 dark:text-slate-600 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
                                         )}
                                     </button>
                                 ) : (
                                     <Link
                                         href={('href' in item ? item.href : '#') as string}
-                                        className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${isActive
-                                            ? 'bg-gray-900 dark:bg-indigo-600 text-white shadow-md'
-                                            : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-200'
-                                            } ${isSidebarCollapsed ? 'justify-center' : ''}`}
+                                        className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 group shadow-sm ${isActive
+                                            ? 'bg-gradient-to-br from-slate-900 to-slate-800 dark:from-indigo-600 dark:to-blue-700 text-white shadow-lg shadow-indigo-500/20'
+                                            : 'text-gray-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-slate-200'
+                                            } ${isSidebarCollapsed ? 'justify-center px-2' : ''}`}
                                         title={isSidebarCollapsed ? item.name : ''}
                                     >
-                                        <item.icon size={18} className={
-                                            isActive ? 'text-white' :
-                                                item.name === 'Market' ? 'text-blue-500 dark:text-blue-400' :
-                                                    item.name === 'Chat' ? 'text-purple-500 dark:text-purple-400' :
-                                                        item.name === 'Ticker' ? 'text-green-500 dark:text-green-400' :
-                                                            item.name === 'Financials' ? 'text-cyan-500 dark:text-cyan-400' :
-                                                                item.name === 'Strategies' ? 'text-yellow-500 dark:text-yellow-400' :
-                                                                    item.name === 'Signals' ? 'text-pink-500 dark:text-pink-400' :
-                                                                        item.name === 'Whale Watch' ? 'text-indigo-500 dark:text-indigo-400' :
-                                                                            item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
-                                                                                'text-gray-400 dark:text-slate-500'
-                                        } />
-                                        {!isSidebarCollapsed && <span className="text-sm font-medium whitespace-nowrap">{item.name}</span>}
+                                        <div className={`p-1.5 rounded-lg transition-all duration-300 ${isActive ? 'bg-white/10' : ''}`}>
+                                            <item.icon size={18} className={
+                                                isActive ? 'text-white' :
+                                                    item.name === 'Market' ? 'text-blue-500 dark:text-blue-400' :
+                                                        item.name === 'Chat' ? 'text-purple-500 dark:text-purple-400' :
+                                                            item.name === 'Ticker' ? 'text-green-500 dark:text-green-400' :
+                                                                item.name === 'Financials' ? 'text-cyan-500 dark:text-cyan-400' :
+                                                                    item.name === 'Strategies' ? 'text-yellow-500 dark:text-yellow-400' :
+                                                                        item.name === 'Signals' ? 'text-pink-500 dark:text-pink-400' :
+                                                                            item.name === 'Whale Watch' ? 'text-indigo-500 dark:text-indigo-400' :
+                                                                                item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
+                                                                                    'text-gray-400 dark:text-slate-500'
+                                            } />
+                                        </div>
+                                        {!isSidebarCollapsed && <span className="text-sm font-bold tracking-tight">{item.name}</span>}
                                     </Link>
                                 )}
 
                                 {/* Render Sub-items */}
                                 {hasSubItems && isExpanded && !isSidebarCollapsed && (
-                                    <div className="ml-9 space-y-1 animate-in slide-in-from-left-2 duration-200 border-l border-gray-100 dark:border-slate-800 pl-1">
+                                    <div className="ml-9 mt-1 space-y-1 animate-in slide-in-from-left-2 duration-300 border-l border-slate-200 dark:border-white/5 pl-2 relative">
                                         {(item as any).subItems.map((subItem: any) => {
                                             const subPath = subItem.href.split('?')[0];
                                             const subTab = new URLSearchParams(subItem.href.split('?')[1]).get('tab');
@@ -303,9 +315,9 @@ function DashboardContent({
                                                 <Link
                                                     key={subItem.name}
                                                     href={subItem.href}
-                                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${isActiveLink
-                                                        ? 'bg-blue-50 dark:bg-indigo-900/40 text-blue-700 dark:text-indigo-300'
-                                                        : 'text-gray-500 dark:text-slate-500 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-300'
+                                                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[11px] font-bold tracking-tight transition-all duration-300 ${isActiveLink
+                                                        ? 'bg-blue-50/50 dark:bg-indigo-900/40 text-blue-700 dark:text-indigo-300 shadow-sm'
+                                                        : 'text-gray-500 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-slate-300'
                                                         }`}
                                                 >
                                                     {subItem.icon && <subItem.icon size={14} className={subIconColor} />}
@@ -319,51 +331,49 @@ function DashboardContent({
                         );
                     })}
                 </nav>
-                <div className="p-3 border-t border-gray-200 dark:border-slate-800">
+                <div className="p-4 border-t border-gray-200/50 dark:border-white/5 relative z-10 bg-white/50 dark:bg-transparent">
                     <div className={`flex flex-col gap-1 ${isSidebarCollapsed ? 'items-center' : ''}`}>
-
-
                     </div>
                 </div>
             </aside>
 
             {/* Main content */}
             <main
-                className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'ml-20' : 'ml-64'
+                className={`flex-1 flex flex-col min-w-0 transition-all duration-500 ease-in-out z-10 ${isSidebarCollapsed ? 'ml-20' : 'ml-64'
                     } ${isChatPinned && !isChatPage ? 'mr-96' : ''}`}
             >
                 {/* Top Navigation Bar */}
                 {!hideHeader && (
-                    <header className="bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 sticky top-0 z-20 px-8 py-4 flex justify-between items-center shadow-sm dark:shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
+                    <header className="bg-white/70 dark:bg-slate-900/40 backdrop-blur-3xl border-b border-gray-200/50 dark:border-white/5 sticky top-0 z-40 px-8 py-4 flex justify-between items-center transition-all duration-500 shadow-sm">
                         {headerContent ? (
                             <div className="flex-1 mr-4">
                                 {headerContent}
                             </div>
                         ) : (
-                            <div className="w-1/3 flex items-center gap-3">
+                            <div className="w-1/3 flex items-center gap-4">
                                 {showBack && (
                                     <button
                                         onClick={() => router.back()}
-                                        className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-400 transition-colors"
+                                        className="p-2 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-gray-600 dark:text-slate-400 transition-all duration-300"
                                         title="Go Back"
                                     >
-                                        <ArrowLeft size={20} />
+                                        <ArrowLeft size={18} />
                                     </button>
                                 )}
                                 {pathname === '/signals' ? (
                                     <div className="flex flex-col min-w-0">
-                                        <h2 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
-                                            Strategy Signals Dashboard
+                                        <h2 className="text-lg font-black bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent tracking-tight">
+                                            Strategy Signals
                                         </h2>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">Real-time trading signals from all active strategies</p>
+                                        <p className="text-[10px] text-slate-500 dark:text-slate-500 font-bold uppercase tracking-widest">Real-time Trading Matrix</p>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col min-w-0">
-                                        <h2 className="text-xl font-semibold text-gray-800 dark:text-slate-100 capitalize truncate">
+                                        <h2 className={`text-lg font-black text-slate-900 dark:text-slate-100 truncate tracking-tight ${!title ? 'capitalize' : ''}`}>
                                             {title || (pathname.includes('/ticker/') ? 'Stock Details' : pathname.split('/').pop())}
                                         </h2>
                                         {subtitle && (
-                                            <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{subtitle}</p>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-500 font-bold uppercase tracking-widest truncate pr-4 mt-0.5">{subtitle}</p>
                                         )}
                                     </div>
                                 )}
@@ -382,52 +392,68 @@ function DashboardContent({
                             })()}
                         </div>
 
-                        <div className="w-1/3 flex justify-end gap-4 items-center">
+                        <div className="w-1/3 flex justify-end gap-5 items-center">
+                            {extraHeaderItems && (
+                                <div className="hidden md:block">
+                                    {extraHeaderItems}
+                                </div>
+                            )}
                             <AlertsDropdown />
 
                             {(!currentUser || currentUser.username !== 'ashmi') && (
                                 <Link href="/chat">
                                     <button
-                                        className="p-2 rounded-full text-purple-500 hover:text-purple-600 dark:text-purple-400 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all relative"
+                                        className="p-2.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 transition-all duration-300 relative group group-hover:scale-105"
                                         title="Chat"
                                     >
-                                        <MessageSquare size={20} />
+                                        <MessageSquare size={18} className="group-hover:rotate-6 transition-transform" />
+                                        <span className="absolute top-2 right-2 w-2 h-2 bg-purple-500 rounded-full" />
                                     </button>
                                 </Link>
                             )}
 
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <button className="flex items-center gap-3 p-1.5 pr-2 rounded-full border border-slate-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-indigo-500/50 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all group outline-none">
-                                        <div className="h-9 w-9 rounded-full bg-blue-100 dark:bg-indigo-900/50 flex items-center justify-center text-blue-600 dark:text-indigo-400 font-bold border border-blue-200 dark:border-indigo-800 shadow-sm group-hover:scale-105 transition-transform uppercase">
+                                    <button className="flex items-center gap-3 p-1.5 pr-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 hover:border-blue-200 dark:hover:border-indigo-500/50 hover:bg-white dark:hover:bg-white/10 transition-all duration-500 group outline-none">
+                                        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-black shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform uppercase">
                                             {(currentUser?.username === 'admin' ? 'J' : currentUser?.username === 'ashmi' ? 'A' : 'G')}
                                         </div>
                                         <div className="flex flex-col items-start mr-1">
-                                            <span className="text-xs font-bold text-gray-700 dark:text-slate-200 group-hover:text-blue-700 dark:group-hover:text-indigo-400 transition-colors">
-                                                Hi, {currentUser?.username === 'admin' ? 'Jugal' : currentUser?.username === 'ashmi' ? 'Ashmi' : 'Guest'}
+                                            <span className="text-xs font-black text-slate-800 dark:text-slate-200 tracking-tight">
+                                                {currentUser?.username === 'admin' ? 'Jugal Raj' : currentUser?.username === 'ashmi' ? 'Ashmi' : 'Guest'}
                                             </span>
-                                            <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 rounded-full mt-0.5">
-                                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                                                Online
+                                            <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5 bg-emerald-500/10 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full mt-0.5 border border-emerald-500/20">
+                                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                                                ACTIVE
                                             </span>
                                         </div>
-                                        <ChevronDown size={14} className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300" />
+                                        <ChevronDown size={14} className="text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-transform active:rotate-180" />
                                     </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-56">
-                                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="cursor-pointer gap-2" onClick={() => setIsSettingsOpen(true)}>
-                                        <Settings size={16} />
-                                        <span>Settings</span>
+                                <DropdownMenuContent align="end" className="w-64 p-2 rounded-2xl border-white/5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-2xl">
+                                    <DropdownMenuLabel className="font-black text-[10px] uppercase tracking-widest text-slate-500">Terminal Access</DropdownMenuLabel>
+                                    <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/5" />
+                                    <DropdownMenuItem className="cursor-pointer gap-3 p-3 rounded-xl focus:bg-blue-50 dark:focus:bg-white/5 focus:text-blue-600 dark:focus:text-blue-400 transition-all group" onClick={() => setIsSettingsOpen(true)}>
+                                        <div className="p-2 rounded-lg bg-slate-100 dark:bg-white/5 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 transition-colors">
+                                            <Settings size={16} />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold">Preferences</span>
+                                            <span className="text-[10px] opacity-60">Control terminal interface</span>
+                                        </div>
                                     </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
+                                    <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/5" />
                                     <DropdownMenuItem
                                         onClick={handleLogout}
-                                        className="cursor-pointer gap-2 text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
+                                        className="cursor-pointer gap-3 p-3 rounded-xl text-rose-600 dark:text-rose-400 focus:bg-rose-50 dark:focus:bg-rose-500/10 focus:text-rose-700 dark:focus:text-rose-300 transition-all group"
                                     >
-                                        <LogOut size={16} />
-                                        <span>Logout</span>
+                                        <div className="p-2 rounded-lg bg-rose-50 dark:bg-rose-500/10 group-hover:bg-rose-100 dark:group-hover:bg-rose-500/20 transition-colors">
+                                            <LogOut size={16} />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold">Sign Out</span>
+                                            <span className="text-[10px] opacity-60">End terminal session</span>
+                                        </div>
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -435,7 +461,7 @@ function DashboardContent({
                     </header>
                 )}
 
-                <div className={noPadding ? '' : 'p-8'}>
+                <div className={`${noPadding ? '' : 'p-8'} relative z-0`}>
                     {children}
                 </div>
             </main >

@@ -380,8 +380,8 @@ export function ChatInterface({ hideHeader = false, messages = [], onSendMessage
                                 <button
                                     onClick={() => scrollToMessage(msg.id)}
                                     className={`h-4 rounded-full transition-all duration-500 pointer-events-auto relative ${isActive
-                                            ? 'w-1 bg-primary horizon-glow'
-                                            : 'w-0.5 bg-border/40 hover:w-0.5 hover:bg-primary/50'
+                                        ? 'w-1 bg-primary horizon-glow'
+                                        : 'w-0.5 bg-border/40 hover:w-0.5 hover:bg-primary/50'
                                         }`}
                                 />
                             </div>
@@ -395,7 +395,7 @@ export function ChatInterface({ hideHeader = false, messages = [], onSendMessage
                 {!hideHeader && !isNewChat && (
                     <header className="px-8 py-5 flex items-center justify-between shrink-0 backdrop-blur-sm bg-background/5 border-b border-border/10">
                         <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-primary horizon-glow animate-pulse" />
+                            <div className="w-2 h-2 rounded-full bg-primary horizon-glow" />
                             <span className="text-xs font-black tracking-[0.2em] uppercase text-foreground/40 font-mono">
                                 Stockastic Horizon • <span className="text-primary italic">Gemini 2.0</span>
                             </span>
@@ -470,7 +470,7 @@ export function ChatInterface({ hideHeader = false, messages = [], onSendMessage
                                                                             <MessageRenderer content={cleanContent} role={msg.role} isFinished={isFinished} />
                                                                             {!isFinished && (
                                                                                 <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-[0.2em] text-primary/60">
-                                                                                    <div className="w-1.5 h-1.5 rounded-full bg-primary horizon-glow animate-pulse" />
+                                                                                    <div className="w-1.5 h-1.5 rounded-full bg-primary horizon-glow" />
                                                                                     Synthesizing Data...
                                                                                 </div>
                                                                             )}
@@ -486,7 +486,7 @@ export function ChatInterface({ hideHeader = false, messages = [], onSendMessage
 
                                         {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
                                             <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-[0.2em] text-primary/60">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-primary horizon-glow animate-pulse" />
+                                                <div className="w-1.5 h-1.5 rounded-full bg-primary horizon-glow" />
                                                 Aligning Horizon...
                                             </div>
                                         )}
@@ -516,8 +516,8 @@ export function ChatInterface({ hideHeader = false, messages = [], onSendMessage
                                     onClick={handleSendMessage}
                                     disabled={!inputValue.trim() || isLoading}
                                     className={`ml-2 p-3.5 rounded-2xl transition-all ${inputValue.trim()
-                                            ? 'bg-primary text-white scale-100 opacity-100 shadow-xl'
-                                            : 'bg-foreground/5 text-foreground/20 scale-90 opacity-50'
+                                        ? 'bg-primary text-white scale-100 opacity-100 shadow-xl'
+                                        : 'bg-foreground/5 text-foreground/20 scale-90 opacity-50'
                                         }`}
                                 >
                                     <Send size={18} />
