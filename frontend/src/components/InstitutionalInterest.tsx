@@ -19,7 +19,7 @@ export const InstitutionalInterest = () => {
                     <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-md">
                         <ShieldCheck size={14} className="text-indigo-600 dark:text-indigo-400" />
                     </div>
-                    <span className="text-[11px] font-black text-slate-900 dark:text-slate-100 tracking-widest">Institutional Participation</span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">Institutional Participation</span>
                 </div>
                 <TooltipProvider>
                     <Tooltip>

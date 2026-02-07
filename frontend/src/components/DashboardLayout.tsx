@@ -362,14 +362,14 @@ function DashboardContent({
                                 )}
                                 {pathname === '/signals' ? (
                                     <div className="flex flex-col min-w-0">
-                                        <h2 className="text-lg font-black bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent tracking-tight">
+                                        <h2 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent tracking-tight">
                                             Strategy Signals
                                         </h2>
                                         <p className="text-[10px] text-slate-500 dark:text-slate-500 font-bold uppercase tracking-widest">Real-time Trading Matrix</p>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col min-w-0">
-                                        <h2 className={`text-lg font-black text-slate-900 dark:text-slate-100 truncate tracking-tight ${!title ? 'capitalize' : ''}`}>
+                                        <h2 className={`text-lg font-bold text-slate-900 dark:text-slate-100 truncate tracking-tight ${!title ? 'capitalize' : ''}`}>
                                             {title || (pathname.includes('/ticker/') ? 'Stock Details' : pathname.split('/').pop())}
                                         </h2>
                                         {subtitle && (
@@ -415,11 +415,11 @@ function DashboardContent({
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <button className="flex items-center gap-3 p-1.5 pr-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 hover:border-blue-200 dark:hover:border-indigo-500/50 hover:bg-white dark:hover:bg-white/10 transition-all duration-500 group outline-none">
-                                        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-black shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform uppercase">
+                                        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform uppercase">
                                             {(currentUser?.username === 'admin' ? 'J' : currentUser?.username === 'ashmi' ? 'A' : 'G')}
                                         </div>
                                         <div className="flex flex-col items-start mr-1">
-                                            <span className="text-xs font-black text-slate-800 dark:text-slate-200 tracking-tight">
+                                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight">
                                                 {currentUser?.username === 'admin' ? 'Jugal Raj' : currentUser?.username === 'ashmi' ? 'Ashmi' : 'Guest'}
                                             </span>
                                             <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5 bg-emerald-500/10 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full mt-0.5 border border-emerald-500/20">
@@ -431,7 +431,7 @@ function DashboardContent({
                                     </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-64 p-2 rounded-2xl border-white/5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-2xl">
-                                    <DropdownMenuLabel className="font-black text-[10px] uppercase tracking-widest text-slate-500">Terminal Access</DropdownMenuLabel>
+                                    <DropdownMenuLabel className="font-bold text-[10px] uppercase tracking-widest text-slate-500">Terminal Access</DropdownMenuLabel>
                                     <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/5" />
                                     <DropdownMenuItem className="cursor-pointer gap-3 p-3 rounded-xl focus:bg-blue-50 dark:focus:bg-white/5 focus:text-blue-600 dark:focus:text-blue-400 transition-all group" onClick={() => setIsSettingsOpen(true)}>
                                         <div className="p-2 rounded-lg bg-slate-100 dark:bg-white/5 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 transition-colors">

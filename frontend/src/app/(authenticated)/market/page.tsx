@@ -111,6 +111,7 @@ export default function DashboardPage() {
     const [isCommandOpen, setIsCommandOpen] = useState(false);
     const [portfolioStats, setPortfolioStats] = useState({ investment: 0, dayPL: 0, dailyPLPositive: true });
     const [error, setError] = useState<string | null>(null);
+    const [viewMetric, setViewMetric] = useState<'gainers' | 'volume'>('gainers');
     const [mounted, setMounted] = useState(false);
 
     const router = useRouter();
@@ -410,7 +411,7 @@ export default function DashboardPage() {
                         <Card className="bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden relative backdrop-blur-xl">
                             <div className="absolute -left-8 -top-8 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent blur-2xl opacity-50" />
                             <CardHeader className="p-4 pb-1 border-b border-slate-50 dark:border-slate-800">
-                                <CardTitle className="text-xs font-black text-slate-800 dark:text-slate-100 tracking-widest flex items-center gap-2">
+                                <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-2">
                                     <ActivityIcon size={14} className="text-blue-600" /> SNAPSHOT
                                 </CardTitle>
                             </CardHeader>
@@ -428,8 +429,8 @@ export default function DashboardPage() {
 
                                 <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between group/breadth hover:border-blue-500/30 transition-colors">
                                     <div className="flex flex-col">
-                                        <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase">Breadth Ratio</span>
-                                        <span className="text-lg font-black text-slate-900 dark:text-slate-100 italic">{(market_summary.advancers / (market_summary.advancers + market_summary.decliners || 1)).toFixed(2)}</span>
+                                        <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase">Breadth Ratio</span>
+                                        <span className="text-lg font-bold text-slate-900 dark:text-slate-100 italic">{(market_summary.advancers / (market_summary.advancers + market_summary.decliners || 1)).toFixed(2)}</span>
                                     </div>
                                     <div className={`h-8 w-8 rounded-lg flex items-center justify-center transition-transform group-hover/breadth:scale-110 ${marketSentiment > 50 ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'}`}>
                                         <Activity size={18} />
@@ -462,29 +463,14 @@ export default function DashboardPage() {
                             <div className="absolute -right-12 -bottom-12 w-48 h-48 bg-gradient-to-tl from-blue-500/10 to-transparent blur-3xl opacity-50" />
                             <CardHeader className="p-5 border-b border-slate-50 dark:border-white/5 flex flex-row items-center justify-between relative z-10">
                                 <div className="space-y-1">
-                                    <CardTitle className="text-base font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                        <Globe size={16} className="text-blue-600 group-hover:rotate-12 transition-transform" /> Market Liquidity Map
+                                    <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+                                        <Globe size={14} className="text-blue-600 group-hover:rotate-12 transition-transform" /> Market Liquidity Map
                                     </CardTitle>
                                     <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Size represents turnover, color represents performance</p>
                                 </div>
                             </CardHeader>
                             <CardContent className="p-0 relative z-10">
                                 <MarketBubbleMap stocks={allStocks} height={480} />
-                            </CardContent>
-                        </Card>
-
-                        {/* Top Gainers Performance Graph */}
-                        <Card className="lg:col-span-3 bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden backdrop-blur-xl relative group">
-                            <CardHeader className="p-5 border-b border-slate-50 dark:border-white/5 flex flex-row items-center justify-between relative z-10">
-                                <div className="space-y-1">
-                                    <CardTitle className="text-base font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                        <TrendingUp size={16} className="text-emerald-500" /> One-Month Performance (Top Gainers)
-                                    </CardTitle>
-                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Relative growth index over last 30 intervals</p>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="p-6 relative z-10">
-                                <TopGainersChart gainers={top_gainers} height={340} />
                             </CardContent>
                         </Card>
 
@@ -522,6 +508,32 @@ export default function DashboardPage() {
                             </CardContent>
                         </Card>
 
+                        {/* Multi-Metric Performance Graph */}
+                        <Card className="lg:col-span-3 bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden backdrop-blur-xl relative group">
+                            <CardHeader className="p-5 border-b border-slate-50 dark:border-white/5 flex flex-row items-center justify-between relative z-10">
+                                <div className="space-y-1">
+                                    <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+                                        <TrendingUp size={14} className={`${viewMetric === 'gainers' ? 'text-emerald-500' : 'text-blue-500'}`} />
+                                        {viewMetric === 'gainers' ? 'Top Gainers Performance' : 'Top Volume Performance'}
+                                    </CardTitle>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Actual daily closing price trend over last 30 intervals</p>
+                                </div>
+                                <Tabs value={viewMetric} onValueChange={(v: any) => setViewMetric(v)} className="w-[200px]">
+                                    <TabsList className="grid w-full grid-cols-2 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl h-8">
+                                        <TabsTrigger value="gainers" className="rounded-lg font-bold text-[9px] tracking-widest uppercase">Gainers</TabsTrigger>
+                                        <TabsTrigger value="volume" className="rounded-lg font-bold text-[9px] tracking-widest uppercase">Volume</TabsTrigger>
+                                    </TabsList>
+                                </Tabs>
+                            </CardHeader>
+                            <CardContent className="p-6 relative z-10">
+                                <TopGainersChart
+                                    gainers={viewMetric === 'gainers' ? top_gainers : top_volume}
+                                    height={450}
+                                    metricTitle={viewMetric === 'gainers' ? 'Top Gainers' : 'Top Volume'}
+                                />
+                            </CardContent>
+                        </Card>
+
                         {/* Lower Tier Middle: Breadth Trend & Portfolio */}
                         <div className="lg:col-span-3 grid grid-cols-1 lg:grid-cols-12 gap-6">
 
@@ -554,11 +566,11 @@ export default function DashboardPage() {
                                             </div>
                                             <div className="w-full md:w-48 space-y-4">
                                                 <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:border-blue-500/20">
-                                                    <span className="text-[9px] font-black text-slate-900 dark:text-slate-400 block mb-1 uppercase tracking-wider">Health Index</span>
-                                                    <div className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tighter">72.4 <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold ml-1">Stable</span></div>
+                                                    <span className="text-[9px] font-bold text-slate-900 dark:text-slate-400 block mb-1 uppercase tracking-wider">Health Index</span>
+                                                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 tracking-tighter">72.4 <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold ml-1">Stable</span></div>
                                                 </div>
                                                 <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:border-blue-500/20">
-                                                    <span className="text-[9px] font-black text-slate-900 dark:text-slate-400 block mb-1 uppercase tracking-wider">Confirmation</span>
+                                                    <span className="text-[9px] font-bold text-slate-900 dark:text-slate-400 block mb-1 uppercase tracking-wider">Confirmation</span>
                                                     <div className="text-[10px] font-bold text-slate-700 dark:text-slate-300 leading-tight">Price action confirmed by volume participation.</div>
                                                 </div>
                                             </div>
@@ -609,21 +621,21 @@ export default function DashboardPage() {
                                 </CardHeader>
                                 <CardContent className="p-6 pt-0 flex flex-col justify-center gap-6 h-full min-h-[300px]">
                                     <div className="space-y-1">
-                                        <span className="text-[10px] font-black text-slate-600 dark:text-slate-400 tracking-widest">Total Value</span>
-                                        <div className="text-3xl font-black text-black dark:text-slate-100 tracking-tighter">Rs. {portfolioStats.investment.toLocaleString()}</div>
+                                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 tracking-widest">Total Value</span>
+                                        <div className="text-3xl font-bold text-black dark:text-slate-100 tracking-tighter">Rs. {portfolioStats.investment.toLocaleString()}</div>
                                     </div>
 
                                     <div className="grid grid-cols-1 gap-4">
                                         <div className={`p-4 rounded-3xl ${portfolioStats.dailyPLPositive ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/30' : 'bg-rose-50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/30'} border transition-colors duration-500`}>
-                                            <span className={`text-[9px] font-black tracking-widest block mb-1 ${portfolioStats.dailyPLPositive ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>Day Gain/Loss</span>
-                                            <div className={`text-xl font-black ${portfolioStats.dailyPLPositive ? 'text-emerald-800 dark:text-emerald-500' : 'text-rose-800 dark:text-rose-500'}`}>
+                                            <span className={`text-[9px] font-bold tracking-widest block mb-1 ${portfolioStats.dailyPLPositive ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>Day Gain/Loss</span>
+                                            <div className={`text-xl font-bold ${portfolioStats.dailyPLPositive ? 'text-emerald-800 dark:text-emerald-500' : 'text-rose-800 dark:text-rose-500'}`}>
                                                 {portfolioStats.dailyPLPositive ? '+' : ''}{portfolioStats.dayPL.toLocaleString()}
                                             </div>
                                         </div>
 
                                         <button
                                             onClick={() => router.push('/portfolio')}
-                                            className="w-full py-3 bg-slate-900 dark:bg-slate-700 text-white rounded-2xl font-black text-[10px] tracking-widest hover:bg-slate-800 dark:hover:bg-slate-600 transition-all transform active:scale-95 shadow-lg shadow-slate-200 dark:shadow-none"
+                                            className="w-full py-3 bg-slate-900 dark:bg-slate-700 text-white rounded-2xl font-bold text-[10px] tracking-widest hover:bg-slate-800 dark:hover:bg-slate-600 transition-all transform active:scale-95 shadow-lg shadow-slate-200 dark:shadow-none"
                                         >
                                             View Full Portfolio
                                         </button>
@@ -671,8 +683,8 @@ export default function DashboardPage() {
                     >
                         <Card className="bg-white/50 dark:bg-slate-900/40 border-none shadow-xl shadow-slate-200/50 dark:shadow-none backdrop-blur-xl overflow-hidden">
                             <CardHeader className="p-4 pb-2 border-b border-slate-100 dark:border-white/5 flex flex-row items-center justify-between">
-                                <CardTitle className="text-sm font-black text-slate-900 dark:text-slate-100 tracking-tighter flex items-center gap-2">
-                                    <TrendingUp size={16} className="text-blue-600" /> SECTOR PERFORMANCE MATRIX
+                                <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+                                    <TrendingUp size={14} className="text-blue-600" /> SECTOR PERFORMANCE MATRIX
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-0">
@@ -680,11 +692,11 @@ export default function DashboardPage() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow className="border-transparent hover:bg-transparent">
-                                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 w-[240px]">Index Name</TableHead>
-                                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 text-right">Change (%)</TableHead>
-                                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 text-right">Turnover (Rs.)</TableHead>
-                                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 text-right">Volume (Qty)</TableHead>
-                                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 text-right w-[120px]">Trend</TableHead>
+                                                <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 w-[240px]">Index Name</TableHead>
+                                                <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 text-right">Change (%)</TableHead>
+                                                <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 text-right">Turnover (Rs.)</TableHead>
+                                                <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 text-right">Volume (Qty)</TableHead>
+                                                <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 text-right w-[120px]">Trend</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -697,20 +709,20 @@ export default function DashboardPage() {
                                                                 <div className={`p-1.5 rounded-lg bg-gradient-to-br ${sectorConfig[sector.name]?.gradient || 'from-slate-500/10 to-slate-600/10'} text-slate-700 dark:text-slate-400 shadow-sm opacity-70 group-hover:opacity-100 transition-opacity`}>
                                                                     {sectorConfig[sector.name]?.icon ? React.cloneElement(sectorConfig[sector.name].icon as React.ReactElement<any>, { size: 14 }) : <Activity size={14} />}
                                                                 </div>
-                                                                <span className="text-xs font-black text-slate-800 dark:text-slate-200 tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase">{sector.name}</span>
+                                                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase">{sector.name}</span>
                                                             </div>
                                                         </TableCell>
-                                                        <TableCell className={`text-right py-3 font-black text-sm ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                                        <TableCell className={`text-right py-3 font-bold text-sm ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                                             <div className="flex items-center justify-end gap-1.5">
                                                                 {isPositive ? <TrendingUp size={12} className="opacity-50" /> : <TrendingDown size={12} className="opacity-50" />}
                                                                 {isPositive ? '+' : ''}{sector.change.toFixed(2)}%
                                                             </div>
                                                         </TableCell>
                                                         <TableCell className="text-right py-3">
-                                                            <span className="text-xs font-mono font-black text-slate-900 dark:text-slate-100">{(sector.turnover / 1000000).toFixed(2)}M</span>
+                                                            <span className="text-xs font-mono font-bold text-slate-900 dark:text-slate-100">{(sector.turnover / 1000000).toFixed(2)}M</span>
                                                         </TableCell>
                                                         <TableCell className="text-right py-3">
-                                                            <span className="text-xs font-mono font-black text-slate-600 dark:text-slate-300">{(sector.volume || sector.turnover / 500).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                                                            <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">{(sector.volume || sector.turnover / 500).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                                                         </TableCell>
                                                         <TableCell className="text-right py-3">
                                                             <div className="h-6 w-20 ml-auto opacity-70 group-hover:opacity-100 transition-opacity">

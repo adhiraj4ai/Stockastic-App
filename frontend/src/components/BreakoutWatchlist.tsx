@@ -31,7 +31,7 @@ export const BreakoutWatchlist = ({ stocks }: BreakoutWatchlistProps) => {
                     <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-md">
                         <Zap size={14} className="text-amber-600 dark:text-amber-400 fill-amber-600 dark:fill-amber-400" />
                     </div>
-                    <span className="text-[11px] font-black text-slate-900 dark:text-slate-100 tracking-widest">Momentum Breakouts</span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight">Momentum Breakouts</span>
                 </div>
             </div>
 
