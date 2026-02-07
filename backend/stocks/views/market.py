@@ -3,7 +3,7 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Sum, Max, Q, Count
+from django.db.models import Sum, Max, Min, Q, Count, F, Avg
 from ..models import DailyStockPrice, DailyFloorsheet, StockFundamental, Company, Dividend, FinancialReport
 from ..serializers import (
     DailyStockPriceSerializer, DailyFloorsheetSerializer, StockFundamentalSerializer, 
@@ -11,6 +11,8 @@ from ..serializers import (
 )
 from ..technical import get_technical_indicators
 from .accumulation_mixin import AccumulationMixin
+import datetime
+from django.db.models import Subquery, OuterRef
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -36,6 +38,8 @@ def stock_history(request, ticker):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def stock_summary(request):
+    range_type = request.GET.get('range', 'daily') # daily, weekly, monthly
+    
     # 1. Get Latest Date with substantial data (> 10 entries)
     latest_date_data = DailyStockPrice.objects.values('date').annotate(
         count=Count('ticker')
@@ -46,10 +50,42 @@ def stock_summary(request):
     if not latest_date:
         return Response({})
 
-    # 2. Fetch Data (External DB)
-    todays_data = DailyStockPrice.objects.filter(date=latest_date)
+    # 2. Determine Reference Date based on Range
+    ref_date = None
+    if range_type == 'weekly':
+        target_date = latest_date - datetime.timedelta(days=7)
+        # Find nearest available date on or before target
+        ref_date_data = DailyStockPrice.objects.filter(date__lte=target_date).values('date').annotate(count=Count('ticker')).filter(count__gt=10).order_by('-date').first()
+        ref_date = ref_date_data['date'] if ref_date_data else None
+    elif range_type == 'monthly':
+        target_date = latest_date - datetime.timedelta(days=30)
+        ref_date_data = DailyStockPrice.objects.filter(date__lte=target_date).values('date').annotate(count=Count('ticker')).filter(count__gt=10).order_by('-date').first()
+        ref_date = ref_date_data['date'] if ref_date_data else None
+        
+    # If range is daily or ref_date not found, standard daily logic
+    is_daily = (range_type == 'daily' or not ref_date)
 
-    # 3. Create Sector Map (using Company model)
+    # 3. Fetch Data
+    latest_prices = DailyStockPrice.objects.filter(date=latest_date)
+    
+    # Pre-fetch reference prices if aggregating
+    ref_prices_map = {}
+    aggregates_map = {}
+    
+    if not is_daily:
+        ref_prices = DailyStockPrice.objects.filter(date=ref_date)
+        ref_prices_map = {p.ticker: p.close for p in ref_prices}
+        
+        # Aggregate Volume and Turnover
+        aggs = DailyStockPrice.objects.filter(date__gt=ref_date, date__lte=latest_date).values('ticker').annotate(
+            total_vol=Sum('volume'),
+            total_turn=Sum('turnover'),
+            max_high=Max('high'),
+            min_low=Min('low') # Note: Min aggregation might need import if not present, but usually Max is enough for volatility proxy
+        )
+        aggregates_map = {a['ticker']: a for a in aggs}
+
+    # 4. Create Sector Map (using Company model)
     companies = Company.objects.all()
     sector_map = {c.symbol: c.sector for c in companies}
     
@@ -64,22 +100,46 @@ def stock_summary(request):
     advancers_count = 0
     decliners_count = 0
     unchanged_count = 0
+    
+    # For 52-week scanners
+    near_high_list = []
+    near_low_list = []
 
-    for stock in todays_data:
-        prev_close = stock.prev_close or stock.open
+    for stock in latest_prices:
+        # Determine comparison price
+        if not is_daily and stock.ticker in ref_prices_map:
+            prev_close = ref_prices_map[stock.ticker]
+        else:
+            prev_close = stock.prev_close or stock.open
+
+        # Determine volume/turnover
+        if not is_daily and stock.ticker in aggregates_map:
+            agg = aggregates_map[stock.ticker]
+            volume = agg['total_vol'] or 0
+            turnover = agg['total_turn'] or 0
+            # Use aggregated high/low for diff? For now keep daily diff for "intraday volatility" or use period range
+            # Let's use period volatility: (Max High - Min Low) / Prev Close
+            # diff = (agg['max_high'] - agg['min_low']) if (agg['max_high'] and agg['min_low']) else (stock.high - stock.low)
+            diff = stock.close - stock.open # Keep diff as candle body for now
+        else:
+            volume = stock.volume
+            turnover = stock.turnover or (stock.close * stock.volume)
+            diff = stock.close - stock.open
         
-        change = stock.close - prev_close
+        # Calculations
+        change = stock.close - prev_close if prev_close else 0
         percent_change = (change / prev_close * 100) if prev_close else 0
         
-        turnover = stock.turnover or (stock.close * stock.volume)
-        
-        total_volume += stock.volume
+        # Global Totals (Only sum if daily, or if we want total volume over period? Usually summary header is for "Today")
+        # User requested "Weekly Data", likely implies seeing weekly volume for stocks. 
+        # But market header stats (Total Turnover) usually refer to the *current day's* session even in weekly view.
+        # However, to be consistent with the list, let's sum based on the list data.
+        total_volume += volume
         total_turnover += turnover
-        market_points_today += stock.close
-        market_points_prev += prev_close
         
-        diff = stock.close - stock.open
-
+        market_points_today += stock.close
+        market_points_prev += prev_close # This gives us "Weekly Market Change" if aggregated
+        
         if change > 0:
              advancers_count += 1
         elif change < 0:
@@ -95,19 +155,34 @@ def stock_summary(request):
         sector_stats[sector]['count'] += 1
         sector_stats[sector]['turnover'] += turnover
 
-        summary_list.append({
+        stock_data = {
             'ticker': stock.ticker,
             'close': stock.close,
             'open': stock.open,
             'high': stock.high,
             'low': stock.low,
-            'volume': stock.volume,
+            'volume': volume,
             'turnover': turnover,
             'change': change,
             'percent_change': percent_change,
             'diff': diff,
-            'sector': sector
-        })
+            'sector': sector,
+            'weeks_52_high': stock.weeks_52_high,
+            'weeks_52_low': stock.weeks_52_low
+        }
+        summary_list.append(stock_data)
+        
+        # 52-Week Scanners (Daily only check is fine, or compare current close)
+        from decimal import Decimal
+        if stock.weeks_52_high and stock.close:
+            # Within 2% of high
+            if stock.close >= stock.weeks_52_high * Decimal('0.98'):
+                near_high_list.append(stock_data)
+                
+        if stock.weeks_52_low and stock.close:
+            # Within 2% of low
+            if stock.close <= stock.weeks_52_low * Decimal('1.02'):
+                near_low_list.append(stock_data)
 
     final_sector_summary = []
     for sec, stats in sector_stats.items():
@@ -125,6 +200,10 @@ def stock_summary(request):
     by_volume = sorted(summary_list, key=lambda x: x['volume'])
     by_turnover = sorted(summary_list, key=lambda x: x['turnover'])
     by_change = sorted(summary_list, key=lambda x: x['percent_change'])
+    
+    # Sort scanner lists
+    near_high_list.sort(key=lambda x: x['percent_change'], reverse=True)
+    near_low_list.sort(key=lambda x: x['percent_change']) # Losers first
 
     total_stocks = len(summary_list)
     advancers_percent = (advancers_count / total_stocks * 100) if total_stocks else 0
@@ -132,6 +211,8 @@ def stock_summary(request):
     response_data = {
         'market_summary': {
             'date': latest_date,
+            'ref_date': ref_date, # Useful for frontend to show range
+            'range': range_type,
             'total_turnover': total_turnover,
             'total_volume': total_volume,
             'total_points': market_points_today,
@@ -149,9 +230,171 @@ def stock_summary(request):
         'bottom_volume': by_volume[:10],
         'bottom_turnover': by_turnover[:10],
         'top_losers': by_change[:10],
+        'near_52_high': near_high_list[:10],
+        'near_52_low': near_low_list[:10]
     }
     
     return Response(response_data)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def analyze_activity(request):
+    """
+    Deep dive into market activity. 
+    Identifies 'Notable Stocks' (High Gain/Loss, Turnover, Volume, Circuit Breakers)
+    and aggregates Broker data (Floorsheet) for them.
+    range: daily (default), weekly, monthly
+    """
+    range_type = request.GET.get('range', 'daily')
+    
+    # 1. Reuse logic to get dates and notable stocks (simplified)
+    # Ideally refactor `stock_summary` logic into helper, but for now duplicate core date finding for speed
+    
+    latest_date_data = DailyStockPrice.objects.values('date').annotate(
+        count=Count('ticker')
+    ).filter(count__gt=10).order_by('-date').first()
+    
+    latest_date = latest_date_data['date'] if latest_date_data else None
+    if not latest_date: return Response({})
+
+    start_date = latest_date
+    if range_type == 'weekly':
+        start_date = latest_date - datetime.timedelta(days=7)
+    elif range_type == 'monthly':
+        start_date = latest_date - datetime.timedelta(days=30)
+        
+    # 2. Identify Notable Stock Tickers
+    # Use aggregates over the period to find top movers/turnover
+    
+    # We need:
+    # - Top Gainers/Losers (Price diff between start and end)
+    # - Top Turnover (Sum of turnover)
+    # - Top Volume (Sum of volume)
+    
+    # Efficiently fetch ALL stocks' performance over the period
+    # To do this properly for "Gainers", we need price at start and end.
+    # Group by ticker.
+    
+    # Fetch all prices in range
+    prices = DailyStockPrice.objects.filter(date__gte=start_date, date__lte=latest_date)
+    
+    # We can use python aggregation for flexibility or complicated ORM
+    # Let's use Python for simpler "First vs Last" logic
+    ticker_stats = {}
+    for p in prices:
+        if p.ticker not in ticker_stats:
+            ticker_stats[p.ticker] = {'vol': 0, 'turn': 0, 'prices': []}
+        ticker_stats[p.ticker]['vol'] += (p.volume or 0)
+        ticker_stats[p.ticker]['turn'] += (p.turnover or 0)
+        ticker_stats[p.ticker]['prices'].append({'date': p.date, 'close': p.close})
+        
+    notable_metrics = []
+    
+    for ticker, data in ticker_stats.items():
+        # Sort prices by date
+        sorted_prices = sorted(data['prices'], key=lambda x: x['date'])
+        if not sorted_prices: continue
+            
+        start_price = sorted_prices[0]['close']
+        end_price = sorted_prices[-1]['close']
+        
+        change = float(end_price - start_price)
+        pct_change = (change / float(start_price) * 100) if start_price else 0
+        
+        notable_metrics.append({
+            'ticker': ticker,
+            'change': change,
+            'percent_change': pct_change,
+            'turnover': data['turn'],
+            'volume': data['vol'],
+            'close': end_price
+        })
+        
+    # Sort and pick top K for each category
+    top_gainers = sorted(notable_metrics, key=lambda x: x['percent_change'], reverse=True)[:10]
+    top_losers = sorted(notable_metrics, key=lambda x: x['percent_change'])[:10]
+    top_turnover = sorted(notable_metrics, key=lambda x: x['turnover'], reverse=True)[:10]
+    top_volume = sorted(notable_metrics, key=lambda x: x['volume'], reverse=True)[:10]
+    
+    # Combine into a unique set of tickers to analyze
+    unique_tickers = set(
+        [x['ticker'] for x in top_gainers] + 
+        [x['ticker'] for x in top_losers] + 
+        [x['ticker'] for x in top_turnover] + 
+        [x['ticker'] for x in top_volume]
+    )
+    
+    # 3. Drill Down: Aggregate Floorsheet Data for these tickers
+    # Optimize: Query floorsheet for ALL these tickers in one go, then group in Python
+    # This prevents N+1 queries
+    
+    floorsheet_data = DailyFloorsheet.objects.filter(
+        symbol__in=unique_tickers, 
+        transaction_date__gte=start_date,
+        transaction_date__lte=latest_date
+    )
+    
+    # We want: Top Buying Brokers, Top Selling Brokers, Total Transactions
+    broker_stats = {} # {ticker: {buyers: {id: qty}, sellers: {id: qty}, transactions: 0}}
+    
+    for fs in floorsheet_data:
+        ticker = fs.symbol
+        if ticker not in broker_stats:
+            broker_stats[ticker] = {'buyers': {}, 'sellers': {}, 'transactions': 0, 'avg_price_sum': 0, 'total_qty': 0}
+            
+        stats = broker_stats[ticker]
+        stats['transactions'] += 1
+        stats['total_qty'] += fs.quantity
+        stats['avg_price_sum'] += (fs.rate * fs.quantity)
+        
+        # Buyer
+        b_id = fs.buyer_id
+        if b_id not in stats['buyers']: stats['buyers'][b_id] = 0
+        stats['buyers'][b_id] += fs.quantity
+        
+        # Seller
+        s_id = fs.seller_id
+        if s_id not in stats['sellers']: stats['sellers'][s_id] = 0
+        stats['sellers'][s_id] += fs.quantity
+        
+    # Format the final analysis data
+    analysis_results = []
+    
+    # Helper to format broker list
+    def get_top_brokers(broker_dict, is_buyer=True):
+        # Sort by quantity
+        sorted_brokers = sorted(broker_dict.items(), key=lambda x: x[1], reverse=True)[:5]
+        return [{'broker_id': k, 'quantity': v} for k, v in sorted_brokers]
+
+    # Map metrics back to tickers
+    metrics_map = {m['ticker']: m for m in notable_metrics}
+    
+    for ticker in unique_tickers:
+        stats = broker_stats.get(ticker, {})
+        m = metrics_map.get(ticker, {})
+        
+        if not stats: continue
+        
+        avg_price = (stats['avg_price_sum'] / stats['total_qty']) if stats['total_qty'] else 0
+        
+        analysis_results.append({
+            'ticker': ticker,
+            'metrics': m,
+            'analysis': {
+                'total_transactions': stats.get('transactions', 0),
+                'weighted_avg_price': round(avg_price, 2),
+                'top_buyers': get_top_brokers(stats.get('buyers', {})),
+                'top_sellers': get_top_brokers(stats.get('sellers', {}), is_buyer=False)
+            }
+        })
+
+    # Sort results by something interesting? Maybe turnover
+    analysis_results.sort(key=lambda x: x['metrics']['turnover'], reverse=True)
+
+    return Response({
+        'date_range': {'start': start_date, 'end': latest_date},
+        'analysis': analysis_results
+    })
 
 @api_view(['GET'])
 @permission_classes([AllowAny])

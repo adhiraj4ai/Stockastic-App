@@ -27,6 +27,7 @@ const navItems = [
         subItems: [
             { name: 'Overview', href: '/market', icon: LayoutDashboard },
             { name: 'Movers & Shakers', href: '/market/movers', icon: Zap },
+            { name: 'Deep Dive', href: '/market/activity', icon: Activity },
         ]
     },
     // Chat moved to top nav
