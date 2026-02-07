@@ -15,8 +15,19 @@ export function middleware(request: NextRequest) {
     }
 
     // 2. Redirect to /login if user is NOT logged in and visits protected routes
-    // Assuming /market, /portfolio, /ticker/* are protected
-    const protectedRoutes = ['/market', '/portfolio', '/ticker'];
+    const protectedRoutes = [
+        '/market',
+        '/portfolio',
+        '/ticker',
+        '/chat',
+        '/accumulation',
+        '/financials',
+        '/strategies',
+        '/signals',
+        '/recommendations',
+        '/pipeline',
+        '/settings'
+    ];
 
     if (!token) {
         if (protectedRoutes.some(route => pathname.startsWith(route))) {
@@ -28,5 +39,19 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/', '/login', '/market/:path*', '/portfolio/:path*', '/ticker/:path*'],
+    matcher: [
+        '/',
+        '/login',
+        '/market/:path*',
+        '/portfolio/:path*',
+        '/ticker/:path*',
+        '/chat/:path*',
+        '/accumulation/:path*',
+        '/financials/:path*',
+        '/strategies/:path*',
+        '/signals/:path*',
+        '/recommendations/:path*',
+        '/pipeline/:path*',
+        '/settings/:path*'
+    ],
 };

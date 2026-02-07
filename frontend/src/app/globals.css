@@ -111,7 +111,7 @@
   }
 
   body {
-    @apply bg-background text-foreground selection:bg-primary/20 transition-colors duration-500 overflow-hidden;
+    @apply bg-background text-foreground selection:bg-primary/20 transition-colors duration-500;
     background-image:
       radial-gradient(at 0% 0%, oklch(0.7 0.2 250 / 0.05) 0px, transparent 50%),
       radial-gradient(at 100% 0%, oklch(0.6 0.2 280 / 0.05) 0px, transparent 50%),
