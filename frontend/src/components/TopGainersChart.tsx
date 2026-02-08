@@ -41,8 +41,8 @@ export const TopGainersChart = ({ gainers, height = 300, metricTitle = 'One-Mont
                 const results = await Promise.all(
                     targetGainers.map(async (stock) => {
                         const response = await api.get<HistoricalData[]>(`/api/stocks/history/${stock.ticker}/`);
-                        // Take the last 30 days
-                        return { ticker: stock.ticker, data: response.data.slice(-30) };
+                        // Take the last 90 days for better context
+                        return { ticker: stock.ticker, data: response.data.slice(-90) };
                     })
                 );
 
@@ -74,11 +74,13 @@ export const TopGainersChart = ({ gainers, height = 300, metricTitle = 'One-Mont
     }
 
     // Determine the union of dates from all stocks
+    // Store as ISO strings (YYYY-MM-DD) to ensure correct chronological sorting
     const allDatesSet = new Set<string>();
     Object.values(historyData).forEach(data => {
-        data.forEach(d => allDatesSet.add(new Date(d.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })));
+        data.forEach(d => allDatesSet.add(d.date));
     });
-    const sortedDates = Array.from(allDatesSet).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    // Sort ISO strings directly (works correctly for dates)
+    const sortedDates = Array.from(allDatesSet).sort();
 
     const colors = [
         '#3b82f6', // blue
@@ -115,9 +117,9 @@ export const TopGainersChart = ({ gainers, height = 300, metricTitle = 'One-Mont
         // Use index-based coloring for consistent top-list visualization
         const color = colors[i % colors.length];
 
-        // Map data to the sorted dates to ensure alignment
+        // Map data to the sorted ISO dates
         const chartValues = sortedDates.map(dateStr => {
-            const entry = data.find(d => new Date(d.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) === dateStr);
+            const entry = data.find(d => d.date === dateStr);
             return entry ? entry.close : null;
         });
 
@@ -177,7 +179,11 @@ export const TopGainersChart = ({ gainers, height = 300, metricTitle = 'One-Mont
                 lineStyle: { color: isDark ? '#475569' : '#cbd5e1', width: 1.5, type: 'dashed' }
             },
             formatter: (params: any) => {
-                let res = `<div style="font-weight: 900; margin-bottom: 10px; font-size: 13px; color: ${isDark ? '#f8fafc' : '#0f172a'}; border-bottom: 1px solid ${isDark ? '#334155' : '#f1f5f9'}; padding-bottom: 6px;">${params[0].axisValue}</div>`;
+                // Format the ISO date for tooltip display
+                const dateObj = new Date(params[0].axisValue);
+                const dateDisplay = dateObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+
+                let res = `<div style="font-weight: 900; margin-bottom: 10px; font-size: 13px; color: ${isDark ? '#f8fafc' : '#0f172a'}; border-bottom: 1px solid ${isDark ? '#334155' : '#f1f5f9'}; padding-bottom: 6px;">${dateDisplay}</div>`;
 
                 // Sort params by value descending
                 const sortedParams = [...params].sort((a, b) => b.value - a.value);
@@ -265,7 +271,17 @@ export const TopGainersChart = ({ gainers, height = 300, metricTitle = 'One-Mont
                 color: isDark ? '#64748b' : '#94a3b8',
                 fontFamily: 'Inter',
                 fontWeight: 600,
-                interval: 4
+                interval: 4,
+                formatter: (value: string) => {
+                    // Format the displayed label (e.g. "Nov 2")
+                    // Handle potential invalid dates gently, though sortedDates should be valid ISO
+                    try {
+                        const date = new Date(value);
+                        return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                    } catch (e) {
+                        return value;
+                    }
+                }
             }
         },
         yAxis: {
