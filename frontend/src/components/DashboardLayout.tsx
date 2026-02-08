@@ -243,7 +243,7 @@ function DashboardContent({
                         return (
                             <div
                                 key={item.name}
-                                className="space-y-1"
+                                className={`space-y-1 transition-all duration-300 ${hasSubItems ? 'border border-slate-200/50 dark:border-white/5 shadow-sm rounded-xl overflow-hidden bg-white/40 dark:bg-white/5' : ''}`}
                             >
                                 {hasSubItems ? (
                                     <button
@@ -276,9 +276,9 @@ function DashboardContent({
                                 ) : (
                                     <Link
                                         href={('href' in item ? item.href : '#') as string}
-                                        className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 group shadow-sm ${isActive
-                                            ? 'bg-gradient-to-br from-slate-900 to-slate-800 dark:from-indigo-600 dark:to-blue-700 text-white shadow-lg shadow-indigo-500/20'
-                                            : 'text-gray-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-slate-200'
+                                        className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 group shadow-sm border ${isActive
+                                            ? 'bg-gradient-to-br from-slate-900 to-slate-800 dark:from-indigo-600 dark:to-blue-700 text-white shadow-lg shadow-indigo-500/20 border-transparent'
+                                            : 'text-gray-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-slate-200 border-slate-200/50 dark:border-white/5'
                                             } ${isSidebarCollapsed ? 'justify-center px-2' : ''}`}
                                         title={isSidebarCollapsed ? item.name : ''}
                                     >
@@ -302,7 +302,7 @@ function DashboardContent({
 
                                 {/* Render Sub-items */}
                                 {hasSubItems && isExpanded && !isSidebarCollapsed && (
-                                    <div className="ml-9 mt-1 space-y-1 animate-in slide-in-from-left-2 duration-300 border-l border-slate-200 dark:border-white/5 pl-2 relative">
+                                    <div className="ml-9 mt-1 mb-2 space-y-1 animate-in slide-in-from-top-2 duration-300 border-l border-slate-200 dark:border-white/10 pl-2 relative">
                                         {(item as any).subItems.map((subItem: any) => {
                                             const subPath = subItem.href.split('?')[0];
                                             const subTab = new URLSearchParams(subItem.href.split('?')[1]).get('tab');
