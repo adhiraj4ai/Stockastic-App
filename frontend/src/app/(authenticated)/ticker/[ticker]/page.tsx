@@ -90,13 +90,14 @@ interface StockDetailData {
 }
 
 interface FloorsheetItem {
-    transaction_no: string;
-    buyer_broker: string;
-    seller_broker: string;
-    quantity: number;
-    rate: number;
-    amount: number;
-    date: string;
+    id: number;
+    contract_no: string;
+    buyer_id: number;
+    seller_id: number;
+    transaction_quantity: number;
+    transaction_rate: number;
+    transaction_amount: number;
+    transaction_date: string;
 }
 
 export default function StockDetailPage({ params }: { params: Promise<{ ticker: string }> }) {
@@ -753,13 +754,13 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                                                     {floorsheet.slice(0, 20).map((row, i) => (
-                                                        <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all group">
-                                                            <td className="px-6 py-4 font-mono text-xs text-slate-400">#{row.transaction_no}</td>
-                                                            <td className="px-6 py-4"><span className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold text-xs">{row.buyer_broker}</span></td>
-                                                            <td className="px-6 py-4"><span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold text-xs">{row.seller_broker}</span></td>
-                                                            <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300">{row.quantity.toLocaleString()}</td>
-                                                            <td className="px-6 py-4 font-mono text-slate-600 dark:text-slate-400">Rs. {row.rate}</td>
-                                                            <td className="px-6 py-4 text-right font-bold text-slate-900 dark:text-slate-100">Rs. {row.amount.toLocaleString()}</td>
+                                                        <tr key={row.id || i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all group">
+                                                            <td className="px-6 py-4 font-mono text-xs text-slate-400">#{row.contract_no}</td>
+                                                            <td className="px-6 py-4"><span className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold text-xs">{row.buyer_id}</span></td>
+                                                            <td className="px-6 py-4"><span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold text-xs">{row.seller_id}</span></td>
+                                                            <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300">{row.transaction_quantity.toLocaleString()}</td>
+                                                            <td className="px-6 py-4 font-mono text-slate-600 dark:text-slate-400">Rs. {row.transaction_rate.toLocaleString()}</td>
+                                                            <td className="px-6 py-4 text-right font-bold text-slate-900 dark:text-slate-100">Rs. {row.transaction_amount.toLocaleString()}</td>
                                                         </tr>
                                                     ))}
                                                 </tbody>
