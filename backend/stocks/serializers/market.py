@@ -7,18 +7,16 @@ class DailyStockPriceSerializer(serializers.ModelSerializer):
         fields = ['ticker', 'date', 'open', 'high', 'low', 'close', 'volume']
 
 class DailyFloorsheetSerializer(serializers.ModelSerializer):
-    transaction_no = serializers.CharField(source='transaction_id')
-    ticker = serializers.CharField(source='symbol')
-    buyer_broker = serializers.IntegerField(source='buyer_id')
-    seller_broker = serializers.IntegerField(source='seller_id')
-    quantity = serializers.IntegerField(source='transaction_quantity')
-    rate = serializers.DecimalField(source='transaction_rate', max_digits=10, decimal_places=2)
-    amount = serializers.DecimalField(source='transaction_amount', max_digits=15, decimal_places=2)
-    date = serializers.DateField(source='transaction_date')
+    contract_no = serializers.CharField(source='transaction_id')
+    id = serializers.IntegerField(source='transaction_id')
     
     class Meta:
         model = DailyFloorsheet
-        fields = ['transaction_no', 'ticker', 'buyer_broker', 'seller_broker', 'quantity', 'rate', 'amount', 'date']
+        fields = [
+            'id', 'contract_no', 'symbol', 'transaction_date', 
+            'buyer_id', 'seller_id', 'transaction_quantity', 
+            'transaction_rate', 'transaction_amount'
+        ]
 
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:

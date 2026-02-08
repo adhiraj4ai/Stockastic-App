@@ -70,8 +70,8 @@ function FloorsheetContent() {
                         </Button>
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900">Floorsheet Analysis</h1>
-                        <p className="text-sm text-slate-500">
+                        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Floorsheet Analysis</h1>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
                             {broker && symbol ? `Broker ${broker} transactions in ${symbol}${date ? ` on ${date}` : ''}` :
                                 broker ? `All transactions by Broker ${broker}${date ? ` on ${date}` : ''}` :
                                     symbol ? `Floorsheet for ${symbol}${date ? ` on ${date}` : ''}` : 'Recent Market Transactions'}
@@ -79,11 +79,11 @@ function FloorsheetContent() {
                     </div>
                 </div>
 
-                <Card>
+                <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
                     <CardHeader>
-                        <CardTitle className="flex justify-between items-center">
+                        <CardTitle className="flex justify-between items-center text-slate-900 dark:text-slate-100">
                             <span>Transaction Log</span>
-                            <Badge variant="outline" className="text-xs font-normal">
+                            <Badge variant="outline" className="text-xs font-normal text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700">
                                 Displaying last {transactions.length} records
                             </Badge>
                         </CardTitle>
@@ -94,13 +94,13 @@ function FloorsheetContent() {
                                 <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
                             </div>
                         ) : transactions.length === 0 ? (
-                            <div className="p-12 text-center text-slate-500">
+                            <div className="p-12 text-center text-slate-500 dark:text-slate-400">
                                 No transactions found matching criteria.
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm text-left">
-                                    <thead className="bg-slate-50 text-slate-600 uppercase text-xs font-bold border-b">
+                                    <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 uppercase text-xs font-bold border-b border-slate-200 dark:border-slate-800">
                                         <tr>
                                             <th className="px-6 py-3">Contract</th>
                                             <th className="px-6 py-3">Date</th>
@@ -111,36 +111,36 @@ function FloorsheetContent() {
                                             <th className="px-6 py-3 text-right">Amount</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100">
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                         {transactions.map((tx, idx) => {
                                             const isBuyer = broker && String(tx.buyer_id) === String(broker);
                                             const isSeller = broker && String(tx.seller_id) === String(broker);
 
                                             return (
-                                                <tr key={tx.id || idx} className="hover:bg-slate-50/50 transition-colors">
-                                                    <td className="px-6 py-3 font-mono text-xs text-slate-500">
+                                                <tr key={tx.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                                                    <td className="px-6 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">
                                                         {tx.contract_no}
                                                     </td>
-                                                    <td className="px-6 py-3 text-slate-600">
+                                                    <td className="px-6 py-3 text-slate-600 dark:text-slate-300">
                                                         {tx.transaction_date}
                                                     </td>
                                                     <td className="px-6 py-3">
-                                                        <Badge variant="outline" className={isBuyer ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 border-slate-200"}>
+                                                        <Badge variant="outline" className={isBuyer ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800" : "bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"}>
                                                             {tx.buyer_id}
                                                         </Badge>
                                                     </td>
                                                     <td className="px-6 py-3">
-                                                        <Badge variant="outline" className={isSeller ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-slate-50 border-slate-200"}>
+                                                        <Badge variant="outline" className={isSeller ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800" : "bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"}>
                                                             {tx.seller_id}
                                                         </Badge>
                                                     </td>
-                                                    <td className="px-6 py-3 text-right font-medium">
+                                                    <td className="px-6 py-3 text-right font-medium text-slate-900 dark:text-slate-200">
                                                         {(tx.transaction_quantity || 0).toLocaleString()}
                                                     </td>
-                                                    <td className="px-6 py-3 text-right font-mono text-slate-600">
+                                                    <td className="px-6 py-3 text-right font-mono text-slate-600 dark:text-slate-400">
                                                         {(tx.transaction_rate || 0).toLocaleString()}
                                                     </td>
-                                                    <td className="px-6 py-3 text-right font-bold text-slate-700">
+                                                    <td className="px-6 py-3 text-right font-bold text-slate-700 dark:text-slate-300">
                                                         {formatCurrency(tx.transaction_amount || 0)}
                                                     </td>
                                                 </tr>
