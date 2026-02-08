@@ -402,11 +402,19 @@ export default function MoversShakersPage() {
                                                 </div>
                                                 <span className="font-mono text-[10px] text-slate-500">{(stock.turnover / 10000000).toFixed(2)} Cr</span>
                                             </div>
-                                            <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full"
-                                                    style={{ width: `${(stock.turnover / (scanners.maxTurnover || 1)) * 100}%` }}
+                                            <div className="flex items-center gap-2">
+                                                <Sparkline
+                                                    data={stock.sparkline}
+                                                    color={stock.percent_change >= 0 ? '#10b981' : '#f43f5e'}
+                                                    width={30}
+                                                    height={10}
                                                 />
+                                                <div className="h-2 flex-grow bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full"
+                                                        style={{ width: `${(stock.turnover / (scanners.maxTurnover || 1)) * 100}%` }}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
@@ -432,11 +440,19 @@ export default function MoversShakersPage() {
                                                 </div>
                                                 <span className="font-mono text-[10px] text-slate-500">{stock.volume.toLocaleString()} Qty</span>
                                             </div>
-                                            <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full"
-                                                    style={{ width: `${(stock.volume / (scanners.maxVolume || 1)) * 100}%` }}
+                                            <div className="flex items-center gap-2">
+                                                <Sparkline
+                                                    data={stock.sparkline}
+                                                    color={stock.percent_change >= 0 ? '#10b981' : '#f43f5e'}
+                                                    width={30}
+                                                    height={10}
                                                 />
+                                                <div className="h-2 flex-grow bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full"
+                                                        style={{ width: `${(stock.volume / (scanners.maxVolume || 1)) * 100}%` }}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     ))}

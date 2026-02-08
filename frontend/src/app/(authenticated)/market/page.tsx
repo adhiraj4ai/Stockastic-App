@@ -385,11 +385,6 @@ export default function DashboardPage() {
             noPadding
             title={<>Market <span className="text-blue-600 dark:text-blue-400">Terminal</span></>}
             subtitle="Real-time analytics and predictive insights for your strategic operations."
-            extraHeaderItems={
-                <Badge className="bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 px-3 py-1 font-bold text-[10px] tracking-widest rounded-full shadow-sm border flex items-center transition-all whitespace-nowrap">
-                    {market_summary.date}
-                </Badge>
-            }
         >
             {/* 1. Market Pulse Ticker */}
             <div className="bg-slate-900 dark:bg-black/80 overflow-hidden py-1.5 border-b border-slate-800 dark:border-slate-900 transition-colors duration-500">

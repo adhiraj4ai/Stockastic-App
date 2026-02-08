@@ -101,7 +101,18 @@ function DashboardContent({
 
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+    const [marketMeta, setMarketMeta] = useState<{ date: string, status: string } | null>(null);
+
     const isChatPage = pathname === '/chat';
+
+    useEffect(() => {
+        // Fetch Market Status for Header
+        import('@/lib/api').then(({ default: api }) => {
+            api.get('/api/stocks/summary/?mode=status')
+                .then(res => setMarketMeta(res.data))
+                .catch(err => console.error("Failed to load market status", err));
+        });
+    }, []);
 
     useEffect(() => {
         // Fetch current user
@@ -388,7 +399,8 @@ function DashboardContent({
                             </div>
                         )}
 
-                        <div className="w-1/3 flex justify-center">
+
+                        <div className="w-1/3 flex justify-center items-center gap-4">
                             {pathname.startsWith('/ticker/') && (() => {
                                 const currentTicker = pathname.split('/ticker/')[1]?.split('/')[0];
                                 return (
@@ -404,6 +416,20 @@ function DashboardContent({
                             {extraHeaderItems && (
                                 <div className="hidden md:block">
                                     {extraHeaderItems}
+                                </div>
+                            )}
+
+                            {marketMeta && (
+                                <div className="hidden md:flex flex-col items-end mr-2">
+                                    <div className="flex items-center gap-2">
+                                        <span className={`h-2 w-2 rounded-full ${marketMeta.status === 'OPEN' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                                            {marketMeta.status === 'OPEN' ? 'Market Open' : 'Market Closed'}
+                                        </span>
+                                    </div>
+                                    <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                                        {marketMeta.date}
+                                    </span>
                                 </div>
                             )}
                             <AlertsDropdown />

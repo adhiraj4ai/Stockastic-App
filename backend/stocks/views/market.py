@@ -47,8 +47,22 @@ def stock_summary(request):
     
     latest_date = latest_date_data['date'] if latest_date_data else None
     
+    latest_date = latest_date_data['date'] if latest_date_data else None
+    
     if not latest_date:
         return Response({})
+
+    # Lightweight response for global header
+    if request.GET.get('mode') == 'status':
+        # Determine if market is "Active" (today is latest date)
+        is_today = latest_date == datetime.date.today()
+        # You could add time checks here for 11am-3pm if needed
+        status = "OPEN" if is_today else "CLOSED" 
+        return Response({
+            'date': latest_date,
+            'status': status,
+            'is_active': is_today
+        })
 
     # 2. Determine Reference Date based on Range
     ref_date = None

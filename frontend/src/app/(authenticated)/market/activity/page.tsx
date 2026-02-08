@@ -86,10 +86,10 @@ export default function MarketActivityPage() {
         const chartTitle = type === 'turnover' ? 'High Turnover' : type === 'gainers' ? 'Top Gainers' : 'High Volume';
 
         return (
-            <div className="space-y-8">
+            <div className="space-y-4">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Daily Column */}
-                    <div className="col-span-1">
+                    <div className="col-span-1 min-w-0">
                         <div className="flex items-center gap-2 mb-4 px-1">
                             <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400">
                                 <Clock size={16} />
@@ -100,7 +100,7 @@ export default function MarketActivityPage() {
                     </div>
 
                     {/* Weekly Column */}
-                    <div className="col-span-1">
+                    <div className="col-span-1 min-w-0">
                         <div className="flex items-center gap-2 mb-4 px-1">
                             <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400">
                                 <Calendar size={16} />
@@ -111,7 +111,7 @@ export default function MarketActivityPage() {
                     </div>
 
                     {/* Monthly Column */}
-                    <div className="col-span-1">
+                    <div className="col-span-1 min-w-0">
                         <div className="flex items-center gap-2 mb-4 px-1">
                             <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400">
                                 <Calendar size={16} />
