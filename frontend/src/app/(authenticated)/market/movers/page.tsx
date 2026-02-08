@@ -192,6 +192,92 @@ const SectorBadge = ({ sector }: { sector: string }) => {
     );
 };
 
+const PaginatedTable = ({ data, type }: { data: StockData[], type: 'high' | 'low' }) => {
+    const [page, setPage] = useState(1);
+    const itemsPerPage = 10;
+    const totalPages = Math.ceil(data.length / itemsPerPage);
+    const router = useRouter();
+
+    const paginatedData = data.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+    if (data.length === 0) {
+        return (
+            <div className="p-6 text-center text-xs text-slate-400 italic">
+                No stocks near 52-week {type}.
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex flex-col h-full">
+            <div className="flex-grow">
+                <Table>
+                    <TableHeader>
+                        <TableRow className="border-none hover:bg-transparent bg-slate-50/50 dark:bg-white/5">
+                            <TableHead className="py-2 h-8 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ticker</TableHead>
+                            <TableHead className="py-2 h-8 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Trend</TableHead>
+                            <TableHead className="py-2 h-8 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Price</TableHead>
+                            <TableHead className="py-2 h-8 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">ROC</TableHead>
+                            <TableHead className="py-2 h-8 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right"></TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {paginatedData.map((stock) => (
+                            <TableRow
+                                key={stock.ticker}
+                                className="border-slate-50 dark:border-white/5 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5"
+                                onClick={() => router.push(`/ticker/${stock.ticker}`)}
+                            >
+                                <TableCell className="py-2.5 font-bold text-xs">{stock.ticker}</TableCell>
+                                <TableCell className="py-2.5 flex justify-center">
+                                    <Sparkline data={stock.sparkline} color={type === 'high' ? '#10b981' : '#f43f5e'} width={40} height={15} />
+                                </TableCell>
+                                <TableCell className="py-2.5 text-right">
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-xs font-mono">Rs. {stock.close}</span>
+                                        <span className="text-[9px] text-slate-400">{type === 'high' ? 'High' : 'Low'}: {type === 'high' ? stock.weeks_52_high : stock.weeks_52_low}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell className={`py-2.5 text-right font-mono text-xs font-bold ${stock.percent_change > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                    {stock.percent_change > 0 ? '+' : ''}{stock.percent_change.toFixed(1)}%
+                                </TableCell>
+                                <TableCell className="py-2.5 text-right">
+                                    {type === 'high' ? (
+                                        <ArrowUpRight size={14} className="text-emerald-500" />
+                                    ) : (
+                                        <ArrowDownRight size={14} className="text-rose-500" />
+                                    )}
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+            {totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-2 border-t border-slate-50 dark:border-white/5">
+                    <button
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        className="text-[10px] font-bold text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed hover:text-blue-600 transition-colors"
+                    >
+                        PREV
+                    </button>
+                    <span className="text-[10px] font-mono text-slate-400">
+                        {page} / {totalPages}
+                    </span>
+                    <button
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        disabled={page === totalPages}
+                        className="text-[10px] font-bold text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed hover:text-blue-600 transition-colors"
+                    >
+                        NEXT
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
 export default function MoversShakersPage() {
     const [data, setData] = useState<MarketSummaryData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -470,36 +556,8 @@ export default function MoversShakersPage() {
                                     </CardTitle>
                                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Trading within 2% of yearly peak</p>
                                 </CardHeader>
-                                <CardContent className="p-0">
-                                    {scanners.nearHigh.length > 0 ? (
-                                        <Table>
-                                            <TableBody>
-                                                {scanners.nearHigh.map((stock) => (
-                                                    <TableRow
-                                                        key={stock.ticker}
-                                                        className="border-slate-50 dark:border-white/5 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5"
-                                                        onClick={() => router.push(`/ticker/${stock.ticker}`)}
-                                                    >
-                                                        <TableCell className="py-3 font-bold text-xs">{stock.ticker}</TableCell>
-                                                        <TableCell className="py-3">
-                                                            <Sparkline data={stock.sparkline} color="#10b981" width={40} height={15} />
-                                                        </TableCell>
-                                                        <TableCell className="py-3 text-right">
-                                                            <div className="flex flex-col items-end">
-                                                                <span className="text-xs font-mono">Rs. {stock.close}</span>
-                                                                <span className="text-[9px] text-slate-400">High: {stock.weeks_52_high}</span>
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell className="py-3 text-right">
-                                                            <ArrowUpRight size={14} className="text-emerald-500" />
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    ) : (
-                                        <div className="p-6 text-center text-xs text-slate-400 italic">No stocks near 52-week high</div>
-                                    )}
+                                <CardContent className="p-0 min-h-[300px]">
+                                    <PaginatedTable data={scanners.nearHigh} type="high" />
                                 </CardContent>
                             </Card>
 
@@ -511,36 +569,8 @@ export default function MoversShakersPage() {
                                     </CardTitle>
                                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Trading within 2% of yearly bottom</p>
                                 </CardHeader>
-                                <CardContent className="p-0">
-                                    {scanners.nearLow.length > 0 ? (
-                                        <Table>
-                                            <TableBody>
-                                                {scanners.nearLow.map((stock) => (
-                                                    <TableRow
-                                                        key={stock.ticker}
-                                                        className="border-slate-50 dark:border-white/5 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5"
-                                                        onClick={() => router.push(`/ticker/${stock.ticker}`)}
-                                                    >
-                                                        <TableCell className="py-3 font-bold text-xs">{stock.ticker}</TableCell>
-                                                        <TableCell className="py-3">
-                                                            <Sparkline data={stock.sparkline} color="#f43f5e" width={40} height={15} />
-                                                        </TableCell>
-                                                        <TableCell className="py-3 text-right">
-                                                            <div className="flex flex-col items-end">
-                                                                <span className="text-xs font-mono">Rs. {stock.close}</span>
-                                                                <span className="text-[9px] text-slate-400">Low: {stock.weeks_52_low}</span>
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell className="py-3 text-right">
-                                                            <ArrowDownRight size={14} className="text-rose-500" />
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    ) : (
-                                        <div className="p-6 text-center text-xs text-slate-400 italic">No stocks near 52-week low</div>
-                                    )}
+                                <CardContent className="p-0 min-h-[300px]">
+                                    <PaginatedTable data={scanners.nearLow} type="low" />
                                 </CardContent>
                             </Card>
                         </div>
