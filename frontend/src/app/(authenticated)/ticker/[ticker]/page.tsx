@@ -33,6 +33,7 @@ import { IntelligenceGlass } from '@/components/ticker/IntelligenceGlass';
 import { BentoMetrics } from '@/components/ticker/BentoMetrics';
 import { AdvancedCharting } from '@/components/ticker/AdvancedCharting';
 import SignalDashboard from '@/components/SignalDashboard';
+import BrokerAnalysis from '@/components/ticker/BrokerAnalysis';
 
 interface StockDetailData {
     company: {
@@ -100,6 +101,7 @@ interface FloorsheetItem {
     transaction_date: string;
 }
 
+// @ts-ignore
 export default function StockDetailPage({ params }: { params: Promise<{ ticker: string }> }) {
     const { ticker } = use(params);
     const router = useRouter();
@@ -1099,6 +1101,10 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                     </div>
                                 </TabsContent>
 
+                                <TabsContent value="analysis" className="mt-8 outline-none">
+                                    <BrokerAnalysis symbol={ticker} />
+                                </TabsContent>
+
                                 <TabsContent value="history" className="mt-0">
                                     <div className="glass-card-light rounded-2xl p-8 border-slate-200">
                                         <div className="flex items-center justify-between mb-8">
@@ -1308,7 +1314,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                     defaultTicker={ticker}
                     accounts={accounts}
                 />
-            </div>
-        </DashboardLayout>
+            </div >
+        </DashboardLayout >
     );
 }
