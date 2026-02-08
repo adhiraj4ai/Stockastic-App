@@ -12,7 +12,7 @@ import {
     HeartPulse, Activity as ActivityIcon, LineChart, LayoutDashboard, Search, Clock,
     Command as CommandIcon, Wallet, Lightbulb, MessageSquare, Landmark, Building2,
     Droplets, Boxes, Factory, ShoppingBag, Hotel, Plane, Phone, HardHat, ShieldCheck,
-    Coins, PieChart
+    Coins, PieChart, Flame
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -34,7 +34,6 @@ import { MarketHealthRadar } from '@/components/MarketHealthRadar';
 import { VolumeShockers } from '@/components/VolumeShockers';
 import { MiniSectorCard } from '@/components/MiniSectorCard';
 import { BreakoutWatchlist } from '@/components/BreakoutWatchlist';
-import { TopGainersChart } from '@/components/TopGainersChart';
 import { MarketBreadthTrend } from '@/components/MarketBreadthTrend';
 import { InstitutionalInterest } from '@/components/InstitutionalInterest';
 import { Badge } from '@/components/ui/badge';
@@ -506,16 +505,27 @@ export default function DashboardPage() {
                             </CardContent>
                         </Card>
 
-                        {/* Broker Flow / Whale Watch (Moved from Main Grid) */}
+                        {/* Market Breadth Trend (Moved to Sidebar) */}
                         <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
                             <CardHeader className="p-3 pb-1">
                                 <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                    <Wallet size={14} className="text-blue-500" /> Smart Money Flow
+                                    <LineChart size={14} className="text-emerald-500" /> Breadth (5D)
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-4 pt-0">
-                                {/* Using any type for data because WhaleWatchData interface isn't exported yet contextually */}
-                                <BrokerFlowChart data={(data as any).whale_watch || []} height={320} />
+                                <MarketBreadthTrend height={180} />
+                            </CardContent>
+                        </Card>
+
+                        {/* Volume Shockers (Moved from Main Grid) */}
+                        <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
+                            <CardHeader className="p-3 pb-1">
+                                <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
+                                    <Zap size={14} className="text-orange-500" /> Volume Shockers
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-4 pt-0">
+                                <VolumeShockers stocks={top_turnover} />
                             </CardContent>
                         </Card>
 
@@ -523,6 +533,22 @@ export default function DashboardPage() {
 
                     {/* MIDDLE COLUMN: Bubble Map and Lists */}
                     <motion.div variants={itemVariants} className="xl:col-span-3 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                        {/* Broker Flow / Whale Watch (Moved to Main Grid - Full Width) */}
+                        <Card className="lg:col-span-3 bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
+                            <CardHeader className="p-5 pb-2 border-b border-slate-50 dark:border-white/5">
+                                <div className="space-y-1">
+                                    <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
+                                        <Wallet size={14} className="text-blue-500" /> Smart Money Flow (Top Broker Accumulation)
+                                    </CardTitle>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Tracking the biggest net buyers and their targeted stocks.</p>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-6">
+                                {/* Using any type for data because WhaleWatchData interface isn't exported yet contextually */}
+                                <BrokerFlowChart data={(data as any).whale_watch || []} height={350} />
+                            </CardContent>
+                        </Card>
 
                         {/* Market Heatmap */}
                         <Card className="lg:col-span-2 bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden group hover:shadow-2xl transition-all duration-300 backdrop-blur-xl relative">
@@ -541,7 +567,7 @@ export default function DashboardPage() {
                         </Card>
 
                         {/* Actionable Stock Lists (Tabbed) */}
-                        <Card className="xl:col-span-1 bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full flex flex-col backdrop-blur-xl relative overflow-hidden">
+                        <Card className="xl:col-span-1 bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full flex flex-col backdrop-blur-xl relative overflow-hidden hidden xl:flex">
                             <div className="absolute -left-8 -bottom-8 w-32 h-32 bg-gradient-to-tr from-indigo-500/10 to-transparent blur-2xl opacity-50" />
                             <CardHeader className="p-3 pb-1 relative z-10">
                                 <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
@@ -574,51 +600,12 @@ export default function DashboardPage() {
                             </CardContent>
                         </Card>
 
-                        {/* Multi-Metric Performance Graph */}
-                        <Card className="lg:col-span-3 bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden backdrop-blur-xl relative group">
-                            <CardHeader className="p-5 border-b border-slate-50 dark:border-white/5 flex flex-row items-center justify-between relative z-10">
-                                <div className="space-y-1">
-                                    <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                        <TrendingUp size={14} className={`${viewMetric === 'gainers' ? 'text-emerald-500' : 'text-blue-500'}`} />
-                                        {viewMetric === 'gainers' ? 'Top Gainers Performance' : 'Top Volume Performance'}
-                                    </CardTitle>
-                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Actual daily closing price trend over last 30 intervals</p>
-                                </div>
-                                <Tabs value={viewMetric} onValueChange={(v: any) => setViewMetric(v)} className="w-[200px]">
-                                    <TabsList className="grid w-full grid-cols-2 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl h-8">
-                                        <TabsTrigger value="gainers" className="rounded-lg font-bold text-[9px] tracking-widest uppercase">Gainers</TabsTrigger>
-                                        <TabsTrigger value="volume" className="rounded-lg font-bold text-[9px] tracking-widest uppercase">Volume</TabsTrigger>
-                                    </TabsList>
-                                </Tabs>
-                            </CardHeader>
-                            <CardContent className="p-6 relative z-10">
-                                <TopGainersChart
-                                    gainers={viewMetric === 'gainers' ? top_gainers : top_volume}
-                                    height={450}
-                                    metricTitle={viewMetric === 'gainers' ? 'Top Gainers' : 'Top Volume'}
-                                />
-                            </CardContent>
-                        </Card>
 
-                        {/* Lower Tier Middle: Breadth Trend & Portfolio */}
+                        {/* Lower Tier Middle: Rally Quality */}
                         <div className="lg:col-span-3 grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                            {/* Market Breadth Trend */}
-                            <div className="lg:col-span-5">
-                                <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full">
-                                    <CardHeader className="p-3 pb-1">
-                                        <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                            <LineChart size={14} className="text-emerald-500" /> Breadth Trend (5D)
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="p-6 pt-0">
-                                        <MarketBreadthTrend height={220} />
-                                    </CardContent>
-                                </Card>
-                            </div>
-
                             {/* Market Health Radar */}
-                            <div className="lg:col-span-7">
+                            <div className="lg:col-span-12">
                                 <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full">
                                     <CardHeader className="p-3 pb-1">
                                         <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
@@ -631,10 +618,10 @@ export default function DashboardPage() {
                                                 <MarketHealthRadar
                                                     data={marketHealth.scores}
                                                     rawData={marketHealth.raw || undefined}
-                                                    height={250}
+                                                    height={300}
                                                 />
                                             </div>
-                                            <div className="w-full md:w-48 space-y-4">
+                                            <div className="w-full md:w-64 space-y-4">
                                                 <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:border-blue-500/20">
                                                     <span className="text-[9px] font-bold text-slate-900 dark:text-slate-400 block mb-1 uppercase tracking-wider">Health Index</span>
                                                     <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 tracking-tighter">72.4 <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold ml-1">Stable</span></div>
@@ -650,14 +637,14 @@ export default function DashboardPage() {
                             </div>
                         </div>
 
-                        {/* DETAILED STATISTICS ROW */}
-                        <div className="lg:col-span-3 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* DETAILED STATISTICS ROW: Sector & Rotation (Full Width Stacked) */}
+                        <div className="lg:col-span-3 grid grid-cols-1 gap-6 min-h-[400px]">
 
-                            {/* Sector Rankings (Full Width) */}
-                            <Card className="lg:col-span-3 bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none min-h-[400px]">
+                            {/* Sector Rankings */}
+                            <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full">
                                 <CardHeader className="p-3 pb-1 flex flex-row items-center justify-between">
                                     <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                        <BarChart3 size={14} /> Sector Performance & Liquidity Matrix
+                                        <BarChart3 size={14} /> Sector Performance
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-6 pt-0 h-[350px]">
@@ -665,37 +652,21 @@ export default function DashboardPage() {
                                 </CardContent>
                             </Card>
 
-                        </div>
+                            {/* Rotation Analysis */}
+                            <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full">
+                                <CardHeader className="p-3 pb-1">
+                                    <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
+                                        <ActivityIcon size={14} className="text-indigo-500" /> Rotation & Convergence
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-6 pt-0">
+                                    <div className="h-[350px]">
+                                        <SectorGraph />
+                                    </div>
+                                </CardContent>
+                            </Card>
 
-                        {/* FINAL ROW: Volume Drivers & Convergence */}
-                        <div className="lg:col-span-3 grid grid-cols-1 lg:grid-cols-12 gap-6">
-                            <div className="lg:col-span-8">
-                                <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
-                                    <CardHeader className="p-3 pb-1">
-                                        <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                            <ActivityIcon size={14} className="text-indigo-500" /> Rotation & Convergence
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="p-6 pt-0">
-                                        <div className="h-[350px]">
-                                            <SectorGraph />
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </div>
 
-                            <div className="lg:col-span-4 h-full">
-                                <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full">
-                                    <CardHeader className="p-3 pb-1">
-                                        <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                            <Zap size={14} /> Volume Shockers
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="p-6 pt-0">
-                                        <VolumeShockers stocks={top_turnover} />
-                                    </CardContent>
-                                </Card>
-                            </div>
                         </div>
                     </motion.div>
 

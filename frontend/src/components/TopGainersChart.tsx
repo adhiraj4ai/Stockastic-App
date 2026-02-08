@@ -110,9 +110,10 @@ export const TopGainersChart = ({ gainers, height = 300, metricTitle = 'One-Mont
         return colors[index];
     };
 
-    const series = targetGainers.map((stock) => {
+    const series = targetGainers.map((stock, i) => {
         const data = historyData[stock.ticker] || [];
-        const color = getStockColor(stock.ticker);
+        // Use index-based coloring for consistent top-list visualization
+        const color = colors[i % colors.length];
 
         // Map data to the sorted dates to ensure alignment
         const chartValues = sortedDates.map(dateStr => {
@@ -129,6 +130,7 @@ export const TopGainersChart = ({ gainers, height = 300, metricTitle = 'One-Mont
             symbolSize: 4,
             showSymbol: false,
             connectNulls: true,
+            itemStyle: { color: color }, // Explicitly set itemStyle for legend to pick up
             lineStyle: {
                 width: 3,
                 color: color,

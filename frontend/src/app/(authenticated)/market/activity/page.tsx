@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { TopGainersChart } from '@/components/TopGainersChart';
 
 interface BrokerData {
     broker_id: string;
@@ -73,59 +74,80 @@ export default function MarketActivityPage() {
 
     const CategoryContent = ({ type }: { type: 'turnover' | 'gainers' | 'volume' }) => {
         if (!data) return null;
+
+        // Prepare chart data for this specific category
+        const chartData = data.daily[type].slice(0, 10).map(item => ({
+            ticker: item.ticker,
+            change: item.metrics.change,
+            percent_change: item.metrics.percent_change,
+            price: item.metrics.close
+        }));
+
+        const chartTitle = type === 'turnover' ? 'High Turnover' : type === 'gainers' ? 'Top Gainers' : 'High Volume';
+
         return (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Daily Column */}
-                <div className="col-span-1">
-                    <div className="flex items-center gap-2 mb-4 px-1">
-                        <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400">
-                            <Clock size={16} />
+            <div className="space-y-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Daily Column */}
+                    <div className="col-span-1">
+                        <div className="flex items-center gap-2 mb-4 px-1">
+                            <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400">
+                                <Clock size={16} />
+                            </div>
+                            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Daily Top 10</h3>
                         </div>
-                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Daily Top 10</h3>
+                        <ActivityTable data={data.daily ? data.daily[type] : []} type={type} />
                     </div>
-                    <ActivityTable data={data.daily ? data.daily[type] : []} type={type} />
+
+                    {/* Weekly Column */}
+                    <div className="col-span-1">
+                        <div className="flex items-center gap-2 mb-4 px-1">
+                            <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400">
+                                <Calendar size={16} />
+                            </div>
+                            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Weekly Top 10</h3>
+                        </div>
+                        <ActivityTable data={data.weekly ? data.weekly[type] : []} type={type} />
+                    </div>
+
+                    {/* Monthly Column */}
+                    <div className="col-span-1">
+                        <div className="flex items-center gap-2 mb-4 px-1">
+                            <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400">
+                                <Calendar size={16} />
+                            </div>
+                            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Monthly Top 10</h3>
+                        </div>
+                        <ActivityTable data={data.monthly ? data.monthly[type] : []} type={type} />
+                    </div>
                 </div>
 
-                {/* Weekly Column */}
-                <div className="col-span-1">
-                    <div className="flex items-center gap-2 mb-4 px-1">
-                        <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400">
-                            <Calendar size={16} />
+                {/* Performance Chart for this Category */}
+                <Card className="bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden backdrop-blur-xl relative group">
+                    <CardHeader className="p-5 border-b border-slate-50 dark:border-white/5 flex flex-row items-center justify-between relative z-10">
+                        <div className="space-y-1">
+                            <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+                                <TrendingUp size={14} className="text-blue-500" />
+                                {chartTitle} Performance Analysis
+                            </CardTitle>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">30-Day price trend of the top 10 stocks in this category</p>
                         </div>
-                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Weekly Top 10</h3>
-                    </div>
-                    <ActivityTable data={data.weekly ? data.weekly[type] : []} type={type} />
-                </div>
-
-                {/* Monthly Column */}
-                <div className="col-span-1">
-                    <div className="flex items-center gap-2 mb-4 px-1">
-                        <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400">
-                            <Calendar size={16} />
-                        </div>
-                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Monthly Top 10</h3>
-                    </div>
-                    <ActivityTable data={data.monthly ? data.monthly[type] : []} type={type} />
-                </div>
+                    </CardHeader>
+                    <CardContent className="p-6 relative z-10">
+                        <TopGainersChart
+                            gainers={chartData}
+                            height={350}
+                        />
+                    </CardContent>
+                </Card>
             </div>
         );
     };
 
     return (
-        <DashboardLayout title="Deep Dive" subtitle="MARKET ACTIVITY">
+        <DashboardLayout title="Market Activity Analysis" subtitle="Multi-timeframe breakdown of top stocks">
             <div className="space-y-6 pb-12">
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-white/5 backdrop-blur-xl">
-                    <div className="flex items-center gap-2">
-                        <div className="p-2 bg-blue-500/10 rounded-xl text-blue-600 dark:text-blue-400">
-                            <Activity size={20} />
-                        </div>
-                        <div>
-                            <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Market Activity Analysis</h2>
-                            <p className="text-[10px] text-slate-500 font-medium">Multi-timeframe breakdown of top stocks</p>
-                        </div>
-                    </div>
-                </div>
+
 
                 {loading ? (
                     <div className="flex items-center justify-center min-h-[400px]">
@@ -137,30 +159,31 @@ export default function MarketActivityPage() {
                         <p className="text-sm font-bold">No data available</p>
                     </div>
                 ) : (
+
                     <Tabs defaultValue="turnover" value={category} onValueChange={setCategory} className="w-full">
-                        <TabsList className="w-full justify-start bg-transparent border-b border-slate-200 dark:border-white/10 p-0 h-auto rounded-none mb-6 gap-6">
+                        <TabsList className="inline-flex h-auto bg-slate-100 dark:bg-slate-800 p-1 rounded-lg mb-6">
                             <TabsTrigger
                                 value="turnover"
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:bg-transparent px-0 py-3 text-sm font-bold text-slate-500 data-[state=active]:text-blue-600 transition-all"
+                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all"
                             >
-                                <div className="flex items-center gap-2">
-                                    <Magnet size={16} /> High Turnover
+                                <div className="flex items-center justify-center gap-2">
+                                    <Magnet size={14} /> High Turnover
                                 </div>
                             </TabsTrigger>
                             <TabsTrigger
                                 value="gainers"
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent px-0 py-3 text-sm font-bold text-slate-500 data-[state=active]:text-emerald-600 transition-all"
+                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-emerald-600 data-[state=active]:shadow-sm transition-all"
                             >
-                                <div className="flex items-center gap-2">
-                                    <Zap size={16} /> Top Gainers
+                                <div className="flex items-center justify-center gap-2">
+                                    <Zap size={14} /> Top Gainers
                                 </div>
                             </TabsTrigger>
                             <TabsTrigger
                                 value="volume"
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-cyan-600 data-[state=active]:bg-transparent px-0 py-3 text-sm font-bold text-slate-500 data-[state=active]:text-cyan-600 transition-all"
+                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-cyan-600 data-[state=active]:shadow-sm transition-all"
                             >
-                                <div className="flex items-center gap-2">
-                                    <Droplets size={16} /> High Volume
+                                <div className="flex items-center justify-center gap-2">
+                                    <Droplets size={14} /> High Volume
                                 </div>
                             </TabsTrigger>
                         </TabsList>
@@ -335,3 +358,4 @@ const BrokerBarChart = ({ brokers, type, totalQty }: { brokers: BrokerData[], ty
         </div>
     );
 };
+
