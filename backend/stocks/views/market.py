@@ -383,7 +383,26 @@ def analyze_activity(request):
             })
             
         # Top Lists
-        top_gainers = sorted(notable_metrics, key=lambda x: x['percent_change'], reverse=True)[:10]
+        # Filter Logic: For Daily Gainers, exclude stocks that haven't been active in the last 45 days
+        # (i.e., prevent stocks that just "woke up" after >45 days from dominating the list)
+        top_gainers_candidates = sorted(notable_metrics, key=lambda x: x['percent_change'], reverse=True)[:30]
+        
+        if range_type == 'daily' and top_gainers_candidates:
+            candidate_tickers = [x['ticker'] for x in top_gainers_candidates]
+            cutoff_date = latest_date - datetime.timedelta(days=45)
+            
+            # Check for activity count in the last 45 days (inclusive of today)
+            # If a stock only has 1 record in this period (today), it means it was inactive for >45 days prior.
+            active_tickers = set(DailyStockPrice.objects.filter(
+                ticker__in=candidate_tickers,
+                date__gte=cutoff_date,
+                date__lte=latest_date
+            ).values('ticker').annotate(cnt=Count('id')).filter(cnt__gt=1).values_list('ticker', flat=True))
+            
+            top_gainers = [x for x in top_gainers_candidates if x['ticker'] in active_tickers][:10]
+        else:
+            top_gainers = top_gainers_candidates[:10]
+
         top_turnover = sorted(notable_metrics, key=lambda x: x['turnover'], reverse=True)[:10]
         top_volume = sorted(notable_metrics, key=lambda x: x['volume'], reverse=True)[:10]
         

@@ -218,9 +218,14 @@ export default function MoversShakersPage() {
     const scanners = useMemo(() => {
         if (!data) return { circuits: [], magnets: [], guzzlers: [], volatile: [], nearHigh: [], nearLow: [] };
 
-        // 1. Rocket List (Circuit Breakers): +/- 9%
+        // 1. Rocket List (Circuit Breakers): Top Movers (Absolute Change)
         const merged = [...(data.top_gainers || []), ...(data.top_losers || [])];
-        const circuits = merged.filter(s => Math.abs(s.percent_change) >= 9).slice(0, 10);
+        // Sort by absolute percentage change descending and take top 10
+        // Use a Map to ensure unique tickers if backend returns duplicates (though unlikely with top_gainers/losers split)
+        const uniqueMerged = Array.from(new Map(merged.map(s => [s.ticker, s])).values());
+        const circuits = uniqueMerged
+            .sort((a, b) => Math.abs(b.percent_change) - Math.abs(a.percent_change))
+            .slice(0, 10);
 
         // 2. Money Magnets (Turnover)
         const magnets = [...(data.top_turnover || [])].sort((a, b) => b.turnover - a.turnover).slice(0, 10);
@@ -255,17 +260,27 @@ export default function MoversShakersPage() {
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="space-y-8 pb-12"
+                className="space-y-4 pb-12"
             >
-                {/* Timeframe Tabs */}
-                <div className="flex justify-center">
-                    <Tabs defaultValue="daily" value={timeframe} className="w-full max-w-md" onValueChange={setTimeframe}>
-                        <TabsList className="grid w-full grid-cols-3 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-2xl">
-                            <TabsTrigger value="daily" className="rounded-xl font-bold text-xs data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:shadow-sm transition-all">Daily</TabsTrigger>
-                            <TabsTrigger value="weekly" className="rounded-xl font-bold text-xs data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:shadow-sm transition-all">Weekly</TabsTrigger>
-                            <TabsTrigger value="monthly" className="rounded-xl font-bold text-xs data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:shadow-sm transition-all">Monthly</TabsTrigger>
+                {/* Header Control Row */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 dark:border-white/5 pb-4">
+                    <Tabs defaultValue="daily" value={timeframe} className="w-full max-w-[400px]" onValueChange={setTimeframe}>
+                        <TabsList className="grid w-full grid-cols-3 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-lg">
+                            <TabsTrigger value="daily" className="rounded-md font-bold text-xs data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:shadow-sm transition-all">Daily</TabsTrigger>
+                            <TabsTrigger value="weekly" className="rounded-md font-bold text-xs data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:shadow-sm transition-all">Weekly</TabsTrigger>
+                            <TabsTrigger value="monthly" className="rounded-md font-bold text-xs data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:shadow-sm transition-all">Monthly</TabsTrigger>
                         </TabsList>
                     </Tabs>
+
+                    {/* Range info - Moved here for alignment */}
+                    {!loading && data?.market_summary?.ref_date && (
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Range:</span>
+                            <Badge variant="outline" className="font-mono text-[10px] text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                                {data.market_summary.ref_date} — {data.market_summary.date}
+                            </Badge>
+                        </div>
+                    )}
                 </div>
 
                 {loading ? (
@@ -274,15 +289,6 @@ export default function MoversShakersPage() {
                     </div>
                 ) : (
                     <>
-                        {/* Range info */}
-                        {data?.market_summary?.ref_date && (
-                            <div className="text-center">
-                                <Badge variant="outline" className="font-mono text-[10px] text-slate-500">
-                                    Date Range: {data.market_summary.ref_date} — {data.market_summary.date}
-                                </Badge>
-                            </div>
-                        )}
-
                         {/* 1. ROCKET LIST (Circuit Breakers) */}
                         <Card className="bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden relative backdrop-blur-xl group">
                             <div className="absolute -left-10 -top-10 w-40 h-40 bg-purple-500/10 blur-3xl opacity-50 transition-opacity group-hover:opacity-70" />
@@ -290,7 +296,7 @@ export default function MoversShakersPage() {
                                 <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-2">
                                     <Rocket size={14} className="text-purple-600" /> ROCKET LIST (CIRCUIT BREAKERS)
                                 </CardTitle>
-                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Stocks hitting or nearing 10% limits</p>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Top 10 Highest Volatility Stocks</p>
                             </CardHeader>
                             <CardContent className="p-0 relative z-10">
                                 {scanners.circuits.length > 0 ? (
@@ -308,43 +314,63 @@ export default function MoversShakersPage() {
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {scanners.circuits.map((stock) => (
-                                                    <TableRow
-                                                        key={stock.ticker}
-                                                        className="border-slate-50 dark:border-white/5 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5"
-                                                        onClick={() => router.push(`/ticker/${stock.ticker}`)}
-                                                    >
-                                                        <TableCell className="py-3 font-bold text-xs pl-6">{stock.ticker}</TableCell>
-                                                        <TableCell className="py-3">
-                                                            <SectorBadge sector={stock.sector} />
-                                                        </TableCell>
-                                                        <TableCell className="py-3">
-                                                            <Sparkline
-                                                                data={stock.sparkline}
-                                                                color={stock.percent_change > 0 ? '#10b981' : '#f43f5e'}
-                                                            />
-                                                        </TableCell>
-                                                        <TableCell className="py-3">
-                                                            <div className="flex gap-1 flex-wrap max-w-[120px]">
-                                                                {stock.top_buyers?.slice(0, 3).map((b, i) => (
-                                                                    <Badge key={i} variant="secondary" className="text-[9px] px-1 h-4 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-                                                                        {b.broker}
-                                                                    </Badge>
-                                                                ))}
-                                                                {!stock.top_buyers?.length && <span className="text-[9px] text-slate-300">-</span>}
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell className="py-3 text-right font-mono text-xs">Rs. {stock.close}</TableCell>
-                                                        <TableCell className={`py-3 text-right font-mono text-xs font-bold ${stock.percent_change > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                            {stock.percent_change > 0 ? '+' : ''}{stock.percent_change.toFixed(2)}%
-                                                        </TableCell>
-                                                        <TableCell className="py-3 text-right pr-6">
-                                                            <Badge className={`${stock.percent_change > 0 ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-rose-500 hover:bg-rose-600'} text-white border-none text-[9px] font-bold px-2`}>
-                                                                {Math.abs(stock.percent_change) >= 9.9 ? 'LOCKED' : 'NEAR LOCK'}
-                                                            </Badge>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
+                                                {scanners.circuits.map((stock) => {
+                                                    const absChange = Math.abs(stock.percent_change);
+                                                    let statusLabel = 'ACTIVE';
+                                                    let statusColor = 'bg-slate-500';
+
+                                                    if (absChange >= 9.9) {
+                                                        statusLabel = 'LOCKED';
+                                                        statusColor = stock.percent_change > 0 ? 'bg-emerald-600' : 'bg-rose-600';
+                                                    } else if (absChange >= 9) {
+                                                        statusLabel = 'NEAR LOCK';
+                                                        statusColor = stock.percent_change > 0 ? 'bg-emerald-500' : 'bg-rose-500';
+                                                    } else if (absChange >= 5) {
+                                                        statusLabel = 'HIGH VOL';
+                                                        statusColor = 'bg-orange-500';
+                                                    } else {
+                                                        statusLabel = 'ACTIVE';
+                                                        statusColor = 'bg-blue-500';
+                                                    }
+
+                                                    return (
+                                                        <TableRow
+                                                            key={stock.ticker}
+                                                            className="border-slate-50 dark:border-white/5 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5"
+                                                            onClick={() => router.push(`/ticker/${stock.ticker}`)}
+                                                        >
+                                                            <TableCell className="py-3 font-bold text-xs pl-6">{stock.ticker}</TableCell>
+                                                            <TableCell className="py-3">
+                                                                <SectorBadge sector={stock.sector} />
+                                                            </TableCell>
+                                                            <TableCell className="py-3">
+                                                                <Sparkline
+                                                                    data={stock.sparkline}
+                                                                    color={stock.percent_change > 0 ? '#10b981' : '#f43f5e'}
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell className="py-3">
+                                                                <div className="flex gap-1 flex-wrap max-w-[120px]">
+                                                                    {stock.top_buyers?.slice(0, 3).map((b, i) => (
+                                                                        <Badge key={i} variant="secondary" className="text-[9px] px-1 h-4 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                                                                            {b.broker}
+                                                                        </Badge>
+                                                                    ))}
+                                                                    {!stock.top_buyers?.length && <span className="text-[9px] text-slate-300">-</span>}
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell className="py-3 text-right font-mono text-xs">Rs. {stock.close}</TableCell>
+                                                            <TableCell className={`py-3 text-right font-mono text-xs font-bold ${stock.percent_change > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                                {stock.percent_change > 0 ? '+' : ''}{stock.percent_change.toFixed(2)}%
+                                                            </TableCell>
+                                                            <TableCell className="py-3 text-right pr-6">
+                                                                <Badge className={`${statusColor} hover:${statusColor} text-white border-none text-[9px] font-bold px-2`}>
+                                                                    {statusLabel}
+                                                                </Badge>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
                                             </TableBody>
                                         </Table>
                                     </div>

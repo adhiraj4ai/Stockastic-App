@@ -53,7 +53,7 @@ interface ApiResponse {
 export default function MarketActivityPage() {
     const [data, setData] = useState<ApiResponse | null>(null);
     const [loading, setLoading] = useState(true);
-    const [category, setCategory] = useState('turnover');
+    const [category, setCategory] = useState('gainers');
     const router = useRouter();
 
     useEffect(() => {
@@ -160,22 +160,22 @@ export default function MarketActivityPage() {
                     </div>
                 ) : (
 
-                    <Tabs defaultValue="turnover" value={category} onValueChange={setCategory} className="w-full">
+                    <Tabs defaultValue="gainers" value={category} onValueChange={setCategory} className="w-full">
                         <TabsList className="inline-flex h-auto bg-slate-100 dark:bg-slate-800 p-1 rounded-lg mb-6">
-                            <TabsTrigger
-                                value="turnover"
-                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all"
-                            >
-                                <div className="flex items-center justify-center gap-2">
-                                    <Magnet size={14} /> High Turnover
-                                </div>
-                            </TabsTrigger>
                             <TabsTrigger
                                 value="gainers"
                                 className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-emerald-600 data-[state=active]:shadow-sm transition-all"
                             >
                                 <div className="flex items-center justify-center gap-2">
                                     <Zap size={14} /> Top Gainers
+                                </div>
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="turnover"
+                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all"
+                            >
+                                <div className="flex items-center justify-center gap-2">
+                                    <Magnet size={14} /> High Turnover
                                 </div>
                             </TabsTrigger>
                             <TabsTrigger
