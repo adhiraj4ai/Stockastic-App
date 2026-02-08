@@ -149,9 +149,10 @@ export function BrokerAnalysis({ symbol }: BrokerAnalysisProps) {
                     return `
                         <div class="font-bold mb-1 border-b pb-1 text-slate-700">Broker ${data.broker}</div>
                         <div class="flex justify-between gap-4 py-1">
-                            <span class="text-gray-500">Net Qty:</span>
+                        <div class="flex justify-between gap-4 py-1">
+                            <span class="text-gray-500">${type === 'buy' ? 'Net Bought:' : 'Net Sold:'}</span>
                             <span class="font-mono font-bold ${type === 'buy' ? 'text-emerald-600' : 'text-red-600'}">
-                                ${((data as any)[valueKey] ?? 0) > 0 ? '+' : ''}${((data as any)[valueKey] ?? 0).toLocaleString()}
+                                ${Math.abs((data as any)[valueKey] ?? 0).toLocaleString()}
                             </span>
                         </div>
                         <div class="flex justify-between gap-4 py-1">
@@ -223,8 +224,8 @@ export function BrokerAnalysis({ symbol }: BrokerAnalysisProps) {
                             key={t.value}
                             onClick={() => setRange(t.value)}
                             className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${range === t.value
-                                    ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm transform scale-105'
-                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                                ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm transform scale-105'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                                 }`}
                         >
                             {t.label}

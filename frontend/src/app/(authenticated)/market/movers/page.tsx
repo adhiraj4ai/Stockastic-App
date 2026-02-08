@@ -25,6 +25,10 @@ interface StockData {
     weeks_52_low?: number;
     sparkline?: number[];
     top_buyers?: { broker: string; qty: number }[];
+    roc?: number;
+    rsi?: number;
+    macd?: string;
+    macd_signal?: string;
 }
 
 interface WhaleWatchData {
@@ -380,7 +384,7 @@ export default function MoversShakersPage() {
                             <div className="absolute -left-10 -top-10 w-40 h-40 bg-purple-500/10 blur-3xl opacity-50 transition-opacity group-hover:opacity-70" />
                             <CardHeader className="p-5 border-b border-slate-50 dark:border-slate-800 relative z-10">
                                 <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                    <Rocket size={14} className="text-purple-600" /> ROCKET LIST (CIRCUIT BREAKERS)
+                                    <Rocket size={14} className="text-purple-600" /> ROCKET LIST
                                 </CardTitle>
                                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Top 10 Highest Volatility Stocks</p>
                             </CardHeader>
@@ -393,6 +397,9 @@ export default function MoversShakersPage() {
                                                     <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-6">Ticker</TableHead>
                                                     <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sector</TableHead>
                                                     <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Trend (7D)</TableHead>
+                                                    <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">ROC</TableHead>
+                                                    <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">RSI</TableHead>
+                                                    <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">MACD</TableHead>
                                                     <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Top Buyers</TableHead>
                                                     <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Price</TableHead>
                                                     <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Change</TableHead>
@@ -434,6 +441,26 @@ export default function MoversShakersPage() {
                                                                     data={stock.sparkline}
                                                                     color={stock.percent_change > 0 ? '#10b981' : '#f43f5e'}
                                                                 />
+                                                            </TableCell>
+                                                            <TableCell className="py-3 text-center">
+                                                                <span className={`text-[10px] font-mono font-bold ${stock.roc && stock.roc > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                                    {stock.roc ? `${stock.roc > 0 ? '+' : ''}${stock.roc}%` : '-'}
+                                                                </span>
+                                                            </TableCell>
+                                                            <TableCell className="py-3 text-center">
+                                                                <span className={`text-[10px] font-mono font-bold ${stock.rsi && stock.rsi > 70 ? 'text-rose-500' :
+                                                                        stock.rsi && stock.rsi < 30 ? 'text-emerald-500' : 'text-slate-500'
+                                                                    }`}>
+                                                                    {stock.rsi ? stock.rsi : '-'}
+                                                                </span>
+                                                            </TableCell>
+                                                            <TableCell className="py-3 text-center">
+                                                                <div className="flex flex-col items-center">
+                                                                    <span className={`text-[10px] font-mono font-bold ${stock.macd && parseFloat(stock.macd) > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                                        {stock.macd || '-'}
+                                                                    </span>
+                                                                    <span className="text-[8px] text-slate-400 font-mono">{stock.macd_signal || ''}</span>
+                                                                </div>
                                                             </TableCell>
                                                             <TableCell className="py-3">
                                                                 <div className="flex gap-1 flex-wrap max-w-[120px]">

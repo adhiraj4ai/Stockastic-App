@@ -263,7 +263,68 @@ def stock_summary(request):
         if stock['ticker'] in top_buyers_map:
             stock['top_buyers'] = top_buyers_map[stock['ticker']]
 
-    # 7. Whale Watch: Top 5 Brokers by Total Buy Volume -> Top 3 Stocks for each
+    # 7. Calculate Technicals (ROC, RSI, MACD) for Rocket List Candidates
+    # Fetch history for these specific tickers to compute indicators on the fly
+    curr_date = latest_date
+    start_date_tech = curr_date - datetime.timedelta(days=100) # Enough for MACD/RSI
+    
+    tech_qs = DailyStockPrice.objects.filter(
+        ticker__in=rocket_tickers,
+        date__gte=start_date_tech,
+        date__lte=curr_date
+    ).values('ticker', 'date', 'close').order_by('date')
+    
+    import pandas as pd
+    try:
+        import pandas_ta as ta
+    except ImportError:
+        ta = None
+
+    if ta and tech_qs.exists():
+        df_tech = pd.DataFrame(list(tech_qs))
+        if not df_tech.empty:
+            # Group by ticker
+            for t in rocket_tickers:
+                # Filter for this ticker
+                t_df = df_tech[df_tech['ticker'] == t].copy()
+                if t_df.empty or len(t_df) < 30: continue
+                
+                t_df.set_index('date', inplace=True)
+                t_df['close'] = pd.to_numeric(t_df['close'])
+                
+                # Calculate Indicators
+                try:
+                    # ROC (14) - Rate of Change
+                    roc = t_df.ta.roc(length=14)
+                    roc_val = roc.iloc[-1] if roc is not None and not roc.empty else None
+                    
+                    # RSI (14)
+                    rsi = t_df.ta.rsi(length=14)
+                    rsi_val = rsi.iloc[-1] if rsi is not None and not rsi.empty else None
+                    
+                    # MACD (12, 26, 9)
+                    macd = t_df.ta.macd(fast=12, slow=26, signal=9)
+                    # Returns columns: MACD_12_26_9, MACDh_12_26_9, MACDs_12_26_9
+                    macd_val = None
+                    macd_signal = None
+                    if macd is not None and not macd.empty:
+                         macd_val = macd['MACD_12_26_9'].iloc[-1]
+                         macd_signal = macd['MACDs_12_26_9'].iloc[-1]
+
+                    # Update the stock dict in summary_list
+                    # Find the stock object reference
+                    for s in summary_list:
+                        if s['ticker'] == t:
+                            s['roc'] = round(roc_val, 2) if roc_val is not None else None
+                            s['rsi'] = round(rsi_val, 2) if rsi_val is not None else None
+                            s['macd'] = f"{macd_val:.2f}" if macd_val is not None else None
+                            s['macd_signal'] = f"{macd_signal:.2f}" if macd_signal is not None else None
+                            break
+                            
+                except Exception as e:
+                    print(f"Error calculating tech for {t}: {e}")
+
+    # 8. Whale Watch: Top 5 Brokers by Total Buy Volume -> Top 3 Stocks for each
     # Step A: Find top 5 brokers by total volume
     top_brokers_qs = DailyFloorsheet.objects.filter(
         transaction_date=latest_date

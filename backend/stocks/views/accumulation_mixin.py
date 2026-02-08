@@ -513,7 +513,14 @@ class AccumulationMixin(viewsets.ViewSet):
         sort_key = 'net_amt' if is_all else 'net_qty'
         
         buy_leaders = sorted([l for l in leader_stats if l[sort_key] > 0], key=lambda x: x[sort_key], reverse=True)[:10]
-        sell_leaders = sorted([l for l in leader_stats if l[sort_key] < 0], key=lambda x: x[sort_key])[:10]
+        
+        raw_sell_leaders = sorted([l for l in leader_stats if l[sort_key] < 0], key=lambda x: x[sort_key])[:10]
+        sell_leaders = []
+        for l in raw_sell_leaders:
+            l_copy = l.copy()
+            l_copy['net_qty'] = abs(l_copy['net_qty'])
+            l_copy['net_amt'] = abs(l_copy['net_amt'])
+            sell_leaders.append(l_copy)
 
         return Response({
             'data': sorted_data, 
