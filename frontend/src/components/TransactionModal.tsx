@@ -18,6 +18,8 @@ interface TransactionModalProps {
     defaultTicker?: string;
     defaultType?: string;
     accounts?: PortfolioAccount[];
+    // If editing, receive the transaction object
+    transactionToEdit?: any;
 }
 
 type TransactionType = 'BUY' | 'SELL' | 'BONUS' | 'DIVIDEND';
@@ -28,7 +30,8 @@ export default function TransactionModal({
     onSuccess,
     defaultTicker = '',
     defaultType = 'BUY',
-    accounts = []
+    accounts = [],
+    transactionToEdit = null
 }: TransactionModalProps) {
     const [activeTab, setActiveTab] = useState<TransactionType>(defaultType as TransactionType);
     const [formData, setFormData] = useState({
@@ -54,7 +57,7 @@ export default function TransactionModal({
                     if (res.data.username === 'ashmi') {
                         setIsAshmi(true);
                         // Auto-select first account if not already selected
-                        if (accounts.length > 0) {
+                        if (accounts.length > 0 && !formData.account) {
                             setFormData(prev => ({ ...prev, account: accounts[0].id.toString() }));
                         }
                     }
@@ -114,15 +117,31 @@ export default function TransactionModal({
 
     useEffect(() => {
         if (isOpen) {
-            setFormData(prev => ({
-                ...prev,
-                ticker: defaultTicker,
-                // Default to first account if exists and none selected, or keep empty if multiple
-                account: prev.account || (accounts.length > 0 ? accounts[0].id.toString() : '')
-            }));
-            if (defaultType) setActiveTab(defaultType as TransactionType);
+            if (transactionToEdit) {
+                // Populate form for editing
+                setFormData({
+                    ticker: transactionToEdit.ticker,
+                    transaction_date: new Date(transactionToEdit.transaction_date).toISOString().split('T')[0],
+                    quantity: transactionToEdit.quantity.toString(),
+                    rate: transactionToEdit.rate.toString(),
+                    account: transactionToEdit.account ? transactionToEdit.account.toString() : (accounts.length > 0 ? accounts[0].id.toString() : ''),
+                });
+                setActiveTab(transactionToEdit.transaction_type as TransactionType);
+            } else {
+                // Reset for new transaction
+                setFormData(prev => ({
+                    ...prev,
+                    ticker: defaultTicker,
+                    // Default to first account if exists and none selected, or keep empty if multiple
+                    transaction_date: new Date().toISOString().split('T')[0],
+                    quantity: '',
+                    rate: '',
+                    account: prev.account || (accounts.length > 0 ? accounts[0].id.toString() : '')
+                }));
+                if (defaultType) setActiveTab(defaultType as TransactionType);
+            }
         }
-    }, [isOpen, defaultTicker, defaultType, accounts]);
+    }, [isOpen, defaultTicker, defaultType, accounts, transactionToEdit]);
 
     useEffect(() => {
         if (activeTab === 'BUY' || activeTab === 'SELL') {
@@ -146,26 +165,32 @@ export default function TransactionModal({
             };
 
             // Only send account if selected (API handles null as default/no account)
-            // But if we have accounts, we should enforce one? Or let it be optional?
-            // If user selects "Select Account", value is empty string.
             if (formData.account) {
                 payload.account = formData.account;
             }
 
-            await axios.post(`${apiUrl}/api/stocks/transactions/`, payload, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            if (transactionToEdit) {
+                await axios.put(`${apiUrl}/api/stocks/transactions/${transactionToEdit.id}/`, payload, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            } else {
+                await axios.post(`${apiUrl}/api/stocks/transactions/`, payload, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            }
 
             onSuccess();
             onClose();
             // Reset form (keep account?)
-            setFormData(prev => ({
-                ...prev,
-                ticker: '',
-                transaction_date: new Date().toISOString().split('T')[0],
-                quantity: '',
-                rate: '',
-            }));
+            if (!transactionToEdit) {
+                setFormData(prev => ({
+                    ...prev,
+                    ticker: '',
+                    transaction_date: new Date().toISOString().split('T')[0],
+                    quantity: '',
+                    rate: '',
+                }));
+            }
         } catch (err: any) {
             console.error('Transaction failed:', err);
             const errorMsg = err.response?.data ? JSON.stringify(err.response.data) : "Failed to submit transaction";

@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import api from '@/lib/api';
-import { Loader2, Target, TrendingDown, TrendingUp, Shield, BarChart3, Save, X, Info, AlertTriangle, BookOpen, Quote, Zap } from 'lucide-react';
+import { Loader2, Target, TrendingDown, TrendingUp, Shield, BarChart3, Save, X, Info, AlertTriangle, BookOpen, Quote, Zap, Pencil, Trash2 } from 'lucide-react';
+import TransactionModal from './TransactionModal';
 
 interface ExitStrategyDialogProps {
     open: boolean;
@@ -47,6 +48,8 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
     const [wacc, setWacc] = useState<number>(0);
     const [isUnderwater, setIsUnderwater] = useState<boolean>(false);
     const [transactions, setTransactions] = useState<any[]>([]);
+    const [transactionToEdit, setTransactionToEdit] = useState<any>(null);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -85,7 +88,18 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
             }
         };
         fetchData();
-    }, [open, portfolioItem]);
+    }, [open, portfolioItem, refreshTrigger]);
+
+    const handleDeleteTransaction = async (id: number) => {
+        if (!confirm('Are you sure you want to delete this transaction?')) return;
+        try {
+            await api.delete(`/api/stocks/transactions/${id}/`);
+            setRefreshTrigger(prev => prev + 1);
+        } catch (error) {
+            console.error("Failed to delete transaction", error);
+            alert("Failed to delete transaction");
+        }
+    };
 
     const handleApplyStrategy = (key: string) => {
         const s = strategies[key];
@@ -131,7 +145,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent showCloseButton={false} className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0 border-none shadow-2xl rounded-[2rem] bg-white font-sans">
+            <DialogContent showCloseButton={false} className="w-[80vw] max-w-[80vw] h-[80vh] max-h-[80vh] overflow-y-auto p-0 border-none shadow-2xl rounded-[2rem] bg-white font-sans">
                 <div className="flex flex-col">
                     {/* Header Section */}
                     <div className="bg-slate-50/50 p-5 px-6 border-b border-gray-100/80">
@@ -226,6 +240,24 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
                                                             <td className="px-4 py-2.5 text-right font-medium text-gray-600 tabular-nums">{t.rate}</td>
                                                             <td className="px-4 py-2.5 text-right font-black text-gray-900 tabular-nums">
                                                                 Rs. {parseFloat(t.amount).toLocaleString()}
+                                                            </td>
+                                                            <td className="px-4 py-2.5 text-right">
+                                                                <div className="flex items-center justify-end gap-2">
+                                                                    <button
+                                                                        onClick={() => setTransactionToEdit(t)}
+                                                                        className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                                        title="Edit Transaction"
+                                                                    >
+                                                                        <Pencil className="h-3.5 w-3.5" />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDeleteTransaction(t.id)}
+                                                                        className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                                        title="Delete Transaction"
+                                                                    >
+                                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                                    </button>
+                                                                </div>
                                                             </td>
                                                         </tr>
                                                     ))}
@@ -418,7 +450,19 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
                         </Button>
                     </div>
                 </div>
-            </DialogContent >
-        </Dialog >
+            </DialogContent>
+            {transactionToEdit && (
+                <TransactionModal
+                    isOpen={!!transactionToEdit}
+                    onClose={() => setTransactionToEdit(null)}
+                    onSuccess={() => {
+                        setTransactionToEdit(null);
+                        setRefreshTrigger(prev => prev + 1);
+                    }}
+                    transactionToEdit={transactionToEdit}
+                    accounts={[]}
+                />
+            )}
+        </Dialog>
     );
 }

@@ -261,3 +261,69 @@ class PortfolioTransactionViewSet(viewsets.ModelViewSet):
         
         # Recalculate the item after deletion to ensure correctness
         PortfolioService.recalculate_item(user, account, ticker)
+
+    def perform_update(self, serializer):
+        user = self.request.user
+        instance = serializer.instance
+        old_ticker = instance.ticker
+        old_account = instance.account
+        
+        # Save updates
+        # For updates, we might need to re-process metrics like commission if quantity/rate changed
+        # ideally we re-run process_transaction logic or similar calculation
+        # But serializer.save() just updates model fields. 
+        # We need to manually update calculated fields if quantity/rate changed.
+        
+        data = serializer.validated_data
+        
+        # Recalculate charges if quantity or rate changed
+        if 'quantity' in data or 'rate' in data or 'transaction_type' in data:
+            qty = data.get('quantity', instance.quantity)
+            rate = data.get('rate', instance.rate)
+            txn_type = data.get('transaction_type', instance.transaction_type)
+            
+            # Simple recalc of standard charges (ignoring manual overrides for now as they aren't in standard form)
+            # If user provided overrides in PUT, use them, else recalc
+            
+            amount = Decimal(qty) * Decimal(rate)
+            commission = data.get('commission', calculate_broker_commission(amount))
+            sebon_fee = data.get('sebon_fee', calculate_sebon_fee(amount))
+            dp_charge = data.get('dp_charge', calculate_dp_charge())
+            
+            # CGT logic is complex for edit, assume 0 or manual for now unless SELL
+            cgt = data.get('cgt', instance.cgt) 
+            # Note: Recalculating CGT accurately requires knowing profit at that specific time, which is hard.
+            # Allowing user to edit means they might need to adjust manually if backend logic falls short.
+            # For now, simplistic approach: update calc fields.
+            
+            receivable = amount
+            if txn_type == TransactionType.BUY:
+                receivable = amount + commission + sebon_fee + dp_charge
+            elif txn_type == TransactionType.SELL:
+                 receivable = amount - commission - sebon_fee - dp_charge - cgt
+            elif txn_type == TransactionType.BONUS:
+                 receivable = Decimal('0.00')
+                 
+            serializer.save(
+                amount=amount,
+                commission=commission,
+                sebon_fee=sebon_fee,
+                dp_charge=dp_charge,
+                receivable_amount=receivable
+            )
+        else:
+            serializer.save()
+
+        # Recalculate Portfolio Item
+        # If ticker or account changed (unlikely in simple edit), we'd need to recalc old and new.
+        # Assuming ticker/account don't change for now (simplifies logic).
+        
+        ticker = instance.ticker # updated ticker
+        account = instance.account # updated account
+        
+        # Recalculate this item
+        PortfolioService.recalculate_item(user, account, ticker)
+        
+        # If ticker/account *did* change, we should recalc the old one too.
+        if old_ticker != ticker or old_account != account:
+             PortfolioService.recalculate_item(user, old_account, old_ticker)
