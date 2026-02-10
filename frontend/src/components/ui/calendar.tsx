@@ -47,7 +47,7 @@ function Calendar({
         <div className="flex items-center justify-between mb-2 px-1">
             <button
                 onClick={handlePrev}
-                className={cn(buttonVariants({ variant: "outline" }), "h-7 w-7 p-0 bg-transparent opacity-50 hover:opacity-100")}
+                className={cn(buttonVariants({ variant: "outline" }), "h-7 w-7 p-0 bg-transparent opacity-50 hover:opacity-100 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800")}
             >
                 <ChevronLeft className="h-4 w-4" />
             </button>
@@ -57,8 +57,8 @@ function Calendar({
                     else if (view === 'months') setView('years');
                 }}
                 className={cn(
-                    "text-sm font-bold text-gray-700 hover:text-blue-600 transition-colors",
-                    view === 'years' && "cursor-default hover:text-gray-700"
+                    "text-sm font-bold text-gray-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors",
+                    view === 'years' && "cursor-default hover:text-gray-700 dark:hover:text-slate-200"
                 )}
                 disabled={view === 'years'}
             >
@@ -71,7 +71,7 @@ function Calendar({
             </button>
             <button
                 onClick={handleNext}
-                className={cn(buttonVariants({ variant: "outline" }), "h-7 w-7 p-0 bg-transparent opacity-50 hover:opacity-100")}
+                className={cn(buttonVariants({ variant: "outline" }), "h-7 w-7 p-0 bg-transparent opacity-50 hover:opacity-100 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800")}
             >
                 <ChevronRight className="h-4 w-4" />
             </button>
@@ -79,7 +79,7 @@ function Calendar({
     );
 
     return (
-        <div className={cn("p-3 relative bg-white border rounded-xl shadow-lg w-auto inline-block", className)}>
+        <div className={cn("p-3 relative bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl shadow-lg w-auto inline-block", className)}>
             <Header />
 
             {view === 'months' && (
@@ -92,8 +92,8 @@ function Calendar({
                                 setView('days');
                             }}
                             className={cn(
-                                "py-2 text-xs font-medium rounded-md hover:bg-blue-50 hover:text-blue-600 transition-all",
-                                getMonth(navDate) === i ? "bg-blue-600 text-white hover:bg-blue-600 hover:text-white" : "text-gray-600"
+                                "py-2 text-xs font-medium rounded-md hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-slate-200 transition-all",
+                                getMonth(navDate) === i ? "bg-blue-600 text-white hover:bg-blue-600 hover:text-white" : "text-gray-600 dark:text-slate-400"
                             )}
                         >
                             {m}
@@ -114,8 +114,8 @@ function Calendar({
                                     setView('months');
                                 }}
                                 className={cn(
-                                    "py-2 text-xs font-medium rounded-md hover:bg-blue-50 hover:text-blue-600 transition-all",
-                                    getYear(navDate) === y ? "bg-blue-600 text-white hover:bg-blue-600 hover:text-white" : "text-gray-600"
+                                    "py-2 text-xs font-medium rounded-md hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-slate-200 transition-all",
+                                    getYear(navDate) === y ? "bg-blue-600 text-white hover:bg-blue-600 hover:text-white" : "text-gray-600 dark:text-slate-400"
                                 )}
                             >
                                 {y}
@@ -139,16 +139,16 @@ function Calendar({
                         nav: "hidden", // We use custom nav
                         month_grid: "w-full border-collapse",
                         weekdays: "flex justify-between w-full mb-2 px-1",
-                        weekday: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem] text-center",
+                        weekday: "text-slate-400 dark:text-slate-500 rounded-md w-9 font-normal text-[0.8rem] text-center",
                         week: "flex w-full mt-2 justify-between",
                         day: cn(
                             buttonVariants({ variant: "ghost" }),
-                            "h-9 w-9 p-0 font-normal aria-selected:opacity-100"
+                            "h-9 w-9 p-0 font-normal aria-selected:opacity-100 text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
                         ),
                         selected: "bg-blue-600 text-white hover:bg-blue-700 hover:text-white focus:bg-blue-600 focus:text-white",
-                        today: "bg-accent text-accent-foreground font-bold border border-blue-200",
-                        outside: "text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground",
-                        disabled: "text-muted-foreground opacity-20 cursor-not-allowed",
+                        today: "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold border border-blue-200 dark:border-blue-800",
+                        outside: "text-slate-400 dark:text-slate-600 opacity-50 aria-selected:bg-slate-100/50 dark:aria-selected:bg-slate-800/50 aria-selected:text-slate-500 dark:aria-selected:text-slate-400",
+                        disabled: "text-slate-300 dark:text-slate-700 opacity-50 cursor-not-allowed",
                         hidden: "invisible",
                         vhidden: "hidden",
                         ...classNames,

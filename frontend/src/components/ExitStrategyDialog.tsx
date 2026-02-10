@@ -145,7 +145,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent showCloseButton={false} className="w-[80vw] max-w-[80vw] h-[80vh] max-h-[80vh] overflow-y-auto p-0 border-none shadow-2xl rounded-[2rem] bg-white font-sans">
+            <DialogContent showCloseButton={false} className="w-[80vw] max-w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh] overflow-y-auto p-0 border-none shadow-2xl rounded-[2rem] bg-white font-sans">
                 <div className="flex flex-col">
                     {/* Header Section */}
                     <div className="bg-slate-50/50 p-5 px-6 border-b border-gray-100/80">
