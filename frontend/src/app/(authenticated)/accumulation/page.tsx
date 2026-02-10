@@ -99,16 +99,10 @@ interface BrokerFavorite {
     symbol: string;
     name: string;
     current_net: number;
-    change_1d: number;
-    change_2d: number;
-    change_3d: number;
-    change_1w: number;
-    change_1m: number;
-    change_3m: number;
-    change_6m: number;
-    change_1y: number;
-    change_all: number;
     wac?: number;
+    qty_accumulated: number;
+    ltp: number;
+    roc: number;
 }
 
 interface AccumulationItem {
@@ -162,6 +156,9 @@ function AccumulationContent() {
     const [selectedBroker, setSelectedBroker] = useState(searchParams.get('broker') || '');
     const [allBrokers, setAllBrokers] = useState<string[]>([]);
     const [favPeriod, setFavPeriod] = useState('1W');
+    const [favSearch, setFavSearch] = useState('');
+    const [favPage, setFavPage] = useState(1);
+    const [favTotal, setFavTotal] = useState(0);
 
     // History State
     const [historyData, setHistoryData] = useState<AccumulationItem[]>([]);
@@ -313,18 +310,29 @@ function AccumulationContent() {
                 setFavoritesLoading(true);
                 try {
                     const res = await api.get('/api/stocks/companies/broker_favorites/', {
-                        params: { broker: selectedBroker }
+                        params: {
+                            broker: selectedBroker,
+                            range: favPeriod,
+                            search: favSearch,
+                            page: favPage,
+                            page_size: 20
+                        }
                     });
-                    setFavorites(res.data);
+                    setFavorites(res.data.results || []); // Handle paginated response
+                    setFavTotal(res.data.count || 0); // Set total count
                 } catch (err) {
                     console.error('Failed to fetch broker favorites', err);
                 } finally {
                     setFavoritesLoading(false);
                 }
             };
-            fetchFavorites();
+            // Debounce search if needed, but for now simple effect dependency is fine
+            const timeoutId = setTimeout(() => {
+                fetchFavorites();
+            }, 300); // 300ms debounce for search
+            return () => clearTimeout(timeoutId);
         }
-    }, [activeTab, selectedBroker]);
+    }, [activeTab, selectedBroker, favPeriod, favSearch, favPage]);
 
     useEffect(() => {
         if ((activeTab === 'accumulators' || activeTab === 'aggressive-trader') && selectedGraphSymbol) {
@@ -1057,32 +1065,56 @@ function AccumulationContent() {
                     activeTab === 'favorites' && (
                         <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm">
                             <div className="p-4 border-b dark:border-slate-800 bg-white dark:bg-slate-900/80 flex flex-col md:flex-row justify-between items-center gap-4 sticky top-[73px] z-10 rounded-t-xl">
-                                <div className="flex flex-wrap items-center gap-3 w-full justify-between md:justify-end">
-                                    <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm">
-                                        <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-2">Broker</span>
-                                        <select
-                                            value={selectedBroker}
-                                            onChange={(e) => handleBrokerChange(e.target.value)}
-                                            className="bg-transparent border-none text-sm font-bold text-blue-700 dark:text-indigo-400 outline-none pr-4 min-w-[80px]"
-                                        >
-                                            <option value="">Select ID</option>
-                                            {allBrokers.map(b => <option key={b} value={b}>{b}</option>)}
-                                        </select>
-                                    </div>
-
-                                    <div className="flex gap-1">
+                                <div className="flex flex-wrap items-center gap-3 w-full justify-between">
+                                    {/* Left: Time Ranges */}
+                                    <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1 md:pb-0">
                                         {['1D', '1W', '1M', '3M', '6M', '1Y', 'ALL'].map(p => (
                                             <Button
                                                 key={p}
                                                 variant={favPeriod === p ? "default" : "outline"}
                                                 size="sm"
-                                                onClick={() => setFavPeriod(p)}
+                                                onClick={() => {
+                                                    setFavPeriod(p);
+                                                    setFavPage(1);
+                                                }}
                                                 className={`rounded-lg px-3 py-1 h-8 text-xs font-bold transition-all ${favPeriod === p ? 'bg-blue-600 dark:bg-indigo-600 text-white shadow-sm' : 'text-gray-600 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-slate-800 border-gray-200 dark:border-slate-800'
                                                     }`}
                                             >
                                                 {p}
                                             </Button>
                                         ))}
+                                    </div>
+
+                                    {/* Right: Broker and Search */}
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm">
+                                            <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-2">Broker</span>
+                                            <select
+                                                value={selectedBroker}
+                                                onChange={(e) => {
+                                                    handleBrokerChange(e.target.value);
+                                                    setFavPage(1); // Reset page on broker change
+                                                    setFavSearch(''); // Reset search
+                                                }}
+                                                className="bg-transparent border-none text-sm font-bold text-blue-700 dark:text-indigo-400 outline-none pr-4 min-w-[80px]"
+                                            >
+                                                <option value="">Select ID</option>
+                                                {allBrokers.map(b => <option key={b} value={b}>{b}</option>)}
+                                            </select>
+                                        </div>
+                                        {/* Search Input */}
+                                        <div className="relative w-48 hidden md:block">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 dark:text-slate-500" />
+                                            <Input
+                                                placeholder="Search symbol..."
+                                                value={favSearch}
+                                                onChange={(e) => {
+                                                    setFavSearch(e.target.value);
+                                                    setFavPage(1);
+                                                }}
+                                                className="pl-9 h-9 rounded-xl bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-xs shadow-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-indigo-500 dark:text-slate-100"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1108,6 +1140,8 @@ function AccumulationContent() {
                                                     <TableHead className="hidden lg:table-cell">Company</TableHead>
                                                     <TableHead className="text-right">Total Net Holding</TableHead>
                                                     <TableHead className="text-right">WAC</TableHead>
+                                                    <TableHead className="text-right">LTP</TableHead>
+                                                    <TableHead className="text-right">ROC</TableHead>
                                                     <TableHead className="text-right bg-blue-50/50 dark:bg-indigo-900/20">Qty Accumulated ({favPeriod})</TableHead>
                                                     <TableHead className="w-[100px]"></TableHead>
                                                 </TableRow>
@@ -1115,46 +1149,68 @@ function AccumulationContent() {
                                             <TableBody>
                                                 {favorites.length === 0 ? (
                                                     <TableRow>
-                                                        <TableCell colSpan={6} className="h-40 text-center text-gray-500 dark:text-slate-400">
-                                                            No favorites data found for this broker.
+                                                        <TableCell colSpan={8} className="h-40 text-center text-gray-500 dark:text-slate-400">
+                                                            No favorites data found.
                                                         </TableCell>
                                                     </TableRow>
                                                 ) : (
-                                                    [...favorites]
-                                                        .sort((a, b) => {
-                                                            const key = `change_${favPeriod.toLowerCase()}` as keyof BrokerFavorite;
-                                                            return ((b[key] as number) ?? 0) - ((a[key] as number) ?? 0);
-                                                        })
-                                                        .map((fav, idx) => {
-                                                            const changeKey = `change_${favPeriod.toLowerCase()}` as keyof BrokerFavorite;
-                                                            const changeValue = (fav[changeKey] as number) ?? 0;
-
-                                                            return (
-                                                                <TableRow key={idx} className="hover:bg-blue-50/30 dark:hover:bg-slate-900/50 transition-colors group border-b dark:border-slate-800">
-                                                                    <TableCell className="font-bold text-blue-700 dark:text-indigo-400">{fav.symbol}</TableCell>
-                                                                    <TableCell className="hidden lg:table-cell text-sm text-gray-600 dark:text-slate-400 truncate max-w-[200px]">{fav.name}</TableCell>
-                                                                    <TableCell className="text-right font-mono font-medium text-gray-400 dark:text-slate-500">
-                                                                        {fav.current_net.toLocaleString()}
-                                                                    </TableCell>
-                                                                    <TableCell className="text-right font-mono font-bold text-orange-600 dark:text-orange-400">
-                                                                        {fav.wac?.toLocaleString() || '-'}
-                                                                    </TableCell>
-                                                                    <TableCell className={`text-right font-mono font-bold bg-blue-50/20 dark:bg-indigo-900/20 ${changeValue > 0 ? 'text-green-600 dark:text-emerald-400' : changeValue < 0 ? 'text-red-600 dark:text-rose-400' : 'text-gray-400 dark:text-slate-500'}`}>
-                                                                        {changeValue > 0 ? '+' : ''}{changeValue.toLocaleString()}
-                                                                    </TableCell>
-                                                                    <TableCell className="text-center">
-                                                                        <Link href={`/accumulation?tab=history&symbol=${fav.symbol}&broker=${selectedBroker}`}>
-                                                                            <Button variant="ghost" size="icon" className="group-hover:text-blue-600 dark:group-hover:text-indigo-400 rounded-full transition-all" title="View historical accumulation">
-                                                                                <History className="w-4 h-4" />
-                                                                            </Button>
-                                                                        </Link>
-                                                                    </TableCell>
-                                                                </TableRow>
-                                                            );
-                                                        })
+                                                    favorites.map((fav, idx) => (
+                                                        <TableRow key={idx} className="hover:bg-blue-50/30 dark:hover:bg-slate-900/50 transition-colors group border-b dark:border-slate-800">
+                                                            <TableCell className="font-bold text-blue-700 dark:text-indigo-400">{fav.symbol}</TableCell>
+                                                            <TableCell className="hidden lg:table-cell text-sm text-gray-600 dark:text-slate-400 truncate max-w-[200px]">{fav.name}</TableCell>
+                                                            <TableCell className="text-right font-mono font-medium text-gray-400 dark:text-slate-500">
+                                                                {fav.current_net.toLocaleString()}
+                                                            </TableCell>
+                                                            <TableCell className="text-right font-mono font-bold text-orange-600 dark:text-orange-400">
+                                                                {fav.wac?.toLocaleString() || '-'}
+                                                            </TableCell>
+                                                            <TableCell className="text-right font-mono font-bold text-slate-700 dark:text-slate-300">
+                                                                {fav.ltp?.toLocaleString() || '-'}
+                                                            </TableCell>
+                                                            <TableCell className={`text-right font-mono font-bold ${fav.roc > 0 ? 'text-green-600 dark:text-emerald-400' : fav.roc < 0 ? 'text-red-600 dark:text-rose-400' : 'text-gray-400'}`}>
+                                                                {fav.roc > 0 ? '+' : ''}{fav.roc}%
+                                                            </TableCell>
+                                                            <TableCell className={`text-right font-mono font-bold bg-blue-50/20 dark:bg-indigo-900/20 ${fav.qty_accumulated > 0 ? 'text-green-600 dark:text-emerald-400' : fav.qty_accumulated < 0 ? 'text-red-600 dark:text-rose-400' : 'text-gray-400 dark:text-slate-500'}`}>
+                                                                {fav.qty_accumulated > 0 ? '+' : ''}{fav.qty_accumulated.toLocaleString()}
+                                                            </TableCell>
+                                                            <TableCell className="text-center">
+                                                                <Link href={`/accumulation?tab=history&symbol=${fav.symbol}&broker=${selectedBroker}`}>
+                                                                    <Button variant="ghost" size="icon" className="group-hover:text-blue-600 dark:group-hover:text-indigo-400 rounded-full transition-all" title="View historical accumulation">
+                                                                        <History className="w-4 h-4" />
+                                                                    </Button>
+                                                                </Link>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))
                                                 )}
                                             </TableBody>
                                         </table>
+                                        {/* Pagination Controls */}
+                                        <div className="p-4 border-t dark:border-slate-800 flex items-center justify-between">
+                                            <span className="text-xs text-gray-500 dark:text-slate-400">
+                                                Page {favPage} of {Math.ceil(favTotal / 20) || 1} • {favTotal} results
+                                            </span>
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    disabled={favPage === 1}
+                                                    onClick={() => setFavPage(p => Math.max(1, p - 1))}
+                                                    className="h-8 px-2"
+                                                >
+                                                    Previous
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    disabled={favPage * 20 >= favTotal}
+                                                    onClick={() => setFavPage(p => p + 1)}
+                                                    className="h-8 px-2"
+                                                >
+                                                    Next
+                                                </Button>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>

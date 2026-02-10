@@ -69,15 +69,22 @@ class AccumulationMixin(viewsets.ViewSet):
             LEFT JOIN past_positions p ON l.symbol = p.symbol AND l.entity_id = p.entity_id
             WHERE (l.cumulative_net - COALESCE(p.cumulative_net, 0)) != 0
         ),
+        total_volume AS (
+            SELECT symbol, SUM(volume) as total_vol
+            FROM daily_stock_price, target_date, ref_date
+            WHERE transaction_date > target_date.start_date AND transaction_date <= ref_date.max_date
+            GROUP BY symbol
+        ),
         symbol_agg AS (
             SELECT 
                 bn.symbol,
                 SUM(CASE WHEN sm.broker IS NOT NULL THEN bn.net_flow ELSE 0 END) as smart_net_qty,
-                0 as total_vol,
+                COALESCE(MAX(tv.total_vol), 0) as total_vol,
                 ARRAY_AGG(bn.broker ORDER BY bn.net_flow DESC) FILTER (WHERE bn.net_flow > 0) as top_buyers,
                 ARRAY_AGG(bn.broker ORDER BY bn.net_flow ASC) FILTER (WHERE bn.net_flow < 0) as top_sellers
             FROM broker_net bn
             LEFT JOIN smart_money sm ON bn.symbol = sm.symbol AND CAST(bn.broker AS VARCHAR) = sm.broker
+            LEFT JOIN total_volume tv ON bn.symbol = tv.symbol
             GROUP BY bn.symbol
         )
         SELECT 
@@ -85,7 +92,9 @@ class AccumulationMixin(viewsets.ViewSet):
             CASE WHEN sa.smart_net_qty > 0 THEN sa.smart_net_qty ELSE 0 END as buy_qty,
             CASE WHEN sa.smart_net_qty < 0 THEN ABS(sa.smart_net_qty) ELSE 0 END as sell_qty,
             sa.smart_net_qty as net_qty,
-            0 as accumulation_ratio,
+            CASE WHEN sa.total_vol > 0 
+               THEN ROUND((ABS(sa.smart_net_qty)::NUMERIC / sa.total_vol) * 100, 2)
+               ELSE 0 END as accumulation_ratio,
             COALESCE(sa.top_buyers[1:3], ARRAY[]::text[]) as top_buyers,
             COALESCE(sa.top_sellers[1:3], ARRAY[]::text[]) as top_sellers,
             COALESCE(dsp.close, 0) as close
@@ -330,12 +339,47 @@ class AccumulationMixin(viewsets.ViewSet):
         return Response(results)
 
     @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get'])
     def broker_favorites(self, request):
-        broker = request.query_params.get('broker')
-        if not broker:
+        broker_str = request.query_params.get('broker')
+        if not broker_str:
             return Response({'error': 'broker ID is required'}, status=400)
+            
+        try:
+            broker = int(broker_str)
+        except ValueError:
+             return Response({'error': 'broker ID must be an integer'}, status=400)
 
-        query = """
+        time_range = request.query_params.get('range', '3M')
+        search_query = request.query_params.get('search', '').lower()
+        
+        try:
+            page = int(request.query_params.get('page', 1))
+            page_size = int(request.query_params.get('page_size', 20))
+        except ValueError:
+            page = 1
+            page_size = 20
+
+        range_map = {
+            '1D': 1, '1W': 7, '2W': 14, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, '2Y': 730, 'ALL': 36500
+        }
+        days = range_map.get(time_range, 90)
+
+        offset = (page - 1) * page_size
+        
+        search_filter = ""
+        params = []
+        
+        if search_query:
+            search_filter = """
+            AND (LOWER(c.symbol) LIKE %s OR LOWER(c."companyName") LIKE %s)
+            """
+            # Search filter is used TWICE (in total_count and main query)
+            # So we need to provide params 4 times
+            search_term = f"%{search_query}%"
+            params = [search_term, search_term, search_term, search_term]
+
+        query = f"""
         WITH ref_date AS (
             SELECT transaction_date as current_date 
             FROM daily_floorsheet 
@@ -344,42 +388,134 @@ class AccumulationMixin(viewsets.ViewSet):
             ORDER BY transaction_date DESC 
             LIMIT 1
         ),
-        broker_activity AS (
-            SELECT symbol, transaction_date, transaction_quantity as net_qty, (transaction_quantity * transaction_rate) as net_amt
-            FROM daily_floorsheet WHERE buyer_id = %s
-            UNION ALL
-            SELECT symbol, transaction_date, -transaction_quantity as net_qty, -(transaction_quantity * transaction_rate) as net_amt
-            FROM daily_floorsheet WHERE seller_id = %s
+        target_date AS (
+             SELECT (current_date - INTERVAL '{days} days') as start_date FROM ref_date
         ),
-        aggregated_stats AS (
+        broker_activity AS (
             SELECT 
-                ba.symbol,
-                SUM(CASE WHEN ba.transaction_date > (rd.current_date - INTERVAL '1 month') THEN ba.net_qty ELSE 0 END) as flow_1m,
-                MAX(ba.transaction_date) as last_trade_date
-            FROM broker_activity ba, ref_date rd
-            GROUP BY ba.symbol
+                df.symbol, 
+                SUM(CASE 
+                    WHEN df.buyer_id = {broker} THEN df.transaction_quantity 
+                    WHEN df.seller_id = {broker} THEN -df.transaction_quantity 
+                    ELSE 0 
+                END) as qty_accumulated
+            FROM daily_floorsheet df, target_date td
+            WHERE df.transaction_date > td.start_date
+            AND (df.buyer_id = {broker} OR df.seller_id = {broker})
+            GROUP BY df.symbol
+            HAVING SUM(CASE 
+                    WHEN df.buyer_id = {broker} THEN df.transaction_quantity 
+                    WHEN df.seller_id = {broker} THEN -df.transaction_quantity 
+                    ELSE 0 
+                END) != 0
+        ),
+        total_count AS (
+             SELECT COUNT(*) as cnt
+             FROM broker_activity ba
+             INNER JOIN companies c ON ba.symbol = c.symbol
+             WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
+             AND c.status = 'A'
+             AND c."sectorName" != 'Unknown' AND c."sectorName" IS NOT NULL
+             {search_filter}
         )
         SELECT 
-            ast.symbol, c."companyName" as name, COALESCE(ca.cumulative_net, 0) as current_net,
+            ba.symbol, 
+            c."companyName" as name, 
+            COALESCE(ca.cumulative_net, 0) as current_net,
             CASE WHEN ca.cumulative_buy > 0 THEN ROUND(ca.cumulative_buy_amount / ca.cumulative_buy, 2) ELSE 0 END as wac,
-            ast.flow_1m as change_1m
-        FROM aggregated_stats ast
-        INNER JOIN companies c ON ast.symbol = c.symbol
+            ba.qty_accumulated,
+            (SELECT cnt FROM total_count) as total_records
+        FROM broker_activity ba
+        INNER JOIN companies c ON ba.symbol = c.symbol
         LEFT JOIN LATERAL (
             SELECT cumulative_net, cumulative_buy, cumulative_buy_amount 
             FROM daily_cumulative_accumulation 
-            WHERE symbol = ast.symbol AND entity_id = %s
+            WHERE symbol = ba.symbol AND entity_id = '{broker}'
             ORDER BY transaction_date DESC LIMIT 1
         ) ca ON true
         WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
         AND c.status = 'A'
         AND c."sectorName" != 'Unknown' AND c."sectorName" IS NOT NULL
-        ORDER BY current_net DESC;
+        {search_filter}
+        ORDER BY ba.qty_accumulated DESC
+        LIMIT {page_size} OFFSET {offset};
         """
+
         with connections['default'].cursor() as cursor:
-            cursor.execute(query, [broker, broker, broker])
-            results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-        return Response(results)
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            
+        results = []
+        total_records = 0
+        if rows:
+            total_records = rows[0][5] # Get from first row
+            columns = ['symbol', 'name', 'current_net', 'wac', 'qty_accumulated', 'total_records']
+            base_results = [dict(zip(columns, row)) for row in rows]
+            
+            # Fetch LTP and Calculate ROC for these symbols
+            symbols = [r['symbol'] for r in base_results]
+            
+            # Get latest date
+            latest_price_obj = DailyStockPrice.objects.filter(ticker__in=symbols).order_by('-date').first()
+            if latest_price_obj:
+                latest_date = latest_price_obj.date
+                # ROC Period (14 days)
+                roc_period_date = latest_date - timedelta(days=20) # Go back a bit more to ensure we catch 14 trading days approx
+                
+                # Fetch recent prices
+                prices = DailyStockPrice.objects.filter(
+                    ticker__in=symbols, 
+                    date__gte=roc_period_date
+                ).values('ticker', 'date', 'close').order_by('ticker', 'date')
+                
+                price_map = {}
+                for p in prices:
+                    if p['ticker'] not in price_map: price_map[p['ticker']] = []
+                    price_map[p['ticker']].append(p)
+                
+                final_results = []
+                for item in base_results:
+                    sym = item['symbol']
+                    item_prices = price_map.get(sym, [])
+                    
+                    ltp = 0
+                    roc = 0
+                    
+                    if item_prices:
+                        current = item_prices[-1]
+                        ltp = current['close']
+                        
+                        # Calculate ROC (14) - verify length
+                        # If we have at least 14 days, compare with 14th day back
+                        # If not, compare with earliest available in range
+                        if len(item_prices) > 1:
+                            # Standard ROC 14 if enough data, else simple return
+                            lookback = 14
+                            prev_idx = max(0, len(item_prices) - 1 - lookback)
+                            prev = item_prices[prev_idx]
+                            
+                            if prev['close']:
+                                roc = ((ltp - prev['close']) / prev['close']) * 100
+                            
+                    item['ltp'] = ltp
+                    item['roc'] = round(roc, 2)
+                    del item['total_records']
+                    final_results.append(item)
+                results = final_results
+            else:
+                 # No price data fallback
+                 for r in base_results:
+                     r['ltp'] = 0
+                     r['roc'] = 0
+                     del r['total_records']
+                 results = base_results
+
+        return Response({
+            'count': total_records,
+            'results': results,
+            'page': page,
+            'page_size': page_size
+        })
 
     @action(detail=False, methods=['get'])
     def brokers_graph(self, request):
