@@ -351,34 +351,16 @@ class AccumulationMixin(viewsets.ViewSet):
              return Response({'error': 'broker ID must be an integer'}, status=400)
 
         time_range = request.query_params.get('range', '3M')
-        search_query = request.query_params.get('search', '').lower()
         
-        try:
-            page = int(request.query_params.get('page', 1))
-            page_size = int(request.query_params.get('page_size', 20))
-        except ValueError:
-            page = 1
-            page_size = 20
-
         range_map = {
             '1D': 1, '1W': 7, '2W': 14, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, '2Y': 730, 'ALL': 36500
         }
         days = range_map.get(time_range, 90)
 
-        offset = (page - 1) * page_size
+        # Client-side pagination: Return all records for the broker/range
         
-        search_filter = ""
         params = []
         
-        if search_query:
-            search_filter = """
-            AND (LOWER(c.symbol) LIKE %s OR LOWER(c."companyName") LIKE %s)
-            """
-            # Search filter is used TWICE (in total_count and main query)
-            # So we need to provide params 4 times
-            search_term = f"%{search_query}%"
-            params = [search_term, search_term, search_term, search_term]
-
         query = f"""
         WITH ref_date AS (
             SELECT transaction_date as current_date 
@@ -398,7 +380,12 @@ class AccumulationMixin(viewsets.ViewSet):
                     WHEN df.buyer_id = {broker} THEN df.transaction_quantity 
                     WHEN df.seller_id = {broker} THEN -df.transaction_quantity 
                     ELSE 0 
-                END) as qty_accumulated
+                END) as qty_accumulated,
+                SUM(CASE 
+                    WHEN df.buyer_id = {broker} THEN df.transaction_amount
+                    WHEN df.seller_id = {broker} THEN -df.transaction_amount 
+                    ELSE 0 
+                END) as net_amount
             FROM daily_floorsheet df, target_date td
             WHERE df.transaction_date > td.start_date
             AND (df.buyer_id = {broker} OR df.seller_id = {broker})
@@ -408,15 +395,6 @@ class AccumulationMixin(viewsets.ViewSet):
                     WHEN df.seller_id = {broker} THEN -df.transaction_quantity 
                     ELSE 0 
                 END) != 0
-        ),
-        total_count AS (
-             SELECT COUNT(*) as cnt
-             FROM broker_activity ba
-             INNER JOIN companies c ON ba.symbol = c.symbol
-             WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
-             AND c.status = 'A'
-             AND c."sectorName" != 'Unknown' AND c."sectorName" IS NOT NULL
-             {search_filter}
         )
         SELECT 
             ba.symbol, 
@@ -424,7 +402,7 @@ class AccumulationMixin(viewsets.ViewSet):
             COALESCE(ca.cumulative_net, 0) as current_net,
             CASE WHEN ca.cumulative_buy > 0 THEN ROUND(ca.cumulative_buy_amount / ca.cumulative_buy, 2) ELSE 0 END as wac,
             ba.qty_accumulated,
-            (SELECT cnt FROM total_count) as total_records
+            ba.net_amount
         FROM broker_activity ba
         INNER JOIN companies c ON ba.symbol = c.symbol
         LEFT JOIN LATERAL (
@@ -436,23 +414,19 @@ class AccumulationMixin(viewsets.ViewSet):
         WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
         AND c.status = 'A'
         AND c."sectorName" != 'Unknown' AND c."sectorName" IS NOT NULL
-        {search_filter}
-        ORDER BY ba.qty_accumulated DESC
-        LIMIT {page_size} OFFSET {offset};
+        ORDER BY ba.qty_accumulated DESC;
         """
 
         with connections['default'].cursor() as cursor:
             cursor.execute(query, params)
             rows = cursor.fetchall()
             
-        results = []
-        total_records = 0
+        base_results = []
         if rows:
-            total_records = rows[0][5] # Get from first row
-            columns = ['symbol', 'name', 'current_net', 'wac', 'qty_accumulated', 'total_records']
+            columns = ['symbol', 'name', 'current_net', 'wac', 'qty_accumulated', 'net_amount']
             base_results = [dict(zip(columns, row)) for row in rows]
             
-            # Fetch LTP and Calculate ROC for these symbols
+            # Fetch LTP and Calculate ROC for all symbols
             symbols = [r['symbol'] for r in base_results]
             
             # Get latest date
@@ -460,7 +434,7 @@ class AccumulationMixin(viewsets.ViewSet):
             if latest_price_obj:
                 latest_date = latest_price_obj.date
                 # ROC Period (14 days)
-                roc_period_date = latest_date - timedelta(days=20) # Go back a bit more to ensure we catch 14 trading days approx
+                roc_period_date = latest_date - timedelta(days=20) 
                 
                 # Fetch recent prices
                 prices = DailyStockPrice.objects.filter(
@@ -485,11 +459,7 @@ class AccumulationMixin(viewsets.ViewSet):
                         current = item_prices[-1]
                         ltp = current['close']
                         
-                        # Calculate ROC (14) - verify length
-                        # If we have at least 14 days, compare with 14th day back
-                        # If not, compare with earliest available in range
                         if len(item_prices) > 1:
-                            # Standard ROC 14 if enough data, else simple return
                             lookback = 14
                             prev_idx = max(0, len(item_prices) - 1 - lookback)
                             prev = item_prices[prev_idx]
@@ -499,23 +469,14 @@ class AccumulationMixin(viewsets.ViewSet):
                             
                     item['ltp'] = ltp
                     item['roc'] = round(roc, 2)
-                    del item['total_records']
                     final_results.append(item)
-                results = final_results
+                base_results = final_results
             else:
-                 # No price data fallback
                  for r in base_results:
                      r['ltp'] = 0
                      r['roc'] = 0
-                     del r['total_records']
-                 results = base_results
 
-        return Response({
-            'count': total_records,
-            'results': results,
-            'page': page,
-            'page_size': page_size
-        })
+        return Response(base_results)
 
     @action(detail=False, methods=['get'])
     def brokers_graph(self, request):

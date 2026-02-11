@@ -101,6 +101,7 @@ interface BrokerFavorite {
     current_net: number;
     wac?: number;
     qty_accumulated: number;
+    net_amount: number;
     ltp: number;
     roc: number;
 }
@@ -152,13 +153,14 @@ function AccumulationContent() {
 
     // Broker Favorites State
     const [favorites, setFavorites] = useState<BrokerFavorite[]>([]);
+    const [filteredFavorites, setFilteredFavorites] = useState<BrokerFavorite[]>([]);
     const [favoritesLoading, setFavoritesLoading] = useState(false);
     const [selectedBroker, setSelectedBroker] = useState(searchParams.get('broker') || '');
     const [allBrokers, setAllBrokers] = useState<string[]>([]);
     const [favPeriod, setFavPeriod] = useState('1W');
     const [favSearch, setFavSearch] = useState('');
     const [favPage, setFavPage] = useState(1);
-    const [favTotal, setFavTotal] = useState(0);
+    const favPageSize = 20;
 
     // History State
     const [historyData, setHistoryData] = useState<AccumulationItem[]>([]);
@@ -304,6 +306,7 @@ function AccumulationContent() {
         }
     }, [activeTab, range, sector]);
 
+    // Favorites Fetch Effect
     useEffect(() => {
         if (activeTab === 'favorites' && selectedBroker) {
             const fetchFavorites = async () => {
@@ -312,27 +315,48 @@ function AccumulationContent() {
                     const res = await api.get('/api/stocks/companies/broker_favorites/', {
                         params: {
                             broker: selectedBroker,
-                            range: favPeriod,
-                            search: favSearch,
-                            page: favPage,
-                            page_size: 20
+                            range: favPeriod
                         }
                     });
-                    setFavorites(res.data.results || []); // Handle paginated response
-                    setFavTotal(res.data.count || 0); // Set total count
+                    const data = Array.isArray(res.data) ? res.data : [];
+                    setFavorites(data);
+                    setFilteredFavorites(data); // Initial set
+                    setFavPage(1);
                 } catch (err) {
                     console.error('Failed to fetch broker favorites', err);
+                    setFavorites([]);
+                    setFilteredFavorites([]);
                 } finally {
                     setFavoritesLoading(false);
                 }
             };
-            // Debounce search if needed, but for now simple effect dependency is fine
-            const timeoutId = setTimeout(() => {
-                fetchFavorites();
-            }, 300); // 300ms debounce for search
-            return () => clearTimeout(timeoutId);
+
+            fetchFavorites();
         }
-    }, [activeTab, selectedBroker, favPeriod, favSearch, favPage]);
+    }, [activeTab, selectedBroker, favPeriod]);
+
+    // Client-side Search & Pagination Effect
+    useEffect(() => {
+        let result = favorites;
+        if (favSearch) {
+            const q = favSearch.toLowerCase();
+            result = result.filter(f =>
+                f.symbol.toLowerCase().includes(q) ||
+                f.name.toLowerCase().includes(q)
+            );
+        }
+        setFilteredFavorites(result);
+
+        // Adjust page if out of bounds
+        const maxPage = Math.ceil(result.length / favPageSize) || 1;
+        if (favPage > maxPage && favPage !== 1) setFavPage(1);
+
+    }, [favSearch, favorites, favPageSize]);
+
+    const getCurrentPageItems = () => {
+        const startIndex = (favPage - 1) * favPageSize;
+        return filteredFavorites.slice(startIndex, startIndex + favPageSize);
+    };
 
     useEffect(() => {
         if ((activeTab === 'accumulators' || activeTab === 'aggressive-trader') && selectedGraphSymbol) {
@@ -1143,18 +1167,19 @@ function AccumulationContent() {
                                                     <TableHead className="text-right">LTP</TableHead>
                                                     <TableHead className="text-right">ROC</TableHead>
                                                     <TableHead className="text-right bg-blue-50/50 dark:bg-indigo-900/20">Qty Accumulated ({favPeriod})</TableHead>
+                                                    <TableHead className="text-right">Net Amount</TableHead>
                                                     <TableHead className="w-[100px]"></TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {favorites.length === 0 ? (
+                                                {getCurrentPageItems().length === 0 ? (
                                                     <TableRow>
-                                                        <TableCell colSpan={8} className="h-40 text-center text-gray-500 dark:text-slate-400">
+                                                        <TableCell colSpan={9} className="h-40 text-center text-gray-500 dark:text-slate-400">
                                                             No favorites data found.
                                                         </TableCell>
                                                     </TableRow>
                                                 ) : (
-                                                    favorites.map((fav, idx) => (
+                                                    getCurrentPageItems().map((fav, idx) => (
                                                         <TableRow key={idx} className="hover:bg-blue-50/30 dark:hover:bg-slate-900/50 transition-colors group border-b dark:border-slate-800">
                                                             <TableCell className="font-bold text-blue-700 dark:text-indigo-400">{fav.symbol}</TableCell>
                                                             <TableCell className="hidden lg:table-cell text-sm text-gray-600 dark:text-slate-400 truncate max-w-[200px]">{fav.name}</TableCell>
@@ -1173,6 +1198,13 @@ function AccumulationContent() {
                                                             <TableCell className={`text-right font-mono font-bold bg-blue-50/20 dark:bg-indigo-900/20 ${fav.qty_accumulated > 0 ? 'text-green-600 dark:text-emerald-400' : fav.qty_accumulated < 0 ? 'text-red-600 dark:text-rose-400' : 'text-gray-400 dark:text-slate-500'}`}>
                                                                 {fav.qty_accumulated > 0 ? '+' : ''}{fav.qty_accumulated.toLocaleString()}
                                                             </TableCell>
+                                                            <TableCell className={`text-right font-mono font-bold ${fav.net_amount > 0 ? 'text-green-600 dark:text-emerald-400' : fav.net_amount < 0 ? 'text-red-600 dark:text-rose-400' : 'text-gray-400'}`}>
+                                                                {Math.abs(fav.net_amount) >= 10000000
+                                                                    ? `${(fav.net_amount / 10000000).toFixed(2)} Cr`
+                                                                    : Math.abs(fav.net_amount) >= 100000
+                                                                        ? `${(fav.net_amount / 100000).toFixed(2)} L`
+                                                                        : fav.net_amount.toLocaleString()}
+                                                            </TableCell>
                                                             <TableCell className="text-center">
                                                                 <Link href={`/accumulation?tab=history&symbol=${fav.symbol}&broker=${selectedBroker}`}>
                                                                     <Button variant="ghost" size="icon" className="group-hover:text-blue-600 dark:group-hover:text-indigo-400 rounded-full transition-all" title="View historical accumulation">
@@ -1188,7 +1220,7 @@ function AccumulationContent() {
                                         {/* Pagination Controls */}
                                         <div className="p-4 border-t dark:border-slate-800 flex items-center justify-between">
                                             <span className="text-xs text-gray-500 dark:text-slate-400">
-                                                Page {favPage} of {Math.ceil(favTotal / 20) || 1} • {favTotal} results
+                                                Page {favPage} of {Math.ceil(filteredFavorites.length / favPageSize) || 1} • {filteredFavorites.length} results
                                             </span>
                                             <div className="flex gap-2">
                                                 <Button
@@ -1203,7 +1235,7 @@ function AccumulationContent() {
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
-                                                    disabled={favPage * 20 >= favTotal}
+                                                    disabled={favPage * favPageSize >= filteredFavorites.length}
                                                     onClick={() => setFavPage(p => p + 1)}
                                                     className="h-8 px-2"
                                                 >

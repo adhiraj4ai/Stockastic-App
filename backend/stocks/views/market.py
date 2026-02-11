@@ -35,6 +35,45 @@ def stock_history(request, ticker):
     serializer = DailyStockPriceSerializer(data, many=True)
     return Response(serializer.data)
 
+def _get_top_3_comparison(latest_date, prev_date):
+    def get_top_3_for_date(target_date):
+        if not target_date:
+            return None
+        
+        # Get prices for calculations
+        prices = DailyStockPrice.objects.filter(date=target_date)
+        
+        # We need percent_change which is often pre-calculated but let's be safe
+        stats_list = []
+        for p in prices:
+            # Re-calculating change if necessary
+            c = float(p.close) if p.close else 0
+            pc = float(p.prev_close) if p.prev_close else (float(p.open) if p.open else c)
+            change = c - pc
+            pct = (change / pc * 100) if pc else 0
+            
+            stats_list.append({
+                'symbol': p.ticker,
+                'turnover': float(p.turnover or 0),
+                'volume': float(p.volume or 0),
+                'transactions': p.trans or 0,
+                'percent_change': pct
+            })
+            
+        return {
+            'date': target_date,
+            'turnover': [s['symbol'] for s in sorted(stats_list, key=lambda x: x['turnover'], reverse=True)[:3]],
+            'volume': [s['symbol'] for s in sorted(stats_list, key=lambda x: x['volume'], reverse=True)[:3]],
+            'transactions': [s['symbol'] for s in sorted(stats_list, key=lambda x: x['transactions'], reverse=True)[:3]],
+            'gainers': [s['symbol'] for s in sorted(stats_list, key=lambda x: x['percent_change'], reverse=True)[:3]],
+            'losers': [s['symbol'] for s in sorted(stats_list, key=lambda x: x['percent_change'])[:3]]
+        }
+
+    return {
+        'today': get_top_3_for_date(latest_date),
+        'last': get_top_3_for_date(prev_date)
+    }
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def stock_summary(request):
@@ -75,6 +114,12 @@ def stock_summary(request):
         target_date = latest_date - datetime.timedelta(days=30)
         ref_date_data = DailyStockPrice.objects.filter(date__lte=target_date).values('date').annotate(count=Count('ticker')).filter(count__gt=10).order_by('-date').first()
         ref_date = ref_date_data['date'] if ref_date_data else None
+    
+    # 2.5 Find "Last Open Day" (Previous Trading Day) for Top 3 Comparison
+    prev_date_data = DailyStockPrice.objects.filter(date__lt=latest_date).values('date').annotate(
+        count=Count('ticker')
+    ).filter(count__gt=10).order_by('-date').first()
+    prev_date = prev_date_data['date'] if prev_date_data else None
         
     # If range is daily or ref_date not found, standard daily logic
     is_daily = (range_type == 'daily' or not ref_date)
@@ -379,7 +424,8 @@ def stock_summary(request):
         'top_losers': by_change[:10],
         'near_52_high': near_high_list[:10],
         'near_52_low': near_low_list[:10],
-        'whale_watch': whale_watch
+        'whale_watch': whale_watch,
+        'top_3_comparison': _get_top_3_comparison(latest_date, prev_date)
     }
     
     return Response(response_data)
@@ -409,21 +455,27 @@ def analyze_activity(request):
         elif range_type == 'monthly':
             start_date = latest_date - datetime.timedelta(days=30)
             
-        # 2. Fetch Prices
-        prices = DailyStockPrice.objects.filter(date__gte=start_date, date__lte=latest_date)
+        # 2. Fetch Prices 
+        # For ROC(14), we need at least 14 days of history regardless of range_type
+        # Let's fetch at least 45 days to be safe for weekends/holidays
+        tech_start = latest_date - datetime.timedelta(days=45)
+        prices = DailyStockPrice.objects.filter(date__gte=tech_start, date__lte=latest_date)
         
         ticker_stats = {}
         for p in prices:
             if p.ticker not in ticker_stats:
                 ticker_stats[p.ticker] = {'vol': 0, 'turn': 0, 'prices': []}
-            ticker_stats[p.ticker]['vol'] += (p.volume or 0)
-            ticker_stats[p.ticker]['turn'] += (p.turnover or 0)
+            
             ticker_stats[p.ticker]['prices'].append({
                 'date': p.date, 
                 'close': p.close,
                 'open': p.open,
                 'prev_close': p.prev_close
             })
+            # Filter for range stats
+            if p.date >= start_date:
+                ticker_stats[p.ticker]['vol'] += (p.volume or 0)
+                ticker_stats[p.ticker]['turn'] += (p.turnover or 0)
             
         notable_metrics = []
         
@@ -432,9 +484,21 @@ def analyze_activity(request):
             if not sorted_prices: continue
             
             latest_entry = sorted_prices[-1]
-            first_entry = sorted_prices[0]
+            # filter prices for original range to avoid calculating volume/turnover for the extra history
+            range_entries = [p for p in sorted_prices if p['date'] >= start_date]
+            if not range_entries: continue
+            first_entry = range_entries[0]
             
             end_price = float(latest_entry['close']) if latest_entry['close'] else 0
+            
+            # Additional logic for ROC (Rate of Change) - specifically 14 days
+            # We'll calculate it using the available history in sorted_prices
+            roc_val = None
+            if len(sorted_prices) >= 15:
+                # We can calculate ROC 14 if we have 15 points
+                start_p = float(sorted_prices[-15]['close']) if sorted_prices[-15]['close'] else 0
+                if start_p > 0:
+                    roc_val = round(((end_price - start_p) / start_p) * 100, 2)
             
             # Change Calculation Logic
             if range_type == 'daily':
@@ -442,7 +506,6 @@ def analyze_activity(request):
                 ref_price = float(latest_entry['prev_close']) if latest_entry['prev_close'] else float(latest_entry['open'])
             else:
                 # Range change: Latest Close vs Price BEFORE the range started
-                # Ideally we need prev_close of the first_entry
                 ref_price = float(first_entry['prev_close']) if first_entry['prev_close'] else float(first_entry['close'])
                 
             change = end_price - ref_price
@@ -454,20 +517,17 @@ def analyze_activity(request):
                 'percent_change': round(pct_change, 2),
                 'turnover': data['turn'],
                 'volume': data['vol'],
-                'close': end_price
+                'close': end_price,
+                'roc': roc_val
             })
             
         # Top Lists
-        # Filter Logic: For Daily Gainers, exclude stocks that haven't been active in the last 45 days
-        # (i.e., prevent stocks that just "woke up" after >45 days from dominating the list)
         top_gainers_candidates = sorted(notable_metrics, key=lambda x: x['percent_change'], reverse=True)[:30]
         
         if range_type == 'daily' and top_gainers_candidates:
             candidate_tickers = [x['ticker'] for x in top_gainers_candidates]
             cutoff_date = latest_date - datetime.timedelta(days=45)
             
-            # Check for activity count in the last 45 days (inclusive of today)
-            # If a stock only has 1 record in this period (today), it means it was inactive for >45 days prior.
             active_tickers = set(DailyStockPrice.objects.filter(
                 ticker__in=candidate_tickers,
                 date__gte=cutoff_date,
@@ -480,11 +540,13 @@ def analyze_activity(request):
 
         top_turnover = sorted(notable_metrics, key=lambda x: x['turnover'], reverse=True)[:10]
         top_volume = sorted(notable_metrics, key=lambda x: x['volume'], reverse=True)[:10]
+        top_roc = sorted([x for x in notable_metrics if x['roc'] is not None], key=lambda x: x['roc'], reverse=True)[:10]
         
         unique_tickers = set(
             [x['ticker'] for x in top_gainers] + 
             [x['ticker'] for x in top_turnover] + 
-            [x['ticker'] for x in top_volume]
+            [x['ticker'] for x in top_volume] +
+            [x['ticker'] for x in top_roc]
         )
         
         # Floorsheet Aggregation
@@ -541,7 +603,8 @@ def analyze_activity(request):
         return {
             'turnover': build_list(top_turnover),
             'gainers': build_list(top_gainers),
-            'volume': build_list(top_volume)
+            'volume': build_list(top_volume),
+            'roc': build_list(top_roc)
         }
 
     # Execute for all timeframes

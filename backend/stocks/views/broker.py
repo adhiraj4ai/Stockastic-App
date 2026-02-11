@@ -95,8 +95,9 @@ class BrokerViewSet(viewsets.ViewSet):
             CASE WHEN sa.smart_net_qty > 0 THEN sa.smart_net_qty ELSE 0 END as buy_qty,
             CASE WHEN sa.smart_net_qty < 0 THEN ABS(sa.smart_net_qty) ELSE 0 END as sell_qty,
             sa.smart_net_qty as net_qty,
+            sa.total_vol as total_vol,
             CASE WHEN sa.total_vol > 0 
-               THEN (ABS(sa.smart_net_qty) / sa.total_vol) * 100 
+               THEN (ABS(sa.smart_net_qty)::NUMERIC / sa.total_vol) * 100 
                ELSE 0 END as accumulation_ratio,
             COALESCE(sa.top_buyers[1:3], ARRAY[]::integer[]) as top_buyers,
             COALESCE(sa.top_sellers[1:3], ARRAY[]::integer[]) as top_sellers,

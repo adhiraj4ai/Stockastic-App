@@ -12,6 +12,11 @@ export function middleware(request: NextRequest) {
         if (pathname === '/' || pathname === '/login') {
             return NextResponse.redirect(new URL('/market', request.url));
         }
+    } else {
+        // Redirect to /login if user is NOT logged in and visits Root /
+        if (pathname === '/') {
+            return NextResponse.redirect(new URL('/login', request.url));
+        }
     }
 
     // 2. Redirect to /login if user is NOT logged in and visits protected routes

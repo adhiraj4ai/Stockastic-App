@@ -39,6 +39,7 @@ import { InstitutionalInterest } from '@/components/InstitutionalInterest';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Variants } from 'framer-motion';
+import { TopThreeView } from '@/components/TopThreeView';
 
 const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -74,6 +75,7 @@ interface StockData {
     change: number;
     percent_change: number;
     sector: string;
+    roc?: number;
 }
 
 interface MarketSummaryData {
@@ -102,6 +104,10 @@ interface MarketSummaryData {
         volume: number;
         count: number;
     }[];
+    top_3_comparison?: {
+        today: any;
+        last: any;
+    };
 }
 
 export default function DashboardPage() {
@@ -371,9 +377,14 @@ export default function DashboardPage() {
                     {Number(stock.close).toLocaleString()}
                 </TableCell>
                 <TableCell className={`text-right py-2.5 font-bold ${isStockPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    <div className="flex items-center justify-end gap-1">
-                        {isStockPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                        {Number(stock.percent_change).toFixed(2)}%
+                    <div className="flex flex-col items-end">
+                        <div className="flex items-center justify-end gap-1">
+                            {isStockPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                            {Number(stock.percent_change).toFixed(2)}%
+                        </div>
+                        {stock.roc !== undefined && stock.roc !== null && (
+                            <span className="text-[9px] font-mono text-slate-500 opacity-80">ROC: {stock.roc}%</span>
+                        )}
                     </div>
                 </TableCell>
             </TableRow>
@@ -524,6 +535,7 @@ export default function DashboardPage() {
                             </CardContent>
                         </Card>
 
+
                     </motion.div>
 
                     {/* MIDDLE COLUMN: Bubble Map and Lists */}
@@ -571,9 +583,10 @@ export default function DashboardPage() {
                             </CardHeader>
                             <CardContent className="p-6 pt-0 flex-1 overflow-hidden flex flex-col">
                                 <Tabs defaultValue="gainers" className="w-full h-full flex flex-col">
-                                    <TabsList className="grid w-full grid-cols-2 mb-4 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl h-10 border border-slate-200/50 dark:border-slate-800">
+                                    <TabsList className="grid w-full grid-cols-3 mb-4 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl h-10 border border-slate-200/50 dark:border-slate-800">
                                         <TabsTrigger value="gainers" className="rounded-lg font-bold text-[10px] tracking-widest data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Top Gainers</TabsTrigger>
                                         <TabsTrigger value="losers" className="rounded-lg font-bold text-[10px] tracking-widest data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Top Losers</TabsTrigger>
+                                        <TabsTrigger value="roc" className="rounded-lg font-bold text-[10px] tracking-widest data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">ROC Watch</TabsTrigger>
                                     </TabsList>
                                     <div className="flex-1 overflow-auto -mx-2 px-2 scrollbar-hide">
                                         <TabsContent value="gainers" className="m-0 focus-visible:outline-none">
@@ -587,6 +600,18 @@ export default function DashboardPage() {
                                             <Table>
                                                 <TableBody>
                                                     {top_losers.slice(0, 8).map((stock) => <StockRow key={stock.ticker} stock={stock} />)}
+                                                </TableBody>
+                                            </Table>
+                                        </TabsContent>
+                                        <TabsContent value="roc" className="m-0 focus-visible:outline-none">
+                                            <Table>
+                                                <TableBody>
+                                                    {[...top_gainers, ...top_losers]
+                                                        .filter(s => s.roc !== undefined && s.roc !== null)
+                                                        .sort((a, b) => (b.roc || 0) - (a.roc || 0))
+                                                        .slice(0, 8)
+                                                        .map((stock) => <StockRow key={stock.ticker} stock={stock} />)
+                                                    }
                                                 </TableBody>
                                             </Table>
                                         </TabsContent>
@@ -632,8 +657,8 @@ export default function DashboardPage() {
                             </div>
                         </div>
 
-                        {/* DETAILED STATISTICS ROW: Sector & Rotation (Full Width Stacked) */}
-                        <div className="lg:col-span-3 grid grid-cols-1 gap-6 min-h-[400px]">
+                        {/* DETAILED STATISTICS ROW: Sector (Full Width) */}
+                        <div className="lg:col-span-3 grid grid-cols-1 gap-6">
 
                             {/* Sector Rankings */}
                             <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full">
@@ -647,21 +672,26 @@ export default function DashboardPage() {
                                 </CardContent>
                             </Card>
 
-                            {/* Rotation Analysis */}
-                            <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full">
-                                <CardHeader className="p-3 pb-1">
-                                    <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                        <ActivityIcon size={14} className="text-indigo-500" /> Rotation & Convergence
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-6 pt-0">
-                                    <div className="h-[350px]">
-                                        <SectorGraph />
-                                    </div>
-                                </CardContent>
-                            </Card>
 
+                            {/* Rotation & Top 3 Comparison Row */}
+                            <div className="lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* Rotation Analysis */}
+                                <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full">
+                                    <CardHeader className="p-3 pb-1">
+                                        <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
+                                            <ActivityIcon size={14} className="text-indigo-500" /> Rotation & Convergence
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-6 pt-0">
+                                        <div className="h-[350px]">
+                                            <SectorGraph />
+                                        </div>
+                                    </CardContent>
+                                </Card>
 
+                                {/* NEPSE TOP 3 - Shared Width */}
+                                <TopThreeView data={data?.top_3_comparison || null} />
+                            </div>
                         </div>
                     </motion.div>
 
@@ -809,6 +839,6 @@ export default function DashboardPage() {
                     scrollbar-width: none;
                 }
             `}</style>
-        </DashboardLayout >
+        </DashboardLayout>
     );
 }

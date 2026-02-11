@@ -42,6 +42,7 @@ interface TimeframeData {
     turnover: ActivityData[];
     gainers: ActivityData[];
     volume: ActivityData[];
+    roc: ActivityData[];
 }
 
 interface ApiResponse {
@@ -72,7 +73,7 @@ export default function MarketActivityPage() {
         fetchData();
     }, []);
 
-    const CategoryContent = ({ type }: { type: 'turnover' | 'gainers' | 'volume' }) => {
+    const CategoryContent = ({ type }: { type: 'turnover' | 'gainers' | 'volume' | 'roc' }) => {
         if (!data) return null;
 
         // Prepare chart data for this specific category
@@ -83,7 +84,7 @@ export default function MarketActivityPage() {
             price: item.metrics.close
         }));
 
-        const chartTitle = type === 'turnover' ? 'High Turnover' : type === 'gainers' ? 'Top Gainers' : 'High Volume';
+        const chartTitle = type === 'turnover' ? 'High Turnover' : type === 'gainers' ? 'Top Gainers' : type === 'volume' ? 'High Volume' : 'ROC Watch';
 
         return (
             <div className="space-y-4">
@@ -186,6 +187,14 @@ export default function MarketActivityPage() {
                                     <Droplets size={14} /> High Volume
                                 </div>
                             </TabsTrigger>
+                            <TabsTrigger
+                                value="roc"
+                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-rose-600 data-[state=active]:shadow-sm transition-all"
+                            >
+                                <div className="flex items-center justify-center gap-2">
+                                    <Activity size={14} /> ROC Watchlist
+                                </div>
+                            </TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="turnover" className="mt-0">
@@ -196,6 +205,9 @@ export default function MarketActivityPage() {
                         </TabsContent>
                         <TabsContent value="volume" className="mt-0">
                             <CategoryContent type="volume" />
+                        </TabsContent>
+                        <TabsContent value="roc" className="mt-0">
+                            <CategoryContent type="roc" />
                         </TabsContent>
                     </Tabs>
                 )}
@@ -232,7 +244,7 @@ function ActivityTable({ data, type }: { data: ActivityData[], type: string }) {
                             <TableHead className="font-bold text-[10px] uppercase tracking-widest text-slate-500 text-right p-2">Price</TableHead>
                             <TableHead className="font-bold text-[10px] uppercase tracking-widest text-slate-500 text-right p-2">Chg%</TableHead>
                             <TableHead className="font-bold text-[10px] uppercase tracking-widest text-slate-500 text-right p-2">
-                                {type === 'volume' ? 'Vol' : 'Turn'}
+                                {type === 'volume' ? 'Vol' : type === 'roc' ? 'ROC' : 'Turn'}
                             </TableHead>
                         </TableRow>
                     </TableHeader>
@@ -256,7 +268,9 @@ function ActivityTable({ data, type }: { data: ActivityData[], type: string }) {
                                     <TableCell className="text-right font-mono text-[10px] text-slate-600 dark:text-slate-400 p-2">
                                         {type === 'volume'
                                             ? `${(item.metrics.volume / 1000).toFixed(1)}K`
-                                            : `${(item.metrics.turnover / 10000000).toFixed(2)}Cr`}
+                                            : type === 'roc'
+                                                ? `${(item.metrics as any).roc || 0}%`
+                                                : `${(item.metrics.turnover / 10000000).toFixed(2)}Cr`}
                                     </TableCell>
                                 </TableRow>
 

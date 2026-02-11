@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
     // Disable type checking during build (for Docker)
     ignoreBuildErrors: true,
   },
+  eslint: {
+    // Disable linting during build to speed up Docker builds
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default nextConfig;

@@ -213,13 +213,13 @@ function DashboardContent({
         <div className="min-h-screen bg-white dark:bg-[#020617] flex transition-colors duration-300 relative overflow-hidden">
             {/* Ambient Background Glows */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/5 dark:bg-indigo-500/10 blur-[120px] rounded-full" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/5 dark:bg-blue-500/10 blur-[120px] rounded-full" />
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/5 dark:bg-indigo-500/5 blur-[80px] rounded-full" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/5 dark:bg-blue-500/5 blur-[80px] rounded-full" />
             </div>
 
             {/* Sidebar */}
             <aside
-                className={`bg-white/80 dark:bg-slate-900/40 backdrop-blur-2xl border-r border-gray-200/50 dark:border-white/5 flex flex-col fixed h-full z-30 transition-all duration-500 ${isSidebarCollapsed ? 'w-20' : 'w-64'
+                className={`bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border-r border-gray-200/50 dark:border-white/5 flex flex-col fixed h-full z-30 transition-all duration-500 ${isSidebarCollapsed ? 'w-20' : 'w-64'
                     }`}
             >
                 <div className={`p-4 border-b border-gray-200/50 dark:border-white/5 flex items-center justify-between ${isSidebarCollapsed ? 'flex-col gap-4' : ''}`}>
@@ -363,7 +363,7 @@ function DashboardContent({
             >
                 {/* Top Navigation Bar */}
                 {!hideHeader && (
-                    <header className="bg-white/70 dark:bg-slate-900/40 backdrop-blur-3xl border-b border-gray-200/50 dark:border-white/5 sticky top-0 z-40 px-8 py-4 flex justify-between items-center transition-all duration-500 shadow-sm">
+                    <header className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border-b border-gray-200/50 dark:border-white/5 sticky top-0 z-40 px-8 py-4 flex justify-between items-center transition-all duration-500 shadow-sm">
                         {headerContent ? (
                             <div className="flex-1 mr-4">
                                 {headerContent}
