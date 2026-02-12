@@ -446,7 +446,10 @@ function StrategiesContent() {
                                                                         Rename Strategy
                                                                     </DropdownMenuItem>
                                                                     <DropdownMenuItem
-                                                                        onSelect={() => handleDelete(strategy.id, strategy.name)}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleDelete(strategy.id, strategy.name);
+                                                                        }}
                                                                         className="text-rose-600 focus:text-rose-600 focus:bg-rose-50 dark:focus:bg-rose-900/20 cursor-pointer rounded-lg m-1"
                                                                     >
                                                                         <Trash2 size={14} className="mr-2" />
@@ -610,7 +613,10 @@ function StrategiesContent() {
                                                                             Rename
                                                                         </DropdownMenuItem>
                                                                         <DropdownMenuItem
-                                                                            onSelect={() => handleDelete(strategy.id, strategy.name)}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleDelete(strategy.id, strategy.name);
+                                                                            }}
                                                                             className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer gap-2 font-bold text-xs uppercase tracking-wider p-2.5"
                                                                         >
                                                                             <Trash2 size={14} />
