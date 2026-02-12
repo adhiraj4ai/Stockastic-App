@@ -35,44 +35,6 @@ def stock_history(request, ticker):
     serializer = DailyStockPriceSerializer(data, many=True)
     return Response(serializer.data)
 
-def _get_top_3_comparison(latest_date, prev_date):
-    def get_top_3_for_date(target_date):
-        if not target_date:
-            return None
-        
-        # Get prices for calculations
-        prices = DailyStockPrice.objects.filter(date=target_date)
-        
-        # We need percent_change which is often pre-calculated but let's be safe
-        stats_list = []
-        for p in prices:
-            # Re-calculating change if necessary
-            c = float(p.close) if p.close else 0
-            pc = float(p.prev_close) if p.prev_close else (float(p.open) if p.open else c)
-            change = c - pc
-            pct = (change / pc * 100) if pc else 0
-            
-            stats_list.append({
-                'symbol': p.ticker,
-                'turnover': float(p.turnover or 0),
-                'volume': float(p.volume or 0),
-                'transactions': p.trans or 0,
-                'percent_change': pct
-            })
-            
-        return {
-            'date': target_date,
-            'turnover': [s['symbol'] for s in sorted(stats_list, key=lambda x: x['turnover'], reverse=True)[:3]],
-            'volume': [s['symbol'] for s in sorted(stats_list, key=lambda x: x['volume'], reverse=True)[:3]],
-            'transactions': [s['symbol'] for s in sorted(stats_list, key=lambda x: x['transactions'], reverse=True)[:3]],
-            'gainers': [s['symbol'] for s in sorted(stats_list, key=lambda x: x['percent_change'], reverse=True)[:3]],
-            'losers': [s['symbol'] for s in sorted(stats_list, key=lambda x: x['percent_change'])[:3]]
-        }
-
-    return {
-        'today': get_top_3_for_date(latest_date),
-        'last': get_top_3_for_date(prev_date)
-    }
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -425,7 +387,6 @@ def stock_summary(request):
         'near_52_high': near_high_list[:10],
         'near_52_low': near_low_list[:10],
         'whale_watch': whale_watch,
-        'top_3_comparison': _get_top_3_comparison(latest_date, prev_date)
     }
     
     return Response(response_data)

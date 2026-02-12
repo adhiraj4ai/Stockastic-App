@@ -39,7 +39,6 @@ import { InstitutionalInterest } from '@/components/InstitutionalInterest';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Variants } from 'framer-motion';
-import { TopThreeView } from '@/components/TopThreeView';
 
 const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -673,9 +672,8 @@ export default function DashboardPage() {
                             </Card>
 
 
-                            {/* Rotation & Top 3 Comparison Row */}
-                            <div className="lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                {/* Rotation Analysis */}
+                            {/* Rotation Analysis */}
+                            <div className="lg:col-span-3">
                                 <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full">
                                     <CardHeader className="p-3 pb-1">
                                         <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
@@ -688,9 +686,6 @@ export default function DashboardPage() {
                                         </div>
                                     </CardContent>
                                 </Card>
-
-                                {/* NEPSE TOP 3 - Shared Width */}
-                                <TopThreeView data={data?.top_3_comparison || null} />
                             </div>
                         </div>
                     </motion.div>
