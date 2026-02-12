@@ -119,9 +119,26 @@ function DashboardContent({
         import('@/lib/api').then(({ default: api }) => {
             api.get('/api/users/me/')
                 .then(res => setCurrentUser(res.data))
-                .catch(err => console.error("Failed to load user profile", err));
+                .catch(err => {
+                    console.error("Failed to load user profile", err);
+                    const status = err.response ? err.response.status : null;
+                    if (status === 401) {
+                        router.push('/login');
+                    }
+                });
         });
-    }, []);
+
+        // Periodic check for token existence - simple safeguard
+        const checkAuth = () => {
+            const token = Cookies.get('access_token');
+            if (!token && pathname !== '/login') {
+                router.push('/login');
+            }
+        };
+
+        const interval = setInterval(checkAuth, 5000);
+        return () => clearInterval(interval);
+    }, [pathname, router]);
 
     // Filter Navigation Items based on User
     const filteredNavItems = navItems.filter(item => {
@@ -454,12 +471,14 @@ function DashboardContent({
                                         </div>
                                         <div className="flex flex-col items-start mr-1">
                                             <span className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight">
-                                                {currentUser?.username === 'admin' ? 'Jugal Raj' : currentUser?.username === 'ashmi' ? 'Ashmi' : 'Guest'}
+                                                {currentUser ? (currentUser.username === 'admin' ? 'Jugal Raj' : currentUser.username === 'ashmi' ? 'Ashmi' : currentUser.username) : 'User'}
                                             </span>
-                                            <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5 bg-emerald-500/10 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full mt-0.5 border border-emerald-500/20">
-                                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                                                ACTIVE
-                                            </span>
+                                            {currentUser && (
+                                                <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5 bg-emerald-500/10 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full mt-0.5 border border-emerald-500/20">
+                                                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                                                    ACTIVE
+                                                </span>
+                                            )}
                                         </div>
                                         <ChevronDown size={14} className="text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-transform active:rotate-180" />
                                     </button>

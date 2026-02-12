@@ -8,18 +8,11 @@ export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // 1. Redirect to /market if user is logged in and visits Root / or /login
-    if (token) {
-        if (pathname === '/' || pathname === '/login') {
-            return NextResponse.redirect(new URL('/market', request.url));
-        }
-    } else {
-        // Redirect to /login if user is NOT logged in and visits Root /
-        if (pathname === '/') {
-            return NextResponse.redirect(new URL('/login', request.url));
-        }
+    if (token && (pathname === '/' || pathname === '/login')) {
+        return NextResponse.redirect(new URL('/market', request.url));
     }
 
-    // 2. Redirect to /login if user is NOT logged in and visits protected routes
+    // 2. Redirect to /login if user is NOT logged in and visits protected routes or root
     const protectedRoutes = [
         '/market',
         '/portfolio',
@@ -35,7 +28,7 @@ export function middleware(request: NextRequest) {
     ];
 
     if (!token) {
-        if (protectedRoutes.some(route => pathname.startsWith(route))) {
+        if (pathname === '/' || protectedRoutes.some(route => pathname.startsWith(route))) {
             return NextResponse.redirect(new URL('/login', request.url));
         }
     }
