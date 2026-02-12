@@ -34,6 +34,7 @@ import { BentoMetrics } from '@/components/ticker/BentoMetrics';
 import { AdvancedCharting } from '@/components/ticker/AdvancedCharting';
 import SignalDashboard from '@/components/SignalDashboard';
 import BrokerAnalysis from '@/components/ticker/BrokerAnalysis';
+import { FibonacciRetracement } from '@/components/ticker/FibonacciRetracement';
 
 interface StockDetailData {
     company: {
@@ -651,6 +652,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                         <TabsTrigger value="financials" className="rounded-lg px-4 text-xs font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Financials</TabsTrigger>
                                         <TabsTrigger value="dividends" className="rounded-lg px-4 text-xs font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Dividends</TabsTrigger>
                                         <TabsTrigger value="history" className="rounded-lg px-4 text-xs font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">History</TabsTrigger>
+                                        <TabsTrigger value="fibonacci" className="rounded-lg px-4 text-xs font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-amber-600 dark:data-[state=active]:text-amber-400 data-[state=active]:shadow-sm">Fibonacci</TabsTrigger>
                                     </TabsList>
                                 </div>
                             </div>
@@ -1104,6 +1106,10 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
 
                                 <TabsContent value="analysis" className="mt-8 outline-none">
                                     <BrokerAnalysis symbol={ticker} />
+                                </TabsContent>
+
+                                <TabsContent value="fibonacci" className="mt-0 space-y-8">
+                                    <FibonacciRetracement symbol={ticker} />
                                 </TabsContent>
 
                                 <TabsContent value="history" className="mt-0">

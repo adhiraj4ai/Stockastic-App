@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations, chart
+    market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations, chart, fibonacci
 )
 
 
@@ -67,4 +67,7 @@ urlpatterns = [
     
     # Chart Data (for Lightweight Charts)
     path('chart-history/<str:ticker>/', chart.get_stock_chart_data, name='chart_history'),
+    
+    # Fibonacci Retracement
+    path('fibonacci/<str:ticker>/', fibonacci.get_fibonacci_levels, name='fibonacci_levels'),
 ]

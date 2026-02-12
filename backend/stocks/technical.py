@@ -166,9 +166,9 @@ def _calculate_volume(df, indicators):
     _add_ind(indicators, 'Volume', 'CMF (20)', _get_scalar(cmf.iloc[-1]) if cmf is not None else None)
 
 def _calculate_support_resistance(df, indicators):
-    """Calculate and add support and resistance levels."""
+    """Calculate and add support and resistance levels using 5 years of data."""
     last_date = df.index[-1]
-    start_date = last_date - pd.Timedelta(days=90)
+    start_date = last_date - pd.Timedelta(days=1825)  # 5 years
     window = df[df.index > start_date]
     
     if not window.empty:

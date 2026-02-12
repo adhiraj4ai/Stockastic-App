@@ -7,3 +7,4 @@ from . import watchlist
 from . import notifications
 from . import recommendations
 from . import chart
+from . import fibonacci
