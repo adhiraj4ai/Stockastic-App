@@ -185,7 +185,7 @@ export default function OptimizePage() {
                     <span className="truncate">Optimize - {strategy?.name || 'Strategy'}</span>
                     <Link
                         href={`/strategies/${strategyId}/editor`}
-                        className="p-1 w-7 h-7 flex items-center justify-center rounded-md border border-gray-200 bg-gray-50 text-gray-400 hover:text-blue-600 hover:bg-white hover:border-blue-200 transition-all shadow-sm group"
+                        className="p-1 w-7 h-7 flex items-center justify-center rounded-md border border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-200 dark:hover:border-blue-900/50 transition-all shadow-sm group"
                         title="Edit Strategy code"
                     >
                         <Code size={14} className="group-hover:scale-110 transition-transform" />
@@ -197,29 +197,29 @@ export default function OptimizePage() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Configuration Panel */}
                     <div className="lg:col-span-4 xl:col-span-3">
-                        <Card className="border-gray-200 shadow-sm overflow-hidden sticky top-6">
+                        <Card className="border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden sticky top-6 dark:bg-slate-900">
                             {configExpanded && (
                                 <CardContent className="p-6 space-y-6">
                                     {/* Scope Section */}
                                     <div className="space-y-4">
                                         <div>
-                                            <Label className="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wider">Scope</Label>
-                                            <div className="flex p-1.5 bg-gray-100 rounded-xl gap-1 shadow-inner border border-gray-200/50">
+                                            <Label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-2 block uppercase tracking-wider">Scope</Label>
+                                            <div className="flex p-1.5 bg-gray-100 dark:bg-slate-950 rounded-xl gap-1 shadow-inner border border-gray-200/50 dark:border-slate-800">
                                                 <button
                                                     onClick={() => setScope('SINGLE')}
-                                                    className={`flex-1 py-2.5 px-2 text-xs font-bold rounded-lg transition-all duration-200 ${scope === 'SINGLE' ? 'bg-white text-purple-700 shadow-sm scale-[1.02]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                                                    className={`flex-1 py-2.5 px-2 text-xs font-bold rounded-lg transition-all duration-200 ${scope === 'SINGLE' ? 'bg-white dark:bg-slate-800 text-purple-700 dark:text-purple-400 shadow-sm scale-[1.02]' : 'text-gray-500 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800/50'}`}
                                                 >
                                                     Single
                                                 </button>
                                                 <button
                                                     onClick={() => setScope('SECTOR')}
-                                                    className={`flex-1 py-2.5 px-2 text-xs font-bold rounded-lg transition-all duration-200 ${scope === 'SECTOR' ? 'bg-white text-purple-700 shadow-sm scale-[1.02]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                                                    className={`flex-1 py-2.5 px-2 text-xs font-bold rounded-lg transition-all duration-200 ${scope === 'SECTOR' ? 'bg-white dark:bg-slate-800 text-purple-700 dark:text-purple-400 shadow-sm scale-[1.02]' : 'text-gray-500 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800/50'}`}
                                                 >
                                                     Sector
                                                 </button>
                                                 <button
                                                     onClick={() => setScope('ALL')}
-                                                    className={`flex-1 py-2.5 px-2 text-xs font-bold rounded-lg transition-all duration-200 ${scope === 'ALL' ? 'bg-white text-purple-700 shadow-sm scale-[1.02]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                                                    className={`flex-1 py-2.5 px-2 text-xs font-bold rounded-lg transition-all duration-200 ${scope === 'ALL' ? 'bg-white dark:bg-slate-800 text-purple-700 dark:text-purple-400 shadow-sm scale-[1.02]' : 'text-gray-500 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800/50'}`}
                                                 >
                                                     All
                                                 </button>
@@ -228,19 +228,19 @@ export default function OptimizePage() {
 
                                         {/* Parallel Environments Selector */}
                                         <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-                                            <Label className="text-xs font-bold text-gray-500 mb-2 block">Parallel Environments</Label>
-                                            <div className="flex p-1 bg-gray-50 rounded-lg gap-1 border border-gray-200/50">
+                                            <Label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-2 block">Parallel Environments</Label>
+                                            <div className="flex p-1 bg-gray-50 dark:bg-slate-950 rounded-lg gap-1 border border-gray-200/50 dark:border-slate-800">
                                                 {[1, 4, 8].map((val) => (
                                                     <button
                                                         key={val}
                                                         onClick={() => setParallelEnvs(val)}
-                                                        className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-all ${parallelEnvs === val ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                                        className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-all ${parallelEnvs === val ? 'bg-purple-600 dark:bg-purple-700 text-white shadow-sm' : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'}`}
                                                     >
                                                         {val} CPU
                                                     </button>
                                                 ))}
                                             </div>
-                                            <p className="text-[9px] text-gray-400 mt-1 px-1">Speed up exhaustive search using multiple cores.</p>
+                                            <p className="text-[9px] text-gray-400 dark:text-slate-500 mt-1 px-1">Speed up exhaustive search using multiple cores.</p>
                                         </div>
 
                                         {/* Target Selection (Symbol or Sector) - Conditionally Rendered */}
@@ -259,15 +259,15 @@ export default function OptimizePage() {
 
                                         {scope === 'SECTOR' && (
                                             <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-                                                <Label className="text-[10px] font-bold text-gray-400 mb-2 block uppercase tracking-wider">Sector Target</Label>
+                                                <Label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-2 block uppercase tracking-wider">Sector Target</Label>
                                                 <select
                                                     value={sector}
                                                     onChange={(e) => setSector(e.target.value)}
-                                                    className="w-full h-10 px-3 text-xs rounded-xl border-2 border-gray-100 bg-gray-50/50 focus:bg-white focus:border-purple-200 focus:ring-4 focus:ring-purple-500/5 outline-none transition-all shadow-sm"
+                                                    className="w-full h-10 px-3 text-xs rounded-xl border-2 border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:border-purple-200 dark:focus:border-purple-900/50 focus:ring-4 focus:ring-purple-500/5 outline-none transition-all shadow-sm"
                                                 >
-                                                    <option value="">Select sector...</option>
+                                                    <option value="" className="dark:bg-slate-900">Select sector...</option>
                                                     {sectors.map((s) => (
-                                                        <option key={s.name} value={s.name}>{s.name} ({s.count})</option>
+                                                        <option key={s.name} value={s.name} className="dark:bg-slate-900">{s.name} ({s.count})</option>
                                                     ))}
                                                 </select>
                                             </div>
@@ -275,8 +275,8 @@ export default function OptimizePage() {
 
                                         {scope === 'ALL' && (
                                             <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-                                                <Label className="text-[10px] font-bold text-gray-400 mb-2 block uppercase tracking-wider">Target</Label>
-                                                <div className="w-full h-10 px-3 text-xs flex items-center text-gray-500 bg-gray-50 border border-gray-200 rounded-xl italic">
+                                                <Label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 mb-2 block uppercase tracking-wider">Target</Label>
+                                                <div className="w-full h-10 px-3 text-xs flex items-center text-gray-500 dark:text-slate-400 bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl italic">
                                                     All available symbols
                                                 </div>
                                             </div>
@@ -301,7 +301,7 @@ export default function OptimizePage() {
                                                                 newParams[idx].min = parseInt(e.target.value) || 0;
                                                                 setParameters(newParams);
                                                             }}
-                                                            className="w-20 h-9 px-3 text-xs text-center border rounded-md border-gray-200 focus:ring-1 focus:ring-purple-500 outline-none bg-gray-50/50 font-medium"
+                                                            className="w-20 h-9 px-3 text-xs text-center border rounded-md border-gray-200 dark:border-slate-800 focus:ring-1 focus:ring-purple-500 outline-none bg-gray-50/50 dark:bg-slate-950 dark:text-slate-100 font-medium"
                                                             placeholder="Min"
                                                         />
                                                         <span className="text-gray-300 text-[10px]">to</span>
@@ -313,7 +313,7 @@ export default function OptimizePage() {
                                                                 newParams[idx].max = parseInt(e.target.value) || 0;
                                                                 setParameters(newParams);
                                                             }}
-                                                            className="w-20 h-9 px-3 text-xs text-center border rounded-md border-gray-200 focus:ring-1 focus:ring-purple-500 outline-none bg-gray-50/50 font-medium"
+                                                            className="w-20 h-9 px-3 text-xs text-center border rounded-md border-gray-200 dark:border-slate-800 focus:ring-1 focus:ring-purple-500 outline-none bg-gray-50/50 dark:bg-slate-950 dark:text-slate-100 font-medium"
                                                             placeholder="Max"
                                                         />
                                                     </div>
@@ -332,7 +332,7 @@ export default function OptimizePage() {
                                         <Button
                                             onClick={handleOptimize}
                                             disabled={optimizing || (scope === 'SINGLE' && !symbol) || (scope === 'SECTOR' && !sector)}
-                                            className="w-full h-11 text-xs font-bold uppercase tracking-wider bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-200 active:scale-95 transition-all rounded-xl"
+                                            className="w-full h-11 text-xs font-bold uppercase tracking-wider bg-purple-600 dark:bg-purple-700 hover:bg-purple-700 dark:hover:bg-purple-800 text-white shadow-lg shadow-purple-200 dark:shadow-purple-900/20 active:scale-95 transition-all rounded-xl"
                                         >
                                             {optimizing ? (
                                                 <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" /> RUNNING</>
@@ -349,42 +349,42 @@ export default function OptimizePage() {
                     {/* K-Fold Optimization Results Panel */}
                     <div className="lg:col-span-8 xl:col-span-9 space-y-6 pb-20">
                         {results.status === 'pending' && (
-                            <div className="h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-3xl bg-gray-50/30 text-center px-10">
-                                <div className="p-4 bg-white rounded-2xl shadow-sm border border-gray-100 mb-4 scale-110">
-                                    <Activity size={32} className="text-purple-200" />
+                            <div className="h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-3xl bg-gray-50/30 dark:bg-slate-900/20 text-center px-10">
+                                <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 mb-4 scale-110">
+                                    <Activity size={32} className="text-purple-200 dark:text-purple-900" />
                                 </div>
-                                <h3 className="text-lg font-bold text-gray-800">Ready to Optimize</h3>
-                                <p className="text-sm text-gray-500 max-w-sm mt-1">
+                                <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100">Ready to Optimize</h3>
+                                <p className="text-sm text-gray-500 dark:text-slate-400 max-w-sm mt-1">
                                     Click "Start Optimization" to find the best parameters using 3-year chronological K-fold cross-validation.
                                 </p>
                             </div>
                         )}
 
                         {results.status === 'loading' && (
-                            <Card className="border-purple-100 shadow-xl shadow-purple-50/50 overflow-hidden">
+                            <Card className="border-purple-100 dark:border-purple-900/50 dark:bg-slate-900 shadow-xl shadow-purple-50/50 dark:shadow-purple-900/10 overflow-hidden">
                                 <div className="p-12 flex flex-col items-center justify-center text-center">
-                                    <div className="w-20 h-2 bg-purple-50 rounded-full overflow-hidden mb-6">
-                                        <div className="h-full bg-purple-600 animate-[loading_1.5s_ease-in-out_infinite]" />
+                                    <div className="w-20 h-2 bg-purple-50 dark:bg-purple-900/20 rounded-full overflow-hidden mb-6">
+                                        <div className="h-full bg-purple-600 dark:bg-purple-500 animate-[loading_1.5s_ease-in-out_infinite]" />
                                     </div>
-                                    <Zap size={40} className="text-purple-600 animate-pulse mb-4" />
-                                    <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight">Optimizing Strategy</h3>
-                                    <p className="text-sm font-medium text-gray-600 mt-2">Evaluating parameters across all 3-year historical folds...</p>
-                                    <p className="text-xs text-gray-400 mt-2 font-mono italic">This ensures robustness across different market regimes</p>
+                                    <Zap size={40} className="text-purple-600 dark:text-purple-400 animate-pulse mb-4" />
+                                    <h3 className="text-xl font-black text-gray-900 dark:text-slate-100 uppercase tracking-tight">Optimizing Strategy</h3>
+                                    <p className="text-sm font-medium text-gray-600 dark:text-slate-400 mt-2">Evaluating parameters across all 3-year historical folds...</p>
+                                    <p className="text-xs text-gray-400 dark:text-slate-500 mt-2 font-mono italic">This ensures robustness across different market regimes</p>
                                 </div>
                             </Card>
                         )}
 
                         {results.status === 'error' && (
-                            <Card className="border-red-100 bg-red-50/30 overflow-hidden">
+                            <Card className="border-red-100 dark:border-red-900/30 bg-red-50/30 dark:bg-red-950/10 overflow-hidden">
                                 <div className="p-12 flex flex-col items-center justify-center text-center">
-                                    <div className="p-3 bg-red-100 rounded-2xl mb-4">
-                                        <AlertTriangle size={32} className="text-red-600" />
+                                    <div className="p-3 bg-red-100 dark:bg-red-900/40 rounded-2xl mb-4">
+                                        <AlertTriangle size={32} className="text-red-600 dark:text-red-400" />
                                     </div>
-                                    <h3 className="text-lg font-bold text-red-900">Optimization Failed</h3>
-                                    <p className="text-sm text-red-600 mt-1">There was an error processing your request. Please check your strategy code and parameter ranges.</p>
+                                    <h3 className="text-lg font-bold text-red-900 dark:text-red-200">Optimization Failed</h3>
+                                    <p className="text-sm text-red-600 dark:text-red-400 mt-1">There was an error processing your request. Please check your strategy code and parameter ranges.</p>
                                     <Button
                                         variant="outline"
-                                        className="mt-6 border-red-200 text-red-700 hover:bg-red-50"
+                                        className="mt-6 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
                                         onClick={handleOptimize}
                                     >
                                         Try Again
@@ -394,8 +394,8 @@ export default function OptimizePage() {
                         )}
 
                         {results.status === 'success' && results.data && (
-                            <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden">
-                                <div className="px-8 py-5 bg-gradient-to-r from-slate-900 to-slate-800 flex items-center justify-between">
+                            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-slate-950 border border-slate-200 dark:border-slate-800 overflow-hidden">
+                                <div className="px-8 py-5 bg-gradient-to-r from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-purple-500/20 rounded-lg">
                                             <Activity size={18} className="text-purple-300" />
@@ -411,27 +411,27 @@ export default function OptimizePage() {
                                 </div>
 
                                 <div className="p-8">
-                                    <div className="overflow-x-auto rounded-2xl border border-slate-100 bg-slate-50/30">
+                                    <div className="overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/20">
                                         <table className="w-full text-sm border-collapse">
                                             <thead>
                                                 <tr>
-                                                    <th className="p-4 text-left bg-slate-100/50 border-b border-slate-200 w-1/4 text-xs font-black text-slate-500 uppercase tracking-wider">Optimization Metric</th>
+                                                    <th className="p-4 text-left bg-slate-100/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 w-1/4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Optimization Metric</th>
                                                     {['win_rate', 'profit', 'balanced'].map(obj => (
-                                                        <th key={obj} className={`p-4 text-left border-b border-slate-200 w-1/4 uppercase tracking-widest text-[10px] font-black ${obj === 'balanced' ? 'bg-purple-600 text-white' : 'bg-slate-100/50 text-slate-700'}`}>
+                                                        <th key={obj} className={`p-4 text-left border-b border-slate-200 dark:border-slate-800 w-1/4 uppercase tracking-widest text-[10px] font-black ${obj === 'balanced' ? 'bg-purple-600 dark:bg-purple-700 text-white' : 'bg-slate-100/50 dark:bg-slate-900/50 text-slate-700 dark:text-slate-300'}`}>
                                                             {obj.replace('_', ' ')}
                                                         </th>
                                                     ))}
                                                 </tr>
                                             </thead>
-                                            <tbody className="bg-white">
+                                            <tbody className="bg-white dark:bg-slate-900">
                                                 {/* Parameters Row */}
                                                 <tr>
-                                                    <td className="p-4 font-bold text-slate-400 border-b border-slate-100 align-top text-xs uppercase">Best Parameters</td>
+                                                    <td className="p-4 font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 align-top text-xs uppercase">Best Parameters</td>
                                                     {['win_rate', 'profit', 'balanced'].map(obj => {
                                                         const objData = results.data![obj];
                                                         return (
-                                                            <td key={obj} className={`p-4 border-b border-slate-100 align-top ${obj === 'balanced' ? 'bg-purple-50/30' : ''}`}>
-                                                                <pre className="text-[11px] text-slate-600 whitespace-pre-wrap font-mono font-bold leading-relaxed">
+                                                            <td key={obj} className={`p-4 border-b border-slate-100 dark:border-slate-800 align-top ${obj === 'balanced' ? 'bg-purple-50/30 dark:bg-purple-900/20' : ''}`}>
+                                                                <pre className="text-[11px] text-slate-600 dark:text-slate-300 whitespace-pre-wrap font-mono font-bold leading-relaxed">
                                                                     {JSON.stringify(objData?.best_params || {}, null, 2).replace(/{|}|"/g, '').trim()}
                                                                 </pre>
                                                             </td>
@@ -448,8 +448,8 @@ export default function OptimizePage() {
                                                     { label: 'Avg. Profit Factor', path: ['stats', 'categorized', 'Trade Metrics', 'Profit Factor'] },
                                                     { label: 'Total Trades (Sum)', path: ['stats', 'categorized', 'Trade Metrics', 'Total Trades'] },
                                                 ].map((row: any, i) => (
-                                                    <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                                                        <td className="p-4 font-semibold text-slate-600 border-b border-slate-50 text-xs">{row.label}</td>
+                                                    <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                                                        <td className="p-4 font-semibold text-slate-600 dark:text-slate-300 border-b border-slate-50 dark:border-slate-800/50 text-xs">{row.label}</td>
                                                         {['win_rate', 'profit', 'balanced'].map(obj => {
                                                             const objData = results.data![obj];
                                                             let value = '-';
@@ -466,7 +466,7 @@ export default function OptimizePage() {
 
                                                             const isBalanced = obj === 'balanced';
                                                             return (
-                                                                <td key={obj} className={`p-4 border-b border-slate-50 font-mono text-xs ${isBalanced ? 'bg-purple-50/30 font-black text-purple-900' : 'text-slate-600 font-bold'}`}>
+                                                                <td key={obj} className={`p-4 border-b border-slate-50 dark:border-slate-800/50 font-mono text-xs ${isBalanced ? 'bg-purple-50/30 dark:bg-purple-900/20 font-black text-purple-900 dark:text-purple-300' : 'text-slate-600 dark:text-slate-400 font-bold'}`}>
                                                                     {value}
                                                                 </td>
                                                             );
@@ -476,17 +476,17 @@ export default function OptimizePage() {
 
                                                 {/* Action Row */}
                                                 <tr>
-                                                    <td className="p-4 border-b border-slate-50"></td>
+                                                    <td className="p-4 border-b border-slate-50 dark:border-slate-800"></td>
                                                     {['win_rate', 'profit', 'balanced'].map(obj => {
                                                         const expId = results.data![obj]?.experiment_id;
                                                         return (
-                                                            <td key={obj} className={`p-4 border-b border-slate-50 ${obj === 'balanced' ? 'bg-purple-50/30' : ''}`}>
+                                                            <td key={obj} className={`p-4 border-b border-slate-50 dark:border-slate-800 ${obj === 'balanced' ? 'bg-purple-50/30 dark:bg-purple-900/20' : ''}`}>
                                                                 {expId && (
                                                                     <div className="flex flex-col gap-2">
                                                                         <Button
                                                                             variant="ghost"
                                                                             size="sm"
-                                                                            className="w-full text-[10px] h-8 uppercase font-black text-slate-500 hover:text-purple-600 hover:bg-white border border-transparent hover:border-purple-100 transition-all"
+                                                                            className="w-full text-[10px] h-8 uppercase font-black text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-purple-100 dark:hover:border-purple-900 transition-all"
                                                                             onClick={() => window.open(`/strategies/${strategyId}/experiments/${expId}`, '_blank')}
                                                                         >
                                                                             <ExternalLink size={12} className="mr-1.5" /> View Results
@@ -501,20 +501,20 @@ export default function OptimizePage() {
                                         </table>
                                     </div>
 
-                                    <div className="mt-10 p-6 bg-slate-900 rounded-3xl text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl shadow-slate-400">
+                                    <div className="mt-10 p-6 bg-slate-900 dark:bg-slate-950 rounded-3xl text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl shadow-slate-400 dark:shadow-slate-950">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center border border-white/10">
-                                                <TrendingUp size={24} className="text-purple-300" />
+                                            <div className="w-12 h-12 bg-white/10 dark:bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 dark:border-white/5">
+                                                <TrendingUp size={24} className="text-purple-300 dark:text-purple-400" />
                                             </div>
                                             <div>
-                                                <p className="text-white font-black uppercase tracking-widest text-[10px]">Ready to deploy?</p>
-                                                <h4 className="text-blue-200 font-bold text-sm">Balanced optimization found stable parameters.</h4>
+                                                <p className="text-white dark:text-slate-200 font-black uppercase tracking-widest text-[10px]">Ready to deploy?</p>
+                                                <h4 className="text-blue-200 dark:text-blue-300 font-bold text-sm">Balanced optimization found stable parameters.</h4>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <Button
                                                 onClick={handleApplyParameters}
-                                                className="h-12 px-8 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 font-black uppercase tracking-widest text-xs shadow-lg transition-transform active:scale-95"
+                                                className="h-12 px-8 rounded-2xl bg-white dark:bg-slate-200 text-slate-900 dark:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-300 font-black uppercase tracking-widest text-xs shadow-lg transition-transform active:scale-95"
                                             >
                                                 Apply Balanced Config
                                             </Button>

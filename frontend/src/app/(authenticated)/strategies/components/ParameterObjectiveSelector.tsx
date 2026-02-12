@@ -97,10 +97,10 @@ export default function ParameterObjectiveSelector({ strategyId, symbol, onParam
     if (loading) {
         return (
             <div className="py-4 space-y-3">
-                <div className="h-4 bg-gray-100 rounded w-1/2 animate-pulse" />
+                <div className="h-4 bg-gray-100 dark:bg-slate-800 rounded w-1/2 animate-pulse" />
                 <div className="space-y-2">
                     {[1, 2, 3].map(i => (
-                        <div key={i} className="h-16 bg-gray-50 rounded-xl animate-pulse" />
+                        <div key={i} className="h-16 bg-gray-50 dark:bg-slate-800/50 rounded-xl animate-pulse" />
                     ))}
                 </div>
             </div>
@@ -115,7 +115,7 @@ export default function ParameterObjectiveSelector({ strategyId, symbol, onParam
         <div className="mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
             <div className="flex items-center gap-2 mb-3">
                 <Settings size={14} className="text-slate-400" />
-                <span className="text-[11px] font-black text-slate-700 uppercase tracking-widest">
+                <span className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">
                     Performance Flavor
                 </span>
             </div>
@@ -139,9 +139,9 @@ export default function ParameterObjectiveSelector({ strategyId, symbol, onParam
                             className={`
                                 w-full group relative flex items-center gap-3 p-3 rounded-xl transition-all duration-300
                                 ${isSelected && isAvailable
-                                    ? 'bg-slate-50'
+                                    ? 'bg-slate-50 dark:bg-slate-800'
                                     : isAvailable
-                                        ? 'hover:bg-slate-50/50'
+                                        ? 'hover:bg-slate-50/50 dark:hover:bg-slate-800/50'
                                         : 'opacity-40 grayscale cursor-not-allowed'
                                 }
                             `}
@@ -149,34 +149,34 @@ export default function ParameterObjectiveSelector({ strategyId, symbol, onParam
                             <div className={`
                                 p-2 rounded-lg transition-all
                                 ${isSelected
-                                    ? `bg-${obj.color}-100 text-${obj.color}-600`
-                                    : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200 group-hover:text-slate-600'}
+                                    ? `bg-${obj.color}-100 dark:bg-${obj.color}-900/30 text-${obj.color}-600 dark:text-${obj.color}-400`
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover:bg-slate-200 dark:group-hover:bg-slate-700 group-hover:text-slate-600'}
                             `}>
                                 <Icon size={18} />
                             </div>
 
                             <div className="flex-1 text-left min-w-0">
                                 <div className="flex items-center gap-2">
-                                    <span className={`text-[13px] font-black uppercase tracking-tight transition-colors ${isSelected ? 'text-slate-900' : 'text-slate-600'}`}>
+                                    <span className={`text-[13px] font-black uppercase tracking-tight transition-colors ${isSelected ? 'text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-400'}`}>
                                         {obj.label}
                                     </span>
                                     {obj.value === 'balanced' && (
-                                        <span className="text-[8px] font-black bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded tracking-widest animate-pulse">REC</span>
+                                        <span className="text-[8px] font-black bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded tracking-widest animate-pulse">REC</span>
                                     )}
                                 </div>
-                                <p className="text-[10px] font-bold text-slate-400 truncate opacity-80 uppercase tracking-tighter">
+                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate opacity-80 uppercase tracking-tighter">
                                     {obj.subtitle}
                                 </p>
                             </div>
 
                             {isAvailable && (
                                 <div className="text-right ml-2">
-                                    <div className={`text-sm font-black tracking-tighter ${returnPct >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                    <div className={`text-sm font-black tracking-tighter ${returnPct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                         {returnPct >= 0 ? '+' : ''}{returnPct.toFixed(1)}%
                                     </div>
                                     <div className="flex items-center justify-end gap-1 mt-0.5">
-                                        <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">Sharpe</span>
-                                        <span className="text-[10px] font-black text-slate-500">
+                                        <span className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-tighter">Sharpe</span>
+                                        <span className="text-[10px] font-black text-slate-500 dark:text-slate-400">
                                             {sharpeRatio.toFixed(2)}
                                         </span>
                                     </div>
@@ -193,7 +193,7 @@ export default function ParameterObjectiveSelector({ strategyId, symbol, onParam
                 })}
             </div>
 
-            <div className="mt-3 flex items-center justify-between text-slate-400">
+            <div className="mt-3 flex items-center justify-between text-slate-400 dark:text-slate-500">
                 <div className="flex items-center gap-2">
                     <Zap size={10} className="fill-current" />
                     <span className="text-[9px] font-bold uppercase tracking-widest">
@@ -201,7 +201,7 @@ export default function ParameterObjectiveSelector({ strategyId, symbol, onParam
                     </span>
                 </div>
                 {config.updated_at && (
-                    <span className="text-[8px] font-mono text-slate-300">
+                    <span className="text-[8px] font-mono text-slate-300 dark:text-slate-600">
                         Rev: {new Date(config.updated_at).toLocaleDateString()}
                     </span>
                 )}

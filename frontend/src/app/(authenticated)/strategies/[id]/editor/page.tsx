@@ -263,14 +263,14 @@ export default function EditStrategyPage() {
             <div className="flex flex-col h-[calc(100vh-100px)] -mt-4">
                 {/* Warning Banner if Published */}
                 {isPublished && (
-                    <div className="bg-amber-50 border-b border-amber-100 px-6 py-3 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-100 dark:border-amber-900/50 px-6 py-3 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-300">
                         <div className="flex items-center gap-3">
-                            <div className="bg-amber-100 p-2 rounded-full">
-                                <ShieldAlert size={18} className="text-amber-700" />
+                            <div className="bg-amber-100 dark:bg-amber-900/40 p-2 rounded-full">
+                                <ShieldAlert size={18} className="text-amber-700 dark:text-amber-500" />
                             </div>
                             <div>
-                                <h4 className="text-sm font-bold text-amber-900 leading-tight">Strategy is Published</h4>
-                                <p className="text-xs text-amber-700 mt-0.5">
+                                <h4 className="text-sm font-bold text-amber-900 dark:text-amber-200 leading-tight">Strategy is Published</h4>
+                                <p className="text-xs text-amber-700 dark:text-amber-400/80 mt-0.5">
                                     The code cannot be modified while experiments are published. Unpublish to enable editing.
                                 </p>
                             </div>
@@ -279,7 +279,7 @@ export default function EditStrategyPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => setUnpublishModalOpen(true)}
-                            className="bg-white border-amber-200 text-amber-700 hover:bg-amber-100 hover:border-amber-300 font-bold text-xs h-8 px-4 rounded-lg shadow-sm"
+                            className="bg-white dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 hover:border-amber-300 dark:hover:border-amber-700 font-bold text-xs h-8 px-4 rounded-lg shadow-sm"
                         >
                             Unpublish Now
                         </Button>
@@ -319,7 +319,7 @@ export default function EditStrategyPage() {
                     </div>
 
                     {/* Right Sidebar: Configuration */}
-                    <div className="w-80 bg-gray-50 border-l border-gray-200 flex flex-col h-full overflow-hidden">
+                    <div className="w-80 bg-gray-50 dark:bg-slate-900 border-l border-gray-200 dark:border-slate-800 flex flex-col h-full overflow-hidden">
                         <div className="flex-1 overflow-y-auto p-6 space-y-8">
                             {/* Action Buttons */}
                             <div className="space-y-4 pb-8 border-b border-gray-200">
@@ -327,7 +327,7 @@ export default function EditStrategyPage() {
                                     onClick={handleSave}
                                     disabled={saving || !isDirty || isPublished}
                                     variant={isDirty && !isPublished ? "default" : "outline"}
-                                    className={`w-full h-12 px-5 gap-2 transition-all font-black rounded-xl text-sm uppercase tracking-widest ${isDirty && !isPublished ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-100' : 'text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed opacity-60'}`}
+                                    className={`w-full h-12 px-5 gap-2 transition-all font-black rounded-xl text-sm uppercase tracking-widest ${isDirty && !isPublished ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-100 dark:shadow-green-900/20' : 'text-gray-400 dark:text-slate-500 bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 cursor-not-allowed opacity-60'}`}
                                 >
                                     <Save size={18} />
                                     {saving ? 'Saving...' : 'Save Changes'}
@@ -336,7 +336,7 @@ export default function EditStrategyPage() {
                                 {isPublished && (
                                     <Button
                                         onClick={() => setUnpublishModalOpen(true)}
-                                        className="w-full h-11 px-5 gap-2 bg-white border-2 border-amber-200 text-amber-700 hover:bg-amber-50 font-black rounded-xl text-[10px] uppercase tracking-widest shadow-sm transition-all"
+                                        className="w-full h-11 px-5 gap-2 bg-white dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/40 font-black rounded-xl text-[10px] uppercase tracking-widest shadow-sm transition-all"
                                     >
                                         <XOctagon size={16} />
                                         Unpublish Strategy
@@ -345,7 +345,7 @@ export default function EditStrategyPage() {
 
                                 <Button
                                     onClick={handleRun}
-                                    className="w-full h-12 px-5 gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-black rounded-xl text-sm uppercase tracking-widest shadow-lg shadow-blue-100 active:scale-[0.98] transition-all"
+                                    className="w-full h-12 px-5 gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-black rounded-xl text-sm uppercase tracking-widest shadow-lg shadow-blue-100 dark:shadow-blue-900/20 active:scale-[0.98] transition-all"
                                 >
                                     <Play size={18} />
                                     Backtest
@@ -353,8 +353,8 @@ export default function EditStrategyPage() {
                             </div>
 
                             <div className="space-y-4 pt-2">
-                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-[0.15em]">Optimization Config</h3>
-                                <p className="text-[11px] text-gray-500 leading-relaxed font-medium">
+                                <h3 className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-[0.15em]">Optimization Config</h3>
+                                <p className="text-[11px] text-gray-500 dark:text-slate-400 leading-relaxed font-medium">
                                     Define parameter ranges (max 10 lines).
                                 </p>
                                 <textarea
@@ -367,43 +367,43 @@ export default function EditStrategyPage() {
                                             setOptimizationConfig(lines.slice(0, 10).join('\n'));
                                         }
                                     }}
-                                    className="w-full h-[240px] p-4 text-sm font-mono font-medium bg-white border border-gray-200 text-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none shadow-sm leading-relaxed"
+                                    className="w-full h-[240px] p-4 text-sm font-mono font-medium bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 text-gray-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none shadow-sm leading-relaxed"
                                     placeholder={'fast_window: [10, 30]\nslow_window: [40, 60]'}
                                 />
                             </div>
 
-                            <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-xl space-y-2">
-                                <div className="flex items-center gap-2 text-blue-700 font-bold text-[10px] uppercase">
+                            <div className="p-4 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl space-y-2">
+                                <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-bold text-[10px] uppercase">
                                     <Activity size={12} />
                                     Tips
                                 </div>
-                                <p className="text-[10px] text-blue-600/80 leading-relaxed">
+                                <p className="text-[10px] text-blue-600/80 dark:text-blue-400/60 leading-relaxed">
                                     Use list format `[min, max]` for continuous ranges or `[1, 2, 3]` for categorical values. Example: `param_name: [start, end]`.
                                 </p>
                             </div>
                         </div>
 
                         {/* Theme Toggle at Bottom */}
-                        <div className="p-4 bg-white border-t border-gray-200">
+                        <div className="p-4 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800">
                             <div className="flex flex-col gap-2">
-                                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1 text-center">Editor Theme</Label>
-                                <div className="flex items-center gap-1 p-1 bg-gray-50 rounded-xl border border-gray-100">
+                                <Label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest px-1 text-center">Editor Theme</Label>
+                                <div className="flex items-center gap-1 p-1 bg-gray-50 dark:bg-slate-950 rounded-xl border border-gray-100 dark:border-slate-800">
                                     <button
                                         onClick={() => setThemeMode('default')}
-                                        className={`flex-1 flex items-center justify-center h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'default' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                        className={`flex-1 flex items-center justify-center h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'default' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'}`}
                                     >
                                         Default
                                     </button>
                                     <button
                                         onClick={() => setThemeMode('light')}
-                                        className={`flex-1 flex items-center justify-center gap-2 h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'light' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                        className={`flex-1 flex items-center justify-center gap-2 h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'light' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'}`}
                                     >
                                         <Sun size={12} />
                                         Light
                                     </button>
                                     <button
                                         onClick={() => setThemeMode('dark')}
-                                        className={`flex-1 flex items-center justify-center gap-2 h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'dark' ? 'bg-gray-800 text-blue-400 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                        className={`flex-1 flex items-center justify-center gap-2 h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'dark' ? 'bg-gray-800 dark:bg-slate-800 text-blue-400 shadow-sm' : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'}`}
                                     >
                                         <Moon size={12} />
                                         Dark
@@ -420,11 +420,11 @@ export default function EditStrategyPage() {
             <Dialog open={unpublishModalOpen} onOpenChange={setUnpublishModalOpen}>
                 <DialogContent className="sm:max-w-[425px] rounded-2xl">
                     <DialogHeader>
-                        <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-4">
-                            <AlertTriangle className="text-amber-600" size={24} />
+                        <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/40 rounded-full flex items-center justify-center mb-4">
+                            <AlertTriangle className="text-amber-600 dark:text-amber-500" size={24} />
                         </div>
-                        <DialogTitle className="text-xl font-black text-slate-900">Unpublish Strategy?</DialogTitle>
-                        <DialogDescription className="text-slate-500 font-medium leading-relaxed pt-2">
+                        <DialogTitle className="text-xl font-black text-slate-900 dark:text-slate-100">Unpublish Strategy?</DialogTitle>
+                        <DialogDescription className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed pt-2">
                             This will stop generating automated recommendations for this strategy.
                             You will be able to edit and save your code changes after unpublishing.
                         </DialogDescription>

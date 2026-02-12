@@ -53,13 +53,13 @@ export function PeriodSelector({ startDate, endDate, setStartDate, setEndDate, r
 
     return (
         <div className="space-y-4">
-            <Label className="text-xs font-bold text-gray-500 uppercase">Backtest Period</Label>
-            <div className="flex p-1 bg-gray-100 rounded-lg gap-1">
+            <Label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase">Backtest Period</Label>
+            <div className="flex p-1 bg-gray-100 dark:bg-slate-800 rounded-lg gap-1">
                 {(['1y', '3y', '5y', '10y', 'all', 'custom'] as const).map((t) => (
                     <button
                         key={t}
                         onClick={() => setRangeType(t)}
-                        className={`flex-1 py-1.5 px-1 text-[10px] font-bold rounded-md transition-all ${rangeType === t ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                        className={`flex-1 py-1.5 px-1 text-[10px] font-bold rounded-md transition-all ${rangeType === t ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'}`}
                     >
                         {t === 'all' ? 'ALL' : t.toUpperCase()}
                     </button>
@@ -69,13 +69,13 @@ export function PeriodSelector({ startDate, endDate, setStartDate, setEndDate, r
             {rangeType === 'custom' && (
                 <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="space-y-1.5">
-                        <Label className="text-[10px] uppercase font-bold text-gray-400 pl-1">From</Label>
+                        <Label className="text-[10px] uppercase font-bold text-gray-400 dark:text-slate-500 pl-1">From</Label>
                         <Popover>
                             <PopoverTrigger asChild>
                                 <Button
                                     variant="outline"
                                     className={cn(
-                                        "w-full h-9 justify-start text-left font-medium text-xs bg-white border-gray-200 rounded-xl",
+                                        "w-full h-9 justify-start text-left font-medium text-xs bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 rounded-xl",
                                         !fromDate && "text-muted-foreground"
                                     )}
                                 >
@@ -83,7 +83,7 @@ export function PeriodSelector({ startDate, endDate, setStartDate, setEndDate, r
                                     {fromDate ? format(fromDate, "MMM dd, y") : "Select..."}
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0 rounded-2xl overflow-hidden shadow-2xl" align="start">
+                            <PopoverContent className="w-auto p-0 rounded-2xl overflow-hidden shadow-2xl dark:border-slate-800" align="start">
                                 <Calendar
                                     mode="single"
                                     selected={fromDate}
@@ -96,13 +96,13 @@ export function PeriodSelector({ startDate, endDate, setStartDate, setEndDate, r
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label className="text-[10px] uppercase font-bold text-gray-400 pl-1">To</Label>
+                        <Label className="text-[10px] uppercase font-bold text-gray-400 dark:text-slate-500 pl-1">To</Label>
                         <Popover>
                             <PopoverTrigger asChild>
                                 <Button
                                     variant="outline"
                                     className={cn(
-                                        "w-full h-9 justify-start text-left font-medium text-xs bg-white border-gray-200 rounded-xl",
+                                        "w-full h-9 justify-start text-left font-medium text-xs bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 rounded-xl",
                                         !toDate && "text-muted-foreground"
                                     )}
                                 >
@@ -110,7 +110,7 @@ export function PeriodSelector({ startDate, endDate, setStartDate, setEndDate, r
                                     {toDate ? format(toDate, "MMM dd, y") : "Select..."}
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0 rounded-2xl overflow-hidden shadow-2xl" align="end">
+                            <PopoverContent className="w-auto p-0 rounded-2xl overflow-hidden shadow-2xl dark:border-slate-800" align="end">
                                 <Calendar
                                     mode="single"
                                     selected={toDate}
@@ -125,9 +125,9 @@ export function PeriodSelector({ startDate, endDate, setStartDate, setEndDate, r
             )}
 
             {!startDate && !endDate && rangeType !== 'custom' && (
-                <div className="flex items-center gap-2 p-2 bg-blue-50/50 rounded-lg border border-blue-100">
+                <div className="flex items-center gap-2 p-2 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/30">
                     <CalendarIcon size={12} className="text-blue-500" />
-                    <span className="text-[10px] text-blue-600 font-medium">Running with full market history</span>
+                    <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">Running with full market history</span>
                 </div>
             )}
         </div>

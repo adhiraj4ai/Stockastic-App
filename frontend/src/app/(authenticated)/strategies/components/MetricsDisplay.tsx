@@ -147,7 +147,7 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
                         <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 text-[10px] font-bold border-2 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-200 dark:hover:border-blue-900 transition-all"
+                            className="h-8 text-[10px] font-bold border-2 border-gray-200 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-200 dark:hover:border-blue-900 transition-all dark:text-slate-100"
                             onClick={() => {
                                 const newWindow = window.open('', '_blank');
                                 if (newWindow) {
@@ -167,7 +167,7 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
                     <iframe
                         title="Backtest Plot"
                         srcDoc={plotHtml}
-                        className="w-full h-full border-0"
+                        className="w-full h-full border-0 dark:invert-[0.9] dark:hue-rotate-180"
                         sandbox="allow-scripts"
                     />
                 </div>
@@ -181,7 +181,7 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
                     value2={`$${fmtTile(data.total_pnl || data['Equity Final [$]'] - (data['Equity Initial [$]'] || 10000))}`}
                     subtext={`Net profit generated from your initial capital over the period.`}
                     icon={Percent}
-                    colorClass="bg-green-500 bg-green-50 text-green-600"
+                    colorClass="bg-green-500 bg-green-50 dark:bg-green-900/10 text-green-600 dark:text-green-400"
                     trend={(data.pnl_percent || data['Return [%]']) > 0 ? 'up' : 'down'}
                 />
                 <SummaryTile
@@ -190,7 +190,7 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
                     value2={fmtTile(data.sharpe_ratio || data['Sharpe Ratio'])}
                     subtext={`Profit Factor & Sharpe Ratio indicating risk-adjusted returns.`}
                     icon={BarChart3}
-                    colorClass="bg-indigo-500 bg-indigo-50 text-indigo-600"
+                    colorClass="bg-indigo-500 bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400"
                 />
                 <SummaryTile
                     title="Strategy Precision"
@@ -198,7 +198,7 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
                     value2={`${data.total_trades || data['# Trades'] || 0} Trades`}
                     subtext={`${data['Total Winning Trades'] || 0} Win vs ${data['Total Losing Trades'] || 0} Loss.`}
                     icon={Target}
-                    colorClass="bg-blue-500 bg-blue-50 text-blue-600"
+                    colorClass="bg-blue-500 bg-blue-50 dark:bg-blue-900/10 text-blue-600 dark:text-blue-400"
                 />
                 <SummaryTile
                     title="Risk Tolerance"
@@ -206,7 +206,7 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
                     value2={`${fmtTile(data['Avg. Drawdown [%]'] || 0)}% Avg`}
                     subtext={`Maximum historical dip from peak compared to average dip.`}
                     icon={ShieldAlert}
-                    colorClass="bg-red-500 bg-red-50 text-red-600"
+                    colorClass="bg-red-500 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400"
                     trend={(data.max_drawdown || data['Max. Drawdown [%]']) < 15 ? 'up' : 'down'}
                 />
             </div>

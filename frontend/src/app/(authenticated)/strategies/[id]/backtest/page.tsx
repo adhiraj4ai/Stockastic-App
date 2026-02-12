@@ -262,10 +262,10 @@ function BacktestContent() {
             showBack={true}
             title={
                 <div className="flex items-center gap-3">
-                    <span className="truncate">Backtest - {strategy?.name || 'Strategy'}</span>
+                    <span className="truncate dark:text-slate-100">Backtest - {strategy?.name || 'Strategy'}</span>
                     <Link
                         href={`/strategies/${strategyId}/editor`}
-                        className="p-1 w-7 h-7 flex items-center justify-center rounded-md border border-gray-200 bg-gray-50 text-gray-400 hover:text-blue-600 hover:bg-white hover:border-blue-200 transition-all shadow-sm group"
+                        className="p-1 w-7 h-7 flex items-center justify-center rounded-md border border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-200 dark:hover:border-blue-900 transition-all shadow-sm group"
                         title="Edit Strategy code"
                     >
                         <Code size={14} className="group-hover:scale-110 transition-transform" />
@@ -277,27 +277,27 @@ function BacktestContent() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Configuration Panel */}
                     <div className="lg:col-span-4 xl:col-span-3">
-                        <Card className="border-gray-200 shadow-md overflow-hidden sticky top-6">
+                        <Card className="border-gray-200 dark:border-slate-800 shadow-md overflow-hidden sticky top-6 dark:bg-slate-900">
                             <CardContent className="p-6 space-y-8">
                                 {/* Mode Toggle */}
                                 <div className="space-y-4">
-                                    <Label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Backtest Mode</Label>
-                                    <div className="flex p-1.5 bg-gray-100 rounded-xl gap-1 shadow-inner">
+                                    <Label className="text-sm font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wide">Backtest Mode</Label>
+                                    <div className="flex p-1.5 bg-gray-100 dark:bg-slate-800 rounded-xl gap-1 shadow-inner">
                                         <button
                                             onClick={() => setMode('symbol')}
-                                            className={`flex-1 py-2 px-3 text-xs font-bold rounded-lg transition-all ${mode === 'symbol' ? 'bg-white text-blue-600 shadow-md scale-105' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                                            className={`flex-1 py-2 px-3 text-xs font-bold rounded-lg transition-all ${mode === 'symbol' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-md scale-105' : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800/50'}`}
                                         >
                                             Symbol
                                         </button>
                                         <button
                                             onClick={() => setMode('sector')}
-                                            className={`flex-1 py-2 px-3 text-xs font-bold rounded-lg transition-all ${mode === 'sector' ? 'bg-white text-blue-600 shadow-md scale-105' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                                            className={`flex-1 py-2 px-3 text-xs font-bold rounded-lg transition-all ${mode === 'sector' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-md scale-105' : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800/50'}`}
                                         >
                                             Sector
                                         </button>
                                         <button
                                             onClick={() => setMode('all')}
-                                            className={`flex-1 py-2 px-3 text-xs font-bold rounded-lg transition-all ${mode === 'all' ? 'bg-white text-blue-600 shadow-md scale-105' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+                                            className={`flex-1 py-2 px-3 text-xs font-bold rounded-lg transition-all ${mode === 'all' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-md scale-105' : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800/50'}`}
                                         >
                                             All
                                         </button>
@@ -307,22 +307,22 @@ function BacktestContent() {
                                 {/* Symbol or Sector Selection */}
                                 {mode === 'symbol' && (
                                     <div className="space-y-3">
-                                        <Label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Ticker Symbol</Label>
-                                        <CompanySelect className="h-11 text-base" value={symbol} onChange={(val) => setSymbol(val)} />
+                                        <Label className="text-sm font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wide">Ticker Symbol</Label>
+                                        <CompanySelect className="h-11 text-base dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100" value={symbol} onChange={(val) => setSymbol(val)} />
                                     </div>
                                 )}
 
                                 {mode === 'sector' && (
                                     <div className="space-y-3">
-                                        <Label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Sector</Label>
+                                        <Label className="text-sm font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wide">Sector</Label>
                                         <select
                                             value={sector}
                                             onChange={(e) => setSector(e.target.value)}
-                                            className="w-full h-11 px-4 rounded-lg border-2 border-gray-200 bg-white text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm hover:border-gray-300"
+                                            className="w-full h-11 px-4 rounded-lg border-2 border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-slate-100 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm hover:border-gray-300 dark:hover:border-slate-700"
                                         >
                                             <option value="">Select a sector...</option>
                                             {sectors.map((s) => (
-                                                <option key={s.name} value={s.name}>
+                                                <option key={s.name} value={s.name} className="dark:bg-slate-900">
                                                     {s.name} ({s.count})
                                                 </option>
                                             ))}
@@ -331,10 +331,10 @@ function BacktestContent() {
                                 )}
 
                                 {mode === 'all' && (
-                                    <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-3">
+                                    <div className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-lg p-3">
                                         <div className="flex gap-2">
                                             <AlertTriangle size={14} className="text-blue-500 shrink-0 mt-0.5" />
-                                            <p className="text-[11px] text-blue-700 leading-relaxed">
+                                            <p className="text-[11px] text-blue-700 dark:text-blue-400 leading-relaxed">
                                                 Runs strategy on <strong>all active companies</strong>. This processing is resource intensive.
                                             </p>
                                         </div>
@@ -353,26 +353,26 @@ function BacktestContent() {
                                     />
                                 )}
 
-                                <div className="space-y-4 pt-6 border-t-2 border-gray-100">
-                                    <Label className="text-sm font-bold text-gray-700 uppercase tracking-wide flex items-center gap-2">
+                                <div className="space-y-4 pt-6 border-t-2 border-gray-100 dark:border-slate-800">
+                                    <Label className="text-sm font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wide flex items-center gap-2">
                                         Parameters
                                     </Label>
                                     <textarea
                                         value={paramsJson}
                                         onChange={(e) => setParamsJson(e.target.value)}
-                                        className="w-full h-28 p-3 text-xs font-mono border-2 border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white outline-none resize-none shadow-sm transition-all"
+                                        className="w-full h-28 p-3 text-xs font-mono border-2 border-gray-200 dark:border-slate-800 rounded-lg bg-gray-50 dark:bg-slate-950 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 outline-none resize-none shadow-sm transition-all"
                                         placeholder='{ "fast_window": 20, "slow_window": 50 }'
                                     />
                                 </div>
 
-                                <div className="pt-4 border-t border-gray-100 space-y-4">
+                                <div className="pt-4 border-t border-gray-100 dark:border-slate-800 space-y-4">
                                     <div className="space-y-3">
-                                        <Label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Initial Capital (NPR)</Label>
+                                        <Label className="text-sm font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wide">Initial Capital (NPR)</Label>
                                         <input
                                             type="number"
                                             value={initialBalance}
                                             onChange={(e) => setInitialBalance(Number(e.target.value))}
-                                            className="w-full h-11 px-4 rounded-lg border-2 border-gray-200 bg-white text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm hover:border-gray-300"
+                                            className="w-full h-11 px-4 rounded-lg border-2 border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-slate-100 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm hover:border-gray-300 dark:hover:border-slate-700"
                                             placeholder="100,000"
                                         />
                                     </div>
@@ -402,7 +402,7 @@ function BacktestContent() {
                                     <Button
                                         variant="outline"
                                         onClick={() => router.push(`/strategies/${strategyId}/optimize`)}
-                                        className="w-full h-11 text-xs uppercase font-extrabold border-2 border-purple-200 text-purple-700 hover:bg-purple-50 hover:border-purple-300 hover:shadow-md transition-all"
+                                        className="w-full h-11 text-xs uppercase font-extrabold border-2 border-purple-200 dark:border-purple-900/50 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 dark:bg-slate-900 hover:border-purple-300 dark:hover:border-purple-800 hover:shadow-md transition-all"
                                     >
                                         <Zap size={14} className="mr-2" /> Find Best Parameters
                                     </Button>
@@ -412,11 +412,11 @@ function BacktestContent() {
                     </div>
 
                     {/* Results Panel */}
-                    <div className="lg:col-span-8 xl:col-span-9 bg-white rounded-2xl shadow-lg border-2 border-gray-100 overflow-hidden flex flex-col min-h-[700px]">
+                    <div className="lg:col-span-8 xl:col-span-9 bg-white dark:bg-slate-900 rounded-2xl shadow-lg border-2 border-gray-100 dark:border-slate-800 overflow-hidden flex flex-col min-h-[700px]">
                         {running ? (
                             <div className="h-full flex flex-col items-center justify-center space-y-4">
-                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                                <p className="text-gray-500 animate-pulse">Running backtest strategy...</p>
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
+                                <p className="text-gray-500 dark:text-slate-400 animate-pulse">Running backtest strategy...</p>
                             </div>
                         ) : results ? (
                             <div className="h-full flex flex-col">
@@ -428,8 +428,8 @@ function BacktestContent() {
                                                 <Check size={16} />
                                             </div>
                                             <div>
-                                                <p className="text-xs font-bold">Unsaved Experiment</p>
-                                                <p className="text-[10px] opacity-80 font-medium">Results are temporary. Save to persist in history.</p>
+                                                <p className="text-xs font-bold text-white">Unsaved Experiment</p>
+                                                <p className="text-[10px] opacity-80 font-medium text-white/90">Results are temporary. Save to persist in history.</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
@@ -483,22 +483,22 @@ function BacktestContent() {
                                     ) : (
                                         <div className="flex flex-col h-full space-y-6">
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                                <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                                                    <p className="text-xs text-blue-600">Total Companies</p>
-                                                    <p className="text-lg font-bold text-blue-900">{results.total_companies}</p>
+                                                <div className="bg-blue-50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100 dark:border-blue-900/30">
+                                                    <p className="text-xs text-blue-600 dark:text-blue-400">Total Companies</p>
+                                                    <p className="text-lg font-bold text-blue-900 dark:text-blue-200">{results.total_companies}</p>
                                                 </div>
-                                                <div className="bg-green-50 p-3 rounded-lg border border-green-100">
-                                                    <p className="text-xs text-green-600">Successful Runs</p>
-                                                    <p className="text-lg font-bold text-green-900">{results.successful_backtests}</p>
+                                                <div className="bg-green-50 dark:bg-green-900/10 p-3 rounded-lg border border-green-100 dark:border-green-900/30">
+                                                    <p className="text-xs text-green-600 dark:text-green-400">Successful Runs</p>
+                                                    <p className="text-lg font-bold text-green-900 dark:text-green-200">{results.successful_backtests}</p>
                                                 </div>
-                                                <div className="bg-gray-50 p-3 rounded-lg">
-                                                    <p className="text-xs text-gray-500">Success Rate</p>
-                                                    <p className="text-lg font-bold">{results.total_companies ? ((results.successful_backtests / results.total_companies) * 100).toFixed(0) : 0}%</p>
+                                                <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-lg">
+                                                    <p className="text-xs text-gray-500 dark:text-slate-400">Success Rate</p>
+                                                    <p className="text-lg font-bold dark:text-slate-100">{results.total_companies ? ((results.successful_backtests / results.total_companies) * 100).toFixed(0) : 0}%</p>
                                                 </div>
                                                 {results.aggregated && (
-                                                    <div className="bg-gray-50 p-3 rounded-lg">
-                                                        <p className="text-xs text-gray-500">Avg Return</p>
-                                                        <p className={`text-lg font-bold ${results.aggregated.avg_return >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                    <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-lg">
+                                                        <p className="text-xs text-gray-500 dark:text-slate-400">Avg Return</p>
+                                                        <p className={`text-lg font-bold ${results.aggregated.avg_return >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                                             {results.aggregated.avg_return?.toFixed(2)}%
                                                         </p>
                                                     </div>
@@ -506,28 +506,28 @@ function BacktestContent() {
                                             </div>
 
                                             {results.individual_results && results.individual_results.length > 0 && (
-                                                <div className="border rounded-md">
+                                                <div className="border border-slate-200 dark:border-slate-800 rounded-md">
                                                     <Table>
-                                                        <TableCaption>Individual Stock Performance in Sector</TableCaption>
+                                                        <TableCaption className="text-slate-500 dark:text-slate-400">Individual Stock Performance in Sector</TableCaption>
                                                         <TableHeader>
-                                                            <TableRow>
-                                                                <TableHead>Symbol</TableHead>
-                                                                <TableHead className="text-right">Return</TableHead>
-                                                                <TableHead className="text-right">Win Rate</TableHead>
-                                                                <TableHead className="text-right">Trades</TableHead>
-                                                                <TableHead className="text-right">PnL</TableHead>
+                                                            <TableRow className="bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                                                                <TableHead className="text-slate-700 dark:text-slate-300">Symbol</TableHead>
+                                                                <TableHead className="text-right text-slate-700 dark:text-slate-300">Return</TableHead>
+                                                                <TableHead className="text-right text-slate-700 dark:text-slate-300">Win Rate</TableHead>
+                                                                <TableHead className="text-right text-slate-700 dark:text-slate-300">Trades</TableHead>
+                                                                <TableHead className="text-right text-slate-700 dark:text-slate-300">PnL</TableHead>
                                                             </TableRow>
                                                         </TableHeader>
                                                         <TableBody>
                                                             {results.individual_results.map((r: any, idx: number) => (
-                                                                <TableRow key={idx}>
-                                                                    <TableCell className="font-medium">{r.symbol}</TableCell>
-                                                                    <TableCell className={`text-right font-bold ${r.pnl_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                <TableRow key={idx} className="hover:bg-blue-50/20 dark:hover:bg-blue-900/10 border-slate-100 dark:border-slate-800">
+                                                                    <TableCell className="font-medium dark:text-slate-200">{r.symbol}</TableCell>
+                                                                    <TableCell className={`text-right font-bold ${r.pnl_percent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                                                         {r.pnl_percent?.toFixed(2)}%
                                                                     </TableCell>
-                                                                    <TableCell className="text-right">{r.win_rate?.toFixed(1)}%</TableCell>
-                                                                    <TableCell className="text-right">{r.total_trades}</TableCell>
-                                                                    <TableCell className={`text-right font-mono ${r.total_pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                    <TableCell className="text-right dark:text-slate-300">{r.win_rate?.toFixed(1)}%</TableCell>
+                                                                    <TableCell className="text-right dark:text-slate-300">{r.total_trades}</TableCell>
+                                                                    <TableCell className={`text-right font-mono ${r.total_pnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                                                         {r.total_pnl?.toFixed(2)}
                                                                     </TableCell>
                                                                 </TableRow>
@@ -541,21 +541,21 @@ function BacktestContent() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="h-full flex flex-col items-center justify-center p-12 text-center bg-gradient-to-br from-blue-50/30 via-white to-purple-50/30">
-                                <div className="mb-6 p-6 bg-gradient-to-br from-blue-100 to-blue-50 rounded-3xl shadow-lg">
-                                    <Play size={48} className="text-blue-600" />
+                            <div className="h-full flex flex-col items-center justify-center p-12 text-center bg-gradient-to-br from-blue-50/30 dark:from-blue-900/10 via-white dark:via-slate-950 to-purple-50/30 dark:to-purple-900/10">
+                                <div className="mb-6 p-6 bg-gradient-to-br from-blue-100 dark:from-blue-950 to-blue-50 dark:to-blue-900/50 rounded-3xl shadow-lg border border-blue-200 dark:border-blue-800">
+                                    <Play size={48} className="text-blue-600 dark:text-blue-400" />
                                 </div>
-                                <h3 className="text-2xl font-black text-gray-900 mb-3">Ready to Backtest</h3>
-                                <p className="text-base text-gray-600 max-w-lg mb-8 leading-relaxed">
+                                <h3 className="text-2xl font-black text-gray-900 dark:text-slate-100 mb-3">Ready to Backtest</h3>
+                                <p className="text-base text-gray-600 dark:text-slate-400 max-w-lg mb-8 leading-relaxed">
                                     Configure your parameters on the left and run a backtest to see how your strategy would have performed with historical data.
                                 </p>
-                                <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4 max-w-md">
-                                    <p className="text-sm text-purple-900 font-medium mb-2">💡 Pro Tip</p>
-                                    <p className="text-sm text-purple-700">
+                                <div className="bg-purple-50 dark:bg-purple-900/10 border-2 border-purple-200 dark:border-purple-900/30 rounded-xl p-4 max-w-md">
+                                    <p className="text-sm text-purple-900 dark:text-purple-300 font-medium mb-2">💡 Pro Tip</p>
+                                    <p className="text-sm text-purple-700 dark:text-purple-400">
                                         Need help finding the best parameters?{' '}
                                         <button
                                             onClick={() => router.push(`/strategies/${strategyId}/optimize`)}
-                                            className="text-purple-600 hover:text-purple-800 font-bold underline"
+                                            className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 font-bold underline"
                                         >
                                             Try Parameter Optimization →
                                         </button>

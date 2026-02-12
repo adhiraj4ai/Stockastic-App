@@ -192,13 +192,39 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 if not error:
                     results.append({'symbol': company.symbol, 'metrics': res})
             
+            # Calculate summary statistics
+            total_companies = companies.count()
+            successful_runs = len(results)
+            
+            avg_return = 0
+            if successful_runs > 0:
+                total_return = sum([r['metrics'].get('Return [%]', 0) for r in results])
+                avg_return = total_return / successful_runs
+                
+            # Flatten results for frontend
+            flattened_results = []
+            for r in results:
+                metrics = r['metrics']
+                flattened_results.append({
+                    'symbol': r['symbol'],
+                    'pnl_percent': metrics.get('Return [%]'),
+                    'win_rate': metrics.get('Win Rate [%]'),
+                    'total_trades': metrics.get('# Trades'),
+                    'total_pnl': metrics.get('Equity Final [$]') - initial_balance if metrics.get('Equity Final [$]') else 0
+                })
+            
             parent_exp.status = StrategyExperiment.Status.SUCCESS
             parent_exp.save()
             
             return Response({
                 'batch_id': batch_id,
                 'sector': sector,
-                'results': results
+                'total_companies': total_companies,
+                'successful_backtests': successful_runs,
+                'aggregated': {
+                    'avg_return': avg_return
+                },
+                'individual_results': flattened_results
             })
         else:
             # Single stock backtest
@@ -222,7 +248,10 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 status=StrategyExperiment.Status.SUCCESS
             )
             
-            return Response(result)
+            return Response({
+                'stats': result,
+                'plot_html': exp_data.get('plot_html')
+            })
 
     @action(detail=True, methods=['post'])
     def optimize_multi_period(self, request, pk=None):
@@ -639,15 +668,38 @@ class StrategyViewSet(viewsets.ModelViewSet):
         return clean, {}
 
     def _clean_for_json(self, data):
-        if isinstance(data, dict):
+        # Handle pandas null values FIRST (NaT, NaN, pd.NA, etc.)
+        try:
+            if pd.isna(data):
+                return None
+        except (TypeError, ValueError, AttributeError):
+            pass
+        
+        # Handle pandas data structures
+        if isinstance(data, pd.DataFrame):
+            # Recursively clean the converted dict
+            return self._clean_for_json(data.to_dict('records'))
+        elif isinstance(data, pd.Series):
+            # Recursively clean the converted dict
+            return self._clean_for_json(data.to_dict())
+        elif isinstance(data, (pd.Timestamp, datetime)):
+            return data.isoformat()
+        elif isinstance(data, pd.Timedelta):
+            return data.total_seconds()
+        
+        # Handle collections recursively
+        elif isinstance(data, dict):
             return {k: self._clean_for_json(v) for k, v in data.items()}
         elif isinstance(data, list):
             return [self._clean_for_json(i) for i in data]
+        
+        # Handle numeric types
         elif isinstance(data, (float, np.float64, np.float32)):
             if np.isnan(data) or np.isinf(data): return 0
             return float(data)
         elif isinstance(data, (int, np.int64, np.int32)):
             return int(data)
+        
         return data
 
     def _extract_params_simple(self, code):

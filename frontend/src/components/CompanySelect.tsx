@@ -111,8 +111,8 @@ export function CompanySelect({ value, onChange, className }: CompanySelectProps
                                         )}
                                     />
                                     <div className="flex flex-col">
-                                        <span className="font-bold">{framework.symbol}</span>
-                                        <span className="text-xs text-gray-500">{framework.name}</span>
+                                        <span className="font-bold dark:text-slate-100">{framework.symbol}</span>
+                                        <span className="text-xs text-gray-500 dark:text-slate-400">{framework.name}</span>
                                     </div>
                                 </CommandItem>
                             ))}
