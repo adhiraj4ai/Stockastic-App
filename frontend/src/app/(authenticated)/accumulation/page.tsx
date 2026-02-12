@@ -19,7 +19,10 @@ import {
     Calendar,
     Layers,
     ExternalLink,
-    History
+    History,
+    TrendingUp,
+    TrendingDown,
+    Minus
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -145,6 +148,10 @@ function AccumulationContent() {
     const [search, setSearch] = useState('');
     const [sortConfig, setSortConfig] = useState<{ key: keyof AccumulationData; direction: 'asc' | 'desc' }>({
         key: 'net_qty',
+        direction: 'desc'
+    });
+    const [trendSortConfig, setTrendSortConfig] = useState<{ key: keyof BrokerTrend | 'change_5d' | 'change_10d' | 'change_20d' | 'change_50d'; direction: 'asc' | 'desc' }>({
+        key: 'cumulative_net',
         direction: 'desc'
     });
 
@@ -624,15 +631,57 @@ function AccumulationContent() {
         return sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />;
     };
 
+    const handleTrendSort = (key: keyof BrokerTrend | 'change_5d' | 'change_10d' | 'change_20d' | 'change_50d') => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (trendSortConfig.key === key && trendSortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setTrendSortConfig({ key, direction });
+    };
+
+    const sortedTrends = [...trends]
+        .filter(t =>
+            t.symbol.toLowerCase().includes(search.toLowerCase()) ||
+            String(t.broker).includes(search)
+        )
+        .sort((a, b) => {
+            const key = trendSortConfig.key;
+            // Depending on key, we might be sorting string or number
+            // Force type assertion or check
+            const aValue = a[key as keyof BrokerTrend];
+            const bValue = b[key as keyof BrokerTrend];
+
+            if (typeof aValue === 'number' && typeof bValue === 'number') {
+                return trendSortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+            }
+            if (String(aValue) < String(bValue)) return trendSortConfig.direction === 'asc' ? -1 : 1;
+            if (String(aValue) > String(bValue)) return trendSortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+    const TrendSortIcon = ({ column }: { column: string }) => {
+        if (trendSortConfig.key !== column) return <div className="w-4 h-4 opacity-0" />;
+        return trendSortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />;
+    };
+
     const TrendBadge = ({ trend, change }: { trend: string, change: number }) => {
-        const color = trend === 'Increasing' ? 'text-green-600 bg-green-50 border-green-100' :
-            trend === 'Decreasing' ? 'text-red-600 bg-red-50 border-red-100' :
-                'text-blue-600 bg-blue-50 border-blue-100';
+        const isIncreasing = trend === 'Increasing';
+        const isDecreasing = trend === 'Decreasing';
+
+        const colorClass = isIncreasing
+            ? 'text-green-700 dark:text-emerald-400 bg-green-50 dark:bg-emerald-900/20 border-green-200 dark:border-emerald-800/30'
+            : isDecreasing
+                ? 'text-red-700 dark:text-rose-400 bg-red-50 dark:bg-rose-900/20 border-red-200 dark:border-rose-800/30'
+                : 'text-gray-600 dark:text-slate-400 bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700';
+
+        const Icon = isIncreasing ? TrendingUp : isDecreasing ? TrendingDown : Minus;
 
         return (
-            <div className={`flex flex-col items-center px-2 py-1 rounded border ${color}`}>
-                <span className="text-[10px] font-bold uppercase">{trend}</span>
-                <span className="text-[9px] font-mono">{(change ?? 0).toFixed(2)}%</span>
+            <div className={`flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border ${colorClass} w-full max-w-[100px] mx-auto shadow-sm transition-all hover:scale-105`}>
+                <Icon className="w-3.5 h-3.5 stroke-[3px]" />
+                <span className="text-xs font-black font-mono tracking-tight">
+                    {Math.abs(change ?? 0).toFixed(1)}%
+                </span>
             </div>
         );
     };
@@ -1003,74 +1052,84 @@ function AccumulationContent() {
                                     <table className="w-full caption-bottom text-sm">
                                         <TableHeader className="bg-gray-50 dark:bg-slate-900 sticky top-[146px] z-10 shadow-sm border-b dark:border-slate-800">
                                             <TableRow>
-                                                <TableHead className="w-[120px]">Symbol</TableHead>
-                                                <TableHead>Broker ID</TableHead>
-                                                <TableHead className="text-right">Cumulative Net</TableHead>
-                                                <TableHead className="text-right">LTP</TableHead>
-                                                <TableHead className="text-right">WAC</TableHead>
-                                                <TableHead className="text-center">5D Trend</TableHead>
-                                                <TableHead className="text-center">10D Trend</TableHead>
-                                                <TableHead className="text-center">20D Trend</TableHead>
-                                                <TableHead className="text-center">50D Trend</TableHead>
+                                                <TableHead className="w-[120px] cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('symbol')}>
+                                                    <div className="flex items-center gap-1">Symbol <TrendSortIcon column="symbol" /></div>
+                                                </TableHead>
+                                                <TableHead className="cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('broker')}>
+                                                    <div className="flex items-center gap-1">Broker ID <TrendSortIcon column="broker" /></div>
+                                                </TableHead>
+                                                <TableHead className="text-right cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('cumulative_net')}>
+                                                    <div className="flex items-center justify-end gap-1">Cumulative Net <TrendSortIcon column="cumulative_net" /></div>
+                                                </TableHead>
+                                                <TableHead className="text-right cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('ltp')}>
+                                                    <div className="flex items-center justify-end gap-1">LTP <TrendSortIcon column="ltp" /></div>
+                                                </TableHead>
+                                                <TableHead className="text-right cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('wac')}>
+                                                    <div className="flex items-center justify-end gap-1">WAC <TrendSortIcon column="wac" /></div>
+                                                </TableHead>
+                                                <TableHead className="text-center cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('change_5d')}>
+                                                    <div className="flex items-center justify-center gap-1">5D Trend <TrendSortIcon column="change_5d" /></div>
+                                                </TableHead>
+                                                <TableHead className="text-center cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('change_10d')}>
+                                                    <div className="flex items-center justify-center gap-1">10D Trend <TrendSortIcon column="change_10d" /></div>
+                                                </TableHead>
+                                                <TableHead className="text-center cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('change_20d')}>
+                                                    <div className="flex items-center justify-center gap-1">20D Trend <TrendSortIcon column="change_20d" /></div>
+                                                </TableHead>
+                                                <TableHead className="text-center cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('change_50d')}>
+                                                    <div className="flex items-center justify-center gap-1">50D Trend <TrendSortIcon column="change_50d" /></div>
+                                                </TableHead>
                                                 <TableHead className="w-[60px]"></TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {trends.filter(t =>
-                                                t.symbol.toLowerCase().includes(search.toLowerCase()) ||
-                                                String(t.broker).includes(search)
-                                            ).length === 0 ? (
+                                            {sortedTrends.length === 0 ? (
                                                 <TableRow>
-                                                    <TableCell colSpan={9} className="h-40 text-center text-gray-500 dark:text-slate-400">
+                                                    <TableCell colSpan={10} className="h-40 text-center text-gray-500 dark:text-slate-400">
                                                         No broker trends found matching "{search}".
                                                     </TableCell>
                                                 </TableRow>
                                             ) : (
-                                                trends
-                                                    .filter(t =>
-                                                        t.symbol.toLowerCase().includes(search.toLowerCase()) ||
-                                                        String(t.broker).includes(search)
-                                                    )
-                                                    .map((row, idx) => (
-                                                        <TableRow key={idx} className="hover:bg-blue-50/40 dark:hover:bg-slate-900/50 transition-colors group border-b dark:border-slate-800">
-                                                            <TableCell className="font-bold text-blue-700 dark:text-indigo-400">{row.symbol}</TableCell>
-                                                            <TableCell>
-                                                                <Link href={`/broker/${row.broker}`}>
-                                                                    <span className="px-2 py-1 bg-gray-100 dark:bg-slate-800 rounded text-xs font-bold border border-gray-200 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-indigo-900/30 hover:text-blue-600 dark:hover:text-indigo-400 cursor-pointer transition-all">
-                                                                        Broker {row.broker}
-                                                                    </span>
-                                                                </Link>
-                                                            </TableCell>
-                                                            <TableCell className="text-right font-mono font-bold text-blue-800 dark:text-indigo-400">
-                                                                {row.cumulative_net.toLocaleString()}
-                                                            </TableCell>
-                                                            <TableCell className="text-right font-mono font-bold text-gray-900 dark:text-slate-100">
-                                                                {row.ltp?.toLocaleString()}
-                                                            </TableCell>
-                                                            <TableCell className="text-right font-mono font-bold text-gray-700 dark:text-slate-300">
-                                                                {row.wac?.toLocaleString()}
-                                                            </TableCell>
-                                                            <TableCell className="text-center">
-                                                                <TrendBadge trend={row.trend_5d} change={row.change_5d} />
-                                                            </TableCell>
-                                                            <TableCell className="text-center">
-                                                                <TrendBadge trend={row.trend_10d} change={row.change_10d} />
-                                                            </TableCell>
-                                                            <TableCell className="text-center">
-                                                                <TrendBadge trend={row.trend_20d} change={row.change_20d} />
-                                                            </TableCell>
-                                                            <TableCell className="text-center">
-                                                                <TrendBadge trend={row.trend_50d} change={row.change_50d} />
-                                                            </TableCell>
-                                                            <TableCell className="text-center">
-                                                                <Link href={`/accumulation?tab=history&symbol=${row.symbol}&broker=${row.broker}`}>
-                                                                    <Button variant="ghost" size="icon" className="group-hover:text-blue-600 dark:group-hover:text-indigo-400 rounded-full" title="View historical accumulation">
-                                                                        <History className="w-4 h-4" />
-                                                                    </Button>
-                                                                </Link>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))
+                                                sortedTrends.map((row, idx) => (
+                                                    <TableRow key={idx} className="hover:bg-blue-50/40 dark:hover:bg-slate-900/50 transition-colors group border-b dark:border-slate-800">
+                                                        <TableCell className="font-bold text-blue-700 dark:text-indigo-400">{row.symbol}</TableCell>
+                                                        <TableCell>
+                                                            <Link href={`/broker/${row.broker}`}>
+                                                                <span className="px-2 py-1 bg-gray-100 dark:bg-slate-800 rounded text-xs font-bold border border-gray-200 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-indigo-900/30 hover:text-blue-600 dark:hover:text-indigo-400 cursor-pointer transition-all">
+                                                                    Broker {row.broker}
+                                                                </span>
+                                                            </Link>
+                                                        </TableCell>
+                                                        <TableCell className="text-right font-mono font-bold text-blue-800 dark:text-indigo-400">
+                                                            {row.cumulative_net.toLocaleString()}
+                                                        </TableCell>
+                                                        <TableCell className="text-right font-mono font-bold text-gray-900 dark:text-slate-100">
+                                                            {row.ltp?.toLocaleString()}
+                                                        </TableCell>
+                                                        <TableCell className="text-right font-mono font-bold text-gray-700 dark:text-slate-300">
+                                                            {row.wac?.toLocaleString()}
+                                                        </TableCell>
+                                                        <TableCell className="text-center">
+                                                            <TrendBadge trend={row.trend_5d} change={row.change_5d} />
+                                                        </TableCell>
+                                                        <TableCell className="text-center">
+                                                            <TrendBadge trend={row.trend_10d} change={row.change_10d} />
+                                                        </TableCell>
+                                                        <TableCell className="text-center">
+                                                            <TrendBadge trend={row.trend_20d} change={row.change_20d} />
+                                                        </TableCell>
+                                                        <TableCell className="text-center">
+                                                            <TrendBadge trend={row.trend_50d} change={row.change_50d} />
+                                                        </TableCell>
+                                                        <TableCell className="text-center">
+                                                            <Link href={`/accumulation?tab=history&symbol=${row.symbol}&broker=${row.broker}`}>
+                                                                <Button variant="ghost" size="icon" className="group-hover:text-blue-600 dark:group-hover:text-indigo-400 rounded-full" title="View historical accumulation">
+                                                                    <History className="w-4 h-4" />
+                                                                </Button>
+                                                            </Link>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
                                             )}
                                         </TableBody>
                                     </table>
