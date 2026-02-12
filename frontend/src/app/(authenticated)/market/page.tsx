@@ -39,6 +39,7 @@ import { InstitutionalInterest } from '@/components/InstitutionalInterest';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Variants } from 'framer-motion';
+import { PortfolioSummary } from '@/components/PortfolioSummary';
 
 const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -115,7 +116,13 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [recentStocks, setRecentStocks] = useState<string[]>([]);
     const [isCommandOpen, setIsCommandOpen] = useState(false);
-    const [portfolioStats, setPortfolioStats] = useState({ investment: 0, dayPL: 0, dailyPLPositive: true });
+    const [portfolioStats, setPortfolioStats] = useState({
+        investment: 0,
+        currentValue: 0,
+        totalPL: 0,
+        dayPL: 0,
+        dailyPLPositive: true
+    });
     const [error, setError] = useState<string | null>(null);
     const [viewMetric, setViewMetric] = useState<'gainers' | 'volume'>('gainers');
     const [mounted, setMounted] = useState(false);
@@ -168,10 +175,14 @@ export default function DashboardPage() {
                 const portfolioItems: any[] = portfolioResponse.data;
 
                 const totalInvestment = portfolioItems.reduce((acc, item) => acc + Number(item.investment_value), 0);
+                const totalCurrentValue = portfolioItems.reduce((acc, item) => acc + Number(item.current_value), 0);
                 const totalDayPL = portfolioItems.reduce((acc, item) => acc + Number(item.day_gain_loss), 0);
+                const totalPL = totalCurrentValue - totalInvestment;
 
                 setPortfolioStats({
                     investment: totalInvestment,
+                    currentValue: totalCurrentValue,
+                    totalPL: totalPL,
                     dayPL: totalDayPL,
                     dailyPLPositive: totalDayPL >= 0
                 });
@@ -434,6 +445,15 @@ export default function DashboardPage() {
 
                     {/* LEFT COLUMN: Deep Analysis & Watchlists */}
                     <motion.div variants={itemVariants} className="xl:col-span-1 space-y-6 sticky top-24 self-start">
+
+                        {/* Portfolio Summary */}
+                        <PortfolioSummary
+                            investment={portfolioStats.investment}
+                            currentValue={portfolioStats.currentValue}
+                            totalPL={portfolioStats.totalPL}
+                            dayPL={portfolioStats.dayPL}
+                            loading={loading}
+                        />
 
                         {/* Market Sentiment Gauge */}
                         <Card className="bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none hover:shadow-2xl transition-all duration-500 cursor-default group backdrop-blur-xl relative overflow-hidden">
