@@ -288,6 +288,95 @@ class BrokerViewSet(viewsets.ViewSet):
         return Response(results)
 
     @action(detail=False, methods=['get'])
+    def signals(self, request):
+        """
+        Identify high-potential accumulation signals:
+        1. Platinum Buy: Price is near Broker WAC (-5% to +5%) + High Accumulation
+        2. Momentum Buy: Price is breaking out from WAC (+5% to +15%)
+        3. Contrarian Buy: Price < WAC (< -5%) - High Risk / High Reward
+        """
+        query = """
+        WITH trend_data AS (
+            SELECT 
+                ca.*,
+                ca.cumulative_net - LAG(ca.cumulative_net, 5) OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date) AS net_5d,
+                MAX(ca.transaction_date) FILTER (WHERE ca.transaction_date IN (
+                    SELECT transaction_date FROM daily_cumulative_accumulation 
+                    GROUP BY transaction_date HAVING COUNT(*) > 100
+                )) OVER () AS latest_date
+            FROM daily_cumulative_accumulation ca
+            INNER JOIN companies c ON ca.symbol = c.symbol
+            WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
+        )
+        SELECT 
+            td.symbol, 
+            c."companyName" as name,
+            c."sectorName" as sector,
+            td.entity_id as broker, 
+            td.cumulative_net,
+            ROUND(td.cumulative_buy_amount / NULLIF(td.cumulative_buy, 0), 2) as wac,
+            dsp.close as ltp
+        FROM trend_data td
+        INNER JOIN companies c ON td.symbol = c.symbol
+        LEFT JOIN (
+            SELECT DISTINCT ON (symbol) symbol, close 
+            FROM daily_stock_price ORDER BY symbol, transaction_date DESC
+        ) dsp ON td.symbol = dsp.symbol
+        WHERE td.transaction_date = td.latest_date
+        AND td.cumulative_net > 100000 -- Minimum meaningful accumulation
+        ORDER BY td.cumulative_net DESC;
+        """
+        
+        with connections['default'].cursor() as cursor:
+            cursor.execute(query)
+            columns = [col[0] for col in cursor.description]
+            raw_results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        # Post-process to categorize signals
+        signals = []
+        seen_symbols = set()
+
+        for row in raw_results:
+            if row['symbol'] in seen_symbols:
+                continue
+
+            ltp = row['ltp']
+            wac = row['wac']
+            
+            if not ltp or not wac:
+                continue
+
+            markup = ((float(ltp) - float(wac)) / float(wac)) * 100
+            row['markup_percent'] = round(markup, 2)
+
+            signal_type = None
+            risk_reward = "Neutral"
+
+            if -5 <= markup <= 5:
+                signal_type = "Platinum Buy"
+                risk_reward = "Excellent"
+            elif 5 < markup <= 15:
+                signal_type = "Momentum Buy"
+                risk_reward = "Good"
+            elif markup < -5:
+                 signal_type = "Contrarian Buy" 
+                 risk_reward = "High Risk"
+            else:
+                 signal_type = "Watchlist"
+                 risk_reward = "High Risk"
+
+            if signal_type:
+                row['signal_type'] = signal_type
+                row['risk_reward'] = risk_reward
+                signals.append(row)
+                seen_symbols.add(row['symbol'])
+
+        # Sort by markup (lowest markup first = closer to WAC is better for Buying)
+        signals.sort(key=lambda x: x['markup_percent'])
+
+        return Response(signals)
+
+    @action(detail=False, methods=['get'])
     def favorites(self, request):
         broker = request.query_params.get('broker')
         if not broker:

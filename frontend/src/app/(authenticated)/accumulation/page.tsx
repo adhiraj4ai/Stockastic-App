@@ -24,6 +24,7 @@ import {
     TrendingDown,
     Minus
 } from 'lucide-react';
+import { SignalsView } from '@/components/accumulation/SignalsView';
 import Link from 'next/link';
 import {
     TableBody,
@@ -688,6 +689,7 @@ function AccumulationContent() {
 
     const getPageTitle = () => {
         switch (activeTab) {
+            case 'signals': return 'Smart Signals';
             case 'aggressive': return 'Aggressive Patterns';
             case 'aggressive-trader': return 'Aggressive Trader Analysis';
             case 'trends': return 'Broker Trends';
@@ -701,6 +703,10 @@ function AccumulationContent() {
     return (
         <DashboardLayout title={`${getPageTitle()}`}>
             <div className="space-y-4 animate-in fade-in duration-500 pb-10">
+
+                {activeTab === 'signals' && (
+                    <SignalsView />
+                )}
 
                 {activeTab === 'overview' && (
                     <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm">

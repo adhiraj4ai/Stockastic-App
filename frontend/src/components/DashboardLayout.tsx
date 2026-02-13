@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Flame, Users, BarChart3, History, Star, TrendingDown, Brain, Radar, Landmark, ScanLine, Zap, Share2 } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Flame, Users, BarChart3, History, Star, TrendingDown, Brain, Radar, Landmark, ScanLine, Zap, Share2, Crosshair } from 'lucide-react';
 import { SearchBar } from './SearchBar';
 import { ChatSidebar } from './ChatSidebar';
 import { AlertsDropdown } from './AlertsDropdown';
@@ -45,6 +45,7 @@ const navItems = [
         name: 'Accumulation',
         icon: Activity,
         subItems: [
+            { name: 'Smart Signals', href: '/accumulation?tab=signals', icon: Crosshair },
             { name: 'Accumulation Overview', href: '/accumulation?tab=overview', icon: LayoutDashboard },
             { name: 'Aggressive Patterns', href: '/accumulation?tab=aggressive', icon: Flame },
             { name: 'Aggressive Trader', href: '/accumulation?tab=aggressive-trader', icon: TrendingDown },
