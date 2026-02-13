@@ -26,12 +26,18 @@ class NotificationViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['POST'])
     def trigger_check(self, request):
-        # This would call the alert checking logic
-        # count = check_market_alerts(request.user)
-        return Response({'status': 'check complete', 'notifications_created': 0})
+        """Manually trigger notification checks for portfolio, watchlist, and signals"""
+        from ..services.notification_service import check_portfolio_alerts, check_watchlist_alerts, check_signal_alerts
+        
+        portfolio_count = check_portfolio_alerts(request.user)
+        watchlist_count = check_watchlist_alerts(request.user)
+        signal_count = check_signal_alerts(request.user)
+        
+        return Response({
+            'status': 'check complete',
+            'portfolio_notifications': portfolio_count,
+            'watchlist_notifications': watchlist_count,
+            'signal_notifications': signal_count,
+            'total_notifications': portfolio_count + watchlist_count + signal_count
+        })
 
-def check_market_alerts(user):
-    """
-    Business logic for checking market alerts (RSI, Price triggers, etc.)
-    """
-    return 0
