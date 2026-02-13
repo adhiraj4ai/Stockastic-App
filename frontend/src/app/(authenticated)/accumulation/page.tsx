@@ -155,6 +155,9 @@ function AccumulationContent() {
         direction: 'desc'
     });
 
+    const [trendsPage, setTrendsPage] = useState(1);
+    const [trendsPageSize, setTrendsPageSize] = useState(20);
+
     // Read tab from URL or default to overview
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview');
 
@@ -174,7 +177,8 @@ function AccumulationContent() {
     const [historyLoading, setHistoryLoading] = useState(false);
     const [historyError, setHistoryError] = useState('');
     const [historyPage, setHistoryPage] = useState(1);
-    const [hasMoreHistory, setHasMoreHistory] = useState(true);
+    const [historyPageSize, setHistoryPageSize] = useState(20);
+    // const [hasMoreHistory, setHasMoreHistory] = useState(true); // Removed for client-side pagination
 
     // Set default range based on tab
     useEffect(() => {
@@ -397,33 +401,23 @@ function AccumulationContent() {
                     setHistoryLoading(false);
                     return;
                 }
-                // If page 1, show loading usually. If page > 1, maybe just append?
-                // We'll use a separate loading state or just keep historyLoading true
-                if (historyPage === 1) setHistoryLoading(true);
 
+                setHistoryLoading(true);
                 setHistoryError('');
+
                 try {
+                    // Fetch allow/large batch for client-side pagination
                     const res = await api.get('/api/stocks/accumulation_history/', {
                         params: {
                             broker: selectedBroker,
                             symbol: selectedGraphSymbol,
-                            page: historyPage,
-                            page_size: 250
+                            page: 1,
+                            page_size: 5000
                         }
                     });
 
-                    const newData = res.data;
-                    if (newData.length < 250) {
-                        setHasMoreHistory(false);
-                    } else {
-                        setHasMoreHistory(true);
-                    }
-
-                    if (historyPage === 1) {
-                        setHistoryData(newData);
-                    } else {
-                        setHistoryData(prev => [...prev, ...newData]);
-                    }
+                    // For client-side pagination, we just set the full dataset
+                    setHistoryData(res.data);
                 } catch (err) {
                     console.error('Failed to fetch accumulation history', err);
                     setHistoryError('Failed to load history.');
@@ -433,25 +427,23 @@ function AccumulationContent() {
             };
             fetchHistory();
         }
-    }, [activeTab, selectedBroker, selectedGraphSymbol, historyPage]); // triggering on historyPage change
+    }, [activeTab, selectedBroker, selectedGraphSymbol]); // Removed historyPage dependency
+
+    // Client-side pagination logic
+    const sortedHistory = [...historyData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const historyTotalPages = Math.ceil(sortedHistory.length / historyPageSize) || 1;
+    const paginatedHistory = sortedHistory.slice((historyPage - 1) * historyPageSize, historyPage * historyPageSize);
 
     // Reset pagination when filters change
     useEffect(() => {
         setHistoryPage(1);
-        setHasMoreHistory(true);
+        // setHasMoreHistory(true); // Removed
         // We do typically want to clear data or show loading, but the main effect handles page 1 reset if we just reset page to 1
         // However, if we change filter, we might want to ensure date is wiped immediately? 
         // Let's rely on the main effect refetching for page 1.
     }, [selectedBroker, selectedGraphSymbol]);
 
-    const handleHistoryScroll = (e: React.UIEvent<HTMLDivElement>) => {
-        const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
-        if (scrollHeight - scrollTop <= clientHeight + 100) { // 100px threshold
-            if (!historyLoading && hasMoreHistory) {
-                setHistoryPage(prev => prev + 1);
-            }
-        }
-    };
+    // const handleHistoryScroll = ... // Removed infinite scroll handler
 
     const getGraphOption = () => {
         if (!graphData.length) return {};
@@ -658,6 +650,14 @@ function AccumulationContent() {
             if (String(aValue) > String(bValue)) return trendSortConfig.direction === 'asc' ? 1 : -1;
             return 0;
         });
+
+    const trendsTotalPages = Math.ceil(sortedTrends.length / trendsPageSize) || 1;
+    const paginatedTrends = sortedTrends.slice((trendsPage - 1) * trendsPageSize, trendsPage * trendsPageSize);
+
+    // Reset trends page on search or sort change
+    useEffect(() => {
+        setTrendsPage(1);
+    }, [search, trendSortConfig]);
 
     const TrendSortIcon = ({ column }: { column: string }) => {
         if (trendSortConfig.key !== column) return <div className="w-4 h-4 opacity-0" />;
@@ -1090,7 +1090,7 @@ function AccumulationContent() {
                                                     </TableCell>
                                                 </TableRow>
                                             ) : (
-                                                sortedTrends.map((row, idx) => (
+                                                paginatedTrends.map((row, idx) => (
                                                     <TableRow key={idx} className="hover:bg-blue-50/40 dark:hover:bg-slate-900/50 transition-colors group border-b dark:border-slate-800">
                                                         <TableCell className="font-bold text-blue-700 dark:text-indigo-400">{row.symbol}</TableCell>
                                                         <TableCell>
@@ -1133,9 +1133,54 @@ function AccumulationContent() {
                                             )}
                                         </TableBody>
                                     </table>
-                                    {historyLoading && historyPage > 1 && (
-                                        <div className="py-4 flex justify-center w-full bg-gray-50 dark:bg-slate-900 border-t dark:border-slate-800">
-                                            <Loader2 className="w-6 h-6 text-blue-500 dark:text-indigo-400 animate-spin" />
+
+                                    {/* Trends Pagination Controls */}
+                                    {!trendsLoading && sortedTrends.length > 0 && (
+                                        <div className="p-4 border-t dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0 rounded-b-xl">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-sm font-medium text-gray-500 dark:text-slate-400">Rows per page:</span>
+                                                <select
+                                                    value={trendsPageSize}
+                                                    onChange={(e) => {
+                                                        setTrendsPageSize(Number(e.target.value));
+                                                        setTrendsPage(1);
+                                                    }}
+                                                    className="h-8 rounded-lg border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800 text-sm font-bold focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500 dark:text-slate-200"
+                                                >
+                                                    {[20, 50, 100].map(size => (
+                                                        <option key={size} value={size}>{size}</option>
+                                                    ))}
+                                                </select>
+                                                <span className="text-xs text-gray-400 dark:text-slate-500 hidden sm:inline-block">
+                                                    | Total {sortedTrends.length} records
+                                                </span>
+                                            </div>
+
+                                            <div className="flex items-center gap-4">
+                                                <span className="text-sm font-medium text-gray-600 dark:text-slate-400">
+                                                    Page {trendsPage} of {trendsTotalPages}
+                                                </span>
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setTrendsPage(p => Math.max(1, p - 1))}
+                                                        disabled={trendsPage === 1}
+                                                        className="h-8 px-3 font-bold"
+                                                    >
+                                                        Previous
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setTrendsPage(p => Math.min(trendsTotalPages, p + 1))}
+                                                        disabled={trendsPage >= trendsTotalPages}
+                                                        className="h-8 px-3 font-bold"
+                                                    >
+                                                        Next
+                                                    </Button>
+                                                </div>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -1530,7 +1575,6 @@ function AccumulationContent() {
                         ) : (
                             <div
                                 className="flex-1 overflow-auto no-scrollbar"
-                                onScroll={handleHistoryScroll}
                             >
                                 <table className="w-full caption-bottom text-sm relative">
                                     <TableHeader className="bg-gray-50 dark:bg-slate-900 sticky top-0 z-10 shadow-sm border-b dark:border-slate-800">
@@ -1555,7 +1599,7 @@ function AccumulationContent() {
                                                 </TableCell>
                                             </TableRow>
                                         ) : (
-                                            historyData.map((item, idx) => (
+                                            paginatedHistory.map((item, idx) => (
                                                 <TableRow key={idx} className="hover:bg-gray-50 dark:hover:bg-slate-900/50 transition-colors border-b dark:border-slate-800 last:border-0 group">
                                                     <TableCell className="text-xs text-gray-600 dark:text-slate-400 font-medium whitespace-nowrap">
                                                         <div className="flex items-center gap-2">
@@ -1601,6 +1645,56 @@ function AccumulationContent() {
                                         )}
                                     </TableBody>
                                 </table>
+                            </div>
+                        )}
+
+                        {/* History Pagination Controls */}
+                        {!historyLoading && !historyError && historyData.length > 0 && (
+                            <div className="p-4 border-t dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0 rounded-b-xl">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-sm font-medium text-gray-500 dark:text-slate-400">Rows per page:</span>
+                                    <select
+                                        value={historyPageSize}
+                                        onChange={(e) => {
+                                            setHistoryPageSize(Number(e.target.value));
+                                            setHistoryPage(1);
+                                        }}
+                                        className="h-8 rounded-lg border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800 text-sm font-bold focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500 dark:text-slate-200"
+                                    >
+                                        {[20, 50, 100].map(size => (
+                                            <option key={size} value={size}>{size}</option>
+                                        ))}
+                                    </select>
+                                    <span className="text-xs text-gray-400 dark:text-slate-500 hidden sm:inline-block">
+                                        | Total {historyData.length} records
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center gap-4">
+                                    <span className="text-sm font-medium text-gray-600 dark:text-slate-400">
+                                        Page {historyPage} of {historyTotalPages}
+                                    </span>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
+                                            disabled={historyPage === 1}
+                                            className="h-8 px-3 font-bold"
+                                        >
+                                            Previous
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setHistoryPage(p => Math.min(historyTotalPages, p + 1))}
+                                            disabled={historyPage >= historyTotalPages}
+                                            className="h-8 px-3 font-bold"
+                                        >
+                                            Next
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>
