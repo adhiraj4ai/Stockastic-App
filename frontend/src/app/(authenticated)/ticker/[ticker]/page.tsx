@@ -644,15 +644,15 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                         >
                             <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-4 mb-8">
                                 <div className="flex items-center gap-6">
-                                    <TabsList className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 h-9 rounded-xl">
-                                        <TabsTrigger value="indicators" className="rounded-lg px-4 text-xs font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Indicators</TabsTrigger>
-                                        <TabsTrigger value="signals" className="rounded-lg px-4 text-xs font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Signals</TabsTrigger>
-                                        <TabsTrigger value="analysis" className="rounded-lg px-4 text-xs font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Analysis</TabsTrigger>
-                                        <TabsTrigger value="floorsheet" className="rounded-lg px-4 text-xs font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Floorsheet</TabsTrigger>
-                                        <TabsTrigger value="financials" className="rounded-lg px-4 text-xs font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Financials</TabsTrigger>
-                                        <TabsTrigger value="dividends" className="rounded-lg px-4 text-xs font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Dividends</TabsTrigger>
-                                        <TabsTrigger value="history" className="rounded-lg px-4 text-xs font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">History</TabsTrigger>
-                                        <TabsTrigger value="fibonacci" className="rounded-lg px-4 text-xs font-medium data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-amber-600 dark:data-[state=active]:text-amber-400 data-[state=active]:shadow-sm">Fibonacci</TabsTrigger>
+                                    <TabsList className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 h-10 rounded-xl shadow-sm">
+                                        <TabsTrigger value="indicators" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Indicators</TabsTrigger>
+                                        <TabsTrigger value="signals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Signals</TabsTrigger>
+                                        <TabsTrigger value="analysis" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Analysis</TabsTrigger>
+                                        <TabsTrigger value="floorsheet" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Floorsheet</TabsTrigger>
+                                        <TabsTrigger value="financials" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Financials</TabsTrigger>
+                                        <TabsTrigger value="dividends" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Dividends</TabsTrigger>
+                                        <TabsTrigger value="history" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">History</TabsTrigger>
+                                        <TabsTrigger value="fibonacci" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-amber-600 dark:data-[state=active]:text-amber-400 data-[state=active]:shadow-sm transition-all">Fibonacci</TabsTrigger>
                                     </TabsList>
                                 </div>
                             </div>
@@ -665,7 +665,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                 <TabsContent value="floorsheet" className="mt-0 space-y-8">
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                         {/* Accumulation (Top Buyers) */}
-                                        <div className="glass-card-light dark:bg-slate-900 rounded-3xl p-8 border-slate-200 dark:border-slate-700">
+                                        <div className="glass-card-light dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
                                             <div className="flex items-center gap-3 mb-6">
                                                 <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
                                                     <TrendingUp size={18} />
@@ -697,7 +697,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                         </div>
 
                                         {/* Distribution (Top Sellers) */}
-                                        <div className="glass-card-light dark:bg-slate-900 rounded-3xl p-8 border-slate-200 dark:border-slate-700">
+                                        <div className="glass-card-light dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
                                             <div className="flex items-center gap-3 mb-6">
                                                 <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800">
                                                     <TrendingDown size={18} />
@@ -730,7 +730,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                     </div>
 
                                     {/* Raw Floorsheet Table */}
-                                    <div className="glass-card-light dark:bg-slate-900 rounded-3xl p-8 border-slate-200 dark:border-slate-700">
+                                    <div className="glass-card-light dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
                                         <div className="flex items-center justify-between mb-8">
                                             <div className="flex items-center gap-3">
                                                 <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800">
@@ -745,9 +745,9 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                 <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-none px-3">Direct Feed</Badge>
                                             </div>
                                         </div>
-                                        <div className="overflow-x-auto no-scrollbar rounded-2xl border border-slate-100 dark:border-slate-800">
+                                        <div className="overflow-x-auto no-scrollbar rounded-2xl border border-slate-200 dark:border-slate-800">
                                             <table className="w-full text-sm text-left">
-                                                <thead className="bg-slate-50 dark:bg-slate-800 text-slate-400 border-b border-slate-100 dark:border-slate-700">
+                                                <thead className="bg-slate-50 dark:bg-slate-800 text-slate-400 border-b border-slate-200 dark:border-slate-700">
                                                     <tr>
                                                         <th className="px-6 py-4 font-semibold text-[10px]">Trans #</th>
                                                         <th className="px-6 py-4 font-semibold text-[10px]">Buyer</th>
@@ -775,7 +775,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                 </TabsContent>
 
                                 <TabsContent value="dividends" className="mt-0">
-                                    <div className="glass-card-light dark:bg-slate-900 rounded-2xl p-8 border-slate-200 dark:border-slate-700">
+                                    <div className="glass-card-light dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
                                         <div className="flex items-center gap-3 mb-8">
                                             <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800">
                                                 <PieChart size={18} />
@@ -785,9 +785,9 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                 <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">Shareholder rewards timeline</p>
                                             </div>
                                         </div>
-                                        <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                                        <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
                                             <table className="w-full text-sm text-left">
-                                                <thead className="bg-slate-50 dark:bg-slate-800 text-slate-400 border-b border-slate-100 dark:border-slate-700">
+                                                <thead className="bg-slate-50 dark:bg-slate-800 text-slate-400 border-b border-slate-200 dark:border-slate-700">
                                                     <tr>
                                                         <th className="px-6 py-4 font-semibold text-[10px]">Fiscal Year</th>
                                                         <th className="px-6 py-4 font-semibold text-[10px]">Bonus (%)</th>
@@ -818,7 +818,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                 </TabsContent>
 
                                 <TabsContent value="financials" className="mt-0 space-y-8">
-                                    <div className="glass-card-light rounded-2xl p-8">
+                                    <div className="glass-card-light rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
                                         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
                                             <div className="flex items-center gap-3">
                                                 <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
@@ -850,7 +850,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                         </div>
 
                                         {/* Financial Summary Chart */}
-                                        <div className="bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 p-6 mb-8 shadow-sm">
+                                        <div className="bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 mb-8 shadow-sm">
                                             <div className="h-[400px]">
                                                 <ReactECharts
                                                     key={`${reportType}-${visibleMetrics.join('-')}`}
@@ -871,7 +871,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                         if (!sectionData) return null;
 
                                                         return (
-                                                            <div key={section} className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+                                                            <div key={section} className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
                                                                 <button
                                                                     onClick={() => toggleCollapse(`section-${section}`)}
                                                                     className="w-full flex items-center justify-between px-6 py-4 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100/50 dark:hover:bg-slate-700/50 transition-colors"
@@ -936,7 +936,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                 <TabsContent value="indicators" className="mt-0">
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                         {/* Fundamental Benchmarks */}
-                                        <div className="glass-card-light rounded-2xl p-8">
+                                        <div className="glass-card-light rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
                                             <div className="flex items-center gap-3 mb-10">
                                                 <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
                                                     <BarChart2 size={18} />
@@ -947,9 +947,9 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                 </div>
                                             </div>
 
-                                            <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800">
+                                            <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
                                                 <table className="w-full text-sm">
-                                                    <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
+                                                    <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
                                                         <tr>
                                                             <th className="px-6 py-4 text-left font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Metric</th>
                                                             <th className="px-6 py-4 text-center font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Audited</th>
@@ -1015,7 +1015,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                         </div>
 
                                         {/* Technical Divergence */}
-                                        <div className="glass-card-light rounded-2xl p-8">
+                                        <div className="glass-card-light rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
                                             <div className="flex items-center gap-3 mb-10">
                                                 <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
                                                     <TrendingUp size={18} />
@@ -1045,9 +1045,9 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
 
                                                         return (
                                                             <TabsContent key={category} value={category} className="mt-0 focus-visible:outline-none ring-offset-background">
-                                                                <div className="overflow-hidden overflow-y-auto max-h-[500px] rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm relative no-scrollbar">
+                                                                <div className="overflow-hidden overflow-y-auto max-h-[500px] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative no-scrollbar">
                                                                     <table className="w-full text-sm">
-                                                                        <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 backdrop-blur-sm sticky top-0 z-10">
+                                                                        <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 backdrop-blur-sm sticky top-0 z-10">
                                                                             <tr>
                                                                                 <th className="px-6 py-4 text-left font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Indicator</th>
                                                                                 <th className="px-6 py-4 text-center font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Value</th>
@@ -1113,7 +1113,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                 </TabsContent>
 
                                 <TabsContent value="history" className="mt-0">
-                                    <div className="glass-card-light rounded-2xl p-8 border-slate-200">
+                                    <div className="glass-card-light rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
                                         <div className="flex items-center justify-between mb-8">
                                             <div className="flex items-center gap-3">
                                                 <div className="p-2 rounded-xl bg-slate-50 text-slate-600 border border-slate-100">
@@ -1143,9 +1143,9 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                         </div>
 
                                         {historyView === 'table' ? (
-                                            <div className="overflow-hidden overflow-y-auto max-h-[500px] rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm relative no-scrollbar">
+                                            <div className="overflow-hidden overflow-y-auto max-h-[500px] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative no-scrollbar">
                                                 <table className="w-full text-sm text-left">
-                                                    <thead className="bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-10">
+                                                    <thead className="bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
                                                         <tr>
                                                             <th className="px-6 py-4 font-semibold text-[10px]">Date</th>
                                                             <th className="px-6 py-4 font-semibold text-[10px]">Open</th>

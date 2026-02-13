@@ -49,7 +49,7 @@ export default function SignalDashboard({ symbol }: { symbol: string }) {
     if (holdCount > buyCount && holdCount > sellCount) consensus = "HOLD";
 
     return (
-        <div className="glass-card-light rounded-2xl p-6 relative group overflow-hidden">
+        <div className="glass-card-light rounded-2xl border border-slate-200 dark:border-slate-800/50 p-6 relative group overflow-hidden shadow-sm">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="relative z-10">
                 <div className="flex justify-between items-center mb-6">
@@ -70,7 +70,7 @@ export default function SignalDashboard({ symbol }: { symbol: string }) {
                     ) : (
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="text-sm text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800">
+                                <tr className="text-sm text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-800">
                                     <th className="p-3 font-semibold">Strategy</th>
                                     <th className="p-3 font-semibold text-center">Signal</th>
                                     <th className="p-3 font-semibold text-center">Date</th>
