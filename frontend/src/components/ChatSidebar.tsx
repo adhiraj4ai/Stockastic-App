@@ -7,9 +7,10 @@ import { chatApi, ChatMessage } from '@/lib/api';
 interface ChatSidebarProps {
     isPinned?: boolean;
     onPinToggle?: () => void;
+    hideFloatingButton?: boolean; // New prop to hide the floating button when using unified menu
 }
 
-export function ChatSidebar({ isPinned = false, onPinToggle }: ChatSidebarProps) {
+export function ChatSidebar({ isPinned = false, onPinToggle, hideFloatingButton = false }: ChatSidebarProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -79,10 +80,17 @@ export function ChatSidebar({ isPinned = false, onPinToggle }: ChatSidebarProps)
         }
     }, [activeSessionId]);
 
+    // Expose method to open chat from external trigger
+    useEffect(() => {
+        const handleOpenChat = () => setIsOpen(true);
+        window.addEventListener('openChatSidebar', handleOpenChat);
+        return () => window.removeEventListener('openChatSidebar', handleOpenChat);
+    }, []);
+
     return (
         <>
-            {/* Toggle Button (Floating) - Hide if open or pinned */}
-            {!showSidebar && (
+            {/* Toggle Button (Floating) - Hide if open, pinned, or hideFloatingButton is true */}
+            {!showSidebar && !hideFloatingButton && (
                 <button
                     onClick={() => setIsOpen(true)}
                     className="fixed right-6 bottom-6 h-14 w-14 bg-slate-900 dark:bg-indigo-600 rounded-full shadow-2xl flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all z-40 hover:shadow-indigo-500/20"

@@ -7,12 +7,13 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { Trash2, Plus, TrendingUp, TrendingDown, DollarSign, Wallet, Users, FolderPlus, ShieldAlert, CheckCircle2, Activity, Pencil } from 'lucide-react';
+import { Trash2, Plus, TrendingUp, TrendingDown, DollarSign, Wallet, Users, FolderPlus, ShieldAlert, CheckCircle2, Activity, Pencil, Calculator } from 'lucide-react';
 import TransactionModal, { PortfolioAccount } from '@/components/TransactionModal';
 import { CreateAccountDialog } from '@/components/CreateAccountDialog';
 import StockLink from '@/components/StockLink';
 import { Wand2, Target, Check, ChevronDown, ChevronUp, Radio, PieChart as PieIcon, BarChart as BarIcon, Grid3X3, Zap, Search, ArrowUpDown, ChevronLeft, ChevronRight, ArrowUp } from 'lucide-react';
 import { ExitStrategyDialog } from '@/components/ExitStrategyDialog';
+import { PositionSizingCalculator } from '@/components/PositionSizingCalculator';
 import { CompanySelect } from '@/components/CompanySelect';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -104,6 +105,7 @@ function PortfolioContent() {
     });
     const pageSize = 10;
     const [mounted, setMounted] = useState(false);
+    const [isPositionCalcOpen, setIsPositionCalcOpen] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
     const activeTab = searchParams.get('tab') || 'holdings';
@@ -1292,7 +1294,26 @@ function PortfolioContent() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </DashboardLayout >
+
+            {/* Position Sizing Calculator */}
+            <PositionSizingCalculator
+                open={isPositionCalcOpen}
+                onOpenChange={setIsPositionCalcOpen}
+                accountId={selectedAccount}
+            />
+
+            {/* Floating Action Button for Position Calculator */}
+            <button
+                onClick={() => setIsPositionCalcOpen(true)}
+                className="fixed bottom-8 right-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-all z-50 group"
+                title="Position Sizing Calculator"
+            >
+                <Calculator className="h-6 w-6" />
+                <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 px-3 py-1 rounded-lg text-sm font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    Position Sizing Calculator
+                </span>
+            </button>
+        </DashboardLayout>
     );
 }
 

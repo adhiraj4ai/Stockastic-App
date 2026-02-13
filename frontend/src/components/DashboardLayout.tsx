@@ -520,7 +520,7 @@ function DashboardContent({
                     {children}
                 </div>
             </main >
-            {!isChatPage && <ChatSidebar isPinned={isChatPinned} onPinToggle={() => setIsChatPinned(!isChatPinned)} />}
+            {!isChatPage && <ChatSidebar isPinned={isChatPinned} onPinToggle={() => setIsChatPinned(!isChatPinned)} hideFloatingButton={true} />}
 
             <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
         </div >

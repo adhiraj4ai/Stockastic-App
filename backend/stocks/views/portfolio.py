@@ -94,6 +94,104 @@ class PortfolioViewSet(viewsets.ModelViewSet):
             
         return Response(result)
 
+    @action(detail=False, methods=['post'])
+    def calculate_position_size(self, request):
+        """
+        Calculate optimal position size based on risk parameters.
+        
+        POST body:
+        {
+            "account_id": int or "all" (optional, defaults to "all"),
+            "entry_price": float (required),
+            "stop_loss_price": float (required),
+            "risk_percentage": float (optional, defaults to account's default or 2.0),
+            "target_price": float (optional, for R/R calculation)
+        }
+        """
+        from ..services.position_sizing import PositionSizingService
+        
+        user = request.user
+        
+        # Get parameters from request
+        account_id = request.data.get('account_id', 'all')
+        entry_price = request.data.get('entry_price')
+        stop_loss_price = request.data.get('stop_loss_price')
+        risk_percentage = request.data.get('risk_percentage')
+        target_price = request.data.get('target_price')
+        
+        # Validate required parameters
+        if entry_price is None:
+            return Response(
+                {"error": "entry_price is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if stop_loss_price is None:
+            return Response(
+                {"error": "stop_loss_price is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Calculate account balance
+        if account_id == 'all':
+            # Use total portfolio value across all accounts
+            queryset = PortfolioItem.objects.filter(user=user)
+            total_value = sum(float(item.current_price) * item.quantity for item in queryset)
+            
+            # Add cash balance from all accounts
+            accounts = PortfolioAccount.objects.filter(user=user)
+            total_cash = sum(float(acc.balance) for acc in accounts)
+            
+            account_balance = total_value + total_cash
+            
+            # Get default risk percentage from first account or use 2.0
+            if accounts.exists():
+                default_risk = float(accounts.first().default_risk_percentage)
+            else:
+                default_risk = 2.0
+        else:
+            # Use specific account
+            try:
+                account = PortfolioAccount.objects.get(id=account_id, user=user)
+                
+                # Calculate account value (holdings + cash)
+                queryset = PortfolioItem.objects.filter(user=user, account=account)
+                holdings_value = sum(float(item.current_price) * item.quantity for item in queryset)
+                
+                account_balance = holdings_value + float(account.balance)
+                default_risk = float(account.default_risk_percentage)
+            except PortfolioAccount.DoesNotExist:
+                return Response(
+                    {"error": "Account not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        
+        # Use provided risk percentage or default
+        if risk_percentage is None:
+            risk_percentage = default_risk
+        
+        # Ensure minimum account balance
+        if account_balance <= 0:
+            account_balance = 100000  # Default to 1 lakh if no portfolio
+        
+        # Calculate position size
+        try:
+            result = PositionSizingService.calculate_position_size(
+                account_balance=account_balance,
+                risk_percentage=float(risk_percentage),
+                entry_price=float(entry_price),
+                stop_loss_price=float(stop_loss_price),
+                target_price=float(target_price) if target_price else None
+            )
+            
+            return Response(result, status=status.HTTP_200_OK)
+            
+        except ValueError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
     @action(detail=True, methods=['get'])
     def suggest_exits(self, request, pk=None):
         item = self.get_object()
