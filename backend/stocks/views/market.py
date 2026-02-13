@@ -687,6 +687,56 @@ def floorsheet_list(request):
     except Exception as e:
         return Response({'error': str(e)}, status=500)
 
+def _get_broker_accumulation(ticker):
+    """
+    Calculate top buyers/sellers for multiple time ranges on the fly.
+    """
+    ranges = {
+        '1D': 1, '1W': 7, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, '2Y': 730
+    }
+    
+    # Get latest date for this ticker from floorsheet
+    latest_fs = DailyFloorsheet.objects.filter(symbol=ticker).order_by('-transaction_date').first()
+    if not latest_fs:
+        return {}
+        
+    latest_date = latest_fs.transaction_date
+    results = {}
+    
+    for label, days in ranges.items():
+        if label == '1D':
+            start_date = latest_date
+        else:
+            start_date = latest_date - datetime.timedelta(days=days)
+            
+        # Aggregate Buyers
+        buyers = DailyFloorsheet.objects.filter(
+            symbol=ticker, 
+            transaction_date__gte=start_date,
+            transaction_date__lte=latest_date
+        ).values('buyer_id').annotate(
+            qty=Sum('transaction_quantity')
+        ).order_by('-qty')[:5]
+        
+        # Aggregate Sellers
+        sellers = DailyFloorsheet.objects.filter(
+            symbol=ticker, 
+            transaction_date__gte=start_date,
+            transaction_date__lte=latest_date
+        ).values('seller_id').annotate(
+            qty=Sum('transaction_quantity')
+        ).order_by('-qty')[:5]
+        
+        range_data = []
+        for b in buyers:
+            range_data.append({"broker": str(b['buyer_id']), "qty": int(b['qty']), "type": "BUY"})
+        for s in sellers:
+            range_data.append({"broker": str(s['seller_id']), "qty": int(s['qty']), "type": "SELL"})
+            
+        results[label] = range_data
+        
+    return results
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def stock_detail(request, ticker):
@@ -695,7 +745,10 @@ def stock_detail(request, ticker):
         fundamental = StockFundamental.objects.get(ticker=ticker)
         fundamental_data = dict(StockFundamentalSerializer(fundamental).data)
     except StockFundamental.DoesNotExist:
-        fundamental_data = None
+        fundamental_data = {}
+        
+    # Inject broker accumulation data on-the-fly
+    fundamental_data['broker_accumulation'] = _get_broker_accumulation(ticker)
         
     latest_price = DailyStockPrice.objects.filter(ticker=ticker).order_by('-date').first()
     prev_price_obj = DailyStockPrice.objects.filter(ticker=ticker).order_by('-date')[1:2]

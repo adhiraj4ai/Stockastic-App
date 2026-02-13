@@ -646,18 +646,22 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                 <div className="flex items-center gap-6">
                                     <TabsList className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 h-10 rounded-xl shadow-sm">
                                         <TabsTrigger value="indicators" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Indicators</TabsTrigger>
+                                        <TabsTrigger value="fibonacci" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-amber-600 dark:data-[state=active]:text-amber-400 data-[state=active]:shadow-sm transition-all">Fibonacci</TabsTrigger>
                                         <TabsTrigger value="signals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Signals</TabsTrigger>
                                         <TabsTrigger value="analysis" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Analysis</TabsTrigger>
                                         <TabsTrigger value="floorsheet" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Floorsheet</TabsTrigger>
                                         <TabsTrigger value="financials" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Financials</TabsTrigger>
                                         <TabsTrigger value="dividends" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Dividends</TabsTrigger>
                                         <TabsTrigger value="history" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">History</TabsTrigger>
-                                        <TabsTrigger value="fibonacci" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-amber-600 dark:data-[state=active]:text-amber-400 data-[state=active]:shadow-sm transition-all">Fibonacci</TabsTrigger>
                                     </TabsList>
                                 </div>
                             </div>
 
                             <div className="animate-in fade-in zoom-in-95 duration-700">
+                                <TabsContent value="fibonacci" className="mt-0 space-y-8">
+                                    <FibonacciRetracement symbol={ticker} />
+                                </TabsContent>
+
                                 <TabsContent value="signals" className="mt-0 space-y-8">
                                     <SignalDashboard symbol={ticker} />
                                 </TabsContent>
@@ -1108,9 +1112,6 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                     <BrokerAnalysis symbol={ticker} />
                                 </TabsContent>
 
-                                <TabsContent value="fibonacci" className="mt-0 space-y-8">
-                                    <FibonacciRetracement symbol={ticker} />
-                                </TabsContent>
 
                                 <TabsContent value="history" className="mt-0">
                                     <div className="glass-card-light rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
