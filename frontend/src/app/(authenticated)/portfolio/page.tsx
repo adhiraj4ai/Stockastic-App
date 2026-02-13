@@ -585,7 +585,7 @@ function PortfolioContent() {
                                                 return (
                                                     <React.Fragment key={`${item.ticker}-${idx}`}>
                                                         <TableRow
-                                                            className={`transition-all duration-300 cursor-pointer border-l-4 ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-blue-50/30 dark:bg-blue-900/20 border-l-blue-500' : isUnderwater ? 'border-l-red-500/50 hover:bg-red-50/10 dark:hover:bg-red-900/10' : hasStrategy ? 'border-l-green-500/50 hover:bg-gray-50 dark:hover:bg-slate-800' : 'border-l-transparent hover:bg-gray-50 dark:hover:bg-slate-800'}`}
+                                                            className={`transition-all duration-200 cursor-pointer border-l-4 hover:shadow-lg hover:scale-[1.01] hover:-translate-y-0.5 ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-blue-50/50 dark:bg-blue-900/30 border-l-blue-500 shadow-lg scale-[1.01]' : isUnderwater ? 'border-l-red-500/50 hover:bg-red-50/20 dark:hover:bg-red-900/20 hover:border-l-red-500' : hasStrategy ? 'border-l-green-500/50 hover:bg-green-50/20 dark:hover:bg-green-900/20 hover:border-l-green-500' : 'border-l-transparent hover:bg-slate-50/80 dark:hover:bg-slate-800/50 hover:border-l-blue-400/50'}`}
                                                             onClick={() => {
                                                                 setSelectedPortfolioItem(item);
                                                                 setIsExitPlanDialogOpen(true);
