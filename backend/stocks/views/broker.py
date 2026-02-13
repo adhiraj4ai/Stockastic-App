@@ -290,41 +290,76 @@ class BrokerViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def signals(self, request):
         """
-        Identify high-potential accumulation signals:
-        1. Platinum Buy: Price is near Broker WAC (-5% to +5%) + High Accumulation
-        2. Momentum Buy: Price is breaking out from WAC (+5% to +15%)
-        3. Contrarian Buy: Price < WAC (< -5%) - High Risk / High Reward
+        Identify high-potential signals using Institutional Clustering and Divergence.
         """
         query = """
-        WITH trend_data AS (
+        WITH accumulation_ref AS (
+            SELECT transaction_date as latest_acc_date 
+            FROM daily_cumulative_accumulation 
+            GROUP BY transaction_date 
+            HAVING COUNT(*) > 100 
+            ORDER BY transaction_date DESC 
+            LIMIT 1
+        ),
+        ranked_holders AS (
             SELECT 
-                ca.*,
-                ca.cumulative_net - LAG(ca.cumulative_net, 5) OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date) AS net_5d,
-                MAX(ca.transaction_date) FILTER (WHERE ca.transaction_date IN (
-                    SELECT transaction_date FROM daily_cumulative_accumulation 
-                    GROUP BY transaction_date HAVING COUNT(*) > 100
-                )) OVER () AS latest_date
+                symbol, entity_id, cumulative_net,
+                ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY cumulative_net DESC) as rank
+            FROM daily_cumulative_accumulation, accumulation_ref
+            WHERE transaction_date = accumulation_ref.latest_acc_date
+            AND cumulative_net > 0 
+        ),
+        smart_money AS (
+            SELECT symbol, entity_id as broker 
+            FROM ranked_holders 
+            WHERE rank <= 15
+        ),
+        broker_delta AS (
+            SELECT 
+                ca.symbol, ca.entity_id as broker,
+                ca.cumulative_net as current_net,
+                (ca.cumulative_net - LAG(ca.cumulative_net, 5) OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date)) as net_5d,
+                (ca.cumulative_net - LAG(ca.cumulative_net, 20) OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date)) as net_20d,
+                ROUND(ca.cumulative_buy_amount / NULLIF(ca.cumulative_buy, 0), 2) as wac,
+                ca.transaction_date
             FROM daily_cumulative_accumulation ca
-            INNER JOIN companies c ON ca.symbol = c.symbol
-            WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
+        ),
+        latest_broker_delta AS (
+            SELECT bd.* FROM broker_delta bd, accumulation_ref
+            WHERE bd.transaction_date = accumulation_ref.latest_acc_date
+        ),
+        symbol_clustering AS (
+            SELECT 
+                bd.symbol,
+                COUNT(DISTINCT bd.broker) FILTER (WHERE sm.broker IS NOT NULL AND bd.net_5d > 0) as cluster_count,
+                SUM(CASE WHEN sm.broker IS NOT NULL THEN bd.net_5d ELSE 0 END) as inst_net_5d,
+                SUM(CASE WHEN sm.broker IS NOT NULL THEN bd.net_20d ELSE 0 END) as inst_net_20d,
+                MAX(bd.wac) as top_broker_wac
+            FROM latest_broker_delta bd
+            LEFT JOIN smart_money sm ON bd.symbol = sm.symbol AND bd.broker = sm.broker
+            GROUP BY bd.symbol
+        ),
+        price_ref AS (
+            SELECT 
+                symbol, close, 
+                LAG(close, 5) OVER (PARTITION BY symbol ORDER BY transaction_date) as close_5d,
+                transaction_date,
+                ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY transaction_date DESC) as rn
+            FROM daily_stock_price
+        ),
+        latest_price AS (
+            SELECT * FROM price_ref WHERE rn = 1
         )
         SELECT 
-            td.symbol, 
-            c."companyName" as name,
-            c."sectorName" as sector,
-            td.entity_id as broker, 
-            td.cumulative_net,
-            ROUND(td.cumulative_buy_amount / NULLIF(td.cumulative_buy, 0), 2) as wac,
-            dsp.close as ltp
-        FROM trend_data td
-        INNER JOIN companies c ON td.symbol = c.symbol
-        LEFT JOIN (
-            SELECT DISTINCT ON (symbol) symbol, close 
-            FROM daily_stock_price ORDER BY symbol, transaction_date DESC
-        ) dsp ON td.symbol = dsp.symbol
-        WHERE td.transaction_date = td.latest_date
-        AND td.cumulative_net > 100000 -- Minimum meaningful accumulation
-        ORDER BY td.cumulative_net DESC;
+            sc.symbol, c."companyName" as name, c."sectorName" as sector,
+            sc.cluster_count, sc.inst_net_5d, sc.inst_net_20d, sc.top_broker_wac,
+            lp.close as ltp, lp.close_5d
+        FROM symbol_clustering sc
+        INNER JOIN companies c ON sc.symbol = c.symbol
+        INNER JOIN latest_price lp ON sc.symbol = lp.symbol
+        WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
+        AND (sc.cluster_count >= 1 OR sc.inst_net_5d > 50000)
+        ORDER BY sc.cluster_count DESC, sc.inst_net_5d DESC;
         """
         
         with connections['default'].cursor() as cursor:
@@ -332,47 +367,57 @@ class BrokerViewSet(viewsets.ViewSet):
             columns = [col[0] for col in cursor.description]
             raw_results = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-        # Post-process to categorize signals
         signals = []
-        seen_symbols = set()
-
         for row in raw_results:
-            if row['symbol'] in seen_symbols:
-                continue
-
-            ltp = row['ltp']
-            wac = row['wac']
+            ltp = float(row['ltp'] or 0)
+            wac = float(row['top_broker_wac'] or 0)
+            net_5d = float(row['inst_net_5d'] or 0)
+            clusters = row['cluster_count']
+            price_5d = float(row['close_5d'] or ltp)
             
-            if not ltp or not wac:
-                continue
-
-            markup = ((float(ltp) - float(wac)) / float(wac)) * 100
-            row['markup_percent'] = round(markup, 2)
-
+            price_change = ((ltp - price_5d) / price_5d) * 100 if price_5d > 0 else 0
+            markup = ((ltp - wac) / wac) * 100 if wac > 0 else 0
+            
             signal_type = None
-            risk_reward = "Neutral"
+            rationale = ""
+            strength = "Low"
 
-            if -5 <= markup <= 5:
+            # 1. Platinum (Optimal Entry)
+            if clusters >= 2 and -5 <= markup <= 5:
                 signal_type = "Platinum Buy"
-                risk_reward = "Excellent"
-            elif 5 < markup <= 15:
-                signal_type = "Momentum Buy"
-                risk_reward = "Good"
-            elif markup < -5:
-                 signal_type = "Contrarian Buy" 
-                 risk_reward = "High Risk"
-            else:
-                 signal_type = "Watchlist"
-                 risk_reward = "High Risk"
+                rationale = f"Institutional Clustering ({clusters} brokers) near average cost (WAC)."
+                strength = "Exceptional"
+            
+            # 2. Gold (Strong Momentum or Heavy Cluster)
+            elif clusters >= 4 or (net_5d > 200000 and price_change > 2):
+                signal_type = "Gold Signal"
+                if clusters >= 4:
+                    rationale = f"High Institutional Clustering ({clusters} brokers) identified."
+                else:
+                    rationale = f"Aggressive institutional accumulation with price momentum."
+                strength = "High"
+
+            # 3. Silver (Early Entry)
+            elif clusters >= 2:
+                signal_type = "Silver Signal"
+                rationale = f"Early institutional interest detected from {clusters} smart-money brokers."
+                strength = "Medium"
+
+            # 4. Divergence (Contrarian)
+            elif price_change < -3 and net_5d > 100000:
+                signal_type = "Bullish Divergence"
+                rationale = "Institutional accumulation increasing despite price correction."
+                strength = "High"
 
             if signal_type:
-                row['signal_type'] = signal_type
-                row['risk_reward'] = risk_reward
+                row.update({
+                    'signal_type': signal_type,
+                    'rationale': rationale,
+                    'strength': strength,
+                    'markup_percent': round(markup, 2),
+                    'price_change_5d': round(price_change, 2)
+                })
                 signals.append(row)
-                seen_symbols.add(row['symbol'])
-
-        # Sort by markup (lowest markup first = closer to WAC is better for Buying)
-        signals.sort(key=lambda x: x['markup_percent'])
 
         return Response(signals)
 

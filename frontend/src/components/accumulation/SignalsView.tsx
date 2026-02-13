@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, TrendingUp, TrendingDown, AlertTriangle, Crosshair, ArrowRight } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, AlertTriangle, Crosshair, ArrowRight, Activity } from 'lucide-react';
 import api from '@/lib/api';
 import { Progress } from "@/components/ui/progress";
 import Link from 'next/link';
@@ -13,13 +13,17 @@ interface Signal {
     symbol: string;
     name: string;
     sector: string;
-    broker: number;
-    cumulative_net: number;
-    wac: number;
+    cluster_count: number;
+    inst_net_5d: number;
+    inst_net_20d: number;
+    top_broker_wac: number;
     ltp: number;
+    close_5d: number;
+    signal_type: 'Platinum Buy' | 'Gold Signal' | 'Silver Signal' | 'Bullish Divergence';
+    rationale: string;
+    strength: string;
     markup_percent: number;
-    signal_type: 'Platinum Buy' | 'Momentum Buy' | 'Contrarian Buy' | 'Watchlist';
-    risk_reward: string;
+    price_change_5d: number;
 }
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -44,9 +48,9 @@ export function SignalsView() {
 
     const groupedSignals = {
         platinum: signals.filter(s => s.signal_type === 'Platinum Buy'),
-        momentum: signals.filter(s => s.signal_type === 'Momentum Buy'),
-        contrarian: signals.filter(s => s.signal_type === 'Contrarian Buy'),
-        watchlist: signals.filter(s => s.signal_type === 'Watchlist'),
+        gold: signals.filter(s => s.signal_type === 'Gold Signal'),
+        silver: signals.filter(s => s.signal_type === 'Silver Signal'),
+        divergence: signals.filter(s => s.signal_type === 'Bullish Divergence'),
     };
 
     if (loading) {
@@ -59,10 +63,10 @@ export function SignalsView() {
     }
 
     const sections = [
-        { id: 'platinum', label: 'Platinum', signals: groupedSignals.platinum, color: 'bg-indigo-500', badge: 'High Conviction', badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-        { id: 'momentum', label: 'Momentum', signals: groupedSignals.momentum, color: 'bg-emerald-500', badge: 'Trend Following', badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-        { id: 'contrarian', label: 'Contrarian', signals: groupedSignals.contrarian, color: 'bg-amber-500', badge: 'Dip Buying', badgeColor: 'bg-amber-50 text-amber-700 border-amber-200' },
-        { id: 'watchlist', label: 'Watchlist', signals: groupedSignals.watchlist, color: 'bg-slate-400', badge: 'Wait for Pullback', badgeColor: 'bg-slate-50 text-slate-700 border-slate-200' },
+        { id: 'platinum', label: 'Platinum', signals: groupedSignals.platinum, color: 'bg-indigo-500', badge: 'Optimal Entry', badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+        { id: 'gold', label: 'Gold', signals: groupedSignals.gold, color: 'bg-amber-500', badge: 'High Conviction', badgeColor: 'bg-amber-50 text-amber-700 border-amber-200' },
+        { id: 'silver', label: 'Silver', signals: groupedSignals.silver, color: 'bg-slate-400', badge: 'Institutional Entry', badgeColor: 'bg-slate-50 text-slate-700 border-slate-200' },
+        { id: 'divergence', label: 'Divergence', signals: groupedSignals.divergence, color: 'bg-emerald-500', badge: 'Bullish Divergence', badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
     ];
 
     // Find first non-empty section to set as default tab
@@ -140,9 +144,9 @@ function SignalCard({ signal }: { signal: Signal }) {
     return (
         <Card className="hover:shadow-lg transition-all duration-300 border-slate-200 dark:border-slate-800 group relative overflow-hidden">
             <div className={`absolute top-0 left-0 w-1 h-full ${signal.signal_type === 'Platinum Buy' ? 'bg-indigo-500' :
-                signal.signal_type === 'Momentum Buy' ? 'bg-emerald-500' :
-                    signal.signal_type === 'Contrarian Buy' ? 'bg-amber-500' :
-                        signal.signal_type === 'Watchlist' ? 'bg-slate-400' : 'bg-slate-400'
+                signal.signal_type === 'Gold Signal' ? 'bg-amber-500' :
+                    signal.signal_type === 'Silver Signal' ? 'bg-slate-400' :
+                        signal.signal_type === 'Bullish Divergence' ? 'bg-emerald-500' : 'bg-slate-400'
                 }`}></div>
 
             <CardContent className="p-5">
@@ -168,19 +172,26 @@ function SignalCard({ signal }: { signal: Signal }) {
                     </div>
                 </div>
 
+                <div className="mb-4">
+                    <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+                        <Activity className="w-4 h-4" />
+                        {signal.rationale}
+                    </p>
+                </div>
+
                 <div className="space-y-4">
                     <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-slate-800/50">
                         <div className="flex justify-between text-sm mb-1">
-                            <span className="text-slate-500">Whale Broker</span>
-                            <span className="font-bold text-slate-700 dark:text-slate-300">Broker {signal.broker}</span>
+                            <span className="text-slate-500">Institutional Support</span>
+                            <span className="font-bold text-slate-700 dark:text-slate-300">{signal.cluster_count} Smart Brokers Buying</span>
                         </div>
                         <div className="flex justify-between text-sm mb-1">
-                            <span className="text-slate-500">Accumulated</span>
-                            <span className="font-mono font-medium text-slate-900 dark:text-slate-100">{signal.cumulative_net.toLocaleString()} qty</span>
+                            <span className="text-slate-500">5D Inst. Net Flow</span>
+                            <span className="font-mono font-medium text-slate-900 dark:text-slate-100">{signal.inst_net_5d.toLocaleString()} qty</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                            <span className="text-slate-500">Avg Cost (WAC)</span>
-                            <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">Rs. {signal.wac}</span>
+                            <span className="text-slate-500">Key Broker WAC</span>
+                            <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">Rs. {signal.top_broker_wac}</span>
                         </div>
                     </div>
 

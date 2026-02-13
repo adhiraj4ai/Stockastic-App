@@ -123,13 +123,9 @@ def _calculate_trend(df, indicators):
         current_psar = p_l if (p_l is not None and not pd.isna(p_l)) else p_s
     _add_ind(indicators, 'Trend', 'PSAR', current_psar)
 
-    for length in [20, 50, 200]:
+    for length in [50, 200]:
         val = _get_scalar(df.ta.sma(length=length).iloc[-1])
         _add_ind(indicators, 'Trend', f'{length}-Day SMA', val)
-    
-    for length in [12, 26, 50, 200]:
-        val = _get_scalar(df.ta.ema(length=length).iloc[-1])
-        _add_ind(indicators, 'Trend', f'{length}-Day EMA', val)
 
 def _calculate_volatility(df, indicators):
     """Calculate and add volatility indicators."""

@@ -35,6 +35,8 @@ import { AdvancedCharting } from '@/components/ticker/AdvancedCharting';
 import SignalDashboard from '@/components/SignalDashboard';
 import BrokerAnalysis from '@/components/ticker/BrokerAnalysis';
 import { FibonacciRetracement } from '@/components/ticker/FibonacciRetracement';
+import TechnicalAnalysis from '@/components/ticker/TechnicalAnalysis';
+import IndicatorTooltip from '@/components/ticker/IndicatorTooltip';
 
 interface StockDetailData {
     company: {
@@ -637,7 +639,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                     {/* 2. CORE ANALYTICS HUB */}
                     <div className="space-y-8">
                         <Tabs
-                            defaultValue="indicators"
+                            defaultValue="technical"
                             className="w-full"
                             value={activeTab}
                             onValueChange={setActiveTab}
@@ -645,140 +647,105 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                             <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-4 mb-8">
                                 <div className="flex items-center gap-6">
                                     <TabsList className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 h-10 rounded-xl shadow-sm">
-                                        <TabsTrigger value="indicators" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Indicators</TabsTrigger>
-                                        <TabsTrigger value="fibonacci" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-amber-600 dark:data-[state=active]:text-amber-400 data-[state=active]:shadow-sm transition-all">Fibonacci</TabsTrigger>
-                                        <TabsTrigger value="signals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Signals</TabsTrigger>
-                                        <TabsTrigger value="analysis" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Analysis</TabsTrigger>
-                                        <TabsTrigger value="floorsheet" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Floorsheet</TabsTrigger>
-                                        <TabsTrigger value="financials" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Financials</TabsTrigger>
-                                        <TabsTrigger value="dividends" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Dividends</TabsTrigger>
+                                        <TabsTrigger value="technical" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Technical Analysis</TabsTrigger>
+                                        <TabsTrigger value="fundamentals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Fundamentals</TabsTrigger>
                                         <TabsTrigger value="history" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">History</TabsTrigger>
                                     </TabsList>
                                 </div>
                             </div>
 
                             <div className="animate-in fade-in zoom-in-95 duration-700">
-                                <TabsContent value="fibonacci" className="mt-0 space-y-8">
-                                    <FibonacciRetracement symbol={ticker} />
+                                <TabsContent value="technical" className="mt-0 space-y-8">
+                                    <TechnicalAnalysis symbol={ticker} data={data} />
                                 </TabsContent>
 
-                                <TabsContent value="signals" className="mt-0 space-y-8">
-                                    <SignalDashboard symbol={ticker} />
-                                </TabsContent>
 
-                                <TabsContent value="floorsheet" className="mt-0 space-y-8">
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                        {/* Accumulation (Top Buyers) */}
-                                        <div className="glass-card-light dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
-                                            <div className="flex items-center gap-3 mb-6">
-                                                <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
-                                                    <TrendingUp size={18} />
-                                                </div>
-                                                <h4 className="font-bold text-slate-800 dark:text-slate-100">Top Buyers (Accumulation)</h4>
+                                <TabsContent value="fundamentals" className="mt-0 space-y-8">
+                                    {/* Fundamental Benchmarks */}
+                                    <div className="glass-card-light rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
+                                        <div className="flex items-center gap-3 mb-10">
+                                            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
+                                                <BarChart2 size={18} />
                                             </div>
-                                            <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800">
-                                                <table className="w-full text-sm">
-                                                    <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
-                                                        <tr>
-                                                            <th className="px-6 py-4 text-left font-semibold text-slate-500 dark:text-slate-400 text-xs">Broker</th>
-                                                            <th className="px-6 py-4 text-right font-semibold text-slate-500 dark:text-slate-400 text-xs">Quantity</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                                                        {(data.fundamental?.broker_accumulation?.['1D'] || [])
-                                                            .filter(d => d.type === 'BUY')
-                                                            .sort((a, b) => b.qty - a.qty)
-                                                            .slice(0, 5)
-                                                            .map((item, idx) => (
-                                                                <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                                                                    <td className="px-6 py-4 font-bold text-blue-600">Broker {item.broker}</td>
-                                                                    <td className="px-6 py-4 text-right font-mono font-bold text-slate-700">{item.qty.toLocaleString()}</td>
-                                                                </tr>
-                                                            ))}
-                                                    </tbody>
-                                                </table>
+                                            <div>
+                                                <h4 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Fundamental Benchmarks</h4>
+                                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">Sector-wide comparison</p>
                                             </div>
                                         </div>
 
-                                        {/* Distribution (Top Sellers) */}
-                                        <div className="glass-card-light dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
-                                            <div className="flex items-center gap-3 mb-6">
-                                                <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800">
-                                                    <TrendingDown size={18} />
-                                                </div>
-                                                <h4 className="font-bold text-slate-800 dark:text-slate-100">Top Sellers (Distribution)</h4>
-                                            </div>
-                                            <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800">
-                                                <table className="w-full text-sm">
-                                                    <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
-                                                        <tr>
-                                                            <th className="px-6 py-4 text-left font-semibold text-slate-500 dark:text-slate-400 text-xs">Broker</th>
-                                                            <th className="px-6 py-4 text-right font-semibold text-slate-500 dark:text-slate-400 text-xs">Quantity</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                                                        {(data.fundamental?.broker_accumulation?.['1D'] || [])
-                                                            .filter(d => d.type === 'SELL')
-                                                            .sort((a, b) => b.qty - a.qty)
-                                                            .slice(0, 5)
-                                                            .map((item, idx) => (
-                                                                <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                                                                    <td className="px-6 py-4 font-bold text-rose-600">Broker {item.broker}</td>
-                                                                    <td className="px-6 py-4 text-right font-mono font-bold text-slate-700 dark:text-slate-300">{item.qty.toLocaleString()}</td>
-                                                                </tr>
-                                                            ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Raw Floorsheet Table */}
-                                    <div className="glass-card-light dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
-                                        <div className="flex items-center justify-between mb-8">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800">
-                                                    <Activity size={18} />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-slate-800 dark:text-slate-100">Transaction Stream</h4>
-                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">Real-time market depth</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-none px-3">Direct Feed</Badge>
-                                            </div>
-                                        </div>
-                                        <div className="overflow-x-auto no-scrollbar rounded-2xl border border-slate-200 dark:border-slate-800">
-                                            <table className="w-full text-sm text-left">
-                                                <thead className="bg-slate-50 dark:bg-slate-800 text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                                        <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
+                                            <table className="w-full text-sm">
+                                                <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
                                                     <tr>
-                                                        <th className="px-6 py-4 font-semibold text-[10px]">Trans #</th>
-                                                        <th className="px-6 py-4 font-semibold text-[10px]">Buyer</th>
-                                                        <th className="px-6 py-4 font-semibold text-[10px]">Seller</th>
-                                                        <th className="px-6 py-4 font-semibold text-[10px]">Qty</th>
-                                                        <th className="px-6 py-4 font-semibold text-[10px]">Rate</th>
-                                                        <th className="px-6 py-4 font-semibold text-[10px] text-right">Total</th>
+                                                        <th className="px-6 py-4 text-left font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Metric</th>
+                                                        <th className="px-6 py-4 text-center font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Audited</th>
+                                                        <th className="px-6 py-4 text-center font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Unaudited</th>
+                                                        <th className="px-6 py-4 text-left font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Sector Range (Low - High)</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                                                    {floorsheet.slice(0, 20).map((row, i) => (
-                                                        <tr key={row.id || i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all group">
-                                                            <td className="px-6 py-4 font-mono text-xs text-slate-400">#{row.contract_no}</td>
-                                                            <td className="px-6 py-4"><span className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold text-xs">{row.buyer_id}</span></td>
-                                                            <td className="px-6 py-4"><span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold text-xs">{row.seller_id}</span></td>
-                                                            <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300">{row.transaction_quantity.toLocaleString()}</td>
-                                                            <td className="px-6 py-4 font-mono text-slate-600 dark:text-slate-400">Rs. {row.transaction_rate.toLocaleString()}</td>
-                                                            <td className="px-6 py-4 text-right font-bold text-slate-900 dark:text-slate-100">Rs. {row.transaction_amount.toLocaleString()}</td>
-                                                        </tr>
-                                                    ))}
+                                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/30 dark:bg-slate-950/40">
+                                                    {[
+                                                        { name: 'P/E Ratio', key: 'pe_ratio', label: 'P/E' },
+                                                        { name: 'P/B Ratio', key: 'pb_ratio', label: 'P/B' },
+                                                        { name: 'ROE (%)', key: 'ro_equity', label: 'ROE' },
+                                                        { name: 'EPS', key: 'eps', label: 'EPS' },
+                                                        { name: 'Dividend Yield', key: 'dividend_yield', label: 'Div Yield' },
+                                                        { name: 'Book Value', key: 'book_value', label: 'Book Value' },
+                                                        { name: 'Market Cap', key: 'market_cap', label: 'Mkt Cap' }
+                                                    ].map((metric, i) => {
+                                                        const indicator = data.fundamental?.fundamental_indicators?.find((ind: any) => ind.name.toLowerCase().includes(metric.label.toLowerCase())) ||
+                                                            data.fundamental?.fundamental_indicators?.find((ind: any) => ind.name === metric.name);
+
+                                                        const auditedValue = (data.fundamental as any)?.[metric.key];
+                                                        const unauditedValue = (data.fundamental as any)?.[`${metric.key}_unaudited`] || auditedValue;
+
+                                                        const formatVal = (val: any) => {
+                                                            if (val === null || val === undefined) return '-';
+                                                            if (typeof val === 'number') {
+                                                                if (val > 10000000) return (val / 10000000).toFixed(2) + ' Cr';
+                                                                return val.toFixed(2);
+                                                            }
+                                                            return val.toString();
+                                                        };
+
+                                                        return (
+                                                            <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                                <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                                                                    <div className="flex items-center gap-1">
+                                                                        {metric.name}
+                                                                        <IndicatorTooltip name={metric.name} description="" />
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-center">
+                                                                    <span className="px-2.5 py-1 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold text-[11px] ring-1 ring-blue-100 dark:ring-blue-800">{formatVal(auditedValue)}</span>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-center">
+                                                                    <span className="px-2.5 py-1 rounded bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 font-bold text-[11px] ring-1 ring-amber-100 dark:ring-amber-800">{formatVal(unauditedValue)}</span>
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <div className="flex items-center gap-4">
+                                                                        <div className="flex flex-col min-w-[40px]">
+                                                                            <span className="text-xs text-rose-500 font-bold uppercase">{indicator?.sector_low || '-'}</span>
+                                                                            <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono leading-tight">{indicator?.sector_low_ticker || ''}</span>
+                                                                        </div>
+                                                                        <div className="flex-1 h-1 bg-slate-100 dark:bg-slate-800 rounded-full relative">
+                                                                            <div className="absolute top-1/2 left-1/4 w-1.5 h-1.5 -translate-y-1/2 bg-blue-500 rounded-full shadow-sm" />
+                                                                        </div>
+                                                                        <div className="flex flex-col items-end min-w-[40px]">
+                                                                            <span className="text-xs text-emerald-500 font-bold uppercase">{indicator?.sector_high || '-'}</span>
+                                                                            <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono leading-tight">{indicator?.sector_high_ticker || ''}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
                                                 </tbody>
                                             </table>
                                         </div>
                                     </div>
-                                </TabsContent>
 
-                                <TabsContent value="dividends" className="mt-0">
+                                    {/* Dividend Distribution History */}
                                     <div className="glass-card-light dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
                                         <div className="flex items-center gap-3 mb-8">
                                             <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800">
@@ -819,9 +786,8 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                             </table>
                                         </div>
                                     </div>
-                                </TabsContent>
 
-                                <TabsContent value="financials" className="mt-0 space-y-8">
+                                    {/* Financial Performance Matrix */}
                                     <div className="glass-card-light rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
                                         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
                                             <div className="flex items-center gap-3">
@@ -936,181 +902,6 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                     </div>
                                 </TabsContent>
 
-
-                                <TabsContent value="indicators" className="mt-0">
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                        {/* Fundamental Benchmarks */}
-                                        <div className="glass-card-light rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
-                                            <div className="flex items-center gap-3 mb-10">
-                                                <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
-                                                    <BarChart2 size={18} />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Fundamental Benchmarks</h4>
-                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">Sector-wide comparison</p>
-                                                </div>
-                                            </div>
-
-                                            <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
-                                                <table className="w-full text-sm">
-                                                    <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-                                                        <tr>
-                                                            <th className="px-6 py-4 text-left font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Metric</th>
-                                                            <th className="px-6 py-4 text-center font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Audited</th>
-                                                            <th className="px-6 py-4 text-center font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Unaudited</th>
-                                                            <th className="px-6 py-4 text-left font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Sector Range (Low - High)</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/30 dark:bg-slate-950/40">
-                                                        {[
-                                                            { name: 'P/E Ratio', key: 'pe_ratio', label: 'P/E' },
-                                                            { name: 'P/B Ratio', key: 'pb_ratio', label: 'P/B' },
-                                                            { name: 'ROE (%)', key: 'ro_equity', label: 'ROE' },
-                                                            { name: 'EPS', key: 'eps', label: 'EPS' },
-                                                            { name: 'Dividend Yield', key: 'dividend_yield', label: 'Div Yield' },
-                                                            { name: 'Book Value', key: 'book_value', label: 'Book Value' },
-                                                            { name: 'Market Cap', key: 'market_cap', label: 'Mkt Cap' }
-                                                        ].map((metric, i) => {
-                                                            const indicator = data.fundamental?.fundamental_indicators?.find(ind => ind.name.toLowerCase().includes(metric.label.toLowerCase())) ||
-                                                                data.fundamental?.fundamental_indicators?.find(ind => ind.name === metric.name);
-
-                                                            const auditedValue = (data.fundamental as any)?.[metric.key];
-                                                            const unauditedValue = (data.fundamental as any)?.[`${metric.key}_unaudited`] || auditedValue;
-
-                                                            const formatVal = (val: any) => {
-                                                                if (val === null || val === undefined) return '-';
-                                                                if (typeof val === 'number') {
-                                                                    if (val > 10000000) return (val / 10000000).toFixed(2) + ' Cr';
-                                                                    return val.toFixed(2);
-                                                                }
-                                                                return val.toString();
-                                                            };
-
-                                                            return (
-                                                                <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
-                                                                    <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">{metric.name}</td>
-                                                                    <td className="px-6 py-4 text-center">
-                                                                        <span className="px-2.5 py-1 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold text-[11px] ring-1 ring-blue-100 dark:ring-blue-800">{formatVal(auditedValue)}</span>
-                                                                    </td>
-                                                                    <td className="px-6 py-4 text-center">
-                                                                        <span className="px-2.5 py-1 rounded bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 font-bold text-[11px] ring-1 ring-amber-100 dark:ring-amber-800">{formatVal(unauditedValue)}</span>
-                                                                    </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <div className="flex items-center gap-4">
-                                                                            <div className="flex flex-col min-w-[40px]">
-                                                                                <span className="text-xs text-rose-500 font-bold uppercase">{indicator?.sector_low || '-'}</span>
-                                                                                <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono leading-tight">{indicator?.sector_low_ticker || ''}</span>
-                                                                            </div>
-                                                                            <div className="flex-1 h-1 bg-slate-100 dark:bg-slate-800 rounded-full relative">
-                                                                                <div className="absolute top-1/2 left-1/4 w-1.5 h-1.5 -translate-y-1/2 bg-blue-500 rounded-full shadow-sm" />
-                                                                            </div>
-                                                                            <div className="flex flex-col items-end min-w-[40px]">
-                                                                                <span className="text-xs text-emerald-500 font-bold uppercase">{indicator?.sector_high || '-'}</span>
-                                                                                <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono leading-tight">{indicator?.sector_high_ticker || ''}</span>
-                                                                            </div>
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                            );
-                                                        })}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-
-                                        {/* Technical Divergence */}
-                                        <div className="glass-card-light rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
-                                            <div className="flex items-center gap-3 mb-10">
-                                                <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
-                                                    <TrendingUp size={18} />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Technical Divergence</h4>
-                                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">Relative strength mapping</p>
-                                                </div>
-                                            </div>
-
-                                            <div className="p-6">
-                                                <Tabs defaultValue="Momentum" className="w-full">
-                                                    <TabsList className="grid w-full grid-cols-4 mb-6 p-1 bg-slate-100 dark:bg-slate-900 rounded-xl">
-                                                        {['Momentum', 'Trend', 'Volatility', 'Volume'].map(cat => (
-                                                            <TabsTrigger
-                                                                key={cat}
-                                                                value={cat}
-                                                                className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-primary dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all duration-200 text-[10px] sm:text-xs"
-                                                            >
-                                                                {cat}
-                                                            </TabsTrigger>
-                                                        ))}
-                                                    </TabsList>
-
-                                                    {['Momentum', 'Trend', 'Volatility', 'Volume'].map(category => {
-                                                        const indicators = data.fundamental?.technical_indicators?.filter((ind: any) => ind.category === category) || [];
-
-                                                        return (
-                                                            <TabsContent key={category} value={category} className="mt-0 focus-visible:outline-none ring-offset-background">
-                                                                <div className="overflow-hidden overflow-y-auto max-h-[500px] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative no-scrollbar">
-                                                                    <table className="w-full text-sm">
-                                                                        <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 backdrop-blur-sm sticky top-0 z-10">
-                                                                            <tr>
-                                                                                <th className="px-6 py-4 text-left font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Indicator</th>
-                                                                                <th className="px-6 py-4 text-center font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Value</th>
-                                                                                <th className="px-6 py-4 text-left font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Sector Range (Low - High)</th>
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/30 dark:bg-slate-950/40">
-                                                                            {indicators.length > 0 ? (
-                                                                                indicators.map((indicator: any, i: number) => (
-                                                                                    <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
-                                                                                        <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">{indicator.name}</td>
-                                                                                        <td className="px-6 py-4 text-center">
-                                                                                            <span className="px-2.5 py-1 rounded bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs ring-1 ring-slate-200 dark:ring-slate-700 group-hover:bg-white dark:group-hover:bg-slate-700 group-hover:shadow-sm transition-all">{indicator.value}</span>
-                                                                                        </td>
-                                                                                        <td className="px-6 py-4">
-                                                                                            {indicator.sector_high !== '-' ? (
-                                                                                                <div className="flex items-center gap-4">
-                                                                                                    <div className="flex flex-col min-w-[40px]">
-                                                                                                        <span className="text-xs text-rose-500 font-bold uppercase">{indicator.sector_low}</span>
-                                                                                                        {/* <span className="text-[8px] text-slate-400 font-mono leading-tight">{indicator.sector_low_ticker}</span> */}
-                                                                                                    </div>
-                                                                                                    <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full relative overflow-hidden">
-                                                                                                        <div className="absolute inset-0 bg-gradient-to-r from-rose-100 dark:from-rose-900/20 via-slate-100 dark:via-slate-800 to-emerald-100 dark:to-emerald-900/20 opacity-50"></div>
-                                                                                                        {/* Calculate position based on math if possible, else center or use simplified visual */}
-                                                                                                        <div className="absolute top-0 bottom-0 w-1 bg-slate-400 dark:bg-slate-500 rounded-full left-1/2 -translate-x-1/2 ring-2 ring-white dark:ring-slate-900"></div>
-                                                                                                    </div>
-                                                                                                    <div className="flex flex-col items-end min-w-[40px]">
-                                                                                                        <span className="text-xs text-emerald-500 font-bold uppercase">{indicator.sector_high}</span>
-                                                                                                        {/* <span className="text-[8px] text-slate-400 font-mono leading-tight">{indicator.sector_high_ticker}</span> */}
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            ) : (
-                                                                                                <span className="text-xs text-slate-400 italic">No Sector Data</span>
-                                                                                            )}
-                                                                                        </td>
-                                                                                    </tr>
-                                                                                ))
-                                                                            ) : (
-                                                                                <tr>
-                                                                                    <td colSpan={3} className="px-6 py-8 text-center text-slate-400 italic">
-                                                                                        No indicators available for this category.
-                                                                                    </td>
-                                                                                </tr>
-                                                                            )}
-                                                                        </tbody>
-                                                                    </table>
-                                                                </div>
-                                                            </TabsContent>
-                                                        );
-                                                    })}
-                                                </Tabs>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </TabsContent>
-
-                                <TabsContent value="analysis" className="mt-8 outline-none">
-                                    <BrokerAnalysis symbol={ticker} />
-                                </TabsContent>
 
 
                                 <TabsContent value="history" className="mt-0">
