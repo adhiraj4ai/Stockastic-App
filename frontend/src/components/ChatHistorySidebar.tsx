@@ -71,7 +71,7 @@ export function ChatHistorySidebar({
                 <div className="px-4 py-2">
                     <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 mb-4 px-1 flex items-center gap-2">
                         <Clock size={10} />
-                        Recorded Vantages
+                        Recent History
                     </h4>
                 </div>
 

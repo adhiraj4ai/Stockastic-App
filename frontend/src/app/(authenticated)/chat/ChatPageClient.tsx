@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChatInterface } from '@/components/ChatInterface';
+import ChatInterface from '@/components/chat/ChatInterface';
 import { ChatHistorySidebar } from '@/components/ChatHistorySidebar';
 import DashboardLayout from '@/components/DashboardLayout';
 import { chatApi, ChatMessage } from '@/lib/api';
@@ -244,6 +244,7 @@ function ChatContent() {
                                 messages={uiMessages}
                                 onSendMessage={handleSendMessage}
                                 isLoading={isLoading}
+                                onClearMessages={() => { }}
                             />
                         </motion.div>
                     </AnimatePresence>

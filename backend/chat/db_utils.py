@@ -40,6 +40,20 @@ def get_database_schema_string():
                 
     return "\n".join(schema_str)
 
+def get_reference_date():
+    """
+    Get the latest transaction date from the market data.
+    """
+    from stocks.models import DailyStockPrice
+    from datetime import date
+    try:
+        latest = DailyStockPrice.objects.order_by('-date').first()
+        if latest:
+            return latest.date
+    except Exception:
+        pass
+    return date.today()
+
 def execute_sql_query(query: str):
     """
     Executes a read-only SQL query and returns the results.

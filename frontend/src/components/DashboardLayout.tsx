@@ -41,6 +41,7 @@ const navItems = [
             { name: 'Watchlist', href: '/portfolio?tab=watchlist', icon: Eye },
         ]
     },
+    { name: 'Stockastic AI', href: '/chat', icon: MessageSquare },
     {
         name: 'Accumulation',
         icon: Activity,

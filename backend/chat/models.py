@@ -23,6 +23,8 @@ class ChatMessage(models.Model):
     role = models.CharField(max_length=20, choices=[('user', 'User'), ('assistant', 'Assistant')])
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
+    tool_calls = models.JSONField(null=True, blank=True, help_text="Tool calls made in this message")
+    tool_results = models.JSONField(null=True, blank=True, help_text="Results from tool calls")
 
     class Meta:
         ordering = ['timestamp']
