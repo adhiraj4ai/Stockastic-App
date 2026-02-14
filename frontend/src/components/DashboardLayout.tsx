@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Flame, Users, BarChart3, History, Star, TrendingDown, Brain, Radar, Landmark, ScanLine, Zap, Share2, Crosshair } from 'lucide-react';
 import { SearchBar } from './SearchBar';
 import { ChatSidebar } from './ChatSidebar';
@@ -28,6 +29,8 @@ const navItems = [
             { name: 'Overview', href: '/market', icon: LayoutDashboard },
             { name: 'Movers & Shakers', href: '/market/movers', icon: Zap },
             { name: 'Deep Dive', href: '/market/activity', icon: Activity },
+            { name: 'Floorsheet', href: '/floorsheet', icon: FileText },
+            { name: 'Smart Money', href: '/smart-money', icon: Crosshair },
             { name: 'Social Highlights', href: '/social', icon: Share2 },
         ]
     },
@@ -101,6 +104,14 @@ function DashboardContent({
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
     const [currentUser, setCurrentUser] = useState<{ id: number; username: string; email: string } | null>(null);
+    const { resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    const logoSrc = mounted && resolvedTheme === 'dark' ? '/stockastic-logo-dark.png' : '/stockastic-logo-v3.png';
 
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -247,11 +258,11 @@ function DashboardContent({
                         <div className="w-full flex justify-center py-0">
                             <Link href="/market" className="hover:scale-105 transition-transform duration-300">
                                 <Image
-                                    src="/stockastic-logo-v3.png"
+                                    src={logoSrc}
                                     alt="Stockastic Logo"
                                     width={144}
                                     height={108}
-                                    className="object-contain dark:brightness-110"
+                                    className="object-contain transition-all duration-300"
                                     priority
                                 />
                             </Link>

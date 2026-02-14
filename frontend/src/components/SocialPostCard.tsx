@@ -226,7 +226,7 @@ export const SocialPostCard = ({ type, data }: SocialPostCardProps) => {
                         {/* Using standard img for better html2canvas compatibility */}
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                            src="/stockastic-logo-v3.png"
+                            src="/stockastic-logo-dark.png"
                             alt="Stockastic"
                             width={100}
                             height={40}

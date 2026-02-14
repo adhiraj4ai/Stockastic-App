@@ -8,3 +8,4 @@ from . import notifications
 from . import recommendations
 from . import chart
 from . import fibonacci
+from . import floorsheet

@@ -665,12 +665,18 @@ def stock_financials(request, ticker):
 @permission_classes([AllowAny])
 def floorsheet_list(request):
     """
-    List floorsheet transactions with optional filtering by broker and symbol.
+    List floorsheet transactions with optional filtering and pagination.
     """
     broker = request.query_params.get('broker')
     symbol = request.query_params.get('symbol')
     date = request.query_params.get('date')
-    limit = int(request.query_params.get('limit', 100))
+    
+    page = int(request.query_params.get('page', 1))
+    page_size = int(request.query_params.get('page_size', 50))
+    
+    # Calculate offset
+    start_index = (page - 1) * page_size
+    end_index = start_index + page_size
 
     try:
         queryset = DailyFloorsheet.objects.all()
@@ -680,10 +686,26 @@ def floorsheet_list(request):
             queryset = queryset.filter(Q(buyer_id=broker) | Q(seller_id=broker))
         if date:
             queryset = queryset.filter(transaction_date=date)
+        else:
+            # Default to latest available date if no date provided, to avoid querying massive table
+            # (optimisation)
+            latest = DailyFloorsheet.objects.order_by('-transaction_date').first()
+            if latest:
+                queryset = queryset.filter(transaction_date=latest.transaction_date)
             
-        queryset = queryset.order_by('-transaction_date')[:limit]
+        # Get total count before slicing
+        total_count = queryset.count()
+        
+        # Slice for pagination
+        queryset = queryset.order_by('-transaction_date', '-transaction_id')[start_index:end_index]
         serializer = DailyFloorsheetSerializer(queryset, many=True)
-        return Response(serializer.data)
+        
+        return Response({
+            'results': serializer.data,
+            'total_count': total_count,
+            'current_page': page,
+            'total_pages': (total_count + page_size - 1) // page_size if page_size > 0 else 1
+        })
     except Exception as e:
         return Response({'error': str(e)}, status=500)
 

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import Image from 'next/image';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,15 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const { resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
     const router = useRouter();
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    const logoSrc = mounted && resolvedTheme === 'dark' ? '/stockastic-logo-dark.png' : '/stockastic-logo-v3.png';
 
     const users = [
         {
@@ -97,7 +106,7 @@ export default function LoginPage() {
                 <CardHeader className="space-y-2 text-center pb-2 border-b border-slate-50 dark:border-slate-800 flex flex-col items-center pt-8">
                     <div className="relative w-44 h-28 mb-2">
                         <Image
-                            src="/stockastic-logo-v3.png"
+                            src={logoSrc}
                             alt="Stockastic Logo"
                             fill
                             className="object-contain"
