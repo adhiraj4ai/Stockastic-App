@@ -92,62 +92,6 @@ services:
       retries: 3
       start_period: 40s
 
-  # ML Service Celery Worker (Forecast/ML tasks)
-  ml_service_celery:
-    build:
-      context: ./ml_service
-      dockerfile: Dockerfile
-    container_name: stockastic-ml-celery
-    command: celery -A ml_service worker --loglevel=info -Q ml_tasks
-    volumes:
-      - ./ml_service:/app
-      - ml_models:/app/ml_models
-    env_file:
-      - .env.docker
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      ml_service:
-        condition: service_healthy
-    networks:
-      - stockastic-network
-    healthcheck:
-      test: [ "CMD-SHELL", "celery -A ml_service inspect ping || exit 1" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # ML Service (Separate Django app for forecasting)
-  ml_service:
-    build:
-      context: ./ml_service
-      dockerfile: Dockerfile
-    container_name: stockastic-ml-service
-    command: python manage.py runserver 0.0.0.0:8001
-    volumes:
-      - ./ml_service:/app
-      - ml_models:/app/ml_models
-    ports:
-      - "8001:8001"
-    env_file:
-      - .env.docker
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - stockastic-network
-    healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:8001/admin/ || exit 1" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
   # Next.js Frontend
   frontend:
     build:
@@ -155,13 +99,11 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: http://localhost:8000
-        NEXT_PUBLIC_ML_SERVICE_URL: http://localhost:8001
     container_name: stockastic-frontend
     ports:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
-      - NEXT_PUBLIC_ML_SERVICE_URL=http://localhost:8001
     depends_on:
       - backend
     networks:
