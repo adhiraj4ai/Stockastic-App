@@ -48,7 +48,6 @@ INSTALLED_APPS = [
     "companies",  # Added for company management
     "stocks",
     "chat",
-    "ml",
 ]
 
 MIDDLEWARE = [
