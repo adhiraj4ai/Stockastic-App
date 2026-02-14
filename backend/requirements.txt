@@ -42,3 +42,5 @@ django-cryptography==1.1
 langchain-ollama==0.2.3
 langchain-community==0.3.16
 langgraph==0.2.70
+pytest==8.0.0
+pytest-django==4.8.0
