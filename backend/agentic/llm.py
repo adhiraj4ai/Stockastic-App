@@ -97,10 +97,8 @@ class OllamaProvider(LLMProvider):
         self.llm = ChatOllama(
             model=model_name,
             base_url=base_url,
-            temperature=0.7,
-            # Increasing connection timeout/retries is handled by underlying client, 
-            # but we can try to set these if exposed or rely on defaults.
-            # 503 often means loading model.
+            temperature=0.3,
+            num_ctx=8192,
         )
 
     def generate_response(self, messages: List[Dict[str, str]]) -> str:
@@ -127,9 +125,9 @@ class OllamaProvider(LLMProvider):
 class LLMFactory:
     @staticmethod
     def get_provider() -> LLMProvider:
-        provider_name = os.getenv("LLM_PROVIDER", "groq").lower()
+        provider_name = os.getenv("LLM_PROVIDER", "ollama").lower()
         api_key = os.getenv("LLM_API_KEY")
-        model_name = os.getenv("LLM_MODEL_NAME")
+        model_name = os.getenv("LLM_MODEL_NAME", "phi4")
 
         if not api_key and provider_name != "ollama":
             # Fallback for development if no key is provided
