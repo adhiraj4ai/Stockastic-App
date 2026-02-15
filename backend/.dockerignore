@@ -9,6 +9,7 @@ venv_ml/
 venv_ml312/
 env/
 ENV/
+.venv/
 
 # Django
 *.log

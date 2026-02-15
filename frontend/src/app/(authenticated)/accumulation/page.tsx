@@ -16,7 +16,7 @@ import {
     BarChart2,
     ArrowRight,
     Loader2,
-    Calendar,
+    Calendar as CalendarIcon,
     Layers,
     ExternalLink,
     History,
@@ -33,6 +33,10 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import nextDynamic from 'next/dynamic';
 const ReactECharts = nextDynamic(() => import('echarts-for-react'), { ssr: false });
 
@@ -181,6 +185,14 @@ function AccumulationContent() {
     const [historyPageSize, setHistoryPageSize] = useState(20);
     // const [hasMoreHistory, setHasMoreHistory] = useState(true); // Removed for client-side pagination
 
+    // Share Transfer State
+    const [transferData, setTransferData] = useState<any>(null);
+    const [transferLoading, setTransferLoading] = useState(false);
+    const [transferBroker1, setTransferBroker1] = useState('58');
+    const [transferBroker2, setTransferBroker2] = useState('58');
+    const [transferStartDate, setTransferStartDate] = useState<Date | undefined>();
+    const [transferEndDate, setTransferEndDate] = useState<Date | undefined>();
+
     // Set default range based on tab
     useEffect(() => {
         if (activeTab === 'aggressive-trader') {
@@ -199,7 +211,7 @@ function AccumulationContent() {
     // Update state if URL changes
     useEffect(() => {
         const tab = searchParams.get('tab');
-        if (tab && ['overview', 'aggressive', 'trends', 'favorites', 'accumulators', 'aggressive-trader', 'history'].includes(tab)) {
+        if (tab && ['overview', 'aggressive', 'trends', 'favorites', 'accumulators', 'aggressive-trader', 'history', 'share-transfer'].includes(tab)) {
             setActiveTab(tab);
         }
         const b = searchParams.get('broker');
@@ -430,6 +442,27 @@ function AccumulationContent() {
         }
     }, [activeTab, selectedBroker, selectedGraphSymbol]); // Removed historyPage dependency
 
+    const fetchTransferData = async () => {
+        if (!selectedGraphSymbol || !transferBroker1 || !transferBroker2) return;
+        setTransferLoading(true);
+        try {
+            const res = await api.get('/api/stocks/floorsheet/broker_transfer/', {
+                params: {
+                    symbol: selectedGraphSymbol,
+                    broker1: transferBroker1,
+                    broker2: transferBroker2,
+                    start_date: transferStartDate ? format(transferStartDate, 'yyyy-MM-dd') : undefined,
+                    end_date: transferEndDate ? format(transferEndDate, 'yyyy-MM-dd') : undefined
+                }
+            });
+            setTransferData(res.data);
+        } catch (err) {
+            console.error('Failed to fetch transfer data', err);
+        } finally {
+            setTransferLoading(false);
+        }
+    };
+
     // Client-side pagination logic
     const sortedHistory = [...historyData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     const historyTotalPages = Math.ceil(sortedHistory.length / historyPageSize) || 1;
@@ -507,6 +540,124 @@ function AccumulationContent() {
             }))
         };
     };
+
+    const getTransferChartOption = () => {
+        if (!transferData || !transferData.daily_stats.length) return {};
+
+        return {
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: { type: 'shadow' }
+            },
+            legend: {
+                data: [`B${transferBroker1} → B${transferBroker2}`, `B${transferBroker2} → B${transferBroker1}`],
+                textStyle: { color: '#6b7280', fontSize: 10 },
+                top: 0
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                top: '15%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                data: transferData.daily_stats.map((d: any) => d.transaction_date),
+                axisLabel: { color: '#6b7280', fontSize: 10 }
+            },
+            yAxis: {
+                type: 'value',
+                axisLabel: { color: '#6b7280', fontSize: 10 }
+            },
+            series: [
+                {
+                    name: `B${transferBroker1} → B${transferBroker2}`,
+                    type: 'bar',
+                    stack: 'total',
+                    data: transferData.daily_stats.map((d: any) => d.volume_1_to_2 || 0),
+                    itemStyle: { color: '#3b82f6', borderRadius: [4, 4, 0, 0] }
+                },
+                {
+                    name: `B${transferBroker2} → B${transferBroker1}`,
+                    type: 'bar',
+                    stack: 'total',
+                    data: transferData.daily_stats.map((d: any) => d.volume_2_to_1 || 0),
+                    itemStyle: { color: '#8b5cf6', borderRadius: [4, 4, 0, 0] }
+                }
+            ]
+        };
+    };
+
+    const getComparisonChartOption = () => {
+        if (!transferData || !transferData.daily_stats.length) return {};
+
+        const dates = transferData.daily_stats.map((d: any) => d.transaction_date);
+        const transferVol = transferData.daily_stats.map((d: any) => (d.volume_1_to_2 || 0) + (d.volume_2_to_1 || 0));
+        const netAcc = transferData.daily_stats.map((d: any) => d.net_accumulation || 0);
+
+        return {
+            tooltip: {
+                trigger: 'axis',
+                formatter: (params: any) => {
+                    let res = `<div class="font-bold mb-1">${params[0].name}</div>`;
+                    params.forEach((p: any) => {
+                        res += `<div class="flex justify-between gap-4">
+                            <span>${p.marker} ${p.seriesName}</span>
+                            <span class="font-bold">${p.value.toLocaleString()}</span>
+                        </div>`;
+                    });
+                    return res;
+                }
+            },
+            legend: {
+                data: ['Total Transfer Vol', 'Symbol Net Accumulation'],
+                textStyle: { color: '#6b7280', fontSize: 10 },
+                top: 0
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                top: '15%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                data: dates,
+                axisLabel: { color: '#6b7280', fontSize: 10 }
+            },
+            yAxis: {
+                type: 'value',
+                axisLabel: { color: '#6b7280', fontSize: 10 }
+            },
+            series: [
+                {
+                    name: 'Total Transfer Vol',
+                    type: 'bar',
+                    data: transferVol,
+                    itemStyle: { color: '#3b82f6', opacity: 0.8 }
+                },
+                {
+                    name: 'Symbol Net Accumulation',
+                    type: 'line',
+                    data: netAcc,
+                    smooth: true,
+                    symbol: 'circle',
+                    symbolSize: 6,
+                    itemStyle: { color: '#10b981' },
+                    lineStyle: { width: 3, shadowBlur: 10, shadowColor: 'rgba(16, 185, 129, 0.3)' },
+                    areaStyle: {
+                        color: {
+                            type: 'linear',
+                            x: 0, y: 0, x2: 0, y2: 1,
+                            colorStops: [{ offset: 0, color: 'rgba(16, 185, 129, 0.2)' }, { offset: 1, color: 'rgba(16, 185, 129, 0)' }]
+                        }
+                    }
+                }
+            ]
+        };
+    };
     const getAggressiveGraphOption = (type: 'buy' | 'sell') => {
         const leaders = type === 'buy' ? buyLeaders : sellLeaders;
         if (!leaders.length) return {};
@@ -536,12 +687,12 @@ function AccumulationContent() {
                         <div class="flex justify-between gap-4 py-1">
                             <span className="text-gray-500">${isAll ? 'Net Amt:' : 'Net Qty:'}</span>
                             <span className="font-mono font-bold ${type === 'buy' ? 'text-green-600' : 'text-red-600'}">
-                                ${isAll ? 'Rs. ' : ''}${(((data as any)[valueKey] ?? 0) > 0 ? '+' : '') + ((data as any)[valueKey] ?? 0).toLocaleString()}
+                                ${isAll ? 'रू ' : ''}${(((data as any)[valueKey] ?? 0) > 0 ? '+' : '') + ((data as any)[valueKey] ?? 0).toLocaleString()}
                             </span>
                         </div>
                         <div class="flex justify-between gap-4 py-1">
                             <span class="text-gray-500">Avg Rate:</span>
-                            <span class="font-mono font-bold text-gray-900">Rs. ${type === 'buy' ? data.buy_rate : data.sell_rate}</span>
+                            <span class="font-mono font-bold text-gray-900">रू ${type === 'buy' ? data.buy_rate : data.sell_rate}</span>
                         </div>
                         <div class="flex justify-between gap-4 py-1 text-xs">
                             <span class="text-gray-400">Total Vol:</span>
@@ -584,7 +735,7 @@ function AccumulationContent() {
                     formatter: (p: any) => {
                         const val = (leaders[p.dataIndex] as any)[valueKey] ?? 0;
                         return isAll
-                            ? `Rs. ${(Math.abs(val) / 10000000).toFixed(2)} Cr`
+                            ? `रू ${(Math.abs(val) / 10000000).toFixed(2)} Cr`
                             : val.toLocaleString();
                     }, // Show real value string
                     fontSize: 10,
@@ -696,6 +847,7 @@ function AccumulationContent() {
             case 'favorites': return 'Broker Favorites';
             case 'accumulators': return 'Accumulators Navigator';
             case 'history': return 'Accumulation History';
+            case 'share-transfer': return 'Share Transfer Dashboard';
             default: return 'Accumulation Overview';
         }
     };
@@ -801,7 +953,7 @@ function AccumulationContent() {
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="text-right font-mono font-medium dark:text-slate-300">
-                                                        Rs. {item.close.toLocaleString()}
+                                                        रू {item.close.toLocaleString()}
                                                     </TableCell>
                                                     <TableCell className="text-right">
                                                         <span className={`font-mono font-bold ${item.net_qty >= 0 ? 'text-green-600 dark:text-emerald-400' : 'text-red-600 dark:text-rose-400'}`}>
@@ -925,7 +1077,7 @@ function AccumulationContent() {
                                                             <div className="flex flex-col">
                                                                 <div className="flex items-center gap-2">
                                                                     <span className="text-xl font-black text-gray-900 dark:text-slate-100 group-hover:text-green-600 dark:group-hover:text-emerald-400 transition-colors tracking-tight">{sym.symbol}</span>
-                                                                    <span className="text-sm font-bold text-gray-400 dark:text-slate-500">Rs. {sym.close?.toLocaleString()}</span>
+                                                                    <span className="text-sm font-bold text-gray-400 dark:text-slate-500">रू {sym.close?.toLocaleString()}</span>
                                                                 </div>
                                                                 <span className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase truncate max-w-[180px]">{sym.name}</span>
                                                             </div>
@@ -985,7 +1137,7 @@ function AccumulationContent() {
                                                             <div className="flex flex-col">
                                                                 <div className="flex items-center gap-2">
                                                                     <span className="text-xl font-black text-gray-900 dark:text-slate-100 group-hover:text-red-600 dark:group-hover:text-rose-400 transition-colors tracking-tight">{sym.symbol}</span>
-                                                                    <span className="text-sm font-bold text-gray-400 dark:text-slate-500">Rs. {sym.close?.toLocaleString()}</span>
+                                                                    <span className="text-sm font-bold text-gray-400 dark:text-slate-500">रू {sym.close?.toLocaleString()}</span>
                                                                 </div>
                                                                 <span className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase truncate max-w-[180px]">{sym.name}</span>
                                                             </div>
@@ -1700,6 +1852,311 @@ function AccumulationContent() {
                                             Next
                                         </Button>
                                     </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === 'share-transfer' && (
+                    <div className="space-y-6">
+                        {/* Filters Card */}
+                        <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm p-4 sticky top-[73px] z-30">
+                            <div className="flex flex-wrap items-end gap-3">
+                                <div className="flex-1 min-w-[150px] space-y-1.5">
+                                    <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-1">Ticker</label>
+                                    <CompanySelect
+                                        value={selectedGraphSymbol}
+                                        onChange={setSelectedGraphSymbol}
+                                        className="h-10 border-gray-200 dark:border-slate-800"
+                                    />
+                                </div>
+                                <div className="w-24 space-y-1.5">
+                                    <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-1">Broker 1</label>
+                                    <select
+                                        value={transferBroker1}
+                                        onChange={(e) => setTransferBroker1(e.target.value)}
+                                        className="w-full h-10 px-2 rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold text-gray-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                                    >
+                                        <option value="">ID</option>
+                                        {allBrokers.map(b => <option key={b} value={b}>{b}</option>)}
+                                    </select>
+                                </div>
+                                <div className="pb-2.5 text-gray-300 hidden lg:block">
+                                    <ArrowRight className="w-4 h-4" />
+                                </div>
+                                <div className="w-24 space-y-1.5">
+                                    <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-1">Broker 2</label>
+                                    <select
+                                        value={transferBroker2}
+                                        onChange={(e) => setTransferBroker2(e.target.value)}
+                                        className="w-full h-10 px-2 rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold text-gray-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                                    >
+                                        <option value="">ID</option>
+                                        {allBrokers.map(b => <option key={b} value={b}>{b}</option>)}
+                                    </select>
+                                </div>
+
+                                <div className="flex-1 min-w-[280px] space-y-1.5">
+                                    <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-1">Date Range</label>
+                                    <div className="flex gap-2">
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button variant="outline" className={cn("flex-1 h-10 justify-start font-medium rounded-lg border-gray-200 dark:border-slate-800 dark:bg-slate-900 px-3", !transferStartDate && "text-gray-400")}>
+                                                    <CalendarIcon className="mr-2 h-4 w-4 text-blue-500" />
+                                                    {transferStartDate ? format(transferStartDate, "MMM dd, yyyy") : "Start"}
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0 rounded-xl overflow-hidden shadow-2xl z-[100]" align="start">
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={transferStartDate}
+                                                    onSelect={setTransferStartDate}
+                                                    initialFocus
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button variant="outline" className={cn("flex-1 h-10 justify-start font-medium rounded-lg border-gray-200 dark:border-slate-800 dark:bg-slate-900 px-3", !transferEndDate && "text-gray-400")}>
+                                                    <CalendarIcon className="mr-2 h-4 w-4 text-purple-500" />
+                                                    {transferEndDate ? format(transferEndDate, "MMM dd, yyyy") : "End"}
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0 rounded-xl overflow-hidden shadow-2xl z-[100]" align="start">
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={transferEndDate}
+                                                    onSelect={setTransferEndDate}
+                                                    initialFocus
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+                                </div>
+
+                                <Button
+                                    onClick={fetchTransferData}
+                                    disabled={transferLoading || !selectedGraphSymbol || !transferBroker1 || !transferBroker2}
+                                    className="h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[10px] tracking-widest rounded-lg transition-all active:scale-95 shadow-lg shadow-blue-500/20"
+                                >
+                                    {transferLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply Filters"}
+                                </Button>
+                            </div>
+                        </div>
+                        {!selectedGraphSymbol || selectedGraphSymbol === 'All' || !transferBroker1 || !transferBroker2 ? (
+                            <div className="p-20 text-center flex flex-col items-center gap-4 bg-white dark:bg-slate-900/50 rounded-xl border border-dashed dark:border-slate-800">
+                                <div className="p-4 bg-blue-50 dark:bg-indigo-900/20 rounded-full">
+                                    <Layers className="w-8 h-8 text-blue-500" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-gray-800 dark:text-slate-200">Set Filters</h3>
+                                    <p className="text-gray-500 dark:text-slate-400">Select a ticker and two brokers to compare share transfers.</p>
+                                </div>
+                            </div>
+                        ) : transferLoading ? (
+                            <div className="p-20 flex flex-col items-center justify-center gap-4">
+                                <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+                                <p className="text-gray-500 dark:text-slate-400 font-medium">Crunching transfer data...</p>
+                            </div>
+                        ) : transferData ? (
+                            <>
+                                {/* Summary Cards Breakdown */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    {/* Direction 1: B1 to B2 */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2 px-1">
+                                            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                                            <h4 className="text-xs font-black uppercase text-gray-500 dark:text-slate-400">
+                                                Broker {transferBroker1} Buying from Broker {transferBroker2}
+                                            </h4>
+                                        </div>
+                                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                            <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
+                                                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Volume</p>
+                                                <p className="text-lg font-black text-blue-600 dark:text-indigo-400">
+                                                    {transferData.summary.broker1_to_broker2.total_volume?.toLocaleString() || 0}
+                                                </p>
+                                            </Card>
+                                            <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
+                                                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Amount</p>
+                                                <p className="text-lg font-black text-gray-800 dark:text-slate-100">
+                                                    रू {(transferData.summary.broker1_to_broker2.total_amount / 100000).toFixed(2)}L
+                                                </p>
+                                            </Card>
+                                            <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
+                                                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Avg. Rate</p>
+                                                <p className="text-lg font-black text-gray-800 dark:text-slate-100 text-xs">
+                                                    {transferData.summary.broker1_to_broker2.avg_rate?.toLocaleString() || 0}
+                                                </p>
+                                            </Card>
+                                            <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
+                                                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Txs</p>
+                                                <p className="text-lg font-black text-gray-800 dark:text-slate-100">
+                                                    {transferData.summary.broker1_to_broker2.total_transactions || 0}
+                                                </p>
+                                            </Card>
+                                        </div>
+                                    </div>
+
+                                    {/* Direction 2: B2 to B1 */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2 px-1">
+                                            <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                                            <h4 className="text-xs font-black uppercase text-gray-500 dark:text-slate-400">
+                                                Broker {transferBroker2} Buying from Broker {transferBroker1}
+                                            </h4>
+                                        </div>
+                                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                            <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
+                                                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Volume</p>
+                                                <p className="text-lg font-black text-purple-600 dark:text-purple-400">
+                                                    {transferData.summary.broker2_to_broker1.total_volume?.toLocaleString() || 0}
+                                                </p>
+                                            </Card>
+                                            <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
+                                                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Amount</p>
+                                                <p className="text-lg font-black text-gray-800 dark:text-slate-100">
+                                                    रू {(transferData.summary.broker2_to_broker1.total_amount / 100000).toFixed(2)}L
+                                                </p>
+                                            </Card>
+                                            <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
+                                                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Avg. Rate</p>
+                                                <p className="text-lg font-black text-gray-800 dark:text-slate-100 text-xs">
+                                                    {transferData.summary.broker2_to_broker1.avg_rate?.toLocaleString() || 0}
+                                                </p>
+                                            </Card>
+                                            <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
+                                                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Txs</p>
+                                                <p className="text-lg font-black text-gray-800 dark:text-slate-100">
+                                                    {transferData.summary.broker2_to_broker1.total_transactions || 0}
+                                                </p>
+                                            </Card>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Chart & List */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 h-[350px] flex flex-col shadow-sm">
+                                        <CardHeader>
+                                            <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                                <BarChart2 className="w-4 h-4 text-blue-500" />
+                                                Daily Transfer Volume
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="flex-1 p-0">
+                                            {transferData.daily_stats.length > 0 ? (
+                                                <ReactECharts
+                                                    option={getTransferChartOption()}
+                                                    style={{ height: '100%', width: '100%' }}
+                                                />
+                                            ) : (
+                                                <div className="h-full flex items-center justify-center text-gray-400 text-sm">No daily statistics available</div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+
+                                    <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 h-[350px] flex flex-col shadow-sm">
+                                        <CardHeader>
+                                            <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                                <TrendingUp className="w-4 h-4 text-emerald-500" />
+                                                Transfer vs Net Accumulation
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="flex-1 p-0">
+                                            {transferData.daily_stats.length > 0 ? (
+                                                <ReactECharts
+                                                    option={getComparisonChartOption()}
+                                                    style={{ height: '100%', width: '100%' }}
+                                                />
+                                            ) : (
+                                                <div className="h-full flex items-center justify-center text-gray-400 text-sm">No comparison data available</div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                </div>
+
+                                <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm flex flex-col">
+                                    <CardHeader className="border-b dark:border-slate-800 py-3">
+                                        <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                            <History className="w-4 h-4 text-purple-500" />
+                                            Daily Aggregated Transfers & Net Flow
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-0 overflow-auto">
+                                        <table className="w-full text-[11px]">
+                                            <thead className="bg-gray-50 dark:bg-slate-800 sticky top-0 z-10">
+                                                <tr>
+                                                    <th className="p-2 text-left">Date</th>
+                                                    <th className="p-2 text-right">Price (Chg%)</th>
+                                                    <th className="p-2 text-right">Transfer Vol</th>
+                                                    <th className="p-2 text-right">Trans/Sell Ratio</th>
+                                                    <th className="p-2 text-right">B{transferBroker1} Net</th>
+                                                    <th className="p-2 text-right">B{transferBroker2} Net</th>
+                                                    <th className="p-2 text-right">Market Net</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y dark:divide-slate-800">
+                                                {!transferData.aggregated_transfers || transferData.aggregated_transfers.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan={6} className="p-10 text-center text-gray-400">No aggregated data found</td>
+                                                    </tr>
+                                                ) : (
+                                                    transferData.aggregated_transfers.map((day: any, i: number) => {
+                                                        const totalTransfer = (day.volume_1_to_2 || 0) + (day.volume_2_to_1 || 0);
+                                                        // Calculate ratios: what % of the selling broker's total sell volume was this transfer?
+                                                        const ratio1to2 = day.b1_sell > 0 ? (day.volume_1_to_2 / day.b1_sell * 100).toFixed(1) : '0';
+                                                        const ratio2to1 = day.b2_sell > 0 ? (day.volume_2_to_1 / day.b2_sell * 100).toFixed(1) : '0';
+
+                                                        return (
+                                                            <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-b dark:border-slate-800/50 last:border-0">
+                                                                <td className="p-2 font-mono text-gray-500">{day.transaction_date}</td>
+                                                                <td className="p-2 text-right">
+                                                                    <div className="font-bold flex flex-col">
+                                                                        <span>रू {day.close_price?.toLocaleString()}</span>
+                                                                        <span className={`text-[10px] ${day.price_change_pc >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                            {day.price_change_pc > 0 ? '+' : ''}{day.price_change_pc}%
+                                                                        </span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="p-2 text-right font-bold text-blue-600 dark:text-blue-400">
+                                                                    {totalTransfer.toLocaleString()}
+                                                                </td>
+                                                                <td className="p-2 text-right">
+                                                                    <div className="flex flex-col gap-0.5">
+                                                                        {day.volume_1_to_2 > 0 && <span className="text-gray-400">B1→B2: <b className="text-indigo-600">{ratio1to2}%</b></span>}
+                                                                        {day.volume_2_to_1 > 0 && <span className="text-gray-400">B2→B1: <b className="text-purple-600">{ratio2to1}%</b></span>}
+                                                                        {totalTransfer === 0 && <span className="text-gray-300">-</span>}
+                                                                    </div>
+                                                                </td>
+                                                                <td className={`p-2 text-right font-bold ${day.b1_net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                    {day.b1_net > 0 ? '+' : ''}{day.b1_net?.toLocaleString() || '0'}
+                                                                </td>
+                                                                <td className={`p-2 text-right font-bold ${day.b2_net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                    {day.b2_net > 0 ? '+' : ''}{day.b2_net?.toLocaleString() || '0'}
+                                                                </td>
+                                                                <td className={`p-2 text-right font-bold ${day.net_accumulation >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                                    {day.net_accumulation > 0 ? '+' : ''}{day.net_accumulation?.toLocaleString() || '0'}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </CardContent>
+                                </Card>
+                            </>
+                        ) : (
+                            <div className="p-20 text-center flex flex-col items-center gap-4 bg-white dark:bg-slate-900/50 rounded-xl border border-dashed dark:border-slate-800">
+                                <div className="p-4 bg-blue-50 dark:bg-indigo-900/20 rounded-full">
+                                    <Activity className="w-8 h-8 text-blue-500" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-gray-800 dark:text-slate-200">Ready to Analyze</h3>
+                                    <p className="text-gray-500 dark:text-slate-400">Click "Apply Filters" to fetch share transfer data for {selectedGraphSymbol}.</p>
                                 </div>
                             </div>
                         )}
