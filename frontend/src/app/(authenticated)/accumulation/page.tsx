@@ -864,7 +864,7 @@ function AccumulationContent() {
                     <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm">
                         <div className="p-4 border-b dark:border-slate-800 bg-white dark:bg-slate-900/80 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sticky top-[73px] z-20 rounded-t-xl">
                             <div className="flex flex-wrap items-center gap-3">
-                                <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-2">Analysis Range</span>
+                                <span className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase px-2">Analysis Range</span>
                                 <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1 md:pb-0">
                                     {timeRanges.map((t) => (
                                         <Button
@@ -894,7 +894,7 @@ function AccumulationContent() {
                                     />
                                 </div>
                                 <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm">
-                                    <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-2">Sector</span>
+                                    <span className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase px-2">Sector</span>
                                     <select
                                         value={sector}
                                         onChange={(e) => setSector(e.target.value)}
@@ -949,7 +949,7 @@ function AccumulationContent() {
                                                     <TableCell className="hidden lg:table-cell">
                                                         <div className="flex flex-col max-w-[200px]">
                                                             <span className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{item.name}</span>
-                                                            <span className="text-[10px] text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider">{item.sector}</span>
+                                                            <span className="text-xs text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider">{item.sector}</span>
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="text-right font-mono font-medium dark:text-slate-300">
@@ -968,14 +968,14 @@ function AccumulationContent() {
                                                                     style={{ width: `${Math.min(item.accumulation_ratio, 100)}%` }}
                                                                 />
                                                             </div>
-                                                            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500">{item.accumulation_ratio.toFixed(1)}% Strength</span>
+                                                            <span className="text-xs font-bold text-gray-400 dark:text-slate-500">{item.accumulation_ratio.toFixed(1)}% Strength</span>
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="hidden md:table-cell">
                                                         <div className="flex justify-center gap-1">
                                                             {item.top_buyers?.map(b => (
                                                                 <Link href={`/broker/${b}`} key={b}>
-                                                                    <span className="px-2 py-0.5 bg-green-50 dark:bg-emerald-900/30 text-green-700 dark:text-emerald-400 rounded text-[10px] font-bold border border-green-100 dark:border-emerald-800/30 hover:bg-green-100 dark:hover:bg-emerald-800 cursor-pointer transition-colors">#{b}</span>
+                                                                    <span className="px-2 py-0.5 bg-green-50 dark:bg-emerald-900/30 text-green-700 dark:text-emerald-400 rounded text-xs font-bold border border-green-100 dark:border-emerald-800/30 hover:bg-green-100 dark:hover:bg-emerald-800 cursor-pointer transition-colors">#{b}</span>
                                                                 </Link>
                                                             ))}
                                                         </div>
@@ -984,7 +984,7 @@ function AccumulationContent() {
                                                         <div className="flex justify-center gap-1">
                                                             {item.top_sellers?.map(b => (
                                                                 <Link href={`/broker/${b}`} key={b}>
-                                                                    <span className="px-2 py-0.5 bg-red-50 dark:bg-rose-900/30 text-red-700 dark:text-rose-400 rounded text-[10px] font-bold border border-red-100 dark:border-rose-800/30 hover:bg-red-100 dark:hover:bg-rose-800 cursor-pointer transition-colors">#{b}</span>
+                                                                    <span className="px-2 py-0.5 bg-red-50 dark:bg-rose-900/30 text-red-700 dark:text-rose-400 rounded text-xs font-bold border border-red-100 dark:border-rose-800/30 hover:bg-red-100 dark:hover:bg-rose-800 cursor-pointer transition-colors">#{b}</span>
                                                                 </Link>
                                                             ))}
                                                         </div>
@@ -1010,7 +1010,7 @@ function AccumulationContent() {
                     <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm">
                         <div className="p-4 border-b dark:border-slate-800 bg-white dark:bg-slate-900/80 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sticky top-[73px] z-10 rounded-t-xl">
                             <div className="flex flex-wrap items-center gap-3">
-                                <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-2">Analysis Range</span>
+                                <span className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase px-2">Analysis Range</span>
                                 <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1 md:pb-0">
                                     {timeRanges.filter(t => ['1D', '1W', '2W', '1M', '3M'].includes(t.value)).map((t) => (
                                         <Button
@@ -1040,7 +1040,7 @@ function AccumulationContent() {
                                     />
                                 </div>
                                 <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm">
-                                    <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-2">Sector</span>
+                                    <span className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase px-2">Sector</span>
                                     <select
                                         value={sector}
                                         onChange={(e) => setSector(e.target.value)}
@@ -1082,7 +1082,7 @@ function AccumulationContent() {
                                                                 <span className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase truncate max-w-[180px]">{sym.name}</span>
                                                             </div>
                                                             <div className="flex flex-col items-end">
-                                                                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-1">Buy Intensity</span>
+                                                                <span className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-1">Buy Intensity</span>
                                                                 <div className="px-3 py-1 bg-green-100 dark:bg-emerald-900/30 text-green-700 dark:text-emerald-400 rounded-lg text-sm font-black border border-green-200 dark:border-emerald-800/30 shadow-sm flex items-center gap-1">
                                                                     +{sym.intensity.toFixed(1)}%
                                                                 </div>
@@ -1091,21 +1091,21 @@ function AccumulationContent() {
 
                                                         <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-700/50">
                                                             <div>
-                                                                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase block mb-1">Inst. Buy Qty</span>
+                                                                <span className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase block mb-1">Inst. Buy Qty</span>
                                                                 <span className="text-sm font-bold text-gray-700 dark:text-slate-300">{sym.institutional_buy.toLocaleString()}</span>
                                                             </div>
                                                             <div>
-                                                                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase block mb-1">20D Avg Vol</span>
+                                                                <span className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase block mb-1">20D Avg Vol</span>
                                                                 <span className="text-sm font-bold text-gray-700 dark:text-slate-300">{Math.round(sym.avg_vol_20d).toLocaleString()}</span>
                                                             </div>
                                                         </div>
 
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex gap-1 items-center overflow-hidden">
-                                                                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase mr-1">Top Buyers</span>
+                                                                <span className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase mr-1">Top Buyers</span>
                                                                 {sym.producers?.map(p => (
                                                                     <Link href={`/broker/${p}`} key={p}>
-                                                                        <span className="px-1.5 py-0.5 bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-400 rounded text-[10px] font-bold border border-gray-100 dark:border-slate-700 hover:bg-green-50 dark:hover:bg-emerald-900/30 hover:text-green-600 dark:hover:text-emerald-400 cursor-pointer transition-colors shadow-sm">#{p}</span>
+                                                                        <span className="px-1.5 py-0.5 bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-400 rounded text-xs font-bold border border-gray-100 dark:border-slate-700 hover:bg-green-50 dark:hover:bg-emerald-900/30 hover:text-green-600 dark:hover:text-emerald-400 cursor-pointer transition-colors shadow-sm">#{p}</span>
                                                                     </Link>
                                                                 ))}
                                                             </div>
@@ -1142,7 +1142,7 @@ function AccumulationContent() {
                                                                 <span className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase truncate max-w-[180px]">{sym.name}</span>
                                                             </div>
                                                             <div className="flex flex-col items-end">
-                                                                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-1">Sell Intensity</span>
+                                                                <span className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-1">Sell Intensity</span>
                                                                 <div className="px-3 py-1 bg-red-100 dark:bg-rose-900/30 text-red-700 dark:text-rose-400 rounded-lg text-sm font-black border border-red-200 dark:border-rose-800/30 shadow-sm flex items-center gap-1">
                                                                     {sym.intensity.toFixed(1)}%
                                                                 </div>
@@ -1151,21 +1151,21 @@ function AccumulationContent() {
 
                                                         <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-700/50">
                                                             <div>
-                                                                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase block mb-1">Inst. Sell Qty</span>
+                                                                <span className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase block mb-1">Inst. Sell Qty</span>
                                                                 <span className="text-sm font-bold text-gray-700 dark:text-slate-300">{sym.institutional_sell.toLocaleString()}</span>
                                                             </div>
                                                             <div>
-                                                                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase block mb-1">20D Avg Vol</span>
+                                                                <span className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase block mb-1">20D Avg Vol</span>
                                                                 <span className="text-sm font-bold text-gray-700 dark:text-slate-300">{Math.round(sym.avg_vol_20d).toLocaleString()}</span>
                                                             </div>
                                                         </div>
 
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex gap-1 items-center overflow-hidden">
-                                                                <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase mr-1">Offloaders</span>
+                                                                <span className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase mr-1">Offloaders</span>
                                                                 {sym.offloaders?.map(p => (
                                                                     <Link href={`/broker/${p}`} key={p}>
-                                                                        <span className="px-1.5 py-0.5 bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-400 rounded text-[10px] font-bold border border-gray-100 dark:border-slate-700 hover:bg-red-50 dark:hover:bg-rose-900/30 hover:text-red-600 dark:hover:text-rose-400 cursor-pointer transition-colors shadow-sm">#{p}</span>
+                                                                        <span className="px-1.5 py-0.5 bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-400 rounded text-xs font-bold border border-gray-100 dark:border-slate-700 hover:bg-red-50 dark:hover:bg-rose-900/30 hover:text-red-600 dark:hover:text-rose-400 cursor-pointer transition-colors shadow-sm">#{p}</span>
                                                                     </Link>
                                                                 ))}
                                                             </div>
@@ -1184,168 +1184,171 @@ function AccumulationContent() {
                             )}
                         </div>
                     </div>
-                )}
+                )
+                }
 
-                {activeTab === 'trends' && (
-                    <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm">
-                        <div className="p-4 border-b dark:border-slate-800 bg-white dark:bg-slate-900/80 flex items-center justify-end gap-4 sticky top-[73px] z-20 rounded-t-xl">
-                            <div className="relative w-64">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
-                                <Input
-                                    placeholder="Filter symbols or brokers..."
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    className="pl-10 h-9 rounded-lg bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 shadow-none text-sm focus:ring-1 focus:ring-blue-500 dark:focus:ring-indigo-500 dark:text-slate-100"
-                                />
-                            </div>
-                        </div>
-                        <div className="p-0">
-                            {trendsLoading ? (
-                                <div className="flex flex-col items-center justify-center p-20 space-y-4">
-                                    <Loader2 className="w-10 h-10 text-blue-500 dark:text-indigo-400 animate-spin" />
-                                    <p className="text-gray-500 dark:text-slate-400 font-medium">Calculating broker trends...</p>
+                {
+                    activeTab === 'trends' && (
+                        <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm">
+                            <div className="p-4 border-b dark:border-slate-800 bg-white dark:bg-slate-900/80 flex items-center justify-end gap-4 sticky top-[73px] z-20 rounded-t-xl">
+                                <div className="relative w-64">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
+                                    <Input
+                                        placeholder="Filter symbols or brokers..."
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        className="pl-10 h-9 rounded-lg bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 shadow-none text-sm focus:ring-1 focus:ring-blue-500 dark:focus:ring-indigo-500 dark:text-slate-100"
+                                    />
                                 </div>
-                            ) : (
-                                <div>
-                                    <table className="w-full caption-bottom text-sm">
-                                        <TableHeader className="bg-gray-50 dark:bg-slate-900 sticky top-[146px] z-10 shadow-sm border-b dark:border-slate-800">
-                                            <TableRow>
-                                                <TableHead className="w-[120px] cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('symbol')}>
-                                                    <div className="flex items-center gap-1">Symbol <TrendSortIcon column="symbol" /></div>
-                                                </TableHead>
-                                                <TableHead className="cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('broker')}>
-                                                    <div className="flex items-center gap-1">Broker ID <TrendSortIcon column="broker" /></div>
-                                                </TableHead>
-                                                <TableHead className="text-right cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('cumulative_net')}>
-                                                    <div className="flex items-center justify-end gap-1">Cumulative Net <TrendSortIcon column="cumulative_net" /></div>
-                                                </TableHead>
-                                                <TableHead className="text-right cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('ltp')}>
-                                                    <div className="flex items-center justify-end gap-1">LTP <TrendSortIcon column="ltp" /></div>
-                                                </TableHead>
-                                                <TableHead className="text-right cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('wac')}>
-                                                    <div className="flex items-center justify-end gap-1">WAC <TrendSortIcon column="wac" /></div>
-                                                </TableHead>
-                                                <TableHead className="text-center cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('change_5d')}>
-                                                    <div className="flex items-center justify-center gap-1">5D Trend <TrendSortIcon column="change_5d" /></div>
-                                                </TableHead>
-                                                <TableHead className="text-center cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('change_10d')}>
-                                                    <div className="flex items-center justify-center gap-1">10D Trend <TrendSortIcon column="change_10d" /></div>
-                                                </TableHead>
-                                                <TableHead className="text-center cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('change_20d')}>
-                                                    <div className="flex items-center justify-center gap-1">20D Trend <TrendSortIcon column="change_20d" /></div>
-                                                </TableHead>
-                                                <TableHead className="text-center cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('change_50d')}>
-                                                    <div className="flex items-center justify-center gap-1">50D Trend <TrendSortIcon column="change_50d" /></div>
-                                                </TableHead>
-                                                <TableHead className="w-[60px]"></TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {sortedTrends.length === 0 ? (
+                            </div>
+                            <div className="p-0">
+                                {trendsLoading ? (
+                                    <div className="flex flex-col items-center justify-center p-20 space-y-4">
+                                        <Loader2 className="w-10 h-10 text-blue-500 dark:text-indigo-400 animate-spin" />
+                                        <p className="text-gray-500 dark:text-slate-400 font-medium">Calculating broker trends...</p>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <table className="w-full caption-bottom text-sm">
+                                            <TableHeader className="bg-gray-50 dark:bg-slate-900 sticky top-[146px] z-10 shadow-sm border-b dark:border-slate-800">
                                                 <TableRow>
-                                                    <TableCell colSpan={10} className="h-40 text-center text-gray-500 dark:text-slate-400">
-                                                        No broker trends found matching "{search}".
-                                                    </TableCell>
+                                                    <TableHead className="w-[120px] cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('symbol')}>
+                                                        <div className="flex items-center gap-1">Symbol <TrendSortIcon column="symbol" /></div>
+                                                    </TableHead>
+                                                    <TableHead className="cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('broker')}>
+                                                        <div className="flex items-center gap-1">Broker ID <TrendSortIcon column="broker" /></div>
+                                                    </TableHead>
+                                                    <TableHead className="text-right cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('cumulative_net')}>
+                                                        <div className="flex items-center justify-end gap-1">Cumulative Net <TrendSortIcon column="cumulative_net" /></div>
+                                                    </TableHead>
+                                                    <TableHead className="text-right cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('ltp')}>
+                                                        <div className="flex items-center justify-end gap-1">LTP <TrendSortIcon column="ltp" /></div>
+                                                    </TableHead>
+                                                    <TableHead className="text-right cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('wac')}>
+                                                        <div className="flex items-center justify-end gap-1">WAC <TrendSortIcon column="wac" /></div>
+                                                    </TableHead>
+                                                    <TableHead className="text-center cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('change_5d')}>
+                                                        <div className="flex items-center justify-center gap-1">5D Trend <TrendSortIcon column="change_5d" /></div>
+                                                    </TableHead>
+                                                    <TableHead className="text-center cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('change_10d')}>
+                                                        <div className="flex items-center justify-center gap-1">10D Trend <TrendSortIcon column="change_10d" /></div>
+                                                    </TableHead>
+                                                    <TableHead className="text-center cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('change_20d')}>
+                                                        <div className="flex items-center justify-center gap-1">20D Trend <TrendSortIcon column="change_20d" /></div>
+                                                    </TableHead>
+                                                    <TableHead className="text-center cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('change_50d')}>
+                                                        <div className="flex items-center justify-center gap-1">50D Trend <TrendSortIcon column="change_50d" /></div>
+                                                    </TableHead>
+                                                    <TableHead className="w-[60px]"></TableHead>
                                                 </TableRow>
-                                            ) : (
-                                                paginatedTrends.map((row, idx) => (
-                                                    <TableRow key={idx} className="hover:bg-blue-50/40 dark:hover:bg-slate-900/50 transition-colors group border-b dark:border-slate-800">
-                                                        <TableCell className="font-bold text-blue-700 dark:text-indigo-400">{row.symbol}</TableCell>
-                                                        <TableCell>
-                                                            <Link href={`/broker/${row.broker}`}>
-                                                                <span className="px-2 py-1 bg-gray-100 dark:bg-slate-800 rounded text-xs font-bold border border-gray-200 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-indigo-900/30 hover:text-blue-600 dark:hover:text-indigo-400 cursor-pointer transition-all">
-                                                                    Broker {row.broker}
-                                                                </span>
-                                                            </Link>
-                                                        </TableCell>
-                                                        <TableCell className="text-right font-mono font-bold text-blue-800 dark:text-indigo-400">
-                                                            {row.cumulative_net.toLocaleString()}
-                                                        </TableCell>
-                                                        <TableCell className="text-right font-mono font-bold text-gray-900 dark:text-slate-100">
-                                                            {row.ltp?.toLocaleString()}
-                                                        </TableCell>
-                                                        <TableCell className="text-right font-mono font-bold text-gray-700 dark:text-slate-300">
-                                                            {row.wac?.toLocaleString()}
-                                                        </TableCell>
-                                                        <TableCell className="text-center">
-                                                            <TrendBadge trend={row.trend_5d} change={row.change_5d} />
-                                                        </TableCell>
-                                                        <TableCell className="text-center">
-                                                            <TrendBadge trend={row.trend_10d} change={row.change_10d} />
-                                                        </TableCell>
-                                                        <TableCell className="text-center">
-                                                            <TrendBadge trend={row.trend_20d} change={row.change_20d} />
-                                                        </TableCell>
-                                                        <TableCell className="text-center">
-                                                            <TrendBadge trend={row.trend_50d} change={row.change_50d} />
-                                                        </TableCell>
-                                                        <TableCell className="text-center">
-                                                            <Link href={`/accumulation?tab=history&symbol=${row.symbol}&broker=${row.broker}`}>
-                                                                <Button variant="ghost" size="icon" className="group-hover:text-blue-600 dark:group-hover:text-indigo-400 rounded-full" title="View historical accumulation">
-                                                                    <History className="w-4 h-4" />
-                                                                </Button>
-                                                            </Link>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {sortedTrends.length === 0 ? (
+                                                    <TableRow>
+                                                        <TableCell colSpan={10} className="h-40 text-center text-gray-500 dark:text-slate-400">
+                                                            No broker trends found matching "{search}".
                                                         </TableCell>
                                                     </TableRow>
-                                                ))
-                                            )}
-                                        </TableBody>
-                                    </table>
+                                                ) : (
+                                                    paginatedTrends.map((row, idx) => (
+                                                        <TableRow key={idx} className="hover:bg-blue-50/40 dark:hover:bg-slate-900/50 transition-colors group border-b dark:border-slate-800">
+                                                            <TableCell className="font-bold text-blue-700 dark:text-indigo-400">{row.symbol}</TableCell>
+                                                            <TableCell>
+                                                                <Link href={`/broker/${row.broker}`}>
+                                                                    <span className="px-2 py-1 bg-gray-100 dark:bg-slate-800 rounded text-xs font-bold border border-gray-200 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-indigo-900/30 hover:text-blue-600 dark:hover:text-indigo-400 cursor-pointer transition-all">
+                                                                        Broker {row.broker}
+                                                                    </span>
+                                                                </Link>
+                                                            </TableCell>
+                                                            <TableCell className="text-right font-mono font-bold text-blue-800 dark:text-indigo-400">
+                                                                {row.cumulative_net.toLocaleString()}
+                                                            </TableCell>
+                                                            <TableCell className="text-right font-mono font-bold text-gray-900 dark:text-slate-100">
+                                                                {row.ltp?.toLocaleString()}
+                                                            </TableCell>
+                                                            <TableCell className="text-right font-mono font-bold text-gray-700 dark:text-slate-300">
+                                                                {row.wac?.toLocaleString()}
+                                                            </TableCell>
+                                                            <TableCell className="text-center">
+                                                                <TrendBadge trend={row.trend_5d} change={row.change_5d} />
+                                                            </TableCell>
+                                                            <TableCell className="text-center">
+                                                                <TrendBadge trend={row.trend_10d} change={row.change_10d} />
+                                                            </TableCell>
+                                                            <TableCell className="text-center">
+                                                                <TrendBadge trend={row.trend_20d} change={row.change_20d} />
+                                                            </TableCell>
+                                                            <TableCell className="text-center">
+                                                                <TrendBadge trend={row.trend_50d} change={row.change_50d} />
+                                                            </TableCell>
+                                                            <TableCell className="text-center">
+                                                                <Link href={`/accumulation?tab=history&symbol=${row.symbol}&broker=${row.broker}`}>
+                                                                    <Button variant="ghost" size="icon" className="group-hover:text-blue-600 dark:group-hover:text-indigo-400 rounded-full" title="View historical accumulation">
+                                                                        <History className="w-4 h-4" />
+                                                                    </Button>
+                                                                </Link>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                )}
+                                            </TableBody>
+                                        </table>
 
-                                    {/* Trends Pagination Controls */}
-                                    {!trendsLoading && sortedTrends.length > 0 && (
-                                        <div className="p-4 border-t dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0 rounded-b-xl">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-sm font-medium text-gray-500 dark:text-slate-400">Rows per page:</span>
-                                                <select
-                                                    value={trendsPageSize}
-                                                    onChange={(e) => {
-                                                        setTrendsPageSize(Number(e.target.value));
-                                                        setTrendsPage(1);
-                                                    }}
-                                                    className="h-8 rounded-lg border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800 text-sm font-bold focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500 dark:text-slate-200"
-                                                >
-                                                    {[20, 50, 100].map(size => (
-                                                        <option key={size} value={size}>{size}</option>
-                                                    ))}
-                                                </select>
-                                                <span className="text-xs text-gray-400 dark:text-slate-500 hidden sm:inline-block">
-                                                    | Total {sortedTrends.length} records
-                                                </span>
-                                            </div>
+                                        {/* Trends Pagination Controls */}
+                                        {!trendsLoading && sortedTrends.length > 0 && (
+                                            <div className="p-4 border-t dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0 rounded-b-xl">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-sm font-medium text-gray-500 dark:text-slate-400">Rows per page:</span>
+                                                    <select
+                                                        value={trendsPageSize}
+                                                        onChange={(e) => {
+                                                            setTrendsPageSize(Number(e.target.value));
+                                                            setTrendsPage(1);
+                                                        }}
+                                                        className="h-8 rounded-lg border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800 text-sm font-bold focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500 dark:text-slate-200"
+                                                    >
+                                                        {[20, 50, 100].map(size => (
+                                                            <option key={size} value={size}>{size}</option>
+                                                        ))}
+                                                    </select>
+                                                    <span className="text-xs text-gray-400 dark:text-slate-500 hidden sm:inline-block">
+                                                        | Total {sortedTrends.length} records
+                                                    </span>
+                                                </div>
 
-                                            <div className="flex items-center gap-4">
-                                                <span className="text-sm font-medium text-gray-600 dark:text-slate-400">
-                                                    Page {trendsPage} of {trendsTotalPages}
-                                                </span>
-                                                <div className="flex gap-2">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => setTrendsPage(p => Math.max(1, p - 1))}
-                                                        disabled={trendsPage === 1}
-                                                        className="h-8 px-3 font-bold"
-                                                    >
-                                                        Previous
-                                                    </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => setTrendsPage(p => Math.min(trendsTotalPages, p + 1))}
-                                                        disabled={trendsPage >= trendsTotalPages}
-                                                        className="h-8 px-3 font-bold"
-                                                    >
-                                                        Next
-                                                    </Button>
+                                                <div className="flex items-center gap-4">
+                                                    <span className="text-sm font-medium text-gray-600 dark:text-slate-400">
+                                                        Page {trendsPage} of {trendsTotalPages}
+                                                    </span>
+                                                    <div className="flex gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => setTrendsPage(p => Math.max(1, p - 1))}
+                                                            disabled={trendsPage === 1}
+                                                            className="h-8 px-3 font-bold"
+                                                        >
+                                                            Previous
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => setTrendsPage(p => Math.min(trendsTotalPages, p + 1))}
+                                                            disabled={trendsPage >= trendsTotalPages}
+                                                            className="h-8 px-3 font-bold"
+                                                        >
+                                                            Next
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
                 {
                     activeTab === 'favorites' && (
@@ -1374,7 +1377,7 @@ function AccumulationContent() {
                                     {/* Right: Broker and Search */}
                                     <div className="flex items-center gap-2">
                                         <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm">
-                                            <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-2">Broker</span>
+                                            <span className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase px-2">Broker</span>
                                             <select
                                                 value={selectedBroker}
                                                 onChange={(e) => {
@@ -1512,656 +1515,664 @@ function AccumulationContent() {
                     )
                 }
 
-                {activeTab === 'accumulators' && (
-                    <>
-                        <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm p-4 mb-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sticky top-[73px] z-20">
-                            <div className="flex flex-wrap items-center gap-3">
-                                <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-2">Analysis Range</span>
-                                <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1 md:pb-0">
-                                    {timeRanges
-                                        .filter(t => t.value !== '1D')
-                                        .map((t) => (
-                                            <Button
-                                                key={t.value}
-                                                onClick={() => setRange(t.value)}
-                                                variant={range === t.value ? "default" : "outline"}
-                                                size="sm"
-                                                className={`rounded-xl px-4 py-2 font-bold transition-all ${range === t.value
-                                                    ? 'bg-blue-600 dark:bg-indigo-600 text-white shadow-lg scale-105'
-                                                    : 'text-gray-600 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-slate-200 border-gray-200 dark:border-slate-800'
-                                                    }`}
-                                            >
-                                                {t.label}
-                                            </Button>
-                                        ))}
+                {
+                    activeTab === 'accumulators' && (
+                        <>
+                            <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm p-4 mb-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sticky top-[73px] z-20">
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <span className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase px-2">Analysis Range</span>
+                                    <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1 md:pb-0">
+                                        {timeRanges
+                                            .filter(t => t.value !== '1D')
+                                            .map((t) => (
+                                                <Button
+                                                    key={t.value}
+                                                    onClick={() => setRange(t.value)}
+                                                    variant={range === t.value ? "default" : "outline"}
+                                                    size="sm"
+                                                    className={`rounded-xl px-4 py-2 font-bold transition-all ${range === t.value
+                                                        ? 'bg-blue-600 dark:bg-indigo-600 text-white shadow-lg scale-105'
+                                                        : 'text-gray-600 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-slate-200 border-gray-200 dark:border-slate-800'
+                                                        }`}
+                                                >
+                                                    {t.label}
+                                                </Button>
+                                            ))}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 w-full lg:w-auto">
+                                    <div className="relative flex-grow lg:w-48">
+                                        <CompanySelect
+                                            value={selectedGraphSymbol}
+                                            onChange={(val) => setSelectedGraphSymbol(val)}
+                                            className="w-full h-10 border-gray-200"
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 w-full lg:w-auto">
-                                <div className="relative flex-grow lg:w-48">
-                                    <CompanySelect
-                                        value={selectedGraphSymbol}
-                                        onChange={(val) => setSelectedGraphSymbol(val)}
-                                        className="w-full h-10 border-gray-200"
-                                    />
+                            <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm h-[45vh] flex flex-col">
+                                <div className="p-4 border-b dark:border-slate-800 bg-white dark:bg-slate-900/80 rounded-t-xl">
+                                    <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100">Accumulation Trend</h3>
+                                </div>
+
+                                <div className="flex-1 p-4 min-h-0">
+                                    {!selectedGraphSymbol ? (
+                                        <div className="h-full flex flex-col items-center justify-center space-y-4 text-gray-400 dark:text-slate-500">
+                                            <BarChart2 className="w-16 h-16 opacity-20" />
+                                            <p className="font-bold text-lg">Enter a symbol to visualize top accumulators</p>
+                                        </div>
+                                    ) : graphLoading ? (
+                                        <div className="h-full flex flex-col items-center justify-center space-y-4">
+                                            <Loader2 className="w-10 h-10 text-blue-500 dark:text-indigo-400 animate-spin" />
+                                            <p className="text-gray-500 dark:text-slate-400 font-medium">Fetching accumulation data...</p>
+                                        </div>
+                                    ) : graphData.length === 0 ? (
+                                        <div className="h-full flex flex-col items-center justify-center space-y-4 text-gray-400 dark:text-slate-500">
+                                            <p className="font-medium">No data found for {selectedGraphSymbol}</p>
+                                        </div>
+                                    ) : (
+                                        <ReactECharts
+                                            option={getGraphOption()}
+                                            style={{ height: '100%', width: '100%' }}
+                                            notMerge={true}
+                                        />
+                                    )}
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm h-[45vh] flex flex-col">
-                            <div className="p-4 border-b dark:border-slate-800 bg-white dark:bg-slate-900/80 rounded-t-xl">
-                                <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100">Accumulation Trend</h3>
-                            </div>
-
-                            <div className="flex-1 p-4 min-h-0">
-                                {!selectedGraphSymbol ? (
-                                    <div className="h-full flex flex-col items-center justify-center space-y-4 text-gray-400 dark:text-slate-500">
-                                        <BarChart2 className="w-16 h-16 opacity-20" />
-                                        <p className="font-bold text-lg">Enter a symbol to visualize top accumulators</p>
-                                    </div>
-                                ) : graphLoading ? (
-                                    <div className="h-full flex flex-col items-center justify-center space-y-4">
-                                        <Loader2 className="w-10 h-10 text-blue-500 dark:text-indigo-400 animate-spin" />
-                                        <p className="text-gray-500 dark:text-slate-400 font-medium">Fetching accumulation data...</p>
-                                    </div>
-                                ) : graphData.length === 0 ? (
-                                    <div className="h-full flex flex-col items-center justify-center space-y-4 text-gray-400 dark:text-slate-500">
-                                        <p className="font-medium">No data found for {selectedGraphSymbol}</p>
-                                    </div>
-                                ) : (
-                                    <ReactECharts
-                                        option={getGraphOption()}
-                                        style={{ height: '100%', width: '100%' }}
-                                        notMerge={true}
-                                    />
-                                )}
-                            </div>
-                        </div>
-                    </>
-                )}
+                        </>
+                    )
+                }
 
                 {/* Aggressive Trader Tab */}
-                {activeTab === 'aggressive-trader' && (
-                    <>
-                        <div className="bg-white rounded-xl border shadow-sm p-4 mb-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sticky top-[73px] z-20">
-                            <div className="flex flex-wrap items-center gap-3">
-                                <span className="text-[10px] font-black text-gray-400 uppercase px-2">Analysis Range</span>
-                                <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1 md:pb-0">
-                                    {timeRanges
-                                        .filter(t => ['1D', '1W', '2W', '1M', '3M'].includes(t.value))
-                                        .map((t) => (
-                                            <Button
-                                                key={t.value}
-                                                onClick={() => setRange(t.value)}
-                                                variant={range === t.value ? "default" : "outline"}
-                                                size="sm"
-                                                className={`rounded-xl px-4 py-2 font-bold transition-all ${range === t.value
-                                                    ? 'bg-blue-600 text-white shadow-lg scale-105'
-                                                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-gray-200'
-                                                    }`}
-                                            >
-                                                {t.label}
+                {
+                    activeTab === 'aggressive-trader' && (
+                        <>
+                            <div className="bg-white rounded-xl border shadow-sm p-4 mb-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sticky top-[73px] z-20">
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <span className="text-xs font-black text-gray-400 uppercase px-2">Analysis Range</span>
+                                    <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1 md:pb-0">
+                                        {timeRanges
+                                            .filter(t => ['1D', '1W', '2W', '1M', '3M'].includes(t.value))
+                                            .map((t) => (
+                                                <Button
+                                                    key={t.value}
+                                                    onClick={() => setRange(t.value)}
+                                                    variant={range === t.value ? "default" : "outline"}
+                                                    size="sm"
+                                                    className={`rounded-xl px-4 py-2 font-bold transition-all ${range === t.value
+                                                        ? 'bg-blue-600 text-white shadow-lg scale-105'
+                                                        : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-gray-200'
+                                                        }`}
+                                                >
+                                                    {t.label}
+                                                </Button>
+                                            ))}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 w-full lg:w-auto">
+                                    <div className="relative flex-grow lg:w-48">
+                                        <CompanySelect
+                                            value={selectedGraphSymbol}
+                                            onChange={(val) => setSelectedGraphSymbol(val)}
+                                            className="w-full h-10 border-gray-200"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {!selectedGraphSymbol ? (
+                                <div className="bg-white rounded-xl border shadow-sm h-[60vh] flex flex-col items-center justify-center space-y-4 text-gray-400">
+                                    <Activity className="w-16 h-16 opacity-20" />
+                                    <p className="font-bold text-lg">Select a company to analyze aggressive traders</p>
+                                </div>
+                            ) : graphLoading ? (
+                                <div className="bg-white rounded-xl border shadow-sm h-[60vh] flex flex-col items-center justify-center space-y-4">
+                                    <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+                                    <p className="text-gray-500 font-medium">Identifying top buyers and sellers...</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    {/* Buyers */}
+                                    <div className="bg-white rounded-xl border shadow-sm h-[60vh] flex flex-col">
+                                        <div className="p-4 border-b bg-green-50/50 rounded-t-xl">
+                                            <h3 className="text-lg font-bold text-green-800">Aggressive Buying Pressure</h3>
+                                        </div>
+                                        <div className="flex-1 p-4 min-h-0">
+                                            {buyLeaders.length === 0 ? (
+                                                <div className="h-full flex items-center justify-center text-gray-400">No buying pressure detected</div>
+                                            ) : (
+                                                <ReactECharts option={getAggressiveGraphOption('buy')} style={{ height: '100%', width: '100%' }} notMerge={true} />
+                                            )}
+                                        </div>
+                                    </div>
+                                    {/* Sellers */}
+                                    <div className="bg-white rounded-xl border shadow-sm h-[60vh] flex flex-col">
+                                        <div className="p-4 border-b bg-red-50/50 rounded-t-xl">
+                                            <h3 className="text-lg font-bold text-red-800">Aggressive Selling Pressure</h3>
+                                        </div>
+                                        <div className="flex-1 p-4 min-h-0">
+                                            {sellLeaders.length === 0 ? (
+                                                <div className="h-full flex items-center justify-center text-gray-400">No selling pressure detected</div>
+                                            ) : (
+                                                <ReactECharts option={getAggressiveGraphOption('sell')} style={{ height: '100%', width: '100%' }} notMerge={true} />
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )
+                }
+
+                {
+                    activeTab === 'history' && (
+                        <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm relative h-[calc(100vh-140px)] flex flex-col">
+                            {/* Header & Filters */}
+                            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 p-5 border-b dark:border-slate-800 bg-white dark:bg-slate-900/80 rounded-t-xl shrink-0">
+                                <div className="flex items-center gap-4">
+                                    <div>
+                                        <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100">Historical Flows</h2>
+                                        <p className="text-xs text-gray-500 dark:text-slate-400 font-medium">Detailed transaction logs</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                                    {/* Broker Selector */}
+                                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-900 p-1.5 rounded-xl border border-gray-200 dark:border-slate-800">
+                                        <span className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase px-2">Broker</span>
+                                        <select
+                                            value={selectedBroker}
+                                            onChange={(e) => handleBrokerChange(e.target.value)}
+                                            className="bg-transparent border-none text-sm font-bold text-blue-700 dark:text-indigo-400 outline-none pr-4 min-w-[80px]"
+                                        >
+                                            <option value="">Select ID</option>
+                                            {selectedBroker && !allBrokers.includes(selectedBroker) && (
+                                                <option value={selectedBroker}>{selectedBroker}</option>
+                                            )}
+                                            {allBrokers.map(b => <option key={b} value={b}>{b}</option>)}
+                                        </select>
+                                    </div>
+
+                                    {/* Symbol Selector */}
+                                    <div className="min-w-[180px]">
+                                        <CompanySelect
+                                            value={selectedGraphSymbol}
+                                            onChange={(val) => {
+                                                setSelectedGraphSymbol(val);
+                                                const params = new URLSearchParams(searchParams.toString());
+                                                params.set('symbol', val);
+                                                router.push(`/accumulation?${params.toString()}`, { scroll: false });
+                                            }}
+                                            className="h-9 border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 text-sm font-bold"
+                                        />
+                                    </div>
+                                    {selectedGraphSymbol && (
+                                        <Link href={`/floorsheet?symbol=${selectedGraphSymbol}&broker=${selectedBroker || ''}`}>
+                                            <Button variant="outline" size="sm" className="bg-white dark:bg-slate-900 gap-2 font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-indigo-400 border-slate-200 dark:border-slate-800">
+                                                <ExternalLink className="w-4 h-4" />
+                                                Floorsheet
                                             </Button>
-                                        ))}
+                                        </Link>
+                                    )}
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 w-full lg:w-auto">
-                                <div className="relative flex-grow lg:w-48">
-                                    <CompanySelect
-                                        value={selectedGraphSymbol}
-                                        onChange={(val) => setSelectedGraphSymbol(val)}
-                                        className="w-full h-10 border-gray-200"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {!selectedGraphSymbol ? (
-                            <div className="bg-white rounded-xl border shadow-sm h-[60vh] flex flex-col items-center justify-center space-y-4 text-gray-400">
-                                <Activity className="w-16 h-16 opacity-20" />
-                                <p className="font-bold text-lg">Select a company to analyze aggressive traders</p>
-                            </div>
-                        ) : graphLoading ? (
-                            <div className="bg-white rounded-xl border shadow-sm h-[60vh] flex flex-col items-center justify-center space-y-4">
-                                <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-                                <p className="text-gray-500 font-medium">Identifying top buyers and sellers...</p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                {/* Buyers */}
-                                <div className="bg-white rounded-xl border shadow-sm h-[60vh] flex flex-col">
-                                    <div className="p-4 border-b bg-green-50/50 rounded-t-xl">
-                                        <h3 className="text-lg font-bold text-green-800">Aggressive Buying Pressure</h3>
+                            {(!selectedBroker || !selectedGraphSymbol) ? (
+                                <div className="flex flex-col items-center justify-center flex-1 text-gray-400 dark:text-slate-500 space-y-4">
+                                    <div className="p-4 bg-gray-50 dark:bg-slate-900 rounded-full">
+                                        <Filter className="w-8 h-8 opacity-50" />
                                     </div>
-                                    <div className="flex-1 p-4 min-h-0">
-                                        {buyLeaders.length === 0 ? (
-                                            <div className="h-full flex items-center justify-center text-gray-400">No buying pressure detected</div>
-                                        ) : (
-                                            <ReactECharts option={getAggressiveGraphOption('buy')} style={{ height: '100%', width: '100%' }} notMerge={true} />
-                                        )}
-                                    </div>
+                                    <p className="font-bold text-lg">Please select both Broker and Symbol</p>
+                                    <p className="text-sm">Select filters above to view history</p>
                                 </div>
-                                {/* Sellers */}
-                                <div className="bg-white rounded-xl border shadow-sm h-[60vh] flex flex-col">
-                                    <div className="p-4 border-b bg-red-50/50 rounded-t-xl">
-                                        <h3 className="text-lg font-bold text-red-800">Aggressive Selling Pressure</h3>
-                                    </div>
-                                    <div className="flex-1 p-4 min-h-0">
-                                        {sellLeaders.length === 0 ? (
-                                            <div className="h-full flex items-center justify-center text-gray-400">No selling pressure detected</div>
-                                        ) : (
-                                            <ReactECharts option={getAggressiveGraphOption('sell')} style={{ height: '100%', width: '100%' }} notMerge={true} />
-                                        )}
-                                    </div>
+                            ) : historyLoading ? (
+                                <div className="flex flex-col items-center justify-center p-20 space-y-4 flex-1">
+                                    <Loader2 className="w-10 h-10 text-blue-500 dark:text-indigo-400 animate-spin" />
+                                    <p className="text-gray-500 dark:text-slate-400 font-medium">Loading history...</p>
                                 </div>
-                            </div>
-                        )}
-                    </>
-                )}
-
-                {activeTab === 'history' && (
-                    <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm relative h-[calc(100vh-140px)] flex flex-col">
-                        {/* Header & Filters */}
-                        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 p-5 border-b dark:border-slate-800 bg-white dark:bg-slate-900/80 rounded-t-xl shrink-0">
-                            <div className="flex items-center gap-4">
-                                <div>
-                                    <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100">Historical Flows</h2>
-                                    <p className="text-xs text-gray-500 dark:text-slate-400 font-medium">Detailed transaction logs</p>
+                            ) : historyError ? (
+                                <div className="flex flex-col items-center justify-center flex-1 p-20 text-center text-red-500 dark:text-rose-400 font-medium space-y-2">
+                                    <p>{historyError}</p>
+                                    <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Retry</Button>
                                 </div>
-                            </div>
-
-                            <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                                {/* Broker Selector */}
-                                <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-900 p-1.5 rounded-xl border border-gray-200 dark:border-slate-800">
-                                    <span className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-2">Broker</span>
-                                    <select
-                                        value={selectedBroker}
-                                        onChange={(e) => handleBrokerChange(e.target.value)}
-                                        className="bg-transparent border-none text-sm font-bold text-blue-700 dark:text-indigo-400 outline-none pr-4 min-w-[80px]"
-                                    >
-                                        <option value="">Select ID</option>
-                                        {selectedBroker && !allBrokers.includes(selectedBroker) && (
-                                            <option value={selectedBroker}>{selectedBroker}</option>
-                                        )}
-                                        {allBrokers.map(b => <option key={b} value={b}>{b}</option>)}
-                                    </select>
-                                </div>
-
-                                {/* Symbol Selector */}
-                                <div className="min-w-[180px]">
-                                    <CompanySelect
-                                        value={selectedGraphSymbol}
-                                        onChange={(val) => {
-                                            setSelectedGraphSymbol(val);
-                                            const params = new URLSearchParams(searchParams.toString());
-                                            params.set('symbol', val);
-                                            router.push(`/accumulation?${params.toString()}`, { scroll: false });
-                                        }}
-                                        className="h-9 border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 text-sm font-bold"
-                                    />
-                                </div>
-                                {selectedGraphSymbol && (
-                                    <Link href={`/floorsheet?symbol=${selectedGraphSymbol}&broker=${selectedBroker || ''}`}>
-                                        <Button variant="outline" size="sm" className="bg-white dark:bg-slate-900 gap-2 font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-indigo-400 border-slate-200 dark:border-slate-800">
-                                            <ExternalLink className="w-4 h-4" />
-                                            Floorsheet
-                                        </Button>
-                                    </Link>
-                                )}
-                            </div>
-                        </div>
-
-                        {(!selectedBroker || !selectedGraphSymbol) ? (
-                            <div className="flex flex-col items-center justify-center flex-1 text-gray-400 dark:text-slate-500 space-y-4">
-                                <div className="p-4 bg-gray-50 dark:bg-slate-900 rounded-full">
-                                    <Filter className="w-8 h-8 opacity-50" />
-                                </div>
-                                <p className="font-bold text-lg">Please select both Broker and Symbol</p>
-                                <p className="text-sm">Select filters above to view history</p>
-                            </div>
-                        ) : historyLoading ? (
-                            <div className="flex flex-col items-center justify-center p-20 space-y-4 flex-1">
-                                <Loader2 className="w-10 h-10 text-blue-500 dark:text-indigo-400 animate-spin" />
-                                <p className="text-gray-500 dark:text-slate-400 font-medium">Loading history...</p>
-                            </div>
-                        ) : historyError ? (
-                            <div className="flex flex-col items-center justify-center flex-1 p-20 text-center text-red-500 dark:text-rose-400 font-medium space-y-2">
-                                <p>{historyError}</p>
-                                <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Retry</Button>
-                            </div>
-                        ) : (
-                            <div
-                                className="flex-1 overflow-auto no-scrollbar"
-                            >
-                                <table className="w-full caption-bottom text-sm relative">
-                                    <TableHeader className="bg-gray-50 dark:bg-slate-900 sticky top-0 z-10 shadow-sm border-b dark:border-slate-800">
-                                        <TableRow>
-                                            <TableHead className="w-[110px] whitespace-nowrap">Date</TableHead>
-                                            <TableHead className="text-right text-green-700 dark:text-emerald-400 font-bold whitespace-nowrap">Buy Qty</TableHead>
-                                            <TableHead className="text-right text-green-700 dark:text-emerald-400 font-bold whitespace-nowrap">Buy Rate</TableHead>
-                                            <TableHead className="text-right text-green-700 dark:text-emerald-400 font-bold whitespace-nowrap">Buy Amt</TableHead>
-                                            <TableHead className="text-right text-red-700 dark:text-rose-400 font-bold whitespace-nowrap">Sell Qty</TableHead>
-                                            <TableHead className="text-right text-red-700 dark:text-rose-400 font-bold whitespace-nowrap">Sell Rate</TableHead>
-                                            <TableHead className="text-right text-red-700 dark:text-rose-400 font-bold whitespace-nowrap">Sell Amt</TableHead>
-                                            <TableHead className="text-right font-bold whitespace-nowrap">Net Qty</TableHead>
-                                            <TableHead className="text-right font-bold bg-blue-50/50 dark:bg-indigo-900/20 whitespace-nowrap">Cum. Qty</TableHead>
-                                            <TableHead className="text-right font-bold bg-yellow-50/50 dark:bg-yellow-900/20 whitespace-nowrap">WAC</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {historyData.length === 0 ? (
+                            ) : (
+                                <div
+                                    className="flex-1 overflow-auto no-scrollbar"
+                                >
+                                    <table className="w-full caption-bottom text-sm relative">
+                                        <TableHeader className="bg-gray-50 dark:bg-slate-900 sticky top-0 z-10 shadow-sm border-b dark:border-slate-800">
                                             <TableRow>
-                                                <TableCell colSpan={10} className="h-40 text-center text-gray-500 dark:text-slate-400">
-                                                    No accumulation data found for this selection.
-                                                </TableCell>
+                                                <TableHead className="w-[110px] whitespace-nowrap">Date</TableHead>
+                                                <TableHead className="text-right text-green-700 dark:text-emerald-400 font-bold whitespace-nowrap">Buy Qty</TableHead>
+                                                <TableHead className="text-right text-green-700 dark:text-emerald-400 font-bold whitespace-nowrap">Buy Rate</TableHead>
+                                                <TableHead className="text-right text-green-700 dark:text-emerald-400 font-bold whitespace-nowrap">Buy Amt</TableHead>
+                                                <TableHead className="text-right text-red-700 dark:text-rose-400 font-bold whitespace-nowrap">Sell Qty</TableHead>
+                                                <TableHead className="text-right text-red-700 dark:text-rose-400 font-bold whitespace-nowrap">Sell Rate</TableHead>
+                                                <TableHead className="text-right text-red-700 dark:text-rose-400 font-bold whitespace-nowrap">Sell Amt</TableHead>
+                                                <TableHead className="text-right font-bold whitespace-nowrap">Net Qty</TableHead>
+                                                <TableHead className="text-right font-bold bg-blue-50/50 dark:bg-indigo-900/20 whitespace-nowrap">Cum. Qty</TableHead>
+                                                <TableHead className="text-right font-bold bg-yellow-50/50 dark:bg-yellow-900/20 whitespace-nowrap">WAC</TableHead>
                                             </TableRow>
-                                        ) : (
-                                            paginatedHistory.map((item, idx) => (
-                                                <TableRow key={idx} className="hover:bg-gray-50 dark:hover:bg-slate-900/50 transition-colors border-b dark:border-slate-800 last:border-0 group">
-                                                    <TableCell className="text-xs text-gray-600 dark:text-slate-400 font-medium whitespace-nowrap">
-                                                        <div className="flex items-center gap-2">
-                                                            {item.date}
-                                                            <Link
-                                                                href={`/floorsheet?symbol=${selectedGraphSymbol}&broker=${selectedBroker}&date=${item.date}`}
-                                                                className="text-blue-500 dark:text-indigo-400 hover:text-blue-700 dark:hover:text-indigo-300 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                title="View daily floorsheet"
-                                                            >
-                                                                <ExternalLink className="w-3 h-3" />
-                                                            </Link>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-mono text-green-700 dark:text-emerald-400">
-                                                        {item.buy_qty > 0 ? item.buy_qty.toLocaleString() : '-'}
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-mono text-xs text-gray-500 dark:text-slate-500">
-                                                        {item.buy_qty > 0 ? item.buy_rate.toFixed(2) : '-'}
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-mono text-xs text-gray-500 dark:text-slate-500">
-                                                        {item.buy_qty > 0 ? Math.round(item.buy_amount).toLocaleString() : '-'}
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-mono text-red-700 dark:text-rose-400">
-                                                        {item.sell_qty > 0 ? item.sell_qty.toLocaleString() : '-'}
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-mono text-xs text-gray-500 dark:text-slate-500">
-                                                        {item.sell_qty > 0 ? item.sell_rate.toFixed(2) : '-'}
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-mono text-xs text-gray-500 dark:text-slate-500">
-                                                        {item.sell_qty > 0 ? Math.round(item.sell_amount).toLocaleString() : '-'}
-                                                    </TableCell>
-                                                    <TableCell className={`text-right font-mono font-bold ${item.net_quantity > 0 ? 'text-green-600 dark:text-emerald-400' : item.net_quantity < 0 ? 'text-red-600 dark:text-rose-400' : 'text-gray-400 dark:text-slate-500'}`}>
-                                                        {item.net_quantity !== 0 ? (item.net_quantity > 0 ? '+' : '') + item.net_quantity.toLocaleString() : '0'}
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-mono font-bold bg-blue-50/30 dark:bg-indigo-900/20 text-blue-800 dark:text-indigo-400">
-                                                        {item.cumulative_qty.toLocaleString()}
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-mono font-bold bg-yellow-50/30 dark:bg-yellow-900/20 text-gray-800 dark:text-yellow-400">
-                                                        {item.wac ? item.wac.toLocaleString() : '-'}
+                                        </TableHeader>
+                                        <TableBody>
+                                            {historyData.length === 0 ? (
+                                                <TableRow>
+                                                    <TableCell colSpan={10} className="h-40 text-center text-gray-500 dark:text-slate-400">
+                                                        No accumulation data found for this selection.
                                                     </TableCell>
                                                 </TableRow>
-                                            ))
-                                        )}
-                                    </TableBody>
-                                </table>
-                            </div>
-                        )}
-
-                        {/* History Pagination Controls */}
-                        {!historyLoading && !historyError && historyData.length > 0 && (
-                            <div className="p-4 border-t dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0 rounded-b-xl">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-sm font-medium text-gray-500 dark:text-slate-400">Rows per page:</span>
-                                    <select
-                                        value={historyPageSize}
-                                        onChange={(e) => {
-                                            setHistoryPageSize(Number(e.target.value));
-                                            setHistoryPage(1);
-                                        }}
-                                        className="h-8 rounded-lg border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800 text-sm font-bold focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500 dark:text-slate-200"
-                                    >
-                                        {[20, 50, 100].map(size => (
-                                            <option key={size} value={size}>{size}</option>
-                                        ))}
-                                    </select>
-                                    <span className="text-xs text-gray-400 dark:text-slate-500 hidden sm:inline-block">
-                                        | Total {historyData.length} records
-                                    </span>
+                                            ) : (
+                                                paginatedHistory.map((item, idx) => (
+                                                    <TableRow key={idx} className="hover:bg-gray-50 dark:hover:bg-slate-900/50 transition-colors border-b dark:border-slate-800 last:border-0 group">
+                                                        <TableCell className="text-xs text-gray-600 dark:text-slate-400 font-medium whitespace-nowrap">
+                                                            <div className="flex items-center gap-2">
+                                                                {item.date}
+                                                                <Link
+                                                                    href={`/floorsheet?symbol=${selectedGraphSymbol}&broker=${selectedBroker}&date=${item.date}`}
+                                                                    className="text-blue-500 dark:text-indigo-400 hover:text-blue-700 dark:hover:text-indigo-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                    title="View daily floorsheet"
+                                                                >
+                                                                    <ExternalLink className="w-3 h-3" />
+                                                                </Link>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="text-right font-mono text-green-700 dark:text-emerald-400">
+                                                            {item.buy_qty > 0 ? item.buy_qty.toLocaleString() : '-'}
+                                                        </TableCell>
+                                                        <TableCell className="text-right font-mono text-xs text-gray-500 dark:text-slate-500">
+                                                            {item.buy_qty > 0 ? item.buy_rate.toFixed(2) : '-'}
+                                                        </TableCell>
+                                                        <TableCell className="text-right font-mono text-xs text-gray-500 dark:text-slate-500">
+                                                            {item.buy_qty > 0 ? Math.round(item.buy_amount).toLocaleString() : '-'}
+                                                        </TableCell>
+                                                        <TableCell className="text-right font-mono text-red-700 dark:text-rose-400">
+                                                            {item.sell_qty > 0 ? item.sell_qty.toLocaleString() : '-'}
+                                                        </TableCell>
+                                                        <TableCell className="text-right font-mono text-xs text-gray-500 dark:text-slate-500">
+                                                            {item.sell_qty > 0 ? item.sell_rate.toFixed(2) : '-'}
+                                                        </TableCell>
+                                                        <TableCell className="text-right font-mono text-xs text-gray-500 dark:text-slate-500">
+                                                            {item.sell_qty > 0 ? Math.round(item.sell_amount).toLocaleString() : '-'}
+                                                        </TableCell>
+                                                        <TableCell className={`text-right font-mono font-bold ${item.net_quantity > 0 ? 'text-green-600 dark:text-emerald-400' : item.net_quantity < 0 ? 'text-red-600 dark:text-rose-400' : 'text-gray-400 dark:text-slate-500'}`}>
+                                                            {item.net_quantity !== 0 ? (item.net_quantity > 0 ? '+' : '') + item.net_quantity.toLocaleString() : '0'}
+                                                        </TableCell>
+                                                        <TableCell className="text-right font-mono font-bold bg-blue-50/30 dark:bg-indigo-900/20 text-blue-800 dark:text-indigo-400">
+                                                            {item.cumulative_qty.toLocaleString()}
+                                                        </TableCell>
+                                                        <TableCell className="text-right font-mono font-bold bg-yellow-50/30 dark:bg-yellow-900/20 text-gray-800 dark:text-yellow-400">
+                                                            {item.wac ? item.wac.toLocaleString() : '-'}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            )}
+                                        </TableBody>
+                                    </table>
                                 </div>
+                            )}
 
-                                <div className="flex items-center gap-4">
-                                    <span className="text-sm font-medium text-gray-600 dark:text-slate-400">
-                                        Page {historyPage} of {historyTotalPages}
-                                    </span>
-                                    <div className="flex gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
-                                            disabled={historyPage === 1}
-                                            className="h-8 px-3 font-bold"
+                            {/* History Pagination Controls */}
+                            {!historyLoading && !historyError && historyData.length > 0 && (
+                                <div className="p-4 border-t dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0 rounded-b-xl">
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-sm font-medium text-gray-500 dark:text-slate-400">Rows per page:</span>
+                                        <select
+                                            value={historyPageSize}
+                                            onChange={(e) => {
+                                                setHistoryPageSize(Number(e.target.value));
+                                                setHistoryPage(1);
+                                            }}
+                                            className="h-8 rounded-lg border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800 text-sm font-bold focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500 dark:text-slate-200"
                                         >
-                                            Previous
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setHistoryPage(p => Math.min(historyTotalPages, p + 1))}
-                                            disabled={historyPage >= historyTotalPages}
-                                            className="h-8 px-3 font-bold"
-                                        >
-                                            Next
-                                        </Button>
+                                            {[20, 50, 100].map(size => (
+                                                <option key={size} value={size}>{size}</option>
+                                            ))}
+                                        </select>
+                                        <span className="text-xs text-gray-400 dark:text-slate-500 hidden sm:inline-block">
+                                            | Total {historyData.length} records
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-sm font-medium text-gray-600 dark:text-slate-400">
+                                            Page {historyPage} of {historyTotalPages}
+                                        </span>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
+                                                disabled={historyPage === 1}
+                                                className="h-8 px-3 font-bold"
+                                            >
+                                                Previous
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setHistoryPage(p => Math.min(historyTotalPages, p + 1))}
+                                                disabled={historyPage >= historyTotalPages}
+                                                className="h-8 px-3 font-bold"
+                                            >
+                                                Next
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {activeTab === 'share-transfer' && (
-                    <div className="space-y-6">
-                        {/* Filters Card */}
-                        <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm p-4 sticky top-[73px] z-30">
-                            <div className="flex flex-wrap items-end gap-3">
-                                <div className="flex-1 min-w-[150px] space-y-1.5">
-                                    <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-1">Ticker</label>
-                                    <CompanySelect
-                                        value={selectedGraphSymbol}
-                                        onChange={setSelectedGraphSymbol}
-                                        className="h-10 border-gray-200 dark:border-slate-800"
-                                    />
-                                </div>
-                                <div className="w-24 space-y-1.5">
-                                    <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-1">Broker 1</label>
-                                    <select
-                                        value={transferBroker1}
-                                        onChange={(e) => setTransferBroker1(e.target.value)}
-                                        className="w-full h-10 px-2 rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold text-gray-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                                    >
-                                        <option value="">ID</option>
-                                        {allBrokers.map(b => <option key={b} value={b}>{b}</option>)}
-                                    </select>
-                                </div>
-                                <div className="pb-2.5 text-gray-300 hidden lg:block">
-                                    <ArrowRight className="w-4 h-4" />
-                                </div>
-                                <div className="w-24 space-y-1.5">
-                                    <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-1">Broker 2</label>
-                                    <select
-                                        value={transferBroker2}
-                                        onChange={(e) => setTransferBroker2(e.target.value)}
-                                        className="w-full h-10 px-2 rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold text-gray-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                                    >
-                                        <option value="">ID</option>
-                                        {allBrokers.map(b => <option key={b} value={b}>{b}</option>)}
-                                    </select>
-                                </div>
-
-                                <div className="flex-1 min-w-[280px] space-y-1.5">
-                                    <label className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase px-1">Date Range</label>
-                                    <div className="flex gap-2">
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button variant="outline" className={cn("flex-1 h-10 justify-start font-medium rounded-lg border-gray-200 dark:border-slate-800 dark:bg-slate-900 px-3", !transferStartDate && "text-gray-400")}>
-                                                    <CalendarIcon className="mr-2 h-4 w-4 text-blue-500" />
-                                                    {transferStartDate ? format(transferStartDate, "MMM dd, yyyy") : "Start"}
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0 rounded-xl overflow-hidden shadow-2xl z-[100]" align="start">
-                                                <Calendar
-                                                    mode="single"
-                                                    selected={transferStartDate}
-                                                    onSelect={setTransferStartDate}
-                                                    initialFocus
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
-
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button variant="outline" className={cn("flex-1 h-10 justify-start font-medium rounded-lg border-gray-200 dark:border-slate-800 dark:bg-slate-900 px-3", !transferEndDate && "text-gray-400")}>
-                                                    <CalendarIcon className="mr-2 h-4 w-4 text-purple-500" />
-                                                    {transferEndDate ? format(transferEndDate, "MMM dd, yyyy") : "End"}
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0 rounded-xl overflow-hidden shadow-2xl z-[100]" align="start">
-                                                <Calendar
-                                                    mode="single"
-                                                    selected={transferEndDate}
-                                                    onSelect={setTransferEndDate}
-                                                    initialFocus
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
-                                    </div>
-                                </div>
-
-                                <Button
-                                    onClick={fetchTransferData}
-                                    disabled={transferLoading || !selectedGraphSymbol || !transferBroker1 || !transferBroker2}
-                                    className="h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[10px] tracking-widest rounded-lg transition-all active:scale-95 shadow-lg shadow-blue-500/20"
-                                >
-                                    {transferLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply Filters"}
-                                </Button>
-                            </div>
+                            )}
                         </div>
-                        {!selectedGraphSymbol || selectedGraphSymbol === 'All' || !transferBroker1 || !transferBroker2 ? (
-                            <div className="p-20 text-center flex flex-col items-center gap-4 bg-white dark:bg-slate-900/50 rounded-xl border border-dashed dark:border-slate-800">
-                                <div className="p-4 bg-blue-50 dark:bg-indigo-900/20 rounded-full">
-                                    <Layers className="w-8 h-8 text-blue-500" />
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-bold text-gray-800 dark:text-slate-200">Set Filters</h3>
-                                    <p className="text-gray-500 dark:text-slate-400">Select a ticker and two brokers to compare share transfers.</p>
-                                </div>
-                            </div>
-                        ) : transferLoading ? (
-                            <div className="p-20 flex flex-col items-center justify-center gap-4">
-                                <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-                                <p className="text-gray-500 dark:text-slate-400 font-medium">Crunching transfer data...</p>
-                            </div>
-                        ) : transferData ? (
-                            <>
-                                {/* Summary Cards Breakdown */}
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    {/* Direction 1: B1 to B2 */}
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 px-1">
-                                            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                                            <h4 className="text-xs font-black uppercase text-gray-500 dark:text-slate-400">
-                                                Broker {transferBroker1} Buying from Broker {transferBroker2}
-                                            </h4>
-                                        </div>
-                                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                                            <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
-                                                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Volume</p>
-                                                <p className="text-lg font-black text-blue-600 dark:text-indigo-400">
-                                                    {transferData.summary.broker1_to_broker2.total_volume?.toLocaleString() || 0}
-                                                </p>
-                                            </Card>
-                                            <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
-                                                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Amount</p>
-                                                <p className="text-lg font-black text-gray-800 dark:text-slate-100">
-                                                    रू {(transferData.summary.broker1_to_broker2.total_amount / 100000).toFixed(2)}L
-                                                </p>
-                                            </Card>
-                                            <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
-                                                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Avg. Rate</p>
-                                                <p className="text-lg font-black text-gray-800 dark:text-slate-100 text-xs">
-                                                    {transferData.summary.broker1_to_broker2.avg_rate?.toLocaleString() || 0}
-                                                </p>
-                                            </Card>
-                                            <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
-                                                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Txs</p>
-                                                <p className="text-lg font-black text-gray-800 dark:text-slate-100">
-                                                    {transferData.summary.broker1_to_broker2.total_transactions || 0}
-                                                </p>
-                                            </Card>
+                    )
+                }
+
+                {
+                    activeTab === 'share-transfer' && (
+                        <div className="space-y-6">
+                            {/* Filters Card */}
+                            <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm p-4 sticky top-[73px] z-30">
+                                <div className="flex flex-wrap items-end gap-3">
+                                    <div className="flex-1 min-w-[150px] space-y-1.5">
+                                        <label className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase px-1">Ticker</label>
+                                        <CompanySelect
+                                            value={selectedGraphSymbol}
+                                            onChange={setSelectedGraphSymbol}
+                                            className="h-10 border-gray-200 dark:border-slate-800"
+                                        />
+                                    </div>
+                                    <div className="w-24 space-y-1.5">
+                                        <label className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase px-1">Broker 1</label>
+                                        <select
+                                            value={transferBroker1}
+                                            onChange={(e) => setTransferBroker1(e.target.value)}
+                                            className="w-full h-10 px-2 rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold text-gray-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                                        >
+                                            <option value="">ID</option>
+                                            {allBrokers.map(b => <option key={b} value={b}>{b}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="pb-2.5 text-gray-300 hidden lg:block">
+                                        <ArrowRight className="w-4 h-4" />
+                                    </div>
+                                    <div className="w-24 space-y-1.5">
+                                        <label className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase px-1">Broker 2</label>
+                                        <select
+                                            value={transferBroker2}
+                                            onChange={(e) => setTransferBroker2(e.target.value)}
+                                            className="w-full h-10 px-2 rounded-lg border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold text-gray-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                                        >
+                                            <option value="">ID</option>
+                                            {allBrokers.map(b => <option key={b} value={b}>{b}</option>)}
+                                        </select>
+                                    </div>
+
+                                    <div className="flex-1 min-w-[280px] space-y-1.5">
+                                        <label className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase px-1">Date Range</label>
+                                        <div className="flex gap-2">
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button variant="outline" className={cn("flex-1 h-10 justify-start font-medium rounded-lg border-gray-200 dark:border-slate-800 dark:bg-slate-900 px-3", !transferStartDate && "text-gray-400")}>
+                                                        <CalendarIcon className="mr-2 h-4 w-4 text-blue-500" />
+                                                        {transferStartDate ? format(transferStartDate, "MMM dd, yyyy") : "Start"}
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0 rounded-xl overflow-hidden shadow-2xl z-[100]" align="start">
+                                                    <Calendar
+                                                        mode="single"
+                                                        selected={transferStartDate}
+                                                        onSelect={setTransferStartDate}
+                                                        initialFocus
+                                                    />
+                                                </PopoverContent>
+                                            </Popover>
+
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button variant="outline" className={cn("flex-1 h-10 justify-start font-medium rounded-lg border-gray-200 dark:border-slate-800 dark:bg-slate-900 px-3", !transferEndDate && "text-gray-400")}>
+                                                        <CalendarIcon className="mr-2 h-4 w-4 text-purple-500" />
+                                                        {transferEndDate ? format(transferEndDate, "MMM dd, yyyy") : "End"}
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0 rounded-xl overflow-hidden shadow-2xl z-[100]" align="start">
+                                                    <Calendar
+                                                        mode="single"
+                                                        selected={transferEndDate}
+                                                        onSelect={setTransferEndDate}
+                                                        initialFocus
+                                                    />
+                                                </PopoverContent>
+                                            </Popover>
                                         </div>
                                     </div>
 
-                                    {/* Direction 2: B2 to B1 */}
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 px-1">
-                                            <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                                            <h4 className="text-xs font-black uppercase text-gray-500 dark:text-slate-400">
-                                                Broker {transferBroker2} Buying from Broker {transferBroker1}
-                                            </h4>
-                                        </div>
-                                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                                            <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
-                                                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Volume</p>
-                                                <p className="text-lg font-black text-purple-600 dark:text-purple-400">
-                                                    {transferData.summary.broker2_to_broker1.total_volume?.toLocaleString() || 0}
-                                                </p>
-                                            </Card>
-                                            <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
-                                                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Amount</p>
-                                                <p className="text-lg font-black text-gray-800 dark:text-slate-100">
-                                                    रू {(transferData.summary.broker2_to_broker1.total_amount / 100000).toFixed(2)}L
-                                                </p>
-                                            </Card>
-                                            <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
-                                                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Avg. Rate</p>
-                                                <p className="text-lg font-black text-gray-800 dark:text-slate-100 text-xs">
-                                                    {transferData.summary.broker2_to_broker1.avg_rate?.toLocaleString() || 0}
-                                                </p>
-                                            </Card>
-                                            <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
-                                                <p className="text-[9px] font-black uppercase text-gray-400 mb-1">Txs</p>
-                                                <p className="text-lg font-black text-gray-800 dark:text-slate-100">
-                                                    {transferData.summary.broker2_to_broker1.total_transactions || 0}
-                                                </p>
-                                            </Card>
-                                        </div>
+                                    <Button
+                                        onClick={fetchTransferData}
+                                        disabled={transferLoading || !selectedGraphSymbol || !transferBroker1 || !transferBroker2}
+                                        className="h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-xs tracking-widest rounded-lg transition-all active:scale-95 shadow-lg shadow-blue-500/20"
+                                    >
+                                        {transferLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply Filters"}
+                                    </Button>
+                                </div>
+                            </div>
+                            {!selectedGraphSymbol || selectedGraphSymbol === 'All' || !transferBroker1 || !transferBroker2 ? (
+                                <div className="p-20 text-center flex flex-col items-center gap-4 bg-white dark:bg-slate-900/50 rounded-xl border border-dashed dark:border-slate-800">
+                                    <div className="p-4 bg-blue-50 dark:bg-indigo-900/20 rounded-full">
+                                        <Layers className="w-8 h-8 text-blue-500" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-800 dark:text-slate-200">Set Filters</h3>
+                                        <p className="text-gray-500 dark:text-slate-400">Select a ticker and two brokers to compare share transfers.</p>
                                     </div>
                                 </div>
-
-                                {/* Chart & List */}
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 h-[350px] flex flex-col shadow-sm">
-                                        <CardHeader>
-                                            <CardTitle className="text-sm font-bold flex items-center gap-2">
-                                                <BarChart2 className="w-4 h-4 text-blue-500" />
-                                                Daily Transfer Volume
-                                            </CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="flex-1 p-0">
-                                            {transferData.daily_stats.length > 0 ? (
-                                                <ReactECharts
-                                                    option={getTransferChartOption()}
-                                                    style={{ height: '100%', width: '100%' }}
-                                                />
-                                            ) : (
-                                                <div className="h-full flex items-center justify-center text-gray-400 text-sm">No daily statistics available</div>
-                                            )}
-                                        </CardContent>
-                                    </Card>
-
-                                    <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 h-[350px] flex flex-col shadow-sm">
-                                        <CardHeader>
-                                            <CardTitle className="text-sm font-bold flex items-center gap-2">
-                                                <TrendingUp className="w-4 h-4 text-emerald-500" />
-                                                Transfer vs Net Accumulation
-                                            </CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="flex-1 p-0">
-                                            {transferData.daily_stats.length > 0 ? (
-                                                <ReactECharts
-                                                    option={getComparisonChartOption()}
-                                                    style={{ height: '100%', width: '100%' }}
-                                                />
-                                            ) : (
-                                                <div className="h-full flex items-center justify-center text-gray-400 text-sm">No comparison data available</div>
-                                            )}
-                                        </CardContent>
-                                    </Card>
+                            ) : transferLoading ? (
+                                <div className="p-20 flex flex-col items-center justify-center gap-4">
+                                    <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+                                    <p className="text-gray-500 dark:text-slate-400 font-medium">Crunching transfer data...</p>
                                 </div>
+                            ) : transferData ? (
+                                <>
+                                    {/* Summary Cards Breakdown */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        {/* Direction 1: B1 to B2 */}
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-2 px-1">
+                                                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                                                <h4 className="text-xs font-black uppercase text-gray-500 dark:text-slate-400">
+                                                    Broker {transferBroker1} Buying from Broker {transferBroker2}
+                                                </h4>
+                                            </div>
+                                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                                <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
+                                                    <p className="text-xs font-black uppercase text-gray-400 mb-1">Volume</p>
+                                                    <p className="text-lg font-black text-blue-600 dark:text-indigo-400">
+                                                        {transferData.summary.broker1_to_broker2.total_volume?.toLocaleString() || 0}
+                                                    </p>
+                                                </Card>
+                                                <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
+                                                    <p className="text-xs font-black uppercase text-gray-400 mb-1">Amount</p>
+                                                    <p className="text-lg font-black text-gray-800 dark:text-slate-100">
+                                                        रू {(transferData.summary.broker1_to_broker2.total_amount / 100000).toFixed(2)}L
+                                                    </p>
+                                                </Card>
+                                                <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
+                                                    <p className="text-xs font-black uppercase text-gray-400 mb-1">Avg. Rate</p>
+                                                    <p className="text-sm font-black text-gray-800 dark:text-slate-100">
+                                                        {transferData.summary.broker1_to_broker2.avg_rate?.toLocaleString() || 0}
+                                                    </p>
+                                                </Card>
+                                                <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
+                                                    <p className="text-xs font-black uppercase text-gray-400 mb-1">Txs</p>
+                                                    <p className="text-lg font-black text-gray-800 dark:text-slate-100">
+                                                        {transferData.summary.broker1_to_broker2.total_transactions || 0}
+                                                    </p>
+                                                </Card>
+                                            </div>
+                                        </div>
 
-                                <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm flex flex-col">
-                                    <CardHeader className="border-b dark:border-slate-800 py-3">
-                                        <CardTitle className="text-sm font-bold flex items-center gap-2">
-                                            <History className="w-4 h-4 text-purple-500" />
-                                            Daily Aggregated Transfers & Net Flow
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="p-0 overflow-auto">
-                                        <table className="w-full text-[11px]">
-                                            <thead className="bg-gray-50 dark:bg-slate-800 sticky top-0 z-10">
-                                                <tr>
-                                                    <th className="p-2 text-left">Date</th>
-                                                    <th className="p-2 text-right">Price (Chg%)</th>
-                                                    <th className="p-2 text-right">Transfer Vol</th>
-                                                    <th className="p-2 text-right">Trans/Sell Ratio</th>
-                                                    <th className="p-2 text-right">B{transferBroker1} Net</th>
-                                                    <th className="p-2 text-right">B{transferBroker2} Net</th>
-                                                    <th className="p-2 text-right">Market Net</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y dark:divide-slate-800">
-                                                {!transferData.aggregated_transfers || transferData.aggregated_transfers.length === 0 ? (
-                                                    <tr>
-                                                        <td colSpan={6} className="p-10 text-center text-gray-400">No aggregated data found</td>
-                                                    </tr>
+                                        {/* Direction 2: B2 to B1 */}
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-2 px-1">
+                                                <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                                                <h4 className="text-xs font-black uppercase text-gray-500 dark:text-slate-400">
+                                                    Broker {transferBroker2} Buying from Broker {transferBroker1}
+                                                </h4>
+                                            </div>
+                                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                                <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
+                                                    <p className="text-xs font-black uppercase text-gray-400 mb-1">Volume</p>
+                                                    <p className="text-lg font-black text-purple-600 dark:text-purple-400">
+                                                        {transferData.summary.broker2_to_broker1.total_volume?.toLocaleString() || 0}
+                                                    </p>
+                                                </Card>
+                                                <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
+                                                    <p className="text-xs font-black uppercase text-gray-400 mb-1">Amount</p>
+                                                    <p className="text-lg font-black text-gray-800 dark:text-slate-100">
+                                                        रू {(transferData.summary.broker2_to_broker1.total_amount / 100000).toFixed(2)}L
+                                                    </p>
+                                                </Card>
+                                                <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
+                                                    <p className="text-xs font-black uppercase text-gray-400 mb-1">Avg. Rate</p>
+                                                    <p className="text-sm font-black text-gray-800 dark:text-slate-100">
+                                                        {transferData.summary.broker2_to_broker1.avg_rate?.toLocaleString() || 0}
+                                                    </p>
+                                                </Card>
+                                                <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
+                                                    <p className="text-xs font-black uppercase text-gray-400 mb-1">Txs</p>
+                                                    <p className="text-lg font-black text-gray-800 dark:text-slate-100">
+                                                        {transferData.summary.broker2_to_broker1.total_transactions || 0}
+                                                    </p>
+                                                </Card>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Chart & List */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 h-[350px] flex flex-col shadow-sm">
+                                            <CardHeader>
+                                                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                                    <BarChart2 className="w-4 h-4 text-blue-500" />
+                                                    Daily Transfer Volume
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="flex-1 p-0">
+                                                {transferData.daily_stats.length > 0 ? (
+                                                    <ReactECharts
+                                                        option={getTransferChartOption()}
+                                                        style={{ height: '100%', width: '100%' }}
+                                                    />
                                                 ) : (
-                                                    transferData.aggregated_transfers.map((day: any, i: number) => {
-                                                        const totalTransfer = (day.volume_1_to_2 || 0) + (day.volume_2_to_1 || 0);
-                                                        // Calculate ratios: what % of the selling broker's total sell volume was this transfer?
-                                                        const ratio1to2 = day.b1_sell > 0 ? (day.volume_1_to_2 / day.b1_sell * 100).toFixed(1) : '0';
-                                                        const ratio2to1 = day.b2_sell > 0 ? (day.volume_2_to_1 / day.b2_sell * 100).toFixed(1) : '0';
-
-                                                        return (
-                                                            <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-b dark:border-slate-800/50 last:border-0">
-                                                                <td className="p-2 font-mono text-gray-500">{day.transaction_date}</td>
-                                                                <td className="p-2 text-right">
-                                                                    <div className="font-bold flex flex-col">
-                                                                        <span>रू {day.close_price?.toLocaleString()}</span>
-                                                                        <span className={`text-[10px] ${day.price_change_pc >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                                            {day.price_change_pc > 0 ? '+' : ''}{day.price_change_pc}%
-                                                                        </span>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="p-2 text-right font-bold text-blue-600 dark:text-blue-400">
-                                                                    {totalTransfer.toLocaleString()}
-                                                                </td>
-                                                                <td className="p-2 text-right">
-                                                                    <div className="flex flex-col gap-0.5">
-                                                                        {day.volume_1_to_2 > 0 && <span className="text-gray-400">B1→B2: <b className="text-indigo-600">{ratio1to2}%</b></span>}
-                                                                        {day.volume_2_to_1 > 0 && <span className="text-gray-400">B2→B1: <b className="text-purple-600">{ratio2to1}%</b></span>}
-                                                                        {totalTransfer === 0 && <span className="text-gray-300">-</span>}
-                                                                    </div>
-                                                                </td>
-                                                                <td className={`p-2 text-right font-bold ${day.b1_net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                                    {day.b1_net > 0 ? '+' : ''}{day.b1_net?.toLocaleString() || '0'}
-                                                                </td>
-                                                                <td className={`p-2 text-right font-bold ${day.b2_net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                                    {day.b2_net > 0 ? '+' : ''}{day.b2_net?.toLocaleString() || '0'}
-                                                                </td>
-                                                                <td className={`p-2 text-right font-bold ${day.net_accumulation >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                                    {day.net_accumulation > 0 ? '+' : ''}{day.net_accumulation?.toLocaleString() || '0'}
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })
+                                                    <div className="h-full flex items-center justify-center text-gray-400 text-sm">No daily statistics available</div>
                                                 )}
-                                            </tbody>
-                                        </table>
-                                    </CardContent>
-                                </Card>
-                            </>
-                        ) : (
-                            <div className="p-20 text-center flex flex-col items-center gap-4 bg-white dark:bg-slate-900/50 rounded-xl border border-dashed dark:border-slate-800">
-                                <div className="p-4 bg-blue-50 dark:bg-indigo-900/20 rounded-full">
-                                    <Activity className="w-8 h-8 text-blue-500" />
+                                            </CardContent>
+                                        </Card>
+
+                                        <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 h-[350px] flex flex-col shadow-sm">
+                                            <CardHeader>
+                                                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                                    <TrendingUp className="w-4 h-4 text-emerald-500" />
+                                                    Transfer vs Net Accumulation
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="flex-1 p-0">
+                                                {transferData.daily_stats.length > 0 ? (
+                                                    <ReactECharts
+                                                        option={getComparisonChartOption()}
+                                                        style={{ height: '100%', width: '100%' }}
+                                                    />
+                                                ) : (
+                                                    <div className="h-full flex items-center justify-center text-gray-400 text-sm">No comparison data available</div>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+
+                                    <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm flex flex-col">
+                                        <CardHeader className="border-b dark:border-slate-800 py-3">
+                                            <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                                <History className="w-4 h-4 text-purple-500" />
+                                                Daily Aggregated Transfers & Net Flow
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="p-0 overflow-auto">
+                                            <table className="w-full text-xs">
+                                                <thead className="bg-gray-50 dark:bg-slate-800 sticky top-0 z-10">
+                                                    <tr>
+                                                        <th className="p-2 text-left">Date</th>
+                                                        <th className="p-2 text-right">Price (Chg%)</th>
+                                                        <th className="p-2 text-right">Transfer Vol</th>
+                                                        <th className="p-2 text-right">Trans/Sell Ratio</th>
+                                                        <th className="p-2 text-right">B{transferBroker1} Net</th>
+                                                        <th className="p-2 text-right">B{transferBroker2} Net</th>
+                                                        <th className="p-2 text-right">Market Net</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y dark:divide-slate-800">
+                                                    {!transferData.aggregated_transfers || transferData.aggregated_transfers.length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan={6} className="p-10 text-center text-gray-400">No aggregated data found</td>
+                                                        </tr>
+                                                    ) : (
+                                                        transferData.aggregated_transfers.map((day: any, i: number) => {
+                                                            const totalTransfer = (day.volume_1_to_2 || 0) + (day.volume_2_to_1 || 0);
+                                                            // Calculate ratios: what % of the selling broker's total sell volume was this transfer?
+                                                            const ratio1to2 = day.b1_sell > 0 ? (day.volume_1_to_2 / day.b1_sell * 100).toFixed(1) : '0';
+                                                            const ratio2to1 = day.b2_sell > 0 ? (day.volume_2_to_1 / day.b2_sell * 100).toFixed(1) : '0';
+
+                                                            return (
+                                                                <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-b dark:border-slate-800/50 last:border-0">
+                                                                    <td className="p-2 font-mono text-gray-500">{day.transaction_date}</td>
+                                                                    <td className="p-2 text-right">
+                                                                        <div className="font-bold flex flex-col">
+                                                                            <span>रू {day.close_price?.toLocaleString()}</span>
+                                                                            <span className={`text-xs ${day.price_change_pc >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                                {day.price_change_pc > 0 ? '+' : ''}{day.price_change_pc}%
+                                                                            </span>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="p-2 text-right font-bold text-blue-600 dark:text-blue-400">
+                                                                        {totalTransfer.toLocaleString()}
+                                                                    </td>
+                                                                    <td className="p-2 text-right">
+                                                                        <div className="flex flex-col gap-0.5">
+                                                                            {day.volume_1_to_2 > 0 && <span className="text-gray-400">B1→B2: <b className="text-indigo-600">{ratio1to2}%</b></span>}
+                                                                            {day.volume_2_to_1 > 0 && <span className="text-gray-400">B2→B1: <b className="text-purple-600">{ratio2to1}%</b></span>}
+                                                                            {totalTransfer === 0 && <span className="text-gray-300">-</span>}
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className={`p-2 text-right font-bold ${day.b1_net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                        {day.b1_net > 0 ? '+' : ''}{day.b1_net?.toLocaleString() || '0'}
+                                                                    </td>
+                                                                    <td className={`p-2 text-right font-bold ${day.b2_net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                        {day.b2_net > 0 ? '+' : ''}{day.b2_net?.toLocaleString() || '0'}
+                                                                    </td>
+                                                                    <td className={`p-2 text-right font-bold ${day.net_accumulation >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                                        {day.net_accumulation > 0 ? '+' : ''}{day.net_accumulation?.toLocaleString() || '0'}
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </CardContent>
+                                    </Card>
+                                </>
+                            ) : (
+                                <div className="p-20 text-center flex flex-col items-center gap-4 bg-white dark:bg-slate-900/50 rounded-xl border border-dashed dark:border-slate-800">
+                                    <div className="p-4 bg-blue-50 dark:bg-indigo-900/20 rounded-full">
+                                        <Activity className="w-8 h-8 text-blue-500" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-800 dark:text-slate-200">Ready to Analyze</h3>
+                                        <p className="text-gray-500 dark:text-slate-400">Click "Apply Filters" to fetch share transfer data for {selectedGraphSymbol}.</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="text-lg font-bold text-gray-800 dark:text-slate-200">Ready to Analyze</h3>
-                                    <p className="text-gray-500 dark:text-slate-400">Click "Apply Filters" to fetch share transfer data for {selectedGraphSymbol}.</p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
+                            )}
+                        </div>
+                    )
+                }
             </div >
 
             <style jsx global>{`
