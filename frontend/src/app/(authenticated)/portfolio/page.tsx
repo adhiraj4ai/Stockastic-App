@@ -16,6 +16,7 @@ import { ExitStrategyDialog } from '@/components/ExitStrategyDialog';
 import { PositionSizingCalculator } from '@/components/PositionSizingCalculator';
 import { CompanySelect } from '@/components/CompanySelect';
 import { Badge } from '@/components/ui/badge';
+import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
 import { Input } from '@/components/ui/input';
 import { Eye, PlusCircle, X } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend } from 'recharts';
@@ -430,7 +431,7 @@ function PortfolioContent() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">
-                                    Rs. {totalInvestment.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                    {formatRupees(totalInvestment)}
                                 </div>
                                 <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 uppercase font-bold tracking-wider">
                                     Across {displayedItems.length} Holdings
@@ -445,7 +446,7 @@ function PortfolioContent() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">
-                                    Rs. {totalCurrentValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                    {formatRupees(totalCurrentValue)}
                                 </div>
                                 <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 uppercase font-bold tracking-wider">
                                     Real-time Valuation
@@ -461,7 +462,7 @@ function PortfolioContent() {
                             <CardContent>
                                 <div className="flex flex-col">
                                     <div className={`text-2xl font-bold ${totalGainLoss >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                        Rs. {Math.abs(totalGainLoss).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                        {formatRupees(Math.abs(totalGainLoss))}
                                     </div>
                                     <div className="flex items-center gap-2 mt-1">
                                         <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${totalGainLoss >= 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
@@ -484,7 +485,7 @@ function PortfolioContent() {
                             </CardHeader>
                             <CardContent>
                                 <div className={`text-2xl font-bold ${totalDayGainLoss >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                    Rs. {Math.abs(totalDayGainLoss).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                    {formatRupees(Math.abs(totalDayGainLoss))}
                                 </div>
                                 <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 uppercase font-bold tracking-wider">
                                     Intraday Movement
@@ -545,22 +546,22 @@ function PortfolioContent() {
                                                     <div className="flex items-center justify-end gap-1">Quantity <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
                                                 <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('wacc')}>
-                                                    <div className="flex items-center justify-end gap-1">WACC (Rs.) <ArrowUpDown size={12} className="opacity-50" /></div>
+                                                    <div className="flex items-center justify-end gap-1">WACC (रू) <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
                                                 <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('current_price')}>
-                                                    <div className="flex items-center justify-end gap-1">LTP (Rs.) <ArrowUpDown size={12} className="opacity-50" /></div>
+                                                    <div className="flex items-center justify-end gap-1">LTP (रू) <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
                                                 <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('current_value')}>
-                                                    <div className="flex items-center justify-end gap-1">Total Value (Rs.) <ArrowUpDown size={12} className="opacity-50" /></div>
+                                                    <div className="flex items-center justify-end gap-1">Total Value (रू) <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
                                                 <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('gain_loss')}>
-                                                    <div className="flex items-center justify-end gap-1">Profit/Loss <ArrowUpDown size={12} className="opacity-50" /></div>
+                                                    <div className="flex items-center justify-end gap-1">Profit/Loss (रू) <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
                                                 <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('value_yield')}>
                                                     <div className="flex items-center justify-end gap-1" title="Profit to Total Value Ratio">Value Yield <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
                                                 <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('day_gain_loss')}>
-                                                    <div className="flex items-center justify-end gap-1">Today's P/L <ArrowUpDown size={12} className="opacity-50" /></div>
+                                                    <div className="flex items-center justify-end gap-1">Today's P/L (रू) <ArrowUpDown size={12} className="opacity-50" /></div>
                                                 </TableHead>
                                                 <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">Signal</TableHead>
                                                 <TableHead className="w-[50px]"></TableHead>
@@ -620,13 +621,13 @@ function PortfolioContent() {
                                                                     )}
                                                                 </div>
                                                             </TableCell>
-                                                            <TableCell className="text-right text-gray-600 dark:text-slate-400 font-medium py-4">{item.quantity}</TableCell>
-                                                            <TableCell className="text-right text-gray-600 dark:text-slate-400 font-medium py-4">{Number(item.wacc || item.buy_price).toFixed(2)}</TableCell>
-                                                            <TableCell className="text-right text-gray-900 dark:text-slate-100 font-bold py-4">{item.current_price}</TableCell>
-                                                            <TableCell className="text-right font-black text-gray-900 dark:text-slate-100 py-4">{Number(item.current_value).toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
+                                                            <TableCell className="text-right text-gray-600 dark:text-slate-400 font-medium py-4">{formatNepaliNumber(item.quantity)}</TableCell>
+                                                            <TableCell className="text-right text-gray-600 dark:text-slate-400 font-medium py-4">{formatNepaliNumber(Number(item.wacc || item.buy_price).toFixed(2))}</TableCell>
+                                                            <TableCell className="text-right text-gray-900 dark:text-slate-100 font-bold py-4">{formatNepaliNumber(item.current_price)}</TableCell>
+                                                            <TableCell className="text-right font-black text-gray-900 dark:text-slate-100 py-4">{formatNepaliNumber(item.current_value)}</TableCell>
                                                             <TableCell className={`text-right ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'} py-4`}>
                                                                 <div className="font-black text-base">
-                                                                    {isPos ? '+' : ''}{pl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                                                    {isPos ? '+' : ''}{formatNepaliNumber(pl)}
                                                                 </div>
                                                                 <div className={`text-xs font-black uppercase tracking-tighter ${isPos ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'} px-1 rounded inline-block mt-0.5`}>
                                                                     {Number(item.gain_loss_percent).toFixed(2)}%
@@ -638,7 +639,7 @@ function PortfolioContent() {
                                                                 </div>
                                                             </TableCell>
                                                             <TableCell className={`text-right font-black ${isDayPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'} py-4`}>
-                                                                {isDayPos ? '+' : ''}{dayPl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                                                {isDayPos ? '+' : ''}{formatNepaliNumber(dayPl)}
                                                             </TableCell>
                                                             <TableCell className="text-right py-4 pr-6">
                                                                 <div className="flex justify-end">
@@ -826,8 +827,8 @@ function PortfolioContent() {
                                                 {/* Tooltip on Hover */}
                                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-gray-900 dark:bg-slate-950 text-white p-2 rounded text-xs opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-2xl z-30">
                                                     <p className="font-black border-b border-gray-700 dark:border-slate-800 pb-1 mb-1">{item.ticker}</p>
-                                                    <p className="flex justify-between">Profit: <span className="font-mono">Rs. {Number(item.gain_loss).toFixed(0)}</span></p>
-                                                    <p className="flex justify-between">Value: <span className="font-mono">Rs. {Number(item.current_value).toFixed(0)}</span></p>
+                                                    <p className="flex justify-between">Profit: <span className="font-mono">{formatRupees(item.gain_loss)}</span></p>
+                                                    <p className="flex justify-between">Value: <span className="font-mono">{formatRupees(item.current_value)}</span></p>
                                                 </div>
                                             </div>
                                         );
@@ -986,8 +987,8 @@ function PortfolioContent() {
                                         <TableHeader>
                                             <TableRow className="bg-gray-50/50 dark:bg-slate-800/50 hover:bg-gray-50/50 dark:hover:bg-slate-800/50">
                                                 <TableHead className="font-bold text-gray-900 dark:text-slate-100 px-6">Ticker</TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">LTP</TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">Day Change</TableHead>
+                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">LTP (रू)</TableHead>
+                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">Day Change (रू)</TableHead>
                                                 <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">RSI (14)</TableHead>
                                                 <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">ROC (14)</TableHead>
                                                 <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">Signal</TableHead>
@@ -1020,7 +1021,7 @@ function PortfolioContent() {
                                                         </TableCell>
                                                         <TableCell className="text-right py-4">
                                                             <div className="font-black text-slate-900 dark:text-slate-100">
-                                                                {item.current_price ? `Rs. ${Number(item.current_price).toLocaleString(undefined, { minimumFractionDigits: 1 })}` : 'N/A'}
+                                                                {item.current_price ? formatRupees(item.current_price) : 'N/A'}
                                                             </div>
                                                         </TableCell>
                                                         <TableCell className="text-right py-4">
@@ -1247,7 +1248,7 @@ function PortfolioContent() {
 
                         <div className="grid grid-cols-1 gap-4">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest ml-1">Target Entry Price (Rs.)</label>
+                                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest ml-1">Target Entry Price (रू)</label>
                                 <div className="relative">
                                     <Target className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-500 dark:text-blue-400" />
                                     <Input

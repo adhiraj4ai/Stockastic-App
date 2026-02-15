@@ -8,6 +8,7 @@ import BrokerAnalysis from '@/components/ticker/BrokerAnalysis';
 import { FibonacciRetracement } from '@/components/ticker/FibonacciRetracement';
 import IndicatorTooltip from '@/components/ticker/IndicatorTooltip';
 import { cn } from '@/lib/utils';
+import { formatNepaliNumber } from '@/lib/formatters';
 
 interface TechnicalAnalysisProps {
     symbol: string;
@@ -253,7 +254,7 @@ export default function TechnicalAnalysis({ symbol, data }: TechnicalAnalysisPro
                                     .map((item: any, idx: number) => (
                                         <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
                                             <td className="px-6 py-4 font-bold text-rose-600">Broker {item.broker}</td>
-                                            <td className="px-6 py-4 text-right font-mono font-bold text-slate-700 dark:text-slate-300">{item.qty.toLocaleString()}</td>
+                                            <td className="px-6 py-4 text-right font-mono font-bold text-slate-700 dark:text-slate-300">{formatNepaliNumber(item.qty)}</td>
                                         </tr>
                                     ))}
                             </tbody>

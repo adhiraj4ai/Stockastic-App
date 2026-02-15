@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, Clock, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatRupees } from '@/lib/formatters';
 
 interface TerminalHeaderProps {
     symbol: string;
@@ -71,7 +72,7 @@ export function TerminalHeader({
                         "flex items-center justify-center rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50 shadow-inner px-6 py-1.5 gap-6",
                     )}>
                         <div className="font-bold text-slate-900 dark:text-slate-100 tabular-nums tracking-tighter text-3xl">
-                            {price.toLocaleString()}
+                            {formatRupees(price)}
                         </div>
                         <div className={cn(
                             "flex items-center gap-1.5 font-bold tabular-nums rounded-lg justify-center text-lg px-3 py-1",

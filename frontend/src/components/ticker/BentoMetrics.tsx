@@ -2,6 +2,7 @@
 
 import { Activity, BarChart3, Globe, PieChart, DollarSign, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
 
 interface BentoMetricsProps {
     fundamental?: any;
@@ -9,17 +10,17 @@ interface BentoMetricsProps {
 
 export function BentoMetrics({ fundamental }: BentoMetricsProps) {
     const metrics = [
-        { label: 'EPS (TTM)', value: fundamental?.eps ? `Rs. ${fundamental.eps}` : 'N/A', icon: BarChart3, color: 'text-emerald-500', sub: 'Earnings Per Share' },
-        { label: 'Book Value', value: fundamental?.book_value ? `Rs. ${fundamental.book_value}` : 'N/A', icon: DollarSign, color: 'text-blue-500', sub: 'Internal Worth' },
+        { label: 'EPS (TTM)', value: formatRupees(fundamental?.eps), icon: BarChart3, color: 'text-emerald-500', sub: 'Earnings Per Share' },
+        { label: 'Book Value', value: formatRupees(fundamental?.book_value), icon: DollarSign, color: 'text-blue-500', sub: 'Internal Worth' },
         { label: 'P/E Ratio', value: fundamental?.pe_ratio || 'N/A', icon: TrendingUp, color: 'text-amber-500', sub: 'Market Value' },
         { label: 'ROE', value: '18.4%', icon: Activity, color: 'text-purple-500', sub: 'Equity Return' },
     ];
 
     const secondary = [
-        { label: 'Market Cap', value: fundamental?.market_cap ? `Rs. ${(fundamental.market_cap / 10000000).toFixed(2)} Cr` : 'N/A' },
+        { label: 'Market Cap', value: fundamental?.market_cap ? `${formatRupees(fundamental.market_cap / 10000000)} Cr` : 'N/A' },
         { label: 'Dividend Yield', value: `${fundamental?.dividend_yield || '0'}%` },
         { label: 'Listed Date', value: fundamental?.listed_date || 'N/A' },
-        { label: 'Shares Out.', value: fundamental?.shares_outstanding?.toLocaleString() || 'N/A' },
+        { label: 'Shares Out.', value: formatNepaliNumber(fundamental?.shares_outstanding) || 'N/A' },
     ];
 
     // Extract Technical Levels

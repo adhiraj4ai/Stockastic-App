@@ -10,6 +10,7 @@ import { TrendingUp, TrendingDown, Zap, Activity, Filter, Rocket, Magnet, Drople
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
+import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
 
 interface StockData {
     ticker: string;
@@ -73,13 +74,13 @@ const WhaleWatchCard = ({ data }: { data: WhaleWatchData[] }) => {
                             <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-none text-[10px] px-2">
                                 Broker {broker.broker}
                             </Badge>
-                            <span className="text-[10px] font-mono text-slate-400">Total: {(broker.total_turnover / 10000000).toFixed(1)}Cr</span>
+                            <span className="text-[10px] font-mono text-slate-400">Total: {formatRupees(broker.total_turnover / 10000000)} Cr</span>
                         </div>
                         <div className="space-y-1">
                             {broker.top_picks.map((pick, j) => (
                                 <div key={j} className="flex justify-between items-center text-xs">
                                     <span className="font-bold text-slate-700 dark:text-slate-300">{pick.ticker}</span>
-                                    <span className="text-[10px] text-slate-500 font-mono">{(pick.turnover / 10000000).toFixed(2)}Cr</span>
+                                    <span className="text-[10px] text-slate-500 font-mono">{formatRupees(pick.turnover / 10000000)} Cr</span>
                                 </div>
                             ))}
                         </div>
@@ -220,7 +221,7 @@ const PaginatedTable = ({ data, type }: { data: StockData[], type: 'high' | 'low
                         <TableRow className="border-none hover:bg-transparent bg-slate-50/50 dark:bg-white/5">
                             <TableHead className="py-2 h-8 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ticker</TableHead>
                             <TableHead className="py-2 h-8 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Trend</TableHead>
-                            <TableHead className="py-2 h-8 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Price</TableHead>
+                            <TableHead className="py-2 h-8 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Price (रू)</TableHead>
                             <TableHead className="py-2 h-8 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">ROC</TableHead>
                             <TableHead className="py-2 h-8 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right"></TableHead>
                         </TableRow>
@@ -238,8 +239,8 @@ const PaginatedTable = ({ data, type }: { data: StockData[], type: 'high' | 'low
                                 </TableCell>
                                 <TableCell className="py-2.5 text-right">
                                     <div className="flex flex-col items-end">
-                                        <span className="text-xs font-mono">Rs. {stock.close}</span>
-                                        <span className="text-[9px] text-slate-400">{type === 'high' ? 'High' : 'Low'}: {type === 'high' ? stock.weeks_52_high : stock.weeks_52_low}</span>
+                                        <span className="text-xs font-mono">{formatRupees(stock.close)}</span>
+                                        <span className="text-[9px] text-slate-400">{type === 'high' ? 'High' : 'Low'}: {type === 'high' ? formatRupees(stock.weeks_52_high) : formatRupees(stock.weeks_52_low)}</span>
                                     </div>
                                 </TableCell>
                                 <TableCell className={`py-2.5 text-right font-mono text-xs font-bold ${stock.percent_change > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -401,8 +402,8 @@ export default function MoversShakersPage() {
                                                     <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">RSI</TableHead>
                                                     <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">MACD</TableHead>
                                                     <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Top Buyers</TableHead>
-                                                    <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Price</TableHead>
-                                                    <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Change</TableHead>
+                                                    <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Price (रू)</TableHead>
+                                                    <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Change (रू)</TableHead>
                                                     <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right pr-6">Status</TableHead>
                                                 </TableRow>
                                             </TableHeader>
@@ -449,7 +450,7 @@ export default function MoversShakersPage() {
                                                             </TableCell>
                                                             <TableCell className="py-3 text-center">
                                                                 <span className={`text-[10px] font-mono font-bold ${stock.rsi && stock.rsi > 70 ? 'text-rose-500' :
-                                                                        stock.rsi && stock.rsi < 30 ? 'text-emerald-500' : 'text-slate-500'
+                                                                    stock.rsi && stock.rsi < 30 ? 'text-emerald-500' : 'text-slate-500'
                                                                     }`}>
                                                                     {stock.rsi ? stock.rsi : '-'}
                                                                 </span>
@@ -472,7 +473,7 @@ export default function MoversShakersPage() {
                                                                     {!stock.top_buyers?.length && <span className="text-[9px] text-slate-300">-</span>}
                                                                 </div>
                                                             </TableCell>
-                                                            <TableCell className="py-3 text-right font-mono text-xs">Rs. {stock.close}</TableCell>
+                                                            <TableCell className="py-3 text-right font-mono text-xs">{formatRupees(stock.close)}</TableCell>
                                                             <TableCell className={`py-3 text-right font-mono text-xs font-bold ${stock.percent_change > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                                 {stock.percent_change > 0 ? '+' : ''}{stock.percent_change.toFixed(2)}%
                                                             </TableCell>
@@ -513,7 +514,7 @@ export default function MoversShakersPage() {
                                                     <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-blue-600 transition-colors">{stock.ticker}</span>
                                                     <SectorBadge sector={stock.sector} />
                                                 </div>
-                                                <span className="font-mono text-[10px] text-slate-500">{(stock.turnover / 10000000).toFixed(2)} Cr</span>
+                                                <span className="font-mono text-[10px] text-slate-500">{formatRupees(stock.turnover / 10000000)} Cr</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <Sparkline
@@ -551,7 +552,7 @@ export default function MoversShakersPage() {
                                                     <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-cyan-600 transition-colors">{stock.ticker}</span>
                                                     <SectorBadge sector={stock.sector} />
                                                 </div>
-                                                <span className="font-mono text-[10px] text-slate-500">{stock.volume.toLocaleString()} Qty</span>
+                                                <span className="font-mono text-[10px] text-slate-500">{formatNepaliNumber(stock.volume)} Qty</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <Sparkline

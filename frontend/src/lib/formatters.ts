@@ -2,7 +2,7 @@
  * Format a number in Nepali style (lakhs and crores system)
  * Example: 12345678 -> 1,23,45,678
  */
-export function formatNepaliNumber(value: number | string): string {
+export function formatNepaliNumber(value: number | string | null | undefined): string {
     if (value === null || value === undefined || value === '') return '';
 
     // Convert to string and remove existing formatting
@@ -67,8 +67,8 @@ export function parseNepaliNumber(value: string): string {
 /**
  * Format number for display in Nepali style with optional decimal places
  */
-export function formatNepaliCurrency(value: number | string, decimals: number = 2): string {
-    if (value === null || value === undefined || value === '') return '';
+export function formatNepaliCurrency(value: number | string | null | undefined, decimals: number = 2): string {
+    if (value === null || value === undefined || value === '' || value === undefined) return '';
 
     const numValue = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value;
 
@@ -78,4 +78,14 @@ export function formatNepaliCurrency(value: number | string, decimals: number = 
     const rounded = decimals > 0 ? numValue.toFixed(decimals) : Math.round(numValue).toString();
 
     return formatNepaliNumber(rounded);
+}
+
+/**
+ * Format a value as Nepali Rupees (रू)
+ * Example: 12345678 -> रू 1,23,45,678
+ */
+export function formatRupees(value: number | string | null | undefined, decimals: number = 0): string {
+    const formatted = formatNepaliCurrency(value, decimals);
+    if (!formatted) return '';
+    return `रू ${formatted}`;
 }

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
 import api from '@/lib/api';
 import ReactECharts from 'echarts-for-react';
+import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
 
 interface BrokerAnalysisProps {
     symbol: string;
@@ -102,7 +103,7 @@ export function BrokerAnalysis({ symbol }: BrokerAnalysisProps) {
                 axisLabel: {
                     color: '#9ca3af',
                     fontSize: 10,
-                    formatter: (val: number) => val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val
+                    formatter: (val: number) => formatNepaliNumber(val)
                 }
             },
             series: topBrokers.map((broker, idx) => ({
@@ -152,16 +153,16 @@ export function BrokerAnalysis({ symbol }: BrokerAnalysisProps) {
                         <div class="flex justify-between gap-4 py-1">
                             <span class="text-gray-500">${type === 'buy' ? 'Net Bought:' : 'Net Sold:'}</span>
                             <span class="font-mono font-bold ${type === 'buy' ? 'text-emerald-600' : 'text-red-600'}">
-                                ${Math.abs((data as any)[valueKey] ?? 0).toLocaleString()}
+                                ${formatNepaliNumber(Math.abs((data as any)[valueKey] ?? 0))}
                             </span>
                         </div>
                         <div class="flex justify-between gap-4 py-1">
                             <span class="text-gray-500">Avg Rate:</span>
-                            <span class="font-mono font-bold text-gray-700">Rs. ${type === 'buy' ? data.buy_rate : data.sell_rate}</span>
+                            <span className="font-mono font-bold text-gray-700">${formatRupees(type === 'buy' ? data.buy_rate : data.sell_rate)}</span>
                         </div>
                         <div class="flex justify-between gap-4 py-1 text-xs">
                             <span class="text-gray-400">Total Vol:</span>
-                            <span class="font-mono text-gray-500">${(data.buy_qty + data.sell_qty).toLocaleString()}</span>
+                            <span className="font-mono text-gray-500">${formatNepaliNumber(data.buy_qty + data.sell_qty)}</span>
                         </div>
                     `;
                 }
@@ -198,7 +199,7 @@ export function BrokerAnalysis({ symbol }: BrokerAnalysisProps) {
                     show: true,
                     position: 'right',
                     formatter: (p: any) => {
-                        return (leaders[p.dataIndex] as any)[valueKey]?.toLocaleString() ?? '';
+                        return formatNepaliNumber((leaders[p.dataIndex] as any)[valueKey]);
                     },
                     fontSize: 10,
                     fontWeight: 'bold',

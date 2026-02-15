@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { formatNepaliNumber, formatRupees } from "@/lib/formatters";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import nextDynamic from 'next/dynamic';
@@ -522,6 +523,7 @@ function AccumulationContent() {
             },
             yAxis: {
                 type: 'value',
+                name: 'Price (रू)',
                 splitLine: { lineStyle: { color: '#f3f4f6' } },
                 axisLabel: {
                     color: '#6b7280',
@@ -922,7 +924,7 @@ function AccumulationContent() {
                                             </TableHead>
                                             <TableHead className="hidden lg:table-cell">Company</TableHead>
                                             <TableHead className="text-right cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleSort('close')}>
-                                                <div className="flex items-center justify-end gap-1">Price <SortIcon column="close" /></div>
+                                                <div className="flex items-center justify-end gap-1">LTP (रू) <SortIcon column="close" /></div>
                                             </TableHead>
                                             <TableHead className="text-right cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleSort('net_qty')}>
                                                 <div className="flex items-center justify-end gap-1">Net Acc. <SortIcon column="net_qty" /></div>
@@ -953,11 +955,11 @@ function AccumulationContent() {
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="text-right font-mono font-medium dark:text-slate-300">
-                                                        रू {item.close.toLocaleString()}
+                                                        {formatRupees(item.close, 1)}
                                                     </TableCell>
                                                     <TableCell className="text-right">
                                                         <span className={`font-mono font-bold ${item.net_qty >= 0 ? 'text-green-600 dark:text-emerald-400' : 'text-red-600 dark:text-rose-400'}`}>
-                                                            {item.net_qty >= 0 ? '+' : ''}{item.net_qty.toLocaleString()}
+                                                            {item.net_qty >= 0 ? '+' : ''}{formatNepaliNumber(item.net_qty)}
                                                         </span>
                                                     </TableCell>
                                                     <TableCell>
@@ -1077,7 +1079,7 @@ function AccumulationContent() {
                                                             <div className="flex flex-col">
                                                                 <div className="flex items-center gap-2">
                                                                     <span className="text-xl font-black text-gray-900 dark:text-slate-100 group-hover:text-green-600 dark:group-hover:text-emerald-400 transition-colors tracking-tight">{sym.symbol}</span>
-                                                                    <span className="text-sm font-bold text-gray-400 dark:text-slate-500">रू {sym.close?.toLocaleString()}</span>
+                                                                    <span className="text-sm font-bold text-gray-400 dark:text-slate-500">{formatRupees(sym.close, 1)}</span>
                                                                 </div>
                                                                 <span className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase truncate max-w-[180px]">{sym.name}</span>
                                                             </div>
@@ -1092,11 +1094,11 @@ function AccumulationContent() {
                                                         <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-700/50">
                                                             <div>
                                                                 <span className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase block mb-1">Inst. Buy Qty</span>
-                                                                <span className="text-sm font-bold text-gray-700 dark:text-slate-300">{sym.institutional_buy.toLocaleString()}</span>
+                                                                <span className="text-sm font-bold text-gray-700 dark:text-slate-300">{formatNepaliNumber(sym.institutional_buy)}</span>
                                                             </div>
                                                             <div>
                                                                 <span className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase block mb-1">20D Avg Vol</span>
-                                                                <span className="text-sm font-bold text-gray-700 dark:text-slate-300">{Math.round(sym.avg_vol_20d).toLocaleString()}</span>
+                                                                <span className="text-sm font-bold text-gray-700 dark:text-slate-300">{formatNepaliNumber(Math.round(sym.avg_vol_20d))}</span>
                                                             </div>
                                                         </div>
 
@@ -1137,7 +1139,7 @@ function AccumulationContent() {
                                                             <div className="flex flex-col">
                                                                 <div className="flex items-center gap-2">
                                                                     <span className="text-xl font-black text-gray-900 dark:text-slate-100 group-hover:text-red-600 dark:group-hover:text-rose-400 transition-colors tracking-tight">{sym.symbol}</span>
-                                                                    <span className="text-sm font-bold text-gray-400 dark:text-slate-500">रू {sym.close?.toLocaleString()}</span>
+                                                                    <span className="text-sm font-bold text-gray-400 dark:text-slate-500">{formatRupees(sym.close, 1)}</span>
                                                                 </div>
                                                                 <span className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase truncate max-w-[180px]">{sym.name}</span>
                                                             </div>
@@ -1152,11 +1154,11 @@ function AccumulationContent() {
                                                         <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-700/50">
                                                             <div>
                                                                 <span className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase block mb-1">Inst. Sell Qty</span>
-                                                                <span className="text-sm font-bold text-gray-700 dark:text-slate-300">{sym.institutional_sell.toLocaleString()}</span>
+                                                                <span className="text-sm font-bold text-gray-700 dark:text-slate-300">{formatNepaliNumber(sym.institutional_sell)}</span>
                                                             </div>
                                                             <div>
                                                                 <span className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase block mb-1">20D Avg Vol</span>
-                                                                <span className="text-sm font-bold text-gray-700 dark:text-slate-300">{Math.round(sym.avg_vol_20d).toLocaleString()}</span>
+                                                                <span className="text-sm font-bold text-gray-700 dark:text-slate-300">{formatNepaliNumber(Math.round(sym.avg_vol_20d))}</span>
                                                             </div>
                                                         </div>
 
@@ -1222,10 +1224,10 @@ function AccumulationContent() {
                                                         <div className="flex items-center justify-end gap-1">Cumulative Net <TrendSortIcon column="cumulative_net" /></div>
                                                     </TableHead>
                                                     <TableHead className="text-right cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('ltp')}>
-                                                        <div className="flex items-center justify-end gap-1">LTP <TrendSortIcon column="ltp" /></div>
+                                                        <div className="flex items-center justify-end gap-1">LTP (रू) <TrendSortIcon column="ltp" /></div>
                                                     </TableHead>
                                                     <TableHead className="text-right cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('wac')}>
-                                                        <div className="flex items-center justify-end gap-1">WAC <TrendSortIcon column="wac" /></div>
+                                                        <div className="flex items-center justify-end gap-1">WAC (रू) <TrendSortIcon column="wac" /></div>
                                                     </TableHead>
                                                     <TableHead className="text-center cursor-pointer hover:text-blue-600 dark:hover:text-indigo-400 transition-colors" onClick={() => handleTrendSort('change_5d')}>
                                                         <div className="flex items-center justify-center gap-1">5D Trend <TrendSortIcon column="change_5d" /></div>
@@ -1261,13 +1263,13 @@ function AccumulationContent() {
                                                                 </Link>
                                                             </TableCell>
                                                             <TableCell className="text-right font-mono font-bold text-blue-800 dark:text-indigo-400">
-                                                                {row.cumulative_net.toLocaleString()}
+                                                                {formatNepaliNumber(row.cumulative_net)}
                                                             </TableCell>
                                                             <TableCell className="text-right font-mono font-bold text-gray-900 dark:text-slate-100">
-                                                                {row.ltp?.toLocaleString()}
+                                                                {formatNepaliNumber(row.ltp)}
                                                             </TableCell>
                                                             <TableCell className="text-right font-mono font-bold text-gray-700 dark:text-slate-300">
-                                                                {row.wac?.toLocaleString()}
+                                                                {formatNepaliNumber(row.wac)}
                                                             </TableCell>
                                                             <TableCell className="text-center">
                                                                 <TrendBadge trend={row.trend_5d} change={row.change_5d} />
@@ -1428,11 +1430,11 @@ function AccumulationContent() {
                                                     <TableHead className="w-[120px]">Symbol</TableHead>
                                                     <TableHead className="hidden lg:table-cell">Company</TableHead>
                                                     <TableHead className="text-right">Total Net Holding</TableHead>
-                                                    <TableHead className="text-right">WAC</TableHead>
-                                                    <TableHead className="text-right">LTP</TableHead>
+                                                    <TableHead className="text-right">WAC (रू)</TableHead>
+                                                    <TableHead className="text-right">LTP (रू)</TableHead>
                                                     <TableHead className="text-right">ROC</TableHead>
-                                                    <TableHead className="text-right bg-blue-50/50 dark:bg-indigo-900/20">Qty Accumulated ({favPeriod})</TableHead>
-                                                    <TableHead className="text-right">Net Amount</TableHead>
+                                                    <TableHead className="text-right bg-blue-50/50 dark:bg-indigo-900/20">Qty Acc. ({favPeriod})</TableHead>
+                                                    <TableHead className="text-right">Net Amt (रू)</TableHead>
                                                     <TableHead className="w-[100px]"></TableHead>
                                                 </TableRow>
                                             </TableHeader>
@@ -1448,27 +1450,30 @@ function AccumulationContent() {
                                                         <TableRow key={idx} className="hover:bg-blue-50/30 dark:hover:bg-slate-900/50 transition-colors group border-b dark:border-slate-800">
                                                             <TableCell className="font-bold text-blue-700 dark:text-indigo-400">{fav.symbol}</TableCell>
                                                             <TableCell className="hidden lg:table-cell text-sm text-gray-600 dark:text-slate-400 truncate max-w-[200px]">{fav.name}</TableCell>
-                                                            <TableCell className="text-right font-mono font-medium text-gray-400 dark:text-slate-500">
-                                                                {fav.current_net.toLocaleString()}
+                                                            <TableCell className="text-right font-mono font-bold text-gray-900 dark:text-slate-100">
+                                                                {formatNepaliNumber(fav.current_net)}
                                                             </TableCell>
-                                                            <TableCell className="text-right font-mono font-bold text-orange-600 dark:text-orange-400">
-                                                                {fav.wac?.toLocaleString() || '-'}
+                                                            <TableCell className="text-right font-mono text-gray-500 dark:text-slate-400">
+                                                                {formatNepaliNumber(fav.wac) || '-'}
                                                             </TableCell>
-                                                            <TableCell className="text-right font-mono font-bold text-slate-700 dark:text-slate-300">
-                                                                {fav.ltp?.toLocaleString() || '-'}
+                                                            <TableCell className="text-right font-mono text-gray-900 dark:text-slate-300">
+                                                                {formatNepaliNumber(fav.ltp) || '-'}
                                                             </TableCell>
                                                             <TableCell className={`text-right font-mono font-bold ${fav.roc > 0 ? 'text-green-600 dark:text-emerald-400' : fav.roc < 0 ? 'text-red-600 dark:text-rose-400' : 'text-gray-400'}`}>
                                                                 {fav.roc > 0 ? '+' : ''}{fav.roc}%
                                                             </TableCell>
                                                             <TableCell className={`text-right font-mono font-bold bg-blue-50/20 dark:bg-indigo-900/20 ${fav.qty_accumulated > 0 ? 'text-green-600 dark:text-emerald-400' : fav.qty_accumulated < 0 ? 'text-red-600 dark:text-rose-400' : 'text-gray-400 dark:text-slate-500'}`}>
-                                                                {fav.qty_accumulated > 0 ? '+' : ''}{fav.qty_accumulated.toLocaleString()}
+                                                                {fav.qty_accumulated > 0 ? '+' : ''}{formatNepaliNumber(fav.qty_accumulated)}
                                                             </TableCell>
-                                                            <TableCell className={`text-right font-mono font-bold ${fav.net_amount > 0 ? 'text-green-600 dark:text-emerald-400' : fav.net_amount < 0 ? 'text-red-600 dark:text-rose-400' : 'text-gray-400'}`}>
-                                                                {Math.abs(fav.net_amount) >= 10000000
-                                                                    ? `${(fav.net_amount / 10000000).toFixed(2)} Cr`
-                                                                    : Math.abs(fav.net_amount) >= 100000
-                                                                        ? `${(fav.net_amount / 100000).toFixed(2)} L`
-                                                                        : fav.net_amount.toLocaleString()}
+                                                            <TableCell className="text-right font-mono">
+                                                                <div className="flex flex-col items-end">
+                                                                    <span className={`font-bold ${fav.net_amount >= 0 ? 'text-green-600 dark:text-emerald-400' : 'text-red-600 dark:text-rose-400'}`}>
+                                                                        {fav.net_amount > 0 ? '+' : ''}{formatNepaliNumber(fav.net_amount)}
+                                                                    </span>
+                                                                    <span className="text-[10px] text-gray-400 dark:text-slate-500">
+                                                                        {fav.net_amount >= 0 ? '+' : ''}{formatNepaliNumber(fav.net_amount)}
+                                                                    </span>
+                                                                </div>
                                                             </TableCell>
                                                             <TableCell className="text-center">
                                                                 <Link href={`/accumulation?tab=history&symbol=${fav.symbol}&broker=${selectedBroker}`}>
@@ -1746,15 +1751,15 @@ function AccumulationContent() {
                                         <TableHeader className="bg-gray-50 dark:bg-slate-900 sticky top-0 z-10 shadow-sm border-b dark:border-slate-800">
                                             <TableRow>
                                                 <TableHead className="w-[110px] whitespace-nowrap">Date</TableHead>
-                                                <TableHead className="text-right text-green-700 dark:text-emerald-400 font-bold whitespace-nowrap">Buy Qty</TableHead>
-                                                <TableHead className="text-right text-green-700 dark:text-emerald-400 font-bold whitespace-nowrap">Buy Rate</TableHead>
-                                                <TableHead className="text-right text-green-700 dark:text-emerald-400 font-bold whitespace-nowrap">Buy Amt</TableHead>
-                                                <TableHead className="text-right text-red-700 dark:text-rose-400 font-bold whitespace-nowrap">Sell Qty</TableHead>
-                                                <TableHead className="text-right text-red-700 dark:text-rose-400 font-bold whitespace-nowrap">Sell Rate</TableHead>
-                                                <TableHead className="text-right text-red-700 dark:text-rose-400 font-bold whitespace-nowrap">Sell Amt</TableHead>
+                                                <TableHead className="text-right bg-green-50/50 dark:bg-emerald-900/20">Buy Qty</TableHead>
+                                                <TableHead className="text-right bg-green-50/50 dark:bg-emerald-900/20">Rate (रू)</TableHead>
+                                                <TableHead className="text-right bg-green-50/50 dark:bg-emerald-900/20">Amount (रू)</TableHead>
+                                                <TableHead className="text-right bg-red-50/50 dark:bg-rose-900/20">Sell Qty</TableHead>
+                                                <TableHead className="text-right bg-red-50/50 dark:bg-rose-900/20">Rate (रू)</TableHead>
+                                                <TableHead className="text-right bg-red-50/50 dark:bg-rose-900/20">Amount (रू)</TableHead>
                                                 <TableHead className="text-right font-bold whitespace-nowrap">Net Qty</TableHead>
                                                 <TableHead className="text-right font-bold bg-blue-50/50 dark:bg-indigo-900/20 whitespace-nowrap">Cum. Qty</TableHead>
-                                                <TableHead className="text-right font-bold bg-yellow-50/50 dark:bg-yellow-900/20 whitespace-nowrap">WAC</TableHead>
+                                                <TableHead className="text-right font-bold bg-yellow-50/50 dark:bg-yellow-900/20 whitespace-nowrap">WAC (रू)</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -1780,28 +1785,28 @@ function AccumulationContent() {
                                                             </div>
                                                         </TableCell>
                                                         <TableCell className="text-right font-mono text-green-700 dark:text-emerald-400">
-                                                            {item.buy_qty > 0 ? item.buy_qty.toLocaleString() : '-'}
+                                                            {item.buy_qty > 0 ? formatNepaliNumber(item.buy_qty) : '-'}
                                                         </TableCell>
                                                         <TableCell className="text-right font-mono text-xs text-gray-500 dark:text-slate-500">
                                                             {item.buy_qty > 0 ? item.buy_rate.toFixed(2) : '-'}
                                                         </TableCell>
                                                         <TableCell className="text-right font-mono text-xs text-gray-500 dark:text-slate-500">
-                                                            {item.buy_qty > 0 ? Math.round(item.buy_amount).toLocaleString() : '-'}
+                                                            {item.buy_qty > 0 ? formatNepaliNumber(Math.round(item.buy_amount)) : '-'}
                                                         </TableCell>
                                                         <TableCell className="text-right font-mono text-red-700 dark:text-rose-400">
-                                                            {item.sell_qty > 0 ? item.sell_qty.toLocaleString() : '-'}
+                                                            {item.sell_qty > 0 ? formatNepaliNumber(item.sell_qty) : '-'}
                                                         </TableCell>
                                                         <TableCell className="text-right font-mono text-xs text-gray-500 dark:text-slate-500">
                                                             {item.sell_qty > 0 ? item.sell_rate.toFixed(2) : '-'}
                                                         </TableCell>
                                                         <TableCell className="text-right font-mono text-xs text-gray-500 dark:text-slate-500">
-                                                            {item.sell_qty > 0 ? Math.round(item.sell_amount).toLocaleString() : '-'}
+                                                            {item.sell_qty > 0 ? formatNepaliNumber(Math.round(item.sell_amount)) : '-'}
                                                         </TableCell>
                                                         <TableCell className={`text-right font-mono font-bold ${item.net_quantity > 0 ? 'text-green-600 dark:text-emerald-400' : item.net_quantity < 0 ? 'text-red-600 dark:text-rose-400' : 'text-gray-400 dark:text-slate-500'}`}>
-                                                            {item.net_quantity !== 0 ? (item.net_quantity > 0 ? '+' : '') + item.net_quantity.toLocaleString() : '0'}
+                                                            {item.net_quantity !== 0 ? (item.net_quantity > 0 ? '+' : '') + formatNepaliNumber(item.net_quantity) : '0'}
                                                         </TableCell>
                                                         <TableCell className="text-right font-mono font-bold bg-blue-50/30 dark:bg-indigo-900/20 text-blue-800 dark:text-indigo-400">
-                                                            {item.cumulative_qty.toLocaleString()}
+                                                            {formatNepaliNumber(item.cumulative_qty)}
                                                         </TableCell>
                                                         <TableCell className="text-right font-mono font-bold bg-yellow-50/30 dark:bg-yellow-900/20 text-gray-800 dark:text-yellow-400">
                                                             {item.wac ? item.wac.toLocaleString() : '-'}
@@ -2034,7 +2039,7 @@ function AccumulationContent() {
                                                 <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
                                                     <p className="text-xs font-black uppercase text-gray-400 mb-1">Avg. Rate</p>
                                                     <p className="text-sm font-black text-gray-800 dark:text-slate-100">
-                                                        {transferData.summary.broker2_to_broker1.avg_rate?.toLocaleString() || 0}
+                                                        {formatNepaliNumber(transferData.summary.broker2_to_broker1.avg_rate) || 0}
                                                     </p>
                                                 </Card>
                                                 <Card className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 shadow-sm p-3">
@@ -2125,14 +2130,14 @@ function AccumulationContent() {
                                                                     <td className="p-2 font-mono text-gray-500">{day.transaction_date}</td>
                                                                     <td className="p-2 text-right">
                                                                         <div className="font-bold flex flex-col">
-                                                                            <span>रू {day.close_price?.toLocaleString()}</span>
+                                                                            <span>{formatRupees(day.close_price, 1)}</span>
                                                                             <span className={`text-xs ${day.price_change_pc >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                                                                 {day.price_change_pc > 0 ? '+' : ''}{day.price_change_pc}%
                                                                             </span>
                                                                         </div>
                                                                     </td>
                                                                     <td className="p-2 text-right font-bold text-blue-600 dark:text-blue-400">
-                                                                        {totalTransfer.toLocaleString()}
+                                                                        {formatNepaliNumber(totalTransfer)}
                                                                     </td>
                                                                     <td className="p-2 text-right">
                                                                         <div className="flex flex-col gap-0.5">
@@ -2142,13 +2147,13 @@ function AccumulationContent() {
                                                                         </div>
                                                                     </td>
                                                                     <td className={`p-2 text-right font-bold ${day.b1_net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                                        {day.b1_net > 0 ? '+' : ''}{day.b1_net?.toLocaleString() || '0'}
+                                                                        {day.b1_net > 0 ? '+' : ''}{formatNepaliNumber(day.b1_net) || '0'}
                                                                     </td>
                                                                     <td className={`p-2 text-right font-bold ${day.b2_net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                                        {day.b2_net > 0 ? '+' : ''}{day.b2_net?.toLocaleString() || '0'}
+                                                                        {day.b2_net > 0 ? '+' : ''}{formatNepaliNumber(day.b2_net) || '0'}
                                                                     </td>
                                                                     <td className={`p-2 text-right font-bold ${day.net_accumulation >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                                        {day.net_accumulation > 0 ? '+' : ''}{day.net_accumulation?.toLocaleString() || '0'}
+                                                                        {day.net_accumulation > 0 ? '+' : ''}{formatNepaliNumber(day.net_accumulation) || '0'}
                                                                     </td>
                                                                 </tr>
                                                             );

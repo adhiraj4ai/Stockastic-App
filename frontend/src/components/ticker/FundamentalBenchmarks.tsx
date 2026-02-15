@@ -1,5 +1,6 @@
 import React from 'react';
 import { BarChart2 } from 'lucide-react';
+import { formatRupees } from '@/lib/formatters';
 
 interface FundamentalBenchmarksProps {
     fundamental: any;
@@ -45,7 +46,7 @@ export const FundamentalBenchmarks: React.FC<FundamentalBenchmarksProps> = ({ fu
                             ) || fundamental?.fundamental_indicators?.find((ind: any) => ind.name === metric.name);
 
                             const rawValue = fundamental?.[metric.key];
-                            const displayValue = indicator?.value || (rawValue ? (typeof rawValue === 'number' && rawValue > 10000000 ? (rawValue / 10000000).toFixed(2) + ' Cr' : rawValue.toString()) : '-');
+                            const displayValue = indicator?.value || formatRupees(rawValue);
 
                             return (
                                 <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">

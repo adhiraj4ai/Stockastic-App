@@ -19,6 +19,7 @@ import {
     Download, RefreshCw, Maximize2, Table2, LineChart,
     Check, ChevronDown, Search, X, PieChart, Globe
 } from 'lucide-react';
+import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
 import TransactionModal from '@/components/TransactionModal';
@@ -453,11 +454,9 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                             if (m?.unit === '%') {
                                 valStr = p.value.toLocaleString(undefined, { minimumFractionDigits: 2 }) + '%';
                             } else if (m?.unit === 'currency') {
-                                if (Math.abs(p.value) >= 10000000) valStr = (p.value / 10000000).toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' Cr';
-                                else if (Math.abs(p.value) >= 100000) valStr = (p.value / 100000).toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' L';
-                                else valStr = p.value.toLocaleString();
+                                valStr = formatRupees(p.value);
                             } else {
-                                valStr = p.value.toLocaleString();
+                                valStr = formatNepaliNumber(p.value);
                             }
                         }
                         res += `<div style="display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 4px;">
@@ -489,17 +488,13 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
             yAxis: [
                 {
                     type: 'value',
-                    name: 'Amount (Rs)',
+                    name: 'Amount (रू)',
                     nameTextStyle: { color: '#94a3b8', fontWeight: 600, padding: [0, 40, 0, 0], fontSize: 12 },
                     axisLabel: {
                         color: '#94a3b8',
                         fontWeight: 600,
                         fontSize: 11,
-                        formatter: (val: number) => {
-                            if (Math.abs(val) >= 10000000) return (val / 10000000).toFixed(0) + 'Cr';
-                            if (Math.abs(val) >= 100000) return (val / 100000).toFixed(0) + 'L';
-                            return val.toLocaleString();
-                        }
+                        formatter: (val: number) => formatRupees(val)
                     },
                     splitLine: { lineStyle: { type: 'dashed', color: '#f8fafc' } }
                 },
@@ -699,14 +694,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                         const auditedValue = (data.fundamental as any)?.[metric.key];
                                                         const unauditedValue = (data.fundamental as any)?.[`${metric.key}_unaudited`] || auditedValue;
 
-                                                        const formatVal = (val: any) => {
-                                                            if (val === null || val === undefined) return '-';
-                                                            if (typeof val === 'number') {
-                                                                if (val > 10000000) return (val / 10000000).toFixed(2) + ' Cr';
-                                                                return val.toFixed(2);
-                                                            }
-                                                            return val.toString();
-                                                        };
+                                                        const formatVal = (val: any) => formatRupees(val);
 
                                                         return (
                                                             <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">

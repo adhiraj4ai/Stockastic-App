@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { Target, Filter, TrendingUp, TrendingDown, Search, RefreshCw, X, Activity, BarChart3, LineChart, ChevronLeft, ChevronRight } from 'lucide-react';
+import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
 import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -284,11 +285,11 @@ export default function RecommendationsPage() {
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Crossover Price</span>
-                                            <span className="text-xs font-bold text-slate-900 dark:text-slate-100">Rs. {selectedRec.crossover_price?.toLocaleString()}</span>
+                                            <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{formatRupees(selectedRec.crossover_price)}</span>
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Current LTP</span>
-                                            <span className="text-xs font-bold text-emerald-600">Rs. {selectedRec.close.toLocaleString()}</span>
+                                            <span className="text-xs font-bold text-emerald-600">{formatRupees(selectedRec.close)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -424,10 +425,10 @@ export default function RecommendationsPage() {
                                                     <TableRow className="border-b border-slate-100 dark:border-slate-800 hover:bg-transparent">
                                                         <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 w-32">Buy Date</TableHead>
                                                         <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 w-32">Sell Date</TableHead>
-                                                        <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 text-right">Entry Price</TableHead>
-                                                        <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 text-right">Exit Price</TableHead>
+                                                        <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 text-right">Entry Price (रू)</TableHead>
+                                                        <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 text-right">Exit Price (रू)</TableHead>
                                                         <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 text-center">PnL %</TableHead>
-                                                        <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 text-right pr-6">Profit/Loss</TableHead>
+                                                        <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 text-right pr-6">Profit/Loss (रू)</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
@@ -443,10 +444,10 @@ export default function RecommendationsPage() {
                                                                 ) : trade.sellDate}
                                                             </TableCell>
                                                             <TableCell className="font-mono text-sm text-slate-700 dark:text-slate-300 font-medium text-right">
-                                                                Rs. {trade.buyPrice?.toLocaleString()}
+                                                                {formatRupees(trade.buyPrice)}
                                                             </TableCell>
                                                             <TableCell className="font-mono text-sm text-slate-900 dark:text-slate-100 font-medium text-right">
-                                                                Rs. {trade.sellPrice?.toLocaleString()}
+                                                                {formatRupees(trade.sellPrice)}
                                                             </TableCell>
                                                             <TableCell className="text-center">
                                                                 <Badge className={`${trade.pnlPercent >= 0 ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-400 hover:bg-emerald-100' : 'bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-400 hover:bg-rose-100'} border-none shadow-none font-bold text-xs px-2`}>
@@ -454,7 +455,7 @@ export default function RecommendationsPage() {
                                                                 </Badge>
                                                             </TableCell>
                                                             <TableCell className={`text-right pr-6 font-mono text-sm font-bold ${trade.pnlAmount >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                                                                {trade.pnlAmount >= 0 ? '+' : ''}{trade.pnlAmount?.toLocaleString()}
+                                                                {trade.pnlAmount >= 0 ? '+' : ''}{formatRupees(trade.pnlAmount)}
                                                             </TableCell>
                                                         </TableRow>
                                                     ))}
@@ -523,7 +524,7 @@ export default function RecommendationsPage() {
                                                     <TableRow className="border-b border-slate-200 dark:border-slate-700 hover:bg-transparent">
                                                         <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 w-32 py-3 pl-6">Date</TableHead>
                                                         <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 w-24 py-3">Signal</TableHead>
-                                                        <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 w-32 py-3 text-right">Price</TableHead>
+                                                        <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 w-32 py-3 text-right">Price (रू)</TableHead>
                                                         <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 w-32 py-3 pl-8">Strength</TableHead>
                                                         <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 py-3">Intelligence Reasoning</TableHead>
                                                     </TableRow>
@@ -539,7 +540,7 @@ export default function RecommendationsPage() {
                                                                 </span>
                                                             </TableCell>
                                                             <TableCell className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300 text-right">
-                                                                Rs. {row.close?.toLocaleString() || row.price?.toLocaleString()}
+                                                                {formatRupees(row.close || row.price)}
                                                             </TableCell>
                                                             <TableCell className="pl-8">
                                                                 <div className="flex items-center gap-2">
@@ -683,9 +684,9 @@ export default function RecommendationsPage() {
                                         <TableHead className="dark:text-slate-400">Symbol</TableHead>
                                         <TableHead className="dark:text-slate-400">Signal</TableHead>
                                         <TableHead className="dark:text-slate-400">Crossover Date</TableHead>
-                                        <TableHead className="dark:text-slate-400">Crossover Price</TableHead>
+                                        <TableHead className="dark:text-slate-400">Crossover Price (रू)</TableHead>
                                         <TableHead className="dark:text-slate-400">Strength</TableHead>
-                                        <TableHead className="dark:text-slate-400">LTP</TableHead>
+                                        <TableHead className="dark:text-slate-400">LTP (रू)</TableHead>
                                         <TableHead className="w-[30%] dark:text-slate-400">Reason</TableHead>
                                         <TableHead className="text-right dark:text-slate-400">Action</TableHead>
                                     </TableRow>
@@ -718,7 +719,7 @@ export default function RecommendationsPage() {
                                                 </TableCell>
                                                 <TableCell>
                                                     {rec.crossover_price ? (
-                                                        <span className="text-[11px] font-mono text-gray-700 dark:text-slate-300">Rs. {rec.crossover_price.toLocaleString()}</span>
+                                                        <span className="text-[11px] font-mono text-gray-700 dark:text-slate-300">{formatRupees(rec.crossover_price)}</span>
                                                     ) : (
                                                         <span className="text-gray-300 dark:text-slate-700">-</span>
                                                     )}
@@ -734,7 +735,7 @@ export default function RecommendationsPage() {
                                                         <span className="text-xs font-medium text-gray-600 dark:text-slate-400">{rec.strength}%</span>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="font-mono text-gray-700 dark:text-slate-300">Rs. {rec.close.toLocaleString()}</TableCell>
+                                                <TableCell className="font-mono text-gray-700 dark:text-slate-300">{formatRupees(rec.close)}</TableCell>
                                                 <TableCell className="text-sm text-gray-500 dark:text-slate-400">
                                                     <div className="flex flex-col gap-1">
                                                         <span className="text-slate-600 dark:text-slate-300">{rec.reason}</span>

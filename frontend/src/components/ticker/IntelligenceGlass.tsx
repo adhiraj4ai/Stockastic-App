@@ -3,6 +3,7 @@
 import { BrainCircuit, Info, ShieldCheck, AlertTriangle, Zap, ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { formatRupees } from '@/lib/formatters';
 
 interface IntelligenceGlassProps {
     symbol?: string;
@@ -74,7 +75,7 @@ export function IntelligenceGlass({
                         </div>
                         <div className="text-right">
                             <div className="text-2xl font-bold text-slate-900 dark:text-slate-100 tabular-nums">
-                                {price?.toLocaleString()}
+                                {formatRupees(price)}
                             </div>
                             <div className={cn("flex items-center justify-end gap-1 text-xs font-bold", isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")}>
                                 {isPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}

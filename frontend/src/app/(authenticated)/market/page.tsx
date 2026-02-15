@@ -40,6 +40,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Variants } from 'framer-motion';
 import { PortfolioSummary } from '@/components/PortfolioSummary';
+import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
 
 const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -384,7 +385,7 @@ export default function DashboardPage() {
                     </div>
                 </TableCell>
                 <TableCell className="text-right py-2.5 font-mono font-medium text-slate-700 dark:text-slate-300">
-                    {Number(stock.close).toLocaleString()}
+                    {formatNepaliNumber(stock.close)}
                 </TableCell>
                 <TableCell className={`text-right py-2.5 font-bold ${isStockPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
                     <div className="flex flex-col items-end">
@@ -413,7 +414,7 @@ export default function DashboardPage() {
                     {top_gainers.concat(top_losers).slice(0, 10).map((stock, i) => (
                         <div key={i} className="flex items-center gap-2 cursor-pointer opacity-80 hover:opacity-100 transition-opacity" onClick={() => router.push(`/ticker/${stock.ticker}`)}>
                             <span className="font-bold text-xs text-slate-200 dark:text-slate-300 tracking-wider">{stock.ticker}</span>
-                            <span className="font-mono text-xs text-slate-400 dark:text-slate-500">{stock.close}</span>
+                            <span className="font-mono text-xs text-slate-400 dark:text-slate-500">{formatNepaliNumber(stock.close)}</span>
                             <span className={`text-[10px] font-bold px-1.5 rounded-sm ${stock.change >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
                                 {stock.change >= 0 ? '+' : ''}{stock.percent_change.toFixed(1)}%
                             </span>
@@ -423,7 +424,7 @@ export default function DashboardPage() {
                     {top_gainers.concat(top_losers).slice(0, 10).map((stock, i) => (
                         <div key={`d-${i}`} className="flex items-center gap-2 cursor-pointer opacity-80 hover:opacity-100 transition-opacity" onClick={() => router.push(`/ticker/${stock.ticker}`)}>
                             <span className="font-bold text-xs text-slate-200 dark:text-slate-300 tracking-wider">{stock.ticker}</span>
-                            <span className="font-mono text-xs text-slate-400 dark:text-slate-500">{stock.close}</span>
+                            <span className="font-mono text-xs text-slate-400 dark:text-slate-500">{formatNepaliNumber(stock.close)}</span>
                             <span className={`text-[10px] font-bold px-1.5 rounded-sm ${stock.change >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
                                 {stock.change >= 0 ? '+' : ''}{stock.percent_change.toFixed(1)}%
                             </span>
@@ -500,7 +501,7 @@ export default function DashboardPage() {
                                     </div>
                                     <div className="space-y-1 text-right">
                                         <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Turnover</span>
-                                        <div className="font-mono font-bold text-slate-900 dark:text-slate-100">Rs. {(market_summary.total_turnover / 1000000).toFixed(0)}M</div>
+                                        <div className="font-mono font-bold text-slate-900 dark:text-slate-100">{formatRupees(market_summary.total_turnover / 1000000)}M</div>
                                     </div>
                                 </div>
 
@@ -728,7 +729,7 @@ export default function DashboardPage() {
                                             <TableRow className="border-transparent hover:bg-transparent">
                                                 <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 w-[240px]">Index Name</TableHead>
                                                 <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 text-right">Change (%)</TableHead>
-                                                <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 text-right">Turnover (Rs.)</TableHead>
+                                                <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 text-right">Turnover (रू)</TableHead>
                                                 <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 text-right">Volume (Qty)</TableHead>
                                                 <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 text-right w-[120px]">Trend</TableHead>
                                             </TableRow>
@@ -753,10 +754,10 @@ export default function DashboardPage() {
                                                             </div>
                                                         </TableCell>
                                                         <TableCell className="text-right py-3">
-                                                            <span className="text-xs font-mono font-bold text-slate-900 dark:text-slate-100">{(sector.turnover / 1000000).toFixed(2)}M</span>
+                                                            <span className="text-xs font-mono font-bold text-slate-900 dark:text-slate-100">{formatRupees(sector.turnover / 1000000)}M</span>
                                                         </TableCell>
                                                         <TableCell className="text-right py-3">
-                                                            <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">{(sector.volume || sector.turnover / 500).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                                                            <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">{formatNepaliNumber((sector.volume || sector.turnover / 500).toFixed(0))}</span>
                                                         </TableCell>
                                                         <TableCell className="text-right py-3">
                                                             <div className="h-6 w-20 ml-auto opacity-70 group-hover:opacity-100 transition-opacity">
