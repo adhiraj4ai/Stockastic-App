@@ -77,6 +77,8 @@ class WatchlistItem(models.Model):
     ticker = models.CharField(max_length=20)
     added_at = models.DateTimeField(auto_now_add=True)
     target_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    stop_loss_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    alert_enabled = models.BooleanField(default=False)
     notes = models.TextField(blank=True, null=True)
 
     class Meta:
