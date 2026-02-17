@@ -615,6 +615,7 @@ function PortfolioContent() {
                                     fetchPortfolio();
                                     setIsExitPlanDialogOpen(false);
                                 }}
+                                accounts={accounts}
                             />
 
                             {/* Pagination Controls */}

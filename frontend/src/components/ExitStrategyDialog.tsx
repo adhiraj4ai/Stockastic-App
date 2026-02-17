@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import api from '@/lib/api';
-import { Loader2, Target, TrendingDown, TrendingUp, Shield, BarChart3, Save, X, Info, AlertTriangle, BookOpen, Quote, Zap, Pencil, Trash2 } from 'lucide-react';
+import { Loader2, Target, TrendingDown, TrendingUp, Shield, BarChart3, Save, X, Info, AlertTriangle, BookOpen, Quote, Zap, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import TransactionModal from './TransactionModal';
 
 interface ExitStrategyDialogProps {
@@ -14,6 +14,7 @@ interface ExitStrategyDialogProps {
     onOpenChange: (open: boolean) => void;
     portfolioItem: any;
     onSave: () => void;
+    accounts: any[];
 }
 
 interface StrategyOption {
@@ -31,7 +32,7 @@ interface HealthWarning {
     severity: 'LOW' | 'MEDIUM' | 'HIGH';
 }
 
-export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }: ExitStrategyDialogProps) {
+export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, accounts }: ExitStrategyDialogProps) {
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [strategies, setStrategies] = useState<Record<string, StrategyOption>>({});
@@ -50,6 +51,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
     const [transactions, setTransactions] = useState<any[]>([]);
     const [transactionToEdit, setTransactionToEdit] = useState<any>(null);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -150,37 +152,45 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
                     {/* Header Section */}
                     <div className="bg-slate-50/50 dark:bg-slate-800/50 p-5 px-6 border-b border-gray-100/80 dark:border-slate-700/80">
                         <DialogHeader>
-                            <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center justify-between w-full relative">
+                                {/* Left: Title & Badge */}
                                 <div className="flex items-center gap-4">
                                     <div className="p-2 bg-blue-600 dark:bg-blue-500 rounded-xl text-white shadow-lg shadow-blue-500/20">
                                         <Target className="h-5 w-5" />
                                     </div>
-                                    <div>
+                                    <div className="flex flex-col items-start gap-1">
                                         <DialogTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
                                             Exit Strategy: {portfolioItem?.ticker}
-                                            {isUnderwater ? (
-                                                <Badge className="ml-2 bg-red-600 text-white border-none text-[10px] px-2 py-0.5 font-bold animate-pulse">
-                                                    UNDERWATER
-                                                </Badge>
-                                            ) : (
-                                                <Badge variant="outline" className="ml-2 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/30 text-[10px]">STRATEGIC VIEW</Badge>
-                                            )}
                                         </DialogTitle>
-                                        <div className="flex items-center gap-6 mt-1">
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2">
-                                                LTP: <span className="font-black text-blue-600 dark:text-blue-400">Rs. {currentPrice}</span>
-                                            </p>
-                                            <div className="h-3 w-[1px] bg-slate-200 dark:bg-slate-700" />
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2">
-                                                WACC: <span className="font-black text-slate-800 dark:text-slate-200">Rs. {wacc}</span>
-                                            </p>
-                                            <div className="h-3 w-[1px] bg-slate-200 dark:bg-slate-700" />
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2">
-                                                QTY: <span className="font-black text-slate-900 dark:text-slate-100">{portfolioItem?.quantity}</span>
-                                            </p>
-                                        </div>
+                                        {isUnderwater ? (
+                                            <Badge className="bg-red-600 text-white border-none text-[10px] px-2 py-0.5 font-bold animate-pulse">
+                                                UNDERWATER
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant="outline" className="border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/30 text-[10px]">STRATEGIC VIEW</Badge>
+                                        )}
                                     </div>
                                 </div>
+
+                                {/* Center: Metrics */}
+                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:flex items-center gap-8">
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">LTP</span>
+                                        <span className="text-xl font-black text-blue-600 dark:text-blue-400">Rs. {currentPrice}</span>
+                                    </div>
+                                    <div className="w-[1px] h-8 bg-slate-200 dark:bg-slate-700" />
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">WACC</span>
+                                        <span className="text-xl font-black text-slate-800 dark:text-slate-200">Rs. {wacc}</span>
+                                    </div>
+                                    <div className="w-[1px] h-8 bg-slate-200 dark:bg-slate-700" />
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">QTY</span>
+                                        <span className="text-xl font-black text-slate-900 dark:text-slate-100">{portfolioItem?.quantity}</span>
+                                    </div>
+                                </div>
+
+                                {/* Right: Close */}
                                 <button
                                     onClick={() => onOpenChange(false)}
                                     className="p-2 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 rounded-full transition-colors text-slate-400 dark:text-slate-500"
@@ -202,68 +212,78 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
                                 {/* Transaction History Section */}
                                 {transactions.length > 0 && (
                                     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-2 duration-500">
-                                        <div className="bg-slate-50/50 dark:bg-slate-800/50 px-6 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                                        <div
+                                            className="bg-slate-50/50 dark:bg-slate-800/50 px-6 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                            onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+                                        >
                                             <div className="flex items-center gap-2">
                                                 <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                                 <span className="text-[11px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Stock Transaction History</span>
                                             </div>
-                                            <Badge variant="outline" className="text-[10px] font-bold border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800">
-                                                {transactions.length} ENTRIES
-                                            </Badge>
+                                            <div className="flex items-center gap-3">
+                                                <Badge variant="outline" className="text-[10px] font-bold border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800">
+                                                    {transactions.length} ENTRIES
+                                                </Badge>
+                                                {isHistoryOpen ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+                                            </div>
                                         </div>
-                                        <div className="overflow-x-auto overflow-y-auto max-h-[220px] scrollbar-thin scrollbar-thumb-slate-200">
-                                            <table className="w-full text-xs text-left">
-                                                <thead className="bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter sticky top-0 z-10">
-                                                    <tr>
-                                                        <th className="px-4 py-2">Date</th>
-                                                        <th className="px-4 py-2">Type</th>
-                                                        <th className="px-4 py-2 text-right">Quantity</th>
-                                                        <th className="px-4 py-2 text-right">Rate</th>
-                                                        <th className="px-4 py-2 text-right">Total</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-gray-50">
-                                                    {[...transactions].sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()).map((t, i) => (
-                                                        <tr key={i} className="hover:bg-blue-50/30 dark:hover:bg-slate-800/50 transition-colors border-b border-slate-50 dark:border-slate-800 last:border-0">
-                                                            <td className="px-4 py-2.5 text-gray-500 dark:text-slate-400 tabular-nums">
-                                                                {new Date(t.transaction_date).toLocaleDateString()}
-                                                            </td>
-                                                            <td className="px-4 py-2.5">
-                                                                <span className={`font-black px-2 py-0.5 rounded text-[10px] ${t.transaction_type === 'BUY' ? 'bg-green-50 text-green-600' :
-                                                                    t.transaction_type === 'SELL' ? 'bg-red-50 text-red-600' :
-                                                                        'bg-blue-50 text-blue-600'
-                                                                    }`}>
-                                                                    {t.transaction_type}
-                                                                </span>
-                                                            </td>
-                                                            <td className="px-4 py-2.5 text-right font-bold text-gray-700 dark:text-slate-300 tabular-nums">{t.quantity}</td>
-                                                            <td className="px-4 py-2.5 text-right font-medium text-gray-600 dark:text-slate-400 tabular-nums">{t.rate}</td>
-                                                            <td className="px-4 py-2.5 text-right font-black text-gray-900 dark:text-slate-100 tabular-nums">
-                                                                Rs. {parseFloat(t.amount).toLocaleString()}
-                                                            </td>
-                                                            <td className="px-4 py-2.5 text-right">
-                                                                <div className="flex items-center justify-end gap-2">
-                                                                    <button
-                                                                        onClick={() => setTransactionToEdit(t)}
-                                                                        className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                                                        title="Edit Transaction"
-                                                                    >
-                                                                        <Pencil className="h-3.5 w-3.5" />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => handleDeleteTransaction(t.id)}
-                                                                        className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                                                                        title="Delete Transaction"
-                                                                    >
-                                                                        <Trash2 className="h-3.5 w-3.5" />
-                                                                    </button>
-                                                                </div>
-                                                            </td>
+
+                                        {isHistoryOpen && (
+                                            <div className="overflow-x-auto overflow-y-auto max-h-[220px] scrollbar-thin scrollbar-thumb-slate-200 border-t border-slate-100 dark:border-slate-700">
+                                                <table className="w-full text-xs text-left">
+                                                    <thead className="bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter sticky top-0 z-10">
+                                                        <tr>
+                                                            <th className="px-4 py-2">Date</th>
+                                                            <th className="px-4 py-2">Type</th>
+                                                            <th className="px-4 py-2 text-right">Quantity</th>
+                                                            <th className="px-4 py-2 text-right">Rate</th>
+                                                            <th className="px-4 py-2 text-right">Total</th>
+                                                            <th className="px-4 py-2"></th>
                                                         </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
+                                                        {[...transactions].sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()).map((t, i) => (
+                                                            <tr key={i} className="hover:bg-blue-50/30 dark:hover:bg-slate-800/50 transition-colors border-b border-slate-50 dark:border-slate-800 last:border-0">
+                                                                <td className="px-4 py-2.5 text-gray-500 dark:text-slate-400 tabular-nums">
+                                                                    {new Date(t.transaction_date).toLocaleDateString()}
+                                                                </td>
+                                                                <td className="px-4 py-2.5">
+                                                                    <span className={`font-black px-2 py-0.5 rounded text-[10px] ${t.transaction_type === 'BUY' ? 'bg-green-50 text-green-600' :
+                                                                        t.transaction_type === 'SELL' ? 'bg-red-50 text-red-600' :
+                                                                            'bg-blue-50 text-blue-600'
+                                                                        }`}>
+                                                                        {t.transaction_type}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-4 py-2.5 text-right font-bold text-gray-700 dark:text-slate-300 tabular-nums">{t.quantity}</td>
+                                                                <td className="px-4 py-2.5 text-right font-medium text-gray-600 dark:text-slate-400 tabular-nums">{t.rate}</td>
+                                                                <td className="px-4 py-2.5 text-right font-black text-gray-900 dark:text-slate-100 tabular-nums">
+                                                                    Rs. {parseFloat(t.amount).toLocaleString()}
+                                                                </td>
+                                                                <td className="px-4 py-2.5 text-right">
+                                                                    <div className="flex items-center justify-end gap-2">
+                                                                        <button
+                                                                            onClick={() => setTransactionToEdit(t)}
+                                                                            className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                                            title="Edit Transaction"
+                                                                        >
+                                                                            <Pencil className="h-3.5 w-3.5" />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleDeleteTransaction(t.id)}
+                                                                            className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                                            title="Delete Transaction"
+                                                                        >
+                                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -460,7 +480,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave }
                         setRefreshTrigger(prev => prev + 1);
                     }}
                     transactionToEdit={transactionToEdit}
-                    accounts={[]}
+                    accounts={accounts}
                 />
             )}
         </Dialog>
