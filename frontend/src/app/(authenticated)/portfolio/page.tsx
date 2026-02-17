@@ -25,7 +25,11 @@ import { CompanySelect } from '@/components/CompanySelect';
 import { Badge } from '@/components/ui/badge';
 import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
 import { Input } from '@/components/ui/input';
+
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend } from 'recharts';
+import { AccountSettingsDialog } from '@/components/AccountSettingsDialog';
+import { Settings } from 'lucide-react';
+import { PortfolioTable, PortfolioItem } from '@/components/PortfolioTable';
 
 interface WatchlistItem {
     id: number;
@@ -50,37 +54,7 @@ interface WatchlistItem {
     };
 }
 
-interface PortfolioItem {
-    id: number;
-    ticker: string;
-    quantity: number;
-    buy_price: number; // This is the WACC
-    wacc: number;
-    current_price: number;
-    current_value: number;
-    investment_value: number;
-    gain_loss: number;
-    gain_loss_percent: number;
-    day_gain_loss: number;
-    sector?: string;
-    volatility?: number;
-    signals?: {
-        latest_date: string;
-        summary: 'BUY' | 'SELL' | 'HOLD' | 'NEUTRAL' | 'MIXED';
-        details: Array<{
-            signal: string;
-            strategy_name: string;
-            strategy_description: string;
-        }>;
-    };
-    stop_loss_price?: number;
-    target_price?: number;
-    target_price_2?: number;
-    target_price_3?: number;
-    thesis?: string;
-    strategy_type?: string;
-    value_yield?: number;
-}
+
 
 export const dynamic = 'force-dynamic';
 
@@ -114,6 +88,7 @@ function PortfolioContent() {
     const pageSize = 10;
     const [mounted, setMounted] = useState(false);
     const [isPositionCalcOpen, setIsPositionCalcOpen] = useState(false);
+    const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
     const activeTab = searchParams.get('tab') || 'holdings';
@@ -366,11 +341,8 @@ function PortfolioContent() {
 
                 {/* Header & Actions - Only for Holdings */}
                 {activeTab === 'holdings' && (
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">My Portfolio</h1>
-                            <p className="text-gray-500 dark:text-gray-400">Track and manage your investments</p>
-                        </div>
+                    <div className="flex flex-col md:flex-row md:items-center justify-end gap-4">
+
 
                         <div className="flex items-center gap-3">
                             {/* Account Selector */}
@@ -390,6 +362,17 @@ function PortfolioContent() {
                                     <Users className="h-4 w-4" />
                                 </div>
                             </div>
+                            <button
+                                onClick={() => setIsAccountSettingsOpen(true)}
+                                disabled={selectedAccount === 'all'}
+                                className={`p-2.5 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg shadow-sm transition-all ${selectedAccount === 'all'
+                                    ? 'opacity-50 cursor-not-allowed text-gray-400'
+                                    : 'hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400'
+                                    }`}
+                                title={selectedAccount === 'all' ? "Select an account to manage settings" : "Account Settings"}
+                            >
+                                <Settings className="h-5 w-5" />
+                            </button>
 
                             <button
                                 onClick={() => setIsCreateAccountOpen(true)}
@@ -541,153 +524,79 @@ function PortfolioContent() {
                                     <p>No stocks in portfolio. Add a transaction to get started.</p>
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow className="bg-gray-50/50 dark:bg-slate-800/30 hover:bg-gray-50/50 dark:hover:bg-slate-800/30">
-                                                <TableHead className="w-[50px] font-bold text-gray-900 dark:text-slate-100 py-4 px-6 text-center">SN</TableHead>
-                                                <TableHead className="font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('ticker')}>
-                                                    <div className="flex items-center gap-1">Ticker <ArrowUpDown size={12} className="opacity-50" /></div>
-                                                </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('quantity')}>
-                                                    <div className="flex items-center justify-end gap-1">Quantity <ArrowUpDown size={12} className="opacity-50" /></div>
-                                                </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('wacc')}>
-                                                    <div className="flex items-center justify-end gap-1">WACC (रू) <ArrowUpDown size={12} className="opacity-50" /></div>
-                                                </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('current_price')}>
-                                                    <div className="flex items-center justify-end gap-1">LTP (रू) <ArrowUpDown size={12} className="opacity-50" /></div>
-                                                </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('current_value')}>
-                                                    <div className="flex items-center justify-end gap-1">Total Value (रू) <ArrowUpDown size={12} className="opacity-50" /></div>
-                                                </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('gain_loss')}>
-                                                    <div className="flex items-center justify-end gap-1">Profit/Loss (रू) <ArrowUpDown size={12} className="opacity-50" /></div>
-                                                </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('value_yield')}>
-                                                    <div className="flex items-center justify-end gap-1" title="Profit to Total Value Ratio">Value Yield <ArrowUpDown size={12} className="opacity-50" /></div>
-                                                </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => handleSort('day_gain_loss')}>
-                                                    <div className="flex items-center justify-end gap-1">Today's P/L (रू) <ArrowUpDown size={12} className="opacity-50" /></div>
-                                                </TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">Signal</TableHead>
-                                                <TableHead className="w-[50px]"></TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {paginatedItems.map((item, idx) => {
-                                                const pl = Number(item.gain_loss);
-                                                const isPos = pl >= 0;
-                                                const dayPl = Number(item.day_gain_loss);
-                                                const isDayPos = dayPl >= 0;
+                                selectedAccount === 'all' ? (
+                                    <div className="space-y-8 p-6">
+                                        {accounts.map(acc => {
+                                            const accountItems = displayedItems.filter(item => item.account === acc.id);
+                                            if (accountItems.length === 0) return null;
 
-                                                const hasStrategy = !!item.stop_loss_price;
-                                                const isUnderwater = Number(item.current_price) < Number(item.wacc || item.buy_price);
+                                            // Calculate Totals for Header
+                                            const accTotalValue = accountItems.reduce((sum, item) => sum + Number(item.current_value), 0);
+                                            const accTotalGain = accountItems.reduce((sum, item) => sum + Number(item.gain_loss), 0);
 
-                                                // Calculate R/R for row display
-                                                let rrRatio = 'N/A';
-                                                if (item.stop_loss_price && item.target_price && item.current_price) {
-                                                    const risk = Number(item.current_price) - Number(item.stop_loss_price);
-                                                    const reward = Number(item.target_price) - Number(item.current_price);
-                                                    if (risk > 0) rrRatio = `1:${(reward / risk).toFixed(1)}`;
-                                                }
-
-                                                return (
-                                                    <React.Fragment key={`${item.ticker}-${idx}`}>
-                                                        <TableRow
-                                                            className={`transition-all duration-200 cursor-pointer border-l-4 hover:shadow-lg hover:scale-[1.01] hover:-translate-y-0.5 ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-blue-50/50 dark:bg-blue-900/30 border-l-blue-500 shadow-lg scale-[1.01]' : isUnderwater ? 'border-l-red-500/50 hover:bg-red-50/20 dark:hover:bg-red-900/20 hover:border-l-red-500' : hasStrategy ? 'border-l-green-500/50 hover:bg-green-50/20 dark:hover:bg-green-900/20 hover:border-l-green-500' : 'border-l-transparent hover:bg-slate-50/80 dark:hover:bg-slate-800/50 hover:border-l-blue-400/50'}`}
-                                                            onClick={() => {
+                                            return (
+                                                <div key={acc.id} className="space-y-3">
+                                                    <div className="flex items-center gap-3 border-l-4 border-blue-500 pl-3">
+                                                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">{acc.name}</h3>
+                                                        <Badge variant="outline" className="text-xs font-mono">
+                                                            {formatRupees(accTotalValue)}
+                                                        </Badge>
+                                                        <span className={`text-xs font-bold ${accTotalGain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                            {accTotalGain >= 0 ? '+' : ''}{formatRupees(accTotalGain)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="rounded-xl border border-gray-100 dark:border-slate-800 overflow-hidden shadow-sm">
+                                                        <PortfolioTable
+                                                            items={accountItems}
+                                                            currentPage={1} // Grouped view doesn't support pagination per table easily yet, showing all maybe better? Or just pass 1 for SN
+                                                            pageSize={100} // Show all items for account in grouped view
+                                                            onSort={handleSort}
+                                                            onBuy={(ticker) => {
+                                                                setPromoteTicker(ticker);
+                                                                setTransactionType('BUY');
+                                                                setIsModalOpen(true);
+                                                            }}
+                                                            onSell={(ticker) => {
+                                                                setPromoteTicker(ticker);
+                                                                setTransactionType('SELL');
+                                                                setIsModalOpen(true);
+                                                            }}
+                                                            onStrategies={(item) => {
                                                                 setSelectedPortfolioItem(item);
                                                                 setIsExitPlanDialogOpen(true);
                                                             }}
-                                                        >
-                                                            <TableCell className="text-center font-bold text-gray-400 dark:text-gray-500 text-sm py-4 px-6">
-                                                                {(currentPage - 1) * pageSize + idx + 1}
-                                                            </TableCell>
-                                                            <TableCell className="font-semibold py-4">
-                                                                <div className="flex flex-col gap-1.5">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <StockLink ticker={item.ticker} />
-                                                                        {isUnderwater && (
-                                                                            <Badge variant="secondary" className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-100 dark:border-red-800 text-[9px] px-1.5 h-4 flex items-center gap-1">
-                                                                                UNDERWATER
-                                                                            </Badge>
-                                                                        )}
-                                                                        {hasStrategy && (
-                                                                            <Badge variant="secondary" className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-800 text-[9px] px-1.5 h-4 flex items-center gap-1 animate-pulse">
-                                                                                <Radio className="h-2 w-2" /> ACTIVE
-                                                                            </Badge>
-                                                                        )}
-                                                                    </div>
-                                                                    {(item.stop_loss_price || item.target_price) && (
-                                                                        <div className="flex flex-wrap gap-1">
-                                                                            {item.stop_loss_price && <span className="text-xs bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded border border-red-100 dark:border-red-800 font-bold uppercase tracking-tighter shadow-sm">SL: {Number(item.stop_loss_price).toFixed(0)}</span>}
-                                                                            {item.target_price && <span className="text-xs bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded border border-green-100 dark:border-green-800 font-bold uppercase tracking-tighter shadow-sm">TP: {Number(item.target_price).toFixed(0)}</span>}
-                                                                            {rrRatio !== 'N/A' && <span className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-800 font-bold uppercase tracking-tighter shadow-sm">R/R: {rrRatio}</span>}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </TableCell>
-                                                            <TableCell className="text-right text-gray-600 dark:text-slate-400 font-medium py-4">{formatNepaliNumber(item.quantity)}</TableCell>
-                                                            <TableCell className="text-right text-gray-600 dark:text-slate-400 font-medium py-4">{formatNepaliNumber(Number(item.wacc || item.buy_price).toFixed(2))}</TableCell>
-                                                            <TableCell className="text-right text-gray-900 dark:text-slate-100 font-bold py-4">{formatNepaliNumber(item.current_price)}</TableCell>
-                                                            <TableCell className="text-right font-black text-gray-900 dark:text-slate-100 py-4">{formatNepaliNumber(item.current_value)}</TableCell>
-                                                            <TableCell className={`text-right ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'} py-4`}>
-                                                                <div className="font-black text-base">
-                                                                    {isPos ? '+' : ''}{formatNepaliNumber(pl)}
-                                                                </div>
-                                                                <div className={`text-xs font-black uppercase tracking-tighter ${isPos ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'} px-1 rounded inline-block mt-0.5`}>
-                                                                    {Number(item.gain_loss_percent).toFixed(2)}%
-                                                                </div>
-                                                            </TableCell>
-                                                            <TableCell className="text-right py-4">
-                                                                <div className="font-bold text-gray-600 dark:text-slate-400 text-sm text-right">
-                                                                    {(item.value_yield || 0).toFixed(1)}%
-                                                                </div>
-                                                            </TableCell>
-                                                            <TableCell className={`text-right font-black ${isDayPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'} py-4`}>
-                                                                {isDayPos ? '+' : ''}{formatNepaliNumber(dayPl)}
-                                                            </TableCell>
-                                                            <TableCell className="text-right py-4 pr-6">
-                                                                <div className="flex justify-end gap-1">
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setPromoteTicker(item.ticker);
-                                                                            setTransactionType('BUY');
-                                                                            setIsModalOpen(true);
-                                                                        }}
-                                                                        className="p-2 text-gray-300 dark:text-slate-600 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-all"
-                                                                        title="Buy More"
-                                                                    >
-                                                                        <PlusCircle size={18} />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setPromoteTicker(item.ticker);
-                                                                            setTransactionType('SELL');
-                                                                            setIsModalOpen(true);
-                                                                        }}
-                                                                        className="p-2 text-gray-300 dark:text-slate-600 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
-                                                                        title="Sell"
-                                                                    >
-                                                                        <MinusCircle size={18} />
-                                                                    </button>
-                                                                    <button
-                                                                        className={`p-2 rounded-lg transition-all ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-xl rotate-0' : 'text-gray-300 dark:text-slate-600 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rotate-[-45deg] hover:rotate-0'}`}
-                                                                    >
-                                                                        <Target size={18} />
-                                                                    </button>
-                                                                </div>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    </React.Fragment>
-                                                );
-                                            })}
-                                        </TableBody>
-                                    </Table>
-                                </div>
+                                                            selectedPortfolioItem={selectedPortfolioItem}
+                                                            isExitPlanDialogOpen={isExitPlanDialogOpen}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <PortfolioTable
+                                        items={paginatedItems}
+                                        currentPage={currentPage}
+                                        pageSize={pageSize}
+                                        onSort={handleSort}
+                                        onBuy={(ticker) => {
+                                            setPromoteTicker(ticker);
+                                            setTransactionType('BUY');
+                                            setIsModalOpen(true);
+                                        }}
+                                        onSell={(ticker) => {
+                                            setPromoteTicker(ticker);
+                                            setTransactionType('SELL');
+                                            setIsModalOpen(true);
+                                        }}
+                                        onStrategies={(item) => {
+                                            setSelectedPortfolioItem(item);
+                                            setIsExitPlanDialogOpen(true);
+                                        }}
+                                        selectedPortfolioItem={selectedPortfolioItem}
+                                        isExitPlanDialogOpen={isExitPlanDialogOpen}
+                                    />
+                                )
                             )}
 
                             {/* Exit Strategy Dialog */}
@@ -741,6 +650,22 @@ function PortfolioContent() {
                         </CardContent>
                     </Card>
                 )}
+
+                {/* Account Settings Dialog */}
+                <AccountSettingsDialog
+                    isOpen={isAccountSettingsOpen}
+                    onOpenChange={setIsAccountSettingsOpen}
+                    account={accounts.find(a => a.id.toString() === selectedAccount) || null}
+                    portfolioValue={selectedAccount !== 'all' ? displayedItems.reduce((acc, item) => acc + Number(item.current_value), 0) : 0}
+                    onUpdate={() => {
+                        fetchAccounts();
+                        fetchPortfolio();
+                    }}
+                    onDelete={() => {
+                        fetchAccounts();
+                        setSelectedAccount('all');
+                    }}
+                />
 
                 {/* Visual Analytics & Heatmap Section - Only for Holdings */}
                 {activeTab === 'holdings' && displayedItems.length > 0 && (

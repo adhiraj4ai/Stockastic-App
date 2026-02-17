@@ -420,11 +420,11 @@ function DashboardContent({
                                     </div>
                                 ) : (
                                     <div className="flex flex-col min-w-0">
-                                        <h2 className={`text-lg font-bold text-slate-900 dark:text-slate-100 truncate tracking-tight ${!title ? 'capitalize' : ''}`}>
+                                        <h2 className={`text-2xl font-bold text-gray-900 dark:text-slate-100 truncate ${!title ? 'capitalize' : ''}`}>
                                             {title || (pathname.includes('/ticker/') ? 'Stock Details' : pathname.split('/').pop())}
                                         </h2>
                                         {subtitle && (
-                                            <p className="text-[10px] text-slate-500 dark:text-slate-500 font-bold uppercase tracking-widest truncate pr-4 mt-0.5">{subtitle}</p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate pr-4 mt-0.5">{subtitle}</p>
                                         )}
                                     </div>
                                 )}

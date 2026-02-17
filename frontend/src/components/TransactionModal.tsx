@@ -16,6 +16,7 @@ export interface PortfolioAccount {
     id: number;
     name: string;
     balance: string;
+    default_risk_percentage: number;
 }
 
 interface TransactionModalProps {
