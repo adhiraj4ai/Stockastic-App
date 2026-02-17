@@ -241,35 +241,7 @@ function PortfolioContent() {
         return Object.values(grouped);
     }, [items, selectedAccount]);
 
-    // Calculate Summary
-    const totalInvestment = displayedItems.reduce((acc, item) => acc + Number(item.investment_value), 0);
-    const totalCurrentValue = displayedItems.reduce((acc, item) => acc + Number(item.current_value), 0);
-    const totalGainLoss = totalCurrentValue - totalInvestment;
-    const totalGainLossPercent = totalInvestment ? (totalGainLoss / totalInvestment * 100) : 0;
-    const totalDayGainLoss = displayedItems.reduce((acc, item) => acc + Number(item.day_gain_loss), 0);
-
-    const stats = useMemo(() => {
-        const profit = displayedItems.filter(i => Number(i.gain_loss) > 0).length;
-        const loss = displayedItems.filter(i => Number(i.gain_loss) < 0).length;
-        return { profit, loss };
-    }, [displayedItems]);
-
-    const bestPerformer = useMemo(() => {
-        if (displayedItems.length === 0) return null;
-        return [...displayedItems].sort((a, b) => b.gain_loss_percent - a.gain_loss_percent)[0];
-    }, [displayedItems]);
-
-    const sectorData = useMemo(() => {
-        const sectors: Record<string, { name: string; value: number; pnl: number }> = {};
-        displayedItems.forEach(item => {
-            const s = item.sector || 'Others';
-            if (!sectors[s]) sectors[s] = { name: s, value: 0, pnl: 0 };
-            sectors[s].value += Number(item.current_value);
-            sectors[s].pnl += Number(item.gain_loss);
-        });
-        return Object.values(sectors).sort((a, b) => b.value - a.value);
-    }, [displayedItems]);
-
+    // Filter and Sort Items
     const sortedAndFilteredItems = useMemo(() => {
         let result = displayedItems.filter(item =>
             item.ticker.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -294,6 +266,35 @@ function PortfolioContent() {
         }
         return result;
     }, [displayedItems, searchQuery, sortConfig]);
+
+    // Calculate Summary based on Filtered Items
+    const totalInvestment = sortedAndFilteredItems.reduce((acc, item) => acc + Number(item.investment_value), 0);
+    const totalCurrentValue = sortedAndFilteredItems.reduce((acc, item) => acc + Number(item.current_value), 0);
+    const totalGainLoss = totalCurrentValue - totalInvestment;
+    const totalGainLossPercent = totalInvestment ? (totalGainLoss / totalInvestment * 100) : 0;
+    const totalDayGainLoss = sortedAndFilteredItems.reduce((acc, item) => acc + Number(item.day_gain_loss), 0);
+
+    const stats = useMemo(() => {
+        const profit = sortedAndFilteredItems.filter(i => Number(i.gain_loss) > 0).length;
+        const loss = sortedAndFilteredItems.filter(i => Number(i.gain_loss) < 0).length;
+        return { profit, loss };
+    }, [sortedAndFilteredItems]);
+
+    const bestPerformer = useMemo(() => {
+        if (sortedAndFilteredItems.length === 0) return null;
+        return [...sortedAndFilteredItems].sort((a, b) => b.gain_loss_percent - a.gain_loss_percent)[0];
+    }, [sortedAndFilteredItems]);
+
+    const sectorData = useMemo(() => {
+        const sectors: Record<string, { name: string; value: number; pnl: number }> = {};
+        sortedAndFilteredItems.forEach(item => {
+            const s = item.sector || 'Others';
+            if (!sectors[s]) sectors[s] = { name: s, value: 0, pnl: 0 };
+            sectors[s].value += Number(item.current_value);
+            sectors[s].pnl += Number(item.gain_loss);
+        });
+        return Object.values(sectors).sort((a, b) => b.value - a.value);
+    }, [sortedAndFilteredItems]);
 
     const paginatedItems = useMemo(() => {
         const startIndex = (currentPage - 1) * pageSize;
@@ -414,7 +415,7 @@ function PortfolioContent() {
                 {/* Summary Cards - Only for Holdings */}
                 {activeTab === 'holdings' && (
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <Card className="bg-white dark:bg-slate-900 border-blue-100 dark:border-blue-900/30 shadow-sm hover:shadow-md transition-shadow">
+                        <Card className="bg-gradient-to-br from-white to-blue-50/30 dark:from-slate-950 dark:to-slate-900 border-blue-100 dark:border-blue-900/30 shadow-sm hover:shadow-md transition-all">
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Capital Deployed</CardTitle>
                                 <Wallet className="h-4 w-4 text-blue-500" />
@@ -429,7 +430,7 @@ function PortfolioContent() {
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-white dark:bg-slate-900 border-purple-100 dark:border-purple-900/30 shadow-sm hover:shadow-md transition-shadow">
+                        <Card className="bg-gradient-to-br from-white to-purple-50/30 dark:from-slate-950 dark:to-slate-900 border-purple-100 dark:border-purple-900/30 shadow-sm hover:shadow-md transition-all">
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Portfolio Value</CardTitle>
                                 <DollarSign className="h-4 w-4 text-purple-500" />
@@ -444,7 +445,10 @@ function PortfolioContent() {
                             </CardContent>
                         </Card>
 
-                        <Card className={`bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow ${totalGainLoss >= 0 ? "border-green-100 dark:border-green-900/30" : "border-red-100 dark:border-red-900/30"}`}>
+                        <Card className={`shadow-sm hover:shadow-md transition-all ${totalGainLoss >= 0
+                            ? "bg-gradient-to-br from-white to-green-50/50 dark:from-slate-950 dark:to-green-900/20 border-green-100 dark:border-green-900/30"
+                            : "bg-gradient-to-br from-white to-red-50/50 dark:from-slate-950 dark:to-red-900/20 border-red-100 dark:border-red-900/30"
+                            }`}>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Returns</CardTitle>
                                 {totalGainLoss >= 0 ? <TrendingUp className="h-4 w-4 text-green-500" /> : <TrendingDown className="h-4 w-4 text-red-500" />}
@@ -468,7 +472,10 @@ function PortfolioContent() {
                             </CardContent>
                         </Card>
 
-                        <Card className={`bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow ${totalDayGainLoss >= 0 ? "border-green-100 dark:border-green-900/30" : "border-red-100 dark:border-red-900/30"}`}>
+                        <Card className={`shadow-sm hover:shadow-md transition-all ${totalDayGainLoss >= 0
+                            ? "bg-gradient-to-br from-white to-green-50/50 dark:from-slate-950 dark:to-green-900/20 border-green-100 dark:border-green-900/30"
+                            : "bg-gradient-to-br from-white to-red-50/50 dark:from-slate-950 dark:to-red-900/20 border-red-100 dark:border-red-900/30"
+                            }`}>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Session Swing</CardTitle>
                                 <Zap className={`h-4 w-4 ${totalDayGainLoss >= 0 ? 'text-amber-500' : 'text-red-400'}`} />
