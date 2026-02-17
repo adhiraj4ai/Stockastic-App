@@ -109,7 +109,6 @@ export function PortfolioTable({
                                 <div className="flex items-center justify-end gap-1">Today's P/L (रू) <ArrowUpDown size={12} className="opacity-50" /></div>
                             </TableHead>
                             <TableHead className="text-center font-bold text-gray-900 dark:text-slate-100">Action</TableHead>
-                            <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
