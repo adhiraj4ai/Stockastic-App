@@ -9,3 +9,5 @@ from . import recommendations
 from . import chart
 from . import fibonacci
 from . import floorsheet
+from . import dividends
+from . import risk

@@ -55,7 +55,7 @@ class Dividend(models.Model):
     bonus_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     cash_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     total_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    date = models.DateField(null=True, blank=True)
+    book_close_date = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.ticker} - {self.fiscal_year}"

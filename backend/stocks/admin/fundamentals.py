@@ -9,7 +9,7 @@ class StockFundamentalAdmin(admin.ModelAdmin):
 
 @admin.register(Dividend)
 class DividendAdmin(admin.ModelAdmin):
-    list_display = ('ticker', 'fiscal_year', 'bonus_percent', 'cash_percent', 'date')
+    list_display = ('ticker', 'fiscal_year', 'bonus_percent', 'cash_percent', 'book_close_date')
     search_fields = ('ticker',)
     list_filter = ('fiscal_year',)
 

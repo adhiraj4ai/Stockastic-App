@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Flame, Users, BarChart3, History, Star, TrendingDown, Brain, Radar, Landmark, ScanLine, Zap, Share2, Crosshair } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Flame, Users, BarChart3, History, Star, TrendingDown, Brain, Radar, Landmark, ScanLine, Zap, Share2, Crosshair, DollarSign } from 'lucide-react';
 import { SearchBar } from './SearchBar';
 import { ChatSidebar } from './ChatSidebar';
 import { AlertsDropdown } from './AlertsDropdown';
@@ -42,6 +42,7 @@ const navItems = [
         subItems: [
             { name: 'My Portfolio', href: '/portfolio?tab=holdings', icon: Briefcase },
             { name: 'Performance', href: '/portfolio/performance', icon: TrendingUp },
+            { name: 'Income', href: '/portfolio/income', icon: DollarSign },
             { name: 'Watchlist', href: '/portfolio?tab=watchlist', icon: Eye },
         ]
     },

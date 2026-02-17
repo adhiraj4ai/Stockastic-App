@@ -20,6 +20,7 @@ import TransactionModal, { PortfolioAccount } from '@/components/TransactionModa
 import { CreateAccountDialog } from '@/components/CreateAccountDialog';
 import StockLink from '@/components/StockLink';
 import { ExitStrategyDialog } from '@/components/ExitStrategyDialog';
+import { RiskRadar } from '@/components/RiskRadar';
 import { PositionSizingCalculator } from '@/components/PositionSizingCalculator';
 import { CompanySelect } from '@/components/CompanySelect';
 import { Badge } from '@/components/ui/badge';
@@ -497,6 +498,12 @@ function PortfolioContent() {
                                 </div>
                             </CardContent>
                         </Card>
+                    </div>
+                )}
+
+                {activeTab === 'holdings' && (
+                    <div className="mt-8">
+                        <RiskRadar accountId={selectedAccount} />
                     </div>
                 )}
 
