@@ -41,6 +41,7 @@ const navItems = [
         icon: Wallet,
         subItems: [
             { name: 'My Portfolio', href: '/portfolio?tab=holdings', icon: Briefcase },
+            { name: 'Performance', href: '/portfolio/performance', icon: TrendingUp },
             { name: 'Watchlist', href: '/portfolio?tab=watchlist', icon: Eye },
         ]
     },

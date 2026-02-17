@@ -85,3 +85,24 @@ class WatchlistItem(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.ticker}"
+
+class PortfolioSnapshot(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    account = models.ForeignKey(PortfolioAccount, on_delete=models.CASCADE, null=True, blank=True)
+    date = models.DateField(db_index=True)
+    
+    total_value = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    invested_value = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    cash_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
+    # Benchmarking
+    nepse_index = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'account', 'date')
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.date} - {self.total_value}"

@@ -30,6 +30,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 import { AccountSettingsDialog } from '@/components/AccountSettingsDialog';
 import { Settings } from 'lucide-react';
 import { PortfolioTable, PortfolioItem } from '@/components/PortfolioTable';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PortfolioPerformance } from '@/components/PortfolioPerformance';
 
 interface WatchlistItem {
     id: number;
@@ -338,7 +340,13 @@ function PortfolioContent() {
             title={activeTab === 'watchlist' ? 'Strategic Watchlist' : 'My Portfolio'}
             subtitle={activeTab === 'watchlist' ? 'Monitor and track potential entries' : 'Track and manage your investments'}
         >
-            <div className="space-y-6">
+            <Tabs value={activeTab} onValueChange={(val) => router.push(`/portfolio?tab=${val}`)} className="space-y-6">
+                <div className="flex justify-between items-center">
+                    <TabsList>
+                        <TabsTrigger value="holdings">Holdings</TabsTrigger>
+                        <TabsTrigger value="watchlist">Watchlist</TabsTrigger>
+                    </TabsList>
+                </div>
 
                 {/* Header & Actions - Only for Holdings */}
                 {activeTab === 'holdings' && (
@@ -1179,107 +1187,109 @@ function PortfolioContent() {
 
                 {/* Exit Strategy Dialog Removed - Now Inline */}
 
-            </div>
-            {/* Watchlist Management Modal */}
-            <Dialog open={isWatchlistModalOpen} onOpenChange={setIsWatchlistModalOpen}>
-                <DialogContent className="sm:max-w-[425px] overflow-hidden p-0 border-none shadow-2xl dark:bg-slate-950">
-                    <DialogHeader className="p-6 pb-0">
-                        <DialogTitle className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
-                            <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-                                <Eye className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                            </div>
-                            {selectedWatchlistItem ? 'Edit Surveillance' : 'New Surveillance'}
-                        </DialogTitle>
-                        <DialogDescription className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">
-                            {selectedWatchlistItem ? `Updating strategy for ${selectedWatchlistItem.ticker}` : 'Target elite entries for your portfolio'}
-                        </DialogDescription>
-                    </DialogHeader>
 
-                    <div className="p-6 space-y-4">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest ml-1">Symbol</label>
-                            {selectedWatchlistItem ? (
-                                <div className="h-12 flex items-center px-4 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl font-medium text-lg text-slate-900 dark:text-slate-100">
-                                    {selectedWatchlistItem.ticker}
+                {/* Watchlist Management Modal */}
+                <Dialog open={isWatchlistModalOpen} onOpenChange={setIsWatchlistModalOpen}>
+                    <DialogContent className="sm:max-w-[425px] overflow-hidden p-0 border-none shadow-2xl dark:bg-slate-950">
+                        <DialogHeader className="p-6 pb-0">
+                            <DialogTitle className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+                                <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                                    <Eye className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                                 </div>
-                            ) : (
-                                <CompanySelect
-                                    value={watchlistForm.ticker}
-                                    onChange={(val) => setWatchlistForm({ ...watchlistForm, ticker: val })}
-                                    className="h-12 bg-white dark:bg-slate-900 border-blue-100 dark:border-slate-800 font-medium text-lg"
-                                />
-                            )}
-                        </div>
+                                {selectedWatchlistItem ? 'Edit Surveillance' : 'New Surveillance'}
+                            </DialogTitle>
+                            <DialogDescription className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">
+                                {selectedWatchlistItem ? `Updating strategy for ${selectedWatchlistItem.ticker}` : 'Target elite entries for your portfolio'}
+                            </DialogDescription>
+                        </DialogHeader>
 
-                        <div className="grid grid-cols-1 gap-4">
+                        <div className="p-6 space-y-4">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest ml-1">Target Entry Price (रू)</label>
-                                <div className="relative">
-                                    <Target className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-500 dark:text-blue-400" />
-                                    <Input
-                                        placeholder="0.00"
-                                        type="number"
-                                        value={watchlistForm.target_price}
-                                        onChange={(e) => setWatchlistForm({ ...watchlistForm, target_price: e.target.value })}
-                                        className="pl-10 h-12 bg-white dark:bg-slate-900 border-blue-50 dark:border-slate-800 font-black text-slate-900 dark:text-slate-100 text-lg focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 placeholder:text-slate-300 dark:placeholder:text-slate-700"
+                                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest ml-1">Symbol</label>
+                                {selectedWatchlistItem ? (
+                                    <div className="h-12 flex items-center px-4 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl font-medium text-lg text-slate-900 dark:text-slate-100">
+                                        {selectedWatchlistItem.ticker}
+                                    </div>
+                                ) : (
+                                    <CompanySelect
+                                        value={watchlistForm.ticker}
+                                        onChange={(val) => setWatchlistForm({ ...watchlistForm, ticker: val })}
+                                        className="h-12 bg-white dark:bg-slate-900 border-blue-100 dark:border-slate-800 font-medium text-lg"
                                     />
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest ml-1">Target Entry Price (रू)</label>
+                                    <div className="relative">
+                                        <Target className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-500 dark:text-blue-400" />
+                                        <Input
+                                            placeholder="0.00"
+                                            type="number"
+                                            value={watchlistForm.target_price}
+                                            onChange={(e) => setWatchlistForm({ ...watchlistForm, target_price: e.target.value })}
+                                            className="pl-10 h-12 bg-white dark:bg-slate-900 border-blue-50 dark:border-slate-800 font-black text-slate-900 dark:text-slate-100 text-lg focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 placeholder:text-slate-300 dark:placeholder:text-slate-700"
+                                        />
+                                    </div>
                                 </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest ml-1">Strategic Notes</label>
+                                <textarea
+                                    placeholder="Why follow this? Entry thesis..."
+                                    value={watchlistForm.notes}
+                                    onChange={(e) => setWatchlistForm({ ...watchlistForm, notes: e.target.value })}
+                                    className="w-full min-h-[100px] p-3 rounded-xl border border-blue-50 dark:border-slate-800 bg-white dark:bg-slate-900 font-bold text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-700 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none transition-all"
+                                />
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest ml-1">Strategic Notes</label>
-                            <textarea
-                                placeholder="Why follow this? Entry thesis..."
-                                value={watchlistForm.notes}
-                                onChange={(e) => setWatchlistForm({ ...watchlistForm, notes: e.target.value })}
-                                className="w-full min-h-[100px] p-3 rounded-xl border border-blue-50 dark:border-slate-800 bg-white dark:bg-slate-900 font-bold text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-700 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none transition-all"
-                            />
-                        </div>
-                    </div>
+                        <DialogFooter className="p-6 pt-2 bg-slate-50/50 dark:bg-slate-900/50">
+                            <div className="flex w-full gap-3">
+                                <button
+                                    onClick={() => setIsWatchlistModalOpen(false)}
+                                    className="flex-1 h-12 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-slate-500 dark:text-slate-400"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={selectedWatchlistItem ? updateWatchlistItem : addWatchlistItem}
+                                    className="flex-[2] h-12 rounded-xl bg-slate-900 dark:bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest hover:bg-black dark:hover:bg-slate-700 transition-all shadow-lg flex items-center justify-center gap-2 group"
+                                >
+                                    {selectedWatchlistItem ? (
+                                        <>Update Strategy <Target size={14} className="group-hover:scale-125 transition-transform" /></>
+                                    ) : (
+                                        <>Start Surveillance <Plus size={14} className="group-hover:rotate-90 transition-transform" /></>
+                                    )}
+                                </button>
+                            </div>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
 
-                    <DialogFooter className="p-6 pt-2 bg-slate-50/50 dark:bg-slate-900/50">
-                        <div className="flex w-full gap-3">
-                            <button
-                                onClick={() => setIsWatchlistModalOpen(false)}
-                                className="flex-1 h-12 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-slate-500 dark:text-slate-400"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={selectedWatchlistItem ? updateWatchlistItem : addWatchlistItem}
-                                className="flex-[2] h-12 rounded-xl bg-slate-900 dark:bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest hover:bg-black dark:hover:bg-slate-700 transition-all shadow-lg flex items-center justify-center gap-2 group"
-                            >
-                                {selectedWatchlistItem ? (
-                                    <>Update Strategy <Target size={14} className="group-hover:scale-125 transition-transform" /></>
-                                ) : (
-                                    <>Start Surveillance <Plus size={14} className="group-hover:rotate-90 transition-transform" /></>
-                                )}
-                            </button>
-                        </div>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                {/* Position Sizing Calculator */}
+                <PositionSizingCalculator
+                    open={isPositionCalcOpen}
+                    onOpenChange={setIsPositionCalcOpen}
+                    accountId={selectedAccount}
+                />
 
-            {/* Position Sizing Calculator */}
-            <PositionSizingCalculator
-                open={isPositionCalcOpen}
-                onOpenChange={setIsPositionCalcOpen}
-                accountId={selectedAccount}
-            />
+                {/* Floating Action Button for Position Calculator */}
+                <button
+                    onClick={() => setIsPositionCalcOpen(true)}
+                    className="fixed bottom-8 right-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-all z-50 group"
+                    title="Position Sizing Calculator"
+                >
+                    <Calculator className="h-6 w-6" />
+                    <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 px-3 py-1 rounded-lg text-sm font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                        Position Sizing Calculator
+                    </span>
+                </button>
+            </Tabs>
 
-            {/* Floating Action Button for Position Calculator */}
-            <button
-                onClick={() => setIsPositionCalcOpen(true)}
-                className="fixed bottom-8 right-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-all z-50 group"
-                title="Position Sizing Calculator"
-            >
-                <Calculator className="h-6 w-6" />
-                <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 px-3 py-1 rounded-lg text-sm font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                    Position Sizing Calculator
-                </span>
-            </button>
-        </DashboardLayout>
+        </DashboardLayout >
     );
 }
 

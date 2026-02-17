@@ -425,3 +425,200 @@ class PortfolioTransactionViewSet(viewsets.ModelViewSet):
         # If ticker/account *did* change, we should recalc the old one too.
         if old_ticker != ticker or old_account != account:
              PortfolioService.recalculate_item(user, old_account, old_ticker)
+
+class PortfolioPerformanceView(viewsets.ViewSet):
+    """
+    API endpoint for benchmarking portfolio performance against NEPSE.
+    """
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['get'])
+    def metrics(self, request):
+        """
+        Get performance metrics (Alpha, Beta, Sharpe) & Comparison Chart Data.
+        Query Params:
+        - period: 1M, 3M, 6M, 1Y, YTD, ALL (default: 1Y)
+        - account: account_id or 'all' (default: 'all')
+        """
+        user = request.user
+        period = request.query_params.get('period', '1Y')
+        account_id = request.query_params.get('account', 'all')
+        
+        # 1. Determine Date Range
+        end_date = timezone.now().date()
+        if period == '1M':
+            start_date = end_date - timedelta(days=30)
+        elif period == '3M':
+            start_date = end_date - timedelta(days=90)
+        elif period == '6M':
+            start_date = end_date - timedelta(days=180)
+        elif period == 'YTD':
+            start_date = date(end_date.year, 1, 1)
+        elif period == 'ALL':
+            # Find earliest transaction date
+            first_txn = PortfolioTransaction.objects.filter(user=user).order_by('transaction_date').first()
+            start_date = first_txn.transaction_date.date() if first_txn else end_date - timedelta(days=365)
+        else: # Default 1Y
+            start_date = end_date - timedelta(days=365)
+            
+        # 2. Fetch Portfolio Snapshots
+        from ..models import PortfolioSnapshot
+        snapshots = PortfolioSnapshot.objects.filter(
+            user=user, 
+            date__gte=start_date, 
+            date__lte=end_date
+        ).order_by('date')
+        
+        if account_id != 'all':
+            snapshots = snapshots.filter(account_id=account_id)
+        else:
+            # If 'all', we might need to aggregate snapshots by date if we stored them per account
+            # Currently model has account, so we need to sum up total_value per date
+            snapshots = snapshots.values('date').annotate(
+                total_value=Sum('total_value'),
+                invested_value=Sum('invested_value'),
+                cash_balance=Sum('cash_balance')
+            ).order_by('date')
+            
+        if not snapshots:
+            return Response({"error": "No portfolio history found for this period"}, status=200)
+
+        # Convert to DataFrame for easier calculation
+        df_port = pd.DataFrame(list(snapshots))
+        df_port['date'] = pd.to_datetime(df_port['date'])
+        df_port.set_index('date', inplace=True)
+        
+        # Calculate daily returns
+        df_port['return'] = df_port['total_value'].pct_change().fillna(0)
+        
+        # 3. Fetch Benchmark Data (NEPSE)
+        # We need NEPSE index history. Assuming 'NEPSE' ticker in DailyStockPrice
+        # If not present, we can't calculate relative metrics, returning only portfolio performance.
+        nepse_data = DailyStockPrice.objects.filter(
+            ticker='NEPSE', 
+            date__gte=start_date, 
+            date__lte=end_date
+        ).values('date', 'close').order_by('date')
+        
+        df_bench = pd.DataFrame(list(nepse_data))
+        has_benchmark = not df_bench.empty
+        
+        metrics = {
+            "alpha": 0,
+            "beta": 0,
+            "sharpe_ratio": 0,
+            "total_return": 0,
+            "max_drawdown": 0,
+            "benchmark_return": 0
+        }
+        
+        chart_data = []
+        
+        if has_benchmark:
+            df_bench['date'] = pd.to_datetime(df_bench['date'])
+            df_bench.set_index('date', inplace=True)
+            df_bench['close'] = df_bench['close'].astype(float)
+            df_bench['benchmark_return'] = df_bench['close'].pct_change().fillna(0)
+            
+            # Align dataframes
+            df_combined = df_port.join(df_bench, how='inner')
+            
+            if not df_combined.empty:
+                # Cumulative Returns for Chart
+                # Normalize to start at 0%
+                initial_port_val = float(df_combined['total_value'].iloc[0])
+                initial_bench_val = float(df_combined['close'].iloc[0])
+                
+                if initial_port_val == 0:
+                     df_combined['port_cum_return'] = 0.0
+                else:
+                    df_combined['port_cum_return'] = ((df_combined['total_value'].astype(float) - initial_port_val) / initial_port_val) * 100
+                
+                if initial_bench_val == 0:
+                    df_combined['bench_cum_return'] = 0.0
+                else:
+                    df_combined['bench_cum_return'] = ((df_combined['close'] - initial_bench_val) / initial_bench_val) * 100
+                
+                # Metrics Calculation
+                # Beta
+                covariance = np.cov(df_combined['return'], df_combined['benchmark_return'])[0][1]
+                benchmark_variance = np.var(df_combined['benchmark_return'])
+                beta = covariance / benchmark_variance if benchmark_variance != 0 else 0
+                
+                # Total Return
+                total_return = df_combined['port_cum_return'].iloc[-1]
+                benchmark_total_return = df_combined['bench_cum_return'].iloc[-1]
+                
+                # Alpha (Jensen's Alpha roughly: Rp - (Rf + B * (Rm - Rf)))
+                # Assuming Risk Free Rate (Rf) = 6% annualized approx = 0.06/252 daily
+                rf_daily = 0.06 / 252
+                avg_port_ret = df_combined['return'].mean()
+                avg_bench_ret = df_combined['benchmark_return'].mean()
+                
+                alpha = (avg_port_ret - rf_daily) - (beta * (avg_bench_ret - rf_daily))
+                alpha = alpha * 252 # Annualized
+                
+                # Sharpe Ratio
+                sharpe = (df_combined['return'].mean() - rf_daily) / df_combined['return'].std()
+                sharpe = sharpe * (252 ** 0.5) # Annualized
+                
+                # Max Drawdown
+                roll_max = df_port['total_value'].cummax()
+                drawdown = (df_port['total_value'] - roll_max) / roll_max
+                max_drawdown = drawdown.min() * 100
+                
+                metrics = {
+                    "alpha": round(alpha, 4),
+                    "beta": round(beta, 4),
+                    "sharpe_ratio": round(sharpe, 4),
+                    "total_return": round(total_return, 2),
+                    "max_drawdown": round(max_drawdown, 2),
+                    "benchmark_return": round(benchmark_total_return, 2)
+                }
+                
+                # Prepare Chart Data
+                # [{date, portfolio_value, benchmark_value, portfolio_pct, benchmark_pct}]
+                for index, row in df_combined.iterrows():
+                    chart_data.append({
+                        "date": index.strftime('%Y-%m-%d'),
+                        "portfolio_value": row['total_value'],
+                        "benchmark_value": row['close'],
+                        "portfolio_pct": row['port_cum_return'],
+                        "benchmark_pct": row['bench_cum_return']
+                    })
+            else:
+                # No overlapping dates
+                 return Response({"error": "Insufficient overlapping data with benchmark"}, status=200)
+
+        else:
+             # Fallback if no NEPSE data (just show portfolio growth)
+             initial_val = float(df_port['total_value'].iloc[0])
+             
+             if initial_val == 0:
+                 df_port['port_cum_return'] = 0.0
+             else:
+                 df_port['port_cum_return'] = ((df_port['total_value'].astype(float) - initial_val) / initial_val) * 100
+             
+             # Max Drawdown
+             roll_max = df_port['total_value'].cummax()
+             drawdown = (df_port['total_value'] - roll_max) / roll_max
+             max_drawdown = drawdown.min() * 100
+             
+             metrics["max_drawdown"] = round(max_drawdown, 2)
+             metrics["total_return"] = round(df_port['port_cum_return'].iloc[-1], 2)
+             
+             for index, row in df_port.iterrows():
+                chart_data.append({
+                    "date": index.strftime('%Y-%m-%d'),
+                    "portfolio_value": row['total_value'],
+                    "benchmark_value": None,
+                    "portfolio_pct": row['port_cum_return'],
+                    "benchmark_pct": None
+                })
+        
+        return Response({
+            "metrics": metrics,
+            "chart_data": chart_data,
+            "period": period,
+            "has_benchmark": has_benchmark
+        })
