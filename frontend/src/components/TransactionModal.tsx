@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Calculator } from 'lucide-react';
+import { X, Calculator, ShieldAlert, Calendar } from 'lucide-react';
 import axios from 'axios';
 import { CompanySelect } from './CompanySelect';
+import { formatRupees } from '@/lib/formatters';
 import {
     Select,
     SelectContent,
@@ -246,82 +247,90 @@ export default function TransactionModal({
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    {/* Account Selector */}
-                    {/* Account Selector */}
-                    {accounts.length > 0 ? (
-                        !isAshmi && (
-                            <div>
-                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Portfolio Account</label>
+                    {/* Layout: Account (Full Width) */}
+                    <div className="space-y-4">
+                        {accounts.length > 0 ? (
+                            <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
+                                <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 block">Portfolio Account</label>
                                 <Select
                                     value={formData.account ? formData.account.toString() : ""}
                                     onValueChange={(value) => setFormData({ ...formData, account: value })}
                                 >
-                                    <SelectTrigger className="w-full bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700">
-                                        <SelectValue placeholder="Select Account" />
+                                    <SelectTrigger className="w-full bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 h-10">
+                                        <SelectValue placeholder="Select Portfolio Account" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {accounts.map(acc => (
                                             <SelectItem key={acc.id} value={acc.id.toString()}>
-                                                {acc.name}
+                                                {acc.name} <span className="text-xs text-gray-400">({formatRupees(acc.balance)})</span>
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
-                        )
-                    ) : (
-                        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm mb-4">
-                            <strong>No Account Found!</strong>
-                            <p>You must create a portfolio account before adding transactions.</p>
-                        </div>
-                    )}
+                        ) : (
+                            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
+                                <ShieldAlert size={16} />
+                                <div>
+                                    <strong>No Account Found!</strong>
+                                    <p className="text-xs mt-0.5">Please create a portfolio account first.</p>
+                                </div>
+                            </div>
+                        )}
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Ticker</label>
-                            <CompanySelect
-                                value={formData.ticker}
-                                onChange={(val) => setFormData({ ...formData, ticker: val })}
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Ticker Symbol</label>
+                                <CompanySelect
+                                    value={formData.ticker}
+                                    onChange={(val) => setFormData({ ...formData, ticker: val })}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Transaction Date</label>
+                                <div className="relative">
+                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                    <input
+                                        type="date"
+                                        required
+                                        className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-slate-100 text-sm font-medium h-10"
+                                        value={formData.transaction_date}
+                                        onChange={(e) => setFormData({ ...formData, transaction_date: e.target.value })}
+                                    />
+                                </div>
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</label>
-                            <input
-                                type="date"
-                                required
-                                className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-slate-100"
-                                value={formData.transaction_date}
-                                onChange={(e) => setFormData({ ...formData, transaction_date: e.target.value })}
-                            />
-                        </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Quantity</label>
-                            <input
-                                type="number"
-                                required
-                                min="1"
-                                placeholder="0"
-                                className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-slate-100"
-                                value={formData.quantity}
-                                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                {activeTab === 'BONUS' ? 'Paid Up Value' : activeTab === 'DIVIDEND' ? 'Amount' : 'Rate (Price/Share)'}
-                            </label>
-                            <input
-                                type="number"
-                                required
-                                step="0.01"
-                                placeholder="0.00"
-                                className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-slate-100"
-                                value={formData.rate}
-                                onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Quantity (Units)</label>
+                                <input
+                                    type="number"
+                                    required
+                                    min="1"
+                                    placeholder="e.g. 100"
+                                    className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-slate-100 font-bold h-10"
+                                    value={formData.quantity}
+                                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                                    {activeTab === 'BONUS' ? 'Paid Up Value' : activeTab === 'DIVIDEND' ? 'Amount (Rs)' : 'Rate (Rs/Share)'}
+                                </label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">Rs.</span>
+                                    <input
+                                        type="number"
+                                        required
+                                        step="0.01"
+                                        placeholder="0.00"
+                                        className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-slate-100 font-bold h-10"
+                                        value={formData.rate}
+                                        onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -383,9 +392,9 @@ export default function TransactionModal({
                     <button
                         type="submit"
                         disabled={loading || accounts.length === 0}
-                        className={`w-full py-3 rounded-lg font-bold text-white shadow-lg transition-transform active:scale-95 ${activeTab === 'BUY' ? 'bg-green-600 hover:bg-green-700 shadow-green-200'
-                            : activeTab === 'SELL' ? 'bg-red-600 hover:bg-red-700 shadow-red-200'
-                                : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200'
+                        className={`w-full py-3 rounded-lg font-bold text-white transition-transform active:scale-95 ${activeTab === 'BUY' ? 'bg-green-600 hover:bg-green-700'
+                            : activeTab === 'SELL' ? 'bg-red-600 hover:bg-red-700'
+                                : 'bg-blue-600 hover:bg-blue-700'
                             } ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
                         {loading ? 'Processing...' : `Confirm ${activeTab}`}

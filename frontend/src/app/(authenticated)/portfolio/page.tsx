@@ -172,19 +172,19 @@ function PortfolioContent() {
     const fetchPortfolio = async () => {
         setLoading(true);
         try {
-            // Build query
-            let query = '';
+            const params: any = {};
             if (selectedAccount !== 'all') {
-                query = `?account=${selectedAccount}`;
+                params.account = selectedAccount;
             }
 
-            const response = await api.get(`/api/stocks/portfolio/${query}`);
-            console.log('Portfolio Data:', response.data);
-            setItems(response.data);
+            const response = await api.get('/api/stocks/portfolio/', { params });
+            const data = Array.isArray(response.data) ? response.data : (response.data.results || []);
+            setItems(data);
         } catch (err) {
-            console.error('Failed to fetch portfolio', err);
+            console.error('Failed to fetch portfolio:', err);
         } finally {
             setLoading(false);
+            setMounted(true);
         }
     };
 
