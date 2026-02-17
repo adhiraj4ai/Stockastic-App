@@ -47,6 +47,14 @@ export interface PortfolioItem {
             strategy_description: string;
         }>;
     };
+    health_score?: number;
+    fundamental_metrics?: {
+        pe: number | null;
+        pb: number | null;
+        roe: number | null;
+        growth: number | null;
+        de: number | null;
+    };
     value_yield?: number;
 }
 
@@ -108,6 +116,7 @@ export function PortfolioTable({
                             <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => onSort('day_gain_loss')}>
                                 <div className="flex items-center justify-end gap-1">Today's P/L (रू) <ArrowUpDown size={12} className="opacity-50" /></div>
                             </TableHead>
+                            <TableHead className="text-center font-bold text-gray-900 dark:text-slate-100">Health</TableHead>
                             <TableHead className="text-center font-bold text-gray-900 dark:text-slate-100">Action</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -181,6 +190,54 @@ export function PortfolioTable({
                                         </TableCell>
                                         <TableCell className={`text-right font-black ${isDayPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'} py-4`}>
                                             {isDayPos ? '+' : ''}{formatNepaliNumber(dayPl)}
+                                        </TableCell>
+                                        <TableCell className="text-center py-4">
+                                            {item.health_score !== undefined && item.health_score !== null ? (
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Badge
+                                                            variant="secondary"
+                                                            className={`font-bold transition-all px-2.5 py-1 ${item.health_score >= 70 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' :
+                                                                    item.health_score >= 40 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' :
+                                                                        'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
+                                                                }`}
+                                                        >
+                                                            {item.health_score}
+                                                        </Badge>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="p-0 border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
+                                                        <div className="w-52 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
+                                                            <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+                                                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Fundamental Health</h4>
+                                                                <div className="flex items-center gap-2 mt-1">
+                                                                    <span className="text-xl font-black text-slate-900 dark:text-slate-100">{item.health_score}</span>
+                                                                    <span className="text-[10px] font-medium text-slate-400">/ 100</span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="p-3 space-y-2 pb-4">
+                                                                <div className="flex justify-between items-center text-[11px]">
+                                                                    <span className="text-slate-500">P/E Ratio</span>
+                                                                    <span className="font-bold text-slate-700 dark:text-slate-300">{item.fundamental_metrics?.pe?.toFixed(2) || 'N/A'}</span>
+                                                                </div>
+                                                                <div className="flex justify-between items-center text-[11px]">
+                                                                    <span className="text-slate-500">P/B Ratio</span>
+                                                                    <span className="font-bold text-slate-700 dark:text-slate-300">{item.fundamental_metrics?.pb?.toFixed(2) || 'N/A'}</span>
+                                                                </div>
+                                                                <div className="flex justify-between items-center text-[11px]">
+                                                                    <span className="text-slate-500">ROE</span>
+                                                                    <span className="font-bold text-slate-700 dark:text-slate-300">{item.fundamental_metrics?.roe ? `${item.fundamental_metrics.roe.toFixed(1)}%` : 'N/A'}</span>
+                                                                </div>
+                                                                <div className="flex justify-between items-center text-[11px]">
+                                                                    <span className="text-slate-500">EPS Growth</span>
+                                                                    <span className="font-bold text-slate-700 dark:text-slate-300">{item.fundamental_metrics?.growth ? `${item.fundamental_metrics.growth.toFixed(1)}%` : 'N/A'}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            ) : (
+                                                <span className="text-xs text-slate-400">--</span>
+                                            )}
                                         </TableCell>
                                         <TableCell className="text-center py-4">
                                             <div className="flex justify-center gap-1">

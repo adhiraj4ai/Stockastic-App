@@ -2,7 +2,9 @@ from django.db import transaction
 from django.db.models import Sum, Max
 from ..models.portfolio import PortfolioItem, PortfolioTransaction, TransactionType, PortfolioAccount
 from ..models.market import DailyStockPrice, Company
+from ..models.fundamentals import StockFundamental
 from ..models.strategy import StrategySignal
+from .fundamental_service import FundamentalService
 from ..utils import (
     calculate_broker_commission, calculate_sebon_fee, 
     calculate_dp_charge, calculate_cgt
@@ -177,6 +179,10 @@ class PortfolioService:
             print(f"Volatility Calc Error: {e}")
 
         signals_map = PortfolioService._get_signals_map(tickers)
+        
+        # Fundamental Data
+        fund_qs = StockFundamental.objects.filter(ticker__in=tickers)
+        fundamental_map = {f.ticker: f for f in fund_qs}
 
         results = []
         for item in queryset:
@@ -195,6 +201,13 @@ class PortfolioService:
             item.sector = company_sectors.get(item.ticker, 'Unknown')
             item.volatility = volatilities.get(item.ticker, 0.0)
             item.signals = signals_map.get(item.ticker)
+            
+            # Health Score
+            fund_obj = fundamental_map.get(item.ticker)
+            health_score, fund_metrics = FundamentalService.calculate_health_score(fund_obj)
+            item.health_score = health_score
+            item.fundamental_metrics = fund_metrics
+            
             results.append(item)
         
         return results
