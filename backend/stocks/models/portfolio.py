@@ -43,11 +43,21 @@ class TransactionType(models.TextChoices):
     BONUS = 'BONUS', 'Bonus Share'
     DIVIDEND = 'DIVIDEND', 'Cash Dividend'
 
+class TransactionReason(models.TextChoices):
+    STOP_LOSS = 'STOP_LOSS', 'Stop Loss'
+    TAKE_PROFIT = 'TAKE_PROFIT', 'Take Profit'
+    NO_PRICE_CHANGE = 'NO_PRICE_CHANGE', 'No Price Change'
+    FUND_NEED = 'FUND_NEED', 'Fund Need'
+    BETTER_OPPORTUNITY = 'BETTER_OPPORTUNITY', 'Better Opportunity'
+    MARKET_SENTIMENT = 'MARKET_SENTIMENT', 'Market Sentiment'
+    OTHER = 'OTHER', 'Other'
+
 class PortfolioTransaction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     account = models.ForeignKey(PortfolioAccount, on_delete=models.CASCADE, null=True, blank=True)
     ticker = models.CharField(max_length=10)
     transaction_type = models.CharField(max_length=10, choices=TransactionType.choices)
+    reason = models.CharField(max_length=20, choices=TransactionReason.choices, null=True, blank=True)
     quantity = models.PositiveIntegerField(default=0)
     rate = models.DecimalField(max_digits=10, decimal_places=2)
     amount = models.DecimalField(max_digits=12, decimal_places=2)

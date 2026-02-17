@@ -7,18 +7,24 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { Trash2, Plus, TrendingUp, TrendingDown, DollarSign, Wallet, Users, FolderPlus, ShieldAlert, CheckCircle2, Activity, Pencil, Calculator } from 'lucide-react';
+import {
+    ArrowUpDown, MoreHorizontal, Filter, Download,
+    Plus, Search, Trash2, Edit2, TrendingUp, TrendingDown,
+    Calendar, FolderPlus, Calculator, Eye, Target,
+    ShieldAlert, Activity, CheckCircle2, Zap, Wallet, DollarSign,
+    BarChart3 as BarIcon, Grid3X3, Users, Wand2, PlusCircle, MinusCircle, Radio,
+    ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowUp, X, Pencil,
+    PieChart as PieIcon, Check
+} from 'lucide-react';
 import TransactionModal, { PortfolioAccount } from '@/components/TransactionModal';
 import { CreateAccountDialog } from '@/components/CreateAccountDialog';
 import StockLink from '@/components/StockLink';
-import { Wand2, Target, Check, ChevronDown, ChevronUp, Radio, PieChart as PieIcon, BarChart as BarIcon, Grid3X3, Zap, Search, ArrowUpDown, ChevronLeft, ChevronRight, ArrowUp } from 'lucide-react';
 import { ExitStrategyDialog } from '@/components/ExitStrategyDialog';
 import { PositionSizingCalculator } from '@/components/PositionSizingCalculator';
 import { CompanySelect } from '@/components/CompanySelect';
 import { Badge } from '@/components/ui/badge';
 import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
 import { Input } from '@/components/ui/input';
-import { Eye, PlusCircle, X } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 interface WatchlistItem {
@@ -85,6 +91,7 @@ function PortfolioContent() {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [promoteTicker, setPromoteTicker] = useState<string>('');
+    const [transactionType, setTransactionType] = useState<string>('BUY');
     const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
     const [isExitPlanDialogOpen, setIsExitPlanDialogOpen] = useState(false);
     const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<PortfolioItem | null>(null);
@@ -642,7 +649,31 @@ function PortfolioContent() {
                                                                 {isDayPos ? '+' : ''}{formatNepaliNumber(dayPl)}
                                                             </TableCell>
                                                             <TableCell className="text-right py-4 pr-6">
-                                                                <div className="flex justify-end">
+                                                                <div className="flex justify-end gap-1">
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setPromoteTicker(item.ticker);
+                                                                            setTransactionType('BUY');
+                                                                            setIsModalOpen(true);
+                                                                        }}
+                                                                        className="p-2 text-gray-300 dark:text-slate-600 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-all"
+                                                                        title="Buy More"
+                                                                    >
+                                                                        <PlusCircle size={18} />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setPromoteTicker(item.ticker);
+                                                                            setTransactionType('SELL');
+                                                                            setIsModalOpen(true);
+                                                                        }}
+                                                                        className="p-2 text-gray-300 dark:text-slate-600 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                                                                        title="Sell"
+                                                                    >
+                                                                        <MinusCircle size={18} />
+                                                                    </button>
                                                                     <button
                                                                         className={`p-2 rounded-lg transition-all ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-xl rotate-0' : 'text-gray-300 dark:text-slate-600 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rotate-[-45deg] hover:rotate-0'}`}
                                                                     >
@@ -1207,6 +1238,7 @@ function PortfolioContent() {
                         fetchAccounts();
                     }}
                     defaultTicker={promoteTicker}
+                    defaultType={transactionType}
                     accounts={accounts}
                 />
 

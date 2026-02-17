@@ -4,6 +4,13 @@ import { useState, useEffect } from 'react';
 import { X, Calculator } from 'lucide-react';
 import axios from 'axios';
 import { CompanySelect } from './CompanySelect';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 export interface PortfolioAccount {
     id: number;
@@ -40,6 +47,7 @@ export default function TransactionModal({
         quantity: '',
         rate: '',
         account: '', // Account ID
+        reason: '',
     });
     const [loading, setLoading] = useState(false);
     const [estimates, setEstimates] = useState<{ commission: number; sebon: number; dp: number; cgt: number; total: number } | null>(null);
@@ -125,6 +133,7 @@ export default function TransactionModal({
                     quantity: transactionToEdit.quantity.toString(),
                     rate: transactionToEdit.rate.toString(),
                     account: transactionToEdit.account ? transactionToEdit.account.toString() : (accounts.length > 0 ? accounts[0].id.toString() : ''),
+                    reason: transactionToEdit.reason || '',
                 });
                 setActiveTab(transactionToEdit.transaction_type as TransactionType);
             } else {
@@ -136,6 +145,7 @@ export default function TransactionModal({
                     transaction_date: new Date().toISOString().split('T')[0],
                     quantity: '',
                     rate: '',
+                    reason: '',
                     account: prev.account || (accounts.length > 0 ? accounts[0].id.toString() : '')
                 }));
                 if (defaultType) setActiveTab(defaultType as TransactionType);
@@ -189,6 +199,7 @@ export default function TransactionModal({
                     transaction_date: new Date().toISOString().split('T')[0],
                     quantity: '',
                     rate: '',
+                    reason: '',
                 }));
             }
         } catch (err: any) {
@@ -238,18 +249,23 @@ export default function TransactionModal({
                     {/* Account Selector */}
                     {accounts.length > 0 ? (
                         !isAshmi && (
-                            <div className="space-y-2">
-                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Portfolio Account</label>
-                                <select
-                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-slate-100"
-                                    value={formData.account}
-                                    onChange={(e) => setFormData({ ...formData, account: e.target.value })}
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Portfolio Account</label>
+                                <Select
+                                    value={formData.account ? formData.account.toString() : ""}
+                                    onValueChange={(value) => setFormData({ ...formData, account: value })}
                                 >
-                                    <option value="" className="dark:bg-slate-900">Select Account (Default)</option>
-                                    {accounts.map(acc => (
-                                        <option key={acc.id} value={acc.id} className="dark:bg-slate-900">{acc.name}</option>
-                                    ))}
-                                </select>
+                                    <SelectTrigger className="w-full bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700">
+                                        <SelectValue placeholder="Select Account" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {accounts.map(acc => (
+                                            <SelectItem key={acc.id} value={acc.id.toString()}>
+                                                {acc.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         )
                     ) : (
@@ -308,14 +324,38 @@ export default function TransactionModal({
                         </div>
                     </div>
 
+                    {/* Reason Dropdown (Only for SELL) */}
+                    {activeTab === 'SELL' && (
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Reason for Selling</label>
+                            <Select
+                                value={formData.reason}
+                                onValueChange={(value) => setFormData({ ...formData, reason: value })}
+                            >
+                                <SelectTrigger className="w-full bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700">
+                                    <SelectValue placeholder="Select Reason (Optional)" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="STOP_LOSS">Stop Loss</SelectItem>
+                                    <SelectItem value="TAKE_PROFIT">Take Profit</SelectItem>
+                                    <SelectItem value="NO_PRICE_CHANGE">No Price Change</SelectItem>
+                                    <SelectItem value="FUND_NEED">Fund Need</SelectItem>
+                                    <SelectItem value="BETTER_OPPORTUNITY">Better Opportunity</SelectItem>
+                                    <SelectItem value="MARKET_SENTIMENT">Market Sentiment</SelectItem>
+                                    <SelectItem value="OTHER">Other</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+
                     {/* Estimates Panel */}
                     {(activeTab === 'BUY' || activeTab === 'SELL') && estimates && (
                         <div className="mt-4 p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-100 dark:border-slate-700">
                             <div className="flex items-center gap-2 mb-3 text-gray-700 dark:text-slate-200 font-medium text-sm">
                                 <Calculator className="h-4 w-4" />
-                                <span>Estimated Breakdown</span>
+                                <span className="text-xs uppercase tracking-wider font-semibold">Estimated Breakdown</span>
                             </div>
-                            <div className="space-y-1 text-sm">
+                            <div className="space-y-2 text-sm">
                                 <div className="flex justify-between text-gray-500 dark:text-slate-400">
                                     <span>Broker Commission</span>
                                     <span>Rs. {estimates.commission.toFixed(2)}</span>
@@ -334,7 +374,7 @@ export default function TransactionModal({
                                     <span>Rs. {estimates.total.toFixed(2)}</span>
                                 </div>
                             </div>
-                            <p className="text-xs text-gray-400 dark:text-slate-500 mt-2 italic">* Actual calculation may vary slightly on server.</p>
+                            <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-2 italic">* Actual calculation may vary slightly on server.</p>
                         </div>
                     )}
 
