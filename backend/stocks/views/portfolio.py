@@ -35,6 +35,56 @@ class PortfolioAccountViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    @action(detail=True, methods=['post'])
+    def reset(self, request, pk=None):
+        account = self.get_object()
+        if account.account_type != 'PAPER':
+            return Response({"error": "Only paper trading accounts can be reset."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        starting_balance = request.data.get('starting_balance', 1000000)
+        
+        # Delete items and transactions
+        PortfolioTransaction.objects.filter(account=account).delete()
+        PortfolioItem.objects.filter(account=account).delete()
+        
+        account.balance = Decimal(starting_balance)
+        account.save()
+        return Response({"message": "Account reset successfully.", "balance": account.balance})
+        
+    @action(detail=False, methods=['get'])
+    def leaderboard(self, request):
+        paper_accounts = PortfolioAccount.objects.filter(account_type='PAPER')
+        leaderboard_data = []
+        
+        for acc in paper_accounts:
+            items = PortfolioItem.objects.filter(account=acc)
+            tickers = [item.ticker for item in items]
+            latest_prices = {}
+            if tickers:
+                prices = DailyStockPrice.objects.filter(ticker__in=tickers).order_by('ticker', '-date').distinct('ticker')
+                latest_prices = {p.ticker: p.close for p in prices}
+                
+            positions_value = Decimal('0.00')
+            for item in items:
+                current_price = Decimal(latest_prices.get(item.ticker, item.buy_price))
+                positions_value += Decimal(item.quantity) * current_price
+                
+            total_value = acc.balance + positions_value
+            # Assumes 1000000 as default starting balance if we calculate ROI
+            # Using total_value directly for ranking
+            leaderboard_data.append({
+                "account_id": acc.id,
+                "account_name": acc.name,
+                "user": acc.user.username,
+                "balance": acc.balance,
+                "positions_value": positions_value,
+                "total_value": total_value,
+                "roi_percentage": ((total_value - Decimal(1000000)) / Decimal(1000000)) * 100
+            })
+            
+        leaderboard_data.sort(key=lambda x: x['total_value'], reverse=True)
+        return Response(leaderboard_data)
+
 class PortfolioViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = PortfolioItemSerializer
@@ -399,6 +449,10 @@ class PortfolioTransactionViewSet(viewsets.ModelViewSet):
                 receivable = amount + commission + sebon_fee + dp_charge
             elif txn_type == TransactionType.SELL:
                  receivable = amount - commission - sebon_fee - dp_charge - cgt
+            elif txn_type == TransactionType.SHORT_SELL:
+                 receivable = amount - commission - sebon_fee - dp_charge
+            elif txn_type == TransactionType.BUY_TO_COVER:
+                 receivable = amount + commission + sebon_fee + dp_charge
             elif txn_type == TransactionType.BONUS:
                  receivable = Decimal('0.00')
                  

@@ -32,7 +32,7 @@ interface TransactionModalProps {
     transactionToEdit?: any;
 }
 
-type TransactionType = 'BUY' | 'SELL' | 'BONUS' | 'DIVIDEND';
+type TransactionType = 'BUY' | 'SELL' | 'SHORT_SELL' | 'BUY_TO_COVER' | 'BONUS' | 'DIVIDEND';
 
 export default function TransactionModal({
     isOpen,
@@ -107,9 +107,9 @@ export default function TransactionModal({
         let total = 0;
         let cgt = 0; // CGT is hard to estimate without WACC on client easily
 
-        if (activeTab === 'BUY') {
+        if (activeTab === 'BUY' || activeTab === 'BUY_TO_COVER') {
             total = amount + commission + sebon + dp;
-        } else if (activeTab === 'SELL') {
+        } else if (activeTab === 'SELL' || activeTab === 'SHORT_SELL') {
             // Ignoring CGT in estimate for now as we don't have WACC handy here without fetch
             total = amount - commission - sebon - dp;
         } else {
@@ -157,7 +157,7 @@ export default function TransactionModal({
     }, [isOpen, defaultTicker, defaultType, accounts, transactionToEdit]);
 
     useEffect(() => {
-        if (activeTab === 'BUY' || activeTab === 'SELL') {
+        if (activeTab === 'BUY' || activeTab === 'SELL' || activeTab === 'SHORT_SELL' || activeTab === 'BUY_TO_COVER') {
             calculateEstimates();
         } else {
             setEstimates(null);
@@ -229,21 +229,31 @@ export default function TransactionModal({
                 </div>
 
                 {/* Tabs */}
-                <div className="flex border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50">
-                    {(['BUY', 'SELL', 'BONUS', 'DIVIDEND'] as TransactionType[]).map((type) => (
-                        <button
-                            key={type}
-                            onClick={() => setActiveTab(type)}
-                            className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === type
-                                ? type === 'BUY' ? 'border-green-500 text-green-600 dark:text-green-400 bg-green-50/50 dark:bg-green-900/20'
-                                    : type === 'SELL' ? 'border-red-500 text-red-600 dark:text-red-400 bg-red-50/50 dark:bg-red-900/20'
-                                        : 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20'
-                                : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800'
-                                }`}
-                        >
-                            {type === 'BONUS' ? 'BONUS SHARE' : type === 'DIVIDEND' ? 'CASH DIVIDEND' : type}
-                        </button>
-                    ))}
+                <div className="flex border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 overflow-x-auto custom-scrollbar">
+                    {(() => {
+                        let types: TransactionType[] = ['BUY', 'SELL', 'BONUS', 'DIVIDEND'];
+
+                        // Check if selected account is PAPER
+                        const selectedAcc = accounts.find(a => a.id.toString() === formData.account);
+                        if (selectedAcc && selectedAcc.account_type === 'PAPER') {
+                            types = ['BUY', 'SELL', 'SHORT_SELL', 'BUY_TO_COVER', 'BONUS', 'DIVIDEND'];
+                        }
+
+                        return types.map((type) => (
+                            <button
+                                key={type}
+                                onClick={() => setActiveTab(type)}
+                                className={`flex-1 py-3 px-4 min-w-[100px] text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === type
+                                    ? type === 'BUY' || type === 'BUY_TO_COVER' ? 'border-green-500 text-green-600 dark:text-green-400 bg-green-50/50 dark:bg-green-900/20'
+                                        : type === 'SELL' || type === 'SHORT_SELL' ? 'border-red-500 text-red-600 dark:text-red-400 bg-red-50/50 dark:bg-red-900/20'
+                                            : 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20'
+                                    : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800'
+                                    }`}
+                            >
+                                {type === 'BONUS' ? 'BONUS SHARE' : type === 'DIVIDEND' ? 'CASH DIVIDEND' : type === 'SHORT_SELL' ? 'SHORT SELL' : type === 'BUY_TO_COVER' ? 'BUY TO COVER' : type}
+                            </button>
+                        ))
+                    })()}
                 </div>
 
                 {/* Form */}
@@ -360,7 +370,7 @@ export default function TransactionModal({
                     )}
 
                     {/* Estimates Panel */}
-                    {(activeTab === 'BUY' || activeTab === 'SELL') && estimates && (
+                    {(activeTab === 'BUY' || activeTab === 'SELL' || activeTab === 'SHORT_SELL' || activeTab === 'BUY_TO_COVER') && estimates && (
                         <div className="mt-4 p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-100 dark:border-slate-700">
                             <div className="flex items-center gap-2 mb-3 text-gray-700 dark:text-slate-200 font-medium text-sm">
                                 <Calculator className="h-4 w-4" />
@@ -381,7 +391,7 @@ export default function TransactionModal({
                                 </div>
                                 <div className="h-px bg-gray-200 dark:bg-slate-700 my-2"></div>
                                 <div className="flex justify-between font-bold text-gray-900 dark:text-slate-100">
-                                    <span>Net {activeTab === 'BUY' ? 'Payable' : 'Receivable'}</span>
+                                    <span>Net {activeTab === 'BUY' || activeTab === 'BUY_TO_COVER' ? 'Payable' : 'Receivable'}</span>
                                     <span>Rs. {estimates.total.toFixed(2)}</span>
                                 </div>
                             </div>
@@ -393,12 +403,12 @@ export default function TransactionModal({
                     <button
                         type="submit"
                         disabled={loading || accounts.length === 0}
-                        className={`w-full py-3 rounded-lg font-bold text-white transition-transform active:scale-95 ${activeTab === 'BUY' ? 'bg-green-600 hover:bg-green-700'
-                            : activeTab === 'SELL' ? 'bg-red-600 hover:bg-red-700'
+                        className={`w-full py-3 rounded-lg font-bold text-white transition-transform active:scale-95 ${activeTab === 'BUY' || activeTab === 'BUY_TO_COVER' ? 'bg-green-600 hover:bg-green-700'
+                            : activeTab === 'SELL' || activeTab === 'SHORT_SELL' ? 'bg-red-600 hover:bg-red-700'
                                 : 'bg-blue-600 hover:bg-blue-700'
                             } ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
-                        {loading ? 'Processing...' : `Confirm ${activeTab}`}
+                        {loading ? 'Processing...' : `Confirm ${activeTab.replace(/_/g, ' ')}`}
                     </button>
                 </form>
             </div>

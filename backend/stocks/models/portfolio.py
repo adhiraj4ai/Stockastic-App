@@ -25,7 +25,7 @@ class PortfolioItem(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     account = models.ForeignKey(PortfolioAccount, on_delete=models.CASCADE, null=True, blank=True)
     ticker = models.CharField(max_length=10)
-    quantity = models.PositiveIntegerField()
+    quantity = models.IntegerField()
     buy_price = models.DecimalField(max_digits=10, decimal_places=2)
     wacc = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     purchased_at = models.DateTimeField(auto_now_add=True)
@@ -45,6 +45,8 @@ class PortfolioItem(models.Model):
 class TransactionType(models.TextChoices):
     BUY = 'BUY', 'Buy'
     SELL = 'SELL', 'Sell'
+    SHORT_SELL = 'SHORT_SELL', 'Short Sell'
+    BUY_TO_COVER = 'BUY_TO_COVER', 'Buy to Cover'
     BONUS = 'BONUS', 'Bonus Share'
     DIVIDEND = 'DIVIDEND', 'Cash Dividend'
 
@@ -61,9 +63,9 @@ class PortfolioTransaction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     account = models.ForeignKey(PortfolioAccount, on_delete=models.CASCADE, null=True, blank=True)
     ticker = models.CharField(max_length=10)
-    transaction_type = models.CharField(max_length=10, choices=TransactionType.choices)
+    transaction_type = models.CharField(max_length=12, choices=TransactionType.choices)
     reason = models.CharField(max_length=20, choices=TransactionReason.choices, null=True, blank=True)
-    quantity = models.PositiveIntegerField(default=0)
+    quantity = models.IntegerField(default=0)
     rate = models.DecimalField(max_digits=10, decimal_places=2)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     commission = models.DecimalField(max_digits=10, decimal_places=2, default=0)

@@ -46,7 +46,18 @@ class PortfolioService:
             elif txn.transaction_type == TransactionType.SELL:
                 qty -= txn.quantity
                 
-        if qty <= 0:
+            elif txn.transaction_type == TransactionType.SHORT_SELL:
+                old_short_qty = abs(qty) if qty < 0 else 0
+                old_total = Decimal(old_short_qty) * wacc
+                qty -= txn.quantity
+                new_short_qty = abs(qty) if qty < 0 else 0
+                if new_short_qty > 0:
+                    wacc = (old_total + Decimal(txn.quantity * txn.rate)) / Decimal(new_short_qty)
+                    
+            elif txn.transaction_type == TransactionType.BUY_TO_COVER:
+                qty += txn.quantity
+                
+        if qty == 0:
             PortfolioItem.objects.filter(user=user, account=account, ticker=ticker).delete()
             return None
         else:
@@ -118,6 +129,57 @@ class PortfolioService:
                 account.save()
             
             portfolio_item.quantity -= quantity
+            if portfolio_item.quantity == 0:
+                portfolio_item.delete()
+            else:
+                portfolio_item.save()
+
+        elif txn_type == TransactionType.SHORT_SELL:
+            if account and account.account_type != AccountType.PAPER:
+                raise ValueError("Short selling is only allowed in paper trading accounts.")
+            
+            receivable_amount = amount - commission - sebon_fee - dp_charge
+            
+            if account:
+                account.balance += receivable_amount
+                account.save()
+            
+            old_qty = abs(portfolio_item.quantity) if portfolio_item.quantity < 0 else 0
+            old_total = Decimal(old_qty) * Decimal(portfolio_item.wacc)
+            
+            new_quantity = portfolio_item.quantity - quantity
+            
+            # Wacc for short represents average entry short price
+            if portfolio_item.quantity <= 0:
+                 new_wacc = (old_total + amount) / Decimal(old_qty + quantity)
+                 portfolio_item.wacc = new_wacc
+                 portfolio_item.buy_price = new_wacc
+                 
+            portfolio_item.quantity = new_quantity
+            portfolio_item.save()
+
+        elif txn_type == TransactionType.BUY_TO_COVER:
+            if account and account.account_type != AccountType.PAPER:
+                raise ValueError("Buy to cover is only allowed in paper trading accounts.")
+                
+            if portfolio_item.quantity >= 0:
+                raise ValueError("No short position to cover.")
+                
+            if abs(portfolio_item.quantity) < quantity:
+                raise ValueError("Cannot cover more than the short position size.")
+                
+            total_cost = amount + commission + sebon_fee + dp_charge
+            receivable_amount = total_cost
+            
+            if account:
+                if account.balance < total_cost:
+                    raise ValueError(f"Insufficient paper balance to cover. Needed: Rs {total_cost:,.2f}")
+                account.balance -= total_cost
+                account.save()
+                
+            # If there's profit here, we could calculate CGT, but for simplicity skipping CGT on shorts for now
+            
+            portfolio_item.quantity += quantity
             if portfolio_item.quantity == 0:
                 portfolio_item.delete()
             else:
@@ -201,12 +263,25 @@ class PortfolioService:
             prev_close = Decimal(prev_closes.get(item.ticker, current_price))
             
             item.current_price = current_price
-            item.investment_value = Decimal(item.quantity) * Decimal(item.buy_price)
-            item.current_value = Decimal(item.quantity) * current_price
-            item.gain_loss = item.current_value - item.investment_value
+            
+            is_short = item.quantity < 0
+            abs_qty = abs(item.quantity)
+            
+            if is_short:
+                # Short position: invested at wacc, profit when price drops
+                item.investment_value = Decimal(abs_qty) * Decimal(item.buy_price)
+                item.current_value = Decimal(abs_qty) * current_price
+                # For shorts, gain = entry_value - current_value (profit when price drops)
+                item.gain_loss = item.investment_value - item.current_value
+            else:
+                item.investment_value = Decimal(item.quantity) * Decimal(item.buy_price)
+                item.current_value = Decimal(item.quantity) * current_price
+                item.gain_loss = item.current_value - item.investment_value
+                
             item.gain_loss_percent = (item.gain_loss / item.investment_value * 100) if item.investment_value else 0
             
             day_change = current_price - prev_close
+            # For shorts, day gain is inverted
             item.day_gain_loss = day_change * Decimal(item.quantity)
             
             item.sector = company_sectors.get(item.ticker, 'Unknown')

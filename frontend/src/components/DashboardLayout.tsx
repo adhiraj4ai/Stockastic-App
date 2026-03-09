@@ -44,6 +44,7 @@ const navItems = [
             { name: 'Performance', href: '/portfolio/performance', icon: TrendingUp },
             { name: 'Income', href: '/portfolio/income', icon: DollarSign },
             { name: 'Watchlist', href: '/portfolio?tab=watchlist', icon: Eye },
+            { name: 'Paper Trading', href: '/paper-trading', icon: LayoutDashboard },
         ]
     },
     { name: 'Stockastic AI', href: '/chat', icon: MessageSquare },
