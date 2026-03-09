@@ -5,7 +5,7 @@ from ..models.market import DailyStockPrice, Company
 class PortfolioAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = PortfolioAccount
-        fields = ['id', 'name', 'balance', 'default_risk_percentage', 'created_at']
+        fields = ['id', 'name', 'account_type', 'balance', 'default_risk_percentage', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 class PortfolioItemSerializer(serializers.ModelSerializer):

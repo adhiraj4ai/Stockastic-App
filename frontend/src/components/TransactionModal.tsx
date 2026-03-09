@@ -18,6 +18,7 @@ export interface PortfolioAccount {
     name: string;
     balance: string;
     default_risk_percentage: number;
+    account_type: string;
 }
 
 interface TransactionModalProps {
@@ -262,7 +263,7 @@ export default function TransactionModal({
                                     <SelectContent>
                                         {accounts.map(acc => (
                                             <SelectItem key={acc.id} value={acc.id.toString()}>
-                                                {acc.name} <span className="text-xs text-gray-400">({formatRupees(acc.balance)})</span>
+                                                {acc.name} {acc.account_type === 'PAPER' ? '(Paper Trading)' : '(Live)'} <span className="text-xs text-gray-400">({formatRupees(acc.balance)})</span>
                                             </SelectItem>
                                         ))}
                                     </SelectContent>

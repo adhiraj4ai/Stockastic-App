@@ -1,6 +1,6 @@
 from django.db import transaction
 from django.db.models import Sum, Max
-from ..models.portfolio import PortfolioItem, PortfolioTransaction, TransactionType, PortfolioAccount
+from ..models.portfolio import PortfolioItem, PortfolioTransaction, TransactionType, PortfolioAccount, AccountType
 from ..models.market import DailyStockPrice, Company
 from ..models.fundamentals import StockFundamental
 from ..models.strategy import StrategySignal
@@ -82,6 +82,13 @@ class PortfolioService:
         
         if txn_type == TransactionType.BUY:
             total_cost_addition = amount + commission + sebon_fee + dp_charge
+            
+            if account and account.account_type == AccountType.PAPER:
+                if account.balance < total_cost_addition:
+                    raise ValueError(f"Insufficient paper balance. Needed: Rs {total_cost_addition:,.2f}, Available: Rs {account.balance:,.2f}")
+                account.balance -= total_cost_addition
+                account.save()
+
             old_total_cost = Decimal(portfolio_item.quantity) * Decimal(portfolio_item.wacc)
             
             new_quantity = portfolio_item.quantity + quantity
@@ -105,6 +112,10 @@ class PortfolioService:
                 cgt = calculate_cgt(total_profit, is_long_term=False) 
                 
             receivable_amount = amount - commission - sebon_fee - dp_charge - cgt 
+            
+            if account and account.account_type == AccountType.PAPER:
+                account.balance += receivable_amount
+                account.save()
             
             portfolio_item.quantity -= quantity
             if portfolio_item.quantity == 0:

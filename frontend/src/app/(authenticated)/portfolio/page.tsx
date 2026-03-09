@@ -410,7 +410,9 @@ function PortfolioContent() {
                                     <option value="all">All Accounts</option>
                                     <option disabled>──────────</option>
                                     {accounts.map(acc => (
-                                        <option key={acc.id} value={acc.id}>{acc.name}</option>
+                                        <option key={acc.id} value={acc.id}>
+                                            {acc.name} {acc.account_type === 'PAPER' ? `(Virtual: Rs. ${Number(acc.balance).toLocaleString()})` : ''}
+                                        </option>
                                     ))}
                                 </select>
                                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
@@ -568,7 +570,12 @@ function PortfolioContent() {
                                             #{stats.loss} LOSS
                                         </Badge>
                                     </div>
-                                    {selectedAccount !== 'all' && <span className="text-gray-400 dark:text-slate-500 ml-2 text-sm font-normal">(Account: {accounts.find(a => a.id.toString() == selectedAccount)?.name})</span>}
+                                    {selectedAccount !== 'all' && (
+                                        <span className="text-gray-400 dark:text-slate-500 ml-2 text-sm font-normal">
+                                            (Account: {accounts.find(a => a.id.toString() == selectedAccount)?.name}
+                                            {accounts.find(a => a.id.toString() == selectedAccount)?.account_type === 'PAPER' ? ' - Paper Trading' : ''})
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <div className="relative">
