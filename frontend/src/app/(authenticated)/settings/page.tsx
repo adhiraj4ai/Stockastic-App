@@ -65,6 +65,20 @@ export default function SettingsPage() {
     const [revokingId, setRevokingId] = useState<number | null>(null);
     const [revokingAll, setRevokingAll] = useState(false);
 
+    // Password Strength
+    const calculatePasswordStrength = (password: string) => {
+        let strength = 0;
+        if (password.length > 8) strength++;
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[a-z]/.test(password)) strength++;
+        if (/[0-9]/.test(password)) strength++;
+        if (/[^A-Za-z0-9]/.test(password)) strength++;
+        return strength;
+    };
+    const passwordStrength = calculatePasswordStrength(newPassword);
+    const strengthLabels = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Excellent'];
+    const strengthColors = ['', 'bg-rose-500', 'bg-orange-500', 'bg-yellow-500', 'bg-emerald-400', 'bg-emerald-500'];
+
     useEffect(() => {
         api.get('/api/users/me/')
             .then(res => {
@@ -182,13 +196,16 @@ export default function SettingsPage() {
     };
 
     const handleFetchRecoveryCodes = async () => {
+        const password = prompt("Enter your password to view recovery codes:");
+        if (!password) return;
         setFetchingCodes(true);
         try {
-            const res = await api.get('/api/account/2fa/recovery-codes/');
+            const res = await api.get('/api/account/2fa/recovery-codes/', { params: { password } });
             setRecoveryCodes(res.data.codes);
             setShowRecoveryCodes(true);
-        } catch (error) {
-            toast.error("Failed to fetch recovery codes.");
+        } catch (error: any) {
+            const msg = error.response?.data?.error || "Failed to fetch recovery codes.";
+            toast.error(msg);
         } finally {
             setFetchingCodes(false);
         }
@@ -196,13 +213,16 @@ export default function SettingsPage() {
 
     const handleGenerateRecoveryCodes = async () => {
         if (!confirm("Are you sure? This will invalidate all your previous recovery codes.")) return;
+        const password = prompt("Enter your password to regenerate codes:");
+        if (!password) return;
         setFetchingCodes(true);
         try {
-            const res = await api.post('/api/account/2fa/recovery-codes/');
+            const res = await api.post('/api/account/2fa/recovery-codes/', { password });
             setRecoveryCodes(res.data.codes);
             toast.success("New recovery codes generated!");
-        } catch (error) {
-            toast.error("Failed to generate recovery codes.");
+        } catch (error: any) {
+            const msg = error.response?.data?.error || "Failed to generate recovery codes.";
+            toast.error(msg);
         } finally {
             setFetchingCodes(false);
         }
@@ -246,7 +266,9 @@ export default function SettingsPage() {
             setConfirmPassword('');
         } catch (error: any) {
             console.error("Password update failed", error);
-            const msg = error.response?.data?.error || "Failed to update password.";
+            const errData = error.response?.data?.error;
+            // Django validators return an array of error messages
+            const msg = Array.isArray(errData) ? errData.join(' ') : (errData || "Failed to update password.");
             toast.error(msg);
         } finally {
             setPassLoading(false);
@@ -596,6 +618,25 @@ export default function SettingsPage() {
                                             />
                                         </div>
                                     </div>
+                                    {/* Password Strength Meter */}
+                                    {newPassword && (
+                                        <div className="space-y-2">
+                                            <div className="flex gap-1">
+                                                {[1, 2, 3, 4, 5].map((level) => (
+                                                    <div
+                                                        key={level}
+                                                        className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${passwordStrength >= level
+                                                                ? strengthColors[passwordStrength]
+                                                                : 'bg-slate-100 dark:bg-slate-800'
+                                                            }`}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                                Strength: <span className={`${passwordStrength >= 4 ? 'text-emerald-500' : passwordStrength >= 3 ? 'text-yellow-500' : 'text-rose-500'}`}>{strengthLabels[passwordStrength]}</span>
+                                            </p>
+                                        </div>
+                                    )}
                                     <div className="pt-4 flex justify-end">
                                         <Button
                                             onClick={handleUpdatePassword}
@@ -644,8 +685,8 @@ export default function SettingsPage() {
                                                 >
                                                     <div className="flex items-center gap-4 flex-1 min-w-0">
                                                         <div className={`p-2.5 rounded-xl ${session.is_current
-                                                                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600'
-                                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                                                            ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600'
+                                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
                                                             }`}>
                                                             {getDeviceIcon(session.device)}
                                                         </div>
