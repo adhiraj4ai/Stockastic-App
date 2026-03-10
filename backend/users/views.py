@@ -3,6 +3,19 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .serializers import UserSerializer
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login
+from django_otp import devices_for_user
+from django_otp.plugins.otp_totp.models import TOTPDevice
+import pyotp
+import qrcode
+import base64
+from io import BytesIO
+from rest_framework_simplejwt.tokens import RefreshToken
+from dj_rest_auth.registration.views import SocialLoginView
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from allauth.socialaccount.providers.apple.views import AppleOAuth2Adapter
+from allauth.socialaccount.providers.microsoft.views import MicrosoftGraphOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -68,6 +81,106 @@ def get_current_user(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+def setup_2fa(request):
+    user = request.user
+    device = TOTPDevice.objects.filter(user=user, confirmed=False).first()
+    if not device:
+        device = TOTPDevice.objects.create(user=user, confirmed=False, name="Default")
+    
+    # Generate provisioning URI for QR code
+    otp_uri = device.config_url
+    
+    # Create QR code
+    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+    qr.add_data(otp_uri)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    buffered = BytesIO()
+    img.save(buffered, format="PNG")
+    qr_code_base64 = base64.b64encode(buffered.getvalue()).decode()
+    
+    return Response({
+        "qr_code": f"data:image/png;base64,{qr_code_base64}",
+        "secret": device.key
+    })
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def verify_2fa_setup(request):
+    user = request.user
+    token = request.data.get('token')
+    
+    device = TOTPDevice.objects.filter(user=user, confirmed=False).first()
+    if not device:
+        return Response({"error": "2FA setup not initiated"}, status=400)
+    
+    if device.verify_token(token):
+        device.confirmed = True
+        device.save()
+        
+        # Update user profile
+        profile = user.profile
+        profile.two_factor_enabled = True
+        profile.save()
+        
+        return Response({"message": "2FA enabled successfully"})
+    else:
+        return Response({"error": "Invalid token"}, status=400)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def disable_2fa(request):
+    user = request.user
+    token = request.data.get('token')
+    
+    # Verify token before disabling
+    device = TOTPDevice.objects.filter(user=user, confirmed=True).first()
+    if not device:
+        return Response({"error": "2FA not enabled"}, status=400)
+    
+    if device.verify_token(token):
+        device.delete()
+        profile = user.profile
+        profile.two_factor_enabled = False
+        profile.save()
+        return Response({"message": "2FA disabled successfully"})
+    else:
+        return Response({"error": "Invalid token"}, status=400)
+
+@api_view(['POST'])
+@permission_classes([]) # Public
+def login_view(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+    token = request.data.get('token')
+    
+    user = authenticate(username=username, password=password)
+    if not user:
+        return Response({"error": "Invalid credentials"}, status=401)
+    
+    if user.profile.two_factor_enabled:
+        if not token:
+            return Response({"message": "2FA token required", "2fa_required": True}, status=200)
+        
+        # Verify 2FA token
+        device = TOTPDevice.objects.filter(user=user, confirmed=True).first()
+        if not device or not device.verify_token(token):
+            return Response({"error": "Invalid 2FA token"}, status=401)
+    
+    # Generate JWT
+    refresh = RefreshToken.for_user(user)
+    return Response({
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+        'user': {
+            'username': user.username,
+            'email': user.email
+        }
+    })
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def change_password(request):
     user = request.user
     current_password = request.data.get('current_password')
@@ -81,8 +194,19 @@ def change_password(request):
         
     user.set_password(new_password)
     user.save()
-    
-    # Keep user logged in? JWT usually doesn't care about password change unless we rotate secrets or track password version.
-    # But usually good practice to re-issue tokens or let them stay valid until expiry.
-    # For now, just return success.
     return Response({"message": "Password updated successfully"})
+
+class GoogleLogin(SocialLoginView):
+    adapter_class = GoogleOAuth2Adapter
+    client_class = OAuth2Client
+    callback_url = "http://localhost:3000/api/auth/callback/google"
+
+class AppleLogin(SocialLoginView):
+    adapter_class = AppleOAuth2Adapter
+    client_class = OAuth2Client
+    callback_url = "http://localhost:3000/api/auth/callback/apple"
+
+class MicrosoftLogin(SocialLoginView):
+    adapter_class = MicrosoftGraphOAuth2Adapter
+    client_class = OAuth2Client
+    callback_url = "http://localhost:3000/api/auth/callback/microsoft"

@@ -14,6 +14,7 @@ class Profile(models.Model):
     encrypted_email = EncryptedField(blank=True, null=True)
     # Changed to TextField to support Base64 strings directly
     profile_picture = models.TextField(blank=True, help_text="Base64 encoded profile picture")
+    two_factor_enabled = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.username}'s Profile"

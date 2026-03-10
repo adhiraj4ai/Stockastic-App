@@ -29,6 +29,13 @@ export default function SettingsPage() {
     // File Upload Ref
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // 2FA State
+    const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+    const [show2faSetup, setShow2faSetup] = useState(false);
+    const [qrCode, setQrCode] = useState('');
+    const [twoFactorToken, setTwoFactorToken] = useState('');
+    const [setupLoading, setSetupLoading] = useState(false);
+
     // Security Form State
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
@@ -39,6 +46,7 @@ export default function SettingsPage() {
         api.get('/api/users/me/')
             .then(res => {
                 setUser(res.data);
+                setTwoFactorEnabled(res.data.two_factor_enabled);
                 setLoading(false);
             })
             .catch(err => {
@@ -47,6 +55,44 @@ export default function SettingsPage() {
                 setLoading(false);
             });
     }, []);
+
+    const handleSetup2FA = async () => {
+        setSetupLoading(true);
+        try {
+            const res = await api.post('/api/account/2fa/setup/');
+            setQrCode(res.data.qr_code);
+            setShow2faSetup(true);
+        } catch (error) {
+            toast.error("Failed to initiate 2FA setup.");
+        } finally {
+            setSetupLoading(false);
+        }
+    };
+
+    const handleVerify2FA = async () => {
+        if (!twoFactorToken) return;
+        try {
+            await api.post('/api/account/2fa/verify/', { token: twoFactorToken });
+            setTwoFactorEnabled(true);
+            setShow2faSetup(false);
+            setTwoFactorToken('');
+            toast.success("2FA enabled successfully!");
+        } catch (error) {
+            toast.error("Invalid token. Please try again.");
+        }
+    };
+
+    const handleDisable2FA = async () => {
+        const token = prompt("Enter 2FA token to disable:");
+        if (!token) return;
+        try {
+            await api.post('/api/account/2fa/disable/', { token });
+            setTwoFactorEnabled(false);
+            toast.success("2FA disabled.");
+        } catch (error) {
+            toast.error("Failed to disable 2FA. Invalid token.");
+        }
+    };
 
     const handleSaveProfile = async () => {
         if (!user) return;
@@ -130,72 +176,57 @@ export default function SettingsPage() {
     };
 
     if (loading) {
-        return <div className="p-8 flex justify-center">Loading settings...</div>;
+        return <div className="p-8 flex justify-center font-bold text-slate-400">Loading settings...</div>;
     }
 
     return (
         <DashboardLayout>
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-8">
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-8 transition-colors duration-500">
                 <div className="max-w-5xl mx-auto space-y-8">
-                    <div>
-                        <h1 className="text-3xl font-black tracking-tight text-slate-800">Settings</h1>
-                        <p className="text-slate-500 font-medium mt-1">Manage your account settings and preferences.</p>
+                    <div className="flex justify-between items-end">
+                        <div>
+                            <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-slate-100 italic">Settings</h1>
+                            <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Refine your trading identity and security.</p>
+                        </div>
                     </div>
 
                     <Tabs defaultValue="general" className="w-full">
-                        <TabsList className="bg-white/50 backdrop-blur-sm p-1 rounded-xl border border-white/20 shadow-sm mb-6 h-auto">
+                        <TabsList className="bg-white dark:bg-slate-900 p-1 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm mb-8 h-auto flex flex-wrap">
                             <TabsTrigger
                                 value="general"
-                                className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm px-6 py-2.5 font-bold text-sm"
+                                className="rounded-xl data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 px-6 py-3 font-bold text-xs uppercase tracking-widest transition-all"
                             >
-                                <div className="flex items-center gap-2">
-                                    <User size={16} /> General
-                                </div>
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="appearance"
-                                className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm px-6 py-2.5 font-bold text-sm"
-                            >
-                                <div className="flex items-center gap-2">
-                                    <Palette size={16} /> Appearance
-                                </div>
+                                <User size={14} className="mr-2" /> General
                             </TabsTrigger>
                             <TabsTrigger
                                 value="security"
-                                className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm px-6 py-2.5 font-bold text-sm"
+                                className="rounded-xl data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 px-6 py-3 font-bold text-xs uppercase tracking-widest transition-all"
                             >
-                                <div className="flex items-center gap-2">
-                                    <Lock size={16} /> Security
-                                </div>
+                                <Lock size={14} className="mr-2" /> Security
                             </TabsTrigger>
                         </TabsList>
 
-                        {/* General / Profile Tab */}
+                        {/* General Tab */}
                         <TabsContent value="general" className="space-y-6">
-                            {/* Profile Picture Card */}
-                            <Card className="border-none shadow-xl bg-white/80 backdrop-blur-md overflow-hidden">
-                                <CardHeader className="border-b border-indigo-50/50 bg-white/40">
-                                    <CardTitle className="text-xl font-bold text-slate-800">Profile Picture</CardTitle>
-                                    <CardDescription>Update your public profile photo.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="flex items-center gap-8 p-8">
-                                    <div className="relative group cursor-pointer" onClick={triggerFileInput}>
-                                        <div className="h-28 w-28 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-300 border-4 border-white shadow-lg overflow-hidden ring-4 ring-indigo-50/50 transition-all group-hover:scale-105">
-                                            {user?.profile_picture ? (
-                                                <img src={user.profile_picture} alt="Profile" className="h-full w-full object-cover" />
-                                            ) : (
-                                                <User size={48} />
-                                            )}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                {/* Left Column: Avatar */}
+                                <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden lg:col-span-1 h-fit">
+                                    <CardContent className="p-8 flex flex-col items-center text-center">
+                                        <div className="relative group cursor-pointer mb-6" onClick={triggerFileInput}>
+                                            <div className="h-32 w-32 rounded-3xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-300 border-4 border-white dark:border-slate-900 shadow-xl overflow-hidden transition-all group-hover:scale-105">
+                                                {user?.profile_picture ? (
+                                                    <img src={user.profile_picture} alt="Profile" className="h-full w-full object-cover" />
+                                                ) : (
+                                                    <User size={64} />
+                                                )}
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <Camera size={32} className="text-white" />
+                                                </div>
+                                            </div>
                                         </div>
-                                        <button className="absolute bottom-1 right-1 p-2 bg-indigo-600 rounded-full text-white hover:bg-indigo-700 transition-colors shadow-md ring-2 ring-white">
-                                            <Camera size={16} />
-                                        </button>
-                                    </div>
-                                    <div className="space-y-3">
-                                        <div>
-                                            <h3 className="font-bold text-slate-900 text-lg">Upload new photo</h3>
-                                            <p className="text-sm text-slate-500">Supports JPG, PNG or GIF. Max size 2MB.</p>
-                                        </div>
+                                        <h3 className="font-bold text-slate-900 dark:text-slate-100 text-xl">{user?.nickname || user?.username}</h3>
+                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{user?.email}</p>
+
                                         <input
                                             type="file"
                                             ref={fileInputRef}
@@ -203,157 +234,197 @@ export default function SettingsPage() {
                                             accept="image/png, image/jpeg, image/gif"
                                             className="hidden"
                                         />
-                                        <Button variant="outline" onClick={triggerFileInput} className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-800">
-                                            Select File
+                                        <Button
+                                            variant="outline"
+                                            onClick={triggerFileInput}
+                                            className="mt-6 w-full rounded-xl border-slate-100 dark:border-slate-800 font-bold text-[10px] uppercase tracking-widest"
+                                        >
+                                            Change Photo
                                         </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                    </CardContent>
+                                </Card>
 
-                            {/* Personal Info Card */}
-                            <Card className="border-none shadow-xl bg-white/80 backdrop-blur-md overflow-hidden">
-                                <CardHeader className="border-b border-indigo-50/50 bg-white/40">
-                                    <CardTitle className="text-xl font-bold text-slate-800">Personal Information</CardTitle>
-                                    <CardDescription>Update your personal details.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-6 p-8">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                                                <Type size={14} className="text-indigo-400" /> First Name
-                                            </label>
-                                            <Input
-                                                value={user?.first_name || ''}
-                                                onChange={(e) => setUser(prev => prev ? { ...prev, first_name: e.target.value } : null)}
-                                                placeholder="First Name"
-                                                className="bg-white/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium"
-                                            />
+                                {/* Right Column: Details */}
+                                <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden lg:col-span-2">
+                                    <CardHeader className="border-b border-slate-50 dark:border-slate-800 pb-6">
+                                        <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 italic">Personal Details</CardTitle>
+                                        <CardDescription className="text-xs font-bold text-slate-400 uppercase tracking-widest">Public identity and contact information</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="p-8 space-y-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">First Name</label>
+                                                <Input
+                                                    value={user?.first_name || ''}
+                                                    onChange={(e) => setUser(prev => prev ? { ...prev, first_name: e.target.value } : null)}
+                                                    className="h-11 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 rounded-xl"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Last Name</label>
+                                                <Input
+                                                    value={user?.last_name || ''}
+                                                    onChange={(e) => setUser(prev => prev ? { ...prev, last_name: e.target.value } : null)}
+                                                    className="h-11 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 rounded-xl"
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                                                <Type size={14} className="text-indigo-400" /> Last Name
-                                            </label>
-                                            <Input
-                                                value={user?.last_name || ''}
-                                                onChange={(e) => setUser(prev => prev ? { ...prev, last_name: e.target.value } : null)}
-                                                placeholder="Last Name"
-                                                className="bg-white/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium"
-                                            />
-                                        </div>
-                                    </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                                                <Fingerprint size={14} className="text-indigo-400" /> Nickname
-                                            </label>
-                                            <Input
-                                                value={user?.nickname || ''}
-                                                onChange={(e) => setUser(prev => prev ? { ...prev, nickname: e.target.value } : null)}
-                                                placeholder="Nickname"
-                                                className="bg-white/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium"
-                                            />
-                                            <p className="text-[11px] font-medium text-slate-400">Display name for community interactions.</p>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nickname</label>
+                                                <Input
+                                                    value={user?.nickname || ''}
+                                                    onChange={(e) => setUser(prev => prev ? { ...prev, nickname: e.target.value } : null)}
+                                                    className="h-11 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 rounded-xl"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Phone Number</label>
+                                                <Input
+                                                    value={user?.phone_number || ''}
+                                                    onChange={(e) => setUser(prev => prev ? { ...prev, phone_number: e.target.value } : null)}
+                                                    className="h-11 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 rounded-xl"
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                                                <Phone size={14} className="text-indigo-400" /> Phone Number
-                                            </label>
-                                            <Input
-                                                value={user?.phone_number || ''}
-                                                onChange={(e) => setUser(prev => prev ? { ...prev, phone_number: e.target.value } : null)}
-                                                placeholder="+977 98..."
-                                                className="bg-white/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium"
-                                            />
+
+                                        <div className="pt-6 flex justify-end">
+                                            <Button
+                                                onClick={handleSaveProfile}
+                                                disabled={saving}
+                                                className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-bold px-8 h-12 shadow-lg hover:shadow-xl active:scale-95 transition-all uppercase text-[10px] tracking-widest"
+                                            >
+                                                {saving ? 'Saving...' : 'Save Changes'}
+                                            </Button>
                                         </div>
-                                    </div>
-
-                                    <div className="space-y-2 pt-4 border-t border-slate-100">
-                                        <label className="text-sm font-bold text-slate-700">Email Address</label>
-                                        <Input
-                                            value={user?.email || ''}
-                                            onChange={(e) => setUser(prev => prev ? { ...prev, email: e.target.value } : null)}
-                                            placeholder="your@email.com"
-                                            className="bg-white/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium"
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700">Username</label>
-                                        <Input value={user?.username || ''} disabled className="bg-slate-100/50 text-slate-500 font-medium" />
-                                        <p className="text-[11px] font-medium text-slate-400">Usernames cannot be changed.</p>
-                                    </div>
-
-                                    <div className="pt-6 flex justify-end">
-                                        <Button onClick={handleSaveProfile} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all hover:scale-[1.02] active:scale-[0.98]">
-                                            <Save size={16} className="mr-2" /> {saving ? 'Saving...' : 'Save Changes'}
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-
-                        {/* Appearance Tab */}
-                        <TabsContent value="appearance">
-                            <Card className="border-none shadow-xl bg-white/80 backdrop-blur-md overflow-hidden">
-                                <CardHeader className="border-b border-indigo-50/50 bg-white/40">
-                                    <CardTitle className="text-xl font-bold text-slate-800">Appearance</CardTitle>
-                                    <CardDescription>Customize the look and feel of the application.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="p-8">
-                                    <div className="flex items-center justify-between p-6 bg-white border border-slate-100 rounded-xl shadow-sm">
-                                        <div>
-                                            <div className="font-bold text-slate-800">Theme</div>
-                                            <div className="text-sm font-medium text-slate-500">Select your preferred interface theme.</div>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <Button variant="outline" className="bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900 shadow-md">Dark</Button>
-                                            <Button variant="outline" className="bg-white text-slate-900 border-slate-200 hover:bg-slate-50">Light</Button>
-                                            <Button variant="default" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200 shadow-sm">System</Button>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                    </CardContent>
+                                </Card>
+                            </div>
                         </TabsContent>
 
                         {/* Security Tab */}
-                        <TabsContent value="security">
-                            <Card className="border-none shadow-xl bg-white/80 backdrop-blur-md overflow-hidden">
-                                <CardHeader className="border-b border-indigo-50/50 bg-white/40">
-                                    <CardTitle className="text-xl font-bold text-slate-800">Security</CardTitle>
-                                    <CardDescription>Manage your password and security settings.</CardDescription>
+                        <TabsContent value="security" className="space-y-6">
+                            {/* 2FA Card */}
+                            <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
+                                <CardHeader className="border-b border-slate-50 dark:border-slate-800 flex flex-row items-center justify-between py-6">
+                                    <div>
+                                        <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 italic">Two-Factor Authentication</CardTitle>
+                                        <CardDescription className="text-xs font-bold text-slate-400 uppercase tracking-widest">Enhanced account protection</CardDescription>
+                                    </div>
+                                    <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${twoFactorEnabled ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600' : 'bg-slate-50 dark:bg-slate-800 text-slate-400'}`}>
+                                        {twoFactorEnabled ? 'Active' : 'Disabled'}
+                                    </div>
                                 </CardHeader>
-                                <CardContent className="space-y-6 p-8">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700">Current Password</label>
-                                        <Input
-                                            type="password"
-                                            value={currentPassword}
-                                            onChange={(e) => setCurrentPassword(e.target.value)}
-                                            className="bg-white/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                                        />
+                                <CardContent className="p-8">
+                                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                                        <div className="flex-1 max-w-xl">
+                                            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                                                Two-factor authentication adds an extra layer of security to your account by requiring more than just a password to log in.
+                                            </p>
+                                        </div>
+                                        {twoFactorEnabled ? (
+                                            <Button
+                                                onClick={handleDisable2FA}
+                                                className="bg-rose-50 dark:bg-rose-950/20 text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-xl font-bold px-8 h-12 shadow-none border border-rose-100 dark:border-rose-900/30 uppercase text-[10px] tracking-widest"
+                                            >
+                                                Disable 2FA
+                                            </Button>
+                                        ) : (
+                                            <Button
+                                                onClick={handleSetup2FA}
+                                                disabled={setupLoading}
+                                                className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-bold px-8 h-12 shadow-lg uppercase text-[10px] tracking-widest"
+                                            >
+                                                {setupLoading ? 'Loading...' : 'Enable 2FA'}
+                                            </Button>
+                                        )}
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700">New Password</label>
-                                        <Input
-                                            type="password"
-                                            value={newPassword}
-                                            onChange={(e) => setNewPassword(e.target.value)}
-                                            className="bg-white/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700">Confirm New Password</label>
-                                        <Input
-                                            type="password"
-                                            value={confirmPassword}
-                                            onChange={(e) => setConfirmPassword(e.target.value)}
-                                            className="bg-white/50 border-slate-200 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                                        />
+
+                                    {/* 2FA Setup Flow */}
+                                    {show2faSetup && !twoFactorEnabled && (
+                                        <div className="mt-10 p-8 bg-slate-50 dark:bg-slate-950 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col items-center animate-in zoom-in-95 duration-300">
+                                            <div className="max-w-xs text-center space-y-6">
+                                                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">Scan this QR Code</h3>
+                                                <div className="bg-white p-4 rounded-3xl inline-block shadow-inner ring-8 ring-white/50 dark:ring-slate-800/50">
+                                                    <img src={qrCode} alt="2FA QR Code" className="w-48 h-48" />
+                                                </div>
+                                                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                                                    Use an app like Google Authenticator or Authy to scan this code, then enter the 6-digit verification token below.
+                                                </p>
+                                                <div className="space-y-4">
+                                                    <Input
+                                                        placeholder="Enter 6-digit code"
+                                                        className="h-12 text-center text-xl font-mono tracking-widest bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl"
+                                                        value={twoFactorToken}
+                                                        onChange={(e) => setTwoFactorToken(e.target.value)}
+                                                        maxLength={6}
+                                                    />
+                                                    <div className="flex gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            onClick={() => setShow2faSetup(false)}
+                                                            className="flex-1 rounded-xl uppercase text-[10px] font-bold"
+                                                        >
+                                                            Cancel
+                                                        </Button>
+                                                        <Button
+                                                            onClick={handleVerify2FA}
+                                                            className="flex-1 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl uppercase text-[10px] font-bold"
+                                                        >
+                                                            Verify & Enable
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            {/* Password Change Card */}
+                            <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
+                                <CardHeader className="border-b border-slate-50 dark:border-slate-800 py-6">
+                                    <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 italic">Update Password</CardTitle>
+                                    <CardDescription className="text-xs font-bold text-slate-400 uppercase tracking-widest">Change your security credentials</CardDescription>
+                                </CardHeader>
+                                <CardContent className="p-8 space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Current Password</label>
+                                            <Input
+                                                type="password"
+                                                value={currentPassword}
+                                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                                className="h-11 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 rounded-xl"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">New Password</label>
+                                            <Input
+                                                type="password"
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
+                                                className="h-11 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 rounded-xl"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Confirm New Password</label>
+                                            <Input
+                                                type="password"
+                                                value={confirmPassword}
+                                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                                className="h-11 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 rounded-xl"
+                                            />
+                                        </div>
                                     </div>
                                     <div className="pt-4 flex justify-end">
-                                        <Button onClick={handleUpdatePassword} disabled={passLoading} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all hover:scale-[1.02] active:scale-[0.98]">
-                                            <Save size={16} className="mr-2" /> {passLoading ? 'Updating...' : 'Update Password'}
+                                        <Button
+                                            onClick={handleUpdatePassword}
+                                            disabled={passLoading}
+                                            className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-bold px-8 h-12 shadow-lg uppercase text-[10px] tracking-widest"
+                                        >
+                                            {passLoading ? 'Updating...' : 'Update Password'}
                                         </Button>
                                     </div>
                                 </CardContent>

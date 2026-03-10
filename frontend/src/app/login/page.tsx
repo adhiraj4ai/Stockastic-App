@@ -4,16 +4,19 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
-import axios from 'axios';
+import Link from 'next/link';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Cookies from 'js-cookie';
-import { User, ShieldCheck, ArrowLeft, Eye, EyeOff, ChevronRight, AlertCircle, LayoutDashboard } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, AlertCircle, LayoutDashboard, Chrome, Apple, Binary } from 'lucide-react';
 
 export default function LoginPage() {
-    const [selectedUser, setSelectedUser] = useState<'admin' | 'ashmi' | null>(null);
+    const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
+    const [otpToken, setOtpToken] = useState('');
+    const [is2faRequired, setIs2faRequired] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -27,76 +30,37 @@ export default function LoginPage() {
 
     const logoSrc = mounted && resolvedTheme === 'dark' ? '/stockastic-logo-dark.png' : '/stockastic-logo-v3.png';
 
-    const users = [
-        {
-            id: 'admin',
-            name: 'Jugal',
-            title: 'Administrator',
-            icon: ShieldCheck,
-            color: 'text-blue-600',
-            bg: 'bg-blue-50',
-            border: 'border-slate-100 hover:border-blue-300'
-        },
-        {
-            id: 'ashmi',
-            name: 'Ashmi',
-            title: 'Portfolio Manager',
-            icon: User,
-            color: 'text-purple-600',
-            bg: 'bg-purple-50',
-            border: 'border-slate-100 hover:border-purple-300'
-        }
-    ];
-
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedUser) return;
-
         setError('');
         setLoading(true);
 
-        let authSuccess = false;
-
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            console.log('Attempting login to:', `${apiUrl}/api/token/`);
-            const response = await axios.post(`${apiUrl}/api/token/`, {
-                username: selectedUser,
-                password: password.trim(),
+            const response = await api.post('/api/account/login/', {
+                username: identifier, // Backend handles either username or email in identify logic or use identifier
+                password: password,
+                token: otpToken
             });
 
-            console.log('Login successful, setting cookies...');
+            if (response.data['2fa_required']) {
+                setIs2faRequired(true);
+                setLoading(false);
+                return;
+            }
 
             const { access, refresh } = response.data;
-
-            // Store in LocalStorage (for client-side API calls if needed)
             localStorage.setItem('access_token', access);
             localStorage.setItem('refresh_token', refresh);
 
-            // Store in Cookies (for Middleware authentication)
-            // secure: false for localhost development
             const isSecure = window.location.protocol === 'https:';
             Cookies.set('access_token', access, { expires: 1, secure: isSecure, sameSite: 'lax' });
             Cookies.set('refresh_token', refresh, { expires: 7, secure: isSecure, sameSite: 'lax' });
 
-            console.log('Redirecting to portfolio...');
-            authSuccess = true;
             router.push('/portfolio');
         } catch (err: any) {
             console.error('Login failed', err);
-            if (err.response) {
-                setError(`Authentication failed: Invalid password.`);
-            } else if (err.request) {
-                setError(`Network error: System unreachable.`);
-            } else {
-                setError(`Error: ${err.message}`);
-            }
-        } finally {
-            // Only stop loading if we failed. If success, we are redirecting, so keep "Verifying..." or similar
-            // to prevent UI flicker/race conditions with DOM extensions.
-            if (!authSuccess) {
-                setLoading(false);
-            }
+            setError(err.response?.data?.error || 'Invalid credentials');
+            setLoading(false);
         }
     };
 
@@ -114,96 +78,142 @@ export default function LoginPage() {
                         />
                     </div>
                     <CardDescription className="font-medium text-slate-500 dark:text-slate-400 text-sm">
-                        {selectedUser ? `Welcome back, ${users.find(u => u.id === selectedUser)?.name}` : 'Select your workspace to continue'}
+                        {is2faRequired ? 'Enter your 2FA security code' : 'Secure access to your trading terminal'}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-8 px-8 pb-8">
-                    {!selectedUser ? (
-                        <div className="grid grid-cols-1 gap-4">
-                            {users.map((user) => (
-                                <button
-                                    key={user.id}
-                                    onClick={() => setSelectedUser(user.id as any)}
-                                    className={`group relative flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-slate-800/40 border transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 ${user.border} dark:border-slate-800 dark:hover:border-slate-700`}
-                                >
-                                    <div className={`p-3.5 rounded-xl ${user.bg} dark:bg-slate-800 ${user.color} dark:text-indigo-400 transition-transform group-hover:scale-105 shadow-sm`}>
-                                        <user.icon size={24} strokeWidth={2} />
-                                    </div>
-                                    <div className="text-left flex-1 py-0.5">
-                                        <div className="font-bold text-slate-900 dark:text-slate-100 text-base">{user.name}</div>
-                                        <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{user.title}</div>
-                                    </div>
-                                    <div className="text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400 transition-colors">
-                                        <ChevronRight size={20} />
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    ) : (
-                        <form onSubmit={handleLogin} className="space-y-6">
-                            <div className="space-y-1.5 relative">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5">
-                                    <ShieldCheck size={12} className="text-slate-400" />
-                                    Security Code
-                                </label>
-                                <div className="relative">
+                    <form onSubmit={handleLogin} className="space-y-5">
+                        {!is2faRequired ? (
+                            <>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                                        <Mail size={12} className="text-slate-400" />
+                                        Username or Email
+                                    </label>
                                     <Input
-                                        type={showPassword ? "text" : "password"}
-                                        autoFocus
-                                        placeholder="Enter access code..."
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        className="h-12 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/20 focus:border-blue-400 dark:focus:border-blue-500 font-bold text-base pr-12 transition-all rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                                        type="text"
+                                        placeholder="Enter your email..."
+                                        value={identifier}
+                                        onChange={(e) => setIdentifier(e.target.value)}
+                                        className="h-12 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl"
                                         required
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-3.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                                    >
-                                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                                    </button>
                                 </div>
-                            </div>
 
-                            {error && (
-                                <div className="bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 text-[11px] font-bold p-4 rounded-xl border border-rose-100 dark:border-rose-900/30 flex items-center gap-3 animate-in fade-in slide-in-from-top-1">
-                                    <AlertCircle className="h-5 w-5 shrink-0" />
-                                    {error}
+                                <div className="space-y-1">
+                                    <div className="flex justify-between items-center ml-1">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                            <Lock size={12} className="text-slate-400" />
+                                            Password
+                                        </label>
+                                        <Link href="/forgot-password" title="Forgot Password" className="text-[10px] font-bold text-blue-600 hover:underline">
+                                            Forgot?
+                                        </Link>
+                                    </div>
+                                    <div className="relative">
+                                        <Input
+                                            type={showPassword ? "text" : "password"}
+                                            placeholder="••••••••"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="h-12 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl pr-12"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-4 top-3.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                                        >
+                                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                        </button>
+                                    </div>
                                 </div>
+                            </>
+                        ) : (
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                                    <Binary size={12} className="text-slate-400" />
+                                    6-Digit Authenticator Code
+                                </label>
+                                <Input
+                                    type="text"
+                                    autoFocus
+                                    placeholder="000000"
+                                    maxLength={6}
+                                    value={otpToken}
+                                    onChange={(e) => setOtpToken(e.target.value)}
+                                    className="h-14 text-center text-2xl tracking-[0.5em] font-mono bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl shadow-inner"
+                                    required
+                                />
+                                <p className="text-[10px] text-slate-400 mt-2 text-center">
+                                    Open your authenticator app to see the code.
+                                </p>
+                            </div>
+                        )}
+
+                        {error && (
+                            <div className="bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 text-[11px] font-bold p-4 rounded-xl border border-rose-100 dark:border-rose-900/30 flex items-center gap-3">
+                                <AlertCircle className="h-5 w-5 shrink-0" />
+                                {error}
+                            </div>
+                        )}
+
+                        <Button
+                            type="submit"
+                            className="w-full h-12 bg-slate-900 dark:bg-slate-100 hover:bg-black dark:hover:bg-white text-white dark:text-slate-900 font-bold text-xs tracking-widest uppercase transition-all shadow-lg active:scale-[0.98] rounded-xl flex items-center gap-2"
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                                <>
+                                    <LayoutDashboard size={16} />
+                                    {is2faRequired ? 'Verify & Login' : 'Enter Terminal'}
+                                </>
                             )}
+                        </Button>
+                    </form>
 
-                            <div className="space-y-3 pt-2">
-                                <Button
-                                    type="submit"
-                                    className="w-full h-12 bg-slate-900 dark:bg-slate-100 hover:bg-black dark:hover:bg-white text-white dark:text-slate-900 font-bold text-xs tracking-widest uppercase transition-all shadow-lg shadow-slate-200 dark:shadow-none hover:shadow-xl hover:shadow-slate-300 dark:hover:shadow-none active:scale-[0.98] rounded-xl flex items-center gap-2"
-                                    disabled={loading}
-                                >
-                                    {loading ? (
-                                        <>
-                                            <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                            Authenticating...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <LayoutDashboard size={16} />
-                                            Enter Terminal
-                                        </>
-                                    )}
-                                </Button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setSelectedUser(null);
-                                        setPassword('');
-                                        setError('');
-                                    }}
-                                    className="w-full text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 py-2 flex items-center justify-center gap-1.5 transition-colors uppercase tracking-wider hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg"
-                                >
-                                    <ArrowLeft size={12} /> Switch Account
-                                </button>
+                    {!is2faRequired && (
+                        <>
+                            <div className="relative my-8">
+                                <div className="absolute inset-0 flex items-center">
+                                    <span className="w-full border-t border-slate-100 dark:border-slate-800" />
+                                </div>
+                                <div className="relative flex justify-center text-[10px] uppercase">
+                                    <span className="bg-white dark:bg-slate-900 px-2 text-slate-400 font-bold">Or continue with</span>
+                                </div>
                             </div>
-                        </form>
+
+                            <div className="grid grid-cols-3 gap-3">
+                                <Button variant="outline" className="h-12 rounded-xl border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                                    <Chrome size={20} className="text-slate-600 dark:text-slate-400" />
+                                </Button>
+                                <Button variant="outline" className="h-12 rounded-xl border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                                    <Apple size={20} className="text-slate-600 dark:text-slate-400" />
+                                </Button>
+                                <Button variant="outline" className="h-12 rounded-xl border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                                    <Binary size={20} className="text-slate-600 dark:text-slate-400" />
+                                </Button>
+                            </div>
+
+                            <p className="mt-8 text-center text-xs text-slate-500 dark:text-slate-400 font-medium tracking-wide">
+                                Don't have an account?{' '}
+                                <Link href="/signup" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">
+                                    Sign up now
+                                </Link>
+                            </p>
+                        </>
+                    )}
+
+                    {is2faRequired && (
+                        <button
+                            type="button"
+                            onClick={() => setIs2faRequired(false)}
+                            className="w-full mt-4 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest"
+                        >
+                            Back to Credentials
+                        </button>
                     )}
                 </CardContent>
             </Card>

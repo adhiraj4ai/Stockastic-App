@@ -44,3 +44,9 @@ langchain-community==0.3.16
 langgraph==0.2.70
 pytest==8.0.0
 pytest-django==4.8.0
+dj-rest-auth==7.1.1
+django-allauth==65.15.0
+django-otp==1.5.0
+pyotp==2.9.0
+qrcode==7.4.2
+django-ratelimit==4.1.0
