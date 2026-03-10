@@ -20,5 +20,9 @@ urlpatterns = [
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("dashboard/", views.dashboard, name="dashboard"),
     path("users/me/", views.get_current_user, name="user_me"),
+    path("users/change_password/", views.change_password, name="change_password"),
+    path("sessions/", views.list_sessions, name="list_sessions"),
+    path("sessions/<int:session_id>/revoke/", views.revoke_session, name="revoke_session"),
+    path("sessions/revoke-all/", views.revoke_all_sessions, name="revoke_all_sessions"),
 ]
 

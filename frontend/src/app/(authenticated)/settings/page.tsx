@@ -6,7 +6,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Lock, Palette, Save, Camera, Phone, Type, Fingerprint, ShieldCheck, RefreshCw, Eye } from 'lucide-react';
+import { User, Lock, Palette, Save, Camera, Phone, Type, Fingerprint, ShieldCheck, RefreshCw, Eye, Monitor, Smartphone, Tablet, Globe, Trash2, LogOut } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -19,6 +19,18 @@ interface UserSettings {
     nickname?: string;
     phone_number?: string;
     profile_picture?: string;
+}
+
+interface SessionInfo {
+    id: number;
+    device: string;
+    browser: string;
+    os: string;
+    ip_address: string;
+    location: string;
+    is_current: boolean;
+    created_at: string;
+    last_active: string;
 }
 
 export default function SettingsPage() {
@@ -47,6 +59,12 @@ export default function SettingsPage() {
     const [showRecoveryCodes, setShowRecoveryCodes] = useState(false);
     const [fetchingCodes, setFetchingCodes] = useState(false);
 
+    // Sessions State
+    const [sessions, setSessions] = useState<SessionInfo[]>([]);
+    const [sessionsLoading, setSessionsLoading] = useState(false);
+    const [revokingId, setRevokingId] = useState<number | null>(null);
+    const [revokingAll, setRevokingAll] = useState(false);
+
     useEffect(() => {
         api.get('/api/users/me/')
             .then(res => {
@@ -59,7 +77,70 @@ export default function SettingsPage() {
                 toast.error("Failed to load user settings.");
                 setLoading(false);
             });
+        fetchSessions();
     }, []);
+
+    const fetchSessions = async () => {
+        setSessionsLoading(true);
+        try {
+            const res = await api.get('/api/sessions/');
+            setSessions(res.data.sessions);
+        } catch (error) {
+            console.error("Failed to load sessions", error);
+        } finally {
+            setSessionsLoading(false);
+        }
+    };
+
+    const handleRevokeSession = async (sessionId: number) => {
+        setRevokingId(sessionId);
+        try {
+            await api.post(`/api/sessions/${sessionId}/revoke/`);
+            setSessions(prev => prev.filter(s => s.id !== sessionId));
+            toast.success("Session revoked.");
+        } catch (error) {
+            toast.error("Failed to revoke session.");
+        } finally {
+            setRevokingId(null);
+        }
+    };
+
+    const handleRevokeAllSessions = async () => {
+        if (!confirm("Revoke all other sessions? You'll stay logged in on this device only.")) return;
+        setRevokingAll(true);
+        try {
+            const res = await api.post('/api/sessions/revoke-all/');
+            toast.success(`${res.data.revoked_count} session(s) revoked.`);
+            fetchSessions(); // Refresh the list
+        } catch (error) {
+            toast.error("Failed to revoke sessions.");
+        } finally {
+            setRevokingAll(false);
+        }
+    };
+
+    const getDeviceIcon = (device: string) => {
+        switch (device.toLowerCase()) {
+            case 'mobile': return <Smartphone size={18} />;
+            case 'tablet': return <Tablet size={18} />;
+            default: return <Monitor size={18} />;
+        }
+    };
+
+    const formatTimeAgo = (dateStr: string) => {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHrs = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHrs < 24) return `${diffHrs}h ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
+        return date.toLocaleDateString();
+    };
 
     const handleSetup2FA = async () => {
         setSetupLoading(true);
@@ -524,6 +605,90 @@ export default function SettingsPage() {
                                             {passLoading ? 'Updating...' : 'Update Password'}
                                         </Button>
                                     </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Active Sessions Card */}
+                            <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
+                                <CardHeader className="border-b border-slate-50 dark:border-slate-800 py-6">
+                                    <div className="flex items-center justify-between w-full">
+                                        <div>
+                                            <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 italic">Active Sessions</CardTitle>
+                                            <CardDescription className="text-xs font-bold text-slate-400 uppercase tracking-widest">Devices logged into your account</CardDescription>
+                                        </div>
+                                        {sessions.length > 1 && (
+                                            <Button
+                                                onClick={handleRevokeAllSessions}
+                                                disabled={revokingAll}
+                                                variant="outline"
+                                                className="rounded-xl font-bold px-6 h-10 uppercase text-[10px] tracking-widest border-rose-200 dark:border-rose-900/30 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                                            >
+                                                {revokingAll ? <RefreshCw className="h-3 w-3 animate-spin mr-2" /> : <LogOut size={12} className="mr-2" />}
+                                                Revoke All Others
+                                            </Button>
+                                        )}
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-0">
+                                    {sessionsLoading ? (
+                                        <div className="p-8 text-center text-slate-400 font-bold text-sm">Loading sessions...</div>
+                                    ) : sessions.length === 0 ? (
+                                        <div className="p-8 text-center text-slate-400 font-medium text-sm">No active sessions found.</div>
+                                    ) : (
+                                        <div className="divide-y divide-slate-50 dark:divide-slate-800">
+                                            {sessions.map((session) => (
+                                                <div
+                                                    key={session.id}
+                                                    className={`flex items-center justify-between px-8 py-5 transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/30 ${session.is_current ? 'bg-emerald-50/30 dark:bg-emerald-950/10' : ''
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                                                        <div className={`p-2.5 rounded-xl ${session.is_current
+                                                                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600'
+                                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                                                            }`}>
+                                                            {getDeviceIcon(session.device)}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">
+                                                                    {session.browser} on {session.os}
+                                                                </span>
+                                                                {session.is_current && (
+                                                                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 text-[9px] font-black uppercase tracking-widest whitespace-nowrap">
+                                                                        This Device
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center gap-3 mt-1">
+                                                                <span className="text-[11px] text-slate-400 font-medium flex items-center gap-1">
+                                                                    <Globe size={10} />
+                                                                    {session.ip_address}
+                                                                </span>
+                                                                <span className="text-[11px] text-slate-400 font-medium">
+                                                                    Active {formatTimeAgo(session.last_active)}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {!session.is_current && (
+                                                        <Button
+                                                            onClick={() => handleRevokeSession(session.id)}
+                                                            disabled={revokingId === session.id}
+                                                            variant="ghost"
+                                                            className="text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl h-9 w-9 p-0"
+                                                        >
+                                                            {revokingId === session.id ? (
+                                                                <RefreshCw className="h-4 w-4 animate-spin" />
+                                                            ) : (
+                                                                <Trash2 size={14} />
+                                                            )}
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         </TabsContent>

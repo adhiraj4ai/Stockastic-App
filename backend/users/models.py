@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .encryption import EncryptedField
+from django.utils import timezone
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
@@ -18,6 +19,32 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
+
+
+class UserSession(models.Model):
+    """Tracks active user sessions for session management and security auditing."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sessions')
+    session_key = models.CharField(max_length=255, unique=True, db_index=True)
+    device = models.CharField(max_length=256, blank=True, default='Unknown Device')
+    browser = models.CharField(max_length=128, blank=True, default='Unknown Browser')
+    os = models.CharField(max_length=128, blank=True, default='Unknown OS')
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    location = models.CharField(max_length=256, blank=True, default='')
+    is_current = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_active = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-last_active']
+
+    def __str__(self):
+        return f"{self.user.username} — {self.device} ({self.ip_address})"
+
+    @property
+    def is_expired(self):
+        """Session is considered expired after 24 hours of inactivity."""
+        return (timezone.now() - self.last_active).total_seconds() > 86400
+
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

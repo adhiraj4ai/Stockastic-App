@@ -21,8 +21,87 @@ from allauth.socialaccount.providers.apple.views import AppleOAuth2Adapter
 from allauth.socialaccount.providers.microsoft.views import MicrosoftGraphOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 import logging
+import uuid
+import re
+from .models import UserSession
 
 logger = logging.getLogger(__name__)
+
+
+# --- Helpers ---
+
+def _get_client_ip(request):
+    """Extract client IP, respecting X-Forwarded-For for proxied requests."""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        return x_forwarded_for.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR', '0.0.0.0')
+
+def _parse_user_agent(ua_string):
+    """Parse User-Agent into browser, OS, and device type."""
+    browser = 'Unknown Browser'
+    os_name = 'Unknown OS'
+    device = 'Unknown Device'
+    
+    if not ua_string:
+        return browser, os_name, device
+    
+    # Browser detection
+    if 'Edg/' in ua_string:
+        browser = 'Microsoft Edge'
+    elif 'OPR/' in ua_string or 'Opera' in ua_string:
+        browser = 'Opera'
+    elif 'Chrome/' in ua_string and 'Safari/' in ua_string:
+        browser = 'Chrome'
+    elif 'Firefox/' in ua_string:
+        browser = 'Firefox'
+    elif 'Safari/' in ua_string:
+        browser = 'Safari'
+    elif 'MSIE' in ua_string or 'Trident/' in ua_string:
+        browser = 'Internet Explorer'
+    
+    # OS detection
+    if 'Windows NT 10' in ua_string:
+        os_name = 'Windows 10/11'
+    elif 'Windows NT' in ua_string:
+        os_name = 'Windows'
+    elif 'Mac OS X' in ua_string:
+        os_name = 'macOS'
+    elif 'Android' in ua_string:
+        os_name = 'Android'
+    elif 'iPhone' in ua_string or 'iPad' in ua_string:
+        os_name = 'iOS'
+    elif 'Linux' in ua_string:
+        os_name = 'Linux'
+    
+    # Device type
+    if 'Mobile' in ua_string or 'Android' in ua_string or 'iPhone' in ua_string:
+        device = 'Mobile'
+    elif 'iPad' in ua_string or 'Tablet' in ua_string:
+        device = 'Tablet'
+    else:
+        device = 'Desktop'
+    
+    return browser, os_name, device
+
+def _create_session(user, request, refresh_token):
+    """Record a new session after successful login."""
+    ua = request.META.get('HTTP_USER_AGENT', '')
+    browser, os_name, device_type = _parse_user_agent(ua)
+    ip = _get_client_ip(request)
+    
+    # Use the JTI (JWT ID) of the refresh token as session_key
+    session_key = str(refresh_token['jti'])
+    
+    session = UserSession.objects.create(
+        user=user,
+        session_key=session_key,
+        device=device_type,
+        browser=browser,
+        os=os_name,
+        ip_address=ip,
+    )
+    return session
 
 
 # --- Throttle Classes ---
@@ -253,15 +332,116 @@ def login_view(request):
     
     # Generate JWT
     refresh = RefreshToken.for_user(user)
-    logger.info(f"Successful login for user: {user.username}")
+    
+    # Record session
+    session = _create_session(user, request, refresh)
+    
+    logger.info(f"Successful login for user: {user.username} from {session.ip_address}")
     return Response({
         'refresh': str(refresh),
         'access': str(refresh.access_token),
+        'session_id': session.id,
         'user': {
             'username': user.username,
             'email': user.email
         }
     })
+
+
+# --- Session Management Views ---
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_sessions(request):
+    """List all active sessions for the current user."""
+    sessions = UserSession.objects.filter(user=request.user)
+    
+    # Mark current session
+    auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+    current_jti = None
+    if auth_header.startswith('Bearer '):
+        try:
+            from rest_framework_simplejwt.tokens import AccessToken
+            token = AccessToken(auth_header.split(' ')[1])
+            # Get the refresh token's JTI from the access token's payload if available,
+            # or match by user's recent session
+            current_jti = token.get('jti', '')
+        except Exception:
+            pass
+    
+    result = []
+    for s in sessions:
+        result.append({
+            'id': s.id,
+            'device': s.device,
+            'browser': s.browser,
+            'os': s.os,
+            'ip_address': s.ip_address,
+            'location': s.location,
+            'is_current': s.session_key == current_jti if current_jti else False,
+            'created_at': s.created_at.isoformat(),
+            'last_active': s.last_active.isoformat(),
+        })
+    
+    return Response({'sessions': result, 'count': len(result)})
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def revoke_session(request, session_id):
+    """Revoke a specific session by ID."""
+    try:
+        session = UserSession.objects.get(id=session_id, user=request.user)
+        
+        # Blacklist the refresh token if possible
+        try:
+            from rest_framework_simplejwt.tokens import RefreshToken as RT
+            from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+            outstanding = OutstandingToken.objects.filter(jti=session.session_key).first()
+            if outstanding:
+                RT(outstanding.token).blacklist()
+        except Exception:
+            pass  # Token may already be expired/blacklisted
+        
+        session.delete()
+        logger.info(f"Session {session_id} revoked for user {request.user.username}")
+        return Response({"message": "Session revoked successfully"})
+    except UserSession.DoesNotExist:
+        return Response({"error": "Session not found"}, status=404)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def revoke_all_sessions(request):
+    """Revoke all sessions except the current one."""
+    auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+    current_jti = None
+    if auth_header.startswith('Bearer '):
+        try:
+            from rest_framework_simplejwt.tokens import AccessToken
+            token = AccessToken(auth_header.split(' ')[1])
+            current_jti = token.get('jti', '')
+        except Exception:
+            pass
+    
+    sessions = UserSession.objects.filter(user=request.user)
+    if current_jti:
+        sessions = sessions.exclude(session_key=current_jti)
+    
+    count = sessions.count()
+    
+    # Blacklist all refresh tokens
+    for s in sessions:
+        try:
+            from rest_framework_simplejwt.tokens import RefreshToken as RT
+            from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+            outstanding = OutstandingToken.objects.filter(jti=s.session_key).first()
+            if outstanding:
+                RT(outstanding.token).blacklist()
+        except Exception:
+            pass
+    
+    sessions.delete()
+    logger.info(f"Revoked {count} sessions for user {request.user.username}")
+    return Response({"message": f"{count} session(s) revoked", "revoked_count": count})
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
