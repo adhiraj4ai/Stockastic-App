@@ -19,6 +19,7 @@ export const metadata: Metadata = {
 };
 
 import { TooltipProvider } from "@/components/ui/tooltip";
+import IdleSessionProvider from "@/components/IdleSessionProvider";
 
 export default function RootLayout({
   children,
@@ -37,9 +38,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <TooltipProvider>
-            {children}
-          </TooltipProvider>
+          <IdleSessionProvider>
+            <TooltipProvider>
+              {children}
+            </TooltipProvider>
+          </IdleSessionProvider>
         </ThemeProvider>
       </body>
     </html>

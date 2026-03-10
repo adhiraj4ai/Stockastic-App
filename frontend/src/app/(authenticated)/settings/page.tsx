@@ -6,7 +6,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Lock, Palette, Save, Camera, Phone, Type, Fingerprint, ShieldCheck, RefreshCw, Eye, Monitor, Smartphone, Tablet, Globe, Trash2, LogOut } from 'lucide-react';
+import { User, Lock, Palette, Save, Camera, Phone, Type, Fingerprint, ShieldCheck, RefreshCw, Eye, Monitor, Smartphone, Tablet, Globe, Trash2, LogOut, History, CheckCircle, XCircle } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -31,6 +31,14 @@ interface SessionInfo {
     is_current: boolean;
     created_at: string;
     last_active: string;
+}
+
+interface LoginActivity {
+    status: 'SUCCESS' | 'FAILED';
+    ip_address: string;
+    user_agent: string;
+    timestamp: string;
+    location: string;
 }
 
 export default function SettingsPage() {
@@ -65,6 +73,9 @@ export default function SettingsPage() {
     const [revokingId, setRevokingId] = useState<number | null>(null);
     const [revokingAll, setRevokingAll] = useState(false);
 
+    // Activity Log State
+    const [loginActivities, setLoginActivities] = useState<LoginActivity[]>([]);
+
     // Password Strength
     const calculatePasswordStrength = (password: string) => {
         let strength = 0;
@@ -92,7 +103,17 @@ export default function SettingsPage() {
                 setLoading(false);
             });
         fetchSessions();
+        fetchActivity();
     }, []);
+
+    const fetchActivity = async () => {
+        try {
+            const res = await api.get('/api/account/activity/');
+            setLoginActivities(res.data.activity);
+        } catch (error) {
+            console.error("Failed to load activity log", error);
+        }
+    };
 
     const fetchSessions = async () => {
         setSessionsLoading(true);
@@ -626,8 +647,8 @@ export default function SettingsPage() {
                                                     <div
                                                         key={level}
                                                         className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${passwordStrength >= level
-                                                                ? strengthColors[passwordStrength]
-                                                                : 'bg-slate-100 dark:bg-slate-800'
+                                                            ? strengthColors[passwordStrength]
+                                                            : 'bg-slate-100 dark:bg-slate-800'
                                                             }`}
                                                     />
                                                 ))}
@@ -726,6 +747,57 @@ export default function SettingsPage() {
                                                             )}
                                                         </Button>
                                                     )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            {/* Activity Log Card */}
+                            <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
+                                <CardHeader className="border-b border-slate-50 dark:border-slate-800 py-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-xl">
+                                            <History size={18} />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 italic">Login Activity Log</CardTitle>
+                                            <CardDescription className="text-xs font-bold text-slate-400 uppercase tracking-widest">Recent authentication attempts</CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-0">
+                                    {loginActivities.length === 0 ? (
+                                        <div className="p-8 text-center text-slate-400 font-medium text-sm">No recent activity.</div>
+                                    ) : (
+                                        <div className="divide-y divide-slate-50 dark:divide-slate-800">
+                                            {loginActivities.map((activity, i) => (
+                                                <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between px-8 py-5 gap-4 transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                                    <div className="flex items-center gap-4">
+                                                        {activity.status === 'SUCCESS' ? (
+                                                            <CheckCircle size={18} className="text-emerald-500 flex-shrink-0" />
+                                                        ) : (
+                                                            <XCircle size={18} className="text-rose-500 flex-shrink-0" />
+                                                        )}
+                                                        <div>
+                                                            <div className="font-bold text-sm text-slate-900 dark:text-slate-100 line-clamp-1">
+                                                                {activity.user_agent ? activity.user_agent : 'Unknown Client'}
+                                                            </div>
+                                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                                                                <span className="text-[11px] text-slate-400 font-medium">IP: {activity.ip_address || "Unknown"}</span>
+                                                                {activity.location && (
+                                                                    <>
+                                                                        <span className="text-slate-300 dark:text-slate-700">•</span>
+                                                                        <span className="text-[11px] text-slate-400 font-medium">{activity.location}</span>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-[11px] text-slate-400 font-medium flex-shrink-0 sm:text-right">
+                                                        {formatTimeAgo(activity.timestamp)}
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>

@@ -46,6 +46,35 @@ class UserSession(models.Model):
         return (timezone.now() - self.last_active).total_seconds() > 86400
 
 
+class LoginActivity(models.Model):
+    """Tracks login attempts (success/failures) for security auditing."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='login_activity', null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=512, blank=True, default='')
+    status = models.CharField(max_length=20, choices=[('SUCCESS', 'Success'), ('FAILED', 'Failed')])
+    timestamp = models.DateTimeField(auto_now_add=True)
+    location = models.CharField(max_length=256, blank=True, default='')
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.user.username if self.user else 'Unknown'} - {self.status} at {self.timestamp}"
+
+
+class PasswordHistory(models.Model):
+    """Tracks past password hashes to prevent reuse."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='password_history')
+    password_hash = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.created_at}"
+
+
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:

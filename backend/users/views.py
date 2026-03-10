@@ -23,7 +23,11 @@ from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 import logging
 import uuid
 import re
-from .models import UserSession
+import threading
+from django.core.mail import send_mail
+from django.conf import settings
+from .models import UserSession, LoginActivity, PasswordHistory
+from django.contrib.auth.hashers import check_password as auth_check_password
 
 logger = logging.getLogger(__name__)
 
@@ -301,10 +305,19 @@ def login_view(request):
     password = request.data.get('password')
     token = request.data.get('token')
     
+    ip_address = _get_client_ip(request)
+    user_agent = request.META.get('HTTP_USER_AGENT', '')[:512]
+    
     # Use generic error to prevent user enumeration
     user = authenticate(request, username=username, password=password)
     if not user:
         logger.warning(f"Failed login attempt for username: {username}")
+        LoginActivity.objects.create(
+            user=User.objects.filter(username=username).first(),
+            ip_address=ip_address,
+            user_agent=user_agent,
+            status='FAILED'
+        )
         return Response({"error": "Invalid credentials"}, status=401)
     
     # Check if user's email is verified (if mandatory verification is on)
@@ -335,6 +348,35 @@ def login_view(request):
     
     # Record session
     session = _create_session(user, request, refresh)
+    
+    # Send email if new IP/Device mix (has not been successfully logged into in the last 30 days)
+    recent_activity = LoginActivity.objects.filter(
+        user=user, ip_address=ip_address, user_agent=user_agent, status='SUCCESS'
+    ).exists()
+    
+    if not recent_activity and user.email:
+        def send_login_alert():
+            try:
+                send_mail(
+                    subject="New Login to Your Account",
+                    message=f"We detected a new login to your account from {session.device} ({session.os}) at {session.ip_address}.",
+                    from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'security@stockastic.com'),
+                    recipient_list=[user.email],
+                    fail_silently=True,
+                )
+            except Exception as e:
+                logger.error(f"Failed to send login alert: {e}")
+        
+        threading.Thread(target=send_login_alert, daemon=True).start()
+
+    # Record Login Activity
+    LoginActivity.objects.create(
+        user=user,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        status='SUCCESS',
+        location=session.location
+    )
     
     logger.info(f"Successful login for user: {user.username} from {session.ip_address}")
     return Response({
@@ -459,10 +501,50 @@ def change_password(request):
         validate_password(new_password, user=user)
     except ValidationError as e:
         return Response({"error": e.messages}, status=400)
+    
+    # Enforce 5-password history rule
+    for history in PasswordHistory.objects.filter(user=user)[:5]:
+        if auth_check_password(new_password, history.password_hash):
+            return Response({"error": "You cannot reuse any of your last 5 passwords."}, status=400)
         
     user.set_password(new_password)
     user.save()
+    
+    # Record in history
+    PasswordHistory.objects.create(user=user, password_hash=user.password)
+
+    # Send Notification
+    if user.email:
+        def send_password_alert():
+            try:
+                send_mail(
+                    subject="Your Password Has Been Changed",
+                    message="Your account password was just successfully updated. If you did not make this change, please contact support immediately.",
+                    from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'security@stockastic.com'),
+                    recipient_list=[user.email],
+                    fail_silently=True,
+                )
+            except Exception as e:
+                logger.error(f"Failed to send password change alert: {e}")
+        threading.Thread(target=send_password_alert, daemon=True).start()
+
     return Response({"message": "Password updated successfully"})
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def login_activity(request):
+    """Fetch the user's recent login activity."""
+    activities = LoginActivity.objects.filter(user=request.user)[:20]
+    result = []
+    for a in activities:
+        result.append({
+            'status': a.status,
+            'ip_address': a.ip_address,
+            'user_agent': a.user_agent,
+            'timestamp': a.timestamp.isoformat(),
+            'location': a.location
+        })
+    return Response({'activity': result})
 
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
