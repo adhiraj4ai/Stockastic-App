@@ -7,6 +7,12 @@
 # done
 # echo "PostgreSQL started"
 
+# Create logs directory for security logging
+mkdir -p /app/logs
+
+echo "Making migrations..."
+python manage.py makemigrations --no-input
+
 echo "Running migrations..."
 python manage.py migrate
 
