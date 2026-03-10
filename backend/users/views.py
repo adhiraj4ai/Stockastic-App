@@ -4,8 +4,9 @@ from rest_framework.response import Response
 from .serializers import UserSerializer
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
-from django_otp import devices_for_user
+from django_otp import devices_for_user, user_has_device
 from django_otp.plugins.otp_totp.models import TOTPDevice
+from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
 import pyotp
 import qrcode
 import base64
@@ -128,6 +129,9 @@ def verify_2fa_setup(request):
     else:
         return Response({"error": "Invalid token"}, status=400)
 
+    else:
+        return Response({"error": "Invalid token"}, status=400)
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def disable_2fa(request):
@@ -148,6 +152,32 @@ def disable_2fa(request):
     else:
         return Response({"error": "Invalid token"}, status=400)
 
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def recovery_codes(request):
+    user = request.user
+    device = StaticDevice.objects.filter(user=user, name="Backup Codes").first()
+    
+    if request.method == 'POST':
+        # Generate new codes
+        if not device:
+            device = StaticDevice.objects.create(user=user, name="Backup Codes")
+        
+        # Clear existing tokens and generate 10 new ones
+        device.token_set.all().delete()
+        codes = [StaticToken.random_token() for _ in range(10)]
+        for code in codes:
+            device.token_set.create(token=code)
+        
+        return Response({"codes": codes})
+    
+    # GET: Return existing codes (redacted or just list count/existence if security preferred)
+    # For now, let's allow fetching them if the user is authenticated
+    if not device:
+        return Response({"codes": []})
+    
+    return Response({"codes": [t.token for t in device.token_set.all()]})
+
 @api_view(['POST'])
 @permission_classes([]) # Public
 def login_view(request):
@@ -163,10 +193,18 @@ def login_view(request):
         if not token:
             return Response({"message": "2FA token required", "2fa_required": True}, status=200)
         
-        # Verify 2FA token
-        device = TOTPDevice.objects.filter(user=user, confirmed=True).first()
-        if not device or not device.verify_token(token):
-            return Response({"error": "Invalid 2FA token"}, status=401)
+        # Verify 2FA token (Check both TOTP and Static/Recovery)
+        # 1. Check TOTP
+        totp_device = TOTPDevice.objects.filter(user=user, confirmed=True).first()
+        if totp_device and totp_device.verify_token(token):
+            pass # Valid
+        else:
+            # 2. Check Static (Recovery Codes)
+            static_device = StaticDevice.objects.filter(user=user, name="Backup Codes").first()
+            if static_device and static_device.verify_token(token):
+                pass # Valid
+            else:
+                return Response({"error": "Invalid 2FA token"}, status=401)
     
     # Generate JWT
     refresh = RefreshToken.for_user(user)
@@ -199,14 +237,14 @@ def change_password(request):
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
     client_class = OAuth2Client
-    callback_url = "http://localhost:3000/api/auth/callback/google"
+    callback_url = "http://localhost:3000/auth/callback/google"
 
 class AppleLogin(SocialLoginView):
     adapter_class = AppleOAuth2Adapter
     client_class = OAuth2Client
-    callback_url = "http://localhost:3000/api/auth/callback/apple"
+    callback_url = "http://localhost:3000/auth/callback/apple"
 
 class MicrosoftLogin(SocialLoginView):
     adapter_class = MicrosoftGraphOAuth2Adapter
     client_class = OAuth2Client
-    callback_url = "http://localhost:3000/api/auth/callback/microsoft"
+    callback_url = "http://localhost:3000/auth/callback/microsoft"

@@ -15,6 +15,7 @@ urlpatterns = [
     path("account/2fa/setup/", views.setup_2fa, name="setup_2fa"),
     path("account/2fa/verify/", views.verify_2fa_setup, name="verify_2fa"),
     path("account/2fa/disable/", views.disable_2fa, name="disable_2fa"),
+    path("account/2fa/recovery-codes/", views.recovery_codes, name="recovery_codes"),
     path("token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("dashboard/", views.dashboard, name="dashboard"),

@@ -8,7 +8,7 @@ import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Mail, Lock, AlertCircle, Chrome, Apple, Github } from 'lucide-react';
+import { User, Mail, Lock, AlertCircle, Chrome, Apple, Binary, Check, X } from 'lucide-react';
 
 export default function SignupPage() {
     const [formData, setFormData] = useState({
@@ -21,12 +21,44 @@ export default function SignupPage() {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
+    const calculatePasswordStrength = (password: string) => {
+        let strength = 0;
+        if (password.length > 8) strength++;
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[0-9]/.test(password)) strength++;
+        if (/[^A-Za-z0-9]/.test(password)) strength++;
+        return strength;
+    };
+
+    const passwordStrength = calculatePasswordStrength(formData.password);
+
+    const getStrengthColor = () => {
+        if (passwordStrength === 0) return 'bg-slate-200 dark:bg-slate-800';
+        if (passwordStrength === 1) return 'bg-rose-500';
+        if (passwordStrength === 2) return 'bg-orange-500';
+        if (passwordStrength === 3) return 'bg-amber-500';
+        return 'bg-emerald-500';
+    };
+
+    const getStrengthText = () => {
+        if (formData.password.length === 0) return '';
+        if (passwordStrength <= 1) return 'Too Weak';
+        if (passwordStrength === 2) return 'Fair';
+        if (passwordStrength === 3) return 'Good';
+        return 'Strong';
+    };
+
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
         if (formData.password !== formData.confirm_password) {
             setError('Passwords do not match');
+            return;
+        }
+
+        if (passwordStrength < 2) {
+            setError('Password is too weak');
             return;
         }
 
@@ -39,7 +71,7 @@ export default function SignupPage() {
                 password: formData.password,
             });
 
-            alert('Account created successfully! Please login.');
+            alert('Account created successfully! Please check your email for verification.');
             router.push('/login');
         } catch (err: any) {
             console.error('Signup failed', err);
@@ -47,6 +79,10 @@ export default function SignupPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSocialLogin = (provider: string) => {
+        window.location.href = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/users/auth/${provider}/`;
     };
 
     return (
@@ -77,7 +113,7 @@ export default function SignupPage() {
                 <CardContent className="pt-6 px-8 pb-8">
                     <form onSubmit={handleSignup} className="space-y-4">
                         <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Username</label>
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Username</label>
                             <div className="relative">
                                 <User className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
                                 <Input
@@ -91,7 +127,7 @@ export default function SignupPage() {
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Email</label>
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Email</label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
                                 <Input
@@ -106,7 +142,7 @@ export default function SignupPage() {
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Password</label>
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Password</label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
                                 <Input
@@ -118,10 +154,26 @@ export default function SignupPage() {
                                     required
                                 />
                             </div>
+                            {/* Strength Meter */}
+                            {formData.password.length > 0 && (
+                                <div className="mt-2 space-y-1.5 px-1">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Strength: <span className={getStrengthColor().replace('bg-', 'text-')}>{getStrengthText()}</span></span>
+                                    </div>
+                                    <div className="flex gap-1 h-1">
+                                        {[1, 2, 3, 4].map((step) => (
+                                            <div
+                                                key={step}
+                                                className={`flex-1 rounded-full transition-all duration-500 ${step <= passwordStrength ? getStrengthColor() : 'bg-slate-100 dark:bg-slate-800'}`}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Confirm Password</label>
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Confirm Password</label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
                                 <Input
@@ -144,7 +196,7 @@ export default function SignupPage() {
 
                         <Button
                             type="submit"
-                            className="w-full h-12 bg-slate-900 dark:bg-slate-100 hover:bg-black dark:hover:bg-white text-white dark:text-slate-900 font-bold rounded-xl transition-all shadow-lg active:scale-[0.98]"
+                            className="w-full h-12 bg-slate-900 dark:bg-slate-100 hover:bg-black dark:hover:bg-white text-white dark:text-slate-900 font-bold rounded-xl transition-all shadow-lg active:scale-[0.98] uppercase text-[10px] tracking-widest"
                             disabled={loading}
                         >
                             {loading ? 'Creating Account...' : 'Sign Up'}
@@ -161,14 +213,26 @@ export default function SignupPage() {
                     </div>
 
                     <div className="grid grid-cols-3 gap-3">
-                        <Button variant="outline" className="h-12 rounded-xl dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                        <Button
+                            variant="outline"
+                            onClick={() => handleSocialLogin('google')}
+                            className="h-12 rounded-xl dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                        >
                             <Chrome className="h-5 w-5" />
                         </Button>
-                        <Button variant="outline" className="h-12 rounded-xl dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                        <Button
+                            variant="outline"
+                            onClick={() => handleSocialLogin('apple')}
+                            className="h-12 rounded-xl dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                        >
                             <Apple className="h-5 w-5" />
                         </Button>
-                        <Button variant="outline" className="h-12 rounded-xl dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
-                            <Github className="h-5 w-5" />
+                        <Button
+                            variant="outline"
+                            onClick={() => handleSocialLogin('microsoft')}
+                            className="h-12 rounded-xl dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                        >
+                            <Binary className="h-5 w-5" />
                         </Button>
                     </div>
 

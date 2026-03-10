@@ -64,6 +64,11 @@ export default function LoginPage() {
         }
     };
 
+    const handleSocialLogin = (provider: string) => {
+        // Redirect to backend social auth endpoint
+        window.location.href = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/users/auth/${provider}/`;
+    };
+
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 font-sans transition-colors duration-500">
             <Card className="w-full max-w-md shadow-xl border-none ring-0 bg-white dark:bg-slate-900 overflow-hidden">
@@ -186,13 +191,25 @@ export default function LoginPage() {
                             </div>
 
                             <div className="grid grid-cols-3 gap-3">
-                                <Button variant="outline" className="h-12 rounded-xl border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => handleSocialLogin('google')}
+                                    className="h-12 rounded-xl border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                >
                                     <Chrome size={20} className="text-slate-600 dark:text-slate-400" />
                                 </Button>
-                                <Button variant="outline" className="h-12 rounded-xl border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => handleSocialLogin('apple')}
+                                    className="h-12 rounded-xl border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                >
                                     <Apple size={20} className="text-slate-600 dark:text-slate-400" />
                                 </Button>
-                                <Button variant="outline" className="h-12 rounded-xl border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => handleSocialLogin('microsoft')}
+                                    className="h-12 rounded-xl border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                >
                                     <Binary size={20} className="text-slate-600 dark:text-slate-400" />
                                 </Button>
                             </div>

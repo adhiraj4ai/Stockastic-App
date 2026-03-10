@@ -49,8 +49,8 @@ INSTALLED_APPS = [
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
-    # "allauth.socialaccount.providers.apple",  # Requires more setup, keeping it listed
-    # "allauth.socialaccount.providers.microsoft",
+    "allauth.socialaccount.providers.apple",
+    "allauth.socialaccount.providers.microsoft",
     "django_filters",
     "corsheaders",
     "users",
@@ -59,6 +59,8 @@ INSTALLED_APPS = [
     "chat",
     "django_otp",
     "django_otp.plugins.otp_totp",
+    "django_otp.plugins.otp_static",
+    "axes",
 ]
 
 SITE_ID = 1
@@ -73,6 +75,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
+    "axes.middleware.AxesMiddleware",
 ]
 
 ROOT_URLCONF = "stockastic.urls"
@@ -190,6 +193,7 @@ CSRF_TRUSTED_ORIGINS = [
 
 # Authentication
 AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
@@ -223,8 +227,15 @@ REST_AUTH = {
 ACCOUNT_LOGIN_METHODS = {'email', 'username'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 ACCOUNT_USERNAME_REQUIRED = True
+
+# Axes Configuration
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1 # hour
+AXES_LOCKOUT_TEMPLATE = None # Return JSON instead
+AXES_LOCKOUT_URL = None
+AXES_RESET_ON_SUCCESS = True
 
 # Social Account Linking
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True

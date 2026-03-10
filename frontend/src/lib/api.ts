@@ -47,15 +47,47 @@ const addAuthInterceptor = (client: typeof api) => {
 addAuthInterceptor(api);
 addAuthInterceptor(mlApi);
 
-// Response interceptor for global error handling
+// Response interceptor for global error handling and JWT refresh
 api.interceptors.response.use(
     (response) => response,
-    (error) => {
+    async (error) => {
+        const originalRequest = error.config;
         const status = error.response ? error.response.status : null;
         const detail = error.response?.data?.detail;
 
-        // Check for 401 or specific invalid token error messages
-        if (status === 401 || (detail && detail.includes('token not valid'))) {
+        // If 401 and not already retrying
+        if (status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+
+            const refreshToken = Cookies.get('refresh_token') || localStorage.getItem('refresh_token');
+
+            if (refreshToken) {
+                try {
+                    console.log('Attempting to refresh access token...');
+                    const response = await axios.post(`${API_BASE_URL}/api/token/refresh/`, {
+                        refresh: refreshToken
+                    });
+
+                    const { access } = response.data;
+
+                    // Simple logic to store new token (adjust if you use HttpOnly cookies in production)
+                    Cookies.set('access_token', access, { expires: 7 }); // Access token is usually short-lived, but we set it here
+                    localStorage.setItem('access_token', access);
+
+                    // Update header and retry
+                    originalRequest.headers.Authorization = `Bearer ${access}`;
+                    return api(originalRequest);
+                } catch (refreshError) {
+                    console.error('Refresh token expired or invalid. Logging out...');
+                    logoutAndRedirect();
+                }
+            } else {
+                logoutAndRedirect();
+            }
+        }
+
+        // Check for specific invalid token error messages if status isn't 401 or as a fallback
+        if (detail && detail.includes('token not valid')) {
             console.error('Session expired or invalid token. Logging out...');
             logoutAndRedirect();
         }

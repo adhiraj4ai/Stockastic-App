@@ -20,6 +20,33 @@ function ResetPasswordForm() {
     const uid = searchParams.get('uid');
     const token = searchParams.get('token');
 
+    const calculatePasswordStrength = (password: string) => {
+        let strength = 0;
+        if (password.length > 8) strength++;
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[0-9]/.test(password)) strength++;
+        if (/[^A-Za-z0-9]/.test(password)) strength++;
+        return strength;
+    };
+
+    const passwordStrength = calculatePasswordStrength(password);
+
+    const getStrengthColor = () => {
+        if (passwordStrength === 0) return 'bg-slate-200 dark:bg-slate-800';
+        if (passwordStrength === 1) return 'bg-rose-500';
+        if (passwordStrength === 2) return 'bg-orange-500';
+        if (passwordStrength === 3) return 'bg-amber-500';
+        return 'bg-emerald-500';
+    };
+
+    const getStrengthText = () => {
+        if (password.length === 0) return '';
+        if (passwordStrength <= 1) return 'Too Weak';
+        if (passwordStrength === 2) return 'Fair';
+        if (passwordStrength === 3) return 'Good';
+        return 'Strong';
+    };
+
     useEffect(() => {
         if (!uid || !token) {
             setStatus('error');
@@ -32,6 +59,12 @@ function ResetPasswordForm() {
 
         if (password !== confirmPassword) {
             setErrorMessage('Passwords do not match');
+            setStatus('error');
+            return;
+        }
+
+        if (passwordStrength < 2) {
+            setErrorMessage('Password is too weak');
             setStatus('error');
             return;
         }
@@ -95,6 +128,22 @@ function ResetPasswordForm() {
                                 required
                                 minLength={8}
                             />
+                            {/* Strength Meter */}
+                            {password.length > 0 && (
+                                <div className="mt-2 space-y-1.5 px-1">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Strength: <span className={getStrengthColor().replace('bg-', 'text-')}>{getStrengthText()}</span></span>
+                                    </div>
+                                    <div className="flex gap-1 h-1">
+                                        {[1, 2, 3, 4].map((step) => (
+                                            <div
+                                                key={step}
+                                                className={`flex-1 rounded-full transition-all duration-500 ${step <= passwordStrength ? getStrengthColor() : 'bg-slate-100 dark:bg-slate-800'}`}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="space-y-1.5">

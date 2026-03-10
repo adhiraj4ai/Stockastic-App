@@ -6,7 +6,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Lock, Palette, Save, Camera, Phone, Type, Fingerprint } from 'lucide-react';
+import { User, Lock, Palette, Save, Camera, Phone, Type, Fingerprint, ShieldCheck, RefreshCw, Eye } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -41,6 +41,11 @@ export default function SettingsPage() {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [passLoading, setPassLoading] = useState(false);
+
+    // Recovery Codes State
+    const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+    const [showRecoveryCodes, setShowRecoveryCodes] = useState(false);
+    const [fetchingCodes, setFetchingCodes] = useState(false);
 
     useEffect(() => {
         api.get('/api/users/me/')
@@ -88,9 +93,37 @@ export default function SettingsPage() {
         try {
             await api.post('/api/account/2fa/disable/', { token });
             setTwoFactorEnabled(false);
+            setRecoveryCodes([]); // Clear recovery codes locally
             toast.success("2FA disabled.");
         } catch (error) {
             toast.error("Failed to disable 2FA. Invalid token.");
+        }
+    };
+
+    const handleFetchRecoveryCodes = async () => {
+        setFetchingCodes(true);
+        try {
+            const res = await api.get('/api/account/2fa/recovery-codes/');
+            setRecoveryCodes(res.data.codes);
+            setShowRecoveryCodes(true);
+        } catch (error) {
+            toast.error("Failed to fetch recovery codes.");
+        } finally {
+            setFetchingCodes(false);
+        }
+    };
+
+    const handleGenerateRecoveryCodes = async () => {
+        if (!confirm("Are you sure? This will invalidate all your previous recovery codes.")) return;
+        setFetchingCodes(true);
+        try {
+            const res = await api.post('/api/account/2fa/recovery-codes/');
+            setRecoveryCodes(res.data.codes);
+            toast.success("New recovery codes generated!");
+        } catch (error) {
+            toast.error("Failed to generate recovery codes.");
+        } finally {
+            setFetchingCodes(false);
         }
     };
 
@@ -381,6 +414,70 @@ export default function SettingsPage() {
                                     )}
                                 </CardContent>
                             </Card>
+
+                            {/* Recovery Codes Card */}
+                            {twoFactorEnabled && (
+                                <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
+                                    <CardHeader className="border-b border-slate-50 dark:border-slate-800 py-6">
+                                        <div className="flex items-center justify-between w-full">
+                                            <div>
+                                                <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 italic">Recovery Codes</CardTitle>
+                                                <CardDescription className="text-xs font-bold text-slate-400 uppercase tracking-widest">Backup access for your account</CardDescription>
+                                            </div>
+                                            <ShieldCheck size={24} className="text-emerald-500" />
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="p-8">
+                                        {!showRecoveryCodes ? (
+                                            <div className="flex flex-col items-center text-center space-y-4 py-4">
+                                                <p className="text-sm text-slate-600 dark:text-slate-400 max-w-lg">
+                                                    If you lose access to your authenticator app, you can use these recovery codes to log in. Store them in a safe place.
+                                                </p>
+                                                <Button
+                                                    onClick={handleFetchRecoveryCodes}
+                                                    disabled={fetchingCodes}
+                                                    variant="outline"
+                                                    className="rounded-xl font-bold px-8 h-12 uppercase text-[10px] tracking-widest border-slate-200 dark:border-slate-800 flex items-center gap-2"
+                                                >
+                                                    {fetchingCodes ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Eye size={14} />}
+                                                    View Recovery Codes
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-8">
+                                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                                    {recoveryCodes.map((code, idx) => (
+                                                        <div key={idx} className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 p-3 rounded-xl text-center font-mono text-xs font-bold text-slate-700 dark:text-slate-300 shadow-inner">
+                                                            {code}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-50 dark:border-slate-800">
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                                                        Keep these codes secure. They each work once.
+                                                    </p>
+                                                    <div className="flex gap-2 w-full md:w-auto">
+                                                        <Button
+                                                            onClick={handleGenerateRecoveryCodes}
+                                                            disabled={fetchingCodes}
+                                                            variant="outline"
+                                                            className="flex-1 md:flex-none rounded-xl font-bold px-6 h-10 uppercase text-[10px] tracking-widest border-slate-200 dark:border-slate-800 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                                                        >
+                                                            Regenerate Codes
+                                                        </Button>
+                                                        <Button
+                                                            onClick={() => setShowRecoveryCodes(false)}
+                                                            className="flex-1 md:flex-none bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-bold px-6 h-10 uppercase text-[10px] tracking-widest"
+                                                        >
+                                                            Hide Codes
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            )}
 
                             {/* Password Change Card */}
                             <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
