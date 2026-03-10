@@ -70,8 +70,8 @@ api.interceptors.response.use(
 
                     const { access } = response.data;
 
-                    // Simple logic to store new token (adjust if you use HttpOnly cookies in production)
-                    Cookies.set('access_token', access, { expires: 7 }); // Access token is usually short-lived, but we set it here
+                    // Store new token — cookie expiry matches JWT access token lifetime (~15 min)
+                    Cookies.set('access_token', access, { expires: 1 / 96 }); // ~15 minutes
                     localStorage.setItem('access_token', access);
 
                     // Update header and retry

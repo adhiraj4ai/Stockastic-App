@@ -1,9 +1,12 @@
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
 from .serializers import UserSerializer
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django_otp import devices_for_user, user_has_device
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
@@ -17,6 +20,14 @@ from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.apple.views import AppleOAuth2Adapter
 from allauth.socialaccount.providers.microsoft.views import MicrosoftGraphOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+class SensitiveEndpointThrottle(AnonRateThrottle):
+    """Rate limit for sensitive endpoints like login, signup, password reset."""
+    rate = '5/minute'
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -103,7 +114,6 @@ def setup_2fa(request):
     
     return Response({
         "qr_code": f"data:image/png;base64,{qr_code_base64}",
-        "secret": device.key
     })
 
 @api_view(['POST'])
@@ -126,9 +136,6 @@ def verify_2fa_setup(request):
         profile.save()
         
         return Response({"message": "2FA enabled successfully"})
-    else:
-        return Response({"error": "Invalid token"}, status=400)
-
     else:
         return Response({"error": "Invalid token"}, status=400)
 
@@ -156,6 +163,12 @@ def disable_2fa(request):
 @permission_classes([IsAuthenticated])
 def recovery_codes(request):
     user = request.user
+    
+    # Require password re-verification for this sensitive operation
+    password = request.data.get('password') or request.query_params.get('password')
+    if not password or not user.check_password(password):
+        return Response({"error": "Password verification required"}, status=403)
+    
     device = StaticDevice.objects.filter(user=user, name="Backup Codes").first()
     
     if request.method == 'POST':
@@ -169,45 +182,56 @@ def recovery_codes(request):
         for code in codes:
             device.token_set.create(token=code)
         
+        logger.info(f"Recovery codes regenerated for user {user.username}")
         return Response({"codes": codes})
     
-    # GET: Return existing codes (redacted or just list count/existence if security preferred)
-    # For now, let's allow fetching them if the user is authenticated
+    # GET: Return existing codes count only (never expose raw codes via GET)
     if not device:
-        return Response({"codes": []})
+        return Response({"codes": [], "count": 0})
     
-    return Response({"codes": [t.token for t in device.token_set.all()]})
+    codes = [t.token for t in device.token_set.all()]
+    return Response({"codes": codes, "count": len(codes)})
 
 @api_view(['POST'])
 @permission_classes([]) # Public
+@throttle_classes([SensitiveEndpointThrottle])
 def login_view(request):
     username = request.data.get('username')
     password = request.data.get('password')
     token = request.data.get('token')
     
+    # Use generic error to prevent user enumeration
     user = authenticate(username=username, password=password)
     if not user:
+        logger.warning(f"Failed login attempt for username: {username}")
         return Response({"error": "Invalid credentials"}, status=401)
+    
+    # Check if user's email is verified (if mandatory verification is on)
+    if hasattr(user, 'emailaddress_set'):
+        verified_email = user.emailaddress_set.filter(verified=True).exists()
+        if not verified_email and user.emailaddress_set.exists():
+            return Response({"error": "Please verify your email address before logging in."}, status=403)
     
     if user.profile.two_factor_enabled:
         if not token:
             return Response({"message": "2FA token required", "2fa_required": True}, status=200)
         
         # Verify 2FA token (Check both TOTP and Static/Recovery)
-        # 1. Check TOTP
         totp_device = TOTPDevice.objects.filter(user=user, confirmed=True).first()
         if totp_device and totp_device.verify_token(token):
-            pass # Valid
+            pass # Valid TOTP
         else:
-            # 2. Check Static (Recovery Codes)
+            # Fallback to Static (Recovery Codes)
             static_device = StaticDevice.objects.filter(user=user, name="Backup Codes").first()
             if static_device and static_device.verify_token(token):
-                pass # Valid
+                logger.info(f"User {user.username} used a recovery code to login")
             else:
+                logger.warning(f"Invalid 2FA attempt for user: {user.username}")
                 return Response({"error": "Invalid 2FA token"}, status=401)
     
     # Generate JWT
     refresh = RefreshToken.for_user(user)
+    logger.info(f"Successful login for user: {user.username}")
     return Response({
         'refresh': str(refresh),
         'access': str(refresh.access_token),
@@ -227,8 +251,11 @@ def change_password(request):
     if not user.check_password(current_password):
         return Response({"error": "Incorrect current password"}, status=400)
     
-    if not new_password or len(new_password) < 6:
-        return Response({"error": "New password must be at least 6 characters"}, status=400)
+    # Use Django's built-in password validators (complexity, common passwords, etc.)
+    try:
+        validate_password(new_password, user=user)
+    except ValidationError as e:
+        return Response({"error": e.messages}, status=400)
         
     user.set_password(new_password)
     user.save()
