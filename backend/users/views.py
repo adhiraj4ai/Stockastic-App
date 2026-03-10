@@ -302,7 +302,7 @@ def login_view(request):
     token = request.data.get('token')
     
     # Use generic error to prevent user enumeration
-    user = authenticate(username=username, password=password)
+    user = authenticate(request, username=username, password=password)
     if not user:
         logger.warning(f"Failed login attempt for username: {username}")
         return Response({"error": "Invalid credentials"}, status=401)

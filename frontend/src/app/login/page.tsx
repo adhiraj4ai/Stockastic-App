@@ -173,7 +173,7 @@ export default function LoginPage() {
                             ) : (
                                 <>
                                     <LayoutDashboard size={16} />
-                                    {is2faRequired ? 'Verify & Login' : 'Enter Terminal'}
+                                    {is2faRequired ? 'Verify & Login' : 'Sign In'}
                                 </>
                             )}
                         </Button>
