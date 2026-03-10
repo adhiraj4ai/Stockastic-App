@@ -1,7 +1,7 @@
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.throttling import AnonRateThrottle
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from .serializers import UserSerializer
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
@@ -25,9 +25,27 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+# --- Throttle Classes ---
+
 class SensitiveEndpointThrottle(AnonRateThrottle):
-    """Rate limit for sensitive endpoints like login, signup, password reset."""
+    """5 requests/min for public auth endpoints (login, signup, forgot-password)."""
     rate = '5/minute'
+
+class TwoFactorThrottle(UserRateThrottle):
+    """10 requests/min for 2FA operations (setup, verify, disable)."""
+    rate = '10/minute'
+
+class PasswordChangeThrottle(UserRateThrottle):
+    """3 requests/min for password changes and recovery code generation."""
+    rate = '3/minute'
+
+class BurstRateThrottle(AnonRateThrottle):
+    """Short burst limit to prevent rapid-fire requests from any single IP."""
+    rate = '30/minute'
+
+class UserBurstThrottle(UserRateThrottle):
+    """Per-user burst limit to prevent abuse from authenticated users."""
+    rate = '60/minute'
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -93,6 +111,7 @@ def get_current_user(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@throttle_classes([TwoFactorThrottle])
 def setup_2fa(request):
     user = request.user
     device = TOTPDevice.objects.filter(user=user, confirmed=False).first()
@@ -118,6 +137,7 @@ def setup_2fa(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@throttle_classes([TwoFactorThrottle])
 def verify_2fa_setup(request):
     user = request.user
     token = request.data.get('token')
@@ -141,6 +161,7 @@ def verify_2fa_setup(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@throttle_classes([TwoFactorThrottle])
 def disable_2fa(request):
     user = request.user
     token = request.data.get('token')
@@ -161,6 +182,7 @@ def disable_2fa(request):
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
+@throttle_classes([PasswordChangeThrottle])
 def recovery_codes(request):
     user = request.user
     
@@ -243,6 +265,7 @@ def login_view(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@throttle_classes([PasswordChangeThrottle])
 def change_password(request):
     user = request.user
     current_password = request.data.get('current_password')

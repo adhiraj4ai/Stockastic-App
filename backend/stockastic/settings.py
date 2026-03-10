@@ -218,15 +218,17 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
         "rest_framework.authentication.TokenAuthentication",
     ),
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle"
+        "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/day",
-        "user": "1000/day",
-        "sensitive": "5/minute", # For login/signup/forgot-password
-    }
+        "anon": "100/hour",
+        "user": "1000/hour",
+    },
 }
 
 # REST Auth & Allauth
