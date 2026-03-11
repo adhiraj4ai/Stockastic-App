@@ -6,7 +6,7 @@ from .market import (
 from .fundamentals import StockFundamental, Dividend, FinancialReport
 from .portfolio import (
     PortfolioAccount, PortfolioItem, TransactionType, 
-    PortfolioTransaction, WatchlistItem, PortfolioSnapshot
+    PortfolioTransaction, WatchlistItem, PortfolioSnapshot, PortfolioTarget
 )
 from .strategy import (
     ScopeType, Strategy, StrategyExperiment, 

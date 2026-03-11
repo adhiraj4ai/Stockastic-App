@@ -39,6 +39,7 @@ class Notification(models.Model):
         TARGET_REACHED = 'TARGET_REACHED', 'Target Reached'
         SIGNIFICANT_GAIN = 'SIGNIFICANT_GAIN', 'Significant Gain'
         SIGNIFICANT_LOSS = 'SIGNIFICANT_LOSS', 'Significant Loss'
+        BELOW_WACC = 'BELOW_WACC', 'Dropped Below WACC'
         
         # Watchlist alerts
         WATCHLIST_BREAKOUT = 'WATCHLIST_BREAKOUT', 'Watchlist Breakout'

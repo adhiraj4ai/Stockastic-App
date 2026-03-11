@@ -3,18 +3,18 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from decimal import Decimal
-from django.db.models import Q, Max
+from django.db.models import Q, Max, Sum
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, date
 import pandas as pd
 import numpy as np
 
 from ..models import (
-    PortfolioAccount, PortfolioItem, PortfolioTransaction, 
-    DailyStockPrice, Company, StrategySignal, FinancialReport, TransactionType
+    PortfolioAccount, PortfolioItem, PortfolioTransaction, PortfolioSnapshot,
+    DailyStockPrice, Company, StrategySignal, FinancialReport, TransactionType, PortfolioTarget
 )
 from ..serializers import (
-    PortfolioAccountSerializer, PortfolioItemSerializer, PortfolioTransactionSerializer
+    PortfolioAccountSerializer, PortfolioItemSerializer, PortfolioTransactionSerializer, PortfolioTargetSerializer
 )
 from ..utils import (
     calculate_broker_commission, calculate_sebon_fee, 
@@ -112,6 +112,56 @@ class PortfolioViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(detail=False, methods=['get'])
+    def historical_performance(self, request):
+        """
+        Fetch historical portfolio snapshots for charting.
+        Query Params:
+        - account: account_id or 'all' (default: 'all')
+        - period: '1M', '3M', '6M', '1Y', 'ALL' (default: '1M')
+        """
+        user = request.user
+        account_id = request.query_params.get('account', 'all')
+        period = request.query_params.get('period', '1M')
+        
+        # Calculate start date based on period
+        today = timezone.now().date()
+        if period == '1M':
+            start_date = today - timedelta(days=30)
+        elif period == '3M':
+            start_date = today - timedelta(days=90)
+        elif period == '6M':
+            start_date = today - timedelta(days=180)
+        elif period == '1Y':
+            start_date = today - timedelta(days=365)
+        else:
+            start_date = date(2000, 1, 1) # All time
+            
+        snapshots = PortfolioSnapshot.objects.filter(
+            user=user,
+            date__gte=start_date
+        ).order_by('date')
+        
+        if account_id != 'all':
+            snapshots = snapshots.filter(account_id=account_id)
+        
+        # Aggregate if 'all' - multiple snapshots for the same date might exist if multiple accounts
+        if account_id == 'all':
+            # This is slightly complex in Django ORM, might need manual aggregation
+            # Group by date and sum
+            snapshot_data = snapshots.values('date').annotate(
+                total_value=Sum('total_value'),
+                invested_value=Sum('invested_value'),
+                cash_balance=Sum('cash_balance'),
+                nepse_index=Max('nepse_index') # NEPSE is same for all accounts on same date
+            ).order_by('date')
+        else:
+            snapshot_data = snapshots.values(
+                'date', 'total_value', 'invested_value', 'cash_balance', 'nepse_index'
+            )
+            
+        return Response(list(snapshot_data))
+
+    @action(detail=False, methods=['get'])
     def optimize(self, request):
         user = request.user
         account_id = request.query_params.get('account')
@@ -143,6 +193,169 @@ class PortfolioViewSet(viewsets.ModelViewSet):
             return Response(result, status=status.HTTP_400_BAD_REQUEST)
             
         return Response(result)
+
+    @action(detail=False, methods=['get'])
+    def rebalancing_metrics(self, request):
+        """
+        Calculate allocation weights by Sector and Tag, 
+        and compare against user-defined targets.
+        """
+        user = request.user
+        account_id = request.query_params.get('account', 'all')
+        
+        # 1. Get current holdings
+        queryset = PortfolioItem.objects.filter(user=user)
+        if account_id and account_id != 'all':
+            queryset = queryset.filter(account_id=account_id)
+            
+        items_data = PortfolioService.get_portfolio_metrics(queryset)
+        if not items_data:
+            return Response({
+                'total_value': 0,
+                'sector_metrics': [],
+                'tag_metrics': []
+            }, status=200)
+            
+        total_value = sum(Decimal(str(item.current_value)) for item in items_data)
+        if total_value == 0:
+             return Response({
+                'total_value': 0,
+                'sector_metrics': [],
+                'tag_metrics': []
+            }, status=200)
+
+        # 2. Group by Sector
+        sector_allocations = {}
+        for item in items_data:
+            sector = item.sector or 'Other'
+            if sector not in sector_allocations:
+                sector_allocations[sector] = Decimal('0.00')
+            sector_allocations[sector] += Decimal(str(item.current_value))
+            
+        # 3. Group by Tag
+        tag_allocations = {}
+        for item in items_data:
+            tags = item.tags or []
+            if not tags:
+                if 'Untagged' not in tag_allocations:
+                    tag_allocations['Untagged'] = Decimal('0.00')
+                tag_allocations['Untagged'] += Decimal(str(item.current_value))
+            for tag in tags:
+                if tag not in tag_allocations:
+                    tag_allocations[tag] = Decimal('0.00')
+                tag_allocations[tag] += Decimal(str(item.current_value))
+        
+        # 4. Fetch Targets
+        target_qs = PortfolioTarget.objects.filter(user=user)
+        if account_id and account_id != 'all':
+            target_qs = target_qs.filter(Q(account_id=account_id) | Q(account__isnull=True))
+            
+        targets = {
+            'SECTOR': {t.category_name: float(t.target_percentage) for t in target_qs.filter(target_type='SECTOR')},
+            'TAG': {t.category_name: float(t.target_percentage) for t in target_qs.filter(target_type='TAG')}
+        }
+        
+        # 5. Build Result
+        def build_metrics(allocations, target_dict):
+            results = []
+            categories_seen = set()
+            
+            for category, value in allocations.items():
+                categories_seen.add(category)
+                current_pct = (float(value) / float(total_value)) * 100
+                target_pct = target_dict.get(category, 0)
+                deviation = current_pct - target_pct if target_pct > 0 else 0
+                
+                results.append({
+                    'category': category,
+                    'current_value': float(value),
+                    'current_percentage': round(current_pct, 2),
+                    'target_percentage': target_pct,
+                    'deviation_percentage': round(deviation, 2),
+                    'recommended_action': "TRIM" if deviation > 5 else ("INCREASE" if deviation < -5 and target_pct > 0 else "HOLD")
+                })
+            
+            # Add targets that have no current allocation
+            for category, target_pct in target_dict.items():
+                if category not in categories_seen:
+                    results.append({
+                        'category': category,
+                        'current_value': 0,
+                        'current_percentage': 0,
+                        'target_percentage': target_pct,
+                        'deviation_percentage': -target_pct,
+                        'recommended_action': "INCREASE"
+                    })
+            
+            results.sort(key=lambda x: x['current_percentage'], reverse=True)
+            return results
+
+        return Response({
+            'total_value': float(total_value),
+            'sector_metrics': build_metrics(sector_allocations, targets['SECTOR']),
+            'tag_metrics': build_metrics(tag_allocations, targets['TAG']),
+        })
+
+    @action(detail=False, methods=['get'])
+    def rebalance_suggestions(self, request):
+        """
+        Suggest buy/sell quantities for individual tickers to match target_allocation_pct.
+        """
+        user = request.user
+        account_id = request.query_params.get('account', 'all')
+        
+        queryset = PortfolioItem.objects.filter(user=user)
+        if account_id and account_id != 'all':
+            queryset = queryset.filter(account_id=account_id)
+            
+        items_data = PortfolioService.get_portfolio_metrics(queryset)
+        if not items_data:
+            return Response({'total_value': 0, 'suggestions': []}, status=200)
+            
+        total_value = sum(Decimal(str(item.current_value)) for item in items_data)
+        if total_value == 0:
+             return Response({'total_value': 0, 'suggestions': []}, status=200)
+
+        suggestions = []
+        for item in items_data:
+            # We need to fetch the original model object to get target_allocation_pct
+            # or handle it in PortfolioService.get_portfolio_metrics.
+            # For simplicity, we'll fetch from DB here or assume it's in the serializer data if we used it.
+            try:
+                orig_item = PortfolioItem.objects.get(id=item.id)
+                target_pct = float(orig_item.target_allocation_pct or 0)
+            except PortfolioItem.DoesNotExist:
+                target_pct = 0
+
+            if target_pct <= 0:
+                continue
+
+            current_price = float(item.current_price)
+            if current_price <= 0:
+                continue
+
+            target_value = float(total_value) * (target_pct / 100.0)
+            current_value = float(item.current_value)
+            diff_value = target_value - current_value
+            
+            # Suggest quantity (discrete shares)
+            diff_qty = int(diff_value / current_price)
+            
+            suggestions.append({
+                'ticker': item.ticker,
+                'current_value': current_value,
+                'target_value': round(target_value, 2),
+                'current_percentage': round((current_value / float(total_value)) * 100, 2),
+                'target_percentage': target_pct,
+                'suggested_quantity': diff_qty,
+                'suggested_amount': round(diff_qty * current_price, 2),
+                'action': 'BUY' if diff_qty > 0 else ('SELL' if diff_qty < 0 else 'HOLD')
+            })
+
+        return Response({
+            'total_value': float(total_value),
+            'suggestions': sorted(suggestions, key=lambda x: abs(x['suggested_amount']), reverse=True)
+        })
 
     @action(detail=False, methods=['post'])
     def calculate_position_size(self, request):
@@ -361,6 +574,29 @@ class PortfolioViewSet(viewsets.ModelViewSet):
             "transactions": txn_serializer.data
         })
 
+    @action(detail=True, methods=['patch'])
+    def update_tags(self, request, pk=None):
+        """Quick update tags and/or thesis for a portfolio item."""
+        item = self.get_object()
+        tags = request.data.get('tags')
+        thesis = request.data.get('thesis')
+        
+        if tags is not None:
+            if not isinstance(tags, list):
+                return Response({"error": "tags must be a list"}, status=status.HTTP_400_BAD_REQUEST)
+            item.tags = tags
+        
+        if thesis is not None:
+            item.thesis = thesis
+        
+        item.save()
+        return Response({
+            "id": item.id,
+            "ticker": item.ticker,
+            "tags": item.tags,
+            "thesis": item.thesis
+        })
+
 class PortfolioTransactionViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = PortfolioTransactionSerializer
@@ -480,6 +716,255 @@ class PortfolioTransactionViewSet(viewsets.ModelViewSet):
         if old_ticker != ticker or old_account != account:
              PortfolioService.recalculate_item(user, old_account, old_ticker)
 
+class PortfolioTargetViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PortfolioTargetSerializer
+
+    def get_queryset(self):
+        if self.request.user.username == 'admin':
+            return PortfolioTarget.objects.all()
+        return PortfolioTarget.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def realized_pnl(self, request):
+        """
+        Calculate realized P&L from SELL transactions.
+        Query Params:
+        - account: account_id or 'all' (default: 'all')
+        - from_date: YYYY-MM-DD (optional)
+        - to_date: YYYY-MM-DD (optional)
+        """
+        user = request.user
+        account_id = request.query_params.get('account', 'all')
+        from_date = request.query_params.get('from_date')
+        to_date = request.query_params.get('to_date')
+        
+        sell_txns = PortfolioTransaction.objects.filter(
+            user=user,
+            transaction_type__in=[TransactionType.SELL]
+        ).order_by('transaction_date')
+        
+        if account_id != 'all':
+            sell_txns = sell_txns.filter(account_id=account_id)
+        
+        if from_date:
+            sell_txns = sell_txns.filter(transaction_date__date__gte=from_date)
+        if to_date:
+            sell_txns = sell_txns.filter(transaction_date__date__lte=to_date)
+        
+        # We need the WACC at the time of each sell to calculate realized P&L.
+        # We'll reconstruct WACC per ticker from buy history up to each sell date.
+        # Simpler approach: use the stored buy history to compute running WACC per ticker.
+        
+        all_txns = PortfolioTransaction.objects.filter(
+            user=user
+        ).order_by('transaction_date', 'created_at')
+        
+        if account_id != 'all':
+            all_txns = all_txns.filter(account_id=account_id)
+        
+        # Build running WACC per ticker
+        ticker_state = {}  # {ticker: {qty, wacc, realized_pnl, total_sold_qty, total_sell_amount, total_cgt}}
+        
+        for txn in all_txns:
+            ticker = txn.ticker
+            if ticker not in ticker_state:
+                ticker_state[ticker] = {
+                    'qty': 0,
+                    'wacc': Decimal('0.00'),
+                    'realized_pnl': Decimal('0.00'),
+                    'total_sold_qty': 0,
+                    'total_sell_amount': Decimal('0.00'),
+                    'total_cost_of_sold': Decimal('0.00'),
+                    'total_cgt': Decimal('0.00'),
+                    'total_commission': Decimal('0.00'),
+                    'total_fees': Decimal('0.00'),
+                    'sell_count': 0,
+                    'profitable_sells': 0,
+                }
+            
+            state = ticker_state[ticker]
+            
+            if txn.transaction_type in [TransactionType.BUY]:
+                cost = Decimal(txn.quantity) * Decimal(txn.rate) + Decimal(txn.commission) + Decimal(txn.sebon_fee) + Decimal(txn.dp_charge)
+                old_val = Decimal(state['qty']) * state['wacc']
+                state['qty'] += txn.quantity
+                if state['qty'] > 0:
+                    state['wacc'] = (old_val + cost) / Decimal(state['qty'])
+            
+            elif txn.transaction_type == TransactionType.BONUS:
+                old_val = Decimal(state['qty']) * state['wacc']
+                state['qty'] += txn.quantity
+                if state['qty'] > 0:
+                    state['wacc'] = old_val / Decimal(state['qty'])
+            
+            elif txn.transaction_type == TransactionType.SELL:
+                # Check if this sell falls within the requested date range
+                in_range = True
+                if from_date and txn.transaction_date.date() < date.fromisoformat(from_date):
+                    in_range = False
+                if to_date and txn.transaction_date.date() > date.fromisoformat(to_date):
+                    in_range = False
+                
+                sell_proceeds = Decimal(txn.quantity) * Decimal(txn.rate)
+                cost_basis = Decimal(txn.quantity) * state['wacc']
+                gross_pnl = sell_proceeds - cost_basis
+                net_pnl = gross_pnl - Decimal(txn.commission) - Decimal(txn.sebon_fee) - Decimal(txn.dp_charge) - Decimal(txn.cgt)
+                
+                if in_range:
+                    state['realized_pnl'] += net_pnl
+                    state['total_sold_qty'] += txn.quantity
+                    state['total_sell_amount'] += sell_proceeds
+                    state['total_cost_of_sold'] += cost_basis
+                    state['total_cgt'] += Decimal(txn.cgt)
+                    state['total_commission'] += Decimal(txn.commission)
+                    state['total_fees'] += Decimal(txn.sebon_fee) + Decimal(txn.dp_charge)
+                    state['sell_count'] += 1
+                    if net_pnl > 0:
+                        state['profitable_sells'] += 1
+                
+                state['qty'] -= txn.quantity
+        
+        # Build per-ticker results (only tickers with sells in range)
+        per_ticker = []
+        total_realized = Decimal('0.00')
+        total_cgt = Decimal('0.00')
+        total_sells = 0
+        total_wins = 0
+        
+        for ticker, state in ticker_state.items():
+            if state['sell_count'] == 0:
+                continue
+            
+            avg_sell_price = state['total_sell_amount'] / Decimal(state['total_sold_qty']) if state['total_sold_qty'] > 0 else Decimal('0.00')
+            avg_cost = state['total_cost_of_sold'] / Decimal(state['total_sold_qty']) if state['total_sold_qty'] > 0 else Decimal('0.00')
+            
+            per_ticker.append({
+                'ticker': ticker,
+                'total_sold_qty': state['total_sold_qty'],
+                'avg_sell_price': round(float(avg_sell_price), 2),
+                'avg_cost': round(float(avg_cost), 2),
+                'realized_pnl': round(float(state['realized_pnl']), 2),
+                'cgt_paid': round(float(state['total_cgt']), 2),
+                'commission': round(float(state['total_commission']), 2),
+                'fees': round(float(state['total_fees']), 2),
+                'sell_count': state['sell_count'],
+                'profitable_sells': state['profitable_sells'],
+            })
+            
+            total_realized += state['realized_pnl']
+            total_cgt += state['total_cgt']
+            total_sells += state['sell_count']
+            total_wins += state['profitable_sells']
+        
+        per_ticker.sort(key=lambda x: x['realized_pnl'], reverse=True)
+        
+        win_rate = (total_wins / total_sells * 100) if total_sells > 0 else 0
+        
+        return Response({
+            'summary': {
+                'total_realized_pnl': round(float(total_realized), 2),
+                'total_cgt_paid': round(float(total_cgt), 2),
+                'net_after_tax': round(float(total_realized), 2),  # Net is already after CGT deduction
+                'total_trades': total_sells,
+                'win_rate': round(win_rate, 1),
+            },
+            'per_ticker': per_ticker
+        })
+
+    @action(detail=False, methods=['get'])
+    def tax_report(self, request):
+        """
+        Group realized P&L by Fiscal Year (Nepal: mid-July to mid-July).
+        """
+        user = request.user
+        account_id = request.query_params.get('account', 'all')
+        
+        # Reuse realized_pnl logic but calculate for all sells and then group by fiscal year
+        all_txns = PortfolioTransaction.objects.filter(
+            user=user
+        ).order_by('transaction_date', 'created_at')
+        
+        if account_id != 'all':
+            all_txns = all_txns.filter(account_id=account_id)
+            
+        ticker_state = {} # {ticker: {qty, wacc}}
+        annual_summary = {} # {FY: {realized_pnl, cgt, trades, symbols}}
+        
+        def get_fy(dt):
+            # Mid July (approx July 16) is the start
+            if dt.month > 7 or (dt.month == 7 and dt.day >= 16):
+                return f"{dt.year}/{str(dt.year+1)[2:]}"
+            return f"{dt.year-1}/{str(dt.year)[2:]}"
+
+        for txn in all_txns:
+            ticker = txn.ticker
+            if ticker not in ticker_state:
+                ticker_state[ticker] = {'qty': 0, 'wacc': Decimal('0.00')}
+            
+            state = ticker_state[ticker]
+            
+            if txn.transaction_type == TransactionType.BUY:
+                cost = (Decimal(txn.quantity) * Decimal(txn.rate) + 
+                       Decimal(txn.commission) + Decimal(txn.sebon_fee) + Decimal(txn.dp_charge))
+                old_val = Decimal(state['qty']) * state['wacc']
+                state['qty'] += txn.quantity
+                if state['qty'] > 0:
+                    state['wacc'] = (old_val + cost) / Decimal(state['qty'])
+            
+            elif txn.transaction_type == TransactionType.BONUS:
+                old_val = Decimal(state['qty']) * state['wacc']
+                state['qty'] += txn.quantity
+                if state['qty'] > 0:
+                    state['wacc'] = old_val / Decimal(state['qty'])
+            
+            elif txn.transaction_type == TransactionType.SELL:
+                sell_proceeds = Decimal(txn.quantity) * Decimal(txn.rate)
+                cost_basis = Decimal(txn.quantity) * state['wacc']
+                net_pnl = (sell_proceeds - cost_basis - 
+                          Decimal(txn.commission) - Decimal(txn.sebon_fee) - 
+                          Decimal(txn.dp_charge) - Decimal(txn.cgt))
+                
+                fy = get_fy(txn.transaction_date.date())
+                if fy not in annual_summary:
+                    annual_summary[fy] = {
+                        'realized_pnl': Decimal('0.00'),
+                        'cgt_paid': Decimal('0.00'),
+                        'trades_count': 0,
+                        'ticker_details': {} # {ticker: pnl}
+                    }
+                
+                sum_fy = annual_summary[fy]
+                sum_fy['realized_pnl'] += net_pnl
+                sum_fy['cgt_paid'] += Decimal(txn.cgt)
+                sum_fy['trades_count'] += 1
+                
+                if ticker not in sum_fy['ticker_details']:
+                    sum_fy['ticker_details'][ticker] = Decimal('0.00')
+                sum_fy['ticker_details'][ticker] += net_pnl
+                
+                state['qty'] -= txn.quantity
+        
+        # Format results
+        results = []
+        for fy, data in annual_summary.items():
+            results.append({
+                'fiscal_year': fy,
+                'realized_pnl': round(float(data['realized_pnl']), 2),
+                'cgt_paid': round(float(data['cgt_paid']), 2),
+                'trades_count': data['trades_count'],
+                'top_gainers': sorted(
+                    [{'ticker': t, 'pnl': round(float(p), 2)} for t, p in data['ticker_details'].items()],
+                    key=lambda x: x['pnl'], reverse=True
+                )[:5]
+            })
+            
+        results.sort(key=lambda x: x['fiscal_year'], reverse=True)
+        return Response(results)
+
 class PortfolioPerformanceView(viewsets.ViewSet):
     """
     API endpoint for benchmarking portfolio performance against NEPSE.
@@ -545,17 +1030,32 @@ class PortfolioPerformanceView(viewsets.ViewSet):
         # Calculate daily returns
         df_port['return'] = df_port['total_value'].pct_change().fillna(0)
         
-        # 3. Fetch Benchmark Data (NEPSE)
-        # We need NEPSE index history. Assuming 'NEPSE' ticker in DailyStockPrice
-        # If not present, we can't calculate relative metrics, returning only portfolio performance.
-        nepse_data = DailyStockPrice.objects.filter(
-            ticker='NEPSE', 
-            date__gte=start_date, 
-            date__lte=end_date
-        ).values('date', 'close').order_by('date')
+        # 3. Fetch Benchmark Data
+        # We prefer using the nepse_index stored directly in snapshots for consistency
+        # If snapshots have nepse_index, we use that.
+        if df_port.empty:
+            return Response({"error": "No portfolio history found for this period"}, status=200)
+            
+        # Check if we have nepse_index in any of the snapshots
+        has_snapshot_bench = 'nepse_index' in df_port.columns and df_port['nepse_index'].notnull().any()
         
-        df_bench = pd.DataFrame(list(nepse_data))
-        has_benchmark = not df_bench.empty
+        if has_snapshot_bench:
+            df_bench = df_port[['nepse_index']].copy().rename(columns={'nepse_index': 'close'})
+            has_benchmark = True
+        else:
+            # Fallback: Look for 'NEPSE' ticker in DailyStockPrice if snapshot index is missing
+            nepse_data = DailyStockPrice.objects.filter(
+                ticker='NEPSE', 
+                date__gte=start_date, 
+                date__lte=end_date
+            ).values('date', 'close').order_by('date')
+            df_bench = pd.DataFrame(list(nepse_data))
+            if not df_bench.empty:
+                df_bench['date'] = pd.to_datetime(df_bench['date'])
+                df_bench.set_index('date', inplace=True)
+                has_benchmark = True
+            else:
+                has_benchmark = False
         
         metrics = {
             "alpha": 0,

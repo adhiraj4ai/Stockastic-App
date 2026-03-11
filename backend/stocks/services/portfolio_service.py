@@ -293,7 +293,9 @@ class PortfolioService:
             health_score, fund_metrics = FundamentalService.calculate_health_score(fund_obj)
             item.health_score = health_score
             item.fundamental_metrics = fund_metrics
-            
+            # Include target_allocation_pct which is now a field in PortfolioItem
+            # (It's already an attribute of the model instance, but it's good to be explicit 
+            # if we were building a dict, here we are returning model objects)
             results.append(item)
         
         return results

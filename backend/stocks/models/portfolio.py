@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+import json
 
 class AccountType(models.TextChoices):
     LIVE = 'LIVE', 'Live'
@@ -35,6 +36,8 @@ class PortfolioItem(models.Model):
     target_price_3 = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     thesis = models.TextField(blank=True, null=True)
     strategy_type = models.CharField(max_length=50, default='MANUAL')
+    tags = models.JSONField(default=list, blank=True, help_text='Custom tags like Core, Swing, Speculative')
+    target_allocation_pct = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="Target allocation as % of total portfolio")
 
     class Meta:
         unique_together = ('user', 'account', 'ticker')
@@ -115,3 +118,21 @@ class PortfolioSnapshot(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.date} - {self.total_value}"
+
+class PortfolioTarget(models.Model):
+    class TargetType(models.TextChoices):
+        SECTOR = 'SECTOR', 'Sector'
+        TAG = 'TAG', 'Tag'
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    account = models.ForeignKey(PortfolioAccount, on_delete=models.CASCADE, null=True, blank=True)
+    target_type = models.CharField(max_length=10, choices=TargetType.choices)
+    category_name = models.CharField(max_length=100)
+    target_percentage = models.DecimalField(max_digits=5, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'account', 'target_type', 'category_name')
+
+    def __str__(self):
+        return f"{self.user.username} - {self.category_name} ({self.target_percentage}%)"

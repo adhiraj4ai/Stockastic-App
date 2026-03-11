@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models.portfolio import PortfolioAccount, PortfolioItem, PortfolioTransaction, WatchlistItem
+from ..models.portfolio import PortfolioAccount, PortfolioItem, PortfolioTransaction, WatchlistItem, PortfolioTarget
 from ..models.market import DailyStockPrice, Company
 
 class PortfolioAccountSerializer(serializers.ModelSerializer):
@@ -29,7 +29,7 @@ class PortfolioItemSerializer(serializers.ModelSerializer):
                   'gain_loss_percent', 'day_gain_loss', 'sector', 'volatility', 'signals',
                   'health_score', 'fundamental_metrics',
                   'stop_loss_price', 'target_price', 'target_price_2', 'target_price_3', 
-                  'thesis', 'strategy_type']
+                  'thesis', 'strategy_type', 'tags', 'target_allocation_pct']
         read_only_fields = ['id', 'purchased_at']
 
 class PortfolioTransactionSerializer(serializers.ModelSerializer):
@@ -68,3 +68,9 @@ class WatchlistItemSerializer(serializers.ModelSerializer):
                   'days_to_book_closure', 'next_book_close', 'is_accumulating', 
                   'buy_signal_count', 'upside_percent', 'risk_reward_ratio']
         read_only_fields = ['id', 'added_at']
+
+class PortfolioTargetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PortfolioTarget
+        fields = ['id', 'account', 'target_type', 'category_name', 'target_percentage', 'created_at']
+        read_only_fields = ['id', 'created_at']

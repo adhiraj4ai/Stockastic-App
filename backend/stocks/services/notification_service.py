@@ -110,12 +110,32 @@ def check_portfolio_alerts(user):
                 )
                 if notification:
                     notifications_created += 1
-            
-            # Check significant gain/loss (>5% from WACC)
+
+            # Calculate metrics
             wacc = float(item.wacc) if item.wacc else float(item.buy_price)
-            price_change_pct = ((current_price - wacc) / wacc) * 100
+            price_change_pct = ((current_price - wacc) / wacc) * 100 if wacc > 0 else 0
+
+            # Check if dropped below WACC (Cost price)
+            if current_price < wacc:
+                notification = create_notification(
+                    user=user,
+                    notification_type=Notification.NotificationType.BELOW_WACC,
+                    title=f'{item.ticker} Dropped Below Cost',
+                    message=f'{item.ticker} is now trading at Rs. {current_price:.2f}, which is below your average cost of Rs. {wacc:.2f}.',
+                    ticker=item.ticker,
+                    redirect_url='/portfolio?tab=holdings',
+                    portfolio_item_id=item.id,
+                    metadata={
+                        'current_price': current_price,
+                        'wacc': wacc,
+                        'quantity': item.quantity
+                    }
+                )
+                if notification:
+                    notifications_created += 1
             
-            if price_change_pct >= 5.0:
+            # Check significant gain/loss (>10% from WACC, excluding simple break-below which has its own alert)
+            if price_change_pct >= 10.0:
                 notification = create_notification(
                     user=user,
                     notification_type=Notification.NotificationType.SIGNIFICANT_GAIN,
@@ -133,7 +153,7 @@ def check_portfolio_alerts(user):
                 )
                 if notification:
                     notifications_created += 1
-            elif price_change_pct <= -5.0:
+            elif price_change_pct <= -10.0:
                 notification = create_notification(
                     user=user,
                     notification_type=Notification.NotificationType.SIGNIFICANT_LOSS,

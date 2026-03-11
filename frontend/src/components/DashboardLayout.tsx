@@ -40,10 +40,11 @@ const navItems = [
         name: 'Finfolio',
         icon: Wallet,
         subItems: [
-            { name: 'My Portfolio', href: '/portfolio?tab=holdings', icon: Briefcase },
+            { name: 'My Portfolio', href: '/portfolio', icon: Briefcase },
             { name: 'Performance', href: '/portfolio/performance', icon: TrendingUp },
             { name: 'Income', href: '/portfolio/income', icon: DollarSign },
-            { name: 'Watchlist', href: '/portfolio?tab=watchlist', icon: Eye },
+            { name: 'Transactions', href: '/portfolio/transactions', icon: History },
+            { name: 'Watchlist', href: '/portfolio/watchlist', icon: Eye },
             { name: 'Paper Trading', href: '/paper-trading', icon: LayoutDashboard },
         ]
     },
