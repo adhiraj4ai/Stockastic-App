@@ -68,11 +68,22 @@ api.interceptors.response.use(
                         refresh: refreshToken
                     });
 
-                    const { access } = response.data;
+                    const { access, refresh: newRefresh } = response.data;
 
-                    // Store new token — cookie expiry matches JWT access token lifetime (~15 min)
-                    Cookies.set('access_token', access, { expires: 1 / 96 }); // ~15 minutes
+                    // Cookie expiry matches login behaviour (1 day) so the 5-second
+                    // cookie-presence check in DashboardLayout doesn't evict the user
+                    // between activity bursts. The JWT itself is still only valid for
+                    // 15 min server-side; expiry is enforced there.
+                    Cookies.set('access_token', access, { expires: 1, sameSite: 'lax' });
                     localStorage.setItem('access_token', access);
+
+                    // Persist rotated refresh token (ROTATE_REFRESH_TOKENS=True means the
+                    // old one is blacklisted after use — must store the new one or the
+                    // next refresh attempt will fail and force a logout).
+                    if (newRefresh) {
+                        Cookies.set('refresh_token', newRefresh, { expires: 7, sameSite: 'lax' });
+                        localStorage.setItem('refresh_token', newRefresh);
+                    }
 
                     // Update header and retry
                     originalRequest.headers.Authorization = `Bearer ${access}`;

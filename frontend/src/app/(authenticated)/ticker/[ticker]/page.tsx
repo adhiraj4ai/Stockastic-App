@@ -111,7 +111,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
     const router = useRouter();
     const [data, setData] = useState<StockDetailData | null>(null);
     const [floorsheet, setFloorsheet] = useState<FloorsheetItem[]>([]);
-    const [activeTab, setActiveTab] = useState('indicators');
+    const [activeTab, setActiveTab] = useState('technical');
     const [reportType, setReportType] = useState<'ANNUAL' | 'QUARTERLY'>('ANNUAL');
     const [visibleMetrics, setVisibleMetrics] = useState<string[]>(['net_profit', 'revenue']);
     const [dividends, setDividends] = useState<any[]>([]);

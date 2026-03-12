@@ -295,7 +295,7 @@ function DashboardContent({
                                 {hasSubItems ? (
                                     <button
                                         onClick={() => toggleMenu(item.name)}
-                                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 text-gray-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-slate-200 group ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}
+                                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 text-gray-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/60 hover:text-gray-900 dark:hover:text-slate-100 group ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}
                                         title={isSidebarCollapsed ? item.name : ''}
                                     >
                                         <div className="flex items-center gap-3">
@@ -325,7 +325,7 @@ function DashboardContent({
                                         href={('href' in item ? item.href : '#') as string}
                                         className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 group shadow-sm border ${isActive
                                             ? 'bg-gradient-to-br from-slate-900 to-slate-800 dark:from-indigo-600 dark:to-blue-700 text-white shadow-lg shadow-indigo-500/20 border-transparent'
-                                            : 'text-gray-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-slate-200 border-slate-200/50 dark:border-white/5'
+                                            : 'text-gray-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/60 hover:text-gray-900 dark:hover:text-slate-100 border-slate-200/50 dark:border-white/5'
                                             } ${isSidebarCollapsed ? 'justify-center px-2' : ''}`}
                                         title={isSidebarCollapsed ? item.name : ''}
                                     >
@@ -371,8 +371,8 @@ function DashboardContent({
                                                     key={subItem.name}
                                                     href={subItem.href}
                                                     className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[11px] font-bold tracking-tight transition-all duration-300 ${isActiveLink
-                                                        ? 'bg-blue-50/50 dark:bg-indigo-900/40 text-blue-700 dark:text-indigo-300 shadow-sm'
-                                                        : 'text-gray-500 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-slate-300'
+                                                        ? 'bg-blue-100/70 dark:bg-indigo-500/25 text-blue-700 dark:text-indigo-200 shadow-sm'
+                                                        : 'text-gray-500 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-slate-200'
                                                         }`}
                                                 >
                                                     {subItem.icon && <subItem.icon size={14} className={subIconColor} />}

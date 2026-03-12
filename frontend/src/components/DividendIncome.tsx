@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import api from '@/lib/api';
-import { Loader2, DollarSign, TrendingUp, Gift, Calendar, AlertCircle } from 'lucide-react';
+import { Loader2, DollarSign, TrendingUp, Gift, Calendar, AlertCircle, ArrowLeftRight } from 'lucide-react';
 
 interface DividendItem {
     id: number;
@@ -26,6 +26,15 @@ interface DividendSummary {
     total_bonus_shares: number;
     yield_on_cost: number;
     current_invested: number;
+    total_realized_pnl: number;
+}
+
+interface PnlTicker {
+    ticker: string;
+    realized_pnl: number;
+    total_sold_qty: number;
+    sell_count: number;
+    profitable_sells: number;
 }
 
 export function DividendIncome() {
@@ -34,6 +43,7 @@ export function DividendIncome() {
     const [summary, setSummary] = useState<DividendSummary | null>(null);
     const [history, setHistory] = useState<DividendItem[]>([]);
     const [upcoming, setUpcoming] = useState<DividendItem[]>([]);
+    const [realizedPnl, setRealizedPnl] = useState<PnlTicker[]>([]);
 
     useEffect(() => {
         const fetchDividends = async () => {
@@ -43,6 +53,7 @@ export function DividendIncome() {
                 setSummary(response.data.summary);
                 setHistory(response.data.history);
                 setUpcoming(response.data.upcoming);
+                setRealizedPnl(response.data.realized_pnl ?? []);
             } catch (err: any) {
                 console.error("Failed to fetch dividend data", err);
                 setError(err.response?.data?.detail || "Failed to load dividend data.");
@@ -75,7 +86,7 @@ export function DividendIncome() {
     return (
         <div className="space-y-6">
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-900/10 border-emerald-200 dark:border-emerald-800">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium text-emerald-800 dark:text-emerald-400 flex items-center gap-2">
@@ -123,13 +134,79 @@ export function DividendIncome() {
                         </p>
                     </CardContent>
                 </Card>
+
+                <Card className={`bg-gradient-to-br border ${(summary?.total_realized_pnl ?? 0) >= 0 ? 'from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-900/10 border-teal-200 dark:border-teal-800' : 'from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-900/10 border-rose-200 dark:border-rose-800'}`}>
+                    <CardHeader className="pb-2">
+                        <CardTitle className={`text-sm font-medium flex items-center gap-2 ${(summary?.total_realized_pnl ?? 0) >= 0 ? 'text-teal-800 dark:text-teal-400' : 'text-rose-800 dark:text-rose-400'}`}>
+                            <ArrowLeftRight className="h-4 w-4" /> Realized Trade P&L
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className={`text-2xl font-bold ${(summary?.total_realized_pnl ?? 0) >= 0 ? 'text-teal-900 dark:text-teal-300' : 'text-rose-900 dark:text-rose-300'}`}>
+                            {(summary?.total_realized_pnl ?? 0) >= 0 ? '+' : ''}Rs. {summary?.total_realized_pnl.toLocaleString()}
+                        </div>
+                        <p className={`text-xs mt-1 ${(summary?.total_realized_pnl ?? 0) >= 0 ? 'text-teal-700 dark:text-teal-500' : 'text-rose-700 dark:text-rose-500'}`}>
+                            Net profit from live buy-sell trades
+                        </p>
+                    </CardContent>
+                </Card>
             </div>
 
-            <Tabs defaultValue="history" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
+            <Tabs defaultValue="tradepnl" className="w-full">
+                <TabsList className="grid w-full grid-cols-3 lg:w-[540px]">
+                    <TabsTrigger value="tradepnl">Trade P&L</TabsTrigger>
                     <TabsTrigger value="history">Dividend History</TabsTrigger>
                     <TabsTrigger value="upcoming">Upcoming & Projected</TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="tradepnl" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Realized Trade Profit & Loss</CardTitle>
+                            <CardDescription>Net profit from closed buy-sell positions in your live portfolio. Paper trading excluded.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {realizedPnl.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500">No realized trades found in live accounts.</div>
+                            ) : (
+                                <div className="rounded-md border border-gray-200 dark:border-gray-800 overflow-hidden">
+                                    <Table>
+                                        <TableHeader className="bg-gray-50 dark:bg-gray-900/50">
+                                            <TableRow>
+                                                <TableHead>Ticker</TableHead>
+                                                <TableHead className="text-right">Realized P&L</TableHead>
+                                                <TableHead className="text-right">Qty Sold</TableHead>
+                                                <TableHead className="text-right">Trades</TableHead>
+                                                <TableHead className="text-right">Win Rate</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {realizedPnl.map((row) => {
+                                                const winRate = row.sell_count > 0 ? (row.profitable_sells / row.sell_count) * 100 : 0;
+                                                const isProfit = row.realized_pnl >= 0;
+                                                return (
+                                                    <TableRow key={row.ticker}>
+                                                        <TableCell className="font-bold">{row.ticker}</TableCell>
+                                                        <TableCell className={`text-right font-mono font-bold ${isProfit ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                                            {isProfit ? '+' : ''}Rs. {row.realized_pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        </TableCell>
+                                                        <TableCell className="text-right font-mono text-gray-600 dark:text-gray-400">{row.total_sold_qty}</TableCell>
+                                                        <TableCell className="text-right font-mono text-gray-600 dark:text-gray-400">{row.sell_count}</TableCell>
+                                                        <TableCell className="text-right">
+                                                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${winRate >= 50 ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400'}`}>
+                                                                {winRate.toFixed(0)}%
+                                                            </span>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
 
                 <TabsContent value="history" className="space-y-4">
                     <Card>
@@ -162,6 +239,7 @@ export function DividendIncome() {
                         </CardContent>
                     </Card>
                 </TabsContent>
+
             </Tabs>
         </div>
     );
