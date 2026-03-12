@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Flame, Users, BarChart3, History, Star, TrendingDown, Brain, Radar, Landmark, ScanLine, Zap, Share2, Crosshair, DollarSign } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Flame, Users, BarChart3, History, Star, TrendingDown, Brain, Radar, Landmark, ScanLine, Zap, Share2, Crosshair, DollarSign, Layers } from 'lucide-react';
 import { SearchBar } from './SearchBar';
 import { ChatSidebar } from './ChatSidebar';
 import { AlertsDropdown } from './AlertsDropdown';
@@ -53,7 +53,6 @@ const navItems = [
         name: 'Accumulation',
         icon: Activity,
         subItems: [
-            { name: 'Smart Signals', href: '/accumulation?tab=signals', icon: Crosshair },
             { name: 'Accumulation Overview', href: '/accumulation?tab=overview', icon: LayoutDashboard },
             { name: 'Aggressive Patterns', href: '/accumulation?tab=aggressive', icon: Flame },
             { name: 'Aggressive Trader', href: '/accumulation?tab=aggressive-trader', icon: TrendingDown },
@@ -66,9 +65,8 @@ const navItems = [
     },
     { name: 'Financials', href: '/financials', icon: FileText },
     { name: 'Strategies', href: '/strategies', icon: Lightbulb },
-    { name: 'Signals', href: '/signals', icon: Target },
+    { name: 'Signal Intel', href: '/signals', icon: Layers },
     // { name: 'Forecasts', href: '/forecasts', icon: Brain },
-    { name: 'Whale Watch', href: '/recommendations', icon: Radar },
     { name: 'Pipeline', href: '/pipeline', icon: Settings },
 ];
 
@@ -308,10 +306,9 @@ function DashboardContent({
                                                                     item.name === 'Accumulation' ? 'text-orange-500 dark:text-orange-400' :
                                                                         item.name === 'Financials' ? 'text-cyan-500 dark:text-cyan-400' :
                                                                             item.name === 'Strategies' ? 'text-yellow-500 dark:text-yellow-400' :
-                                                                                item.name === 'Signals' ? 'text-pink-500 dark:text-pink-400' :
-                                                                                    item.name === 'Whale Watch' ? 'text-indigo-500 dark:text-indigo-400' :
-                                                                                        item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
-                                                                                            'text-gray-400 dark:text-slate-500'
+                                                                                item.name === 'Signal Intel' ? 'text-pink-500 dark:text-pink-400' :
+                                                                                    item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
+                                                                                        'text-gray-400 dark:text-slate-500'
                                                 } />
                                             </div>
                                             {!isSidebarCollapsed && <span className="text-sm font-bold tracking-tight">{item.name}</span>}
@@ -337,10 +334,9 @@ function DashboardContent({
                                                             item.name === 'Ticker' ? 'text-green-500 dark:text-green-400' :
                                                                 item.name === 'Financials' ? 'text-cyan-500 dark:text-cyan-400' :
                                                                     item.name === 'Strategies' ? 'text-yellow-500 dark:text-yellow-400' :
-                                                                        item.name === 'Signals' ? 'text-pink-500 dark:text-pink-400' :
-                                                                            item.name === 'Whale Watch' ? 'text-indigo-500 dark:text-indigo-400' :
-                                                                                item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
-                                                                                    'text-gray-400 dark:text-slate-500'
+                                                                        item.name === 'Signal Intel' ? 'text-pink-500 dark:text-pink-400' :
+                                                                            item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
+                                                                                'text-gray-400 dark:text-slate-500'
                                             } />
                                         </div>
                                         {!isSidebarCollapsed && <span className="text-sm font-bold tracking-tight">{item.name}</span>}
@@ -417,10 +413,10 @@ function DashboardContent({
                                 )}
                                 {pathname === '/signals' ? (
                                     <div className="flex flex-col min-w-0">
-                                        <h2 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent tracking-tight">
-                                            Strategy Signals
+                                        <h2 className="text-lg font-bold bg-gradient-to-r from-pink-600 to-indigo-600 dark:from-pink-400 dark:to-indigo-400 bg-clip-text text-transparent tracking-tight">
+                                            Signal Intelligence Hub
                                         </h2>
-                                        <p className="text-[10px] text-slate-500 dark:text-slate-500 font-bold uppercase tracking-widest">Real-time Trading Matrix</p>
+                                        <p className="text-[10px] text-slate-500 dark:text-slate-500 font-bold uppercase tracking-widest">Unified · Smart Money · Strategies · Whale Watch</p>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col min-w-0">
