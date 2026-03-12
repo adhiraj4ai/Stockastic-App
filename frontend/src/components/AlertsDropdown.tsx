@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Bell, Info, TrendingUp, TrendingDown, AlertTriangle, AlertCircle, CheckCircle, CheckCircle2, Target, Eye } from 'lucide-react';
+import { Bell, Info, TrendingUp, TrendingDown, AlertTriangle, AlertCircle, CheckCircle, CheckCircle2, Target, Eye, Fish, ExternalLink } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -12,6 +12,7 @@ import {
 import api from '@/lib/api';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 interface Alert {
     id: number;
@@ -20,6 +21,7 @@ interface Alert {
     type: 'STOP_LOSS_HIT' | 'TARGET_REACHED' | 'SIGNIFICANT_GAIN' | 'SIGNIFICANT_LOSS' |
     'WATCHLIST_BREAKOUT' | 'WATCHLIST_ENTRY' |
     'SIGNAL_BUY' | 'SIGNAL_SELL' | 'SIGNAL_STRONG_BUY' | 'SIGNAL_STRONG_SELL' |
+    'WHALE_BUY' | 'WHALE_SELL' |
     'INFO' | 'SUCCESS' | 'WARNING' | 'PRICE_ALERT';
     ticker: string | null;
     read: boolean;
@@ -28,16 +30,64 @@ interface Alert {
     metadata?: any;
 }
 
+function getToastVariant(type: Alert['type']): 'success' | 'error' | 'warning' | 'info' {
+    switch (type) {
+        case 'TARGET_REACHED':
+        case 'SIGNIFICANT_GAIN':
+        case 'SIGNAL_BUY':
+        case 'SIGNAL_STRONG_BUY':
+        case 'WHALE_BUY':
+            return 'success';
+        case 'STOP_LOSS_HIT':
+        case 'SIGNIFICANT_LOSS':
+        case 'SIGNAL_SELL':
+        case 'SIGNAL_STRONG_SELL':
+        case 'WHALE_SELL':
+            return 'error';
+        case 'WARNING':
+        case 'BELOW_WACC':
+            return 'warning';
+        default:
+            return 'info';
+    }
+}
+
 export function AlertsDropdown() {
     const [alerts, setAlerts] = React.useState<Alert[]>([]);
     const [loading, setLoading] = React.useState(true);
+    const seenIds = React.useRef<Set<number>>(new Set());
+    const isFirstFetch = React.useRef(true);
     const router = useRouter();
 
     const fetchNotifications = async () => {
         try {
             const response = await api.get('/api/stocks/notifications/');
-            setAlerts(response.data);
+            const incoming: Alert[] = response.data;
+            setAlerts(incoming);
             setLoading(false);
+
+            // On the very first fetch just seed seenIds — don't toast stale notifications
+            if (isFirstFetch.current) {
+                incoming.forEach(a => seenIds.current.add(a.id));
+                isFirstFetch.current = false;
+                return;
+            }
+
+            // Toast any unread notifications we haven't seen yet
+            incoming
+                .filter(a => !a.read && !seenIds.current.has(a.id))
+                .forEach(a => {
+                    seenIds.current.add(a.id);
+                    const variant = getToastVariant(a.type);
+                    const action = a.redirect_url
+                        ? { label: 'View', onClick: () => router.push(a.redirect_url!) }
+                        : undefined;
+                    toast[variant](a.title, {
+                        description: a.message,
+                        action,
+                        duration: 7000,
+                    });
+                });
         } catch (error) {
             console.error('Failed to fetch notifications:', error);
             setLoading(false);
@@ -106,6 +156,9 @@ export function AlertsDropdown() {
             case 'SIGNAL_SELL':
             case 'SIGNAL_STRONG_SELL':
                 return <TrendingDown size={14} />;
+            case 'WHALE_BUY':
+            case 'WHALE_SELL':
+                return <Fish size={14} />;
             case 'SUCCESS':
                 return <CheckCircle size={14} />;
             case 'WARNING':
@@ -138,6 +191,10 @@ export function AlertsDropdown() {
                 return 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400';
             case 'SIGNAL_STRONG_SELL':
                 return 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300';
+            case 'WHALE_BUY':
+                return 'bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300';
+            case 'WHALE_SELL':
+                return 'bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300';
             case 'SUCCESS':
                 return 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400';
             case 'WARNING':
@@ -223,19 +280,22 @@ export function AlertsDropdown() {
                     )}
                 </div>
 
-                {unreadCount > 0 && (
-                    <div className="p-2 bg-gray-50 dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700">
+                <div className="p-2 bg-gray-50 dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 flex gap-1">
+                    {unreadCount > 0 && (
                         <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                markAllAsRead();
-                            }}
-                            className="w-full py-2 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all"
+                            onClick={(e) => { e.stopPropagation(); markAllAsRead(); }}
+                            className="flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all"
                         >
-                            Mark all as read
+                            Mark all read
                         </button>
-                    </div>
-                )}
+                    )}
+                    <button
+                        onClick={(e) => { e.stopPropagation(); router.push('/notifications'); }}
+                        className="flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all flex items-center justify-center gap-1"
+                    >
+                        <ExternalLink size={10} /> View all
+                    </button>
+                </div>
             </DropdownMenuContent>
         </DropdownMenu>
     );

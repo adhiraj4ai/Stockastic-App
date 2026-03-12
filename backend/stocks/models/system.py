@@ -50,7 +50,11 @@ class Notification(models.Model):
         SIGNAL_SELL = 'SIGNAL_SELL', 'Sell Signal'
         SIGNAL_STRONG_BUY = 'SIGNAL_STRONG_BUY', 'Strong Buy Signal'
         SIGNAL_STRONG_SELL = 'SIGNAL_STRONG_SELL', 'Strong Sell Signal'
-        
+
+        # Whale Watch / Smart Money alerts
+        WHALE_BUY = 'WHALE_BUY', 'Whale Watch Buy'
+        WHALE_SELL = 'WHALE_SELL', 'Whale Watch Sell'
+
         # General
         INFO = 'INFO', 'Information'
         SUCCESS = 'SUCCESS', 'Success'

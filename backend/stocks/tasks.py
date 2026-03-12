@@ -10,24 +10,31 @@ def check_all_user_notifications(self):
     Periodic task to check portfolio and watchlist alerts for all active users.
     Runs every 15 minutes during market hours, hourly otherwise.
     """
-    from stocks.services.notification_service import check_portfolio_alerts, check_watchlist_alerts
-    
+    from stocks.services.notification_service import (
+        check_portfolio_alerts, check_watchlist_alerts,
+        check_signal_alerts, check_whale_watch_alerts,
+    )
+
     total_portfolio = 0
     total_watchlist = 0
-    
+    total_signals = 0
+    total_whale = 0
+
     for user in User.objects.filter(is_active=True):
         try:
-            portfolio_count = check_portfolio_alerts(user)
-            watchlist_count = check_watchlist_alerts(user)
-            total_portfolio += portfolio_count
-            total_watchlist += watchlist_count
+            total_portfolio += check_portfolio_alerts(user)
+            total_watchlist += check_watchlist_alerts(user)
+            total_signals += check_signal_alerts(user)
+            total_whale += check_whale_watch_alerts(user)
         except Exception as e:
             print(f"Error checking notifications for user {user.username}: {e}")
-    
+
     return {
         'total_portfolio_notifications': total_portfolio,
         'total_watchlist_notifications': total_watchlist,
-        'total_notifications': total_portfolio + total_watchlist
+        'total_signal_notifications': total_signals,
+        'total_whale_notifications': total_whale,
+        'total_notifications': total_portfolio + total_watchlist + total_signals + total_whale,
     }
 @shared_task(bind=True, name='stocks.capture_portfolio_snapshots')
 def capture_portfolio_snapshots(self):

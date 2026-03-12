@@ -20,6 +20,7 @@ export const metadata: Metadata = {
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import IdleSessionProvider from "@/components/IdleSessionProvider";
+import { Toaster } from "sonner";
 
 export default function RootLayout({
   children,
@@ -43,6 +44,17 @@ export default function RootLayout({
               {children}
             </TooltipProvider>
           </IdleSessionProvider>
+          <Toaster
+            position="bottom-right"
+            richColors
+            closeButton
+            duration={6000}
+            toastOptions={{
+              classNames: {
+                toast: 'font-sans text-sm',
+              },
+            }}
+          />
         </ThemeProvider>
       </body>
     </html>
