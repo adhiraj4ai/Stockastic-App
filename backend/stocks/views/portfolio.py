@@ -711,169 +711,10 @@ class PortfolioTransactionViewSet(viewsets.ModelViewSet):
         
         # Recalculate this item
         PortfolioService.recalculate_item(user, account, ticker)
-        
+
         # If ticker/account *did* change, we should recalc the old one too.
         if old_ticker != ticker or old_account != account:
              PortfolioService.recalculate_item(user, old_account, old_ticker)
-
-class PortfolioTargetViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
-    serializer_class = PortfolioTargetSerializer
-
-    def get_queryset(self):
-        if self.request.user.username == 'admin':
-            return PortfolioTarget.objects.all()
-        return PortfolioTarget.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-    @action(detail=False, methods=['get'])
-    def realized_pnl(self, request):
-        """
-        Calculate realized P&L from SELL transactions.
-        Query Params:
-        - account: account_id or 'all' (default: 'all')
-        - from_date: YYYY-MM-DD (optional)
-        - to_date: YYYY-MM-DD (optional)
-        """
-        user = request.user
-        account_id = request.query_params.get('account', 'all')
-        from_date = request.query_params.get('from_date')
-        to_date = request.query_params.get('to_date')
-        
-        sell_txns = PortfolioTransaction.objects.filter(
-            user=user,
-            transaction_type__in=[TransactionType.SELL]
-        ).order_by('transaction_date')
-        
-        if account_id != 'all':
-            sell_txns = sell_txns.filter(account_id=account_id)
-        
-        if from_date:
-            sell_txns = sell_txns.filter(transaction_date__date__gte=from_date)
-        if to_date:
-            sell_txns = sell_txns.filter(transaction_date__date__lte=to_date)
-        
-        # We need the WACC at the time of each sell to calculate realized P&L.
-        # We'll reconstruct WACC per ticker from buy history up to each sell date.
-        # Simpler approach: use the stored buy history to compute running WACC per ticker.
-        
-        all_txns = PortfolioTransaction.objects.filter(
-            user=user
-        ).order_by('transaction_date', 'created_at')
-        
-        if account_id != 'all':
-            all_txns = all_txns.filter(account_id=account_id)
-        
-        # Build running WACC per ticker
-        ticker_state = {}  # {ticker: {qty, wacc, realized_pnl, total_sold_qty, total_sell_amount, total_cgt}}
-        
-        for txn in all_txns:
-            ticker = txn.ticker
-            if ticker not in ticker_state:
-                ticker_state[ticker] = {
-                    'qty': 0,
-                    'wacc': Decimal('0.00'),
-                    'realized_pnl': Decimal('0.00'),
-                    'total_sold_qty': 0,
-                    'total_sell_amount': Decimal('0.00'),
-                    'total_cost_of_sold': Decimal('0.00'),
-                    'total_cgt': Decimal('0.00'),
-                    'total_commission': Decimal('0.00'),
-                    'total_fees': Decimal('0.00'),
-                    'sell_count': 0,
-                    'profitable_sells': 0,
-                }
-            
-            state = ticker_state[ticker]
-            
-            if txn.transaction_type in [TransactionType.BUY]:
-                cost = Decimal(txn.quantity) * Decimal(txn.rate) + Decimal(txn.commission) + Decimal(txn.sebon_fee) + Decimal(txn.dp_charge)
-                old_val = Decimal(state['qty']) * state['wacc']
-                state['qty'] += txn.quantity
-                if state['qty'] > 0:
-                    state['wacc'] = (old_val + cost) / Decimal(state['qty'])
-            
-            elif txn.transaction_type == TransactionType.BONUS:
-                old_val = Decimal(state['qty']) * state['wacc']
-                state['qty'] += txn.quantity
-                if state['qty'] > 0:
-                    state['wacc'] = old_val / Decimal(state['qty'])
-            
-            elif txn.transaction_type == TransactionType.SELL:
-                # Check if this sell falls within the requested date range
-                in_range = True
-                if from_date and txn.transaction_date.date() < date.fromisoformat(from_date):
-                    in_range = False
-                if to_date and txn.transaction_date.date() > date.fromisoformat(to_date):
-                    in_range = False
-                
-                sell_proceeds = Decimal(txn.quantity) * Decimal(txn.rate)
-                cost_basis = Decimal(txn.quantity) * state['wacc']
-                gross_pnl = sell_proceeds - cost_basis
-                net_pnl = gross_pnl - Decimal(txn.commission) - Decimal(txn.sebon_fee) - Decimal(txn.dp_charge) - Decimal(txn.cgt)
-                
-                if in_range:
-                    state['realized_pnl'] += net_pnl
-                    state['total_sold_qty'] += txn.quantity
-                    state['total_sell_amount'] += sell_proceeds
-                    state['total_cost_of_sold'] += cost_basis
-                    state['total_cgt'] += Decimal(txn.cgt)
-                    state['total_commission'] += Decimal(txn.commission)
-                    state['total_fees'] += Decimal(txn.sebon_fee) + Decimal(txn.dp_charge)
-                    state['sell_count'] += 1
-                    if net_pnl > 0:
-                        state['profitable_sells'] += 1
-                
-                state['qty'] -= txn.quantity
-        
-        # Build per-ticker results (only tickers with sells in range)
-        per_ticker = []
-        total_realized = Decimal('0.00')
-        total_cgt = Decimal('0.00')
-        total_sells = 0
-        total_wins = 0
-        
-        for ticker, state in ticker_state.items():
-            if state['sell_count'] == 0:
-                continue
-            
-            avg_sell_price = state['total_sell_amount'] / Decimal(state['total_sold_qty']) if state['total_sold_qty'] > 0 else Decimal('0.00')
-            avg_cost = state['total_cost_of_sold'] / Decimal(state['total_sold_qty']) if state['total_sold_qty'] > 0 else Decimal('0.00')
-            
-            per_ticker.append({
-                'ticker': ticker,
-                'total_sold_qty': state['total_sold_qty'],
-                'avg_sell_price': round(float(avg_sell_price), 2),
-                'avg_cost': round(float(avg_cost), 2),
-                'realized_pnl': round(float(state['realized_pnl']), 2),
-                'cgt_paid': round(float(state['total_cgt']), 2),
-                'commission': round(float(state['total_commission']), 2),
-                'fees': round(float(state['total_fees']), 2),
-                'sell_count': state['sell_count'],
-                'profitable_sells': state['profitable_sells'],
-            })
-            
-            total_realized += state['realized_pnl']
-            total_cgt += state['total_cgt']
-            total_sells += state['sell_count']
-            total_wins += state['profitable_sells']
-        
-        per_ticker.sort(key=lambda x: x['realized_pnl'], reverse=True)
-        
-        win_rate = (total_wins / total_sells * 100) if total_sells > 0 else 0
-        
-        return Response({
-            'summary': {
-                'total_realized_pnl': round(float(total_realized), 2),
-                'total_cgt_paid': round(float(total_cgt), 2),
-                'net_after_tax': round(float(total_realized), 2),  # Net is already after CGT deduction
-                'total_trades': total_sells,
-                'win_rate': round(win_rate, 1),
-            },
-            'per_ticker': per_ticker
-        })
 
     @action(detail=False, methods=['get'])
     def tax_report(self, request):
@@ -882,18 +723,17 @@ class PortfolioTargetViewSet(viewsets.ModelViewSet):
         """
         user = request.user
         account_id = request.query_params.get('account', 'all')
-        
-        # Reuse realized_pnl logic but calculate for all sells and then group by fiscal year
+
         all_txns = PortfolioTransaction.objects.filter(
             user=user
         ).order_by('transaction_date', 'created_at')
-        
+
         if account_id != 'all':
             all_txns = all_txns.filter(account_id=account_id)
-            
+
         ticker_state = {} # {ticker: {qty, wacc}}
         annual_summary = {} # {FY: {realized_pnl, cgt, trades, symbols}}
-        
+
         def get_fy(dt):
             # Mid July (approx July 16) is the start
             if dt.month > 7 or (dt.month == 7 and dt.day >= 16):
@@ -904,30 +744,30 @@ class PortfolioTargetViewSet(viewsets.ModelViewSet):
             ticker = txn.ticker
             if ticker not in ticker_state:
                 ticker_state[ticker] = {'qty': 0, 'wacc': Decimal('0.00')}
-            
+
             state = ticker_state[ticker]
-            
+
             if txn.transaction_type == TransactionType.BUY:
-                cost = (Decimal(txn.quantity) * Decimal(txn.rate) + 
+                cost = (Decimal(txn.quantity) * Decimal(txn.rate) +
                        Decimal(txn.commission) + Decimal(txn.sebon_fee) + Decimal(txn.dp_charge))
                 old_val = Decimal(state['qty']) * state['wacc']
                 state['qty'] += txn.quantity
                 if state['qty'] > 0:
                     state['wacc'] = (old_val + cost) / Decimal(state['qty'])
-            
+
             elif txn.transaction_type == TransactionType.BONUS:
                 old_val = Decimal(state['qty']) * state['wacc']
                 state['qty'] += txn.quantity
                 if state['qty'] > 0:
                     state['wacc'] = old_val / Decimal(state['qty'])
-            
+
             elif txn.transaction_type == TransactionType.SELL:
                 sell_proceeds = Decimal(txn.quantity) * Decimal(txn.rate)
                 cost_basis = Decimal(txn.quantity) * state['wacc']
-                net_pnl = (sell_proceeds - cost_basis - 
-                          Decimal(txn.commission) - Decimal(txn.sebon_fee) - 
+                net_pnl = (sell_proceeds - cost_basis -
+                          Decimal(txn.commission) - Decimal(txn.sebon_fee) -
                           Decimal(txn.dp_charge) - Decimal(txn.cgt))
-                
+
                 fy = get_fy(txn.transaction_date.date())
                 if fy not in annual_summary:
                     annual_summary[fy] = {
@@ -936,18 +776,18 @@ class PortfolioTargetViewSet(viewsets.ModelViewSet):
                         'trades_count': 0,
                         'ticker_details': {} # {ticker: pnl}
                     }
-                
+
                 sum_fy = annual_summary[fy]
                 sum_fy['realized_pnl'] += net_pnl
                 sum_fy['cgt_paid'] += Decimal(txn.cgt)
                 sum_fy['trades_count'] += 1
-                
+
                 if ticker not in sum_fy['ticker_details']:
                     sum_fy['ticker_details'][ticker] = Decimal('0.00')
                 sum_fy['ticker_details'][ticker] += net_pnl
-                
+
                 state['qty'] -= txn.quantity
-        
+
         # Format results
         results = []
         for fy, data in annual_summary.items():
@@ -961,9 +801,21 @@ class PortfolioTargetViewSet(viewsets.ModelViewSet):
                     key=lambda x: x['pnl'], reverse=True
                 )[:5]
             })
-            
+
         results.sort(key=lambda x: x['fiscal_year'], reverse=True)
         return Response(results)
+
+class PortfolioTargetViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PortfolioTargetSerializer
+
+    def get_queryset(self):
+        if self.request.user.username == 'admin':
+            return PortfolioTarget.objects.all()
+        return PortfolioTarget.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 class PortfolioPerformanceView(viewsets.ViewSet):
     """

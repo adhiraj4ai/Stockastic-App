@@ -4,9 +4,8 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TransactionHistory } from '@/components/TransactionHistory';
-import { RealizedPnL } from '@/components/RealizedPnL';
 import { TaxReport } from '@/components/TaxReport';
-import { TrendingUp, Calendar, Receipt, Users } from 'lucide-react';
+import { Calendar, Receipt, Users } from 'lucide-react';
 import api from '@/lib/api';
 
 export const dynamic = 'force-dynamic';
@@ -30,7 +29,7 @@ export default function TransactionsPage() {
     return (
         <DashboardLayout
             title="Transactions"
-            subtitle="Transaction history and realized profit & loss"
+            subtitle="Transaction history and tax breakdown"
         >
             <div className="space-y-8">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -68,19 +67,6 @@ export default function TransactionsPage() {
                     </CardHeader>
                     <CardContent className="pt-6">
                         <TaxReport selectedAccount={selectedAccount} />
-                    </CardContent>
-                </Card>
-
-                {/* Realized P&L Section */}
-                <Card className="shadow-sm dark:bg-slate-900 dark:border-slate-800">
-                    <CardHeader className="pb-3 border-b border-gray-50 dark:border-slate-800">
-                        <CardTitle className="text-lg flex items-center gap-2 dark:text-slate-100 italic">
-                            <TrendingUp className="h-5 w-5 text-emerald-500" />
-                            Realized Profit & Loss
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-6">
-                        <RealizedPnL selectedAccount={selectedAccount} />
                     </CardContent>
                 </Card>
 
