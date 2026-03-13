@@ -4,15 +4,21 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import {
-    TrendingUp, TrendingDown, Zap, Crosshair, Radar, Layers,
-    Search, RefreshCw, ArrowRight, Activity, Loader2, ChevronRight,
+    TrendingUp, TrendingDown, Zap, Radar, Layers,
+    Search, ArrowRight, Activity, Loader2, ChevronRight,
+    Globe, Binary, BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { Progress } from '@/components/ui/progress';
+import { DailySignalStatus } from '@/components/signals/DailySignalStatus';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 
 // ─── Shared types ──────────────────────────────────────────────────────────────
 
@@ -78,9 +84,81 @@ const CONVICTION_META = [
     { label: 'Triple Conviction', color: 'text-emerald-600 dark:text-emerald-400' },
 ];
 
+function UnifiedSignalCard({ 
+    symbol, 
+    direction, 
+    ltp, 
+    strength, 
+    reason, 
+    tagline, 
+    conviction, 
+    onSelect 
+}: { 
+    symbol: string; 
+    direction: 'BUY' | 'SELL'; 
+    ltp: number; 
+    strength?: number; 
+    reason?: string; 
+    tagline?: string; 
+    conviction?: number;
+    onSelect: (s: { symbol: string; ltp: number; strength: number; direction: 'BUY' | 'SELL' }) => void;
+}) {
+    return (
+        <div 
+            onClick={() => onSelect({ symbol, ltp, strength: strength || 50, direction })}
+            className={cn(
+                'group relative rounded-2xl border border-l-[6px] p-5 cursor-pointer transition-all hover:shadow-2xl hover:-translate-y-0.5 bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl',
+                direction === 'BUY' ? 'border-l-emerald-500 border-slate-200/60 dark:border-emerald-500/30' : 'border-l-rose-500 border-slate-200/60 dark:border-rose-500/30'
+            )}>
+            <div className="flex items-center justify-between gap-6">
+                <div className="flex items-center gap-5 w-44 shrink-0">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-3">
+                            <Link href={`/ticker/${symbol}`} onClick={(e) => e.stopPropagation()} className="text-lg font-black tracking-tight text-slate-900 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                                {symbol}
+                            </Link>
+                            <SignalBadge direction={direction} />
+                        </div>
+                        {tagline && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate">{tagline}</p>}
+                    </div>
+                </div>
+
+                <div className="flex-1 hidden md:block min-w-0">
+                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 leading-relaxed truncate max-w-xl">
+                        {reason}
+                    </p>
+                </div>
+
+                <div className="shrink-0 text-right h-full flex items-center gap-6">
+                    <div className="space-y-1">
+                        <div className="text-lg font-black font-mono text-slate-900 dark:text-slate-100 tracking-tighter">Rs. {ltp.toLocaleString()}</div>
+                        <div className="flex items-center justify-end gap-2 pr-1">
+                            {conviction !== undefined && conviction > 1 && (
+                                <span className={cn('text-[9px] font-black uppercase tracking-tighter', CONVICTION_META[conviction]?.color)}>
+                                    {conviction >= 3 ? 'Platinum Setup' : 'Confirmed'}
+                                </span>
+                            )}
+                            {strength !== undefined && (
+                                <span className="text-[9px] font-black text-slate-400">STR {strength.toFixed(0)}%</span>
+                            )}
+                        </div>
+                    </div>
+                    <div className="p-2 rounded-xl text-slate-200 group-hover:text-indigo-400 transition-colors">
+                        <Activity size={16} />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ─── ALL SOURCES VIEW ──────────────────────────────────────────────────────────
 
-function AllSourcesView() {
+interface BaseSignalViewProps {
+    onSelect: (signal: { symbol: string; ltp: number; strength: number; direction: 'BUY' | 'SELL' }) => void;
+}
+
+function AllSourcesView({ onSelect }: BaseSignalViewProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [unified, setUnified] = useState<UnifiedSignal[]>([]);
@@ -100,8 +178,12 @@ function AllSourcesView() {
             };
 
             try {
-                // 1. Smart Money
-                const smRes = await api.get('/api/stocks/broker-analysis/signals/').catch(() => null);
+                const [smRes, stRes, wwRes] = await Promise.all([
+                    api.get('/api/stocks/broker-analysis/signals/').catch(() => null),
+                    api.get('/api/stocks/signals/', { params: { page_size: 500 } }).catch(() => null),
+                    api.get(WHALE_ENGINES[0].endpoint).catch(() => null)
+                ]);
+
                 if (smRes?.data) {
                     for (const s of smRes.data as SmartSignal[]) {
                         const dir = s.markup_percent >= 0 ? 'BUY' : 'SELL';
@@ -111,8 +193,6 @@ function AllSourcesView() {
                     }
                 }
 
-                // 2. Strategy signals (today's BUY/SELL only)
-                const stRes = await api.get('/api/stocks/signals/', { params: { page_size: 500 } }).catch(() => null);
                 if (stRes?.data?.results) {
                     const grouped = new Map<string, { dir: 'BUY' | 'SELL'; names: string[]; date: string; ltp: number }>();
                     for (const s of stRes.data.results as StrategySignal[]) {
@@ -122,7 +202,7 @@ function AllSourcesView() {
                             grouped.set(s.symbol, { dir: s.signal, names: [s.strategy_name], date: s.date, ltp: parseFloat(s.last_close) });
                         } else {
                             existing.names.push(s.strategy_name);
-                            if (s.signal === 'BUY') existing.dir = 'BUY'; // BUY wins on conflict
+                            if (s.signal === 'BUY') existing.dir = 'BUY';
                         }
                     }
                     for (const [symbol, data] of grouped) {
@@ -132,8 +212,6 @@ function AllSourcesView() {
                     }
                 }
 
-                // 3. Whale Watch (first engine only for speed)
-                const wwRes = await api.get(WHALE_ENGINES[0].endpoint).catch(() => null);
                 if (wwRes?.data) {
                     for (const r of wwRes.data as WhaleRec[]) {
                         if (r.signal !== 'BUY' && r.signal !== 'SELL') continue;
@@ -142,7 +220,7 @@ function AllSourcesView() {
                         u.conviction++;
                     }
                 }
-            } catch (_) { /* ignore */ }
+            } catch (_) { }
 
             const sorted = [...map.values()].sort((a, b) => b.conviction - a.conviction || b.ltp - a.ltp);
             setUnified(sorted);
@@ -162,139 +240,85 @@ function AllSourcesView() {
     const multiSource = unified.filter(u => u.conviction >= 2).length;
 
     if (loading) return (
-        <div className="flex flex-col items-center justify-center py-24 gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-            <p className="text-sm text-slate-500 font-medium">Aggregating intelligence from all sources…</p>
+        <div className="flex flex-col items-center justify-center py-24 gap-4">
+            <div className="relative">
+                <div className="w-12 h-12 rounded-full border-4 border-slate-100 dark:border-slate-800 animate-pulse" />
+                <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-transparent border-t-indigo-600 animate-spin" />
+            </div>
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Compiling Intelligence Hub…</p>
         </div>
     );
 
     return (
-        <div className="space-y-5">
-            {/* Summary strip */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                    { label: 'Buy Signals', value: buys, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800' },
-                    { label: 'Sell Signals', value: sells, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/20 border-rose-100 dark:border-rose-800' },
-                    { label: 'Multi-Source', value: multiSource, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800' },
-                    { label: 'Total Signals', value: unified.length, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-800' },
+                    { label: 'Buy Signals', value: buys, icon: <TrendingUp size={14} />, color: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/20' },
+                    { label: 'Sell Signals', value: sells, icon: <TrendingDown size={14} />, color: 'text-rose-500', bg: 'bg-rose-500/10 border-rose-500/20' },
+                    { label: 'Multi-Source', value: multiSource, icon: <Activity size={14} />, color: 'text-amber-500', bg: 'bg-amber-500/10 border-amber-500/20' },
+                    { label: 'Intelligence', value: unified.length, icon: <Radar size={14} />, color: 'text-indigo-500', bg: 'bg-indigo-500/10 border-indigo-500/20' },
                 ].map(m => (
-                    <div key={m.label} className={cn('rounded-xl border p-4', m.bg)}>
-                        <div className={cn('text-2xl font-black', m.color)}>{m.value}</div>
-                        <div className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-0.5 uppercase tracking-wider">{m.label}</div>
+                    <div key={m.label} className={cn('rounded-2xl border p-5 backdrop-blur-xl transition-all hover:scale-[1.02]', m.bg)}>
+                        <div className="flex justify-between items-center mb-2">
+                            <span className={cn('p-1.5 rounded-lg bg-white/50 dark:bg-slate-900/50', m.color)}>{m.icon}</span>
+                            <div className={cn('text-2xl font-black', m.color)}>{m.value}</div>
+                        </div>
+                        <div className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{m.label}</div>
                     </div>
                 ))}
             </div>
 
-            {/* Controls */}
-            <div className="flex flex-wrap gap-2 items-center">
-                <div className="relative flex-1 min-w-[160px] max-w-xs">
-                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                        value={search} onChange={e => setSearch(e.target.value)}
-                        placeholder="Search symbol…"
-                        className="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-400/40"
-                    />
+            <div className="flex flex-wrap gap-4 items-center justify-between">
+                <div className="flex flex-wrap gap-4 items-center">
+                    <div className="flex p-1 bg-slate-100/50 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 backdrop-blur-sm">
+                        {(['ALL', 'BUY', 'SELL'] as const).map(d => (
+                            <button key={d} onClick={() => setDirFilter(d)}
+                                className={cn('px-4 py-2 rounded-lg text-xs font-bold transition-all',
+                                    dirFilter === d ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm border border-slate-200/50 dark:border-slate-600/50' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200')}>
+                                {d}
+                            </button>
+                        ))}
+                    </div>
                 </div>
-                <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-                    {(['ALL', 'BUY', 'SELL'] as const).map(d => (
-                        <button key={d} onClick={() => setDirFilter(d)}
-                            className={cn('px-3 py-1.5 text-xs font-bold transition-colors',
-                                dirFilter === d ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700')}>
-                            {d}
-                        </button>
-                    ))}
-                </div>
-                <div className="flex items-center gap-2 ml-auto">
-                    <span className="text-xs text-slate-500 font-medium">Min sources:</span>
-                    {[1, 2, 3].map(n => (
-                        <button key={n} onClick={() => setMinConviction(n)}
-                            className={cn('w-7 h-7 rounded-lg text-xs font-black transition-all',
-                                minConviction === n ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700')}>
-                            {n}
-                        </button>
-                    ))}
+                
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 p-1 bg-slate-100/50 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 backdrop-blur-sm">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-2">Threshold</span>
+                        {[1, 2, 3].map(n => (
+                            <button key={n} onClick={() => setMinConviction(n)}
+                                className={cn('w-8 h-8 rounded-lg text-xs font-black transition-all flex items-center justify-center',
+                                    minConviction === n ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 border-indigo-500' : 'text-slate-500 hover:text-indigo-600')}>
+                                {n}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="relative">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" strokeWidth={2.5} />
+                        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Symbol…"
+                            className="pl-9 pr-4 py-2 text-xs font-medium rounded-xl border border-slate-200/50 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-400/30 w-64" />
+                    </div>
                 </div>
             </div>
 
-            {/* Signal list */}
             {filtered.length === 0 ? (
-                <div className="text-center py-16 text-slate-400 text-sm">No signals match your filters.</div>
+                <div className="flex flex-col items-center justify-center py-24 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-3xl">
+                    <Layers className="w-8 h-8 text-slate-200 dark:text-slate-700 mb-3" />
+                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">No matching intelligence found</p>
+                </div>
             ) : (
-                <div className="space-y-2">
+                <div className="grid gap-3 animate-in fade-in slide-in-from-top-2 duration-500">
                     {filtered.map(u => (
-                        <div key={u.symbol}
-                            onClick={() => router.push(`/ticker/${u.symbol}`)}
-                            className={cn(
-                                'group relative rounded-xl border border-l-4 p-4 cursor-pointer transition-all hover:shadow-md',
-                                u.conviction >= 3
-                                    ? 'border-l-emerald-500 bg-emerald-50/30 dark:bg-emerald-900/10 border-emerald-200/60 dark:border-emerald-800/40'
-                                    : u.conviction === 2
-                                        ? 'border-l-amber-400 bg-amber-50/20 dark:bg-amber-900/10 border-amber-200/60 dark:border-amber-800/40'
-                                        : 'border-l-slate-300 bg-white dark:bg-slate-900/40 border-slate-100 dark:border-slate-800/60',
-                            )}>
-                            <div className="flex items-start justify-between gap-4">
-                                {/* Left: ticker + sources */}
-                                <div className="flex items-center gap-3 min-w-0">
-                                    <div>
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="text-base font-black text-slate-900 dark:text-slate-100">{u.symbol}</span>
-                                            <SignalBadge direction={u.direction} />
-                                            {u.conviction >= 2 && (
-                                                <span className={cn('text-[10px] font-black uppercase tracking-wider', CONVICTION_META[u.conviction]?.color)}>
-                                                    {u.conviction === 3 ? '⚡' : '◆'} {CONVICTION_META[u.conviction]?.label}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                                            {u.smartMoney && <SourceBadge label="Smart Money" color="bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700" />}
-                                            {u.strategy && <SourceBadge label={`Strategies ×${u.strategy.count}`} color="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700" />}
-                                            {u.whale && <SourceBadge label="Whale Watch" color="bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-700" />}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Centre: key insight */}
-                                <div className="flex-1 hidden md:block min-w-0">
-                                    {u.smartMoney && (
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                                            <span className="font-semibold text-indigo-600 dark:text-indigo-400">{u.smartMoney.tier}</span>
-                                            {' — '}{u.smartMoney.rationale}
-                                        </p>
-                                    )}
-                                    {!u.smartMoney && u.whale && (
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{u.whale.reason}</p>
-                                    )}
-                                    {u.strategy && (
-                                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">
-                                            {u.strategy.names.slice(0, 3).join(' · ')}{u.strategy.names.length > 3 ? ` +${u.strategy.names.length - 3}` : ''}
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* Right: price + metrics */}
-                                <div className="shrink-0 text-right space-y-1">
-                                    <div className="text-base font-black font-mono text-slate-900 dark:text-slate-100">Rs. {u.ltp.toLocaleString()}</div>
-                                    <div className="flex items-center justify-end gap-2">
-                                        {u.smartMoney && (
-                                            <span className={cn('text-[10px] font-bold',
-                                                u.smartMoney.markup >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')}>
-                                                {u.smartMoney.markup >= 0 ? '+' : ''}{u.smartMoney.markup.toFixed(1)}% vs WAC
-                                            </span>
-                                        )}
-                                        {u.whale && (
-                                            <span className="text-[10px] font-bold text-cyan-600 dark:text-cyan-400">
-                                                {u.whale.strength.toFixed(0)}% str
-                                            </span>
-                                        )}
-                                    </div>
-                                    {u.whale?.rsi !== undefined && (
-                                        <span className="text-[10px] text-slate-400 font-mono">RSI {u.whale.rsi.toFixed(1)}</span>
-                                    )}
-                                </div>
-
-                                <ChevronRight size={16} className="shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400 mt-1 transition-colors" />
-                            </div>
-                        </div>
+                        <UnifiedSignalCard 
+                            key={u.symbol}
+                            symbol={u.symbol}
+                            direction={u.direction}
+                            ltp={u.ltp}
+                            strength={u.whale?.strength || (u.smartMoney ? u.smartMoney.markup + 50 : 50)}
+                            conviction={u.conviction}
+                            reason={u.smartMoney?.rationale || u.whale?.reason || u.strategy?.names.join(' · ') || 'System Breakout'}
+                            tagline={u.smartMoney?.tier || (u.strategy ? `${u.strategy.count} Strategies` : 'Whale Accumulation')}
+                            onSelect={onSelect}
+                        />
                     ))}
                 </div>
             )}
@@ -304,9 +328,10 @@ function AllSourcesView() {
 
 // ─── SMART MONEY VIEW ─────────────────────────────────────────────────────────
 
-function SmartMoneyView() {
+function SmartMoneyView({ onSelect }: BaseSignalViewProps) {
     const [signals, setSignals] = useState<SmartSignal[]>([]);
     const [loading, setLoading] = useState(true);
+    const [activeSection, setActiveSection] = useState('platinum');
 
     useEffect(() => {
         api.get('/api/stocks/broker-analysis/signals/')
@@ -323,83 +348,63 @@ function SmartMoneyView() {
         { id: 'silver', label: 'Silver', badge: 'Institutional Entry', dot: 'bg-slate-400', badgeCls: 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300', items: signals.filter(s => s.signal_type === 'Silver Signal') },
         { id: 'divergence', label: 'Divergence', badge: 'Bullish Divergence', dot: 'bg-emerald-500', badgeCls: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300', items: signals.filter(s => s.signal_type === 'Bullish Divergence') },
     ];
-    const defaultTab = sections.find(s => s.items.length > 0)?.id ?? 'platinum';
+
+    const current = sections.find(s => s.id === activeSection) || sections[0];
 
     return (
-        <Tabs defaultValue={defaultTab} className="w-full">
-            <TabsList className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 mb-6 flex-wrap h-auto gap-1">
+        <div className="space-y-6">
+            <div className="flex flex-wrap gap-2 p-1 bg-slate-100/50 dark:bg-slate-800/40 rounded-xl w-fit border border-slate-200/50 dark:border-slate-700/50 backdrop-blur-sm">
                 {sections.map(s => (
-                    <TabsTrigger key={s.id} value={s.id} className="flex items-center gap-1.5 px-3 py-1.5 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm rounded-md">
-                        <span className={cn('w-2 h-2 rounded-full', s.dot)} />
+                    <button
+                        key={s.id}
+                        onClick={() => setActiveSection(s.id)}
+                        className={cn(
+                            'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all',
+                            activeSection === s.id
+                                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm border border-slate-200/50 dark:border-slate-600/50'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                        )}
+                    >
+                        <span className={cn('w-2 h-2 rounded-full shadow-sm', s.dot)} />
                         {s.label}
-                        <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px] font-bold bg-slate-200 dark:bg-slate-700">{s.items.length}</Badge>
-                    </TabsTrigger>
+                        <span className="ml-1 opacity-50 px-1.5 py-0.5 rounded-md bg-slate-200/50 dark:bg-slate-900/50 text-[10px]">{s.items.length}</span>
+                    </button>
                 ))}
-            </TabsList>
-            {sections.map(sec => (
-                <TabsContent key={sec.id} value={sec.id} className="mt-0 outline-none">
-                    <div className="flex items-center gap-2 mb-4">
-                        <h3 className="font-bold text-slate-800 dark:text-slate-200">{sec.label} Setups</h3>
-                        <span className={cn('text-[11px] font-bold px-2 py-0.5 rounded-full border', sec.badgeCls)}>{sec.badge}</span>
-                    </div>
-                    {sec.items.length === 0
-                        ? <Empty label={`No ${sec.label} signals right now`} />
-                        : <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                            {sec.items.map(sig => <SmartCard key={sig.symbol} sig={sig} dot={sec.dot} />)}
-                        </div>
-                    }
-                </TabsContent>
-            ))}
-        </Tabs>
-    );
-}
+            </div>
 
-function SmartCard({ sig, dot }: { sig: SmartSignal; dot: string }) {
-    const pos = sig.markup_percent >= 0;
-    const prog = Math.min(Math.max((sig.markup_percent + 10) * 2, 0), 100);
-    return (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 overflow-hidden hover:shadow-lg transition-all group relative">
-            <div className={cn('absolute top-0 left-0 w-1 h-full', dot)} />
-            <div className="p-5 pl-6">
-                <div className="flex justify-between items-start mb-3">
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xl font-black text-slate-900 dark:text-slate-100">{sig.symbol}</span>
-                            <span className="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">{sig.sector}</span>
-                        </div>
-                        <p className="text-sm text-slate-500 mt-0.5 truncate max-w-[180px]">{sig.name}</p>
+            <div className="animate-in fade-in slide-in-from-top-2 duration-500">
+                <div className="flex items-center gap-2 mb-5">
+                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">{current.label} Setups</h3>
+                    <span className={cn('text-[10px] font-black px-2 py-0.5 rounded-full border uppercase tracking-wider', current.badgeCls)}>{current.badge}</span>
+                </div>
+                
+                {current.items.length === 0
+                    ? <Empty label={`No ${current.label} signals right now`} />
+                    : <div className="grid grid-cols-1 gap-3">
+                        {current.items.map(sig => (
+                            <UnifiedSignalCard 
+                                key={sig.symbol}
+                                symbol={sig.symbol}
+                                direction={sig.markup_percent >= 0 ? 'BUY' : 'SELL'}
+                                ltp={sig.ltp}
+                                strength={parseFloat(sig.strength) || 50}
+                                reason={sig.rationale}
+                                tagline={sig.signal_type}
+                                conviction={sig.signal_type === 'Platinum Buy' ? 3 : sig.signal_type === 'Gold Signal' ? 2 : 1}
+                                onSelect={onSelect}
+                            />
+                        ))}
                     </div>
-                    <div className="text-right">
-                        <div className="text-xl font-black font-mono text-slate-900 dark:text-slate-100">Rs. {sig.ltp}</div>
-                        <div className={cn('text-xs font-bold flex items-center justify-end gap-0.5', pos ? 'text-emerald-600' : 'text-rose-600')}>
-                            {pos ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-                            {Math.abs(sig.markup_percent).toFixed(1)}% vs WAC
-                        </div>
-                    </div>
-                </div>
-                <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5 mb-3">
-                    <Activity size={12} /> {sig.rationale}
-                </p>
-                <div className="bg-slate-50 dark:bg-slate-800/60 rounded-lg p-3 text-xs space-y-1 mb-3">
-                    <div className="flex justify-between"><span className="text-slate-500">Smart Brokers</span><span className="font-bold text-slate-700 dark:text-slate-300">{sig.cluster_count} buying</span></div>
-                    <div className="flex justify-between"><span className="text-slate-500">5D Net Flow</span><span className="font-mono text-slate-800 dark:text-slate-200">{sig.inst_net_5d.toLocaleString()} qty</span></div>
-                    <div className="flex justify-between"><span className="text-slate-500">Key Broker WAC</span><span className="font-bold text-indigo-600 dark:text-indigo-400">Rs. {sig.top_broker_wac}</span></div>
-                </div>
-                <div className="space-y-1 mb-3">
-                    <div className="flex justify-between text-[10px] text-slate-400"><span>WAC Zone</span><span>Breakout</span></div>
-                    <Progress value={prog} className="h-1.5" />
-                </div>
-                <Link href={`/ticker/${sig.symbol}`} className="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg bg-indigo-600 group-hover:bg-indigo-700 text-white text-xs font-bold transition-colors">
-                    Analyse <ArrowRight size={12} />
-                </Link>
+                }
             </div>
         </div>
     );
 }
 
+
 // ─── STRATEGIES VIEW ─────────────────────────────────────────────────────────
 
-function StrategiesView() {
+function StrategiesView({ onSelect }: BaseSignalViewProps) {
     const [signals, setSignals] = useState<StrategySignal[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -413,7 +418,6 @@ function StrategiesView() {
             .finally(() => setLoading(false));
     }, []);
 
-    // Group by symbol
     const groups = useMemo(() => {
         const map = new Map<string, StrategySignal[]>();
         for (const s of signals) {
@@ -427,52 +431,42 @@ function StrategiesView() {
     if (loading) return <Loader size />;
 
     return (
-        <div className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-                <div className="relative flex-1 min-w-[160px] max-w-xs">
-                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search symbol…"
-                        className="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-400/40" />
-                </div>
-                <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="space-y-6">
+            <div className="flex flex-wrap gap-4 items-center justify-between">
+                <div className="flex p-1 bg-slate-100/50 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 backdrop-blur-sm">
                     {(['ALL', 'BUY', 'SELL', 'HOLD'] as const).map(d => (
                         <button key={d} onClick={() => setFilter(d)}
-                            className={cn('px-3 py-1.5 text-xs font-bold transition-colors',
-                                filter === d ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700')}>
+                            className={cn('px-4 py-2 rounded-lg text-xs font-bold transition-all',
+                                filter === d ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm border border-slate-200/50 dark:border-slate-600/50' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200')}>
                             {d}
                         </button>
                     ))}
                 </div>
+                <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" strokeWidth={2.5} />
+                    <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Filter symbol…"
+                        className="pl-9 pr-4 py-2 text-xs font-medium rounded-xl border border-slate-200/50 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-400/30 w-64 backdrop-blur-sm transition-all" />
+                </div>
             </div>
 
-            {groups.length === 0 ? <Empty label="No strategy signals match your filters" /> : (
-                <div className="space-y-2">
+            {groups.length === 0 ? <Empty label="No strategy signals match filters" /> : (
+                <div className="grid gap-3 animate-in fade-in slide-in-from-top-2 duration-500">
                     {groups.map(([symbol, sigs]) => {
                         const buySigs = sigs.filter(s => s.signal === 'BUY');
                         const sellSigs = sigs.filter(s => s.signal === 'SELL');
                         const dominant = buySigs.length >= sellSigs.length ? 'BUY' : 'SELL';
                         const ltp = parseFloat(sigs[0]?.last_close ?? '0');
                         return (
-                            <div key={symbol} onClick={() => router.push(`/ticker/${symbol}`)}
-                                className="flex items-center justify-between gap-4 px-4 py-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition-all group">
-                                <div className="flex items-center gap-3">
-                                    <span className="font-black text-slate-900 dark:text-slate-100 text-sm">{symbol}</span>
-                                    <SignalBadge direction={dominant as 'BUY' | 'SELL'} />
-                                </div>
-                                <div className="flex-1 flex flex-wrap gap-1 hidden md:flex">
-                                    {sigs.slice(0, 4).map(s => (
-                                        <span key={s.id} className="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                                            {s.strategy_name}
-                                        </span>
-                                    ))}
-                                    {sigs.length > 4 && <span className="text-[10px] font-bold text-slate-400">+{sigs.length - 4}</span>}
-                                </div>
-                                <div className="flex items-center gap-3 shrink-0">
-                                    <span className="text-sm font-bold font-mono text-slate-700 dark:text-slate-300">Rs. {ltp.toLocaleString()}</span>
-                                    <span className="text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-500">{sigs.length} signal{sigs.length > 1 ? 's' : ''}</span>
-                                    <ChevronRight size={14} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
-                                </div>
-                            </div>
+                            <UnifiedSignalCard 
+                                key={symbol}
+                                symbol={symbol}
+                                direction={dominant as 'BUY' | 'SELL'}
+                                ltp={ltp}
+                                strength={70}
+                                reason={sigs[0]?.strategy_description || sigs.map(s => s.strategy_name).join(' · ')}
+                                tagline={`${sigs.length} Strategy Signals`}
+                                onSelect={onSelect}
+                            />
                         );
                     })}
                 </div>
@@ -483,7 +477,7 @@ function StrategiesView() {
 
 // ─── WHALE WATCH VIEW ─────────────────────────────────────────────────────────
 
-function WhaleWatchView() {
+function WhaleWatchView({ onSelect }: BaseSignalViewProps) {
     const [engineIdx, setEngineIdx] = useState(0);
     const [recs, setRecs] = useState<WhaleRec[]>([]);
     const [loading, setLoading] = useState(true);
@@ -507,65 +501,47 @@ function WhaleWatchView() {
     const sells = filtered.filter(r => r.signal === 'SELL');
 
     return (
-        <div className="space-y-4">
-            <div className="flex flex-wrap gap-2 items-center">
-                <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="space-y-6">
+            <div className="flex flex-wrap gap-4 items-center justify-between">
+                <div className="flex flex-wrap gap-2 p-1 bg-slate-100/50 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 backdrop-blur-sm">
                     {WHALE_ENGINES.map((e, i) => (
                         <button key={e.key} onClick={() => setEngineIdx(i)}
-                            className={cn('px-3 py-1.5 text-xs font-bold transition-colors',
-                                engineIdx === i ? 'bg-cyan-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700')}>
+                            className={cn('px-4 py-2 rounded-lg text-xs font-bold transition-all',
+                                engineIdx === i 
+                                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm border border-slate-200/50 dark:border-slate-600/50' 
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200')}>
                             {e.label}
                         </button>
                     ))}
                 </div>
-                <div className="relative">
-                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Filter…"
-                        className="pl-8 pr-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-cyan-400/40 w-36" />
-                </div>
-                <div className="ml-auto flex gap-3 text-xs font-bold">
-                    <span className="text-emerald-600 dark:text-emerald-400">{buys.length} BUY</span>
-                    <span className="text-rose-600 dark:text-rose-400">{sells.length} SELL</span>
+                
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" strokeWidth={2.5} />
+                        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Filter symbol…"
+                            className="pl-9 pr-4 py-2 text-xs font-medium rounded-xl border border-slate-200/50 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-cyan-400/30 w-64 backdrop-blur-sm transition-all" />
+                    </div>
                 </div>
             </div>
 
+            <div className="flex gap-4 text-[10px] font-black tracking-widest uppercase">
+                <div className="flex items-center gap-1.5 text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-100 dark:border-emerald-500/20">{buys.length} Buy Signals</div>
+                <div className="flex items-center gap-1.5 text-rose-500 bg-rose-50 dark:bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-100 dark:border-rose-500/20">{sells.length} Sell Signals</div>
+            </div>
+
             {loading ? <Loader size /> : filtered.length === 0 ? <Empty label="No signals from this engine" /> : (
-                <div className="space-y-2">
+                <div className="grid gap-2 animate-in fade-in slide-in-from-top-2 duration-500">
                     {filtered.map(r => (
-                        <div key={r.symbol} onClick={() => router.push(`/ticker/${r.symbol}`)}
-                            className={cn('flex items-center gap-4 px-4 py-3 rounded-xl border cursor-pointer transition-all hover:shadow-md group',
-                                r.signal === 'BUY'
-                                    ? 'border-l-4 border-l-emerald-400 bg-emerald-50/20 dark:bg-emerald-900/10 border-emerald-100/60 dark:border-emerald-800/40'
-                                    : 'border-l-4 border-l-rose-400 bg-rose-50/20 dark:bg-rose-900/10 border-rose-100/60 dark:border-rose-800/40')}>
-                            <div className="flex items-center gap-3 w-32 shrink-0">
-                                <span className="font-black text-slate-900 dark:text-slate-100">{r.symbol}</span>
-                                <SignalBadge direction={r.signal} />
-                            </div>
-                            <div className="flex-1 min-w-0 hidden md:block">
-                                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{r.reason}</p>
-                            </div>
-                            <div className="flex items-center gap-4 shrink-0 text-xs font-mono">
-                                <div className="text-right">
-                                    <div className="font-bold text-slate-800 dark:text-slate-200">Rs. {r.close.toLocaleString()}</div>
-                                    <div className="text-[10px] text-slate-400">{r.date}</div>
-                                </div>
-                                <div className="w-20">
-                                    <div className="flex justify-between text-[10px] text-slate-400 mb-0.5">
-                                        <span>Str</span><span>{r.strength.toFixed(0)}%</span>
-                                    </div>
-                                    <Progress value={r.strength} className="h-1.5" />
-                                </div>
-                                {r.rsi !== undefined && (
-                                    <span className={cn('text-[11px] font-bold px-2 py-0.5 rounded',
-                                        r.rsi > 70 ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-                                            : r.rsi < 30 ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                                : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400')}>
-                                        RSI {r.rsi.toFixed(0)}
-                                    </span>
-                                )}
-                                <ChevronRight size={14} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
-                            </div>
-                        </div>
+                        <UnifiedSignalCard 
+                            key={r.symbol}
+                            symbol={r.symbol}
+                            direction={r.signal}
+                            ltp={r.close}
+                            strength={r.strength}
+                            reason={r.reason}
+                            tagline={WHALE_ENGINES[engineIdx].label}
+                            onSelect={onSelect}
+                        />
                     ))}
                 </div>
             )}
@@ -594,47 +570,67 @@ function Empty({ label }: { label: string }) {
 // ─── ROOT ──────────────────────────────────────────────────────────────────────
 
 const TABS = [
-    { key: 'all', label: 'All Sources', icon: <Layers size={14} />, desc: 'Unified feed across all intelligence layers' },
-    { key: 'smart', label: 'Smart Money', icon: <Crosshair size={14} />, desc: 'Institutional accumulation signals' },
-    { key: 'strategies', label: 'Strategies', icon: <Zap size={14} />, desc: 'Backtested strategy signals' },
-    { key: 'whale', label: 'Whale Watch', icon: <Radar size={14} />, desc: 'Deep technical + accumulation engines' },
+    { key: 'all', label: 'Command Center', icon: <Radar size={16} />, desc: 'Real-time alpha discovery from across the market ecosystem.' },
+    { key: 'smart', label: 'Smart Money', icon: <Zap size={16} />, desc: 'Institutional broker flow and professional accumulation zones.' },
+    { key: 'whale', label: 'Whale Watch', icon: <Activity size={16} />, desc: 'Deep technical analysis and large order execution tracking.' },
+    { key: 'strategies', label: 'Strategies', icon: <Binary size={16} />, desc: 'Quantitative signal engines and automated technical setups.' },
 ];
 
 export default function IntelHubClient() {
     const [tab, setTab] = useState('all');
+    const [selectedSignal, setSelectedSignal] = useState<{ symbol: string; ltp: number; strength: number; direction: 'BUY' | 'SELL' } | null>(null);
 
     return (
         <DashboardLayout
-            title={<span className="flex items-center gap-2 text-2xl font-black bg-gradient-to-r from-indigo-600 to-cyan-500 bg-clip-text text-transparent">Signal Intelligence</span>}
+            title={<span className="flex items-center gap-3 text-3xl font-black tracking-tighter text-slate-900 dark:text-white">Signal Intelligence</span>}
             subtitle={TABS.find(t => t.key === tab)?.desc}
         >
-            <div className="space-y-5">
-                {/* Tab bar */}
-                <div className="flex gap-1 bg-slate-100 dark:bg-slate-800/60 rounded-xl p-1 w-fit">
+            <div className="space-y-8 pb-20">
+                {/* Navigation bar */}
+                <div className="flex flex-wrap gap-2 p-1.5 bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl w-fit">
                     {TABS.map(t => (
                         <button
                             key={t.key}
                             onClick={() => setTab(t.key)}
                             className={cn(
-                                'flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold transition-all',
+                                'flex items-center gap-2.5 px-6 py-3 rounded-xl text-xs font-black transition-all group overflow-hidden relative',
                                 tab === t.key
-                                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
-                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200',
+                                    ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xl shadow-slate-200/30 dark:shadow-none border border-slate-200/50 dark:border-slate-700/50'
+                                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50'
                             )}
                         >
-                            {t.icon} {t.label}
+                            <span className={cn('transition-transform duration-500 group-hover:scale-125', tab === t.key ? 'text-indigo-500' : 'text-slate-400')}>
+                                {t.icon}
+                            </span>
+                            <span className="relative z-10">{t.label}</span>
+                            {tab === t.key && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-500/50" />}
                         </button>
                     ))}
                 </div>
 
-                {/* Content */}
-                <div>
-                    {tab === 'all'        && <AllSourcesView />}
-                    {tab === 'smart'      && <SmartMoneyView />}
-                    {tab === 'strategies' && <StrategiesView />}
-                    {tab === 'whale'      && <WhaleWatchView />}
+                {/* Main Content Area with staggered animation */}
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-700">
+                    {tab === 'all'        && <AllSourcesView onSelect={setSelectedSignal} />}
+                    {tab === 'smart'      && <SmartMoneyView onSelect={setSelectedSignal} />}
+                    {tab === 'strategies' && <StrategiesView onSelect={setSelectedSignal} />}
+                    {tab === 'whale'      && <WhaleWatchView onSelect={setSelectedSignal} />}
                 </div>
             </div>
+
+            {/* Premium Details Modal */}
+            <Dialog open={!!selectedSignal} onOpenChange={() => setSelectedSignal(null)}>
+                <DialogContent className="w-[90vw] h-[90vh] max-w-none sm:max-w-none p-0 overflow-hidden border-none bg-transparent shadow-none">
+                    {selectedSignal && (
+                        <DailySignalStatus 
+                            symbol={selectedSignal.symbol}
+                            cmp={selectedSignal.ltp}
+                            strength={selectedSignal.strength}
+                            direction={selectedSignal.direction}
+                            className="shadow-2xl border-slate-200 dark:border-slate-800"
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
         </DashboardLayout>
     );
 }

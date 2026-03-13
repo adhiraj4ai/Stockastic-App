@@ -27,6 +27,7 @@ interface TransactionModalProps {
     onSuccess: () => void;
     defaultTicker?: string;
     defaultType?: string;
+    defaultAccount?: string;
     accounts?: PortfolioAccount[];
     // If editing, receive the transaction object
     transactionToEdit?: any;
@@ -40,6 +41,7 @@ export default function TransactionModal({
     onSuccess,
     defaultTicker = '',
     defaultType = 'BUY',
+    defaultAccount = '',
     accounts = [],
     transactionToEdit = null
 }: TransactionModalProps) {
@@ -144,17 +146,16 @@ export default function TransactionModal({
                 setFormData(prev => ({
                     ...prev,
                     ticker: defaultTicker,
-                    // Default to first account if exists and none selected, or keep empty if multiple
                     transaction_date: new Date().toISOString().split('T')[0],
                     quantity: '',
                     rate: '',
                     reason: '',
-                    account: prev.account || (accounts.length > 0 ? accounts[0].id.toString() : '')
+                    account: defaultAccount || (accounts.length > 0 ? accounts[0].id.toString() : '')
                 }));
                 if (defaultType) setActiveTab(defaultType as TransactionType);
             }
         }
-    }, [isOpen, defaultTicker, defaultType, accounts, transactionToEdit]);
+    }, [isOpen, defaultTicker, defaultType, defaultAccount, accounts, transactionToEdit]);
 
     useEffect(() => {
         if (activeTab === 'BUY' || activeTab === 'SELL' || activeTab === 'SHORT_SELL' || activeTab === 'BUY_TO_COVER') {

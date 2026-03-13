@@ -94,6 +94,7 @@ function PortfolioContent() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [promoteTicker, setPromoteTicker] = useState<string>('');
     const [transactionType, setTransactionType] = useState<string>('BUY');
+    const [defaultModalAccount, setDefaultModalAccount] = useState<string>('');
     const [isCreateAccountOpen, setIsCreateAccountOpen] = useState(false);
     const [isExitPlanDialogOpen, setIsExitPlanDialogOpen] = useState(false);
     const [selectedPortfolioItem, setSelectedPortfolioItem] = useState<PortfolioItem | null>(null);
@@ -628,11 +629,13 @@ function PortfolioContent() {
                                                             onBuy={(ticker) => {
                                                                 setPromoteTicker(ticker);
                                                                 setTransactionType('BUY');
+                                                                setDefaultModalAccount(acc.id.toString());
                                                                 setIsModalOpen(true);
                                                             }}
                                                             onSell={(ticker) => {
                                                                 setPromoteTicker(ticker);
                                                                 setTransactionType('SELL');
+                                                                setDefaultModalAccount(acc.id.toString());
                                                                 setIsModalOpen(true);
                                                             }}
                                                             onStrategies={(item) => {
@@ -656,11 +659,13 @@ function PortfolioContent() {
                                         onBuy={(ticker) => {
                                             setPromoteTicker(ticker);
                                             setTransactionType('BUY');
+                                            setDefaultModalAccount(selectedAccount !== 'all' ? selectedAccount : '');
                                             setIsModalOpen(true);
                                         }}
                                         onSell={(ticker) => {
                                             setPromoteTicker(ticker);
                                             setTransactionType('SELL');
+                                            setDefaultModalAccount(selectedAccount !== 'all' ? selectedAccount : '');
                                             setIsModalOpen(true);
                                         }}
                                         onStrategies={(item) => {
@@ -1327,6 +1332,7 @@ function PortfolioContent() {
                     onClose={() => {
                         setIsModalOpen(false);
                         setPromoteTicker('');
+                        setDefaultModalAccount('');
                     }}
                     onSuccess={() => {
                         fetchPortfolio();
@@ -1334,6 +1340,7 @@ function PortfolioContent() {
                     }}
                     defaultTicker={promoteTicker}
                     defaultType={transactionType}
+                    defaultAccount={defaultModalAccount}
                     accounts={accounts}
                 />
 
