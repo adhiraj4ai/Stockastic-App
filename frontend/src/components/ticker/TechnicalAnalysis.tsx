@@ -13,10 +13,11 @@ import { formatNepaliNumber } from '@/lib/formatters';
 interface TechnicalAnalysisProps {
     symbol: string;
     data: any;
+    history: any[];
 }
 
 
-export default function TechnicalAnalysis({ symbol, data }: TechnicalAnalysisProps) {
+export default function TechnicalAnalysis({ symbol, data, history }: TechnicalAnalysisProps) {
     const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['Momentum', 'Trend', 'Volatility', 'Volume']));
 
     const toggleCategory = (category: string) => {
@@ -264,7 +265,7 @@ export default function TechnicalAnalysis({ symbol, data }: TechnicalAnalysisPro
             </div>
 
             {/* Fibonacci Retracement - Component has its own heading */}
-            <FibonacciRetracement symbol={symbol} />
+            <FibonacciRetracement symbol={symbol} history={history} indicators={data?.fundamental?.technical_indicators || []} />
 
             {/* Strategy Signals - Component has its own heading */}
             <SignalDashboard symbol={symbol} />

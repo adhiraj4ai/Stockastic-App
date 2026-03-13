@@ -48,7 +48,6 @@ const navItems = [
             { name: 'Paper Trading', href: '/paper-trading', icon: LayoutDashboard },
         ]
     },
-    { name: 'Stockastic AI', href: '/chat', icon: MessageSquare },
     {
         name: 'Accumulation',
         icon: Activity,

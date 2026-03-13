@@ -8,8 +8,12 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
     TrendingUp, TrendingDown, Target, ArrowUpRight, ArrowDownRight,
-    Activity, Layers, ChevronUp, ChevronDown
+    Activity, Layers, ChevronUp, ChevronDown, LineChart as LineChartIcon, Table2, Clock
 } from 'lucide-react';
+import {
+    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
+    ReferenceLine, ResponsiveContainer
+} from 'recharts';
 
 interface FibLevel {
     ratio: number;
@@ -45,6 +49,8 @@ interface FibData {
 
 interface FibonacciRetracementProps {
     symbol: string;
+    history: any[];
+    indicators: any[];
 }
 
 const PERIODS = [
@@ -55,11 +61,12 @@ const PERIODS = [
     { value: 1825, label: '5Y' },
 ];
 
-export function FibonacciRetracement({ symbol }: FibonacciRetracementProps) {
+export function FibonacciRetracement({ symbol, history, indicators }: FibonacciRetracementProps) {
     const [data, setData] = useState<FibData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [period, setPeriod] = useState(1825);
+    const [historyView, setHistoryView] = useState<'table' | 'graph'>('graph');
 
     useEffect(() => {
         const fetch = async () => {
@@ -238,7 +245,7 @@ export function FibonacciRetracement({ symbol }: FibonacciRetracementProps) {
             {/* Visual Gauge + Levels Table */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Visual Fibonacci Ladder */}
-                <div className="lg:col-span-5">
+                <div className="lg:col-span-3">
                     <div className="glass-card-light dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-700 h-full">
                         <div className="flex items-center gap-3 mb-8">
                             <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800">
@@ -353,137 +360,187 @@ export function FibonacciRetracement({ symbol }: FibonacciRetracementProps) {
                     </div>
                 </div>
 
-                {/* Fibonacci Levels Table */}
-                <div className="lg:col-span-7">
+                {/* Historical Price Action */}
+                <div className="lg:col-span-9">
                     <div className="glass-card-light dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-700 h-full">
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="p-2 rounded-xl bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-800">
-                                <Activity size={18} />
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-700">
+                                    <Clock size={18} />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-slate-800 dark:text-slate-100">Historical Price Action</h4>
+                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">Ohlcv historical logs</p>
+                                </div>
                             </div>
-                            <div>
-                                <h4 className="font-bold text-slate-800 dark:text-slate-100">Fibonacci Levels Detail</h4>
-                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">
-                                    Swing High: Rs. {data.swing_high.toLocaleString()} ({data.swing_high_date}) &middot; Swing Low: Rs. {data.swing_low.toLocaleString()} ({data.swing_low_date})
-                                </p>
+                            <div className="flex bg-slate-100/80 dark:bg-slate-800/80 rounded-lg p-1 gap-1">
+                                <button
+                                    onClick={() => setHistoryView('graph')}
+                                    className={`p-2 rounded-md transition-all flex items-center gap-2 ${historyView === 'graph' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400 font-bold' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                                >
+                                    <LineChartIcon size={16} />
+                                    <span className="text-xs">Graph</span>
+                                </button>
+                                <button
+                                    onClick={() => setHistoryView('table')}
+                                    className={`p-2 rounded-md transition-all flex items-center gap-2 ${historyView === 'table' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-slate-100 font-bold' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                                >
+                                    <Table2 size={16} />
+                                    <span className="text-xs">Table</span>
+                                </button>
                             </div>
                         </div>
 
-                        <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
-                            <table className="w-full text-sm">
-                                <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700">
-                                    <tr>
-                                        <th className="px-6 py-4 text-left font-semibold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">Level</th>
-                                        <th className="px-6 py-4 text-right font-semibold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">Price</th>
-                                        <th className="px-6 py-4 text-center font-semibold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">Status</th>
-                                        <th className="px-6 py-4 text-right font-semibold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">Distance</th>
-                                        <th className="px-6 py-4 text-right font-semibold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">Strength</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                    {sortedLevels.map((level) => {
-                                        const isNearest = (data.nearest_support?.label === level.label) ||
-                                            (data.nearest_resistance?.label === level.label);
-                                        const isAbove = level.price > data.current_price;
+                        {historyView === 'table' ? (
+                            <div className="overflow-hidden overflow-y-auto max-h-[500px] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative no-scrollbar">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
+                                        <tr>
+                                            <th className="px-6 py-4 font-semibold text-[10px]">Date</th>
+                                            <th className="px-6 py-4 font-semibold text-[10px]">Open</th>
+                                            <th className="px-6 py-4 font-semibold text-[10px]">High</th>
+                                            <th className="px-6 py-4 font-semibold text-[10px]">Low</th>
+                                            <th className="px-6 py-4 font-semibold text-[10px]">Close</th>
+                                            <th className="px-6 py-4 font-semibold text-[10px] text-right">Volume</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800 bg-white/30 dark:bg-slate-950/40">
+                                        {[...history]
+                                            .filter(row => new Date(row.date) > new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))
+                                            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                                            .map((row, i) => (
+                                                <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                    <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-100">{row.date}</td>
+                                                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{row.open}</td>
+                                                    <td className="px-6 py-4 text-emerald-600 dark:text-emerald-400 font-medium">{row.high}</td>
+                                                    <td className="px-6 py-4 text-rose-600 dark:text-rose-400 font-medium">{row.low}</td>
+                                                    <td className="px-6 py-4 font-bold text-slate-900 dark:text-slate-100">{row.close}</td>
+                                                    <td className="px-6 py-4 text-right font-mono text-xs text-slate-400 dark:text-slate-500">{row.volume.toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="h-[500px] w-full bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 relative">
+                                {(() => {
+                                    const historyData = [...history]
+                                        .filter(row => new Date(row.date) > new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))
+                                        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-                                        // Fibonacci strength: key levels (38.2%, 50%, 61.8%) are strongest
-                                        const strength = [0.382, 0.5, 0.618].includes(level.ratio) ? 'Strong'
-                                            : [0.236, 0.786].includes(level.ratio) ? 'Moderate'
-                                                : 'Weak';
+                                    const getVal = (k: string) => {
+                                        const ind = indicators.find((x: any) => x.name.includes(k));
+                                        if (!ind?.value) return null;
+                                        const val = parseFloat(ind.value.toString().replace(/[^0-9.-]/g, ''));
+                                        return isNaN(val) ? null : val;
+                                    };
 
-                                        const strengthColor = strength === 'Strong'
-                                            ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 ring-emerald-100 dark:ring-emerald-800'
-                                            : strength === 'Moderate'
-                                                ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 ring-amber-100 dark:ring-amber-800'
-                                                : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 ring-slate-200 dark:ring-slate-700';
+                                    const r3 = getVal('Resistance 3');
+                                    const r2 = getVal('Resistance 2');
+                                    const r1 = getVal('Resistance 1');
+                                    const p = getVal('Pivot');
+                                    const s1 = getVal('Support 1');
+                                    const s2 = getVal('Support 2');
+                                    const s3 = getVal('Support 3');
+                                    const current = historyData.length > 0 ? historyData[historyData.length - 1].close : null;
 
+                                    const allValues = [r3, r2, r1, p, s1, s2, s3, current, ...historyData.map(d => d.close)].filter(v => typeof v === 'number' && !isNaN(v)) as number[];
+                                    let finalMin: number | 'auto' = 'auto';
+                                    let finalMax: number | 'auto' = 'auto';
+
+                                    if (allValues.length > 0) {
+                                        const minVal = Math.min(...allValues);
+                                        const maxVal = Math.max(...allValues);
+                                        const range = maxVal - minVal;
+                                        const padding = range * 0.05;
+                                        finalMin = Math.floor(minVal - padding);
+                                        finalMax = Math.ceil(maxVal + padding);
+                                    }
+
+                                    const CustomFlag = ({ viewBox, value, color, label }: any) => {
+                                        const { width, y } = viewBox;
+                                        if (!width || !y) return null;
+                                        const flagWidth = 55;
+                                        const flagHeight = 20;
+                                        const xPos = width - flagWidth;
+                                        const yPos = y - (flagHeight / 2);
                                         return (
-                                            <tr
-                                                key={level.label}
-                                                className={cn(
-                                                    "hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors",
-                                                    isNearest ? "bg-blue-50/30 dark:bg-blue-900/10" : ""
-                                                )}
-                                            >
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className={cn(
-                                                            "w-2 h-2 rounded-full",
-                                                            isAbove ? "bg-emerald-400" : "bg-rose-400"
-                                                        )} />
-                                                        <span className="font-bold text-slate-700 dark:text-slate-300">{level.label}</span>
-                                                        <span className="text-[10px] text-slate-400">({(level.ratio * 100).toFixed(1)}%)</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
-                                                        Rs. {level.price.toLocaleString()}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <Badge className={cn(
-                                                        "text-[9px] font-bold border-none px-2.5",
-                                                        isNearest
-                                                            ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                                                            : isAbove
-                                                                ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400"
-                                                                : "bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400"
-                                                    )}>
-                                                        {isNearest ? (isAbove ? '▲ NEXT RESISTANCE' : '▼ NEXT SUPPORT')
-                                                            : isAbove ? 'RESISTANCE' : 'SUPPORT'}
-                                                    </Badge>
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <span className={cn(
-                                                        "font-mono font-bold text-xs",
-                                                        level.distance_pct > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
-                                                    )}>
-                                                        {level.distance_pct > 0 ? '+' : ''}{level.distance_pct}%
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <span className={cn("px-2 py-0.5 rounded-md text-[9px] font-bold ring-1", strengthColor)}>
-                                                        {strength}
-                                                    </span>
-                                                </td>
-                                            </tr>
+                                            <g>
+                                                <path d={`M${xPos} ${yPos} h${flagWidth} a2 2 0 0 1 2 2 v${flagHeight - 4} a2 2 0 0 1 -2 2 h-${flagWidth} l-5 -${flagHeight / 2} z`} fill={color} />
+                                                <text x={xPos + flagWidth / 2 + 2} y={yPos + 14} textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">
+                                                    {label}: {typeof value === 'number' ? value.toFixed(0) : value}
+                                                </text>
+                                            </g>
                                         );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
+                                    };
 
-                        {/* Price Position Bar */}
-                        <div className="mt-8 space-y-3">
-                            <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                                <span>Swing Low: Rs. {data.swing_low.toLocaleString()}</span>
-                                <span>Swing High: Rs. {data.swing_high.toLocaleString()}</span>
-                            </div>
-                            <div className="relative h-4 bg-gradient-to-r from-rose-200 via-amber-100 to-emerald-200 dark:from-rose-900/40 dark:via-amber-900/20 dark:to-emerald-900/40 rounded-full overflow-hidden">
-                                {/* Level markers */}
-                                {sortedLevels.map(level => {
-                                    const pct = priceRange > 0
-                                        ? ((level.price - data.swing_low) / priceRange) * 100
-                                        : 0;
                                     return (
-                                        <div
-                                            key={level.label}
-                                            className="absolute top-0 bottom-0 w-px bg-slate-400/40 dark:bg-slate-500/40"
-                                            style={{ left: `${pct}%` }}
-                                        />
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart data={historyData}>
+                                                <defs>
+                                                    <linearGradient id="colorCloseHist" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={document.documentElement.classList.contains('dark') ? '#334155' : '#e2e8f0'} />
+                                                <XAxis
+                                                    dataKey="date"
+                                                    tickFormatter={(str) => {
+                                                        const date = new Date(str);
+                                                        return date.toLocaleDateString("en-US", { month: "short", year: '2-digit' });
+                                                    }}
+                                                    axisLine={false}
+                                                    tickLine={false}
+                                                    tick={{ fontSize: 10, fill: document.documentElement.classList.contains('dark') ? '#64748b' : '#94a3b8' }}
+                                                    minTickGap={30}
+                                                />
+                                                <YAxis
+                                                    domain={[finalMin, finalMax]}
+                                                    axisLine={false}
+                                                    tickLine={false}
+                                                    tick={{ fontSize: 10, fill: document.documentElement.classList.contains('dark') ? '#64748b' : '#94a3b8' }}
+                                                    width={40}
+                                                />
+                                                <RechartsTooltip
+                                                    contentStyle={{
+                                                        backgroundColor: document.documentElement.classList.contains('dark') ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+                                                        borderRadius: '12px',
+                                                        border: `1px solid ${document.documentElement.classList.contains('dark') ? '#334155' : '#e2e8f0'}`,
+                                                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                                                    }}
+                                                    itemStyle={{ color: document.documentElement.classList.contains('dark') ? '#f1f5f9' : '#1e293b', fontWeight: 'bold', fontSize: '12px' }}
+                                                    labelStyle={{ color: document.documentElement.classList.contains('dark') ? '#94a3b8' : '#64748b', fontSize: '10px', marginBottom: '4px' }}
+                                                />
+                                                <Area
+                                                    type="monotone"
+                                                    dataKey="close"
+                                                    stroke="#3b82f6"
+                                                    strokeWidth={2}
+                                                    fillOpacity={1}
+                                                    fill="url(#colorCloseHist)"
+                                                />
+                                                {r3 && <ReferenceLine y={r3} stroke="#10b981" strokeDasharray="3 3" label={(props) => <CustomFlag {...props} value={r3} color="#10b981" label="R3" />} />}
+                                                {r2 && <ReferenceLine y={r2} stroke="#10b981" strokeDasharray="3 3" label={(props) => <CustomFlag {...props} value={r2} color="#10b981" label="R2" />} />}
+                                                {r1 && <ReferenceLine y={r1} stroke="#10b981" strokeDasharray="3 3" label={(props) => <CustomFlag {...props} value={r1} color="#10b981" label="R1" />} />}
+                                                {p && <ReferenceLine y={p} stroke="#64748b" strokeDasharray="5 5" />}
+                                                {s1 && <ReferenceLine y={s1} stroke="#ef4444" strokeDasharray="3 3" label={(props) => <CustomFlag {...props} value={s1} color="#ef4444" label="S1" />} />}
+                                                {s2 && <ReferenceLine y={s2} stroke="#ef4444" strokeDasharray="3 3" label={(props) => <CustomFlag {...props} value={s2} color="#ef4444" label="S2" />} />}
+                                                {s3 && <ReferenceLine y={s3} stroke="#ef4444" strokeDasharray="3 3" label={(props) => <CustomFlag {...props} value={s3} color="#ef4444" label="S3" />} />}
+                                                {current && (
+                                                    <ReferenceLine
+                                                        y={current}
+                                                        stroke="#3b82f6"
+                                                        strokeDasharray="3 3"
+                                                        label={(props) => <CustomFlag {...props} value={current} color="#3b82f6" label="CMP" />}
+                                                    />
+                                                )}
+                                            </AreaChart>
+                                        </ResponsiveContainer>
                                     );
-                                })}
-                                {/* Current price marker */}
-                                <div
-                                    className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-blue-500 rounded-full border-2 border-white dark:border-slate-900 shadow-lg shadow-blue-500/50 z-10"
-                                    style={{ left: `${Math.min(Math.max(currentPricePct, 2), 98)}%`, transform: 'translate(-50%, -50%)' }}
-                                />
+                                })()}
                             </div>
-                            <div className="text-center">
-                                <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
-                                    CMP: Rs. {data.current_price.toLocaleString()} ({currentPricePct.toFixed(1)}% of range)
-                                </span>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -7,16 +7,12 @@ import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useState, useMemo } from 'react';
-import {
-    ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
-    BarChart, Bar, Legend, ReferenceLine
-} from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
     ArrowLeft, TrendingUp, TrendingDown, Calendar, DollarSign,
-    Activity, Clock, BarChart2, Layers, Zap, Info, Share2,
-    Download, RefreshCw, Maximize2, Table2, LineChart,
+    Activity, BarChart2, Layers, Zap, Info, Share2,
+    Download, RefreshCw, Maximize2,
     Check, ChevronDown, Search, X, PieChart, Globe
 } from 'lucide-react';
 import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
@@ -118,7 +114,6 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
     const [financials, setFinancials] = useState<any[]>([]);
     const [history, setHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [historyView, setHistoryView] = useState<'table' | 'graph'>('graph');
     const [modalOpen, setModalOpen] = useState(false);
     const [txnType, setTxnType] = useState('BUY');
     const [error, setError] = useState<string | null>(null);
@@ -644,14 +639,13 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                     <TabsList className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 h-10 rounded-xl shadow-sm">
                                         <TabsTrigger value="technical" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Technical Analysis</TabsTrigger>
                                         <TabsTrigger value="fundamentals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Fundamentals</TabsTrigger>
-                                        <TabsTrigger value="history" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">History</TabsTrigger>
                                     </TabsList>
                                 </div>
                             </div>
 
                             <div className="animate-in fade-in zoom-in-95 duration-700">
                                 <TabsContent value="technical" className="mt-0 space-y-8">
-                                    <TechnicalAnalysis symbol={ticker} data={data} />
+                                    <TechnicalAnalysis symbol={ticker} data={data} history={history} />
                                 </TabsContent>
 
 
@@ -892,202 +886,6 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
 
 
 
-                                <TabsContent value="history" className="mt-0">
-                                    <div className="glass-card-light rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
-                                        <div className="flex items-center justify-between mb-8">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 rounded-xl bg-slate-50 text-slate-600 border border-slate-100">
-                                                    <Clock size={18} />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-slate-800">Historical Price Action</h4>
-                                                    <p className="text-[10px] text-slate-400 font-semibold">Ohlcv historical logs</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex bg-slate-100/80 dark:bg-slate-800/80 rounded-lg p-1 gap-1">
-                                                <button
-                                                    onClick={() => setHistoryView('graph')}
-                                                    className={`p-2 rounded-md transition-all flex items-center gap-2 ${historyView === 'graph' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400 font-bold' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
-                                                >
-                                                    <LineChart size={16} />
-                                                    <span className="text-xs">Graph</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => setHistoryView('table')}
-                                                    className={`p-2 rounded-md transition-all flex items-center gap-2 ${historyView === 'table' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-slate-100 font-bold' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
-                                                >
-                                                    <Table2 size={16} />
-                                                    <span className="text-xs">Table</span>
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {historyView === 'table' ? (
-                                            <div className="overflow-hidden overflow-y-auto max-h-[500px] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative no-scrollbar">
-                                                <table className="w-full text-sm text-left">
-                                                    <thead className="bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
-                                                        <tr>
-                                                            <th className="px-6 py-4 font-semibold text-[10px]">Date</th>
-                                                            <th className="px-6 py-4 font-semibold text-[10px]">Open</th>
-                                                            <th className="px-6 py-4 font-semibold text-[10px]">High</th>
-                                                            <th className="px-6 py-4 font-semibold text-[10px]">Low</th>
-                                                            <th className="px-6 py-4 font-semibold text-[10px]">Close</th>
-                                                            <th className="px-6 py-4 font-semibold text-[10px] text-right">Volume</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800 bg-white/30 dark:bg-slate-950/40">
-                                                        {[...history]
-                                                            .filter(row => new Date(row.date) > new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))
-                                                            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                                                            .map((row, i) => (
-                                                                <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                                                    <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-100">{row.date}</td>
-                                                                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{row.open}</td>
-                                                                    <td className="px-6 py-4 text-emerald-600 dark:text-emerald-400 font-medium">{row.high}</td>
-                                                                    <td className="px-6 py-4 text-rose-600 dark:text-rose-400 font-medium">{row.low}</td>
-                                                                    <td className="px-6 py-4 font-bold text-slate-900 dark:text-slate-100">{row.close}</td>
-                                                                    <td className="px-6 py-4 text-right font-mono text-xs text-slate-400 dark:text-slate-500">{row.volume.toLocaleString()}</td>
-                                                                </tr>
-                                                            ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        ) : (
-                                            <div className="h-[500px] w-full bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 relative">
-                                                {(() => {
-                                                    // 1. Prepare Data
-                                                    const historyData = [...history]
-                                                        .filter(row => new Date(row.date) > new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))
-                                                        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-                                                    // 2. Extract Indicators & Levels
-                                                    const indicators = data?.fundamental?.technical_indicators || [];
-                                                    const getVal = (k: string) => {
-                                                        const i = indicators.find((x: any) => x.name.includes(k));
-                                                        if (!i?.value) return null;
-                                                        const val = parseFloat(i.value.toString().replace(/[^0-9.-]/g, ''));
-                                                        return isNaN(val) ? null : val;
-                                                    };
-
-                                                    const r3 = getVal('Resistance 3');
-                                                    const r2 = getVal('Resistance 2');
-                                                    const r1 = getVal('Resistance 1');
-                                                    const p = getVal('Pivot');
-                                                    const s1 = getVal('Support 1');
-                                                    const s2 = getVal('Support 2');
-                                                    const s3 = getVal('Support 3');
-                                                    const current = historyData.length > 0 ? historyData[historyData.length - 1].close : null;
-
-                                                    // 3. Calculate Domain to include ALL levels
-                                                    const allValues = [r3, r2, r1, p, s1, s2, s3, current, ...historyData.map(d => d.close)].filter(v => typeof v === 'number' && !isNaN(v)) as number[];
-                                                    const minDomain = allValues.length > 0 ? Math.min(...allValues) : 'auto';
-                                                    const maxDomain = allValues.length > 0 ? Math.max(...allValues) : 'auto';
-                                                    // Add 5% padding
-                                                    let finalMin: number | 'auto' = 'auto';
-                                                    let finalMax: number | 'auto' = 'auto';
-
-                                                    if (typeof minDomain === 'number' && typeof maxDomain === 'number') {
-                                                        const range = maxDomain - minDomain;
-                                                        const padding = range * 0.05;
-                                                        finalMin = Math.floor(minDomain - padding);
-                                                        finalMax = Math.ceil(maxDomain + padding);
-                                                    }
-
-                                                    // 4. Custom Flag Component
-                                                    const CustomFlag = ({ viewBox, value, color, label }: any) => {
-                                                        const { width, y } = viewBox;
-                                                        if (!width || !y) return null;
-                                                        const flagWidth = 55;
-                                                        const flagHeight = 20;
-                                                        const xPos = width - flagWidth;
-                                                        const yPos = y - (flagHeight / 2);
-                                                        return (
-                                                            <g>
-                                                                <path d={`M${xPos} ${yPos} h${flagWidth} a2 2 0 0 1 2 2 v${flagHeight - 4} a2 2 0 0 1 -2 2 h-${flagWidth} l-5 -${flagHeight / 2} z`} fill={color} />
-                                                                <text x={xPos + flagWidth / 2 + 2} y={yPos + 14} textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">
-                                                                    {label}: {typeof value === 'number' ? value.toFixed(0) : value}
-                                                                </text>
-                                                            </g>
-                                                        )
-                                                    };
-
-                                                    return (
-                                                        <ResponsiveContainer width="100%" height="100%">
-                                                            <AreaChart data={historyData}>
-                                                                <defs>
-                                                                    <linearGradient id="colorClose" x1="0" y1="0" x2="0" y2="1">
-                                                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                                                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                                                                    </linearGradient>
-                                                                </defs>
-                                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={document.documentElement.classList.contains('dark') ? '#334155' : '#e2e8f0'} />
-                                                                <XAxis
-                                                                    dataKey="date"
-                                                                    tickFormatter={(str) => {
-                                                                        const date = new Date(str);
-                                                                        return date.toLocaleDateString("en-US", { month: "short", year: '2-digit' });
-                                                                    }}
-                                                                    axisLine={false}
-                                                                    tickLine={false}
-                                                                    tick={{ fontSize: 10, fill: document.documentElement.classList.contains('dark') ? '#64748b' : '#94a3b8' }}
-                                                                    minTickGap={30}
-                                                                />
-                                                                <YAxis
-                                                                    domain={[finalMin, finalMax]}
-                                                                    axisLine={false}
-                                                                    tickLine={false}
-                                                                    tick={{ fontSize: 10, fill: document.documentElement.classList.contains('dark') ? '#64748b' : '#94a3b8' }}
-                                                                    width={40}
-                                                                />
-                                                                <RechartsTooltip
-                                                                    contentStyle={{
-                                                                        backgroundColor: document.documentElement.classList.contains('dark') ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-                                                                        borderRadius: '12px',
-                                                                        border: `1px solid ${document.documentElement.classList.contains('dark') ? '#334155' : '#e2e8f0'}`,
-                                                                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                                                                    }}
-                                                                    itemStyle={{ color: document.documentElement.classList.contains('dark') ? '#f1f5f9' : '#1e293b', fontWeight: 'bold', fontSize: '12px' }}
-                                                                    labelStyle={{ color: document.documentElement.classList.contains('dark') ? '#94a3b8' : '#64748b', fontSize: '10px', marginBottom: '4px' }}
-                                                                />
-                                                                <Area
-                                                                    type="monotone"
-                                                                    dataKey="close"
-                                                                    stroke="#3b82f6"
-                                                                    strokeWidth={2}
-                                                                    fillOpacity={1}
-                                                                    fill="url(#colorClose)"
-                                                                />
-
-                                                                {/* Resistances (Green) */}
-                                                                {r3 && <ReferenceLine y={r3} stroke="#10b981" strokeDasharray="3 3" label={(props) => <CustomFlag {...props} value={r3} color="#10b981" label="R3" />} />}
-                                                                {r2 && <ReferenceLine y={r2} stroke="#10b981" strokeDasharray="3 3" label={(props) => <CustomFlag {...props} value={r2} color="#10b981" label="R2" />} />}
-                                                                {r1 && <ReferenceLine y={r1} stroke="#10b981" strokeDasharray="3 3" label={(props) => <CustomFlag {...props} value={r1} color="#10b981" label="R1" />} />}
-
-                                                                {/* Pivot (Grey) */}
-                                                                {p && <ReferenceLine y={p} stroke="#64748b" strokeDasharray="5 5" />}
-
-                                                                {/* Supports (Red) */}
-                                                                {s1 && <ReferenceLine y={s1} stroke="#ef4444" strokeDasharray="3 3" label={(props) => <CustomFlag {...props} value={s1} color="#ef4444" label="S1" />} />}
-                                                                {s2 && <ReferenceLine y={s2} stroke="#ef4444" strokeDasharray="3 3" label={(props) => <CustomFlag {...props} value={s2} color="#ef4444" label="S2" />} />}
-                                                                {s3 && <ReferenceLine y={s3} stroke="#ef4444" strokeDasharray="3 3" label={(props) => <CustomFlag {...props} value={s3} color="#ef4444" label="S3" />} />}
-
-                                                                {/* Current Price (Blue) */}
-                                                                {current && (
-                                                                    <ReferenceLine
-                                                                        y={current}
-                                                                        stroke="#3b82f6"
-                                                                        strokeDasharray="3 3"
-                                                                        label={(props) => <CustomFlag {...props} value={current} color="#3b82f6" label="CMP" />}
-                                                                    />
-                                                                )}
-                                                            </AreaChart>
-                                                        </ResponsiveContainer>
-                                                    );
-                                                })()}
-                                            </div>
-                                        )}
-                                    </div>
-                                </TabsContent>
                             </div>
                         </Tabs>
                     </div>
