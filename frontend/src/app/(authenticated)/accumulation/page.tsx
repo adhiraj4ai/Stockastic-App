@@ -196,11 +196,7 @@ function AccumulationContent() {
 
     // Set default range based on tab
     useEffect(() => {
-        if (activeTab === 'aggressive-trader') {
-            setRange('1D'); // Keep 1D default for trader view
-            // Default to 'All' symbol if not set
-            if (!selectedGraphSymbol) setSelectedGraphSymbol('All');
-        } else if (activeTab === 'accumulators') {
+        if (activeTab === 'accumulators') {
             setRange('1Y');
         } else if (activeTab === 'aggressive') {
             setRange('1D');
@@ -212,7 +208,7 @@ function AccumulationContent() {
     // Update state if URL changes
     useEffect(() => {
         const tab = searchParams.get('tab');
-        if (tab && ['overview', 'aggressive', 'trends', 'favorites', 'accumulators', 'aggressive-trader', 'history', 'share-transfer'].includes(tab)) {
+        if (tab && ['overview', 'aggressive', 'trends', 'favorites', 'accumulators', 'history', 'share-transfer'].includes(tab)) {
             setActiveTab(tab);
         }
         const b = searchParams.get('broker');
@@ -229,12 +225,6 @@ function AccumulationContent() {
         router.push(`/accumulation?${params.toString()}`, { scroll: false });
     };
 
-    // Reset range to 1Y when switching to Accumulators if currently 1D as 1D is not supported there.
-    useEffect(() => {
-        if (activeTab === 'accumulators' && range === '1D') {
-            setRange('1Y');
-        }
-    }, [activeTab]);
 
     const handleBrokerChange = (value: string) => {
         setSelectedBroker(value);
@@ -384,7 +374,7 @@ function AccumulationContent() {
     };
 
     useEffect(() => {
-        if ((activeTab === 'accumulators' || activeTab === 'aggressive-trader') && selectedGraphSymbol) {
+        if (activeTab === 'accumulators' && selectedGraphSymbol) {
             const fetchGraph = async () => {
                 setGraphLoading(true);
                 try {
@@ -844,8 +834,7 @@ function AccumulationContent() {
         switch (activeTab) {
             case 'signals': return 'Smart Signals';
             case 'aggressive': return 'Aggressive Patterns';
-            case 'aggressive-trader': return 'Aggressive Trader Analysis';
-            case 'trends': return 'Broker Trends';
+case 'trends': return 'Broker Trends';
             case 'favorites': return 'Broker Favorites';
             case 'accumulators': return 'Accumulators Navigator';
             case 'history': return 'Accumulation History';
@@ -1527,93 +1516,20 @@ function AccumulationContent() {
                                 <div className="flex flex-wrap items-center gap-3">
                                     <span className="text-xs font-black text-gray-400 dark:text-slate-500 uppercase px-2">Analysis Range</span>
                                     <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1 md:pb-0">
-                                        {timeRanges
-                                            .filter(t => t.value !== '1D')
-                                            .map((t) => (
-                                                <Button
-                                                    key={t.value}
-                                                    onClick={() => setRange(t.value)}
-                                                    variant={range === t.value ? "default" : "outline"}
-                                                    size="sm"
-                                                    className={`rounded-xl px-4 py-2 font-bold transition-all ${range === t.value
-                                                        ? 'bg-blue-600 dark:bg-indigo-600 text-white shadow-lg scale-105'
-                                                        : 'text-gray-600 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-slate-200 border-gray-200 dark:border-slate-800'
-                                                        }`}
-                                                >
-                                                    {t.label}
-                                                </Button>
-                                            ))}
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-3 w-full lg:w-auto">
-                                    <div className="relative flex-grow lg:w-48">
-                                        <CompanySelect
-                                            value={selectedGraphSymbol}
-                                            onChange={(val) => setSelectedGraphSymbol(val)}
-                                            className="w-full h-10 border-gray-200"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm h-[45vh] flex flex-col">
-                                <div className="p-4 border-b dark:border-slate-800 bg-white dark:bg-slate-900/80 rounded-t-xl">
-                                    <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100">Accumulation Trend</h3>
-                                </div>
-
-                                <div className="flex-1 p-4 min-h-0">
-                                    {!selectedGraphSymbol ? (
-                                        <div className="h-full flex flex-col items-center justify-center space-y-4 text-gray-400 dark:text-slate-500">
-                                            <BarChart2 className="w-16 h-16 opacity-20" />
-                                            <p className="font-bold text-lg">Enter a symbol to visualize top accumulators</p>
-                                        </div>
-                                    ) : graphLoading ? (
-                                        <div className="h-full flex flex-col items-center justify-center space-y-4">
-                                            <Loader2 className="w-10 h-10 text-blue-500 dark:text-indigo-400 animate-spin" />
-                                            <p className="text-gray-500 dark:text-slate-400 font-medium">Fetching accumulation data...</p>
-                                        </div>
-                                    ) : graphData.length === 0 ? (
-                                        <div className="h-full flex flex-col items-center justify-center space-y-4 text-gray-400 dark:text-slate-500">
-                                            <p className="font-medium">No data found for {selectedGraphSymbol}</p>
-                                        </div>
-                                    ) : (
-                                        <ReactECharts
-                                            option={getGraphOption()}
-                                            style={{ height: '100%', width: '100%' }}
-                                            notMerge={true}
-                                        />
-                                    )}
-                                </div>
-                            </div>
-                        </>
-                    )
-                }
-
-                {/* Aggressive Trader Tab */}
-                {
-                    activeTab === 'aggressive-trader' && (
-                        <>
-                            <div className="bg-white rounded-xl border shadow-sm p-4 mb-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sticky top-[73px] z-20">
-                                <div className="flex flex-wrap items-center gap-3">
-                                    <span className="text-xs font-black text-gray-400 uppercase px-2">Analysis Range</span>
-                                    <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1 md:pb-0">
-                                        {timeRanges
-                                            .filter(t => ['1D', '1W', '2W', '1M', '3M'].includes(t.value))
-                                            .map((t) => (
-                                                <Button
-                                                    key={t.value}
-                                                    onClick={() => setRange(t.value)}
-                                                    variant={range === t.value ? "default" : "outline"}
-                                                    size="sm"
-                                                    className={`rounded-xl px-4 py-2 font-bold transition-all ${range === t.value
-                                                        ? 'bg-blue-600 text-white shadow-lg scale-105'
-                                                        : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600 border-gray-200'
-                                                        }`}
-                                                >
-                                                    {t.label}
-                                                </Button>
-                                            ))}
+                                        {timeRanges.map((t) => (
+                                            <Button
+                                                key={t.value}
+                                                onClick={() => setRange(t.value)}
+                                                variant={range === t.value ? "default" : "outline"}
+                                                size="sm"
+                                                className={`rounded-xl px-4 py-2 font-bold transition-all ${range === t.value
+                                                    ? 'bg-blue-600 dark:bg-indigo-600 text-white shadow-lg scale-105'
+                                                    : 'text-gray-600 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-slate-200 border-gray-200 dark:border-slate-800'
+                                                    }`}
+                                            >
+                                                {t.label}
+                                            </Button>
+                                        ))}
                                     </div>
                                 </div>
 
@@ -1629,41 +1545,62 @@ function AccumulationContent() {
                             </div>
 
                             {!selectedGraphSymbol ? (
-                                <div className="bg-white rounded-xl border shadow-sm h-[60vh] flex flex-col items-center justify-center space-y-4 text-gray-400">
+                                <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm h-[60vh] flex flex-col items-center justify-center space-y-4 text-gray-400 dark:text-slate-500">
                                     <Activity className="w-16 h-16 opacity-20" />
-                                    <p className="font-bold text-lg">Select a company to analyze aggressive traders</p>
+                                    <p className="font-bold text-lg">Select a company to analyze accumulators and aggressive traders</p>
                                 </div>
                             ) : graphLoading ? (
-                                <div className="bg-white rounded-xl border shadow-sm h-[60vh] flex flex-col items-center justify-center space-y-4">
-                                    <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-                                    <p className="text-gray-500 font-medium">Identifying top buyers and sellers...</p>
+                                <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm h-[60vh] flex flex-col items-center justify-center space-y-4">
+                                    <Loader2 className="w-10 h-10 text-blue-500 dark:text-indigo-400 animate-spin" />
+                                    <p className="text-gray-500 dark:text-slate-400 font-medium">Fetching accumulation data...</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    {/* Buyers */}
-                                    <div className="bg-white rounded-xl border shadow-sm h-[60vh] flex flex-col">
-                                        <div className="p-4 border-b bg-green-50/50 rounded-t-xl">
-                                            <h3 className="text-lg font-bold text-green-800">Aggressive Buying Pressure</h3>
+                                <div className="space-y-6">
+                                    {/* Accumulation Trend */}
+                                    <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm h-[45vh] flex flex-col">
+                                        <div className="p-4 border-b dark:border-slate-800 bg-white dark:bg-slate-900/80 rounded-t-xl">
+                                            <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100">Accumulation Trend</h3>
                                         </div>
                                         <div className="flex-1 p-4 min-h-0">
-                                            {buyLeaders.length === 0 ? (
-                                                <div className="h-full flex items-center justify-center text-gray-400">No buying pressure detected</div>
+                                            {graphData.length === 0 ? (
+                                                <div className="h-full flex flex-col items-center justify-center space-y-4 text-gray-400 dark:text-slate-500">
+                                                    <p className="font-medium">No data found for {selectedGraphSymbol}</p>
+                                                </div>
                                             ) : (
-                                                <ReactECharts option={getAggressiveGraphOption('buy')} style={{ height: '100%', width: '100%' }} notMerge={true} />
+                                                <ReactECharts
+                                                    option={getGraphOption()}
+                                                    style={{ height: '100%', width: '100%' }}
+                                                    notMerge={true}
+                                                />
                                             )}
                                         </div>
                                     </div>
-                                    {/* Sellers */}
-                                    <div className="bg-white rounded-xl border shadow-sm h-[60vh] flex flex-col">
-                                        <div className="p-4 border-b bg-red-50/50 rounded-t-xl">
-                                            <h3 className="text-lg font-bold text-red-800">Aggressive Selling Pressure</h3>
+
+                                    {/* Aggressive Buy / Sell Pressure */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm h-[50vh] flex flex-col">
+                                            <div className="p-4 border-b dark:border-slate-800 bg-green-50/50 dark:bg-emerald-900/10 rounded-t-xl">
+                                                <h3 className="text-lg font-bold text-green-800 dark:text-emerald-400">Aggressive Buying Pressure</h3>
+                                            </div>
+                                            <div className="flex-1 p-4 min-h-0">
+                                                {buyLeaders.length === 0 ? (
+                                                    <div className="h-full flex items-center justify-center text-gray-400 dark:text-slate-500">No buying pressure detected</div>
+                                                ) : (
+                                                    <ReactECharts option={getAggressiveGraphOption('buy')} style={{ height: '100%', width: '100%' }} notMerge={true} />
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="flex-1 p-4 min-h-0">
-                                            {sellLeaders.length === 0 ? (
-                                                <div className="h-full flex items-center justify-center text-gray-400">No selling pressure detected</div>
-                                            ) : (
-                                                <ReactECharts option={getAggressiveGraphOption('sell')} style={{ height: '100%', width: '100%' }} notMerge={true} />
-                                            )}
+                                        <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm h-[50vh] flex flex-col">
+                                            <div className="p-4 border-b dark:border-slate-800 bg-red-50/50 dark:bg-rose-900/10 rounded-t-xl">
+                                                <h3 className="text-lg font-bold text-red-800 dark:text-rose-400">Aggressive Selling Pressure</h3>
+                                            </div>
+                                            <div className="flex-1 p-4 min-h-0">
+                                                {sellLeaders.length === 0 ? (
+                                                    <div className="h-full flex items-center justify-center text-gray-400 dark:text-slate-500">No selling pressure detected</div>
+                                                ) : (
+                                                    <ReactECharts option={getAggressiveGraphOption('sell')} style={{ height: '100%', width: '100%' }} notMerge={true} />
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

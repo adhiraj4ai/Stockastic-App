@@ -517,16 +517,16 @@ def get_broker_portfolio(request):
     
     query = """
     WITH latest_positions AS (
-        SELECT 
+        SELECT
             ca.symbol, ca.entity_id, ca.cumulative_net,
             ROW_NUMBER() OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date DESC) as rn
         FROM daily_cumulative_accumulation ca
         WHERE ca.entity_id = %s
     )
-    SELECT 
+    SELECT
         pos.symbol, c."companyName" as name, c."sectorName" as sector,
         pos.cumulative_net as quantity, dsp.close as current_price,
-        (pos.cumulative_net * dsp.close) as value
+        COALESCE(pos.cumulative_net * dsp.close, 0) as value
     FROM latest_positions pos
     INNER JOIN companies c ON pos.symbol = c.symbol
     LEFT JOIN (
@@ -539,7 +539,8 @@ def get_broker_portfolio(request):
         cursor.execute(query, [broker_id])
         columns = [col[0] for col in cursor.description]
         results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-    return Response({'holdings': results})
+    total_value = sum(h['value'] for h in results if h['value'])
+    return Response({'broker_id': broker_id, 'total_value': total_value, 'holdings': results})
 
 @api_view(['GET'])
 @permission_classes([AllowAny])

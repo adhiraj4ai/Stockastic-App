@@ -54,7 +54,6 @@ const navItems = [
         subItems: [
             { name: 'Accumulation Overview', href: '/accumulation?tab=overview', icon: LayoutDashboard },
             { name: 'Aggressive Patterns', href: '/accumulation?tab=aggressive', icon: Flame },
-            { name: 'Aggressive Trader', href: '/accumulation?tab=aggressive-trader', icon: TrendingDown },
             { name: 'Broker Trends', href: '/accumulation?tab=trends', icon: BarChart3 },
             { name: 'Accumulation History', href: '/accumulation?tab=history', icon: History },
             { name: 'Broker Favorites', href: '/accumulation?tab=favorites', icon: Star },

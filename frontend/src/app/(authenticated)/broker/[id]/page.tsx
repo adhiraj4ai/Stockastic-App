@@ -120,7 +120,7 @@ export default function BrokerPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-4xl font-black font-mono">
-                                Rs. {(profile.total_value / 10000000).toFixed(2)} Cr
+                                {profile.total_value ? `Rs. ${(profile.total_value / 10000000).toFixed(2)} Cr` : 'N/A'}
                             </div>
                             <p className="text-blue-200 text-sm mt-2 font-medium">
                                 Across {profile.holdings.length} companies
@@ -195,17 +195,17 @@ export default function BrokerPage() {
                                             <TableCell className="text-right font-mono font-medium">{h.quantity.toLocaleString()}</TableCell>
                                             <TableCell className="text-right font-mono text-gray-600">{h.current_price?.toLocaleString() || '-'}</TableCell>
                                             <TableCell className="text-right font-mono font-bold text-gray-900">
-                                                {(h.value / 100000).toFixed(2)} L
+                                                {h.value ? `${(h.value / 100000).toFixed(2)} L` : '-'}
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <span className="text-xs font-bold text-gray-500">
-                                                        {((h.value / profile.total_value) * 100).toFixed(1)}%
+                                                        {h.value && profile.total_value ? `${((h.value / profile.total_value) * 100).toFixed(1)}%` : '-'}
                                                     </span>
                                                     <div className="w-16 h-1 bg-gray-100 rounded-full overflow-hidden">
                                                         <div
                                                             className="h-full bg-blue-500"
-                                                            style={{ width: `${(h.value / profile.total_value) * 100}%` }}
+                                                            style={{ width: h.value && profile.total_value ? `${(h.value / profile.total_value) * 100}%` : '0%' }}
                                                         />
                                                     </div>
                                                 </div>

@@ -428,23 +428,22 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                                         .filter(row => new Date(row.date) > new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))
                                         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-                                    const getVal = (k: string) => {
-                                        const ind = indicators.find((x: any) => x.name.includes(k));
-                                        if (!ind?.value) return null;
-                                        const val = parseFloat(ind.value.toString().replace(/[^0-9.-]/g, ''));
-                                        return isNaN(val) ? null : val;
-                                    };
+                                    // Next 3 resistance levels above CMP (sorted ascending = nearest first)
+                                    const resistanceLevels = data.levels
+                                        .filter(l => l.is_above)
+                                        .sort((a, b) => a.price - b.price)
+                                        .slice(0, 3);
 
-                                    const r3 = getVal('Resistance 3');
-                                    const r2 = getVal('Resistance 2');
-                                    const r1 = getVal('Resistance 1');
-                                    const p = getVal('Pivot');
-                                    const s1 = getVal('Support 1');
-                                    const s2 = getVal('Support 2');
-                                    const s3 = getVal('Support 3');
-                                    const current = historyData.length > 0 ? historyData[historyData.length - 1].close : null;
+                                    // Next 3 support levels below CMP (sorted descending = nearest first)
+                                    const supportLevels = data.levels
+                                        .filter(l => !l.is_above)
+                                        .sort((a, b) => b.price - a.price)
+                                        .slice(0, 3);
 
-                                    const allValues = [r3, r2, r1, p, s1, s2, s3, current, ...historyData.map(d => d.close)].filter(v => typeof v === 'number' && !isNaN(v)) as number[];
+                                    const current = data.current_price;
+
+                                    const levelPrices = [...resistanceLevels, ...supportLevels].map(l => l.price);
+                                    const allValues = [...levelPrices, current, ...historyData.map(d => d.close)].filter(v => typeof v === 'number' && !isNaN(v)) as number[];
                                     let finalMin: number | 'auto' = 'auto';
                                     let finalMax: number | 'auto' = 'auto';
 
@@ -520,21 +519,30 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                                                     fillOpacity={1}
                                                     fill="url(#colorCloseHist)"
                                                 />
-                                                {r3 && <ReferenceLine y={r3} stroke="#10b981" strokeDasharray="3 3" label={(props) => <CustomFlag {...props} value={r3} color="#10b981" label="R3" />} />}
-                                                {r2 && <ReferenceLine y={r2} stroke="#10b981" strokeDasharray="3 3" label={(props) => <CustomFlag {...props} value={r2} color="#10b981" label="R2" />} />}
-                                                {r1 && <ReferenceLine y={r1} stroke="#10b981" strokeDasharray="3 3" label={(props) => <CustomFlag {...props} value={r1} color="#10b981" label="R1" />} />}
-                                                {p && <ReferenceLine y={p} stroke="#64748b" strokeDasharray="5 5" />}
-                                                {s1 && <ReferenceLine y={s1} stroke="#ef4444" strokeDasharray="3 3" label={(props) => <CustomFlag {...props} value={s1} color="#ef4444" label="S1" />} />}
-                                                {s2 && <ReferenceLine y={s2} stroke="#ef4444" strokeDasharray="3 3" label={(props) => <CustomFlag {...props} value={s2} color="#ef4444" label="S2" />} />}
-                                                {s3 && <ReferenceLine y={s3} stroke="#ef4444" strokeDasharray="3 3" label={(props) => <CustomFlag {...props} value={s3} color="#ef4444" label="S3" />} />}
-                                                {current && (
+                                                {resistanceLevels.map((level, idx) => (
                                                     <ReferenceLine
-                                                        y={current}
-                                                        stroke="#3b82f6"
+                                                        key={`r${idx + 1}`}
+                                                        y={level.price}
+                                                        stroke="#10b981"
                                                         strokeDasharray="3 3"
-                                                        label={(props) => <CustomFlag {...props} value={current} color="#3b82f6" label="CMP" />}
+                                                        label={(props) => <CustomFlag {...props} value={level.price} color="#10b981" label={`R${idx + 1}`} />}
                                                     />
-                                                )}
+                                                ))}
+                                                {supportLevels.map((level, idx) => (
+                                                    <ReferenceLine
+                                                        key={`s${idx + 1}`}
+                                                        y={level.price}
+                                                        stroke="#ef4444"
+                                                        strokeDasharray="3 3"
+                                                        label={(props) => <CustomFlag {...props} value={level.price} color="#ef4444" label={`S${idx + 1}`} />}
+                                                    />
+                                                ))}
+                                                <ReferenceLine
+                                                    y={current}
+                                                    stroke="#3b82f6"
+                                                    strokeDasharray="3 3"
+                                                    label={(props) => <CustomFlag {...props} value={current} color="#3b82f6" label="CMP" />}
+                                                />
                                             </AreaChart>
                                         </ResponsiveContainer>
                                     );
