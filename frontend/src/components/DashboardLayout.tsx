@@ -393,7 +393,7 @@ function DashboardContent({
             >
                 {/* Top Navigation Bar */}
                 {!hideHeader && (
-                    <header className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border-b border-gray-200/50 dark:border-white/5 sticky top-0 z-40 px-8 py-4 flex justify-between items-center transition-all duration-500 shadow-sm">
+                    <header className={`bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border-b border-gray-200/50 dark:border-white/5 fixed top-0 right-0 z-40 px-8 py-4 flex justify-between items-center transition-all duration-500 shadow-sm ${isSidebarCollapsed ? 'left-20' : 'left-64'} ${isChatPinned && !isChatPage ? 'right-96' : 'right-0'}`}>
                         {headerContent ? (
                             <div className="flex-1 mr-4">
                                 {headerContent}
@@ -527,7 +527,7 @@ function DashboardContent({
                     </header>
                 )}
 
-                <div className={`${noPadding ? '' : 'p-8'} relative z-0`}>
+                <div className={`${noPadding ? '' : 'p-8'} ${!hideHeader ? 'pt-[73px]' : ''} relative z-0`}>
                     {children}
                 </div>
             </main >
