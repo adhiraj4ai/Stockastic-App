@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TrendingUp, TrendingDown, Zap, Activity, Filter, Rocket, Magnet, Droplets, Gauge, Target, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { PageLoader } from '@/components/ui/StockLoader';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
 import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
@@ -375,9 +376,7 @@ export default function MoversShakersPage() {
                 </div>
 
                 {loading ? (
-                    <div className="flex items-center justify-center min-h-[400px]">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                    </div>
+                    <PageLoader />
                 ) : (
                     <>
                         {/* 1. ROCKET LIST (Circuit Breakers) */}

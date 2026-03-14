@@ -9,9 +9,9 @@ import {
     ChevronDown,
     ChevronUp,
     History,
-    Loader2,
     Activity
 } from 'lucide-react';
+import { PageLoader } from '@/components/ui/StockLoader';
 import {
     TableBody,
     TableCell,
@@ -138,16 +138,7 @@ export default function TrendsPage() {
                 </div>
 
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center p-32 space-y-6">
-                        <div className="relative">
-                            <Loader2 className="w-12 h-12 text-blue-500 dark:text-indigo-500 animate-spin" />
-                            <div className="absolute inset-0 blur-xl bg-blue-500/20 animate-pulse rounded-full" />
-                        </div>
-                        <div className="text-center">
-                            <p className="text-lg font-black text-slate-800 dark:text-slate-200">Analyzing Trends</p>
-                            <p className="text-sm text-slate-500 dark:text-slate-500 font-medium">Processing institutional velocity...</p>
-                        </div>
-                    </div>
+                    <PageLoader text="Analyzing institutional trends..." />
                 ) : (
                     <div className="overflow-x-auto relative">
                         <table className="w-full border-collapse">

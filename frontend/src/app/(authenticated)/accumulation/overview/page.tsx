@@ -6,11 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
     Search,
-    Loader2,
     ArrowRight,
     ChevronUp,
     ChevronDown,
 } from 'lucide-react';
+import { PageLoader } from '@/components/ui/StockLoader';
 import {
     TableBody,
     TableCell,
@@ -154,16 +154,7 @@ export default function OverviewPage() {
                 </div>
 
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center p-32 space-y-6">
-                        <div className="relative">
-                            <Loader2 className="w-12 h-12 text-blue-500 dark:text-indigo-500 animate-spin" />
-                            <div className="absolute inset-0 blur-xl bg-blue-500/20 animate-pulse rounded-full" />
-                        </div>
-                        <div className="text-center">
-                            <p className="text-lg font-semibold text-slate-800 dark:text-slate-200">Processing Floor-sheet Data</p>
-                            <p className="text-sm text-slate-500 dark:text-slate-500 font-medium">Crunching institutional movements...</p>
-                        </div>
-                    </div>
+                    <PageLoader text="Processing floor-sheet data..." />
                 ) : (
                     <div className="relative">
                         <div className="overflow-x-auto">

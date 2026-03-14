@@ -6,7 +6,6 @@ import api from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import { MetricsDisplay } from '../../../components/MetricsDisplay';
 import {
-    Activity,
     ArrowLeft,
     Calendar,
     Zap,
@@ -19,6 +18,7 @@ import {
     Layers,
     BarChart3
 } from "lucide-react";
+import { PageLoader } from '@/components/ui/StockLoader';
 import { toast } from 'sonner';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -170,13 +170,7 @@ export default function ExperimentDetailPage() {
         return (
             <DashboardLayout>
                 <div className="flex items-center justify-center min-h-[60vh]">
-                    <div className="animate-pulse flex flex-col items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                            <Activity className="text-blue-600 dark:text-blue-400 animate-spin" size={24} />
-                        </div>
-                        <p className="text-gray-500 dark:text-slate-400 font-medium">Loading analysis...</p>
-                    </div>
-                </div>
+                    <PageLoader text="Loading analysis..." />
             </DashboardLayout>
         );
     }

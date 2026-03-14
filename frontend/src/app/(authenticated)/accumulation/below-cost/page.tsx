@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Loader2, ArrowRight, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { Search, ArrowRight, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { PageLoader } from '@/components/ui/StockLoader';
 import {
     Table,
     TableBody,
@@ -152,10 +153,7 @@ export default function BelowCostPage() {
                 </div>
 
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center p-20 space-y-4">
-                        <Loader2 className="w-10 h-10 text-rose-500 dark:text-rose-400 animate-spin" />
-                        <p className="text-gray-500 dark:text-slate-400 font-medium tracking-wide">Loading below cost positions...</p>
-                    </div>
+                    <PageLoader text="Loading below cost positions..." />
                 ) : (
                     <div className="relative">
                         <div className="overflow-x-auto">

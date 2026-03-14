@@ -23,6 +23,7 @@ import { ExitStrategyDialog } from '@/components/ExitStrategyDialog';
 import { RiskRadar } from '@/components/RiskRadar';
 import { PositionSizingCalculator } from '@/components/PositionSizingCalculator';
 import { CompanySelect } from '@/components/CompanySelect';
+import { FullPageLoader } from '@/components/ui/StockLoader';
 import { Badge } from '@/components/ui/badge';
 import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
 import { Input } from '@/components/ui/input';
@@ -1482,7 +1483,7 @@ function PortfolioContent() {
 
 export default function PortfolioPage() {
     return (
-        <React.Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" /></div>}>
+        <React.Suspense fallback={<FullPageLoader />}>
             <PortfolioContent />
         </React.Suspense>
     );

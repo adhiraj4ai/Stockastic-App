@@ -8,6 +8,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Play, ArrowLeft, Settings, AlertTriangle, ExternalLink, Check, Zap, Code } from 'lucide-react';
+import { PageLoader, FullPageLoader } from '@/components/ui/StockLoader';
 import { toast } from 'sonner';
 import { CompanySelect } from '@/components/CompanySelect';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -414,9 +415,8 @@ function BacktestContent() {
                     {/* Results Panel */}
                     <div className="lg:col-span-8 xl:col-span-9 bg-white dark:bg-slate-900 rounded-2xl shadow-lg border-2 border-gray-100 dark:border-slate-800 overflow-hidden flex flex-col min-h-[700px]">
                         {running ? (
-                            <div className="h-full flex flex-col items-center justify-center space-y-4">
-                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
-                                <p className="text-gray-500 dark:text-slate-400 animate-pulse">Running backtest strategy...</p>
+                            <div className="h-full flex flex-col items-center justify-center">
+                                <PageLoader text="Running backtest strategy..." />
                             </div>
                         ) : results ? (
                             <div className="h-full flex flex-col">
@@ -572,9 +572,7 @@ function BacktestContent() {
 
 export default function BacktestPage() {
     return (
-        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>}>
+        <Suspense fallback={<FullPageLoader />}>
             <BacktestContent />
         </Suspense>
     );

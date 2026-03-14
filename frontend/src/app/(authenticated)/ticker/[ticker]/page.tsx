@@ -24,6 +24,7 @@ import StockLink from '@/components/StockLink';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
+import { FullPageLoader } from '@/components/ui/StockLoader';
 
 // Terminal Suite Components
 import { IntelligenceGlass } from '@/components/ticker/IntelligenceGlass';
@@ -581,9 +582,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
 
     if (loading) return (
         <DashboardLayout>
-            <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-slate-100"></div>
-            </div>
+            <FullPageLoader />
         </DashboardLayout>
     );
     if (!data) return (

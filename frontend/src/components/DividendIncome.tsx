@@ -4,7 +4,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import api from '@/lib/api';
-import { Loader2, DollarSign, TrendingUp, Gift, Calendar, AlertCircle, ArrowLeftRight } from 'lucide-react';
+import { DollarSign, TrendingUp, Gift, Calendar, AlertCircle, ArrowLeftRight } from 'lucide-react';
+import { PageLoader } from '@/components/ui/StockLoader';
 
 interface DividendItem {
     id: number;
@@ -66,11 +67,7 @@ export function DividendIncome() {
     }, []);
 
     if (loading) {
-        return (
-            <div className="flex justify-center items-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-            </div>
-        );
+        return <PageLoader />;
     }
 
     if (error) {

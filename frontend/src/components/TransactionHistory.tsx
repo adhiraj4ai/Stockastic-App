@@ -11,9 +11,10 @@ import {
 } from "@/components/ui/tooltip";
 import {
     Search, Trash2, Edit2, ChevronLeft, ChevronRight,
-    ArrowUpDown, Calendar, Filter, Loader2, AlertTriangle,
+    ArrowUpDown, Calendar, Filter, AlertTriangle,
     TrendingUp, TrendingDown, Gift, RotateCcw, Download
 } from 'lucide-react';
+import { PageLoader } from '@/components/ui/StockLoader';
 import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { exportToCsv } from '@/lib/csv';
@@ -159,11 +160,7 @@ export function TransactionHistory({ selectedAccount, onEdit }: TransactionHisto
     }, [filtered]);
 
     if (loading) {
-        return (
-            <div className="flex justify-center items-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-            </div>
-        );
+        return <PageLoader />;
     }
 
     return (

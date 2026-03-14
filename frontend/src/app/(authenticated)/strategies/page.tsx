@@ -36,6 +36,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import DashboardLayout from '@/components/DashboardLayout';
+import { FullPageLoader } from '@/components/ui/StockLoader';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -889,9 +890,7 @@ function StrategiesContent() {
 
 export default function StrategiesPage() {
     return (
-        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>}>
+        <Suspense fallback={<FullPageLoader />}>
             <StrategiesContent />
         </Suspense>
     );

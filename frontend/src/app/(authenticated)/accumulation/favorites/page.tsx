@@ -6,10 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
     Search,
-    Loader2,
     History,
     Activity
 } from 'lucide-react';
+import { PageLoader } from '@/components/ui/StockLoader';
 import {
     TableBody,
     TableCell,
@@ -134,10 +134,7 @@ export default function FavoritesPage() {
                 </div>
             <div className="p-0">
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center p-20 space-y-4">
-                        <Loader2 className="w-10 h-10 text-blue-500 dark:text-indigo-400 animate-spin" />
-                        <p className="text-gray-500 dark:text-slate-400 font-medium tracking-wide">Analyzing broker favorites...</p>
-                    </div>
+                    <PageLoader text="Analyzing broker favorites..." />
                 ) : !selectedBroker ? (
                     <div className="p-20 text-center flex flex-col items-center gap-3">
                         <div className="w-16 h-16 bg-blue-50 dark:bg-indigo-900/30 text-blue-400 dark:text-indigo-400 rounded-full flex items-center justify-center">

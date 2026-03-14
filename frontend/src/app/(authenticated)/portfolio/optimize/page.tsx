@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import api from '@/lib/api';
 import { Loader2, ArrowLeft, TrendingUp, Shield, PieChart, Scale, ArrowRight, Wallet, Network, ShieldAlert, Anchor, LayoutGrid } from 'lucide-react';
+import { PageLoader } from '@/components/ui/StockLoader';
 
 interface OptimizationResult {
     success: boolean;
@@ -318,7 +319,7 @@ function OptimizeContent() {
 
 export default function OptimizePage() {
     return (
-        <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-blue-500" /></div>}>
+        <Suspense fallback={<PageLoader />}>
             <OptimizeContent />
         </Suspense>
     );

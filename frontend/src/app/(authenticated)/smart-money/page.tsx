@@ -5,7 +5,8 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import api from '@/lib/api';
-import { Loader2, Zap, Crown } from 'lucide-react';
+import { Zap, Crown } from 'lucide-react';
+import { PageLoader } from '@/components/ui/StockLoader';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -95,10 +96,7 @@ function SmartMoneyContent() {
                 )}
 
                 {loading ? (
-                    <div className="h-96 flex flex-col items-center justify-center gap-4">
-                        <Loader2 className="w-10 h-10 animate-spin text-amber-500" />
-                        <p className="text-sm text-slate-500 animate-pulse">Analyzing broker performance and order flow...</p>
-                    </div>
+                    <PageLoader />
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Leaderboard */}
@@ -225,9 +223,7 @@ export default function SmartMoneyPage() {
     return (
         <Suspense fallback={
             <DashboardLayout>
-                <div className="flex h-[80vh] items-center justify-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
-                </div>
+                <PageLoader />
             </DashboardLayout>
         }>
             <SmartMoneyContent />

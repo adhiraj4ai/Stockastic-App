@@ -6,10 +6,11 @@ import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import {
     TrendingUp, TrendingDown, Zap, Radar, Layers,
-    Search, ArrowRight, Activity, Loader2, ChevronRight,
+    Search, ArrowRight, Activity, ChevronRight,
     Globe, Binary, BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { StockLoader, PageLoader } from '@/components/ui/StockLoader';
 import Link from 'next/link';
 import { Progress } from '@/components/ui/progress';
 import { DailySignalStatus } from '@/components/signals/DailySignalStatus';
@@ -239,15 +240,7 @@ function AllSourcesView({ onSelect }: BaseSignalViewProps) {
     const sells = unified.filter(u => u.direction === 'SELL').length;
     const multiSource = unified.filter(u => u.conviction >= 2).length;
 
-    if (loading) return (
-        <div className="flex flex-col items-center justify-center py-24 gap-4">
-            <div className="relative">
-                <div className="w-12 h-12 rounded-full border-4 border-slate-100 dark:border-slate-800 animate-pulse" />
-                <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-transparent border-t-indigo-600 animate-spin" />
-            </div>
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Compiling Intelligence Hub…</p>
-        </div>
-    );
+    if (loading) return <PageLoader text="Compiling intelligence hub…" />;
 
     return (
         <div className="space-y-6">
@@ -554,7 +547,7 @@ function WhaleWatchView({ onSelect }: BaseSignalViewProps) {
 function Loader({ size }: { size?: boolean }) {
     return (
         <div className="flex justify-center items-center py-16">
-            <Loader2 className={cn('animate-spin text-indigo-500', size ? 'w-7 h-7' : 'w-5 h-5')} />
+            <StockLoader size={size ? 'md' : 'sm'} />
         </div>
     );
 }

@@ -6,11 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
     Search,
-    Loader2,
     ArrowRight,
     ChevronUp,
     ChevronDown
 } from 'lucide-react';
+import { PageLoader } from '@/components/ui/StockLoader';
 import { Card } from "@/components/ui/card";
 import Link from 'next/link';
 import { formatNepaliNumber, formatRupees } from "@/lib/formatters";
@@ -116,10 +116,7 @@ export default function AggressivePage() {
                 </div>
             <div className="p-6">
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center p-20 space-y-4">
-                        <Loader2 className="w-10 h-10 text-orange-500 dark:text-orange-400 animate-spin" />
-                        <p className="text-gray-500 dark:text-slate-400 font-medium tracking-wide">Scanning for aggressive patterns...</p>
-                    </div>
+                    <PageLoader text="Scanning for aggressive patterns..." />
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Accumulators List */}

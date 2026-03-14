@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import api from '@/lib/api';
 import { Loader2, Target, TrendingDown, TrendingUp, Shield, BarChart3, Save, X, Info, AlertTriangle, BookOpen, Quote, Zap, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { PageLoader } from '@/components/ui/StockLoader';
 import TransactionModal from './TransactionModal';
 
 interface ExitStrategyDialogProps {
@@ -203,10 +204,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
 
                     <div className="p-5 pt-2 space-y-4 bg-white dark:bg-slate-900 flex-1 overflow-y-auto no-scrollbar">
                         {loading ? (
-                            <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-slate-900 rounded-xl border border-dashed border-gray-200 dark:border-slate-700">
-                                <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-4" />
-                                <span className="text-sm font-medium text-gray-500 dark:text-slate-400 uppercase tracking-widest">Architecting Exit Scenarios...</span>
-                            </div>
+                            <PageLoader />
                         ) : (
                             <>
                                 {/* Transaction History Section */}

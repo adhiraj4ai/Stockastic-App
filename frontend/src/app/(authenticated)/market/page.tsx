@@ -23,6 +23,7 @@ import {
     CommandGroup,
     CommandItem
 } from '@/components/ui/command';
+import { PageLoader } from '@/components/ui/StockLoader';
 import { SectorGraph } from '@/components/SectorGraph';
 import { Sparkline } from '@/components/Sparkline';
 import { MarketBubbleMap } from '@/components/MarketBubbleMap';
@@ -319,12 +320,8 @@ export default function DashboardPage() {
     if (loading) {
         return (
             <DashboardLayout>
-                <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
-                    <div className="relative h-16 w-16">
-                        <div className="absolute inset-0 rounded-full border-4 border-blue-100 dark:border-blue-900"></div>
-                        <div className="absolute inset-0 rounded-full border-4 border-blue-600 border-t-transparent animate-spin"></div>
-                    </div>
-                    <div className="text-gray-500 dark:text-gray-400 font-medium animate-pulse">Initializing Data Stream...</div>
+                <div className="flex items-center justify-center min-h-[50vh]">
+                    <PageLoader text="Initializing data stream..." />
                 </div>
             </DashboardLayout>
         );

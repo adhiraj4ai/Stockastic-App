@@ -6,7 +6,8 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import api from '@/lib/api';
-import { Loader2, ArrowLeft, TrendingUp, TrendingDown, Users, DollarSign, Activity, Filter, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, Users, DollarSign, Activity, Filter, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { PageLoader } from '@/components/ui/StockLoader';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -253,9 +254,7 @@ function FloorsheetContent() {
                 </div>
 
                 {loading && !tableLoading ? (
-                    <div className="h-64 flex items-center justify-center">
-                        <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
-                    </div>
+                    <PageLoader />
                 ) : (
                     <>
                         {/* Summary Cards */}
@@ -352,9 +351,7 @@ function FloorsheetContent() {
                             </CardHeader>
                             <CardContent className="p-0">
                                 {tableLoading ? (
-                                    <div className="h-96 flex items-center justify-center">
-                                        <Loader2 className="w-8 h-8 animate-spin text-slate-300" />
-                                    </div>
+                                    <PageLoader />
                                 ) : transactions.length === 0 ? (
                                     <div className="p-12 text-center text-slate-500 dark:text-slate-400">
                                         No transactions found matching your criteria.
@@ -458,9 +455,7 @@ export default function FloorsheetPage() {
     return (
         <Suspense fallback={
             <DashboardLayout>
-                <div className="flex h-[80vh] items-center justify-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-                </div>
+                <PageLoader />
             </DashboardLayout>
         }>
             <FloorsheetContent />

@@ -8,7 +8,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { CompanySelect } from '@/components/CompanySelect';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Play, TrendingUp, TrendingDown, Activity, AlertTriangle, Loader2, Zap, Settings, StopCircle, ChevronUp, ChevronDown, Upload, Check, Eye, ExternalLink, X } from 'lucide-react';
+import { ArrowLeft, Play, TrendingUp, TrendingDown, Activity, AlertTriangle, Zap, Settings, StopCircle, ChevronUp, ChevronDown, Upload, Check, Eye, ExternalLink, X } from 'lucide-react';
+import { PageLoader } from '@/components/ui/StockLoader';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -403,19 +404,7 @@ export default function StrategyComparePage() {
                     <CardContent className="p-0">
                         {loading ? (
                             <div className="p-20 flex flex-col items-center justify-center space-y-6 text-center bg-white/50 backdrop-blur-sm">
-                                <div className="relative">
-                                    <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
-                                    <Zap size={24} className="absolute inset-0 m-auto text-blue-600 animate-bounce" />
-                                </div>
-                                <div className="space-y-2">
-                                    <h3 className="text-lg font-bold text-gray-800">Analyzing Market Data...</h3>
-                                    <p className="text-gray-500 max-w-md mx-auto">
-                                        We are running backtests and deep optimizations for all strategies across multiple timeframes.
-                                    </p>
-                                    <p className="text-xs text-blue-500 font-medium bg-blue-50 inline-block px-3 py-1 rounded-full border border-blue-100">
-                                        Grid Search enabled: Testing all combinations
-                                    </p>
-                                </div>
+                                <PageLoader text="Analyzing market data..." />
                                 <Button
                                     onClick={handleCancel}
                                     variant="outline"

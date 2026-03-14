@@ -1,3 +1,8 @@
+import { useState } from 'react';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+
 // Optimization Form Component - JSON Version
 function OptimizeForm({ onOptimize, onCancel, optimizing }: any) {
     const [nTrials, setNTrials] = useState(50);

@@ -4,10 +4,10 @@ import { useEffect, useState, Suspense } from 'react';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
-    Loader2,
     Filter,
     ExternalLink
 } from 'lucide-react';
+import { PageLoader, FullPageLoader } from '@/components/ui/StockLoader';
 import {
     TableBody,
     TableCell,
@@ -136,10 +136,7 @@ function HistoryPageContent() {
                     <p className="font-bold text-lg">Please select both Broker and Symbol</p>
                 </div>
             ) : loading ? (
-                <div className="flex flex-col items-center justify-center p-20 space-y-4 flex-1">
-                    <Loader2 className="w-10 h-10 text-blue-500 dark:text-indigo-400 animate-spin" />
-                    <p className="text-gray-500 dark:text-slate-400 font-medium">Loading history...</p>
-                </div>
+                <PageLoader text="Loading history..." className="flex-1" />
             ) : error ? (
                 <div className="flex flex-col items-center justify-center flex-1 p-20 text-center text-red-500 dark:text-rose-400 font-medium space-y-2">
                     <p>{error}</p>
@@ -270,7 +267,7 @@ function HistoryPageContent() {
 
 export default function HistoryPage() {
     return (
-        <Suspense fallback={<div className="flex p-20 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-blue-500" /></div>}>
+        <Suspense fallback={<FullPageLoader />}>
             <HistoryPageContent />
         </Suspense>
     );

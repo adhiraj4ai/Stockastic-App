@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import api from '@/lib/api';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Loader2, TrendingUp, TrendingDown, Activity, DollarSign, AlertTriangle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, DollarSign, AlertTriangle } from 'lucide-react';
+import { PageLoader } from '@/components/ui/StockLoader';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatRupees, formatNepaliNumber } from '@/lib/formatters';
 
@@ -70,11 +71,7 @@ export function PortfolioPerformance({ accounts, selectedAccount }: PortfolioPer
     }, [period, selectedAccount]);
 
     if (loading) {
-        return (
-            <div className="flex justify-center items-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-            </div>
-        );
+        return <PageLoader />;
     }
 
     if (error) {

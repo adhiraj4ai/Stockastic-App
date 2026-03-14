@@ -239,3 +239,13 @@
   background-size: 200% 100%;
   animation: shimmer 2s infinite linear;
 }
+
+@keyframes stock-bar {
+  0%, 100% { transform: scaleY(0.2); opacity: 0.35; }
+  50%       { transform: scaleY(1);   opacity: 1;    }
+}
+
+.stock-bar {
+  transform-origin: bottom;
+  animation: stock-bar 1.1s ease-in-out infinite;
+}

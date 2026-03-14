@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { PageLoader } from '@/components/ui/StockLoader';
 import {
     Activity, ArrowUpRight, ArrowDownRight,
     BarChart3, TrendingUp, ChevronDown, ChevronRight,
@@ -151,9 +152,7 @@ export default function MarketActivityPage() {
 
 
                 {loading ? (
-                    <div className="flex items-center justify-center min-h-[400px]">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                    </div>
+                    <PageLoader />
                 ) : !data ? (
                     <div className="flex flex-col items-center justify-center min-h-[400px] text-slate-400">
                         <Filter size={48} className="mb-4 opacity-20" />
