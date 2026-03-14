@@ -5,6 +5,7 @@ from django.db import connections
 from datetime import timedelta
 from django.utils import timezone
 from django.db.models import Max
+from django.core.cache import cache
 from ..models import DailyStockPrice, DailyFloorsheet
 
 class AccumulationMixin(viewsets.ViewSet):
@@ -252,6 +253,12 @@ class AccumulationMixin(viewsets.ViewSet):
         # robust implementation using floorsheet aggregation for trends
         # and accumulation snapshot for total position
         symbol_filter = request.query_params.get('symbol', '').strip().upper()
+        time_range = request.query_params.get('range', 'ALL')
+
+        range_map = {
+            '1D': 1, '1W': 7, '2W': 14, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, 'ALL': 36500
+        }
+        days = range_map.get(time_range, 36500)
 
         if symbol_filter:
             symbol_where = f"AND la.symbol = '{symbol_filter}'"
@@ -259,8 +266,8 @@ class AccumulationMixin(viewsets.ViewSet):
             limit_clause = ""
         else:
             symbol_where = ""
-            cumnet_where = "AND la.cumulative_net > 250000"
-            limit_clause = "LIMIT 200"
+            cumnet_where = "AND la.cumulative_net > 100000"  # Lowered threshold to see more relevant trends
+            limit_clause = "LIMIT 300"
 
         query = f"""
         WITH valid_dates AS (
@@ -277,7 +284,8 @@ class AccumulationMixin(viewsets.ViewSet):
                 (SELECT transaction_date FROM valid_dates OFFSET 5 LIMIT 1) as date_5d,
                 (SELECT transaction_date FROM valid_dates OFFSET 10 LIMIT 1) as date_10d,
                 (SELECT transaction_date FROM valid_dates OFFSET 20 LIMIT 1) as date_20d,
-                (SELECT transaction_date FROM valid_dates OFFSET 50 LIMIT 1) as date_50d
+                (SELECT transaction_date FROM valid_dates OFFSET 50 LIMIT 1) as date_50d,
+                (SELECT transaction_date FROM valid_dates LIMIT 1) - INTERVAL '{days} days' as range_start
         ),
         floorsheet_net AS (
             SELECT
@@ -286,7 +294,7 @@ class AccumulationMixin(viewsets.ViewSet):
                 transaction_quantity as qty,
                 transaction_date
             FROM daily_floorsheet
-            WHERE transaction_date > (SELECT date_50d FROM date_milestones)
+            WHERE transaction_date > (SELECT LEAST(date_50d, range_start) FROM date_milestones)
             {"AND symbol = '" + symbol_filter + "'" if symbol_filter else ""}
             UNION ALL
             SELECT
@@ -295,7 +303,7 @@ class AccumulationMixin(viewsets.ViewSet):
                 -transaction_quantity as qty,
                 transaction_date
             FROM daily_floorsheet
-            WHERE transaction_date > (SELECT date_50d FROM date_milestones)
+            WHERE transaction_date > (SELECT LEAST(date_50d, range_start) FROM date_milestones)
             {"AND symbol = '" + symbol_filter + "'" if symbol_filter else ""}
         ),
         trend_stats AS (
@@ -305,7 +313,8 @@ class AccumulationMixin(viewsets.ViewSet):
                 SUM(CASE WHEN fn.transaction_date > dm.date_5d THEN fn.qty ELSE 0 END) as net_5d,
                 SUM(CASE WHEN fn.transaction_date > dm.date_10d THEN fn.qty ELSE 0 END) as net_10d,
                 SUM(CASE WHEN fn.transaction_date > dm.date_20d THEN fn.qty ELSE 0 END) as net_20d,
-                SUM(CASE WHEN fn.transaction_date > dm.date_50d THEN fn.qty ELSE 0 END) as net_50d
+                SUM(CASE WHEN fn.transaction_date > dm.date_50d THEN fn.qty ELSE 0 END) as net_50d,
+                SUM(CASE WHEN fn.transaction_date > dm.range_start THEN fn.qty ELSE 0 END) as net_range
             FROM floorsheet_net fn, date_milestones dm
             GROUP BY fn.symbol, fn.broker
         ),
@@ -318,6 +327,7 @@ class AccumulationMixin(viewsets.ViewSet):
         )
         SELECT
             la.symbol, la.entity_id as broker, la.cumulative_net,
+            COALESCE(ts.net_range, 0) as range_net,
             ROUND(la.cumulative_buy_amount / NULLIF(la.cumulative_buy, 0), 2) as wac,
             CASE WHEN COALESCE(ts.net_5d, 0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_5d, 0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_5d,
             ROUND(ABS(COALESCE(ts.net_5d, 0)) / NULLIF(ABS(la.cumulative_net), 1) * 100, 2) AS change_5d,
@@ -354,6 +364,134 @@ class AccumulationMixin(viewsets.ViewSet):
         return Response(results)
 
     @action(detail=False, methods=['get'])
+    def below_cost(self, request):
+        """
+        Return broker positions where LTP is below their WAC (cost basis).
+        Includes 5D/10D/15D/20D/50D trend data and ROC.
+        """
+        time_range = request.query_params.get('range', 'ALL')
+        range_map = {
+            '1D': 1, '1W': 7, '2W': 14, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, 'ALL': 36500
+        }
+        days = range_map.get(time_range, 36500)
+
+        query = f"""
+        WITH valid_dates AS (
+            SELECT transaction_date
+            FROM daily_floorsheet
+            GROUP BY transaction_date
+            HAVING COUNT(*) > 100
+            ORDER BY transaction_date DESC
+            LIMIT 51
+        ),
+        date_milestones AS (
+            SELECT
+                (SELECT transaction_date FROM valid_dates LIMIT 1) as latest_date,
+                (SELECT transaction_date FROM valid_dates OFFSET 5 LIMIT 1) as date_5d,
+                (SELECT transaction_date FROM valid_dates OFFSET 10 LIMIT 1) as date_10d,
+                (SELECT transaction_date FROM valid_dates OFFSET 15 LIMIT 1) as date_15d,
+                (SELECT transaction_date FROM valid_dates OFFSET 20 LIMIT 1) as date_20d,
+                (SELECT transaction_date FROM valid_dates OFFSET 50 LIMIT 1) as date_50d,
+                (SELECT transaction_date FROM valid_dates LIMIT 1) - INTERVAL '{days} days' as range_start
+        ),
+        floorsheet_net AS (
+            SELECT symbol, buyer_id as broker, transaction_quantity as qty, transaction_date
+            FROM daily_floorsheet
+            WHERE transaction_date > (SELECT LEAST(date_50d, range_start) FROM date_milestones)
+            UNION ALL
+            SELECT symbol, seller_id as broker, -transaction_quantity as qty, transaction_date
+            FROM daily_floorsheet
+            WHERE transaction_date > (SELECT LEAST(date_50d, range_start) FROM date_milestones)
+        ),
+        trend_stats AS (
+            SELECT
+                fn.symbol, fn.broker,
+                SUM(CASE WHEN fn.transaction_date > dm.date_5d THEN fn.qty ELSE 0 END) as net_5d,
+                SUM(CASE WHEN fn.transaction_date > dm.date_10d THEN fn.qty ELSE 0 END) as net_10d,
+                SUM(CASE WHEN fn.transaction_date > dm.date_15d THEN fn.qty ELSE 0 END) as net_15d,
+                SUM(CASE WHEN fn.transaction_date > dm.date_20d THEN fn.qty ELSE 0 END) as net_20d,
+                SUM(CASE WHEN fn.transaction_date > dm.date_50d THEN fn.qty ELSE 0 END) as net_50d,
+                SUM(CASE WHEN fn.transaction_date > dm.range_start THEN fn.qty ELSE 0 END) as net_range
+            FROM floorsheet_net fn, date_milestones dm
+            GROUP BY fn.symbol, fn.broker
+        ),
+        latest_accumulation AS (
+            SELECT DISTINCT ON (symbol, entity_id)
+                symbol, entity_id, cumulative_net, cumulative_buy, cumulative_buy_amount
+            FROM daily_cumulative_accumulation
+            ORDER BY symbol, entity_id, transaction_date DESC
+        ),
+        wac_data AS (
+            SELECT
+                la.symbol, la.entity_id as broker,
+                la.cumulative_net,
+                ROUND(la.cumulative_buy_amount / NULLIF(la.cumulative_buy, 0), 2) as wac
+            FROM latest_accumulation la
+            WHERE la.cumulative_net > 10000
+        ),
+        price_history AS (
+            SELECT 
+                symbol, 
+                transaction_date, 
+                close,
+                LAG(close) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_close
+            FROM daily_stock_price
+            WHERE transaction_date > (SELECT latest_date - INTERVAL '30 days' FROM date_milestones)
+        ),
+        rsi_calc AS (
+            SELECT
+                symbol,
+                ROUND(CASE
+                    WHEN AVG(CASE WHEN close < prev_close THEN prev_close - close ELSE 0 END) = 0
+                    THEN 100.0
+                    ELSE 100.0 - (100.0 / (1.0 + (
+                        AVG(CASE WHEN close > prev_close THEN close - prev_close ELSE 0 END) /
+                        AVG(CASE WHEN close < prev_close THEN prev_close - close ELSE 0 END)
+                    )))
+                END::numeric, 2) as rsi
+            FROM price_history
+            WHERE prev_close IS NOT NULL
+            GROUP BY symbol
+        )
+        SELECT
+            wd.symbol, wd.broker, wd.cumulative_net, wd.wac,
+            COALESCE(ts.net_range, 0) as range_net,
+            dsp.close as ltp,
+            ROUND((dsp.close - wd.wac) / NULLIF(wd.wac, 0) * 100, 2) as roc,
+            c."companyName" as name, c."sectorName" as sector,
+            ROUND(rc.rsi::numeric, 2) as rsi,
+            CASE WHEN COALESCE(ts.net_5d, 0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_5d, 0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_5d,
+            ROUND(ABS(COALESCE(ts.net_5d, 0)) / NULLIF(ABS(wd.cumulative_net), 1) * 100, 2) AS change_5d,
+            CASE WHEN COALESCE(ts.net_10d, 0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_10d, 0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_10d,
+            ROUND(ABS(COALESCE(ts.net_10d, 0)) / NULLIF(ABS(wd.cumulative_net), 1) * 100, 2) AS change_10d,
+            CASE WHEN COALESCE(ts.net_15d, 0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_15d, 0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_15d,
+            ROUND(ABS(COALESCE(ts.net_15d, 0)) / NULLIF(ABS(wd.cumulative_net), 1) * 100, 2) AS change_15d,
+            CASE WHEN COALESCE(ts.net_20d, 0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_20d, 0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_20d,
+            ROUND(ABS(COALESCE(ts.net_20d, 0)) / NULLIF(ABS(wd.cumulative_net), 1) * 100, 2) AS change_20d,
+            CASE WHEN COALESCE(ts.net_50d, 0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_50d, 0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_50d,
+            ROUND(ABS(COALESCE(ts.net_50d, 0)) / NULLIF(ABS(wd.cumulative_net), 1) * 100, 2) AS change_50d
+        FROM wac_data wd
+        LEFT JOIN trend_stats ts ON wd.symbol = ts.symbol AND wd.broker = CAST(ts.broker AS VARCHAR)
+        LEFT JOIN rsi_calc rc ON wd.symbol = rc.symbol
+        INNER JOIN companies c ON wd.symbol = c.symbol
+        LEFT JOIN (
+            SELECT DISTINCT ON (symbol) symbol, close
+            FROM daily_stock_price ORDER BY symbol, transaction_date DESC
+        ) dsp ON wd.symbol = dsp.symbol
+        WHERE dsp.close < wd.wac
+        AND wd.wac > 0
+        AND c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
+        AND c.status = 'A'
+        AND c."sectorName" != 'Unknown' AND c."sectorName" IS NOT NULL
+        ORDER BY roc ASC
+        LIMIT 500;
+        """
+        with connections['default'].cursor() as cursor:
+            cursor.execute(query)
+            columns = [col[0] for col in cursor.description]
+            results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        return Response(results)
+
     @action(detail=False, methods=['get'])
     def broker_favorites(self, request):
         broker_str = request.query_params.get('broker')
@@ -365,8 +503,8 @@ class AccumulationMixin(viewsets.ViewSet):
         except ValueError:
              return Response({'error': 'broker ID must be an integer'}, status=400)
 
-        time_range = request.query_params.get('range', '3M')
-        
+        time_range = request.query_params.get('period') or request.query_params.get('range', '3M')
+
         range_map = {
             '1D': 1, '1W': 7, '2W': 14, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, '2Y': 730, 'ALL': 36500
         }
@@ -482,6 +620,15 @@ class AccumulationMixin(viewsets.ViewSet):
                             if prev['close']:
                                 roc = ((ltp - prev['close']) / prev['close']) * 100
                             
+                            # Calculate RSI
+                            up_moves = [item_prices[i]['close'] - item_prices[i-1]['close'] for i in range(1, len(item_prices)) if item_prices[i]['close'] > item_prices[i-1]['close']]
+                            down_moves = [item_prices[i-1]['close'] - item_prices[i]['close'] for i in range(1, len(item_prices)) if item_prices[i]['close'] < item_prices[i-1]['close']]
+                            
+                            avg_up = sum(up_moves) / 14 if up_moves else 0
+                            avg_down = sum(down_moves) / 14 if down_moves else 0.001
+                            rs = avg_up / avg_down
+                            item['rsi'] = round(100 - (100 / (1 + rs)), 2)
+                            
                     item['ltp'] = ltp
                     item['roc'] = round(roc, 2)
                     final_results.append(item)
@@ -496,17 +643,23 @@ class AccumulationMixin(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def brokers_graph(self, request):
         symbol = request.query_params.get('symbol')
-        
+
         time_range = request.query_params.get('range', '1Y')
         if not symbol:
             return Response({'error': 'Symbol is required'}, status=400)
-        
+
         is_all = symbol == 'All'
-            
-        from django.db.models import Count
-        max_date_res = DailyStockPrice.objects.values('date').annotate(cnt=Count('date')).filter(cnt__gt=100).order_by('-date').first()
-        today = max_date_res['date'] if max_date_res else (DailyStockPrice.objects.aggregate(Max('date'))['date__max'] or timezone.now().date())
-        range_map = {'1D': 1, '1W': 7, '1M': 30, '1Y': 365, 'ALL': 3650}
+
+        with connections['default'].cursor() as cursor:
+            cursor.execute("""
+                SELECT transaction_date FROM daily_stock_price
+                GROUP BY transaction_date HAVING COUNT(*) > 100
+                ORDER BY transaction_date DESC LIMIT 1
+            """)
+            row = cursor.fetchone()
+            today = row[0] if row else timezone.now().date()
+
+        range_map = {'1D': 1, '1W': 7, '2W': 14, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, 'ALL': 3650}
         days = range_map.get(time_range, 365)
         start_date = today - timedelta(days=days)
         
@@ -635,8 +788,8 @@ class AccumulationMixin(viewsets.ViewSet):
             sell_leaders.append(l_copy)
 
         return Response({
-            'data': sorted_data, 
-            'brokers': top_brokers,
+            'history': sorted_data,
+            'top_brokers': top_brokers,
             'buy_leaders': buy_leaders,
             'sell_leaders': sell_leaders
         })
@@ -644,8 +797,22 @@ class AccumulationMixin(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def accumulation_brokers(self, request):
         """
-        Return list of active brokers for accumulation filtering.
+        Return list of active broker IDs for accumulation filtering.
+        Uses raw SQL consistent with the rest of this mixin, with server-side caching.
         """
-        brokers = DailyFloorsheet.objects.values_list('buyer_id', flat=True).distinct().order_by('buyer_id')
-        # Also include sellers if needed, but buyers covers most active
-        return Response(list(brokers))
+        cache_key = 'active_broker_ids'
+        broker_ids = cache.get(cache_key)
+        
+        if broker_ids is None:
+            with connections['default'].cursor() as cursor:
+                cursor.execute("""
+                    SELECT DISTINCT buyer_id
+                    FROM daily_floorsheet
+                    ORDER BY buyer_id
+                """)
+                broker_ids = [str(row[0]) for row in cursor.fetchall()]
+            
+            # Cache for 24 hours
+            cache.set(cache_key, broker_ids, 86400)
+            
+        return Response(broker_ids)

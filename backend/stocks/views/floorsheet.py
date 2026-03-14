@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django.db.models import Sum, Count, F, Avg, Q
 from django.db.models.functions import TruncDate
 from stocks.models.market import DailyFloorsheet, DailyBuyerFloorsheet, DailySellerFloorsheet, DailyCumulativeAccumulation, DailyStockPrice
+from django.utils import timezone
 from datetime import datetime, timedelta
 
 class FloorsheetViewSet(viewsets.ViewSet):
@@ -115,6 +116,24 @@ class FloorsheetViewSet(viewsets.ViewSet):
         broker2 = request.query_params.get('broker2')
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
+        time_range = request.query_params.get('range')
+
+        # If range is provided, override start/end dates
+        if time_range:
+            range_map = {
+                '1D': 0, '1W': 7, '2W': 14, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, 'ALL': 3650
+            }
+            days = range_map.get(time_range, 30)
+            now = timezone.now().date()
+            # Try to get the latest transaction date as "today"
+            latest_price = DailyStockPrice.objects.order_by('-date').first()
+            today = latest_price.date if latest_price else now
+            
+            end_date_obj = today
+            start_date_obj = today - timedelta(days=days)
+            
+            start_date = start_date_obj.strftime('%Y-%m-%d')
+            end_date = end_date_obj.strftime('%Y-%m-%d')
 
         if not all([symbol, broker1, broker2]):
             return Response(
