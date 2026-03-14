@@ -251,17 +251,28 @@ class AccumulationMixin(viewsets.ViewSet):
     def broker_trends(self, request):
         # robust implementation using floorsheet aggregation for trends
         # and accumulation snapshot for total position
-        query = """
+        symbol_filter = request.query_params.get('symbol', '').strip().upper()
+
+        if symbol_filter:
+            symbol_where = f"AND la.symbol = '{symbol_filter}'"
+            cumnet_where = ""
+            limit_clause = ""
+        else:
+            symbol_where = ""
+            cumnet_where = "AND la.cumulative_net > 250000"
+            limit_clause = "LIMIT 200"
+
+        query = f"""
         WITH valid_dates AS (
-            SELECT transaction_date 
-            FROM daily_floorsheet 
-            GROUP BY transaction_date 
-            HAVING COUNT(*) > 100 
-            ORDER BY transaction_date DESC 
+            SELECT transaction_date
+            FROM daily_floorsheet
+            GROUP BY transaction_date
+            HAVING COUNT(*) > 100
+            ORDER BY transaction_date DESC
             LIMIT 51
         ),
         date_milestones AS (
-            SELECT 
+            SELECT
                 (SELECT transaction_date FROM valid_dates LIMIT 1) as latest_date,
                 (SELECT transaction_date FROM valid_dates OFFSET 5 LIMIT 1) as date_5d,
                 (SELECT transaction_date FROM valid_dates OFFSET 10 LIMIT 1) as date_10d,
@@ -269,25 +280,27 @@ class AccumulationMixin(viewsets.ViewSet):
                 (SELECT transaction_date FROM valid_dates OFFSET 50 LIMIT 1) as date_50d
         ),
         floorsheet_net AS (
-            SELECT 
-                symbol, 
-                buyer_id as broker, 
-                transaction_quantity as qty, 
+            SELECT
+                symbol,
+                buyer_id as broker,
+                transaction_quantity as qty,
                 transaction_date
             FROM daily_floorsheet
             WHERE transaction_date > (SELECT date_50d FROM date_milestones)
+            {"AND symbol = '" + symbol_filter + "'" if symbol_filter else ""}
             UNION ALL
-            SELECT 
-                symbol, 
-                seller_id as broker, 
-                -transaction_quantity as qty, 
+            SELECT
+                symbol,
+                seller_id as broker,
+                -transaction_quantity as qty,
                 transaction_date
             FROM daily_floorsheet
             WHERE transaction_date > (SELECT date_50d FROM date_milestones)
+            {"AND symbol = '" + symbol_filter + "'" if symbol_filter else ""}
         ),
         trend_stats AS (
-            SELECT 
-                fn.symbol, 
+            SELECT
+                fn.symbol,
                 fn.broker,
                 SUM(CASE WHEN fn.transaction_date > dm.date_5d THEN fn.qty ELSE 0 END) as net_5d,
                 SUM(CASE WHEN fn.transaction_date > dm.date_10d THEN fn.qty ELSE 0 END) as net_10d,
@@ -300,14 +313,15 @@ class AccumulationMixin(viewsets.ViewSet):
             SELECT DISTINCT ON (symbol, entity_id)
                 symbol, entity_id, cumulative_net, cumulative_buy, cumulative_buy_amount
             FROM daily_cumulative_accumulation
+            {"WHERE symbol = '" + symbol_filter + "'" if symbol_filter else ""}
             ORDER BY symbol, entity_id, transaction_date DESC
         )
-        SELECT 
+        SELECT
             la.symbol, la.entity_id as broker, la.cumulative_net,
             ROUND(la.cumulative_buy_amount / NULLIF(la.cumulative_buy, 0), 2) as wac,
             CASE WHEN COALESCE(ts.net_5d, 0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_5d, 0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_5d,
             ROUND(ABS(COALESCE(ts.net_5d, 0)) / NULLIF(ABS(la.cumulative_net), 1) * 100, 2) AS change_5d,
-            
+
             CASE WHEN COALESCE(ts.net_10d, 0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_10d, 0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_10d,
             ROUND(ABS(COALESCE(ts.net_10d, 0)) / NULLIF(ABS(la.cumulative_net), 1) * 100, 2) AS change_10d,
 
@@ -316,21 +330,22 @@ class AccumulationMixin(viewsets.ViewSet):
 
             CASE WHEN COALESCE(ts.net_50d, 0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_50d, 0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_50d,
             ROUND(ABS(COALESCE(ts.net_50d, 0)) / NULLIF(ABS(la.cumulative_net), 1) * 100, 2) AS change_50d,
-            
+
             dsp.close as ltp
         FROM latest_accumulation la
         LEFT JOIN trend_stats ts ON la.symbol = ts.symbol AND la.entity_id = CAST(ts.broker AS VARCHAR)
         INNER JOIN companies c ON la.symbol = c.symbol
         LEFT JOIN (
-            SELECT DISTINCT ON (symbol) symbol, close 
+            SELECT DISTINCT ON (symbol) symbol, close
             FROM daily_stock_price ORDER BY symbol, transaction_date DESC
         ) dsp ON la.symbol = dsp.symbol
         WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
         AND c.status = 'A'
         AND c."sectorName" != 'Unknown' AND c."sectorName" IS NOT NULL
-        AND la.cumulative_net > 250000
+        {symbol_where}
+        {cumnet_where}
         ORDER BY la.cumulative_net DESC
-        LIMIT 200;
+        {limit_clause};
         """
         with connections['default'].cursor() as cursor:
             cursor.execute(query)

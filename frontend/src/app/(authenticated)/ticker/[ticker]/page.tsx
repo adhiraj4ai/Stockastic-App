@@ -34,6 +34,7 @@ import BrokerAnalysis from '@/components/ticker/BrokerAnalysis';
 import { FibonacciRetracement } from '@/components/ticker/FibonacciRetracement';
 import TechnicalAnalysis from '@/components/ticker/TechnicalAnalysis';
 import IndicatorTooltip from '@/components/ticker/IndicatorTooltip';
+import TickerAccumulation from '@/components/ticker/TickerAccumulation';
 
 interface StockDetailData {
     company: {
@@ -639,6 +640,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                     <TabsList className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 h-10 rounded-xl shadow-sm">
                                         <TabsTrigger value="technical" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Technical Analysis</TabsTrigger>
                                         <TabsTrigger value="fundamentals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Fundamentals</TabsTrigger>
+                                        <TabsTrigger value="accumulation" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all">Accumulation</TabsTrigger>
                                     </TabsList>
                                 </div>
                             </div>
@@ -884,7 +886,9 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                     </div>
                                 </TabsContent>
 
-
+                                <TabsContent value="accumulation" className="mt-0">
+                                    <TickerAccumulation symbol={ticker} />
+                                </TabsContent>
 
                             </div>
                         </Tabs>
