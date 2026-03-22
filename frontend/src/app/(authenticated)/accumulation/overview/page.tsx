@@ -178,6 +178,22 @@ export default function OverviewPage() {
                                             </div>
                                         </TableHead>
                                         <TableHead
+                                            className="text-right px-6 cursor-pointer sticky top-0 z-30 bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm font-bold text-gray-900 dark:text-slate-100 text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800 hidden lg:table-cell"
+                                            onClick={() => handleSort('rsi')}
+                                        >
+                                            <div className="flex items-center justify-end gap-2">
+                                                RSI <SortIcon column="rsi" />
+                                            </div>
+                                        </TableHead>
+                                        <TableHead
+                                            className="text-right px-6 cursor-pointer sticky top-0 z-30 bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm font-bold text-gray-900 dark:text-slate-100 text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800 hidden lg:table-cell"
+                                            onClick={() => handleSort('roc')}
+                                        >
+                                            <div className="flex items-center justify-end gap-2">
+                                                ROC <SortIcon column="roc" />
+                                            </div>
+                                        </TableHead>
+                                        <TableHead
                                             className="text-right px-6 cursor-pointer sticky top-0 z-30 bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm font-bold text-emerald-600 dark:text-emerald-400 text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800"
                                             onClick={() => handleSort('net_qty')}
                                         >
@@ -206,7 +222,7 @@ export default function OverviewPage() {
                                 <AnimatePresence initial={false}>
                                     {sortedData.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={7} className="h-64 text-center">
+                                            <TableCell colSpan={9} className="h-64 text-center">
                                                 <div className="flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500">
                                                     <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-full mb-4">
                                                         <Search className="w-8 h-8 text-slate-400" />
@@ -238,6 +254,28 @@ export default function OverviewPage() {
                                                 </TableCell>
                                                 <TableCell className="text-right px-6 font-mono font-medium text-slate-800 dark:text-slate-200">
                                                     {formatRupees(item.close, 1)}
+                                                </TableCell>
+                                                <TableCell className="text-right px-6 hidden lg:table-cell">
+                                                    {item.rsi != null ? (
+                                                        <span className={cn(
+                                                            "text-xs font-bold px-2 py-0.5 rounded-md",
+                                                            item.rsi >= 70 ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+                                                            : item.rsi <= 30 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                                            : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                                                        )}>
+                                                            {item.rsi.toFixed(1)}
+                                                        </span>
+                                                    ) : <span className="text-slate-400">—</span>}
+                                                </TableCell>
+                                                <TableCell className="text-right px-6 hidden lg:table-cell">
+                                                    {item.roc != null ? (
+                                                        <span className={cn(
+                                                            "text-xs font-bold",
+                                                            item.roc >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                                                        )}>
+                                                            {item.roc >= 0 ? '+' : ''}{item.roc.toFixed(2)}%
+                                                        </span>
+                                                    ) : <span className="text-slate-400">—</span>}
                                                 </TableCell>
                                                 <TableCell className="text-right px-6">
                                                     <div className={cn(
@@ -363,10 +401,8 @@ export default function OverviewPage() {
                             </div>
                         )}
                     </div>
-                </div>
-            )}
-        </div>
-
+                )}
+            </div>
         <style jsx global>{`
             .no-scrollbar::-webkit-scrollbar {
                 display: none;

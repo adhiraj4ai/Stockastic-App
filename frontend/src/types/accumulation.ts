@@ -10,6 +10,8 @@ export interface AccumulationData {
     accumulation_ratio: number;
     top_buyers: string[];
     top_sellers: string[];
+    rsi?: number;
+    roc?: number;
 }
 
 export interface BrokerTrend {

@@ -77,7 +77,7 @@ class AccumulationMixin(viewsets.ViewSet):
             GROUP BY symbol
         ),
         symbol_agg AS (
-            SELECT 
+            SELECT
                 bn.symbol,
                 SUM(CASE WHEN sm.broker IS NOT NULL THEN bn.net_flow ELSE 0 END) as smart_net_qty,
                 COALESCE(MAX(tv.total_vol), 0) as total_vol,
@@ -87,25 +87,59 @@ class AccumulationMixin(viewsets.ViewSet):
             LEFT JOIN smart_money sm ON bn.symbol = sm.symbol AND CAST(bn.broker AS VARCHAR) = sm.broker
             LEFT JOIN total_volume tv ON bn.symbol = tv.symbol
             GROUP BY bn.symbol
+        ),
+        price_history AS (
+            SELECT
+                symbol,
+                close,
+                LAG(close) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_close
+            FROM daily_stock_price
+            WHERE transaction_date > (SELECT max_date - INTERVAL '30 days' FROM ref_date)
+        ),
+        rsi_calc AS (
+            SELECT
+                symbol,
+                ROUND(CASE
+                    WHEN AVG(CASE WHEN close < prev_close THEN prev_close - close ELSE 0 END) = 0
+                    THEN 100.0
+                    ELSE 100.0 - (100.0 / (1.0 + (
+                        AVG(CASE WHEN close > prev_close THEN close - prev_close ELSE 0 END) /
+                        AVG(CASE WHEN close < prev_close THEN prev_close - close ELSE 0 END)
+                    )))
+                END::numeric, 2) as rsi
+            FROM price_history
+            WHERE prev_close IS NOT NULL
+            GROUP BY symbol
+        ),
+        roc_calc AS (
+            SELECT DISTINCT ON (symbol)
+                symbol, close as ref_close
+            FROM daily_stock_price, ref_date
+            WHERE transaction_date <= ref_date.max_date - INTERVAL '14 days'
+            ORDER BY symbol, transaction_date DESC
         )
-        SELECT 
+        SELECT
             sa.symbol, c."companyName" as name, c."sectorName" as sector,
             CASE WHEN sa.smart_net_qty > 0 THEN sa.smart_net_qty ELSE 0 END as buy_qty,
             CASE WHEN sa.smart_net_qty < 0 THEN ABS(sa.smart_net_qty) ELSE 0 END as sell_qty,
             sa.smart_net_qty as net_qty,
-            CASE WHEN sa.total_vol > 0 
+            CASE WHEN sa.total_vol > 0
                THEN ROUND((ABS(sa.smart_net_qty)::NUMERIC / sa.total_vol) * 100, 2)
                ELSE 0 END as accumulation_ratio,
             COALESCE(sa.top_buyers[1:3], ARRAY[]::text[]) as top_buyers,
             COALESCE(sa.top_sellers[1:3], ARRAY[]::text[]) as top_sellers,
-            COALESCE(dsp.close, 0) as close
+            COALESCE(dsp.close, 0) as close,
+            ROUND(rc.rsi::numeric, 2) as rsi,
+            ROUND((dsp.close - roc.ref_close) / NULLIF(roc.ref_close, 0) * 100, 2) as roc
         FROM symbol_agg sa
         INNER JOIN companies c ON sa.symbol = c.symbol
         LEFT JOIN (
-            SELECT DISTINCT ON (symbol) symbol, close 
-            FROM daily_stock_price 
+            SELECT DISTINCT ON (symbol) symbol, close
+            FROM daily_stock_price
             ORDER BY symbol, transaction_date DESC
         ) dsp ON sa.symbol = dsp.symbol
+        LEFT JOIN rsi_calc rc ON sa.symbol = rc.symbol
+        LEFT JOIN roc_calc roc ON sa.symbol = roc.symbol
         WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
         AND c.status = 'A'
         AND c."sectorName" != 'Unknown' AND c."sectorName" IS NOT NULL

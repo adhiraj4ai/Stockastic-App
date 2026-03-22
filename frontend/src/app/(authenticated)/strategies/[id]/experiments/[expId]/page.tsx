@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import DashboardLayout from "@/components/DashboardLayout";
 import { MetricsDisplay } from '../../../components/MetricsDisplay';
 import {
+    Activity,
     ArrowLeft,
     Calendar,
     Zap,
@@ -171,6 +172,7 @@ export default function ExperimentDetailPage() {
             <DashboardLayout>
                 <div className="flex items-center justify-center min-h-[60vh]">
                     <PageLoader text="Loading analysis..." />
+                </div>
             </DashboardLayout>
         );
     }
