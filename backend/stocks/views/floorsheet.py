@@ -269,3 +269,71 @@ class FloorsheetViewSet(viewsets.ViewSet):
             "daily_stats": list(daily_stats),
             "aggregated_transfers": list(daily_stats)[::-1]
         })
+
+    @action(detail=False, methods=['get'])
+    def smart_money(self, request):
+        """
+        Identify top accumulating 'smart brokers' and their active whale signals.
+        """
+        from datetime import timedelta
+        from django.utils import timezone
+        from django.db.models import Sum
+        from stocks.models.market import Company
+        
+        allowed_symbols = Company.objects.values_list('symbol', flat=True)
+        now = timezone.now().date()
+        thirty_days_ago = now - timedelta(days=30)
+        three_days_ago = now - timedelta(days=3)
+
+        # 1. Leaderboard: Top 10 buying brokers in the last 30 days
+        top_brokers = DailyFloorsheet.objects.filter(
+            transaction_date__gte=thirty_days_ago,
+            symbol__in=allowed_symbols
+        ).values('buyer_id').annotate(
+            total_buy_vol=Sum('transaction_quantity')
+        ).order_by('-total_buy_vol')[:10]
+
+        leaderboard = []
+        smart_broker_ids = []
+        for idx, pb in enumerate(top_brokers):
+            rank = 'S' if idx == 0 else 'A' if idx < 3 else 'B' if idx < 6 else 'C'
+            score = int((pb['total_buy_vol'] or 0) / 1000)
+            leaderboard.append({
+                "broker_id": pb['buyer_id'],
+                "score": score,
+                "rank": rank
+            })
+            smart_broker_ids.append(pb['buyer_id'])
+
+        # 2. Active Whale Signals: Recent massive accumulations by these brokers
+        signals_qs = DailyFloorsheet.objects.filter(
+            transaction_date__gte=three_days_ago,
+            buyer_id__in=smart_broker_ids,
+            symbol__in=allowed_symbols
+        ).values('buyer_id', 'symbol').annotate(
+            qty=Sum('transaction_quantity'),
+            amount=Sum('transaction_amount')
+        ).filter(qty__gte=5000).order_by('-amount')[:20]
+
+        # Fetch LTP for these symbols
+        symbols = [s['symbol'] for s in signals_qs]
+        prices_qs = DailyStockPrice.objects.filter(ticker__in=symbols).order_by('ticker', '-date').distinct('ticker')
+        price_map = {p.ticker: float(p.close) for p in prices_qs if p.close is not None}
+
+        signals = []
+        for sq in signals_qs:
+            avg_buy_price = float(sq['amount'] / sq['qty']) if sq['qty'] > 0 else 0
+            signals.append({
+                "broker_id": sq['buyer_id'],
+                "symbol": sq['symbol'],
+                "avg_buy_price": round(avg_buy_price, 2),
+                "ltp": price_map.get(sq['symbol'], 0),
+                "qty": sq['qty'],
+                "amount": float(sq['amount']),
+                "date": str(now)
+            })
+
+        return Response({
+            "leaderboard": leaderboard,
+            "signals": signals
+        })
