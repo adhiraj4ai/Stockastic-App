@@ -391,7 +391,7 @@ def stock_summary(request):
     
     return Response(response_data)
 
-    @api_view(['GET'])
+@api_view(['GET'])
 @permission_classes([AllowAny])
 def analyze_activity(request):
     """

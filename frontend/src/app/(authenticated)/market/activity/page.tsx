@@ -56,7 +56,7 @@ export default function MarketActivityPage() {
     const [data, setData] = useState<ApiResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [category, setCategory] = useState('gainers');
-    const [limit, setLimit] = useState(10);
+    const [limit, setLimit] = useState(20);
     const router = useRouter();
 
     useEffect(() => {
@@ -79,7 +79,7 @@ export default function MarketActivityPage() {
         if (!data) return null;
 
         // Prepare chart data for this specific category
-        const chartData = data.daily[type].slice(0, 10).map(item => ({
+        const chartData = data.daily[type].slice(0, limit).map(item => ({
             ticker: item.ticker,
             change: item.metrics.change,
             percent_change: item.metrics.percent_change,
@@ -133,7 +133,7 @@ export default function MarketActivityPage() {
                                 <TrendingUp size={14} className="text-blue-500" />
                                 {chartTitle} Performance Analysis
                             </CardTitle>
-                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">30-Day price trend of the top 10 stocks in this category</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">30-Day price trend of the top {limit} stocks in this category</p>
                         </div>
                     </CardHeader>
                     <CardContent className="p-6 relative z-10">
