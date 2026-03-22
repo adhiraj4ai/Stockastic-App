@@ -30,6 +30,7 @@ const navItems = [
             { name: 'Overview', href: '/market', icon: LayoutDashboard },
             { name: 'Movers & Shakers', href: '/market/movers', icon: Zap },
             { name: 'Deep Dive', href: '/market/activity', icon: Activity },
+            { name: 'Sector Rotation', href: '/market/rotation', icon: BarChart3 },
             { name: 'Floorsheet', href: '/floorsheet', icon: FileText },
             { name: 'Smart Money', href: '/smart-money', icon: Crosshair },
             { name: 'Social Highlights', href: '/social', icon: Share2 },

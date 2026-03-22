@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations, chart, fibonacci, floorsheet, dividends, risk
+    market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations, chart, fibonacci, floorsheet, dividends, risk, sector_rotation
 )
 
 
@@ -37,6 +37,7 @@ urlpatterns = [
     path('dividends/<str:ticker>/', market.stock_dividends, name='stock_dividends'),
     path('financials/<str:ticker>/', market.stock_financials, name='stock_financials'),
     path('sector-history/<str:sector_name>/', market.sector_history, name='sector_history'),
+    path('sector-rotation/', sector_rotation.get_sector_rotation, name='sector_rotation'),
     path('floorsheet_list/', market.floorsheet_list, name='floorsheet_list'),
     
     # Broker & Accumulation
