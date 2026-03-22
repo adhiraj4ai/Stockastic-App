@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Flame, Users, BarChart3, History, Star, TrendingDown, Brain, Radar, Landmark, ScanLine, Zap, Share2, Crosshair, DollarSign, Layers } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Flame, Users, BarChart3, History, Star, TrendingDown, Brain, Radar, Landmark, ScanLine, Zap, Share2, Crosshair, DollarSign, Layers, GitMerge } from 'lucide-react';
 import { FullPageLoader } from '@/components/ui/StockLoader';
 import { SearchBar } from './SearchBar';
 import { ChatSidebar } from './ChatSidebar';
@@ -32,6 +32,8 @@ const navItems = [
             { name: 'Deep Dive', href: '/market/activity', icon: Activity },
             { name: 'Sector Rotation', href: '/market/rotation', icon: BarChart3 },
             { name: 'Floorsheet', href: '/floorsheet', icon: FileText },
+            { name: 'Bulk Transactions', href: '/market/bulk', icon: Layers },
+            { name: 'Matching Transactions', href: '/market/matching', icon: GitMerge },
             { name: 'Smart Money', href: '/smart-money', icon: Crosshair },
             { name: 'Social Highlights', href: '/social', icon: Share2 },
         ]

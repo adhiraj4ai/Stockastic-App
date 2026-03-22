@@ -680,6 +680,9 @@ def floorsheet_list(request):
     broker = request.query_params.get('broker')
     symbol = request.query_params.get('symbol')
     date = request.query_params.get('date')
+    is_bulk = request.query_params.get('is_bulk', '').lower() == 'true'
+    is_matching = request.query_params.get('is_matching', '').lower() == 'true'
+    ordering = request.query_params.get('ordering')
     
     page = int(request.query_params.get('page', 1))
     page_size = int(request.query_params.get('page_size', 50))
@@ -689,32 +692,49 @@ def floorsheet_list(request):
     end_index = start_index + page_size
 
     try:
-        queryset = DailyFloorsheet.objects.all()
+        from stocks.models.market import Company
+        allowed_symbols = Company.objects.values_list('symbol', flat=True)
+        queryset = DailyFloorsheet.objects.filter(symbol__in=allowed_symbols)
+        
         if symbol:
             queryset = queryset.filter(symbol=symbol)
         if broker:
             queryset = queryset.filter(Q(buyer_id=broker) | Q(seller_id=broker))
+        if is_matching:
+            from django.db.models import F
+            queryset = queryset.filter(buyer_id=F('seller_id'), transaction_quantity__gt=1000)
+        if is_bulk:
+            queryset = queryset.filter(Q(transaction_quantity__gte=5000) | Q(transaction_amount__gte=5000000))
+            
+        applied_date = date
         if date:
             queryset = queryset.filter(transaction_date=date)
-        else:
+        elif (is_bulk or is_matching) or not (symbol or broker):
             # Default to latest available date if no date provided, to avoid querying massive table
-            # (optimisation)
+            # (optimisation). For bulk and matching we enforce latest date by default.
             latest = DailyFloorsheet.objects.order_by('-transaction_date').first()
             if latest:
-                queryset = queryset.filter(transaction_date=latest.transaction_date)
+                applied_date = latest.transaction_date
+                queryset = queryset.filter(transaction_date=applied_date)
             
         # Get total count before slicing
         total_count = queryset.count()
         
+        # Apply Sorting logic
+        if ordering:
+            queryset = queryset.order_by(ordering, '-transaction_date', '-transaction_id')
+        else:
+            queryset = queryset.order_by('-transaction_date', '-transaction_id')
+            
         # Slice for pagination
-        queryset = queryset.order_by('-transaction_date', '-transaction_id')[start_index:end_index]
-        serializer = DailyFloorsheetSerializer(queryset, many=True)
+        serializer = DailyFloorsheetSerializer(queryset[start_index:end_index], many=True)
         
         return Response({
             'results': serializer.data,
             'total_count': total_count,
             'current_page': page,
-            'total_pages': (total_count + page_size - 1) // page_size if page_size > 0 else 1
+            'total_pages': (total_count + page_size - 1) // page_size if page_size > 0 else 1,
+            'applied_date': applied_date
         })
     except Exception as e:
         return Response({'error': str(e)}, status=500)
