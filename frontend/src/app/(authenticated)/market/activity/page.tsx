@@ -56,14 +56,15 @@ export default function MarketActivityPage() {
     const [data, setData] = useState<ApiResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [category, setCategory] = useState('gainers');
+    const [limit, setLimit] = useState(10);
     const router = useRouter();
 
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                // Fetch all data at once (no params needed as backend returns all)
-                const response = await api.get('/api/stocks/activity/');
+                // Fetch all data at once with the specified limit
+                const response = await api.get(`/api/stocks/activity/?limit=${limit}`);
                 setData(response.data);
             } catch (err) {
                 console.error('Failed to fetch activity data', err);
@@ -72,7 +73,7 @@ export default function MarketActivityPage() {
             }
         };
         fetchData();
-    }, []);
+    }, [limit]);
 
     const CategoryContent = ({ type }: { type: 'turnover' | 'gainers' | 'volume' | 'roc' }) => {
         if (!data) return null;
@@ -96,7 +97,7 @@ export default function MarketActivityPage() {
                             <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400">
                                 <Clock size={16} />
                             </div>
-                            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Daily Top 10</h3>
+                            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Daily Top {limit}</h3>
                         </div>
                         <ActivityTable data={data.daily ? data.daily[type] : []} type={type} />
                     </div>
@@ -107,7 +108,7 @@ export default function MarketActivityPage() {
                             <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400">
                                 <Calendar size={16} />
                             </div>
-                            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Weekly Top 10</h3>
+                            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Weekly Top {limit}</h3>
                         </div>
                         <ActivityTable data={data.weekly ? data.weekly[type] : []} type={type} />
                     </div>
@@ -118,7 +119,7 @@ export default function MarketActivityPage() {
                             <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400">
                                 <Calendar size={16} />
                             </div>
-                            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Monthly Top 10</h3>
+                            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">Monthly Top {limit}</h3>
                         </div>
                         <ActivityTable data={data.monthly ? data.monthly[type] : []} type={type} />
                     </div>
@@ -161,7 +162,8 @@ export default function MarketActivityPage() {
                 ) : (
 
                     <Tabs defaultValue="gainers" value={category} onValueChange={setCategory} className="w-full">
-                        <TabsList className="inline-flex h-auto bg-slate-100 dark:bg-slate-800 p-1 rounded-lg mb-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-transparent sm:border-slate-200 dark:sm:border-white/10 mb-6 gap-4">
+                            <TabsList className="inline-flex h-auto bg-slate-100 dark:bg-slate-800 p-1 rounded-lg sm:mb-0 mb-2 border sm:border-none border-slate-200 dark:border-white/5">
                             <TabsTrigger
                                 value="gainers"
                                 className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-emerald-600 data-[state=active]:shadow-sm transition-all"
@@ -195,6 +197,24 @@ export default function MarketActivityPage() {
                                 </div>
                             </TabsTrigger>
                         </TabsList>
+
+                        {/* Top Right Controls */}
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:inline-block">Show</span>
+                            <div className="relative">
+                                <select
+                                    value={limit}
+                                    onChange={(e) => setLimit(Number(e.target.value))}
+                                    className="appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-xs font-bold rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer text-slate-700 dark:text-slate-300 transition-colors"
+                                >
+                                    <option value={10}>Top 10</option>
+                                    <option value={20}>Top 20</option>
+                                    <option value={50}>Top 50</option>
+                                </select>
+                                <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                            </div>
+                        </div>
+                    </div>
 
                         <TabsContent value="turnover" className="mt-0">
                             <CategoryContent type="turnover" />

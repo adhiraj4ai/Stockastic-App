@@ -391,9 +391,19 @@ def stock_summary(request):
     
     return Response(response_data)
 
-@api_view(['GET'])
+    @api_view(['GET'])
 @permission_classes([AllowAny])
 def analyze_activity(request):
+    """
+    Deep dive into market activity. 
+    Returns data for ALL timeframes (daily, weekly, monthly) grouped by category.
+    Structure: { 'daily': { 'turnover': [], ... }, 'weekly': { ... }, 'monthly': { ... } }
+    """
+    limit = int(request.query_params.get('limit', 10))
+    
+    # Helper to calculate stats for a specific range
+    def get_stats_for_range(range_type):
+        ... # wait I can't replace from 396 to 504 easily without omitting code. I'll use multi_replace or smaller replaces.
     """
     Deep dive into market activity. 
     Returns data for ALL timeframes (daily, weekly, monthly) grouped by category.
@@ -483,7 +493,7 @@ def analyze_activity(request):
             })
             
         # Top Lists
-        top_gainers_candidates = sorted(notable_metrics, key=lambda x: x['percent_change'], reverse=True)[:30]
+        top_gainers_candidates = sorted(notable_metrics, key=lambda x: x['percent_change'], reverse=True)[:max(30, limit * 2)]
         
         if range_type == 'daily' and top_gainers_candidates:
             candidate_tickers = [x['ticker'] for x in top_gainers_candidates]
@@ -495,13 +505,13 @@ def analyze_activity(request):
                 date__lte=latest_date
             ).values('ticker').annotate(cnt=Count('id')).filter(cnt__gt=1).values_list('ticker', flat=True))
             
-            top_gainers = [x for x in top_gainers_candidates if x['ticker'] in active_tickers][:10]
+            top_gainers = [x for x in top_gainers_candidates if x['ticker'] in active_tickers][:limit]
         else:
-            top_gainers = top_gainers_candidates[:10]
+            top_gainers = top_gainers_candidates[:limit]
 
-        top_turnover = sorted(notable_metrics, key=lambda x: x['turnover'], reverse=True)[:10]
-        top_volume = sorted(notable_metrics, key=lambda x: x['volume'], reverse=True)[:10]
-        top_roc = sorted([x for x in notable_metrics if x['roc'] is not None], key=lambda x: x['roc'], reverse=True)[:10]
+        top_turnover = sorted(notable_metrics, key=lambda x: x['turnover'], reverse=True)[:limit]
+        top_volume = sorted(notable_metrics, key=lambda x: x['volume'], reverse=True)[:limit]
+        top_roc = sorted([x for x in notable_metrics if x['roc'] is not None], key=lambda x: x['roc'], reverse=True)[:limit]
         
         unique_tickers = set(
             [x['ticker'] for x in top_gainers] + 
