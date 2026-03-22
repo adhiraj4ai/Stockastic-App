@@ -350,6 +350,7 @@ export default function OverviewPage() {
                                 </AnimatePresence>
                             </TableBody>
                         </table>
+                        </div>
 
                         {/* Pagination Controls */}
                         {!loading && sortedData.length > 0 && (

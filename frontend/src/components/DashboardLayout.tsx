@@ -529,7 +529,7 @@ function DashboardContent({
                     </header>
                 )}
 
-                <div className={`${noPadding ? '' : 'p-8'} ${!hideHeader ? 'pt-[73px]' : ''} relative z-0`}>
+                <div className={`${noPadding ? '' : 'p-8'} ${!hideHeader ? 'pt-[90px]' : ''} relative z-0`}>
                     {children}
                 </div>
             </main >
