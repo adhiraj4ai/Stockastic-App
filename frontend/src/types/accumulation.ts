@@ -98,6 +98,34 @@ export interface BelowCostPosition {
     rsi?: number;
 }
 
+export interface SmartMoneyItem {
+    broker_id: number;
+    score: number;
+    rank: string;
+}
+
+export interface WhaleSignal {
+    broker_id: number;
+    symbol: string;
+    avg_buy_price: number;
+    ltp: number;
+    qty: number;
+    amount: number;
+    date: string;
+}
+
+export interface SmartMoneyData {
+    leaderboard?: SmartMoneyItem[];
+    signals?: WhaleSignal[];
+}
+
+export interface BrokerDetailData {
+    history: Record<string, any>[];
+    topBrokers: string[];
+    buyLeaders: AggressiveTrader[];
+    sellLeaders: AggressiveTrader[];
+}
+
 export interface AccumulationItem {
     date: string;
     buy_qty: number;

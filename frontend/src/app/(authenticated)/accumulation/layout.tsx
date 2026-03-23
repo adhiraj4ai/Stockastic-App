@@ -4,14 +4,12 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { usePathname } from "next/navigation";
 
 const titles: Record<string, string> = {
-    '/accumulation/overview': 'Accumulation Overview',
-    '/accumulation/aggressive': 'Aggressive Patterns',
+    '/accumulation/dashboard': 'Accumulation Command Center',
     '/accumulation/trends': 'Broker Trends',
     '/accumulation/favorites': 'Broker Favorites',
     '/accumulation/navigator': 'Accumulators Navigator',
     '/accumulation/history': 'Accumulation History',
     '/accumulation/share-transfer': 'Share Transfer Dashboard',
-    '/accumulation/below-cost': 'Below Cost Positions',
 };
 
 export default function AccumulationLayout({

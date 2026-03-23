@@ -8,14 +8,14 @@ export default function AccumulationPage() {
     const router = useRouter();
 
     useEffect(() => {
-        router.replace('/accumulation/overview');
+        router.replace('/accumulation/dashboard');
     }, [router]);
 
     return (
         <div className="flex h-[70vh] items-center justify-center">
             <div className="flex flex-col items-center gap-4">
                 <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
-                <p className="text-gray-500 font-medium">Redirecting to Accumulation Overview...</p>
+                <p className="text-gray-500 font-medium">Redirecting to Command Center...</p>
             </div>
         </div>
     );
