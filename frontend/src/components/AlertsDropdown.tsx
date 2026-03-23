@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Bell, Info, TrendingUp, TrendingDown, AlertTriangle, AlertCircle, CheckCircle, CheckCircle2, Target, Eye, Fish, ExternalLink } from 'lucide-react';
+import { Bell, Info, TrendingUp, TrendingDown, AlertTriangle, AlertCircle, CheckCircle, CheckCircle2, Target, Eye, Fish, ExternalLink, RefreshCw, Filter } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -18,11 +18,15 @@ interface Alert {
     id: number;
     title: string;
     message: string;
-    type: 'STOP_LOSS_HIT' | 'TARGET_REACHED' | 'SIGNIFICANT_GAIN' | 'SIGNIFICANT_LOSS' |
+    type: 'STOP_LOSS_HIT' | 'TARGET_REACHED' | 'SIGNIFICANT_GAIN' | 'SIGNIFICANT_LOSS' | 'BELOW_WACC' |
     'WATCHLIST_BREAKOUT' | 'WATCHLIST_ENTRY' |
     'SIGNAL_BUY' | 'SIGNAL_SELL' | 'SIGNAL_STRONG_BUY' | 'SIGNAL_STRONG_SELL' |
     'WHALE_BUY' | 'WHALE_SELL' |
-    'INFO' | 'SUCCESS' | 'WARNING' | 'PRICE_ALERT';
+    'INFO' | 'SUCCESS' | 'WARNING' | 'PRICE_ALERT' | 'TREND_BUY_5D' |
+    'VOLUME_SPIKE' | 'RSI_OVERSOLD' | 'RSI_OVERBOUGHT' | 
+    'MACD_BULLISH' | 'MACD_BEARISH' | 'GOLDEN_CROSS' | 'DEATH_CROSS' |
+    'CONSISTENT_BUYING' | 'CONSISTENT_SELLING' | 'WHALE_ENTRY' |
+    'SECTOR_PUMP' | 'MARKET_BREADTH_SHIFT' | 'PORTFOLIO_DIVERSITY' | 'TAKE_PROFIT';
     ticker: string | null;
     read: boolean;
     created_at: string;
@@ -37,6 +41,7 @@ function getToastVariant(type: Alert['type']): 'success' | 'error' | 'warning' |
         case 'SIGNAL_BUY':
         case 'SIGNAL_STRONG_BUY':
         case 'WHALE_BUY':
+        case 'TREND_BUY_5D':
             return 'success';
         case 'STOP_LOSS_HIT':
         case 'SIGNIFICANT_LOSS':
@@ -46,7 +51,13 @@ function getToastVariant(type: Alert['type']): 'success' | 'error' | 'warning' |
             return 'error';
         case 'WARNING':
         case 'BELOW_WACC':
+        case 'PORTFOLIO_DIVERSITY':
             return 'warning';
+        case 'RSI_OVERSOLD':
+        case 'GOLDEN_CROSS':
+        case 'WHALE_ENTRY':
+        case 'VOLUME_SPIKE':
+            return 'success';
         default:
             return 'info';
     }
@@ -159,8 +170,24 @@ export function AlertsDropdown() {
             case 'WHALE_BUY':
             case 'WHALE_SELL':
                 return <Fish size={14} />;
+            case 'TREND_BUY_5D':
+                return <TrendingUp size={14} />;
             case 'SUCCESS':
                 return <CheckCircle size={14} />;
+            case 'VOLUME_SPIKE':
+                return <RefreshCw size={14} />;
+            case 'RSI_OVERSOLD':
+                return <Target size={14} />;
+            case 'RSI_OVERBOUGHT':
+                return <AlertCircle size={14} />;
+            case 'GOLDEN_CROSS':
+                return <TrendingUp size={14} />;
+            case 'WHALE_ENTRY':
+                return <Fish size={14} />;
+            case 'SECTOR_PUMP':
+                return <TrendingUp size={14} />;
+            case 'PORTFOLIO_DIVERSITY':
+                return <Filter size={14} />;
             case 'WARNING':
             case 'PRICE_ALERT':
                 return <AlertCircle size={14} />;
@@ -195,10 +222,19 @@ export function AlertsDropdown() {
                 return 'bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300';
             case 'WHALE_SELL':
                 return 'bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300';
+            case 'TREND_BUY_5D':
+                return 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400';
+            case 'VOLUME_SPIKE':
+                return 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400';
+            case 'GOLDEN_CROSS':
+                return 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400';
+            case 'RSI_OVERSOLD':
+                return 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400';
             case 'SUCCESS':
                 return 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400';
             case 'WARNING':
             case 'PRICE_ALERT':
+            case 'PORTFOLIO_DIVERSITY':
                 return 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400';
             default:
                 return 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
@@ -227,13 +263,22 @@ export function AlertsDropdown() {
             <DropdownMenuContent align="end" className="w-80 p-0 border-none shadow-2xl overflow-hidden rounded-xl">
                 <div className="bg-slate-900 dark:bg-slate-800 px-4 py-3 flex justify-between items-center">
                     <DropdownMenuLabel className="p-0 text-white font-black text-xs uppercase tracking-widest flex items-center gap-2">
-                        <Bell size={14} className="text-blue-400" /> Notifications
+                        <Bell size={14} className="text-blue-400" /> Alerts
                     </DropdownMenuLabel>
-                    {unreadCount > 0 && (
-                        <span className="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded font-black">
-                            {unreadCount} NEW
-                        </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); triggerCheck(); }}
+                            className="p-1 hover:bg-slate-800 rounded-md text-slate-400 hover:text-white transition-colors"
+                            title="Refresh Alerts"
+                        >
+                            <RefreshCw size={12} />
+                        </button>
+                        {unreadCount > 0 && (
+                            <span className="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded font-black">
+                                {unreadCount} NEW
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 <div className="max-h-[350px] overflow-y-auto">
@@ -242,7 +287,7 @@ export function AlertsDropdown() {
                             <div className="bg-slate-50 dark:bg-slate-800 w-10 h-10 rounded-full flex items-center justify-center mx-auto text-slate-300 dark:text-slate-600">
                                 <Bell size={20} />
                             </div>
-                            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">No notifications</p>
+                            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">No alerts</p>
                         </div>
                     ) : (
                         alerts.map((alert) => (

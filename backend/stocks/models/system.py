@@ -40,6 +40,29 @@ class Notification(models.Model):
         SIGNIFICANT_GAIN = 'SIGNIFICANT_GAIN', 'Significant Gain'
         SIGNIFICANT_LOSS = 'SIGNIFICANT_LOSS', 'Significant Loss'
         BELOW_WACC = 'BELOW_WACC', 'Dropped Below WACC'
+        TREND_BUY_5D = 'TREND_BUY_5D', '5D Buying Trend'
+        
+        # Technical alerts
+        VOLUME_SPIKE = 'VOLUME_SPIKE', 'Volume Spike'
+        RSI_OVERSOLD = 'RSI_OVERSOLD', 'RSI Oversold'
+        RSI_OVERBOUGHT = 'RSI_OVERBOUGHT', 'RSI Overbought'
+        MACD_BULLISH = 'MACD_BULLISH', 'MACD Bullish Crossover'
+        MACD_BEARISH = 'MACD_BEARISH', 'MACD Bearish Crossover'
+        GOLDEN_CROSS = 'GOLDEN_CROSS', 'Golden Cross (50/200)'
+        DEATH_CROSS = 'DEATH_CROSS', 'Death Cross (50/200)'
+        
+        # Broker Discovery alerts
+        CONSISTENT_BUYING = 'CONSISTENT_BUYING', 'Consistent Broker Buying'
+        CONSISTENT_SELLING = 'CONSISTENT_SELLING', 'Consistent Broker Selling'
+        WHALE_ENTRY = 'WHALE_ENTRY', 'Top Broker New Entry'
+        
+        # Market / Sector alerts
+        SECTOR_PUMP = 'SECTOR_PUMP', 'Sector Pump Detected'
+        MARKET_BREADTH_SHIFT = 'MARKET_BREADTH_SHIFT', 'Market Breadth Shift'
+        
+        # Portfolio updates
+        PORTFOLIO_DIVERSITY = 'PORTFOLIO_DIVERSITY', 'Portfolio Concentration Warning'
+        TAKE_PROFIT = 'TAKE_PROFIT', 'Take Profit Reminder'
         
         # Watchlist alerts
         WATCHLIST_BREAKOUT = 'WATCHLIST_BREAKOUT', 'Watchlist Breakout'
