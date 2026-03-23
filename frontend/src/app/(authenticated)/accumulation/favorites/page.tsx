@@ -103,8 +103,8 @@ export default function FavoritesPage() {
                             ))}
                         </div>
                         <div className="h-4 w-px bg-slate-200 dark:bg-white/10 hidden md:block" />
-                        <div className="flex items-center gap-2 bg-white dark:bg-slate-900/60 p-1.5 rounded-xl border border-slate-200 dark:border-white/5 shadow-none w-full md:w-auto">
-                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 px-2 tracking-widest">Broker</span>
+                        <div className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-indigo-900/30 p-1.5 rounded-xl border border-blue-100 dark:border-indigo-500/20 shadow-sm w-full md:w-auto transition-all hover:shadow-md">
+                            <span className="text-[10px] font-black text-blue-600 dark:text-indigo-300 px-2 tracking-widest uppercase">Broker</span>
                             <select
                                 value={selectedBroker}
                                 onChange={(e) => {
@@ -112,23 +112,23 @@ export default function FavoritesPage() {
                                     setPage(1);
                                     setSearch('');
                                 }}
-                                className="bg-transparent border-none text-xs font-black text-blue-700 dark:text-indigo-400 outline-none pr-4 min-w-[80px]"
+                                className="bg-transparent border-none text-sm font-black text-slate-800 dark:text-white outline-none pr-4 min-w-[100px] cursor-pointer"
                             >
-                                <option value="">Select ID</option>
-                                {allBrokers.map(b => <option key={b} value={b}>{b}</option>)}
+                                <option value="" className="text-slate-500 dark:text-slate-400">Choose ID...</option>
+                                {allBrokers.map(b => <option key={b} value={b} className="text-slate-800">Broker {b}</option>)}
                             </select>
                         </div>
                     </div>
                     <div className="relative group max-w-md w-full xl:w-80">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 group-focus-within:text-indigo-500 dark:group-focus-within:text-indigo-400 transition-colors" />
                         <Input
-                            placeholder="Search symbols..."
+                            placeholder="Find a stock..."
                             value={search}
                             onChange={(e) => {
                                 setSearch(e.target.value);
                                 setPage(1);
                             }}
-                            className="pl-11 pr-4 h-11 w-full rounded-xl bg-white dark:bg-slate-900/60 border-slate-200 dark:border-white/5 shadow-none focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-indigo-500/20 transition-all font-bold text-sm"
+                            className="pl-11 pr-4 h-11 w-full rounded-xl bg-white dark:bg-slate-900/40 border-slate-200 dark:border-white/10 shadow-sm focus:bg-white dark:focus:bg-slate-900 hover:border-slate-300 dark:hover:border-white/20 focus:ring-2 focus:ring-indigo-500/30 dark:focus:ring-indigo-500/40 transition-all font-bold text-sm"
                         />
                     </div>
                 </div>
@@ -136,27 +136,32 @@ export default function FavoritesPage() {
                 {loading ? (
                     <PageLoader text="Analyzing broker favorites..." />
                 ) : !selectedBroker ? (
-                    <div className="p-20 text-center flex flex-col items-center gap-3">
-                        <div className="w-16 h-16 bg-blue-50 dark:bg-indigo-900/30 text-blue-400 dark:text-indigo-400 rounded-full flex items-center justify-center">
-                            <Search className="w-8 h-8" />
+                    <div className="py-32 px-4 text-center flex flex-col items-center justify-center min-h-[400px]">
+                        <div className="relative mb-6">
+                            <div className="absolute inset-0 bg-blue-500/20 dark:bg-indigo-500/20 blur-2xl rounded-full" />
+                            <div className="w-24 h-24 bg-gradient-to-tr from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-indigo-900/50 border border-white/50 dark:border-white/10 shadow-xl rounded-3xl flex items-center justify-center relative transform -rotate-6 hover:rotate-0 transition-all duration-500 cursor-default">
+                                <Activity className="w-10 h-10 text-blue-500 dark:text-indigo-400" />
+                            </div>
                         </div>
-                        <p className="text-gray-500 dark:text-slate-400 font-medium">Please select a Broker ID to view their favorites.</p>
+                        <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2 tracking-tight">Broker Analysis</h3>
+                        <p className="text-slate-500 dark:text-slate-400 font-medium max-w-sm leading-relaxed">Select a Broker ID from the dropdown above to view their buy, sell, and holding positions.</p>
                     </div>
                 ) : (
                     <div>
                         <div className="overflow-x-auto no-scrollbar">
                             <table className="w-full border-collapse">
                                 <thead>
-                                    <tr className="bg-gray-50/50 dark:bg-slate-800/30 hover:bg-gray-50/50 dark:hover:bg-slate-800/30 border-b border-gray-100 dark:border-slate-800 sticky top-0 z-20 shadow-sm transition-all h-14">
-                                        <TableHead className="px-6 text-left font-bold text-gray-900 dark:text-slate-100 uppercase text-[10px] tracking-widest">Symbol</TableHead>
-                                        <TableHead className="text-right px-6 font-bold text-indigo-500 dark:text-indigo-400 uppercase text-[10px] tracking-widest">RSI</TableHead>
-                                        <TableHead className="text-right px-6 bg-blue-50/10 dark:bg-indigo-500/[0.02] font-bold text-blue-600 dark:text-indigo-400 uppercase text-[10px] tracking-widest">Net Acc. ({range})</TableHead>
-                                        <TableHead className="text-right px-6 font-bold text-gray-900 dark:text-slate-100 uppercase text-[10px] tracking-widest">Total Pos.</TableHead>
-                                        <TableHead className="text-right px-6 font-bold text-orange-500 dark:text-orange-400 uppercase text-[10px] tracking-widest">WAC</TableHead>
-                                        <TableHead className="text-right px-6 font-bold text-gray-900 dark:text-slate-100 uppercase text-[10px] tracking-widest">LTP</TableHead>
-                                        <TableHead className="text-right px-6 font-bold text-rose-600 dark:text-rose-400 uppercase text-[10px] tracking-widest">ROC</TableHead>
-                                        <TableHead className="text-right px-6 font-bold text-emerald-600 dark:text-emerald-400 uppercase text-[10px] tracking-widest">Net Amt</TableHead>
-                                        <TableHead className="w-[80px] px-6"></TableHead>
+                                    <tr className="bg-gray-50/50 dark:bg-slate-800/30 hover:bg-gray-50/50 dark:hover:bg-slate-800/30 border-b border-gray-100 dark:border-slate-800 h-14 transition-all">
+                                        <TableHead className="px-6 text-left sticky top-0 z-30 bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm font-bold text-gray-900 dark:text-slate-100 border-b border-gray-100 dark:border-slate-800"> Symbol </TableHead>
+                                        <TableHead className="text-right px-6 sticky top-0 z-30 bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm font-bold text-gray-900 dark:text-slate-100 text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800"> RSI </TableHead>
+                                        <TableHead className="text-right px-6 sticky top-0 z-30 bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm font-bold text-emerald-600 dark:text-emerald-400 text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800"> Buy Qty </TableHead>
+                                        <TableHead className="text-right px-6 sticky top-0 z-30 bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm font-bold text-rose-600 dark:text-rose-400 text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800"> Sell Qty </TableHead>
+                                        <TableHead className="text-right px-6 sticky top-0 z-30 bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm font-bold text-blue-600 dark:text-indigo-400 text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800"> Net Acc. ({range}) </TableHead>
+                                        <TableHead className="text-right px-6 sticky top-0 z-30 bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm font-bold text-gray-900 dark:text-slate-100 text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800"> Holding </TableHead>
+                                        <TableHead className="text-right px-6 sticky top-0 z-30 bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm font-bold text-orange-500 dark:text-orange-400 text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800"> WAC </TableHead>
+                                        <TableHead className="text-right px-6 sticky top-0 z-30 bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm font-bold text-gray-900 dark:text-slate-100 text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800"> LTP </TableHead>
+                                        <TableHead className="text-right px-6 sticky top-0 z-30 bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm font-bold text-gray-900 dark:text-slate-100 text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800"> ROC </TableHead>
+                                        <TableHead className="w-[80px] px-6 sticky top-0 z-30 bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm border-b border-gray-100 dark:border-slate-800"></TableHead>
                                     </tr>
                                 </thead>
                                 <TableBody>
@@ -176,32 +181,59 @@ export default function FavoritesPage() {
                                                 )}
                                             >
                                                 <TableCell className="px-6 py-4">
-                                                    <Link href={`/ticker/${fav.symbol}`}>
-                                                        <span className="text-base font-medium text-slate-900 dark:text-indigo-400 leading-none hover:text-blue-600 dark:hover:text-white transition-colors cursor-pointer">{fav.symbol}</span>
-                                                    </Link>
+                                                    <div className="flex flex-col">
+                                                        <Link href={`/ticker/${fav.symbol}`}>
+                                                            <span className="text-base font-medium text-slate-900 dark:text-indigo-400 leading-none hover:text-blue-600 dark:hover:text-white transition-colors cursor-pointer">{fav.symbol}</span>
+                                                        </Link>
+                                                        <span className="text-[10px] font-medium lg:hidden text-slate-400 mt-1 tracking-tighter truncate max-w-[80px]">{fav.name}</span>
+                                                    </div>
                                                 </TableCell>
-                                                <TableCell className="text-right px-6 font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                                                    {fav.rsi?.toFixed(1) || '-'}
+                                                <TableCell className="text-right px-6">
+                                                    {fav.rsi != null ? (
+                                                        <span className={cn(
+                                                            "text-xs font-bold px-2 py-0.5 rounded-md",
+                                                            fav.rsi >= 70 ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+                                                            : fav.rsi <= 30 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                                            : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                                                        )}>
+                                                            {fav.rsi.toFixed(1)}
+                                                        </span>
+                                                    ) : <span className="text-slate-400">—</span>}
                                                 </TableCell>
-                                                <TableCell className={`text-right px-6 font-mono font-bold bg-blue-50/10 dark:bg-indigo-500/[0.01] ${fav.qty_accumulated > 0 ? 'text-blue-600 dark:text-indigo-400' : fav.qty_accumulated < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400 dark:text-slate-500'}`}>
-                                                    {fav.qty_accumulated > 0 ? '+' : ''}{formatNepaliNumber(fav.qty_accumulated)}
+                                                <TableCell className="text-right px-6 font-mono font-medium text-emerald-600 dark:text-emerald-400">
+                                                    {formatNepaliNumber(fav.buy_qty)}
                                                 </TableCell>
-                                                <TableCell className="text-right px-6 font-mono font-bold text-slate-500 dark:text-slate-400">
+                                                <TableCell className="text-right px-6 font-mono font-medium text-rose-600 dark:text-rose-400">
+                                                    {formatNepaliNumber(fav.sell_qty)}
+                                                </TableCell>
+                                                <TableCell className="text-right px-6">
+                                                    <div className={cn(
+                                                        "inline-flex flex-col items-end px-3 py-1 rounded-lg transition-all duration-300",
+                                                        fav.qty_accumulated >= 0 ? "bg-emerald-500/5 text-emerald-600 dark:text-emerald-400" : "bg-rose-500/5 text-rose-600 dark:text-rose-400"
+                                                    )}>
+                                                        <span className="text-sm font-black tracking-tight">
+                                                            {fav.qty_accumulated > 0 ? '+' : ''}{formatNepaliNumber(fav.qty_accumulated)}
+                                                        </span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-right px-6 font-mono font-medium text-slate-800 dark:text-slate-200">
                                                     {formatNepaliNumber(fav.current_net)}
                                                 </TableCell>
-                                                <TableCell className="text-right px-6 font-mono font-bold text-orange-600 dark:text-orange-400">
+                                                <TableCell className="text-right px-6 font-mono font-medium text-orange-600 dark:text-orange-400">
                                                     {formatRupees(fav.wac, 1)}
                                                 </TableCell>
-                                                <TableCell className="text-right px-6 font-mono font-bold text-slate-800 dark:text-slate-300">
-                                                    {formatNepaliNumber(fav.ltp) || '-'}
+                                                <TableCell className="text-right px-6 font-mono font-medium text-slate-800 dark:text-slate-200">
+                                                    {formatRupees(fav.ltp, 1)}
                                                 </TableCell>
-                                                <TableCell className={`text-right px-6 font-mono font-bold ${fav.roc > 0 ? 'text-emerald-600 dark:text-emerald-400' : fav.roc < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`}>
-                                                    {fav.roc > 0 ? '+' : ''}{fav.roc}%
-                                                </TableCell>
-                                                <TableCell className="text-right px-6 font-mono">
-                                                    <span className={`font-bold ${fav.net_amount >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                                                        {fav.net_amount > 0 ? '+' : ''}{formatNepaliNumber(fav.net_amount)}
-                                                    </span>
+                                                <TableCell className="text-right px-6">
+                                                    {fav.roc != null ? (
+                                                        <span className={cn(
+                                                            "text-xs font-bold",
+                                                            fav.roc >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                                                        )}>
+                                                            {fav.roc >= 0 ? '+' : ''}{fav.roc.toFixed(2)}%
+                                                        </span>
+                                                    ) : <span className="text-slate-400">—</span>}
                                                 </TableCell>
                                                 <TableCell className="px-6 text-right">
                                                     <Link href={`/accumulation/history?symbol=${fav.symbol}&broker=${selectedBroker}`}>

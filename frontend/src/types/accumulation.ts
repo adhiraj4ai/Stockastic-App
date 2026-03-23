@@ -67,7 +67,9 @@ export interface BrokerFavorite {
     current_net: number;
     wac?: number;
     qty_accumulated: number;
-    net_amount: number;
+    buy_qty: number;
+    sell_qty: number;
+    net_amount?: number;
     ltp: number;
     roc: number;
     rsi?: number;

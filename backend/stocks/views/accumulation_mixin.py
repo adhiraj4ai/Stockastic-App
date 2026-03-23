@@ -563,6 +563,8 @@ class AccumulationMixin(viewsets.ViewSet):
         broker_activity AS (
             SELECT 
                 df.symbol, 
+                SUM(CASE WHEN df.buyer_id = {broker} THEN df.transaction_quantity ELSE 0 END) as buy_qty,
+                SUM(CASE WHEN df.seller_id = {broker} THEN df.transaction_quantity ELSE 0 END) as sell_qty,
                 SUM(CASE 
                     WHEN df.buyer_id = {broker} THEN df.transaction_quantity 
                     WHEN df.seller_id = {broker} THEN -df.transaction_quantity 
@@ -589,6 +591,8 @@ class AccumulationMixin(viewsets.ViewSet):
             COALESCE(ca.cumulative_net, 0) as current_net,
             CASE WHEN ca.cumulative_buy > 0 THEN ROUND(ca.cumulative_buy_amount / ca.cumulative_buy, 2) ELSE 0 END as wac,
             ba.qty_accumulated,
+            ba.buy_qty,
+            ba.sell_qty,
             ba.net_amount
         FROM broker_activity ba
         INNER JOIN companies c ON ba.symbol = c.symbol
@@ -610,7 +614,7 @@ class AccumulationMixin(viewsets.ViewSet):
             
         base_results = []
         if rows:
-            columns = ['symbol', 'name', 'current_net', 'wac', 'qty_accumulated', 'net_amount']
+            columns = ['symbol', 'name', 'current_net', 'wac', 'qty_accumulated', 'buy_qty', 'sell_qty', 'net_amount']
             base_results = [dict(zip(columns, row)) for row in rows]
             
             # Fetch LTP and Calculate ROC for all symbols
