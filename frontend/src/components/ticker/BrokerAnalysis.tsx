@@ -50,7 +50,7 @@ export function BrokerAnalysis({ symbol }: BrokerAnalysisProps) {
             const res = await api.get('/api/stocks/companies/brokers_graph/', {
                 params: { symbol, range }
             });
-            setGraphData(res.data.data);
+            setGraphData(res.data.data || []);
             setTopBrokers(res.data.brokers || []);
             setBuyLeaders(res.data.buy_leaders || []);
             setSellLeaders(res.data.sell_leaders || []);

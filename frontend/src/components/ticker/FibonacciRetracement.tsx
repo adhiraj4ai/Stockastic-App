@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
+import { useTheme } from 'next-themes';
 import api from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -62,6 +63,8 @@ const PERIODS = [
 ];
 
 export function FibonacciRetracement({ symbol, history, indicators }: FibonacciRetracementProps) {
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
     const [data, setData] = useState<FibData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -405,7 +408,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50 dark:divide-slate-800 bg-white/30 dark:bg-slate-950/40">
-                                        {[...history]
+                                        {[...(history || [])]
                                             .filter(row => new Date(row.date) > new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))
                                             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                                             .map((row, i) => (
@@ -424,7 +427,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                         ) : (
                             <div className="h-[500px] w-full bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 relative">
                                 {(() => {
-                                    const historyData = [...history]
+                                    const historyData = [...(history || [])]
                                         .filter(row => new Date(row.date) > new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))
                                         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
@@ -482,7 +485,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                                                         <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                                                     </linearGradient>
                                                 </defs>
-                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={document.documentElement.classList.contains('dark') ? '#334155' : '#e2e8f0'} />
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#334155' : '#e2e8f0'} />
                                                 <XAxis
                                                     dataKey="date"
                                                     tickFormatter={(str) => {
@@ -491,25 +494,25 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                                                     }}
                                                     axisLine={false}
                                                     tickLine={false}
-                                                    tick={{ fontSize: 10, fill: document.documentElement.classList.contains('dark') ? '#64748b' : '#94a3b8' }}
+                                                    tick={{ fontSize: 10, fill: isDark ? '#64748b' : '#94a3b8' }}
                                                     minTickGap={30}
                                                 />
                                                 <YAxis
                                                     domain={[finalMin, finalMax]}
                                                     axisLine={false}
                                                     tickLine={false}
-                                                    tick={{ fontSize: 10, fill: document.documentElement.classList.contains('dark') ? '#64748b' : '#94a3b8' }}
+                                                    tick={{ fontSize: 10, fill: isDark ? '#64748b' : '#94a3b8' }}
                                                     width={40}
                                                 />
                                                 <RechartsTooltip
                                                     contentStyle={{
-                                                        backgroundColor: document.documentElement.classList.contains('dark') ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+                                                        backgroundColor: isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)',
                                                         borderRadius: '12px',
-                                                        border: `1px solid ${document.documentElement.classList.contains('dark') ? '#334155' : '#e2e8f0'}`,
+                                                        border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
                                                         boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                                                     }}
-                                                    itemStyle={{ color: document.documentElement.classList.contains('dark') ? '#f1f5f9' : '#1e293b', fontWeight: 'bold', fontSize: '12px' }}
-                                                    labelStyle={{ color: document.documentElement.classList.contains('dark') ? '#94a3b8' : '#64748b', fontSize: '10px', marginBottom: '4px' }}
+                                                    itemStyle={{ color: isDark ? '#f1f5f9' : '#1e293b', fontWeight: 'bold', fontSize: '12px' }}
+                                                    labelStyle={{ color: isDark ? '#94a3b8' : '#64748b', fontSize: '10px', marginBottom: '4px' }}
                                                 />
                                                 <Area
                                                     type="monotone"

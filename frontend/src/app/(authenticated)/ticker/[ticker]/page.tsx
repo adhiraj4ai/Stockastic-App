@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, use, Fragment } from 'react';
-import React from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -103,10 +102,12 @@ interface FloorsheetItem {
     transaction_date: string;
 }
 
-// @ts-ignore
-export default function StockDetailPage({ params }: { params: Promise<{ ticker: string }> }) {
-    const { ticker } = use(params);
+export default function StockDetailPage() {
+    const params = useParams();
+    const ticker = params.ticker as string;
     const router = useRouter();
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
     const [data, setData] = useState<StockDetailData | null>(null);
     const [floorsheet, setFloorsheet] = useState<FloorsheetItem[]>([]);
     const [activeTab, setActiveTab] = useState('technical');
@@ -158,7 +159,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                 // Fetch History for Chart
                 try {
                     const historyRes = await api.get(`/api/stocks/history/${ticker}/`);
-                    setHistory(historyRes.data);
+                    setHistory(Array.isArray(historyRes.data) ? historyRes.data : []);
                 } catch (hErr) { console.error("History fetch failed", hErr); }
 
                 // Fetch Floorsheet
@@ -350,8 +351,8 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
         let funScore = 0;
         const pe = data.fundamental?.pe_ratio || 0;
         const pbv = data.fundamental?.book_value ? currentPrice / data.fundamental.book_value : 0;
-        const roeItem = data.fundamental?.fundamental_indicators?.find(i => i.name.toLowerCase().includes('roe'));
-        const roeNum = roeItem ? parseFloat(roeItem.value.replace(/[^0-9.-]/g, '')) : 0;
+        const roeItem = data.fundamental?.fundamental_indicators?.find(i => i.name?.toLowerCase()?.includes('roe'));
+        const roeNum = roeItem?.value ? parseFloat(String(roeItem.value).replace(/[^0-9.-]/g, '')) : 0;
 
         // PE Value (35%)
         if (pe > 0 && pe < 15) funScore += 35;
@@ -513,7 +514,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
     };
 
     const getChartOption = () => {
-        if (!history.length) return {};
+        if (!history?.length) return {};
 
         const dates = history.map(item => item.date);
         const data = history.map(item => [item.open, item.close, item.low, item.high]);
@@ -683,7 +684,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                         { name: 'Book Value', key: 'book_value', label: 'Book Value' },
                                                         { name: 'Market Cap', key: 'market_cap', label: 'Mkt Cap' }
                                                     ].map((metric, i) => {
-                                                        const indicator = data.fundamental?.fundamental_indicators?.find((ind: any) => ind.name.toLowerCase().includes(metric.label.toLowerCase())) ||
+                                                        const indicator = data.fundamental?.fundamental_indicators?.find((ind: any) => ind.name?.toLowerCase()?.includes(metric.label.toLowerCase())) ||
                                                             data.fundamental?.fundamental_indicators?.find((ind: any) => ind.name === metric.name);
 
                                                         const auditedValue = (data.fundamental as any)?.[metric.key];
@@ -809,7 +810,7 @@ export default function StockDetailPage({ params }: { params: Promise<{ ticker: 
                                                     key={`${reportType}-${visibleMetrics.join('-')}`}
                                                     option={getFinancialsTrendOption()}
                                                     style={{ height: '100%', width: '100%' }}
-                                                    theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
+                                                    theme={isDark ? 'dark' : 'light'}
                                                 />
                                             </div>
                                         </div>

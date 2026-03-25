@@ -51,6 +51,7 @@ const INDICATOR_COLORS = ['#2962FF', '#FF6D00', '#00C853', '#D500F9', '#FFD600',
 
 // Technical indicator calculation functions
 const calculateSMA = (data: number[], period: number): (number | null)[] => {
+    if (!data?.length) return [];
     const result: (number | null)[] = [];
     for (let i = 0; i < data.length; i++) {
         if (i < period - 1) {
@@ -67,6 +68,7 @@ const calculateSMA = (data: number[], period: number): (number | null)[] => {
 };
 
 const calculateEMA = (data: number[], period: number): (number | null)[] => {
+    if (!data?.length) return [];
     const result: (number | null)[] = [];
     const multiplier = 2 / (period + 1);
     let ema = data[0];
@@ -88,6 +90,7 @@ const calculateEMA = (data: number[], period: number): (number | null)[] => {
 };
 
 const calculateBollingerBands = (data: number[], period: number = 20, stdDev: number = 2) => {
+    if (!data?.length) return { upper: [], middle: [], lower: [] };
     const middle = calculateSMA(data, period);
     const upper: (number | null)[] = [];
     const lower: (number | null)[] = [];
@@ -112,6 +115,7 @@ const calculateBollingerBands = (data: number[], period: number = 20, stdDev: nu
 };
 
 const calculateRSI = (data: number[], period: number = 14): (number | null)[] => {
+    if (!data?.length || data.length < 2) return [];
     const result: (number | null)[] = [];
     const gains: number[] = [];
     const losses: number[] = [];
@@ -149,6 +153,7 @@ const calculateRSI = (data: number[], period: number = 14): (number | null)[] =>
 };
 
 const calculateMACD = (data: number[], fast: number = 12, slow: number = 26, signal: number = 9) => {
+    if (!data?.length) return { macdLine: [], signalLine: [], histogram: [] };
     const emaFast = calculateEMA(data, fast);
     const emaSlow = calculateEMA(data, slow);
     const macdLine: (number | null)[] = emaFast.map((f, i) => (f !== null && emaSlow[i] !== null) ? f - emaSlow[i]! : null);
