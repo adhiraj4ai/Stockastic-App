@@ -681,7 +681,7 @@ export default function StockDetailPage() {
 
 
                                 <TabsContent value="signals" className="mt-0">
-                                    <TickerSignals symbol={ticker} />
+                                    <TickerSignals symbol={ticker} currentPrice={data.price.close} />
                                 </TabsContent>
 
                                 <TabsContent value="fundamentals" className="mt-0 space-y-8">

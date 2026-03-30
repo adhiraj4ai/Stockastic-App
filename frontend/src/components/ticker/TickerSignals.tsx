@@ -7,7 +7,8 @@ import { formatRupees } from '@/lib/formatters';
 import {
     Radar, Zap, Activity, TrendingUp, TrendingDown,
     ArrowUpRight, ArrowDownRight, BarChart3, Layers,
-    Clock, Shield, Brain
+    Clock, Shield, Brain,
+    CheckCircle2, AlertCircle, History
 } from 'lucide-react';
 import { StockLoader } from '@/components/ui/StockLoader';
 
@@ -106,9 +107,43 @@ function StrengthMeter({ value, label }: { value: number; label?: string }) {
     );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+// ─── Freshness Utility ────────────────────────────────────────────────────────
+const getFreshness = (dateStr: string) => {
+    const sigDate = new Date(dateStr);
+    const today = new Date();
+    // Normalize to dates
+    today.setHours(0, 0, 0, 0);
+    sigDate.setHours(0, 0, 0, 0);
 
-export default function TickerSignals({ symbol }: { symbol: string }) {
+    const diffMs = today.getTime() - sigDate.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays <= 1) return { label: 'Active', color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20', icon: CheckCircle2, status: 'active' };
+    if (diffDays <= 3) return { label: 'Recent', color: 'text-amber-500 bg-amber-500/10 border-amber-500/20', icon: AlertCircle, status: 'recent' };
+    return { label: 'Historical', color: 'text-slate-400 bg-slate-400/10 border-slate-400/20', icon: History, status: 'historical' };
+};
+
+// ─── Performance Utility ──────────────────────────────────────────────────────
+function PerformanceBadge({ signalPrice, currentPrice, signal }: { signalPrice: number; currentPrice?: number; signal: string }) {
+    if (!currentPrice || signal === 'HOLD' || signal === 'NEUTRAL') return null;
+
+    const change = ((currentPrice - signalPrice) / signalPrice) * 100;
+    const isSuccess = (signal === 'BUY' && change > 0) || (signal === 'SELL' && change < 0);
+
+    return (
+        <div className={cn(
+            "px-2 py-0.5 rounded text-[10px] font-bold tabular-nums border",
+            isSuccess 
+                ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border-emerald-100 dark:border-emerald-800/30" 
+                : "bg-rose-50 dark:bg-rose-900/20 text-rose-600 border-rose-100 dark:border-rose-800/30"
+        )}>
+            {change > 0 ? '+' : ''}{change.toFixed(1)}%
+        </div>
+    );
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────────
+export default function TickerSignals({ symbol, currentPrice }: { symbol: string; currentPrice?: number }) {
     const [strategySignals, setStrategySignals] = useState<StrategySignal[]>([]);
     const [intelSignals, setIntelSignals] = useState<GeneratedSignal[]>([]);
     const [loading, setLoading] = useState(true);
@@ -222,10 +257,11 @@ export default function TickerSignals({ symbol }: { symbol: string }) {
                                         <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
                                             <tr>
                                                 <th className="px-5 py-3 text-left font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">Strategy</th>
+                                                <th className="px-5 py-3 text-center font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">Freshness</th>
                                                 <th className="px-5 py-3 text-center font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">Signal</th>
+                                                <th className="px-5 py-3 text-center font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">Change</th>
                                                 <th className="px-5 py-3 text-center font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">Date</th>
-                                                <th className="px-5 py-3 text-center font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">Close</th>
-                                                <th className="px-5 py-3 text-left font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">Parameters</th>
+                                                <th className="px-5 py-3 text-center font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">Close @ Sig</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -237,29 +273,31 @@ export default function TickerSignals({ symbol }: { symbol: string }) {
                                                         .map(([k, v]) => `${k}: ${v}`)
                                                         .join(' · ')
                                                     : '';
+                                                const freshness = getFreshness(sig.date);
 
                                                 return (
-                                                    <tr key={sig.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                                                    <tr key={sig.id} className={cn(
+                                                        "hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors",
+                                                        freshness.status === 'historical' && "opacity-50 grayscale-[0.3]"
+                                                    )}>
                                                         <td className="px-5 py-3.5">
                                                             <div className="font-bold text-slate-700 dark:text-slate-200 text-sm">{sig.strategy_name}</div>
                                                             <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-[220px]">{sig.strategy_description}</div>
                                                         </td>
                                                         <td className="px-5 py-3.5 text-center">
+                                                            <div className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase border", freshness.color)}>
+                                                                <freshness.icon size={10} />
+                                                                {freshness.label}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-5 py-3.5 text-center">
                                                             <SignalBadge signal={sig.signal} />
+                                                        </td>
+                                                        <td className="px-5 py-3.5 text-center">
+                                                            <PerformanceBadge signalPrice={parseFloat(sig.last_close)} currentPrice={currentPrice} signal={sig.signal} />
                                                         </td>
                                                         <td className="px-5 py-3.5 text-center text-xs text-slate-500 dark:text-slate-400 font-mono">{sig.date}</td>
                                                         <td className="px-5 py-3.5 text-center text-xs font-bold text-slate-700 dark:text-slate-300 font-mono">{formatRupees(parseFloat(sig.last_close))}</td>
-                                                        <td className="px-5 py-3.5">
-                                                            {paramStr ? (
-                                                                <div className="flex flex-wrap gap-1">
-                                                                    {paramStr.split(' · ').slice(0, 4).map((p, i) => (
-                                                                        <span key={i} className="px-1.5 py-0.5 rounded bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-[9px] font-bold text-slate-500 dark:text-slate-400 font-mono">{p}</span>
-                                                                    ))}
-                                                                </div>
-                                                            ) : (
-                                                                <span className="text-[10px] text-slate-400 italic">Default</span>
-                                                            )}
-                                                        </td>
                                                     </tr>
                                                 );
                                             })}
@@ -299,20 +337,34 @@ export default function TickerSignals({ symbol }: { symbol: string }) {
                                     const SourceIcon = SOURCE_ICONS[source] || Activity;
                                     const colors = SOURCE_COLORS[source] || SOURCE_COLORS['SMART_MONEY'];
                                     const latestSignal = signals.sort((a, b) => b.generated_date.localeCompare(a.generated_date))[0];
+                                    const freshness = getFreshness(latestSignal.generated_date);
 
                                     return (
-                                        <div key={source} className={cn("rounded-xl border p-5 space-y-4", colors.bg, colors.border)}>
+                                        <div key={source} className={cn(
+                                            "rounded-xl border p-5 space-y-4", 
+                                            colors.bg, colors.border,
+                                            freshness.status === 'historical' && "opacity-60 saturate-[0.8]"
+                                        )}>
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
                                                     <SourceIcon size={16} className={colors.text} />
                                                     <div>
                                                         <h4 className={cn("font-bold text-sm", colors.text)}>{SOURCE_LABELS[source] || source}</h4>
-                                                        <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1">
-                                                            <Clock size={9} /> {latestSignal.generated_date}
-                                                        </span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1">
+                                                                <Clock size={9} /> {latestSignal.generated_date}
+                                                            </span>
+                                                            <div className={cn("inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase border", freshness.color)}>
+                                                                <freshness.icon size={8} />
+                                                                {freshness.label}
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <SignalBadge signal={latestSignal.signal} size="lg" />
+                                                <div className="flex flex-col items-end gap-1">
+                                                    <SignalBadge signal={latestSignal.signal} size="lg" />
+                                                    <PerformanceBadge signalPrice={parseFloat(latestSignal.ltp)} currentPrice={currentPrice} signal={latestSignal.signal} />
+                                                </div>
                                             </div>
 
                                             {/* Signal Details */}
