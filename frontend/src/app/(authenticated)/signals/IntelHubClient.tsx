@@ -230,7 +230,15 @@ function UnifiedSignalCard({
     targetPrice?: number;
     stopLoss?: number;
     status?: 'ACTIVE' | 'WON' | 'LOST' | 'CLOSED_MANUAL';
-    onSelect: (s: { symbol: string; ltp: number; strength: number; direction: 'BUY' | 'SELL' }) => void;
+    onSelect: (s: { 
+        symbol: string; 
+        ltp: number; 
+        strength: number; 
+        direction: 'BUY' | 'SELL';
+        targetPrice?: number;
+        stopLoss?: number;
+        status?: string;
+    }) => void;
 }) {
     const freshness = getFreshness(date);
     const action = getActionability(ltp, currentPrice, direction);
@@ -243,7 +251,7 @@ function UnifiedSignalCard({
 
     return (
         <div 
-            onClick={() => onSelect({ symbol, ltp, strength: strength || 50, direction })}
+            onClick={() => onSelect({ symbol, ltp, strength: strength || 50, direction, targetPrice, stopLoss, status })}
             className={cn(
                 'group relative rounded-2xl border border-l-[6px] p-5 cursor-pointer transition-all hover:shadow-2xl hover:-translate-y-0.5 bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6',
                 direction === 'BUY' ? 'border-l-emerald-500 border-slate-200/60 dark:border-emerald-500/30' : 'border-l-rose-500 border-slate-200/60 dark:border-rose-500/30',
@@ -327,7 +335,15 @@ function UnifiedSignalCard({
 // ─── ALL SOURCES VIEW (reads from stored data) ────────────────────────────────
 
 interface BaseSignalViewProps {
-    onSelect: (signal: { symbol: string; ltp: number; strength: number; direction: 'BUY' | 'SELL' }) => void;
+    onSelect: (signal: { 
+        symbol: string; 
+        ltp: number; 
+        strength: number; 
+        direction: 'BUY' | 'SELL';
+        targetPrice?: number;
+        stopLoss?: number;
+        status?: string;
+    }) => void;
     liveMarketMap: Record<string, number>;
     showHistorical: boolean;
 }
@@ -802,7 +818,15 @@ const TABS = [
 
 export default function IntelHubClient() {
     const [tab, setTab] = useState('all');
-    const [selectedSignal, setSelectedSignal] = useState<{ symbol: string; ltp: number; strength: number; direction: 'BUY' | 'SELL' } | null>(null);
+    const [selectedSignal, setSelectedSignal] = useState<{ 
+        symbol: string; 
+        ltp: number; 
+        strength: number; 
+        direction: 'BUY' | 'SELL';
+        targetPrice?: number;
+        stopLoss?: number;
+        status?: string;
+    } | null>(null);
     const [liveMarketMap, setLiveMarketMap] = useState<Record<string, number>>({});
     const [showHistorical, setShowHistorical] = useState(false);
     const [performance, setPerformance] = useState<EnginePerformance[]>([]);
@@ -896,6 +920,9 @@ export default function IntelHubClient() {
                             cmp={selectedSignal.ltp}
                             strength={selectedSignal.strength}
                             direction={selectedSignal.direction}
+                            targetPrice={selectedSignal.targetPrice}
+                            stopLoss={selectedSignal.stopLoss}
+                            status={selectedSignal.status}
                             className="shadow-2xl border-slate-200 dark:border-slate-800"
                         />
                     )}
