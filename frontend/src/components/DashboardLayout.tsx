@@ -34,7 +34,6 @@ const navItems = [
             { name: 'Floorsheet', href: '/floorsheet', icon: FileText },
             { name: 'Bulk Transactions', href: '/market/bulk', icon: Layers },
             { name: 'Matching Transactions', href: '/market/matching', icon: GitMerge },
-            { name: 'Smart Money', href: '/accumulation/dashboard', icon: Crosshair },
             { name: 'Social Highlights', href: '/social', icon: Share2 },
         ]
     },
