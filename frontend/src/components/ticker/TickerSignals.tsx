@@ -125,12 +125,22 @@ const getFreshness = (dateStr: string) => {
 };
 
 // ─── Entry Zone Validation Utility ───────────────────────────────────────────
-const getActionability = (signalPrice: number, currentPrice?: number, signal?: string) => {
+const getActionability = (signalPrice: number, currentPrice?: number, signal?: string, intelligence?: any) => {
     if (!currentPrice || signal === 'HOLD' || signal === 'NEUTRAL') return null;
     const change = ((currentPrice - signalPrice) / signalPrice) * 100;
     const isBuy = signal === 'BUY';
     const isSell = signal === 'SELL';
     
+    // Technical Structural Breakdown check
+    if (intelligence) {
+        if (isBuy && (intelligence.macd === 'BEARISH' || intelligence.technicalScore < 30)) {
+            return { label: 'Setup Broken', color: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800', status: 'invalid' };
+        }
+        if (isSell && (intelligence.macd === 'BULLISH' || intelligence.technicalScore > 70)) {
+            return { label: 'Setup Broken', color: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800', status: 'invalid' };
+        }
+    }
+
     if (isBuy) {
         if (change < -5) return { label: 'Invalidated', color: 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800', status: 'invalid' };
         if (change > 3) return { label: 'Entry Missed', color: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700', status: 'missed' };
@@ -145,8 +155,8 @@ const getActionability = (signalPrice: number, currentPrice?: number, signal?: s
 };
 
 // ─── Performance Utility ──────────────────────────────────────────────────────
-function VerdictBadge({ signalPrice, currentPrice, signal }: { signalPrice: number; currentPrice?: number; signal: string }) {
-    const action = getActionability(signalPrice, currentPrice, signal);
+function VerdictBadge({ signalPrice, currentPrice, signal, intelligence }: { signalPrice: number; currentPrice?: number; signal: string; intelligence?: any }) {
+    const action = getActionability(signalPrice, currentPrice, signal, intelligence);
     if (!action) return null;
     return (
         <span className={cn("px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border", action.color)}>
@@ -155,7 +165,7 @@ function VerdictBadge({ signalPrice, currentPrice, signal }: { signalPrice: numb
     );
 }
 
-function PerformanceBadge({ signalPrice, currentPrice, signal }: { signalPrice: number; currentPrice?: number; signal: string }) {
+function PerformanceBadge({ signalPrice, currentPrice, signal, intelligence }: { signalPrice: number; currentPrice?: number; signal: string; intelligence?: any }) {
     if (!currentPrice || signal === 'HOLD' || signal === 'NEUTRAL') return null;
 
     const change = ((currentPrice - signalPrice) / signalPrice) * 100;
@@ -171,13 +181,13 @@ function PerformanceBadge({ signalPrice, currentPrice, signal }: { signalPrice: 
             )}>
                 {change > 0 ? '+' : ''}{change.toFixed(1)}%
             </div>
-            <VerdictBadge signalPrice={signalPrice} currentPrice={currentPrice} signal={signal} />
+            <VerdictBadge signalPrice={signalPrice} currentPrice={currentPrice} signal={signal} intelligence={intelligence} />
         </div>
     );
 }
 
 // ─── Main Component ────────────────────────────────────────────────────────────
-export default function TickerSignals({ symbol, currentPrice }: { symbol: string; currentPrice?: number }) {
+export default function TickerSignals({ symbol, currentPrice, intelligence }: { symbol: string; currentPrice?: number; intelligence?: any }) {
     const [strategySignals, setStrategySignals] = useState<StrategySignal[]>([]);
     const [intelSignals, setIntelSignals] = useState<GeneratedSignal[]>([]);
     const [loading, setLoading] = useState(true);
@@ -206,7 +216,7 @@ export default function TickerSignals({ symbol, currentPrice }: { symbol: string
         // Filter out signals that are old or whose entry windows have passed/invalidated
         const actionableSignals = strategySignals.filter(s => {
             const freshness = getFreshness(s.date);
-            const action = getActionability(parseFloat(s.last_close), currentPrice, s.signal);
+            const action = getActionability(parseFloat(s.last_close), currentPrice, s.signal, intelligence);
             return freshness.status !== 'historical' && (!action || action.status === 'valid');
         });
 
@@ -231,10 +241,10 @@ export default function TickerSignals({ symbol, currentPrice }: { symbol: string
         if (showHistoricalStrats) return strategySignals;
         return strategySignals.filter(s => {
             const freshness = getFreshness(s.date);
-            const action = getActionability(parseFloat(s.last_close), currentPrice, s.signal);
+            const action = getActionability(parseFloat(s.last_close), currentPrice, s.signal, intelligence);
             return freshness.status !== 'historical' && (!action || action.status === 'valid');
         });
-    }, [strategySignals, currentPrice, showHistoricalStrats]);
+    }, [strategySignals, currentPrice, showHistoricalStrats, intelligence]);
     
     const hiddenStratsCount = strategySignals.length - visibleStrats.length;
 
@@ -257,10 +267,10 @@ export default function TickerSignals({ symbol, currentPrice }: { symbol: string
         return entries.filter(([_, signals]) => {
             const latestSignal = [...signals].sort((a, b) => b.generated_date.localeCompare(a.generated_date))[0];
             const freshness = getFreshness(latestSignal.generated_date);
-            const action = getActionability(parseFloat(latestSignal.ltp), currentPrice, latestSignal.signal);
+            const action = getActionability(parseFloat(latestSignal.ltp), currentPrice, latestSignal.signal, intelligence);
             return freshness.status !== 'historical' && (!action || action.status === 'valid');
         });
-    }, [intelBySource, currentPrice, showHistoricalIntel]);
+    }, [intelBySource, currentPrice, showHistoricalIntel, intelligence]);
 
     const hiddenIntelCount = intelBySource.size - visibleIntelSources.length;
 
@@ -371,7 +381,7 @@ export default function TickerSignals({ symbol, currentPrice }: { symbol: string
                                                             <SignalBadge signal={sig.signal} />
                                                         </td>
                                                         <td className="px-5 py-3.5 text-center">
-                                                            <PerformanceBadge signalPrice={parseFloat(sig.last_close)} currentPrice={currentPrice} signal={sig.signal} />
+                                                            <PerformanceBadge signalPrice={parseFloat(sig.last_close)} currentPrice={currentPrice} signal={sig.signal} intelligence={intelligence} />
                                                         </td>
                                                         <td className="px-5 py-3.5 text-center text-xs text-slate-500 dark:text-slate-400 font-mono">{sig.date}</td>
                                                         <td className="px-5 py-3.5 text-center text-xs font-bold text-slate-700 dark:text-slate-300 font-mono">{formatRupees(parseFloat(sig.last_close))}</td>
@@ -457,7 +467,7 @@ export default function TickerSignals({ symbol, currentPrice }: { symbol: string
                                                     </div>
                                                     <div className="flex flex-col items-end gap-1">
                                                         <SignalBadge signal={latestSignal.signal} size="lg" />
-                                                        <PerformanceBadge signalPrice={parseFloat(latestSignal.ltp)} currentPrice={currentPrice} signal={latestSignal.signal} />
+                                                        <PerformanceBadge signalPrice={parseFloat(latestSignal.ltp)} currentPrice={currentPrice} signal={latestSignal.signal} intelligence={intelligence} />
                                                     </div>
                                                 </div>
 
