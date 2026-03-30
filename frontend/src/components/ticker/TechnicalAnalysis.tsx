@@ -1,10 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { BarChart2, TrendingUp, TrendingDown, Activity, Target, LineChart, ChevronDown, Info } from 'lucide-react';
+import { TrendingUp, TrendingDown, LineChart, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import SignalDashboard from '@/components/SignalDashboard';
-import BrokerAnalysis from '@/components/ticker/BrokerAnalysis';
 import { FibonacciRetracement } from '@/components/ticker/FibonacciRetracement';
 import IndicatorTooltip from '@/components/ticker/IndicatorTooltip';
 import { cn } from '@/lib/utils';
@@ -50,17 +48,8 @@ export default function TechnicalAnalysis({ symbol, data, history }: TechnicalAn
             hoverClass: 'hover:bg-emerald-50/50 dark:hover:bg-emerald-900/10'
         },
         {
-            name: 'Volatility',
-            icon: Activity,
-            color: 'amber',
-            bgClass: 'bg-amber-50 dark:bg-amber-900/20',
-            borderClass: 'border-amber-100 dark:border-amber-800',
-            textClass: 'text-amber-600 dark:text-amber-400',
-            hoverClass: 'hover:bg-amber-50/50 dark:hover:bg-amber-900/10'
-        },
-        {
             name: 'Volume',
-            icon: BarChart2,
+            icon: LineChart, // Fallback icon since BarChart2 is removed
             color: 'purple',
             bgClass: 'bg-purple-50 dark:bg-purple-900/20',
             borderClass: 'border-purple-100 dark:border-purple-800',
@@ -197,81 +186,8 @@ export default function TechnicalAnalysis({ symbol, data, history }: TechnicalAn
                 </div>
             </div>
 
-            {/* Floorsheet Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Top Buyers (Accumulation) */}
-                <div className="glass-card-light dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
-                            <TrendingUp size={18} />
-                        </div>
-                        <h4 className="font-bold text-slate-800 dark:text-slate-100">Top Buyers (Accumulation)</h4>
-                    </div>
-                    <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800">
-                        <table className="w-full text-sm">
-                            <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
-                                <tr>
-                                    <th className="px-6 py-4 text-left font-semibold text-slate-500 dark:text-slate-400 text-xs">Broker</th>
-                                    <th className="px-6 py-4 text-right font-semibold text-slate-500 dark:text-slate-400 text-xs">Quantity</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                                {(data.fundamental?.broker_accumulation?.['1D'] || [])
-                                    .filter((d: any) => d.type === 'BUY')
-                                    .sort((a: any, b: any) => b.qty - a.qty)
-                                    .slice(0, 5)
-                                    .map((item: any, idx: number) => (
-                                        <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                                            <td className="px-6 py-4 font-bold text-blue-600">Broker {item.broker}</td>
-                                            <td className="px-6 py-4 text-right font-mono font-bold text-slate-700 dark:text-slate-300">{item.qty.toLocaleString()}</td>
-                                        </tr>
-                                    ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                {/* Top Sellers (Distribution) */}
-                <div className="glass-card-light dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800">
-                            <TrendingDown size={18} />
-                        </div>
-                        <h4 className="font-bold text-slate-800 dark:text-slate-100">Top Sellers (Distribution)</h4>
-                    </div>
-                    <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800">
-                        <table className="w-full text-sm">
-                            <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
-                                <tr>
-                                    <th className="px-6 py-4 text-left font-semibold text-slate-500 dark:text-slate-400 text-xs">Broker</th>
-                                    <th className="px-6 py-4 text-right font-semibold text-slate-500 dark:text-slate-400 text-xs">Quantity</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                                {(data.fundamental?.broker_accumulation?.['1D'] || [])
-                                    .filter((d: any) => d.type === 'SELL')
-                                    .sort((a: any, b: any) => b.qty - a.qty)
-                                    .slice(0, 5)
-                                    .map((item: any, idx: number) => (
-                                        <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                                            <td className="px-6 py-4 font-bold text-rose-600">Broker {item.broker}</td>
-                                            <td className="px-6 py-4 text-right font-mono font-bold text-slate-700 dark:text-slate-300">{formatNepaliNumber(item.qty)}</td>
-                                        </tr>
-                                    ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
             {/* Fibonacci Retracement - Component has its own heading */}
             <FibonacciRetracement symbol={symbol} history={history} indicators={data?.fundamental?.technical_indicators || []} />
-
-            {/* Strategy Signals - Component has its own heading */}
-            <SignalDashboard symbol={symbol} />
-
-            {/* Broker Analysis - Component has its own heading */}
-            <BrokerAnalysis symbol={symbol} />
 
         </div>
     );
