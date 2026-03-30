@@ -906,6 +906,37 @@ class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(GeneratedSignalSerializer(signals, many=True).data)
 
     @action(detail=False, methods=['get'])
+    def performance(self, request):
+        """Return historical performance aggregated by source."""
+        from django.db.models import Count, Q, Avg
+        from ..models import GeneratedSignal
+
+        stats = GeneratedSignal.objects.values('source').annotate(
+            total=Count('id'),
+            won=Count('id', filter=Q(status='WON')),
+            lost=Count('id', filter=Q(status='LOST')),
+            active=Count('id', filter=Q(status='ACTIVE')),
+            avg_pnl=Avg('pnl_percent', filter=Q(status__in=['WON', 'LOST'])),
+        )
+
+        result = []
+        for s in stats:
+            total_resolved = s['won'] + s['lost']
+            win_rate = (s['won'] / total_resolved * 100) if total_resolved > 0 else 0
+            
+            result.append({
+                'source': s['source'],
+                'total': s['total'],
+                'won': s['won'],
+                'lost': s['lost'],
+                'active': s['active'],
+                'win_rate': round(win_rate, 2),
+                'avg_pnl': round(s['avg_pnl'] or 0, 2)
+            })
+            
+        return Response(result)
+
+    @action(detail=False, methods=['get'])
     def summary(self, request):
         """Aggregated counts by source and signal type for the latest date."""
         from ..models import GeneratedSignal

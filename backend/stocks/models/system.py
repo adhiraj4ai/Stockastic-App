@@ -123,12 +123,27 @@ class GeneratedSignal(models.Model):
         ('SELL', 'Sell'),
     )
 
+    STATUS_CHOICES = (
+        ('ACTIVE', 'Active'),
+        ('WON', 'Target Reached'),
+        ('LOST', 'Stop Loss Hit'),
+        ('CLOSED_MANUAL', 'Closed Manually'),
+    )
+
     source = models.CharField(max_length=30, choices=SOURCE_CHOICES)
     symbol = models.CharField(max_length=20, db_index=True)
     signal = models.CharField(max_length=10, choices=SIGNAL_CHOICES)
     signal_tier = models.CharField(max_length=50, blank=True, default='')
     strength = models.FloatField(default=0)
     ltp = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
+    # Lifecycle Tracking
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
+    target_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    stop_loss_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    pnl_percent = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    closed_date = models.DateField(null=True, blank=True)
+
     rationale = models.TextField(blank=True, default='')
     metadata = models.JSONField(default=dict, blank=True)
     generated_date = models.DateField(db_index=True)

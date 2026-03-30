@@ -13,6 +13,7 @@ class GeneratedSignalSerializer(serializers.ModelSerializer):
     class Meta:
         model = GeneratedSignal
         fields = ['id', 'source', 'symbol', 'signal', 'signal_tier', 'strength',
-                  'ltp', 'rationale', 'metadata', 'generated_date', 'created_at']
+                  'ltp', 'target_price', 'stop_loss_price', 'status', 'pnl_percent', 
+                  'closed_date', 'rationale', 'metadata', 'generated_date', 'created_at']
         read_only_fields = ['id', 'created_at']
 

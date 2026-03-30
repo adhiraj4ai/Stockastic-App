@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from stocks.services.signal_generation_service import SignalGenerationService
-
+from stocks.services.signal_evaluation_service import SignalEvaluationService
 
 class Command(BaseCommand):
     help = 'Generates all intel signals (Smart Money, Whale Watch engines) and stores them in the database.'
@@ -10,7 +10,10 @@ class Command(BaseCommand):
             self.stdout.write(f"Processing source {current}/{total}: {source}")
 
         total_saved = SignalGenerationService.generate_all(progress_callback)
+        
+        self.stdout.write(self.style.WARNING("Running active signal evaluator across market data..."))
+        evaluated = SignalEvaluationService.evaluate_active_signals()
 
         self.stdout.write(self.style.SUCCESS(
-            f"All signal generation complete. Total signals saved: {total_saved}"
+            f"All signal generation complete. Total signals saved: {total_saved}. Signals triggered TP/SL: {evaluated}."
         ))

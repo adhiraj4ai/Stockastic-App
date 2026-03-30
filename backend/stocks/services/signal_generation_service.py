@@ -54,7 +54,8 @@ class SignalGenerationService:
 
         for sig in signals:
             try:
-                GeneratedSignal.objects.update_or_create(
+                ltp = float(sig.get('ltp', 0))
+                obj, created = GeneratedSignal.objects.update_or_create(
                     source=source,
                     symbol=sig['symbol'],
                     generated_date=sig.get('generated_date', today),
@@ -62,11 +63,21 @@ class SignalGenerationService:
                         'signal': sig['signal'],
                         'signal_tier': sig.get('signal_tier', ''),
                         'strength': sig.get('strength', 0),
-                        'ltp': sig.get('ltp', 0),
+                        'ltp': ltp,
                         'rationale': sig.get('rationale', ''),
                         'metadata': sig.get('metadata', {}),
                     }
                 )
+                
+                if created and ltp > 0:
+                    if sig['signal'] == 'BUY':
+                        obj.target_price = round(ltp * 1.10, 2)
+                        obj.stop_loss_price = round(ltp * 0.95, 2)
+                    elif sig['signal'] == 'SELL':
+                        obj.target_price = round(ltp * 0.90, 2)
+                        obj.stop_loss_price = round(ltp * 1.05, 2)
+                    obj.save(update_fields=['target_price', 'stop_loss_price'])
+                    
                 saved += 1
             except Exception as e:
                 logger.error(f"Failed to save signal for {sig.get('symbol')}: {e}")

@@ -32,6 +32,11 @@ interface GeneratedSignal {
     signal_tier: string;
     strength: number;
     ltp: string;
+    target_price?: number;
+    stop_loss_price?: number;
+    status: 'ACTIVE' | 'WON' | 'LOST' | 'CLOSED_MANUAL';
+    pnl_percent?: number;
+    closed_date?: string;
     rationale: string;
     metadata: any;
     generated_date: string;
@@ -49,6 +54,9 @@ interface UnifiedSignal {
     symbol: string;
     direction: 'BUY' | 'SELL';
     ltp: number;
+    target_price?: number;
+    stop_loss_price?: number;
+    status?: 'ACTIVE' | 'WON' | 'LOST' | 'CLOSED_MANUAL';
     smartMoney?: { tier: string; markup: number; rationale: string; brokers: number };
     strategy?: { names: string[]; count: number; date: string };
     whale?: { engine: string; strength: number; reason: string; rsi?: number };
@@ -130,6 +138,71 @@ const CONVICTION_META = [
     { label: 'Triple Conviction', color: 'text-emerald-600 dark:text-emerald-400' },
 ];
 
+interface EnginePerformance {
+    source: string;
+    total: number;
+    won: number;
+    lost: number;
+    active: number;
+    win_rate: number;
+    avg_pnl: number;
+}
+
+function SignalPerformanceStats({ stats }: { stats: EnginePerformance[] }) {
+    if (!stats || stats.length === 0) return null;
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {stats.map((s) => (
+                <div key={s.source} className="group relative rounded-2xl border border-slate-200/60 dark:border-slate-800/50 p-5 bg-white/50 dark:bg-slate-900/40 backdrop-blur-xl transition-all hover:shadow-xl hover:bg-white dark:hover:bg-slate-900/60">
+                    <div className="flex justify-between items-start mb-4">
+                        <div>
+                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{SOURCE_LABELS[s.source] || s.source}</h4>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter">{s.win_rate}%</span>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Win Rate</span>
+                            </div>
+                        </div>
+                        <div className={cn(
+                            "px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border",
+                            s.avg_pnl >= 0 
+                                ? "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/30" 
+                                : "bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800/30"
+                        )}>
+                            {s.avg_pnl > 0 ? '+' : ''}{s.avg_pnl}% Avg
+                        </div>
+                    </div>
+                    
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                            <span>Accuracy Meter</span>
+                            <span className="text-slate-400">{s.won}W / {s.lost}L</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
+                            <div 
+                                className="h-full bg-emerald-500 transition-all duration-1000" 
+                                style={{ width: `${s.win_rate}%` }} 
+                            />
+                            <div 
+                                className="h-full bg-rose-500 transition-all duration-1000" 
+                                style={{ width: `${s.total > 0 ? (s.lost / (s.won + s.lost || 1)) * 100 : 0}%` }} 
+                            />
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{s.active} Active Setups</span>
+                            <div className="flex -space-x-1">
+                                {[...Array(3)].map((_, i) => (
+                                    <div key={i} className={cn("w-1.5 h-1.5 rounded-full border border-white dark:border-slate-900", i < Math.ceil(s.win_rate / 33) ? "bg-indigo-500" : "bg-slate-200 dark:bg-slate-700")} />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 function UnifiedSignalCard({ 
     symbol, 
     direction, 
@@ -139,7 +212,10 @@ function UnifiedSignalCard({
     strength, 
     reason, 
     tagline, 
-    conviction, 
+    conviction,
+    targetPrice,
+    stopLoss,
+    status,
     onSelect 
 }: { 
     symbol: string; 
@@ -151,12 +227,19 @@ function UnifiedSignalCard({
     reason?: string; 
     tagline?: string; 
     conviction?: number;
+    targetPrice?: number;
+    stopLoss?: number;
+    status?: 'ACTIVE' | 'WON' | 'LOST' | 'CLOSED_MANUAL';
     onSelect: (s: { symbol: string; ltp: number; strength: number; direction: 'BUY' | 'SELL' }) => void;
 }) {
     const freshness = getFreshness(date);
     const action = getActionability(ltp, currentPrice, direction);
     const change = currentPrice ? ((currentPrice - ltp) / ltp) * 100 : null;
-    const isSuccess = currentPrice && ((direction === 'BUY' && change! > 0) || (direction === 'SELL' && change! < 0));
+    const isSuccess = status === 'WON' || (currentPrice && ((direction === 'BUY' && change! > 0) || (direction === 'SELL' && change! < 0)));
+    
+    // Override action label entirely if signal has historically closed
+    const resolvedActionLabel = status === 'WON' ? 'Target Hit' : status === 'LOST' ? 'Stopped Out' : action?.label;
+    const resolvedActionColor = status === 'WON' ? 'bg-emerald-500 text-white' : status === 'LOST' ? 'bg-rose-500 text-white' : action?.color;
 
     return (
         <div 
@@ -164,7 +247,7 @@ function UnifiedSignalCard({
             className={cn(
                 'group relative rounded-2xl border border-l-[6px] p-5 cursor-pointer transition-all hover:shadow-2xl hover:-translate-y-0.5 bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6',
                 direction === 'BUY' ? 'border-l-emerald-500 border-slate-200/60 dark:border-emerald-500/30' : 'border-l-rose-500 border-slate-200/60 dark:border-rose-500/30',
-                action && action.status !== 'valid' && 'opacity-60 hover:opacity-100' // Dim missed/invalidated signals natively
+                (status === 'LOST' || (action && action.status !== 'valid' && status !== 'WON')) && 'opacity-60 hover:opacity-100' // Dim missed/invalidated signals natively
             )}>
             
             <div className="flex items-center gap-5 w-44 shrink-0">
@@ -195,15 +278,31 @@ function UnifiedSignalCard({
 
             <div className="shrink-0 text-right h-full flex items-center gap-6">
                 
+                {/* Levels Box */}
+                {(targetPrice || stopLoss) && (
+                    <div className="hidden xl:flex flex-col items-end justify-center pr-6 mr-2 border-r border-slate-200 dark:border-slate-800 space-y-1">
+                        {targetPrice && (
+                            <div className="text-[9px] font-black font-mono text-emerald-600 dark:text-emerald-400/80 uppercase tracking-widest flex items-center gap-1.5">
+                                TP <span className="text-xs">Rs. {targetPrice.toFixed(0)}</span>
+                            </div>
+                        )}
+                        {stopLoss && (
+                            <div className="text-[9px] font-black font-mono text-rose-600 dark:text-rose-400/80 uppercase tracking-widest flex items-center gap-1.5">
+                                SL <span className="text-xs">Rs. {stopLoss.toFixed(0)}</span>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Performance Box */}
                 {currentPrice && change !== null ? (
                     <div className="flex flex-col items-center gap-1">
                         <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold tabular-nums border", isSuccess ? "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/30" : "bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800/30")}>
                             {change > 0 ? '+' : ''}{change.toFixed(1)}%
                         </span>
-                        {action && (
-                            <span className={cn("px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border", action.color)}>
-                                {action.label}
+                        {resolvedActionLabel && (
+                            <span className={cn("px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border", resolvedActionColor)}>
+                                {resolvedActionLabel}
                             </span>
                         )}
                     </div>
@@ -263,6 +362,11 @@ function AllSourcesView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
                     for (const sig of genRes.data as GeneratedSignal[]) {
                         const ltp = parseFloat(sig.ltp) || 0;
                         const u = upsert(sig.symbol, sig.signal, ltp);
+                        
+                        // Push up the tracking fields to Unified Signal
+                        if (sig.target_price) u.target_price = sig.target_price;
+                        if (sig.stop_loss_price) u.stop_loss_price = sig.stop_loss_price;
+                        if (sig.status) u.status = sig.status;
 
                         if (sig.source === 'SMART_MONEY') {
                             u.smartMoney = {
@@ -411,6 +515,9 @@ function AllSourcesView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
                             conviction={u.conviction}
                             reason={u.smartMoney?.rationale || u.whale?.reason || u.strategy?.names.join(' · ') || 'System Breakout'}
                             tagline={u.smartMoney?.tier || (u.strategy ? `${u.strategy.count} Strategies` : 'Whale Accumulation')}
+                            targetPrice={u.target_price}
+                            stopLoss={u.stop_loss_price}
+                            status={u.status}
                             onSelect={onSelect}
                         />
                     ))}
@@ -487,10 +594,15 @@ function SmartMoneyView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
                                 symbol={sig.symbol}
                                 direction={sig.signal}
                                 ltp={parseFloat(sig.ltp) || 0}
+                                currentPrice={liveMarketMap[sig.symbol]}
+                                date={sig.generated_date}
                                 strength={sig.strength}
                                 reason={sig.rationale}
                                 tagline={sig.signal_tier}
                                 conviction={sig.signal_tier === 'Platinum Buy' ? 3 : sig.signal_tier === 'Gold Signal' ? 2 : 1}
+                                targetPrice={sig.target_price}
+                                stopLoss={sig.stop_loss_price}
+                                status={sig.status}
                                 onSelect={onSelect}
                             />
                         ))}
@@ -649,6 +761,9 @@ function WhaleWatchView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
                             strength={sig.strength}
                             reason={sig.rationale}
                             tagline={SOURCE_LABELS[sig.source]}
+                            targetPrice={sig.target_price}
+                            stopLoss={sig.stop_loss_price}
+                            status={sig.status}
                             onSelect={onSelect}
                         />
                     ))}
@@ -690,8 +805,10 @@ export default function IntelHubClient() {
     const [selectedSignal, setSelectedSignal] = useState<{ symbol: string; ltp: number; strength: number; direction: 'BUY' | 'SELL' } | null>(null);
     const [liveMarketMap, setLiveMarketMap] = useState<Record<string, number>>({});
     const [showHistorical, setShowHistorical] = useState(false);
+    const [performance, setPerformance] = useState<EnginePerformance[]>([]);
 
     useEffect(() => {
+        // Fetch live prices
         api.get('/api/stocks/summary/').then(res => {
             const d = res.data;
             const map: Record<string, number> = {};
@@ -700,6 +817,11 @@ export default function IntelHubClient() {
             });
             setLiveMarketMap(map);
         }).catch(err => console.error("Failed fetching summary for live prices", err));
+
+        // Fetch engine performance
+        api.get('/api/stocks/generated-signals/performance/')
+            .then(res => setPerformance(res.data || []))
+            .catch(err => console.error("Failed fetching performance stats", err));
     }, []);
 
     return (
@@ -747,11 +869,14 @@ export default function IntelHubClient() {
                                 className={cn(
                                     "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
                                     showHistorical ? "translate-x-2" : "-translate-x-2"
-                                )} 
+                                ) || ""} 
                             />
                         </button>
                     </div>
                 </div>
+
+                {/* Performance Dashboard */}
+                <SignalPerformanceStats stats={performance} />
 
                 {/* Main Content Area with staggered animation */}
                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-700">
