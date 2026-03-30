@@ -717,7 +717,9 @@ class AccumulationMixin(viewsets.ViewSet):
                 if not top_brokers: 
                     return Response({
                         'data': [], 
+                        'history': [],
                         'brokers': [],
+                        'top_brokers': [],
                         'buy_leaders': [],
                         'sell_leaders': []
                     })
@@ -826,7 +828,9 @@ class AccumulationMixin(viewsets.ViewSet):
             sell_leaders.append(l_copy)
 
         return Response({
+            'data': sorted_data,
             'history': sorted_data,
+            'brokers': top_brokers,
             'top_brokers': top_brokers,
             'buy_leaders': buy_leaders,
             'sell_leaders': sell_leaders

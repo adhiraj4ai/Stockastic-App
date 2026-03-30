@@ -35,6 +35,7 @@ import { FibonacciRetracement } from '@/components/ticker/FibonacciRetracement';
 import TechnicalAnalysis from '@/components/ticker/TechnicalAnalysis';
 import IndicatorTooltip from '@/components/ticker/IndicatorTooltip';
 import TickerAccumulation from '@/components/ticker/TickerAccumulation';
+import TickerSignals from '@/components/ticker/TickerSignals';
 
 interface StockDetailData {
     company: {
@@ -121,6 +122,8 @@ export default function StockDetailPage() {
     const [txnType, setTxnType] = useState('BUY');
     const [error, setError] = useState<string | null>(null);
     const [accounts, setAccounts] = useState<any[]>([]);
+    const [portfolioPosition, setPortfolioPosition] = useState<any>(null);
+    const [watchlistItem, setWatchlistItem] = useState<any>(null);
     const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set([
         'section-balance_sheet',
         'section-profit_loss',
@@ -148,6 +151,29 @@ export default function StockDetailPage() {
         };
         fetchAccounts();
     }, []);
+
+    // Fetch portfolio position and watchlist status for this ticker
+    useEffect(() => {
+        if (!ticker) return;
+        const fetchContext = async () => {
+            try {
+                // Portfolio: check if user holds this stock
+                const portfolioRes = await api.get('/api/stocks/portfolio/');
+                const items = portfolioRes.data?.results ?? portfolioRes.data ?? [];
+                const match = items.find((p: any) => p.ticker?.toUpperCase() === ticker.toUpperCase());
+                setPortfolioPosition(match || null);
+            } catch (_) { setPortfolioPosition(null); }
+
+            try {
+                // Watchlist: check if user is watching this stock
+                const watchlistRes = await api.get('/api/stocks/watchlist/');
+                const items = watchlistRes.data?.results ?? watchlistRes.data ?? [];
+                const match = items.find((w: any) => w.ticker?.toUpperCase() === ticker.toUpperCase());
+                setWatchlistItem(match || null);
+            } catch (_) { setWatchlistItem(null); }
+        };
+        fetchContext();
+    }, [ticker]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -620,6 +646,8 @@ export default function StockDetailPage() {
                                 riskLevel={intelligence.riskLevel}
                                 macd={intelligence.macd}
                                 reason={intelligence.reason}
+                                portfolioPosition={portfolioPosition}
+                                watchlistItem={watchlistItem}
                             />
                         </div>
                         <div className="lg:col-span-8">
@@ -639,6 +667,7 @@ export default function StockDetailPage() {
                                 <div className="flex items-center gap-6">
                                     <TabsList className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 h-10 rounded-xl shadow-sm">
                                         <TabsTrigger value="technical" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Technical Analysis</TabsTrigger>
+                                        <TabsTrigger value="signals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all">Signals</TabsTrigger>
                                         <TabsTrigger value="fundamentals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Fundamentals</TabsTrigger>
                                         <TabsTrigger value="accumulation" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all">Accumulation</TabsTrigger>
                                     </TabsList>
@@ -650,6 +679,10 @@ export default function StockDetailPage() {
                                     <TechnicalAnalysis symbol={ticker} data={data} history={history} />
                                 </TabsContent>
 
+
+                                <TabsContent value="signals" className="mt-0">
+                                    <TickerSignals symbol={ticker} />
+                                </TabsContent>
 
                                 <TabsContent value="fundamentals" className="mt-0 space-y-8">
                                     {/* Fundamental Benchmarks */}

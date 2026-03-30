@@ -1,9 +1,26 @@
 'use client';
 
-import { BrainCircuit, Info, ShieldCheck, AlertTriangle, Zap, ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown } from 'lucide-react';
+import { BrainCircuit, Info, ShieldCheck, AlertTriangle, Zap, ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Briefcase, Eye, Star, Target } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { formatRupees } from '@/lib/formatters';
+
+interface PortfolioPosition {
+    ticker: string;
+    quantity: number;
+    buy_price: number;
+    wacc: number;
+    stop_loss_price?: number | null;
+    target_price?: number | null;
+    tags?: string[];
+}
+
+interface WatchlistInfo {
+    ticker: string;
+    target_price?: number | null;
+    stop_loss_price?: number | null;
+    notes?: string | null;
+}
 
 interface IntelligenceGlassProps {
     symbol?: string;
@@ -17,6 +34,8 @@ interface IntelligenceGlassProps {
     riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
     macd: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
     reason?: string;
+    portfolioPosition?: PortfolioPosition | null;
+    watchlistItem?: WatchlistInfo | null;
 }
 
 export function IntelligenceGlass({
@@ -30,7 +49,9 @@ export function IntelligenceGlass({
     technicalScore,
     riskLevel,
     macd,
-    reason
+    reason,
+    portfolioPosition,
+    watchlistItem,
 }: IntelligenceGlassProps) {
     const combinedScore = (fundamentalScore + technicalScore) / 2;
     const isPositive = (change || 0) >= 0;
@@ -44,8 +65,13 @@ export function IntelligenceGlass({
 
     const verdict = getVerdict();
 
+    // Portfolio P&L calculations
+    const portfolioPnl = portfolioPosition && price
+        ? ((price - portfolioPosition.wacc) / portfolioPosition.wacc) * 100
+        : null;
+
     return (
-        <div className="glass-card-light rounded-2xl border dark:border-slate-800/50 overflow-hidden p-6 space-y-6 h-full relative group">
+        <div className="glass-card-light rounded-2xl border dark:border-slate-800/50 overflow-hidden p-6 space-y-5 h-full relative group">
             <div className="absolute top-0 right-0 p-4 opacity-50">
                 <Zap size={20} className="text-slate-200 group-hover:text-amber-500/40 transition-colors" />
             </div>
@@ -85,7 +111,6 @@ export function IntelligenceGlass({
                         </div>
                     </div>
                 ) : (
-                    // Fallback for loading/no data - just Verdict
                     <div className="flex items-center gap-3">
                         <div className={cn("p-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm", verdict.color)}>
                             <verdict.icon size={22} />
@@ -97,6 +122,51 @@ export function IntelligenceGlass({
                     </div>
                 )}
             </div>
+
+            {/* Portfolio / Watchlist Status Badges */}
+            {(portfolioPosition || watchlistItem) && (
+                <div className="flex flex-wrap gap-2">
+                    {portfolioPosition && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-50/80 dark:bg-indigo-900/20 border border-indigo-200/60 dark:border-indigo-800/40 w-full">
+                            <Briefcase size={14} className="text-indigo-500 shrink-0" />
+                            <div className="flex items-center gap-3 flex-wrap text-[11px] font-bold flex-1 min-w-0">
+                                <span className="text-indigo-700 dark:text-indigo-300">In Portfolio</span>
+                                <span className="text-slate-500 dark:text-slate-400 font-mono">{portfolioPosition.quantity} units</span>
+                                <span className="text-slate-500 dark:text-slate-400 font-mono">@ {formatRupees(portfolioPosition.wacc)}</span>
+                                {portfolioPnl !== null && (
+                                    <span className={cn(
+                                        "px-1.5 py-0.5 rounded font-mono font-black text-[10px]",
+                                        portfolioPnl >= 0
+                                            ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+                                            : "bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400"
+                                    )}>
+                                        {portfolioPnl >= 0 ? '+' : ''}{portfolioPnl.toFixed(2)}%
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {watchlistItem && !portfolioPosition && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50/80 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-800/40 w-full">
+                            <Eye size={14} className="text-amber-500 shrink-0" />
+                            <div className="flex items-center gap-3 flex-wrap text-[11px] font-bold flex-1 min-w-0">
+                                <span className="text-amber-700 dark:text-amber-300">On Watchlist</span>
+                                {watchlistItem.target_price && (
+                                    <span className="text-emerald-600 dark:text-emerald-400 font-mono flex items-center gap-1">
+                                        <Target size={10} /> {formatRupees(watchlistItem.target_price)}
+                                    </span>
+                                )}
+                                {watchlistItem.stop_loss_price && (
+                                    <span className="text-rose-600 dark:text-rose-400 font-mono flex items-center gap-1">
+                                        SL {formatRupees(watchlistItem.stop_loss_price)}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Data Layer */}
             <div className="grid grid-cols-1 gap-4">
