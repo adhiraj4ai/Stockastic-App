@@ -587,6 +587,120 @@ def analyze_activity(request):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
+def batch_indicators(request):
+    """
+    Calculate current technical indicators (RSI, MACD, ROC, Trends) for a list of symbols.
+    Query param: ?symbols=AAPL,MSFT,GOOG
+    """
+    symbols_str = request.GET.get('symbols', '')
+    if not symbols_str:
+        return Response({})
+    
+    symbols = [s.strip().upper() for s in symbols_str.split(',') if s.strip()]
+    if not symbols:
+        return Response({})
+
+    # 1. Determine Latest Date
+    latest_date_data = DailyStockPrice.objects.values('date').annotate(
+        count=Count('ticker')
+    ).filter(count__gt=10).order_by('-date').first()
+    
+    latest_date = latest_date_data['date'] if latest_date_data else None
+    if not latest_date:
+        return Response({})
+
+    # Fetch history for indicators (at least 45 days)
+    start_date = latest_date - datetime.timedelta(days=60)
+    prices_qs = DailyStockPrice.objects.filter(
+        ticker__in=symbols,
+        date__gte=start_date,
+        date__lte=latest_date
+    ).values('ticker', 'date', 'close', 'prev_close', 'open').order_by('date')
+
+    import pandas as pd
+    try:
+        import pandas_ta as ta
+    except ImportError:
+        ta = None
+
+    results = {}
+    if not prices_qs.exists():
+        return Response({})
+
+    df_all = pd.DataFrame(list(prices_qs))
+    if df_all.empty:
+        return Response({})
+
+    for ticker in symbols:
+        t_df = df_all[df_all['ticker'] == ticker].copy()
+        if t_df.empty or len(t_df) < 5:
+            continue
+        
+        t_df.set_index('date', inplace=True)
+        t_df['close'] = pd.to_numeric(t_df['close'])
+        
+        # Latest data point
+        latest = t_df.iloc[-1]
+        close = float(latest['close'])
+        
+        # 1. Trends (% Change)
+        # 5D Trend
+        p5d = float(t_df.iloc[-5]['close']) if len(t_df) >= 5 else float(t_df.iloc[0]['close'])
+        trend5d = ((close - p5d) / p5d * 100) if p5d > 0 else 0
+        
+        # 10D Trend
+        p10d = float(t_df.iloc[-10]['close']) if len(t_df) >= 10 else float(t_df.iloc[0]['close'])
+        trend10d = ((close - p10d) / p10d * 100) if p10d > 0 else 0
+        
+        # 1M (20 Trading Days)
+        p1m = float(t_df.iloc[-20]['close']) if len(t_df) >= 20 else float(t_df.iloc[0]['close'])
+        trend1m = ((close - p1m) / p1m * 100) if p1m > 0 else 0
+
+        # Technicals (using pandas_ta if available)
+        rsi_val = None
+        macd_val = None
+        macd_signal = None
+        macd_hist = None
+        roc14_val = None
+
+        if ta and len(t_df) >= 30:
+            try:
+                # RSI (14)
+                rsi = t_df.ta.rsi(length=14)
+                if rsi is not None and not rsi.empty:
+                    rsi_val = round(rsi.iloc[-1], 2)
+                
+                # MACD (12, 26, 9)
+                macd = t_df.ta.macd(fast=12, slow=26, signal=9)
+                if macd is not None and not macd.empty:
+                    macd_val = round(macd.iloc[-1, 0], 2) # MACD
+                    macd_hist = round(macd.iloc[-1, 1], 2) # Histogram
+                    macd_signal = round(macd.iloc[-1, 2], 2) # Signal
+                
+                # ROC (14)
+                roc = t_df.ta.roc(length=14)
+                if roc is not None and not roc.empty:
+                    roc14_val = round(roc.iloc[-1], 2)
+            except:
+                pass
+
+        results[ticker] = {
+            'trends': {
+                '5d': round(trend5d, 2),
+                '10d': round(trend10d, 2),
+                '1m': round(trend1m, 2),
+            },
+            'rsi': rsi_val,
+            'macd': macd_val,
+            'macd_signal': macd_signal,
+            'macd_hist': macd_hist,
+            'roc': roc14_val,
+        }
+
+    return Response(results)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
 def sector_history(request, sector_name):
     queryset = DailyStockPrice.objects.all()
     

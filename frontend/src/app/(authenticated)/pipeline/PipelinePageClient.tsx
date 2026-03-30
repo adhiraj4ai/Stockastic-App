@@ -4,18 +4,21 @@ import { useState, useEffect, useRef } from 'react';
 import api from '@/lib/api';
 import {
     Play,
+    TrendingUp, TrendingDown, Activity, DollarSign, Zap, BarChart3, Globe, ShieldAlert,
+    HeartPulse, Activity as ActivityIcon, LineChart, LayoutDashboard, Search, Clock,
+    Command as CommandIcon, Wallet, Lightbulb, MessageSquare, Landmark, Building2,
+    Droplets, Boxes, Factory, ShoppingBag, Hotel, Plane, Phone, HardHat, ShieldCheck,
+    Coins, PieChart, Flame, Terminal,
     RefreshCw,
     CheckCircle2,
     AlertCircle,
-    Clock,
     Server,
-    Activity,
     UploadCloud,
     FileJson,
     Cpu,
-    Zap,
     History,
-    Radar
+    Radar,
+    Gauge
 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from "@/components/ui/button";
@@ -74,12 +77,18 @@ export default function PipelinePage() {
     const [intelLogs, setIntelLogs] = useState<LogEntry[]>([]);
     const [showIntelLogs, setShowIntelLogs] = useState(false);
 
+    // Signal Evaluation State
+    const [evaluationStatus, setEvaluationStatus] = useState<'idle' | 'running' | 'completed' | 'error'>('idle');
+    const [evaluationLogs, setEvaluationLogs] = useState<LogEntry[]>([]);
+    const [showEvaluationLogs, setShowEvaluationLogs] = useState(false);
+
     // Abort controllers for stopping processes
     const indicatorAbortController = useRef<AbortController | null>(null);
     const optimizationAbortController = useRef<AbortController | null>(null);
     const signalAbortController = useRef<AbortController | null>(null);
     const brokerAbortController = useRef<AbortController | null>(null);
     const intelAbortController = useRef<AbortController | null>(null);
+    const evaluationAbortController = useRef<AbortController | null>(null);
 
     // Track log IDs for abort functionality
     const [indicatorLogId, setIndicatorLogId] = useState<number | null>(null);
@@ -87,6 +96,7 @@ export default function PipelinePage() {
     const [signalLogId, setSignalLogId] = useState<number | null>(null);
     const [brokerLogId, setBrokerLogId] = useState<number | null>(null);
     const [intelLogId, setIntelLogId] = useState<number | null>(null);
+    const [evaluationLogId, setEvaluationLogId] = useState<number | null>(null);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -574,6 +584,90 @@ export default function PipelinePage() {
         }
     };
 
+    const handleRunEvaluation = async () => {
+        if (evaluationStatus === 'running') return;
+
+        setEvaluationStatus('running');
+        setEvaluationLogs([]);
+        setShowEvaluationLogs(true);
+
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const url = `${apiUrl}/api/stocks/pipeline/trigger_evaluation_stream/`;
+        const token = localStorage.getItem('access_token');
+
+        evaluationAbortController.current = new AbortController();
+
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+                signal: evaluationAbortController.current.signal,
+            });
+
+            if (!response.ok) {
+                setEvaluationStatus('error');
+                toast.error(`Connection failed: ${response.statusText}`);
+                return;
+            }
+
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+
+            if (!reader) {
+                setEvaluationStatus('error');
+                return;
+            }
+
+            let buffer = '';
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine || !trimmedLine.startsWith('data: ')) continue;
+
+                    try {
+                        const data = JSON.parse(trimmedLine.substring(6));
+
+                        if (data.type === 'init') {
+                            setEvaluationLogId(data.log_id);
+                            continue;
+                        }
+
+                        if (data.type === 'done') {
+                            setEvaluationStatus('completed');
+                            toast.success("Signal evaluation complete!");
+                            fetchHistory();
+                            return;
+                        }
+                        if (data.type === 'error') {
+                            setEvaluationStatus('error');
+                            toast.error(data.message);
+                            return;
+                        }
+                        if (data.type === 'log' || data.type === 'status') {
+                            setEvaluationLogs(prev => [...prev, {
+                                type: data.type as any,
+                                message: data.message,
+                                timestamp: new Date()
+                            }]);
+                        }
+                    } catch (e) { }
+                }
+            }
+        } catch (error: any) {
+            if (error.name === 'AbortError') return;
+            setEvaluationStatus('error');
+            toast.error("Connection lost");
+        }
+    };
+
     const handleStopIntelSignals = async () => {
         if (intelAbortController.current) {
             intelAbortController.current.abort();
@@ -694,6 +788,24 @@ export default function PipelinePage() {
         }
     };
 
+    const handleStopEvaluation = async () => {
+        if (evaluationAbortController.current) {
+            evaluationAbortController.current.abort();
+            evaluationAbortController.current = null;
+            setEvaluationStatus('idle');
+
+            if (evaluationLogId) {
+                try {
+                    await api.post('/api/stocks/pipeline/abort_log/', { log_id: evaluationLogId });
+                    fetchHistory();
+                } catch (err) {
+                    console.error('Failed to mark log as aborted:', err);
+                }
+            }
+            toast.info("Stopped signal evaluation");
+        }
+    };
+
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
         accept: {
@@ -711,7 +823,7 @@ export default function PipelinePage() {
                     <div className="space-y-3">
                         <div className="flex items-center gap-3 mb-2 px-2">
                             <Activity className="w-5 h-5 text-blue-600 dark:text-indigo-400" />
-                            <h2 className="font-bold text-gray-900 dark:text-slate-100 text-lg uppercase tracking-widest text-[11px]">Active Pipeline Steps</h2>
+                            <h2 className="font-bold text-gray-900 dark:text-slate-100 text-lg text-[11px]">Active pipeline steps</h2>
                         </div>
 
                         {/* Step 1: Floorsheet */}
@@ -728,36 +840,35 @@ export default function PipelinePage() {
                                 <div className="flex items-start gap-4">
                                     <div className={cn(
                                         "p-3 rounded-2xl transition-colors",
-                                        isDragActive ? "bg-blue-600 text-white" : "bg-gray-50 dark:bg-slate-800 text-gray-400 dark:text-slate-500 group-hover:bg-blue-50 dark:group-hover:bg-indigo-900/30 group-hover:text-blue-500 dark:group-hover:text-indigo-400"
+                                        isDragActive ? "bg-blue-600 text-white" : "bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 group-hover:bg-blue-50 dark:group-hover:bg-indigo-900/30 group-hover:text-blue-500 dark:group-hover:text-indigo-400"
                                     )}>
                                         <FileJson className="w-6 h-6" />
                                     </div>
                                     <div className="space-y-1">
-                                        <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100">1. Upload Floorsheet</h3>
-                                        <p className="text-sm text-gray-500 dark:text-slate-400">Drag and drop the latest floorsheet JSON to update accumulation data.</p>
+                                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">1. Upload Floorsheet</h3>
+                                        <p className="text-[10px] text-indigo-600/70 dark:text-indigo-400/60 font-medium leading-relaxed">Drag and drop the latest floorsheet JSON to update accumulation data.</p>
                                         {uploading && (
-                                            <div className="flex items-center gap-2 mt-4 text-sm font-bold text-blue-600 dark:text-indigo-400 animate-pulse">
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                                PROCESSING JSON...
-                                            </div>
+                                            <div className="flex items-center gap-2 mb-2 p-2 rounded-lg bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5">
+                                            <Terminal size={12} className="text-indigo-500" />
+                                            <span className="text-[10px] font-black tracking-widest text-indigo-600/70 dark:text-indigo-400/60 uppercase">Process output</span>
+                                        </div>
                                         )}
                                     </div>
                                 </div>
                             </div>
                         </Card>
 
-                        {/* Step 2: Daily Prices (Simplified View) */}
-                        <div className="group bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 p-3 space-y-2 shadow-sm hover:border-blue-200 dark:hover:border-indigo-700 transition-colors">
+                        {/* Step 2: Daily Prices */}
+                        <div className="group bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 space-y-4 shadow-sm hover:border-blue-200 dark:hover:border-indigo-700 transition-colors">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-gray-50 dark:bg-slate-800 text-gray-400 dark:text-slate-500 group-hover:bg-blue-50 dark:group-hover:bg-indigo-900/30 group-hover:text-blue-500 dark:group-hover:text-indigo-400 transition-colors">
+                                <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 group-hover:bg-blue-50 dark:group-hover:bg-indigo-900/30 group-hover:text-blue-500 dark:group-hover:text-indigo-400 transition-colors">
                                     <Clock className="w-5 h-5" />
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="font-bold text-gray-900 dark:text-slate-100 text-sm">2. Sync Daily Prices</h3>
-                                    <p className="text-xs text-gray-500 dark:text-slate-400">Ingest previous day market close data.</p>
+                                    <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">2. Sync Daily Prices</h3>
+                                    <p className="text-[10px] text-indigo-600/70 dark:text-indigo-400/60 font-medium leading-relaxed">Ingest previous day market close data from GitHub or manual upload.</p>
                                 </div>
                             </div>
-
                             <DailyPriceUpload onSuccess={fetchHistory} />
                         </div>
 
@@ -825,13 +936,26 @@ export default function PipelinePage() {
                             showLogs={showIntelLogs}
                             onToggleLogs={() => setShowIntelLogs(!showIntelLogs)}
                         />
+
+                        {/* Step 8: Signal Evaluation */}
+                        <PipelineStep
+                            title="8. Evaluate Active Signals"
+                            description="Compare active signals against latest prices to mark them as WON or LOST and update accuracy metrics."
+                            status={evaluationStatus}
+                            icon={<Gauge className="w-5 h-5" />}
+                            onRun={handleRunEvaluation}
+                            onStop={handleStopEvaluation}
+                            logs={evaluationLogs}
+                            showLogs={showEvaluationLogs}
+                            onToggleLogs={() => setShowEvaluationLogs(!showEvaluationLogs)}
+                        />
                     </div>
 
                     {/* Upload History */}
                     <div className="space-y-6">
                         <div className="flex items-center gap-3 mb-2 px-2">
                             <History className="w-5 h-5 text-blue-600 dark:text-indigo-400" />
-                            <h2 className="font-bold text-gray-900 dark:text-slate-100 text-lg uppercase tracking-widest text-[11px]">Pipeline History</h2>
+                            <h2 className="font-bold text-gray-900 dark:text-slate-100 text-lg text-[11px]">Pipeline history</h2>
                         </div>
 
                         <UploadHistoryTable
@@ -883,7 +1007,7 @@ function DailyPriceUpload({ onSuccess }: { onSuccess?: () => void }) {
         <div className="space-y-4">
             <div className="flex flex-col gap-3 bg-gray-50/50 dark:bg-slate-800/50 p-4 rounded-xl border border-gray-100 dark:border-slate-800">
                 <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">Trading Date</label>
+                    <label className="text-xs font-bold text-gray-400 dark:text-slate-500 tracking-wider">Trading date</label>
                 </div>
                 <div className="flex gap-2">
                     <Popover>

@@ -17,7 +17,7 @@ export const FundamentalBenchmarks: React.FC<FundamentalBenchmarksProps> = ({ fu
                 </div>
                 <div>
                     <h4 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Fundamental Benchmarks</h4>
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">Sector-wide comparison</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold tracking-widest">Sector-wide comparison</p>
                 </div>
             </div>
 
@@ -25,9 +25,9 @@ export const FundamentalBenchmarks: React.FC<FundamentalBenchmarksProps> = ({ fu
                 <table className="w-full text-sm">
                     <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-800">
                         <tr>
-                            <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[9px]">Metric</th>
-                            <th className="px-6 py-4 text-center font-bold text-slate-400 uppercase tracking-widest text-[9px]">Value</th>
-                            <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[9px]">Sector Range (Low - High)</th>
+                            <th className="px-6 py-4 text-left font-bold text-slate-400 tracking-widest text-[9px]">Metric</th>
+                            <th className="px-6 py-4 text-center font-bold text-slate-400 tracking-widest text-[9px]">Value</th>
+                            <th className="px-6 py-4 text-left font-bold text-slate-400 tracking-widest text-[9px]">Sector range (Low - High)</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/50 dark:bg-slate-900/50">
@@ -57,14 +57,14 @@ export const FundamentalBenchmarks: React.FC<FundamentalBenchmarksProps> = ({ fu
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-4">
                                             <div className="flex flex-col min-w-[40px]">
-                                                <span className="text-xs text-rose-500 dark:text-rose-400 font-bold uppercase">{indicator?.sector_low || '-'}</span>
+                                                <span className="text-xs text-rose-500 dark:text-rose-400 font-bold">{indicator?.sector_low || '-'}</span>
                                                 <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono leading-tight">{indicator?.sector_low_ticker || ''}</span>
                                             </div>
                                             <div className="flex-1 h-1 bg-slate-100 dark:bg-slate-800 rounded-full relative">
                                                 <div className="absolute top-1/2 left-1/4 w-1.5 h-1.5 -translate-y-1/2 bg-blue-500 rounded-full shadow-sm" />
                                             </div>
                                             <div className="flex flex-col items-end min-w-[40px]">
-                                                <span className="text-xs text-emerald-500 dark:text-emerald-400 font-bold uppercase">{indicator?.sector_high || '-'}</span>
+                                                <span className="text-xs text-emerald-500 dark:text-emerald-400 font-bold">{indicator?.sector_high || '-'}</span>
                                                 <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono leading-tight">{indicator?.sector_high_ticker || ''}</span>
                                             </div>
                                         </div>

@@ -15,7 +15,7 @@ export const TechnicalDivergence: React.FC<TechnicalDivergenceProps> = ({ techni
                 </div>
                 <div>
                     <h4 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Technical Divergence</h4>
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">Relative strength mapping</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold tracking-widest">Relative strength mapping</p>
                 </div>
             </div>
 
@@ -42,9 +42,9 @@ export const TechnicalDivergence: React.FC<TechnicalDivergenceProps> = ({ techni
                                     <table className="w-full text-sm">
                                         <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-800 backdrop-blur-sm sticky top-0 z-10">
                                             <tr>
-                                                <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[9px]">Indicator</th>
-                                                <th className="px-6 py-4 text-center font-bold text-slate-400 uppercase tracking-widest text-[9px]">Value</th>
-                                                <th className="px-6 py-4 text-left font-bold text-slate-400 uppercase tracking-widest text-[9px]">Sector Range (Low - High)</th>
+                                                <th className="px-6 py-4 text-left font-bold text-slate-400 tracking-widest text-[9px]">Indicator</th>
+                                                <th className="px-6 py-4 text-center font-bold text-slate-400 tracking-widest text-[9px]">Value</th>
+                                                <th className="px-6 py-4 text-left font-bold text-slate-400 tracking-widest text-[9px]">Sector range (Low - High)</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/50 dark:bg-slate-900/50">
@@ -59,14 +59,14 @@ export const TechnicalDivergence: React.FC<TechnicalDivergenceProps> = ({ techni
                                                             {indicator.sector_high !== '-' ? (
                                                                 <div className="flex items-center gap-4">
                                                                     <div className="flex flex-col min-w-[40px]">
-                                                                        <span className="text-xs text-rose-500 font-bold uppercase">{indicator.sector_low}</span>
+                                                                        <span className="text-xs text-rose-500 font-bold">{indicator.sector_low}</span>
                                                                     </div>
                                                                     <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full relative overflow-hidden">
                                                                         <div className="absolute inset-0 bg-gradient-to-r from-rose-100 dark:from-rose-900/20 via-slate-100 dark:via-slate-800 to-emerald-100 dark:to-emerald-900/20 opacity-50"></div>
                                                                         <div className="absolute top-0 bottom-0 w-1 bg-slate-400 dark:bg-slate-500 rounded-full left-1/2 -translate-x-1/2 ring-2 ring-white dark:ring-slate-900"></div>
                                                                     </div>
                                                                     <div className="flex flex-col items-end min-w-[40px]">
-                                                                        <span className="text-xs text-emerald-500 font-bold uppercase">{indicator.sector_high}</span>
+                                                                        <span className="text-xs text-emerald-500 font-bold">{indicator.sector_high}</span>
                                                                     </div>
                                                                 </div>
                                                             ) : (

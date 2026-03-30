@@ -351,13 +351,13 @@ export default function SettingsPage() {
                         <TabsList className="bg-white dark:bg-slate-900 p-1 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm mb-8 h-auto flex flex-wrap">
                             <TabsTrigger
                                 value="general"
-                                className="rounded-xl data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 px-6 py-3 font-bold text-xs uppercase tracking-widest transition-all"
+                                className="rounded-xl data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 px-6 py-3 font-bold text-xs capitalize transition-all"
                             >
                                 <User size={14} className="mr-2" /> General
                             </TabsTrigger>
                             <TabsTrigger
                                 value="security"
-                                className="rounded-xl data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 px-6 py-3 font-bold text-xs uppercase tracking-widest transition-all"
+                                className="rounded-xl data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 px-6 py-3 font-bold text-xs capitalize transition-all"
                             >
                                 <Lock size={14} className="mr-2" /> Security
                             </TabsTrigger>
@@ -382,7 +382,7 @@ export default function SettingsPage() {
                                             </div>
                                         </div>
                                         <h3 className="font-bold text-slate-900 dark:text-slate-100 text-xl">{user?.nickname || user?.username}</h3>
-                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{user?.email}</p>
+                                        <p className="text-xs font-bold text-slate-400 mt-1">{user?.email}</p>
 
                                         <input
                                             type="file"
@@ -394,7 +394,7 @@ export default function SettingsPage() {
                                         <Button
                                             variant="outline"
                                             onClick={triggerFileInput}
-                                            className="mt-6 w-full rounded-xl border-slate-100 dark:border-slate-800 font-bold text-[10px] uppercase tracking-widest"
+                                            className="mt-6 w-full rounded-xl border-slate-100 dark:border-slate-800 font-bold text-[10px]"
                                         >
                                             Change Photo
                                         </Button>
@@ -405,12 +405,12 @@ export default function SettingsPage() {
                                 <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden lg:col-span-2">
                                     <CardHeader className="border-b border-slate-50 dark:border-slate-800 pb-6">
                                         <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 italic">Personal Details</CardTitle>
-                                        <CardDescription className="text-xs font-bold text-slate-400 uppercase tracking-widest">Public identity and contact information</CardDescription>
+                                        <CardDescription className="text-xs font-bold text-slate-400">Public identity and contact information</CardDescription>
                                     </CardHeader>
                                     <CardContent className="p-8 space-y-6">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="space-y-1.5">
-                                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">First Name</label>
+                                                <label className="text-[10px] font-bold text-slate-500 ml-1">First Name</label>
                                                 <Input
                                                     value={user?.first_name || ''}
                                                     onChange={(e) => setUser(prev => prev ? { ...prev, first_name: e.target.value } : null)}
@@ -418,7 +418,7 @@ export default function SettingsPage() {
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
-                                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Last Name</label>
+                                                <label className="text-[10px] font-bold text-slate-500 ml-1">Last Name</label>
                                                 <Input
                                                     value={user?.last_name || ''}
                                                     onChange={(e) => setUser(prev => prev ? { ...prev, last_name: e.target.value } : null)}
@@ -429,7 +429,7 @@ export default function SettingsPage() {
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="space-y-1.5">
-                                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nickname</label>
+                                                <label className="text-[10px] font-bold text-slate-500 ml-1">Nickname</label>
                                                 <Input
                                                     value={user?.nickname || ''}
                                                     onChange={(e) => setUser(prev => prev ? { ...prev, nickname: e.target.value } : null)}
@@ -437,7 +437,7 @@ export default function SettingsPage() {
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
-                                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Phone Number</label>
+                                                <label className="text-[10px] font-bold text-slate-500 ml-1">Phone Number</label>
                                                 <Input
                                                     value={user?.phone_number || ''}
                                                     onChange={(e) => setUser(prev => prev ? { ...prev, phone_number: e.target.value } : null)}
@@ -450,7 +450,7 @@ export default function SettingsPage() {
                                             <Button
                                                 onClick={handleSaveProfile}
                                                 disabled={saving}
-                                                className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-bold px-8 h-12 shadow-lg hover:shadow-xl active:scale-95 transition-all uppercase text-[10px] tracking-widest"
+                                                className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-bold px-8 h-12 shadow-lg hover:shadow-xl active:scale-95 transition-all text-[11px]"
                                             >
                                                 {saving ? 'Saving...' : 'Save Changes'}
                                             </Button>
@@ -467,9 +467,9 @@ export default function SettingsPage() {
                                 <CardHeader className="border-b border-slate-50 dark:border-slate-800 flex flex-row items-center justify-between py-6">
                                     <div>
                                         <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 italic">Two-Factor Authentication</CardTitle>
-                                        <CardDescription className="text-xs font-bold text-slate-400 uppercase tracking-widest">Enhanced account protection</CardDescription>
+                                        <CardDescription className="text-xs font-bold text-slate-400">Enhanced account protection</CardDescription>
                                     </div>
-                                    <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${twoFactorEnabled ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600' : 'bg-slate-50 dark:bg-slate-800 text-slate-400'}`}>
+                                    <div className={`px-4 py-1.5 rounded-full text-[10px] font-black ${twoFactorEnabled ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600' : 'bg-slate-50 dark:bg-slate-800 text-slate-400'}`}>
                                         {twoFactorEnabled ? 'Active' : 'Disabled'}
                                     </div>
                                 </CardHeader>
@@ -483,7 +483,7 @@ export default function SettingsPage() {
                                         {twoFactorEnabled ? (
                                             <Button
                                                 onClick={handleDisable2FA}
-                                                className="bg-rose-50 dark:bg-rose-950/20 text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-xl font-bold px-8 h-12 shadow-none border border-rose-100 dark:border-rose-900/30 uppercase text-[10px] tracking-widest"
+                                                className="bg-rose-50 dark:bg-rose-950/20 text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-xl font-bold px-8 h-12 shadow-none border border-rose-100 dark:border-rose-900/30 text-[11px]"
                                             >
                                                 Disable 2FA
                                             </Button>
@@ -491,7 +491,7 @@ export default function SettingsPage() {
                                             <Button
                                                 onClick={handleSetup2FA}
                                                 disabled={setupLoading}
-                                                className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-bold px-8 h-12 shadow-lg uppercase text-[10px] tracking-widest"
+                                                className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-bold px-8 h-12 shadow-lg text-[11px]"
                                             >
                                                 {setupLoading ? 'Loading...' : 'Enable 2FA'}
                                             </Button>
@@ -502,7 +502,7 @@ export default function SettingsPage() {
                                     {show2faSetup && !twoFactorEnabled && (
                                         <div className="mt-10 p-8 bg-slate-50 dark:bg-slate-950 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col items-center animate-in zoom-in-95 duration-300">
                                             <div className="max-w-xs text-center space-y-6">
-                                                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">Scan this QR Code</h3>
+                                                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">Scan This QR Code</h3>
                                                 <div className="bg-white p-4 rounded-3xl inline-block shadow-inner ring-8 ring-white/50 dark:ring-slate-800/50">
                                                     <img src={qrCode} alt="2FA QR Code" className="w-48 h-48" />
                                                 </div>
@@ -521,13 +521,13 @@ export default function SettingsPage() {
                                                         <Button
                                                             variant="outline"
                                                             onClick={() => setShow2faSetup(false)}
-                                                            className="flex-1 rounded-xl uppercase text-[10px] font-bold"
+                                                            className="flex-1 rounded-xl text-[10px] font-bold"
                                                         >
                                                             Cancel
                                                         </Button>
                                                         <Button
                                                             onClick={handleVerify2FA}
-                                                            className="flex-1 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl uppercase text-[10px] font-bold"
+                                                            className="flex-1 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl text-[10px] font-bold"
                                                         >
                                                             Verify & Enable
                                                         </Button>
@@ -546,7 +546,7 @@ export default function SettingsPage() {
                                         <div className="flex items-center justify-between w-full">
                                             <div>
                                                 <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 italic">Recovery Codes</CardTitle>
-                                                <CardDescription className="text-xs font-bold text-slate-400 uppercase tracking-widest">Backup access for your account</CardDescription>
+                                                <CardDescription className="text-xs font-bold text-slate-400">Backup access for your account</CardDescription>
                                             </div>
                                             <ShieldCheck size={24} className="text-emerald-500" />
                                         </div>
@@ -561,7 +561,7 @@ export default function SettingsPage() {
                                                     onClick={handleFetchRecoveryCodes}
                                                     disabled={fetchingCodes}
                                                     variant="outline"
-                                                    className="rounded-xl font-bold px-8 h-12 uppercase text-[10px] tracking-widest border-slate-200 dark:border-slate-800 flex items-center gap-2"
+                                                    className="rounded-xl font-bold px-8 h-12 text-[11px] border-slate-200 dark:border-slate-800 flex items-center gap-2"
                                                 >
                                                     {fetchingCodes ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Eye size={14} />}
                                                     View Recovery Codes
@@ -577,7 +577,7 @@ export default function SettingsPage() {
                                                     ))}
                                                 </div>
                                                 <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-50 dark:border-slate-800">
-                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                                                    <p className="text-[10px] text-slate-400 font-bold">
                                                         Keep these codes secure. They each work once.
                                                     </p>
                                                     <div className="flex gap-2 w-full md:w-auto">
@@ -585,13 +585,13 @@ export default function SettingsPage() {
                                                             onClick={handleGenerateRecoveryCodes}
                                                             disabled={fetchingCodes}
                                                             variant="outline"
-                                                            className="flex-1 md:flex-none rounded-xl font-bold px-6 h-10 uppercase text-[10px] tracking-widest border-slate-200 dark:border-slate-800 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                                                            className="flex-1 md:flex-none rounded-xl font-bold px-6 h-10 text-[11px] border-slate-200 dark:border-slate-800 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20"
                                                         >
                                                             Regenerate Codes
                                                         </Button>
                                                         <Button
                                                             onClick={() => setShowRecoveryCodes(false)}
-                                                            className="flex-1 md:flex-none bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-bold px-6 h-10 uppercase text-[10px] tracking-widest"
+                                                            className="flex-1 md:flex-none bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-bold px-6 h-10 text-[11px]"
                                                         >
                                                             Hide Codes
                                                         </Button>
@@ -607,12 +607,12 @@ export default function SettingsPage() {
                             <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
                                 <CardHeader className="border-b border-slate-50 dark:border-slate-800 py-6">
                                     <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 italic">Update Password</CardTitle>
-                                    <CardDescription className="text-xs font-bold text-slate-400 uppercase tracking-widest">Change your security credentials</CardDescription>
+                                    <CardDescription className="text-xs font-bold text-slate-400">Change your security credentials</CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-8 space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Current Password</label>
+                                            <label className="text-[10px] font-bold text-slate-500 ml-1">Current Password</label>
                                             <Input
                                                 type="password"
                                                 value={currentPassword}
@@ -621,7 +621,7 @@ export default function SettingsPage() {
                                             />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">New Password</label>
+                                            <label className="text-[10px] font-bold text-slate-500 ml-1">New Password</label>
                                             <Input
                                                 type="password"
                                                 value={newPassword}
@@ -630,7 +630,7 @@ export default function SettingsPage() {
                                             />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Confirm New Password</label>
+                                            <label className="text-[10px] font-bold text-slate-500 ml-1">Confirm New Password</label>
                                             <Input
                                                 type="password"
                                                 value={confirmPassword}
@@ -653,7 +653,7 @@ export default function SettingsPage() {
                                                     />
                                                 ))}
                                             </div>
-                                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                            <p className="text-[10px] font-bold text-slate-400">
                                                 Strength: <span className={`${passwordStrength >= 4 ? 'text-emerald-500' : passwordStrength >= 3 ? 'text-yellow-500' : 'text-rose-500'}`}>{strengthLabels[passwordStrength]}</span>
                                             </p>
                                         </div>
@@ -662,7 +662,7 @@ export default function SettingsPage() {
                                         <Button
                                             onClick={handleUpdatePassword}
                                             disabled={passLoading}
-                                            className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-bold px-8 h-12 shadow-lg uppercase text-[10px] tracking-widest"
+                                            className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-bold px-8 h-12 shadow-lg text-[11px]"
                                         >
                                             {passLoading ? 'Updating...' : 'Update Password'}
                                         </Button>
@@ -676,14 +676,14 @@ export default function SettingsPage() {
                                     <div className="flex items-center justify-between w-full">
                                         <div>
                                             <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 italic">Active Sessions</CardTitle>
-                                            <CardDescription className="text-xs font-bold text-slate-400 uppercase tracking-widest">Devices logged into your account</CardDescription>
+                                            <CardDescription className="text-xs font-bold text-slate-400">Devices logged into your account</CardDescription>
                                         </div>
                                         {sessions.length > 1 && (
                                             <Button
                                                 onClick={handleRevokeAllSessions}
                                                 disabled={revokingAll}
                                                 variant="outline"
-                                                className="rounded-xl font-bold px-6 h-10 uppercase text-[10px] tracking-widest border-rose-200 dark:border-rose-900/30 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                                                className="rounded-xl font-bold px-6 h-10 text-[11px] border-rose-200 dark:border-rose-900/30 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20"
                                             >
                                                 {revokingAll ? <RefreshCw className="h-3 w-3 animate-spin mr-2" /> : <LogOut size={12} className="mr-2" />}
                                                 Revoke All Others
@@ -717,7 +717,7 @@ export default function SettingsPage() {
                                                                     {session.browser} on {session.os}
                                                                 </span>
                                                                 {session.is_current && (
-                                                                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 text-[9px] font-black uppercase tracking-widest whitespace-nowrap">
+                                                                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 text-[9px] font-black tracking-widest whitespace-nowrap">
                                                                         This Device
                                                                     </span>
                                                                 )}
@@ -762,8 +762,8 @@ export default function SettingsPage() {
                                             <History size={18} />
                                         </div>
                                         <div>
-                                            <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 italic">Login Activity Log</CardTitle>
-                                            <CardDescription className="text-xs font-bold text-slate-400 uppercase tracking-widest">Recent authentication attempts</CardDescription>
+                                            <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 italic">Login activity log</CardTitle>
+                                            <CardDescription className="text-xs font-bold text-slate-400">Recent authentication attempts</CardDescription>
                                         </div>
                                     </div>
                                 </CardHeader>

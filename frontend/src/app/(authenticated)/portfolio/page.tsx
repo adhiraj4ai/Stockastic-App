@@ -482,8 +482,8 @@ function PortfolioContent() {
                                 <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">
                                     {formatRupees(totalInvestment)}
                                 </div>
-                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 uppercase font-bold tracking-wider">
-                                    Across {displayedItems.length} Holdings
+                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 font-bold">
+                                    Across {displayedItems.length} holdings
                                 </div>
                             </CardContent>
                         </Card>
@@ -497,8 +497,8 @@ function PortfolioContent() {
                                 <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">
                                     {formatRupees(totalCurrentValue)}
                                 </div>
-                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 uppercase font-bold tracking-wider">
-                                    Real-time Valuation
+                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 font-bold">
+                                    Real-time valuation
                                 </div>
                             </CardContent>
                         </Card>
@@ -542,7 +542,7 @@ function PortfolioContent() {
                                 <div className={`text-2xl font-bold ${totalDayGainLoss >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                     {formatRupees(Math.abs(totalDayGainLoss))}
                                 </div>
-                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 uppercase font-bold tracking-wider">
+                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 font-bold">
                                     Intraday Movement
                                 </div>
                             </CardContent>
@@ -566,10 +566,10 @@ function PortfolioContent() {
                                     <span>Strategic Holdings</span>
                                     <div className="flex items-center gap-1.5">
                                         <Badge className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800 hover:bg-emerald-50 text-[10px] px-2 py-0 h-5 font-black">
-                                            #{stats.profit} PROFIT
+                                            #{stats.profit} Profit
                                         </Badge>
                                         <Badge className="bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-100 dark:border-rose-800 hover:bg-rose-50 text-[10px] px-2 py-0 h-5 font-black">
-                                            #{stats.loss} LOSS
+                                            #{stats.loss} Loss
                                         </Badge>
                                     </div>
                                     {selectedAccount !== 'all' && (
@@ -694,7 +694,7 @@ function PortfolioContent() {
                             {/* Pagination Controls */}
                             {totalPages > 1 && (
                                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6 px-6 border-t border-gray-50">
-                                    <div className="text-xs font-semibold tracking-widest">
+                                    <div className="text-xs font-semibold">
                                         Displaying <span className="text-gray-900">{(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, sortedAndFilteredItems.length)}</span> of <span className="text-gray-900">{sortedAndFilteredItems.length}</span> holdings
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -764,7 +764,7 @@ function PortfolioContent() {
                                     {/* Pie Chart: Allocation */}
                                     <div className="relative">
                                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                            <span className="text-xs text-gray-400 dark:text-slate-500 font-bold uppercase">Diversification</span>
+                                            <span className="text-xs text-gray-400 dark:text-slate-500 font-bold">Diversification</span>
                                             <span className="text-lg font-black text-gray-800 dark:text-slate-200">{sectorData.length} Sectors</span>
                                         </div>
                                         <ResponsiveContainer width="100%" height="100%">

@@ -46,14 +46,14 @@ export function TechnicalPulse({
                         <mStyle.icon size={18} />
                     </div>
                     <div className="space-y-0.5">
-                        <p className="text-[10px] font-bold opacity-60 uppercase">Technical Pulse & Momentum</p>
-                        <p className={cn("text-base font-bold uppercase", mStyle.color)}>{mStyle.label}</p>
+                        <p className="text-[10px] font-bold opacity-60">Technical pulse & momentum</p>
+                        <p className={cn("text-base font-bold", mStyle.color)}>{mStyle.label}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <Badge variant="outline" className="font-bold text-[9px] px-2 py-0.5 rounded-md border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 bg-white/50 dark:bg-slate-900/50">
                         <Zap size={10} className="mr-1 inline text-amber-500" />
-                        REAL-TIME SIGNAL
+                        Real-time signal
                     </Badge>
                 </div>
             </div>
@@ -62,8 +62,8 @@ export function TechnicalPulse({
                 {/* RSI Gauge */}
                 <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Relative Strength (RSI)</span>
-                        <span className={cn("text-[9px] font-bold px-2 py-0.5 rounded uppercase", rsiStatus.bg, rsiStatus.color)}>
+                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">Relative Strength (RSI)</span>
+                        <span className={cn("text-[9px] font-bold px-2 py-0.5 rounded", rsiStatus.bg, rsiStatus.color)}>
                             {rsiStatus.label}
                         </span>
                     </div>
@@ -79,10 +79,10 @@ export function TechnicalPulse({
 
                 {/* Moving Averages */}
                 <div className="space-y-4 border-l border-slate-100 dark:border-slate-800 pl-8">
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Trend Alignment</span>
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">Trend alignment</span>
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">50-Day Avg.</span>
+                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">50-Day Avg.</span>
                             <span className={cn(
                                 "text-xs font-bold tabular-nums",
                                 currentPrice > movingAverages.sma50 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
@@ -91,7 +91,7 @@ export function TechnicalPulse({
                             </span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">200-Day Avg.</span>
+                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">200-Day Avg.</span>
                             <span className={cn(
                                 "text-xs font-bold tabular-nums",
                                 currentPrice > movingAverages.sma200 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"

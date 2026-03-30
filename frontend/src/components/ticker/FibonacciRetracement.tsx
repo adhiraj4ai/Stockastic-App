@@ -172,7 +172,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                             <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 dark:text-emerald-400">
                                 <ArrowUpRight size={14} />
                             </div>
-                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Next Resistance</span>
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider">Next resistance</span>
                         </div>
                         <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
                             {data.growth_potential !== null ? `+${data.growth_potential}%` : '—'}
@@ -193,7 +193,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                             <div className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-500 dark:text-rose-400">
                                 <ArrowDownRight size={14} />
                             </div>
-                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Next Support</span>
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider">Next support</span>
                         </div>
                         <div className="text-3xl font-black text-rose-600 dark:text-rose-400 tracking-tight">
                             {data.fall_risk !== null ? `-${data.fall_risk}%` : '—'}
@@ -214,7 +214,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                             <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400">
                                 <ChevronUp size={14} />
                             </div>
-                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Max Upside</span>
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider">Max upside</span>
                         </div>
                         <div className="text-3xl font-black text-blue-600 dark:text-blue-400 tracking-tight">
                             {data.max_upside !== null ? `+${data.max_upside}%` : '—'}
@@ -233,7 +233,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                             <div className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-500 dark:text-amber-400">
                                 <ChevronDown size={14} />
                             </div>
-                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Max Downside</span>
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider">Max downside</span>
                         </div>
                         <div className="text-3xl font-black text-amber-600 dark:text-amber-400 tracking-tight">
                             {data.max_downside !== null ? `-${data.max_downside}%` : '—'}
@@ -309,7 +309,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                                                         <span className="font-bold text-slate-700 dark:text-slate-300 text-sm">{level.label}</span>
                                                         {isNearest && (
                                                             <Badge className="text-[8px] px-1.5 py-0 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-none font-bold">
-                                                                {isAbove ? 'RESISTANCE' : 'SUPPORT'}
+                                                                {isAbove ? 'Resistance' : 'Support'}
                                                             </Badge>
                                                         )}
                                                     </div>
@@ -339,7 +339,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                                                             <div className="flex items-center gap-2">
                                                                 <span className="font-black text-blue-600 dark:text-blue-400 text-sm">CMP</span>
                                                                 <Badge className="text-[8px] px-1.5 py-0 bg-blue-500 text-white border-none font-bold animate-pulse">
-                                                                    CURRENT
+                                                                    Current
                                                                 </Badge>
                                                             </div>
                                                         </div>
@@ -354,7 +354,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                         {/* Current Zone Info */}
                         {data.current_zone && (
                             <div className="mt-6 p-4 rounded-2xl bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-900/10 dark:to-indigo-900/10 border border-blue-100 dark:border-blue-800/50">
-                                <div className="text-[10px] font-bold text-blue-500 dark:text-blue-400 uppercase tracking-wider mb-1">Current Zone</div>
+                                <div className="text-[10px] font-bold text-blue-500 dark:text-blue-400 tracking-wider mb-1">Current zone</div>
                                 <div className="text-sm font-bold text-slate-700 dark:text-slate-300">
                                     Between {data.current_zone.lower} (Rs. {data.current_zone.lower_price.toLocaleString()}) and {data.current_zone.upper} (Rs. {data.current_zone.upper_price.toLocaleString()})
                                 </div>

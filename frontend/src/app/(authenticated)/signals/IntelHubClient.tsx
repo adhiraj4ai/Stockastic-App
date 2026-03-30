@@ -20,6 +20,11 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { 
+    Gauge, ArrowUpRight, ArrowDownRight, 
+    MousePointer2, Briefcase, History, 
+    Signal as SignalIcon, Info 
+} from 'lucide-react';
 
 // ─── Shared types ──────────────────────────────────────────────────────────────
 
@@ -65,12 +70,25 @@ interface UnifiedSignal {
 
 const SOURCE_LABELS: Record<string, string> = {
     'SMART_MONEY': 'Smart Money',
-    'BROKER_ACCUMULATION': 'Broker Accum.',
+    'BROKER_ACCUMULATION': 'Broker Accumulation',
     'SMART_CROSSOVER': 'Smart Crossover',
     'ICHIMOKU': 'Ichimoku',
 };
 
 const WHALE_SOURCES = ['BROKER_ACCUMULATION', 'SMART_CROSSOVER', 'ICHIMOKU'] as const;
+
+interface BatchIndicatorData {
+    trends: {
+        '5d': number;
+        '10d': number;
+        '1m': number;
+    };
+    rsi: number | null;
+    macd: number | null;
+    macd_signal: number | null;
+    macd_hist: number | null;
+    roc: number | null;
+}
 
 // ─── Freshness Utility ────────────────────────────────────────────────────────
 const getFreshness = (dateString?: string) => {
@@ -80,7 +98,7 @@ const getFreshness = (dateString?: string) => {
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
     
-    if (diffDays <= 1) return { status: 'active', label: 'Active', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800' };
+    if (diffDays <= 1) return { status: 'active', label: 'Active', color: 'bg-black text-white dark:bg-white dark:text-black border border-slate-900 dark:border-white' };
     if (diffDays <= 3) return { status: 'recent', label: 'Recent', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800' };
     return { status: 'historical', label: 'Historical', color: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700' };
 };
@@ -121,12 +139,12 @@ const isSignalActionable = (signalPrice: number, currentPrice?: number, signalDi
 function SignalBadge({ direction }: { direction: 'BUY' | 'SELL' }) {
     return (
         <span className={cn(
-            'px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wide',
+            'px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide',
             direction === 'BUY'
                 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
                 : 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
         )}>
-            {direction === 'BUY' ? '▲' : '▼'} {direction}
+            {direction === 'BUY' ? '▲ Buy' : '▼ Sell'}
         </span>
     );
 }
@@ -157,14 +175,14 @@ function SignalPerformanceStats({ stats }: { stats: EnginePerformance[] }) {
                 <div key={s.source} className="group relative rounded-2xl border border-slate-200/60 dark:border-slate-800/50 p-5 bg-white/50 dark:bg-slate-900/40 backdrop-blur-xl transition-all hover:shadow-xl hover:bg-white dark:hover:bg-slate-900/60">
                     <div className="flex justify-between items-start mb-4">
                         <div>
-                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{SOURCE_LABELS[s.source] || s.source}</h4>
+                            <h4 className="text-[10px] font-bold text-slate-400 mb-1">{SOURCE_LABELS[s.source] || s.source}</h4>
                             <div className="flex items-baseline gap-2">
                                 <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter">{s.win_rate}%</span>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Win Rate</span>
+                                <span className="text-[10px] font-bold text-slate-400">Win rate</span>
                             </div>
                         </div>
                         <div className={cn(
-                            "px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border",
+                            "px-2 py-1 rounded-lg text-[10px] font-black tracking-wider border",
                             s.avg_pnl >= 0 
                                 ? "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/30" 
                                 : "bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800/30"
@@ -174,8 +192,8 @@ function SignalPerformanceStats({ stats }: { stats: EnginePerformance[] }) {
                     </div>
                     
                     <div className="space-y-3">
-                        <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                            <span>Accuracy Meter</span>
+                        <div className="flex justify-between items-center text-[10px] font-bold text-slate-500">
+                            <span>Accuracy meter</span>
                             <span className="text-slate-400">{s.won}W / {s.lost}L</span>
                         </div>
                         <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
@@ -189,10 +207,10 @@ function SignalPerformanceStats({ stats }: { stats: EnginePerformance[] }) {
                             />
                         </div>
                         <div className="flex justify-between items-center">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{s.active} Active Setups</span>
+                            <span className="text-[10px] font-bold text-slate-400">Active setups</span>
                             <div className="flex -space-x-1">
                                 {[...Array(3)].map((_, i) => (
-                                    <div key={i} className={cn("w-1.5 h-1.5 rounded-full border border-white dark:border-slate-900", i < Math.ceil(s.win_rate / 33) ? "bg-indigo-500" : "bg-slate-200 dark:bg-slate-700")} />
+                                    <div key={i} className={cn("w-1.5 h-1.5 rounded-full border border-white dark:border-slate-900", i < Math.ceil(s.win_rate / 33) ? "bg-black dark:bg-white" : "bg-slate-200 dark:bg-slate-700")} />
                                 ))}
                             </div>
                         </div>
@@ -208,6 +226,7 @@ function UnifiedSignalCard({
     direction, 
     ltp, 
     currentPrice,
+    indicators,
     date,
     strength, 
     reason, 
@@ -216,12 +235,14 @@ function UnifiedSignalCard({
     targetPrice,
     stopLoss,
     status,
+    smartMoneyMetadata,
     onSelect 
 }: { 
     symbol: string; 
     direction: 'BUY' | 'SELL'; 
     ltp: number; 
     currentPrice?: number;
+    indicators?: BatchIndicatorData;
     date?: string;
     strength?: number; 
     reason?: string; 
@@ -230,102 +251,135 @@ function UnifiedSignalCard({
     targetPrice?: number;
     stopLoss?: number;
     status?: 'ACTIVE' | 'WON' | 'LOST' | 'CLOSED_MANUAL';
-    onSelect: (s: { 
-        symbol: string; 
-        ltp: number; 
-        strength: number; 
-        direction: 'BUY' | 'SELL';
-        targetPrice?: number;
-        stopLoss?: number;
-        status?: string;
-    }) => void;
+    smartMoneyMetadata?: any;
+    onSelect: (s: any) => void;
 }) {
     const freshness = getFreshness(date);
     const action = getActionability(ltp, currentPrice, direction);
     const change = currentPrice ? ((currentPrice - ltp) / ltp) * 100 : null;
     const isSuccess = status === 'WON' || (currentPrice && ((direction === 'BUY' && change! > 0) || (direction === 'SELL' && change! < 0)));
     
-    // Override action label entirely if signal has historically closed
-    const resolvedActionLabel = status === 'WON' ? 'Target Hit' : status === 'LOST' ? 'Stopped Out' : action?.label;
+    const resolvedActionLabel = status === 'WON' ? 'Target hit' : status === 'LOST' ? 'Stopped out' : action?.label;
     const resolvedActionColor = status === 'WON' ? 'bg-emerald-500 text-white' : status === 'LOST' ? 'bg-rose-500 text-white' : action?.color;
 
     return (
         <div 
             onClick={() => onSelect({ symbol, ltp, strength: strength || 50, direction, targetPrice, stopLoss, status })}
             className={cn(
-                'group relative rounded-2xl border border-l-[6px] p-5 cursor-pointer transition-all hover:shadow-2xl hover:-translate-y-0.5 bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6',
-                direction === 'BUY' ? 'border-l-emerald-500 border-slate-200/60 dark:border-emerald-500/30' : 'border-l-rose-500 border-slate-200/60 dark:border-rose-500/30',
-                (status === 'LOST' || (action && action.status !== 'valid' && status !== 'WON')) && 'opacity-60 hover:opacity-100' // Dim missed/invalidated signals natively
+                'group relative rounded-3xl border p-5 cursor-pointer transition-all hover:shadow-2xl hover:-translate-y-0.5 bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-6 overflow-hidden',
+                direction === 'BUY' ? 'border-emerald-500/10 hover:border-emerald-500/30' : 'border-rose-500/10 hover:border-rose-500/30',
+                (status === 'LOST' || (action && action.status !== 'valid' && status !== 'WON')) && 'opacity-60 hover:opacity-100'
             )}>
             
-            <div className="flex items-center gap-5 w-44 shrink-0">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                        <Link href={`/ticker/${symbol}`} onClick={(e) => e.stopPropagation()} className="text-lg font-black tracking-tight text-slate-900 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+
+            {/* Col 1: Symbol & Context */}
+            <div className="flex items-center gap-5 w-full xl:w-48 shrink-0">
+                <div className="space-y-2 w-full">
+                    <div className="flex items-center justify-between xl:justify-start gap-3">
+                        <Link href={`/ticker/${symbol}`} onClick={(e) => e.stopPropagation()} className="text-xl font-black tracking-tighter text-slate-900 dark:text-slate-100 hover:text-black dark:hover:text-white transition-colors">
                             {symbol}
                         </Link>
                         <SignalBadge direction={direction} />
                     </div>
-                    {tagline && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate">{tagline}</p>}
-                </div>
-            </div>
-
-            <div className="flex-1 hidden md:block min-w-0">
-                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 leading-relaxed truncate max-w-xl mb-2">
-                    {reason}
-                </p>
-                <div className="flex items-center gap-2">
-                    {date && <span className={cn("px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider", freshness.color)}>{freshness.label}</span>}
-                    {conviction !== undefined && conviction > 1 && (
-                        <span className={cn('text-[9px] font-black uppercase tracking-tighter', CONVICTION_META[conviction]?.color)}>
-                            {conviction >= 3 ? 'Platinum Setup' : 'Confirmed'}
-                        </span>
-                    )}
-                </div>
-            </div>
-
-            <div className="shrink-0 text-right h-full flex items-center gap-6">
-                
-                {/* Levels Box */}
-                {(targetPrice || stopLoss) && (
-                    <div className="hidden xl:flex flex-col items-end justify-center pr-6 mr-2 border-r border-slate-200 dark:border-slate-800 space-y-1">
-                        {targetPrice && (
-                            <div className="text-[9px] font-black font-mono text-emerald-600 dark:text-emerald-400/80 uppercase tracking-widest flex items-center gap-1.5">
-                                TP <span className="text-xs">Rs. {targetPrice.toFixed(0)}</span>
-                            </div>
-                        )}
-                        {stopLoss && (
-                            <div className="text-[9px] font-black font-mono text-rose-600 dark:text-rose-400/80 uppercase tracking-widest flex items-center gap-1.5">
-                                SL <span className="text-xs">Rs. {stopLoss.toFixed(0)}</span>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Performance Box */}
-                {currentPrice && change !== null ? (
-                    <div className="flex flex-col items-center gap-1">
-                        <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold tabular-nums border", isSuccess ? "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/30" : "bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800/30")}>
-                            {change > 0 ? '+' : ''}{change.toFixed(1)}%
-                        </span>
-                        {resolvedActionLabel && (
-                            <span className={cn("px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border", resolvedActionColor)}>
-                                {resolvedActionLabel}
+                    <div className="flex flex-wrap gap-2">
+                        {tagline && <span className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-900/70 dark:text-slate-300/60 text-[9px] font-bold">{tagline}</span>}
+                        {conviction !== undefined && conviction > 1 && (
+                            <span className={cn('px-2 py-0.5 rounded-lg text-[9px] font-black tracking-tight border', conviction >= 3 ? 'bg-amber-50 text-amber-600 border-amber-200/50' : 'bg-slate-50 text-slate-500 border-slate-200/50')}>
+                                {conviction >= 3 ? 'Platinum setup' : 'Dual confirmation'}
                             </span>
                         )}
                     </div>
-                ) : null}
+                </div>
+            </div>
 
+            {/* Col 2: Rationale & Intelligence */}
+            <div className="flex-1 min-w-0 flex flex-col justify-center">
+                <p className="text-xs font-bold text-slate-900/60 dark:text-slate-300/40 leading-relaxed line-clamp-2 mb-2 italic">
+                    &ldquo;{reason}&rdquo;
+                </p>
+                <div className="flex items-center gap-3">
+                    {date && <span className={cn("px-2 py-0.5 rounded-lg text-[10px] font-bold", freshness.color)}>{freshness.label}</span>}
+                    {smartMoneyMetadata?.cluster_count && (
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-900 dark:text-slate-200">
+                            <Briefcase size={12} strokeWidth={2.5} />
+                            {smartMoneyMetadata.cluster_count} brokers
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Col 3: Technical Vitals */}
+            <div className="shrink-0 grid grid-cols-3 gap-6 px-6 border-x border-slate-100 dark:border-slate-800/40">
+                <div className="flex flex-col items-center justify-center">
+                    <span className="text-[9px] font-bold text-slate-900/40 mb-1">RSI</span>
+                    <span className={cn(
+                        "text-sm font-black font-mono",
+                        indicators?.rsi && indicators.rsi > 70 ? "text-rose-500" : indicators?.rsi && indicators.rsi < 30 ? "text-emerald-500" : "text-slate-900 dark:text-slate-100"
+                    )}>
+                        {indicators?.rsi?.toFixed(1) || '--'}
+                    </span>
+                </div>
+                <div className="flex flex-col items-center justify-center">
+                    <span className="text-[9px] font-bold text-slate-900/40 mb-1">MACD</span>
+                    <span className={cn(
+                        "text-sm font-black font-mono",
+                        indicators?.macd_hist && indicators.macd_hist > 0 ? "text-emerald-500" : "text-rose-500"
+                    )}>
+                        {indicators?.macd?.toFixed(1) || '--'}
+                    </span>
+                </div>
+                <div className="flex flex-col items-center justify-center">
+                    <span className="text-[9px] font-bold text-slate-900/40 mb-1">ROC</span>
+                    <span className={cn(
+                        "text-sm font-black font-mono",
+                        indicators?.roc && indicators.roc > 0 ? "text-emerald-500" : "text-rose-500"
+                    )}>
+                        {indicators?.roc?.toFixed(1) || '--'}
+                    </span>
+                </div>
+            </div>
+
+            {/* Col 4: Performance Strides */}
+            <div className="shrink-0 flex items-center gap-6 pr-6 border-r border-slate-100 dark:border-slate-800/40">
+                {[
+                    { label: '5d', val: indicators?.trends['5d'] },
+                    { label: '10d', val: indicators?.trends['10d'] },
+                    { label: '1m', val: indicators?.trends['1m'] }
+                ].map(t => (
+                    <div key={t.label} className="flex flex-col min-w-[32px]">
+                        <span className="text-[8px] font-bold text-slate-900/40 uppercase">{t.label}</span>
+                        <div className={cn(
+                            "text-[10px] font-black font-mono flex items-center gap-0.5",
+                            t.val !== undefined && t.val > 0 ? "text-emerald-500" : t.val !== undefined && t.val < 0 ? "text-rose-500" : "text-slate-400"
+                        )}>
+                            {t.val !== undefined ? (t.val > 0 ? '▲' : '▼') : ''}
+                            {t.val !== undefined ? Math.abs(t.val).toFixed(0) : '--'}%
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Col 5: Levels & Entry */}
+            <div className="shrink-0 flex items-center gap-8">
                 <div className="space-y-1 text-right">
-                    <div className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-none font-mono">Entry</div>
-                    <div className="text-lg font-black font-mono text-slate-900 dark:text-slate-100 tracking-tighter leading-none">Rs. {ltp.toLocaleString()}</div>
-                    {strength !== undefined && (
-                        <div className="text-[9px] font-black text-slate-400 mt-1">STR {strength.toFixed(0)}%</div>
+                    <div className="text-[10px] font-bold text-slate-900/50 leading-none">Entry setup</div>
+                    <div className="text-xl font-black font-mono text-slate-900 dark:text-slate-100 tracking-tighter leading-none">Rs. {ltp.toLocaleString()}</div>
+                    {currentPrice && (
+                        <div className="flex items-center justify-end gap-2 mt-1">
+                            <span className={cn("px-1.5 py-0.5 rounded text-[9px] font-black border", isSuccess ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-rose-50 text-rose-600 border-rose-100")}>
+                                {change! > 0 ? '+' : ''}{change!.toFixed(1)}%
+                            </span>
+                            {resolvedActionLabel && (
+                                <span className={cn("px-1.5 py-0.5 rounded text-[9px] font-black", resolvedActionColor)}>
+                                    {resolvedActionLabel}
+                                </span>
+                            )}
+                        </div>
                     )}
                 </div>
                 
-                <div className="p-2 rounded-xl text-slate-200 group-hover:text-indigo-400 transition-colors">
-                    <Activity size={16} />
+                <div className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-200 group-hover:bg-black dark:group-hover:bg-white dark:group-hover:text-black transition-all shadow-sm">
+                    <ArrowRight size={18} strokeWidth={3} />
                 </div>
             </div>
         </div>
@@ -335,20 +389,14 @@ function UnifiedSignalCard({
 // ─── ALL SOURCES VIEW (reads from stored data) ────────────────────────────────
 
 interface BaseSignalViewProps {
-    onSelect: (signal: { 
-        symbol: string; 
-        ltp: number; 
-        strength: number; 
-        direction: 'BUY' | 'SELL';
-        targetPrice?: number;
-        stopLoss?: number;
-        status?: string;
-    }) => void;
+    onSelect: (signal: any) => void;
     liveMarketMap: Record<string, number>;
+    batchIndicators: Record<string, BatchIndicatorData>;
+    fetchBatchIndicators: (symbols: string[]) => Promise<void>;
     showHistorical: boolean;
 }
 
-function AllSourcesView({ onSelect, liveMarketMap, showHistorical }: BaseSignalViewProps) {
+function AllSourcesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIndicators, showHistorical }: BaseSignalViewProps) {
     const [loading, setLoading] = useState(true);
     const [unified, setUnified] = useState<UnifiedSignal[]>([]);
     const [search, setSearch] = useState('');
@@ -432,6 +480,9 @@ function AllSourcesView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
 
             const sorted = [...map.values()].sort((a, b) => b.conviction - a.conviction || b.ltp - a.ltp);
             setUnified(sorted);
+            // Trigger batch fetch for technicals
+            const symbols = Array.from(new Set(sorted.map(s => s.symbol)));
+            fetchBatchIndicators(symbols);
             setLoading(false);
         };
         fetchData();
@@ -457,8 +508,8 @@ function AllSourcesView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
     return (
         <div className="space-y-6">
             {generatedDate && (
-                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    Intelligence Data from {generatedDate}
+                <div className="text-[10px] font-black text-slate-400 tracking-widest">
+                    Intelligence data from {generatedDate}
                 </div>
             )}
 
@@ -467,14 +518,14 @@ function AllSourcesView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
                     { label: 'Buy Signals', value: buys, icon: <TrendingUp size={14} />, color: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/20' },
                     { label: 'Sell Signals', value: sells, icon: <TrendingDown size={14} />, color: 'text-rose-500', bg: 'bg-rose-500/10 border-rose-500/20' },
                     { label: 'Multi-Source', value: multiSource, icon: <Activity size={14} />, color: 'text-amber-500', bg: 'bg-amber-500/10 border-amber-500/20' },
-                    { label: 'Intelligence', value: unified.length, icon: <Radar size={14} />, color: 'text-indigo-500', bg: 'bg-indigo-500/10 border-indigo-500/20' },
+                    { label: 'Intelligence', value: unified.length, icon: <Radar size={14} />, color: 'text-slate-900 dark:text-white', bg: 'bg-slate-900/10 dark:bg-white/10 border-slate-900/20 dark:border-white/20' },
                 ].map(m => (
                     <div key={m.label} className={cn('rounded-2xl border p-5 backdrop-blur-xl transition-all hover:scale-[1.02]', m.bg)}>
                         <div className="flex justify-between items-center mb-2">
                             <span className={cn('p-1.5 rounded-lg bg-white/50 dark:bg-slate-900/50', m.color)}>{m.icon}</span>
                             <div className={cn('text-2xl font-black', m.color)}>{m.value}</div>
                         </div>
-                        <div className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{m.label}</div>
+                        <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{m.label}</div>
                     </div>
                 ))}
             </div>
@@ -494,11 +545,11 @@ function AllSourcesView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
                 
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 p-1 bg-slate-100/50 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 backdrop-blur-sm">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-2">Threshold</span>
+                        <span className="text-[10px] font-bold text-slate-400 px-2">Threshold</span>
                         {[1, 2, 3].map(n => (
                             <button key={n} onClick={() => setMinConviction(n)}
                                 className={cn('w-8 h-8 rounded-lg text-xs font-black transition-all flex items-center justify-center',
-                                    minConviction === n ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 border-indigo-500' : 'text-slate-500 hover:text-indigo-600')}>
+                                    minConviction === n ? 'bg-black text-white dark:bg-white dark:text-black shadow-lg shadow-slate-200 border-slate-900' : 'text-slate-500 hover:text-black dark:hover:text-white')}>
                                 {n}
                             </button>
                         ))}
@@ -506,7 +557,7 @@ function AllSourcesView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
                     <div className="relative">
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" strokeWidth={2.5} />
                         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Symbol…"
-                            className="pl-9 pr-4 py-2 text-xs font-medium rounded-xl border border-slate-200/50 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-400/30 w-64" />
+                            className="pl-9 pr-4 py-2 text-xs font-medium rounded-xl border border-slate-200/50 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-slate-900/30 w-64" />
                     </div>
                 </div>
             </div>
@@ -514,7 +565,7 @@ function AllSourcesView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
             {filtered.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-3xl">
                     <Layers className="w-8 h-8 text-slate-200 dark:text-slate-700 mb-3" />
-                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest">No matching intelligence found</p>
+                    <p className="text-xs font-bold text-slate-400">No matching intelligence found</p>
                     <p className="text-[10px] text-slate-400 mt-2">Run &quot;Generate All Intel Signals&quot; from the Pipeline page to populate data.</p>
                 </div>
             ) : (
@@ -534,6 +585,8 @@ function AllSourcesView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
                             targetPrice={u.target_price}
                             stopLoss={u.stop_loss_price}
                             status={u.status}
+                            indicators={batchIndicators[u.symbol]}
+                            smartMoneyMetadata={u.smartMoney}
                             onSelect={onSelect}
                         />
                     ))}
@@ -545,7 +598,7 @@ function AllSourcesView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
 
 // ─── SMART MONEY VIEW (reads from stored GeneratedSignal with source=SMART_MONEY) ─
 
-function SmartMoneyView({ onSelect, liveMarketMap, showHistorical }: BaseSignalViewProps) {
+function SmartMoneyView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIndicators, showHistorical }: BaseSignalViewProps) {
     const [signals, setSignals] = useState<GeneratedSignal[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeSection, setActiveSection] = useState('platinum');
@@ -566,7 +619,7 @@ function SmartMoneyView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
     };
 
     const sections = [
-        { id: 'platinum', label: 'Platinum', badge: 'Optimal Entry', dot: 'bg-indigo-500', badgeCls: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300', items: signals.filter(s => filterFn(s, 'Platinum Buy')) },
+        { id: 'platinum', label: 'Platinum', badge: 'Optimal Entry', dot: 'bg-black dark:bg-white', badgeCls: 'bg-slate-950 text-white border-slate-800 dark:bg-white dark:text-black dark:border-slate-200', items: signals.filter(s => filterFn(s, 'Platinum Buy')) },
         { id: 'gold', label: 'Gold', badge: 'High Conviction', dot: 'bg-amber-500', badgeCls: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300', items: signals.filter(s => filterFn(s, 'Gold Signal')) },
         { id: 'silver', label: 'Silver', badge: 'Institutional Entry', dot: 'bg-slate-400', badgeCls: 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300', items: signals.filter(s => filterFn(s, 'Silver Signal')) },
         { id: 'divergence', label: 'Divergence', badge: 'Bullish Divergence', dot: 'bg-emerald-500', badgeCls: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300', items: signals.filter(s => filterFn(s, 'Bullish Divergence')) },
@@ -597,8 +650,8 @@ function SmartMoneyView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
 
             <div className="animate-in fade-in slide-in-from-top-2 duration-500">
                 <div className="flex items-center gap-2 mb-5">
-                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">{current.label} Setups</h3>
-                    <span className={cn('text-[10px] font-black px-2 py-0.5 rounded-full border uppercase tracking-wider', current.badgeCls)}>{current.badge}</span>
+                    <h3 className="text-sm font-bold text-slate-400">{current.label} setups</h3>
+                    <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full border', current.badgeCls)}>{current.badge}</span>
                 </div>
                 
                 {current.items.length === 0
@@ -619,6 +672,8 @@ function SmartMoneyView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
                                 targetPrice={sig.target_price}
                                 stopLoss={sig.stop_loss_price}
                                 status={sig.status}
+                                indicators={batchIndicators[sig.symbol]}
+                                smartMoneyMetadata={sig.metadata}
                                 onSelect={onSelect}
                             />
                         ))}
@@ -632,7 +687,7 @@ function SmartMoneyView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
 
 // ─── STRATEGIES VIEW (already reads from stored StrategySignal) ───────────────
 
-function StrategiesView({ onSelect, liveMarketMap, showHistorical }: BaseSignalViewProps) {
+function StrategiesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIndicators, showHistorical }: BaseSignalViewProps) {
     const [signals, setSignals] = useState<StrategySignal[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -674,7 +729,7 @@ function StrategiesView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
                 <div className="relative">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" strokeWidth={2.5} />
                     <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Filter symbol…"
-                        className="pl-9 pr-4 py-2 text-xs font-medium rounded-xl border border-slate-200/50 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-indigo-400/30 w-64 backdrop-blur-sm transition-all" />
+                        className="pl-9 pr-4 py-2 text-xs font-medium rounded-xl border border-slate-200/50 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-slate-900/30 w-64 backdrop-blur-sm transition-all" />
                 </div>
             </div>
 
@@ -696,6 +751,7 @@ function StrategiesView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
                                 strength={70}
                                 reason={sigs[0]?.strategy_description || sigs.map(s => s.strategy_name).join(' · ')}
                                 tagline={`${sigs.length} Strategy Signals`}
+                                indicators={batchIndicators[symbol]}
                                 onSelect={onSelect}
                             />
                         );
@@ -708,7 +764,7 @@ function StrategiesView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
 
 // ─── WHALE WATCH VIEW (reads from stored GeneratedSignal with whale sources) ──
 
-function WhaleWatchView({ onSelect, liveMarketMap, showHistorical }: BaseSignalViewProps) {
+function WhaleWatchView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIndicators, showHistorical }: BaseSignalViewProps) {
     const [sourceIdx, setSourceIdx] = useState(0);
     const [signals, setSignals] = useState<GeneratedSignal[]>([]);
     const [loading, setLoading] = useState(true);
@@ -726,7 +782,7 @@ function WhaleWatchView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
 
     const filtered = useMemo(() =>
         signals.filter(s => {
-            if (search && !s.symbol.toUpperCase().includes(search.toUpperCase())) return false;
+            if (search && !s.symbol.toLowerCase().includes(search.toLowerCase())) return false;
             if (!showHistorical && !isSignalActionable(parseFloat(s.ltp) || 0, liveMarketMap[s.symbol], s.signal, s.generated_date)) return false;
             return true;
         }).sort((a, b) => b.strength - a.strength),
@@ -744,7 +800,7 @@ function WhaleWatchView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
                             className={cn('px-4 py-2 rounded-lg text-xs font-bold transition-all',
                                 sourceIdx === i 
                                     ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm border border-slate-200/50 dark:border-slate-600/50' 
-                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200')}>
+                                    : 'text-slate-900/50 dark:text-slate-400/40 hover:text-black dark:hover:text-white')}>
                             {SOURCE_LABELS[src]}
                         </button>
                     ))}
@@ -752,16 +808,16 @@ function WhaleWatchView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
                 
                 <div className="flex items-center gap-3">
                     <div className="relative">
-                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" strokeWidth={2.5} />
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-900/40 dark:text-slate-400/40" strokeWidth={2.5} />
                         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Filter symbol…"
-                            className="pl-9 pr-4 py-2 text-xs font-medium rounded-xl border border-slate-200/50 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-cyan-400/30 w-64 backdrop-blur-sm transition-all" />
+                            className="pl-9 pr-4 py-2 text-xs font-medium rounded-xl border border-slate-200/50 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-slate-900/30 w-64 backdrop-blur-sm transition-all" />
                     </div>
                 </div>
             </div>
 
-            <div className="flex gap-4 text-[10px] font-black tracking-widest uppercase">
-                <div className="flex items-center gap-1.5 text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-100 dark:border-emerald-500/20">{buys.length} Buy Signals</div>
-                <div className="flex items-center gap-1.5 text-rose-500 bg-rose-50 dark:bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-100 dark:border-rose-500/20">{sells.length} Sell Signals</div>
+            <div className="flex gap-4 text-[10px] font-black tracking-widest">
+                <div className="flex items-center gap-1.5 text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-100 dark:border-emerald-500/20">{buys.length} Buy signals</div>
+                <div className="flex items-center gap-1.5 text-rose-500 bg-rose-50 dark:bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-100 dark:border-rose-500/20">{sells.length} Sell signals</div>
             </div>
 
             {loading ? <Loader size /> : filtered.length === 0 ? <Empty label="No signals from this engine. Run pipeline to generate." /> : (
@@ -780,6 +836,7 @@ function WhaleWatchView({ onSelect, liveMarketMap, showHistorical }: BaseSignalV
                             targetPrice={sig.target_price}
                             stopLoss={sig.stop_loss_price}
                             status={sig.status}
+                            indicators={batchIndicators[sig.symbol]}
                             onSelect={onSelect}
                         />
                     ))}
@@ -802,7 +859,7 @@ function Loader({ size }: { size?: boolean }) {
 function Empty({ label }: { label: string }) {
     return (
         <div className="flex items-center justify-center py-16 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-            <p className="text-sm text-slate-400">{label}</p>
+            <p className="text-sm text-slate-900/40 dark:text-slate-400/40">{label}</p>
         </div>
     );
 }
@@ -828,8 +885,22 @@ export default function IntelHubClient() {
         status?: string;
     } | null>(null);
     const [liveMarketMap, setLiveMarketMap] = useState<Record<string, number>>({});
+    const [batchIndicators, setBatchIndicators] = useState<Record<string, BatchIndicatorData>>({});
     const [showHistorical, setShowHistorical] = useState(false);
     const [performance, setPerformance] = useState<EnginePerformance[]>([]);
+
+    // ─── Batch Indicator Logic ───
+    const fetchBatchIndicators = async (symbols: string[]) => {
+        if (!symbols.length) return;
+        try {
+            const res = await api.get('/api/stocks/batch-indicators/', {
+                params: { symbols: symbols.join(',') }
+            });
+            setBatchIndicators(prev => ({ ...prev, ...res.data }));
+        } catch (err) {
+            console.error("Failed to fetch batch indicators", err);
+        }
+    };
 
     useEffect(() => {
         // Fetch live prices
@@ -848,6 +919,11 @@ export default function IntelHubClient() {
             .catch(err => console.error("Failed fetching performance stats", err));
     }, []);
 
+    // Effect to trigger batch fetch when signals might have changed or tab changed
+    // We'll trust the individual views to tell us which symbols they need, or just fetch all unique symbols once data is loaded.
+    // Simplifying: the views fetch their own data, so we might need a way to bubble up symbols.
+    // For now, let's keep it simple and the views can call the shared fetchBatchIndicators.
+
     return (
         <DashboardLayout
             title={<span className="flex items-center gap-3 text-3xl font-black tracking-tighter text-slate-900 dark:text-white">Signal Intelligence</span>}
@@ -864,26 +940,26 @@ export default function IntelHubClient() {
                                 className={cn(
                                     'flex items-center gap-2.5 px-6 py-3 rounded-xl text-xs font-black transition-all group overflow-hidden relative',
                                     tab === t.key
-                                        ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xl shadow-slate-200/30 dark:shadow-none border border-slate-200/50 dark:border-slate-700/50'
-                                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50'
+                                        ? 'bg-white dark:bg-slate-800 text-black dark:text-white shadow-xl shadow-slate-200/30 dark:shadow-none border border-slate-200/50 dark:border-slate-700/50'
+                                        : 'text-slate-900/40 dark:text-slate-400/40 hover:text-black dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50'
                                 )}
                             >
-                                <span className={cn('transition-transform duration-500 group-hover:scale-125', tab === t.key ? 'text-indigo-500' : 'text-slate-400')}>
+                                <span className={cn('transition-transform duration-500 group-hover:scale-125', tab === t.key ? 'text-black dark:text-white' : 'text-slate-400/50')}>
                                     {t.icon}
                                 </span>
                                 <span className="relative z-10">{t.label}</span>
-                                {tab === t.key && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-500/50" />}
+                                {tab === t.key && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-black/50 dark:bg-white/50" />}
                             </button>
                         ))}
                     </div>
 
                     <div className="flex items-center gap-2 px-2">
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:block">Historical/Invalidated</span>
+                        <span className="text-xs font-bold text-slate-900/40 dark:text-slate-400/30 tracking-widest hidden sm:block uppercase">Historical</span>
                         <button
                             onClick={() => setShowHistorical(!showHistorical)}
                             className={cn(
-                                "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 border border-transparent shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]",
-                                showHistorical ? "bg-indigo-500 dark:bg-indigo-600" : "bg-slate-200 dark:bg-slate-700"
+                                "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black border border-transparent shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]",
+                                showHistorical ? "bg-black dark:bg-white" : "bg-slate-200 dark:bg-slate-700"
                             )}
                             role="switch"
                             aria-checked={showHistorical}
@@ -904,10 +980,10 @@ export default function IntelHubClient() {
 
                 {/* Main Content Area with staggered animation */}
                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-700">
-                    {tab === 'all'        && <AllSourcesView onSelect={setSelectedSignal} liveMarketMap={liveMarketMap} showHistorical={showHistorical} />}
-                    {tab === 'smart'      && <SmartMoneyView onSelect={setSelectedSignal} liveMarketMap={liveMarketMap} showHistorical={showHistorical} />}
-                    {tab === 'strategies' && <StrategiesView onSelect={setSelectedSignal} liveMarketMap={liveMarketMap} showHistorical={showHistorical} />}
-                    {tab === 'whale'      && <WhaleWatchView onSelect={setSelectedSignal} liveMarketMap={liveMarketMap} showHistorical={showHistorical} />}
+                    {tab === 'all'        && <AllSourcesView onSelect={setSelectedSignal} liveMarketMap={liveMarketMap} batchIndicators={batchIndicators} fetchBatchIndicators={fetchBatchIndicators} showHistorical={showHistorical} />}
+                    {tab === 'smart'      && <SmartMoneyView onSelect={setSelectedSignal} liveMarketMap={liveMarketMap} batchIndicators={batchIndicators} fetchBatchIndicators={fetchBatchIndicators} showHistorical={showHistorical} />}
+                    {tab === 'strategies' && <StrategiesView onSelect={setSelectedSignal} liveMarketMap={liveMarketMap} batchIndicators={batchIndicators} fetchBatchIndicators={fetchBatchIndicators} showHistorical={showHistorical} />}
+                    {tab === 'whale'      && <WhaleWatchView onSelect={setSelectedSignal} liveMarketMap={liveMarketMap} batchIndicators={batchIndicators} fetchBatchIndicators={fetchBatchIndicators} showHistorical={showHistorical} />}
                 </div>
             </div>
 

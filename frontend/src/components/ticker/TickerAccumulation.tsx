@@ -193,15 +193,14 @@ export default function TickerAccumulation({ symbol }: TickerAccumulationProps) 
     const SortIcon = ({ col }: { col: SortKey }) => {
         if (sortConfig.key !== col) return <ChevronsUpDown className="w-3 h-3 inline ml-1 opacity-30" />;
         return sortConfig.dir === 'asc'
-            ? <ChevronUp className="w-3 h-3 inline ml-1 text-indigo-500" />
-            : <ChevronDown className="w-3 h-3 inline ml-1 text-indigo-500" />;
+            ? <ChevronUp className="w-3 h-3 inline ml-1 text-slate-900 dark:text-slate-200" />
+            : <ChevronDown className="w-3 h-3 inline ml-1 text-slate-900 dark:text-slate-200" />;
     };
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center py-24 space-y-4">
-                <Loader2 className="w-10 h-10 animate-spin text-indigo-500" />
-                <p className="text-slate-400 dark:text-slate-500 font-medium">Analyzing accumulation patterns...</p>
+            <div className="flex items-center justify-center p-20">
+                <Loader2 className="w-10 h-10 animate-spin text-slate-900 dark:text-slate-100" />
             </div>
         );
     }
@@ -210,7 +209,7 @@ export default function TickerAccumulation({ symbol }: TickerAccumulationProps) 
         <div className="space-y-6">
             {/* Range Selector */}
             <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">Period</span>
+                <span className="text-[10px] font-black text-slate-400 tracking-widest mr-1">Period</span>
                 {RANGES.map(r => (
                     <Button
                         key={r}
@@ -219,8 +218,8 @@ export default function TickerAccumulation({ symbol }: TickerAccumulationProps) 
                         onClick={() => setRange(r)}
                         className={`rounded-xl px-4 h-8 font-bold text-xs transition-all ${
                             range === r
-                                ? 'bg-indigo-600 text-white shadow-md scale-105'
-                                : 'text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-indigo-400'
+                                ? 'bg-black dark:bg-white text-white dark:text-black shadow-md scale-105'
+                                : 'text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-black'
                         }`}
                     >
                         {r}
@@ -231,7 +230,7 @@ export default function TickerAccumulation({ symbol }: TickerAccumulationProps) 
             {/* Smart Money Overview */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Smart Money Flow</p>
+                    <p className="text-[10px] font-black text-slate-400 tracking-widest mb-3">Smart money flow</p>
                     <p className={`text-2xl font-black tracking-tight ${isAccumulating ? 'text-emerald-600 dark:text-emerald-400' : netFlow < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`}>
                         {netFlow > 0 ? '+' : ''}{formatNepaliNumber(netFlow)}
                     </p>
@@ -239,7 +238,7 @@ export default function TickerAccumulation({ symbol }: TickerAccumulationProps) 
                 </div>
 
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Accumulation Ratio</p>
+                    <p className="text-[10px] font-black text-slate-400 tracking-widest mb-3">Accumulation ratio</p>
                     <p className={`text-2xl font-black tracking-tight ${accRatio > 50 ? 'text-emerald-600 dark:text-emerald-400' : accRatio > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'}`}>
                         {accumData ? `${accRatio.toFixed(1)}%` : '–'}
                     </p>
@@ -247,7 +246,7 @@ export default function TickerAccumulation({ symbol }: TickerAccumulationProps) 
                 </div>
 
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Top Smart Buyers</p>
+                    <p className="text-[10px] font-black text-slate-400 tracking-widest mb-2">Top smart buyers</p>
                     <div className="flex flex-wrap gap-1.5 mt-2">
                         {(accumData?.top_buyers?.slice(0, 5) || []).map((b: any) => (
                             <Link href={`/broker/${b}`} key={b}>
@@ -261,7 +260,7 @@ export default function TickerAccumulation({ symbol }: TickerAccumulationProps) 
                 </div>
 
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Top Smart Sellers</p>
+                    <p className="text-[10px] font-black text-slate-400 tracking-widest mb-2">Top smart sellers</p>
                     <div className="flex flex-wrap gap-1.5 mt-2">
                         {(accumData?.top_sellers?.slice(0, 5) || []).map((b: any) => (
                             <Link href={`/broker/${b}`} key={b}>
@@ -332,7 +331,7 @@ export default function TickerAccumulation({ symbol }: TickerAccumulationProps) 
                             <p className="text-[11px] text-slate-400 mt-0.5">Significant holders of {symbol} with multi-timeframe trend</p>
                         </div>
                         <Link href={`/accumulation?tab=history&symbol=${symbol}`}>
-                            <Button variant="ghost" size="sm" className="text-xs font-bold text-indigo-600 dark:text-indigo-400 gap-1 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl">
+                            <Button variant="ghost" size="sm" className="text-xs font-bold text-slate-900 dark:text-slate-200 gap-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">
                                 Full History <ArrowRight className="w-3 h-3" />
                             </Button>
                         </Link>
@@ -355,7 +354,7 @@ export default function TickerAccumulation({ symbol }: TickerAccumulationProps) 
                                         <th
                                             key={col}
                                             onClick={() => handleSort(col)}
-                                            className={`px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider cursor-pointer select-none hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'}`}
+                                            className={`px-5 py-3 text-[10px] font-black text-slate-400 tracking-wider cursor-pointer select-none hover:text-black dark:hover:text-white transition-colors ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'}`}
                                         >
                                             {label}<SortIcon col={col} />
                                         </th>
@@ -370,7 +369,7 @@ export default function TickerAccumulation({ symbol }: TickerAccumulationProps) 
                                     return (
                                         <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group">
                                             <td className="px-5 py-3">
-                                                <Link href={`/broker/${row.broker}`} className="font-black text-indigo-600 dark:text-indigo-400 hover:underline text-sm">
+                                                <Link href={`/broker/${row.broker}`} className="font-black text-black dark:text-white hover:underline text-sm">
                                                     #{row.broker}
                                                 </Link>
                                             </td>

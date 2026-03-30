@@ -62,7 +62,7 @@ const SOURCE_COLORS: Record<string, { bg: string; text: string; border: string }
 };
 
 const TIER_COLORS: Record<string, string> = {
-    'Platinum Buy': 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700',
+    'Platinum Buy': 'bg-black dark:bg-white text-white dark:text-black border-slate-900 dark:border-white',
     'Gold Signal': 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700',
     'Silver Signal': 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700',
     'Bullish Divergence': 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700',
@@ -77,7 +77,7 @@ function SignalBadge({ signal, size = 'sm' }: { signal: string; size?: 'sm' | 'l
 
     return (
         <span className={cn(
-            'inline-flex items-center gap-1 rounded-full font-black uppercase tracking-wide border',
+            'inline-flex items-center gap-1 rounded-full font-black tracking-wide border',
             size === 'lg' ? 'px-3 py-1 text-xs' : 'px-2 py-0.5 text-[10px]',
             isBuy && 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700',
             isSell && 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-700',
@@ -97,7 +97,7 @@ function StrengthMeter({ value, label }: { value: number; label?: string }) {
     const color = value >= 70 ? 'bg-emerald-500' : value >= 40 ? 'bg-amber-500' : 'bg-rose-500';
     return (
         <div className="space-y-1">
-            {label && <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{label}</span>}
+            {label && <span className="text-[9px] font-bold text-slate-400 tracking-wider">{label}</span>}
             <div className="flex items-center gap-2">
                 <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div className={cn("h-full rounded-full transition-all duration-700", color)} style={{ width: `${Math.min(value, 100)}%` }} />
@@ -134,10 +134,10 @@ const getActionability = (signalPrice: number, currentPrice?: number, signal?: s
     // Technical Structural Breakdown check
     if (intelligence) {
         if (isBuy && (intelligence.macd === 'BEARISH' || intelligence.technicalScore < 30)) {
-            return { label: 'Setup Broken', color: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800', status: 'invalid' };
+            return { label: 'Setup Broken', color: 'bg-slate-100 dark:bg-slate-900/40 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-800', status: 'invalid' };
         }
         if (isSell && (intelligence.macd === 'BULLISH' || intelligence.technicalScore > 70)) {
-            return { label: 'Setup Broken', color: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800', status: 'invalid' };
+            return { label: 'Setup Broken', color: 'bg-slate-100 dark:bg-slate-900/40 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-800', status: 'invalid' };
         }
     }
 
@@ -159,7 +159,7 @@ function VerdictBadge({ signalPrice, currentPrice, signal, intelligence }: { sig
     const action = getActionability(signalPrice, currentPrice, signal, intelligence);
     if (!action) return null;
     return (
-        <span className={cn("px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border", action.color)}>
+        <span className={cn("px-2 py-0.5 rounded text-[9px] font-black tracking-wider border", action.color)}>
             {action.label}
         </span>
     );
@@ -320,7 +320,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence }: { 
                             <>
                                 {/* Consensus Bar */}
                                 <div className="space-y-2">
-                                    <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-wider">
+                                    <div className="flex items-center gap-4 text-[10px] font-black tracking-wider">
                                         <span className="text-emerald-600 dark:text-emerald-400">{strategyAnalysis.buys.length} Buy</span>
                                         <span className="text-rose-600 dark:text-rose-400">{strategyAnalysis.sells.length} Sell</span>
                                         <span className="text-amber-600 dark:text-amber-400">{strategyAnalysis.holds.length} Hold</span>
@@ -336,12 +336,12 @@ export default function TickerSignals({ symbol, currentPrice, intelligence }: { 
                                     <table className="w-full text-sm">
                                         <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
                                             <tr>
-                                                <th className="px-5 py-3 text-left font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">Strategy</th>
-                                                <th className="px-5 py-3 text-center font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">Freshness</th>
-                                                <th className="px-5 py-3 text-center font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">Signal</th>
-                                                <th className="px-5 py-3 text-center font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">Change</th>
-                                                <th className="px-5 py-3 text-center font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">Date</th>
-                                                <th className="px-5 py-3 text-center font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">Close @ Sig</th>
+                                                <th className="px-5 py-3 text-left font-bold text-slate-400 dark:text-slate-500 text-[10px] tracking-wider">Strategy</th>
+                                                <th className="px-5 py-3 text-center font-bold text-slate-400 dark:text-slate-500 text-[10px] tracking-wider">Freshness</th>
+                                                <th className="px-5 py-3 text-center font-bold text-slate-400 dark:text-slate-500 text-[10px] tracking-wider">Signal</th>
+                                                <th className="px-5 py-3 text-center font-bold text-slate-400 dark:text-slate-500 text-[10px] tracking-wider">Change</th>
+                                                <th className="px-5 py-3 text-center font-bold text-slate-400 dark:text-slate-500 text-[10px] tracking-wider">Date</th>
+                                                <th className="px-5 py-3 text-center font-bold text-slate-400 dark:text-slate-500 text-[10px] tracking-wider">Close @ Sig</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -372,7 +372,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence }: { 
                                                             <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-[220px]">{sig.strategy_description}</div>
                                                         </td>
                                                         <td className="px-5 py-3.5 text-center">
-                                                            <div className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase border", freshness.color)}>
+                                                            <div className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black border", freshness.color)}>
                                                                 <freshness.icon size={10} />
                                                                 {freshness.label}
                                                             </div>
@@ -414,7 +414,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence }: { 
                     <div className="glass-card-light rounded-2xl border border-slate-200 dark:border-slate-800/50 p-8 shadow-sm space-y-6">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800">
+                                <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-900/30 text-slate-900 dark:text-slate-200 border border-slate-200 dark:border-slate-800">
                                     <Radar size={18} />
                                 </div>
                                 <div>
@@ -458,7 +458,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence }: { 
                                                                 <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1">
                                                                     <Clock size={9} /> {latestSignal.generated_date}
                                                                 </span>
-                                                                <div className={cn("inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase border", freshness.color)}>
+                                                                <div className={cn("inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-black border", freshness.color)}>
                                                                     <freshness.icon size={8} />
                                                                     {freshness.label}
                                                                 </div>

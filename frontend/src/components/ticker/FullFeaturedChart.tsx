@@ -449,7 +449,7 @@ export function FullFeaturedChart({ symbol, crossoverDate, crossoverPrice, signa
                 <div className="flex flex-col items-center gap-3">
                     <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
                     <div className="text-center">
-                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Loading Advanced Charts</p>
+                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Loading advanced charts</p>
                         <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Fetching OHLC data from local source...</p>
                     </div>
                 </div>
@@ -547,7 +547,7 @@ export function FullFeaturedChart({ symbol, crossoverDate, crossoverPrice, signa
                                 <div className="max-h-[400px] overflow-y-auto p-2 space-y-3">
                                     {/* Trend Indicators */}
                                     <div>
-                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-2 mb-1">Trend</p>
+                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider px-2 mb-1">Trend</p>
                                         <div className="space-y-1">
                                             {AVAILABLE_INDICATORS.trend.map(ind => (
                                                 <div key={ind.id} className="px-2">
@@ -577,7 +577,7 @@ export function FullFeaturedChart({ symbol, crossoverDate, crossoverPrice, signa
 
                                     {/* Volatility Indicators */}
                                     <div>
-                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-2 mb-1">Volatility</p>
+                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider px-2 mb-1">Volatility</p>
                                         <div className="space-y-1">
                                             {AVAILABLE_INDICATORS.volatility.map(ind => (
                                                 <button
@@ -599,7 +599,7 @@ export function FullFeaturedChart({ symbol, crossoverDate, crossoverPrice, signa
 
                                     {/* Momentum Indicators */}
                                     <div>
-                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-2 mb-1">Momentum</p>
+                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider px-2 mb-1">Momentum</p>
                                         <div className="space-y-1">
                                             {AVAILABLE_INDICATORS.momentum.map(ind => (
                                                 <button

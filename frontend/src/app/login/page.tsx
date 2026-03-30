@@ -91,9 +91,9 @@ export default function LoginPage() {
                         {!is2faRequired ? (
                             <>
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                                    <label className="text-[10px] font-bold text-slate-500 ml-1 flex items-center gap-1.5">
                                         <Mail size={12} className="text-slate-400" />
-                                        Username or Email
+                                        Username or email
                                     </label>
                                     <Input
                                         type="text"
@@ -107,7 +107,7 @@ export default function LoginPage() {
 
                                 <div className="space-y-1">
                                     <div className="flex justify-between items-center ml-1">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                        <label className="text-[10px] font-bold text-slate-500 flex items-center gap-1.5">
                                             <Lock size={12} className="text-slate-400" />
                                             Password
                                         </label>
@@ -136,9 +136,9 @@ export default function LoginPage() {
                             </>
                         ) : (
                             <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+                                <label className="text-[10px] font-bold text-slate-500 ml-1 flex items-center gap-1.5">
                                     <Binary size={12} className="text-slate-400" />
-                                    6-Digit Authenticator Code
+                                    6-digit authenticator code
                                 </label>
                                 <Input
                                     type="text"
@@ -165,7 +165,7 @@ export default function LoginPage() {
 
                         <Button
                             type="submit"
-                            className="w-full h-12 bg-slate-900 dark:bg-slate-100 hover:bg-black dark:hover:bg-white text-white dark:text-slate-900 font-bold text-xs tracking-widest uppercase transition-all shadow-lg active:scale-[0.98] rounded-xl flex items-center gap-2"
+                            className="w-full h-12 bg-slate-900 dark:bg-slate-100 hover:bg-black dark:hover:bg-white text-white dark:text-slate-900 font-bold text-xs transition-all shadow-lg active:scale-[0.98] rounded-xl flex items-center gap-2"
                             disabled={loading}
                         >
                             {loading ? (
@@ -173,7 +173,7 @@ export default function LoginPage() {
                             ) : (
                                 <>
                                     <LayoutDashboard size={16} />
-                                    {is2faRequired ? 'Verify & Login' : 'Sign In'}
+                                    {is2faRequired ? 'Verify & login' : 'Sign in'}
                                 </>
                             )}
                         </Button>
@@ -185,7 +185,7 @@ export default function LoginPage() {
                                 <div className="absolute inset-0 flex items-center">
                                     <span className="w-full border-t border-slate-100 dark:border-slate-800" />
                                 </div>
-                                <div className="relative flex justify-center text-[10px] uppercase">
+                                <div className="relative flex justify-center text-[10px]">
                                     <span className="bg-white dark:bg-slate-900 px-2 text-slate-400 font-bold">Or continue with</span>
                                 </div>
                             </div>
@@ -227,9 +227,9 @@ export default function LoginPage() {
                         <button
                             type="button"
                             onClick={() => setIs2faRequired(false)}
-                            className="w-full mt-4 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest"
+                            className="w-full mt-4 text-[10px] font-bold text-slate-400 hover:text-slate-600"
                         >
-                            Back to Credentials
+                            Back to credentials
                         </button>
                     )}
                 </CardContent>

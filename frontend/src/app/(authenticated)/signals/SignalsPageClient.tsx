@@ -158,9 +158,9 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                     <table className="w-full">
                         <thead>
                             <tr className="border-b border-slate-200 dark:border-slate-800">
-                                <th className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase w-12"></th>
+                                <th className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] w-12"></th>
                                 <th
-                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                     onClick={() => handleSort('symbol')}
                                 >
                                     <div className="flex items-center">
@@ -168,7 +168,7 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                     </div>
                                 </th>
                                 <th
-                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                     onClick={() => handleSort('signalType')}
                                 >
                                     <div className="flex items-center">
@@ -176,7 +176,7 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                     </div>
                                 </th>
                                 <th
-                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                     onClick={() => handleSort('count')}
                                 >
                                     <div className="flex items-center">
@@ -184,7 +184,7 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                     </div>
                                 </th>
                                 <th
-                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                     onClick={() => handleSort('lastClose')}
                                 >
                                     <div className="flex items-center">
@@ -192,14 +192,14 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                     </div>
                                 </th>
                                 <th
-                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                     onClick={() => handleSort('date')}
                                 >
                                     <div className="flex items-center">
                                         Date <SortIcon columnKey="date" />
                                     </div>
                                 </th>
-                                <th className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase w-32">Action</th>
+                                <th className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] w-32">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -245,8 +245,8 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                         <tr className="bg-slate-50/50 dark:bg-slate-800/50">
                                             <td colSpan={7} className="p-0">
                                                 <div className="px-12 py-4 space-y-2 border-l-4 border-l-slate-200 dark:border-l-slate-700 ml-6 my-2">
-                                                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">
-                                                        Contributing Strategies
+                                                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-3">
+                                                        Contributing strategies
                                                     </p>
                                                     {group.signals.map(sig => (
                                                         <div key={sig.id} className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm flex justify-between items-center">
@@ -558,24 +558,24 @@ export default function SignalsPage() {
                                 <TabsList className="bg-slate-200/50 dark:bg-slate-800/50 p-1 h-10 rounded-xl">
                                     <TabsTrigger
                                         value="signals"
-                                        className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-300 px-6 font-bold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-400"
+                                        className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-300 px-6 font-bold text-xs text-slate-600 dark:text-slate-400"
                                     >
-                                        All Opportunity
+                                        All opportunities
                                     </TabsTrigger>
                                     <TabsTrigger
                                         value="tracking"
-                                        className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-300 px-6 font-bold text-xs uppercase tracking-wider text-slate-600 dark:text-slate-400"
+                                        className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-300 px-6 font-bold text-xs text-slate-600 dark:text-slate-400"
                                     >
-                                        Active Tracking
+                                        Active tracking
                                     </TabsTrigger>
                                 </TabsList>
                             </Tabs>
 
                             {tabMode === 'signals' && (
                                 <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
-                                    <div className="flex items-center mr-2 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-tighter">
+                                    <div className="flex items-center mr-2 text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-tighter">
                                         <Filter className="w-3 h-3 mr-1" />
-                                        Refine By
+                                        Refine by
                                     </div>
                                     {(['ALL', 'BUY', 'SELL', 'HOLD'] as SignalFilter[]).map(type => (
                                         <Button
@@ -610,7 +610,7 @@ export default function SignalsPage() {
                                 <CardContent className="p-3">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-0.5">BUY Signals</p>
+                                            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-0.5">Buy signals</p>
                                             <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">{buyCount}</p>
                                             <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-0.5">
                                                 {total > 0 ? ((buyCount / total) * 100).toFixed(1) : 0}% of total
@@ -627,7 +627,7 @@ export default function SignalsPage() {
                                 <CardContent className="p-3">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm font-medium text-rose-600 dark:text-rose-400 mb-0.5">SELL Signals</p>
+                                            <p className="text-sm font-medium text-rose-600 dark:text-rose-400 mb-0.5">Sell signals</p>
                                             <p className="text-3xl font-bold text-rose-700 dark:text-rose-300">{sellCount}</p>
                                             <p className="text-xs text-rose-600 dark:text-rose-500 mt-0.5">
                                                 {total > 0 ? ((sellCount / total) * 100).toFixed(1) : 0}% of total
@@ -644,7 +644,7 @@ export default function SignalsPage() {
                                 <CardContent className="p-3">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm font-medium text-amber-600 dark:text-amber-400 mb-0.5">HOLD Signals</p>
+                                            <p className="text-sm font-medium text-amber-600 dark:text-amber-400 mb-0.5">Hold signals</p>
                                             <p className="text-3xl font-bold text-amber-700 dark:text-amber-300">{holdCount}</p>
                                             <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">
                                                 {total > 0 ? ((holdCount / total) * 100).toFixed(1) : 0}% of total
@@ -725,7 +725,7 @@ export default function SignalsPage() {
                                                             <div className="space-y-3">
                                                                 <div className="flex items-center gap-2 pb-3 border-b-2 border-emerald-200 dark:border-emerald-800">
                                                                     <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                                                                    <h3 className="text-sm font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">
+                                                                    <h3 className="text-sm font-bold text-emerald-700 dark:text-emerald-400 tracking-wide">
                                                                         BUY ({buySignals.length})
                                                                     </h3>
                                                                 </div>
@@ -744,7 +744,7 @@ export default function SignalsPage() {
                                                             <div className="space-y-3">
                                                                 <div className="flex items-center gap-2 pb-3 border-b-2 border-rose-200 dark:border-rose-800">
                                                                     <TrendingDown className="w-5 h-5 text-rose-600 dark:text-rose-400" />
-                                                                    <h3 className="text-sm font-bold text-rose-700 dark:text-rose-400 uppercase tracking-wide">
+                                                                    <h3 className="text-sm font-bold text-rose-700 dark:text-rose-400 tracking-wide">
                                                                         SELL ({sellSignals.length})
                                                                     </h3>
                                                                 </div>
@@ -763,7 +763,7 @@ export default function SignalsPage() {
                                                             <div className="space-y-3">
                                                                 <div className="flex items-center gap-2 pb-3 border-b-2 border-amber-200 dark:border-amber-800">
                                                                     <Minus className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                                                                    <h3 className="text-sm font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
+                                                                    <h3 className="text-sm font-bold text-amber-700 dark:text-amber-400 tracking-wide">
                                                                         HOLD ({holdSignals.length})
                                                                     </h3>
                                                                 </div>

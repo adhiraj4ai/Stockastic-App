@@ -116,7 +116,7 @@ export function IntelligenceGlass({
                             <verdict.icon size={22} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">Cognitive Intelligence</p>
+                            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">Cognitive intelligence</p>
                             <h2 className={cn("text-2xl font-bold tracking-tight", verdict.color)}>{verdict.label}</h2>
                         </div>
                     </div>
@@ -197,7 +197,7 @@ export function IntelligenceGlass({
                     <p className="text-[9px] font-semibold text-slate-400 dark:text-slate-500">Trend</p>
                     <div className="flex items-center gap-1.5">
                         {macd === 'BULLISH' ? <ArrowUpRight size={14} className="text-emerald-500" /> : <ArrowDownRight size={14} className="text-rose-500" />}
-                        <span className="font-bold text-xs text-slate-800 dark:text-slate-200">{macd}</span>
+                        <span className="font-bold text-xs text-slate-800 dark:text-slate-200">{macd.charAt(0) + macd.slice(1).toLowerCase()}</span>
                     </div>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-50/50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 space-y-0.5">
@@ -207,7 +207,7 @@ export function IntelligenceGlass({
                             "w-1.5 h-1.5 rounded-full",
                             riskLevel === 'LOW' ? "bg-emerald-500" : riskLevel === 'MEDIUM' ? "bg-amber-500" : "bg-rose-500"
                         )} />
-                        <span className="font-bold text-xs text-slate-800 dark:text-slate-200 uppercase">{riskLevel}</span>
+                        <span className="font-bold text-xs text-slate-800 dark:text-slate-200">{riskLevel.charAt(0) + riskLevel.slice(1).toLowerCase()}</span>
                     </div>
                 </div>
             </div>

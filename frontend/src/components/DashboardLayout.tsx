@@ -248,8 +248,8 @@ function DashboardContent({
         <div className="min-h-screen bg-white dark:bg-[#020617] flex transition-colors duration-300 relative overflow-hidden">
             {/* Ambient Background Glows */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/5 dark:bg-indigo-500/5 blur-[80px] rounded-full" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/5 dark:bg-blue-500/5 blur-[80px] rounded-full" />
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/5 dark:bg-slate-500/5 blur-[80px] rounded-full" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-slate-500/5 dark:bg-blue-500/5 blur-[80px] rounded-full" />
             </div>
 
             {/* Sidebar */}
@@ -274,7 +274,7 @@ function DashboardContent({
                     )}
                     <button
                         onClick={toggleSidebar}
-                        className={`p-2 rounded-xl bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-all duration-300 ${isSidebarCollapsed ? '' : ''}`}
+                        className={`p-2 rounded-xl bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-900/60 dark:text-slate-400/60 hover:text-black dark:hover:text-white transition-all duration-300 ${isSidebarCollapsed ? '' : ''}`}
                         title={isSidebarCollapsed ? "Expand" : "Collapse"}
                     >
                         {isSidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
@@ -294,7 +294,7 @@ function DashboardContent({
                                 {hasSubItems ? (
                                     <button
                                         onClick={() => toggleMenu(item.name)}
-                                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 text-gray-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/60 hover:text-gray-900 dark:hover:text-slate-100 group ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}
+                                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 text-slate-900/80 dark:text-slate-300/70 hover:bg-slate-100 dark:hover:bg-slate-700/60 hover:text-black dark:hover:text-white group ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}
                                         title={isSidebarCollapsed ? item.name : ''}
                                     >
                                         <div className="flex items-center gap-3">
@@ -309,21 +309,21 @@ function DashboardContent({
                                                                             item.name === 'Strategies' ? 'text-yellow-500 dark:text-yellow-400' :
                                                                                 item.name === 'Signal Intel' ? 'text-pink-500 dark:text-pink-400' :
                                                                                     item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
-                                                                                        'text-gray-400 dark:text-slate-500'
+                                                                                        'text-slate-900/40 dark:text-slate-500/60'
                                                 } />
                                             </div>
                                             {!isSidebarCollapsed && <span className="text-sm font-bold tracking-tight">{item.name}</span>}
                                         </div>
                                         {!isSidebarCollapsed && (
-                                            <ChevronDown size={14} className={`text-gray-400 dark:text-slate-600 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                                            <ChevronDown size={14} className={`text-slate-900/50 dark:text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
                                         )}
                                     </button>
                                 ) : (
                                     <Link
                                         href={('href' in item ? item.href : '#') as string}
                                         className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 group shadow-sm border ${isActive
-                                            ? 'bg-gradient-to-br from-slate-900 to-slate-800 dark:from-indigo-600 dark:to-blue-700 text-white shadow-lg shadow-indigo-500/20 border-transparent'
-                                            : 'text-gray-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/60 hover:text-gray-900 dark:hover:text-slate-100 border-slate-200/50 dark:border-white/5'
+                                            ? 'bg-black dark:bg-white text-white dark:text-black shadow-lg shadow-slate-900/20 border-transparent'
+                                            : 'text-slate-900 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-black dark:hover:text-white border-slate-200/50 dark:border-white/5'
                                             } ${isSidebarCollapsed ? 'justify-center px-2' : ''}`}
                                         title={isSidebarCollapsed ? item.name : ''}
                                     >
@@ -337,7 +337,7 @@ function DashboardContent({
                                                                     item.name === 'Strategies' ? 'text-yellow-500 dark:text-yellow-400' :
                                                                         item.name === 'Signal Intel' ? 'text-pink-500 dark:text-pink-400' :
                                                                             item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
-                                                                                'text-gray-400 dark:text-slate-500'
+                                                                                'text-slate-900/40 dark:text-slate-500/60'
                                             } />
                                         </div>
                                         {!isSidebarCollapsed && <span className="text-sm font-bold tracking-tight">{item.name}</span>}
@@ -358,18 +358,18 @@ function DashboardContent({
                                             const subIconColor = isActiveLink
                                                 ? (item.name === 'Accumulation' ? 'text-orange-600 dark:text-orange-400' :
                                                     item.name === 'Finfolio' ? 'text-emerald-600 dark:text-emerald-400' :
-                                                        'text-blue-600 dark:text-indigo-400')
+                                                        'text-black dark:text-white')
                                                 : (item.name === 'Accumulation' ? 'text-orange-500/70 dark:text-orange-400/70' :
                                                     item.name === 'Finfolio' ? 'text-emerald-500/70 dark:text-emerald-400/70' :
-                                                        'text-gray-400 dark:text-slate-600');
+                                                        'text-slate-900/40 dark:text-slate-400/60');
 
                                             return (
                                                 <Link
                                                     key={subItem.name}
                                                     href={subItem.href}
                                                     className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[11px] font-bold tracking-tight transition-all duration-300 ${isActiveLink
-                                                        ? 'bg-blue-100/70 dark:bg-indigo-500/25 text-blue-700 dark:text-indigo-200 shadow-sm'
-                                                        : 'text-gray-500 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-slate-200'
+                                                        ? 'bg-black/5 dark:bg-white/10 text-black dark:text-white shadow-sm'
+                                                        : 'text-slate-900/60 dark:text-slate-400/60 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-black dark:hover:text-white'
                                                         }`}
                                                 >
                                                     {subItem.icon && <subItem.icon size={14} className={subIconColor} />}
@@ -414,10 +414,10 @@ function DashboardContent({
                                 )}
                                 {pathname === '/signals' ? (
                                     <div className="flex flex-col min-w-0">
-                                        <h2 className="text-lg font-bold bg-gradient-to-r from-pink-600 to-indigo-600 dark:from-pink-400 dark:to-indigo-400 bg-clip-text text-transparent tracking-tight">
+                                        <h2 className="text-lg font-bold bg-gradient-to-r from-slate-900 to-black dark:from-white dark:to-slate-400 bg-clip-text text-transparent tracking-tight">
                                             Signal Intelligence Hub
                                         </h2>
-                                        <p className="text-[10px] text-slate-500 dark:text-slate-500 font-bold uppercase tracking-widest">Unified · Smart Money · Strategies · Whale Watch</p>
+                                        <p className="text-[10px] text-slate-500 dark:text-slate-500 font-bold">Unified · Smart Money · Strategies · Whale Watch</p>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col min-w-0">
@@ -425,7 +425,7 @@ function DashboardContent({
                                             {title || (pathname.includes('/ticker/') ? 'Stock Details' : pathname.split('/').pop())}
                                         </h2>
                                         {subtitle && (
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate pr-4 mt-0.5">{subtitle}</p>
+                                            <p className="text-sm text-slate-900/60 dark:text-slate-400/60 truncate pr-4 mt-0.5">{subtitle}</p>
                                         )}
                                     </div>
                                 )}
@@ -451,16 +451,15 @@ function DashboardContent({
                                     {extraHeaderItems}
                                 </div>
                             )}
-
                             {marketMeta && (
                                 <div className="hidden md:flex flex-col items-end mr-2">
                                     <div className="flex items-center gap-2">
-                                        <span className={`h-2 w-2 rounded-full ${marketMeta.status === 'OPEN' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
-                                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-                                            {marketMeta.status === 'OPEN' ? 'Market Open' : 'Market Closed'}
+                                        <span className={`h-2 w-2 rounded-full ${marketMeta.status === 'OPEN' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400/60'}`}></span>
+                                        <span className="text-[10px] font-bold text-slate-900/60 dark:text-slate-400/60">
+                                            {marketMeta.status === 'OPEN' ? 'Market open' : 'Market closed'}
                                         </span>
                                     </div>
-                                    <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                                    <span className="text-xs font-mono font-bold text-slate-900 dark:text-slate-100">
                                         {marketMeta.date}
                                     </span>
                                 </div>
@@ -478,11 +477,10 @@ function DashboardContent({
                                     </button>
                                 </Link>
                             )}
-
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <button className="flex items-center gap-3 p-1.5 pr-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 hover:border-blue-200 dark:hover:border-indigo-500/50 hover:bg-white dark:hover:bg-white/10 transition-all duration-500 group outline-none">
-                                        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform uppercase">
+                                    <button className="flex items-center gap-3 p-1.5 pr-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 hover:border-black dark:hover:border-white/50 hover:bg-white dark:hover:bg-white/10 transition-all duration-500 group outline-none">
+                                        <div className="h-9 w-9 rounded-xl bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-bold shadow-lg shadow-slate-900/20 group-hover:scale-105 transition-transform">
                                             {(currentUser?.username === 'admin' ? 'J' : currentUser?.username === 'ashmi' ? 'A' : 'G')}
                                         </div>
                                         <div className="flex flex-col items-start mr-1">
@@ -492,15 +490,15 @@ function DashboardContent({
                                             {currentUser && (
                                                 <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5 bg-emerald-500/10 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full mt-0.5 border border-emerald-500/20">
                                                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                                                    ACTIVE
+                                                    Active
                                                 </span>
                                             )}
                                         </div>
-                                        <ChevronDown size={14} className="text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-transform active:rotate-180" />
+                                        <ChevronDown size={14} className="text-slate-900/40 dark:text-slate-400/60 group-hover:text-black dark:group-hover:text-white transition-transform active:rotate-180" />
                                     </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-64 p-2 rounded-2xl border-white/5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-2xl">
-                                    <DropdownMenuLabel className="font-bold text-[10px] uppercase tracking-widest text-slate-500">Terminal Access</DropdownMenuLabel>
+                                    <DropdownMenuLabel className="font-bold text-[10px] text-slate-900/60 dark:text-slate-400/60">Terminal access</DropdownMenuLabel>
                                     <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/5" />
                                     <DropdownMenuItem className="cursor-pointer gap-3 p-3 rounded-xl focus:bg-blue-50 dark:focus:bg-white/5 focus:text-blue-600 dark:focus:text-blue-400 transition-all group" onClick={() => setIsSettingsOpen(true)}>
                                         <div className="p-2 rounded-lg bg-slate-100 dark:bg-white/5 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 transition-colors">

@@ -113,7 +113,7 @@ export default function SignupPage() {
                 <CardContent className="pt-6 px-8 pb-8">
                     <form onSubmit={handleSignup} className="space-y-4">
                         <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Username</label>
+                            <label className="text-[10px] font-bold text-slate-500 ml-1">Username</label>
                             <div className="relative">
                                 <User className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
                                 <Input
@@ -127,7 +127,7 @@ export default function SignupPage() {
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Email</label>
+                            <label className="text-[10px] font-bold text-slate-500 ml-1">Email</label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
                                 <Input
@@ -142,7 +142,7 @@ export default function SignupPage() {
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Password</label>
+                            <label className="text-[10px] font-bold text-slate-500 ml-1">Password</label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
                                 <Input
@@ -158,7 +158,7 @@ export default function SignupPage() {
                             {formData.password.length > 0 && (
                                 <div className="mt-2 space-y-1.5 px-1">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Strength: <span className={getStrengthColor().replace('bg-', 'text-')}>{getStrengthText()}</span></span>
+                                        <span className="text-[9px] font-bold text-slate-400">Strength: <span className={getStrengthColor().replace('bg-', 'text-')}>{getStrengthText()}</span></span>
                                     </div>
                                     <div className="flex gap-1 h-1">
                                         {[1, 2, 3, 4].map((step) => (
@@ -173,7 +173,7 @@ export default function SignupPage() {
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Confirm Password</label>
+                            <label className="text-[10px] font-bold text-slate-500 ml-1">Confirm password</label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
                                 <Input
@@ -196,7 +196,7 @@ export default function SignupPage() {
 
                         <Button
                             type="submit"
-                            className="w-full h-12 bg-slate-900 dark:bg-slate-100 hover:bg-black dark:hover:bg-white text-white dark:text-slate-900 font-bold rounded-xl transition-all shadow-lg active:scale-[0.98] uppercase text-[10px] tracking-widest"
+                            className="w-full h-12 bg-slate-900 dark:bg-slate-100 hover:bg-black dark:hover:bg-white text-white dark:text-slate-900 font-bold rounded-xl transition-all shadow-lg active:scale-[0.98] text-[11px]"
                             disabled={loading}
                         >
                             {loading ? 'Creating Account...' : 'Sign Up'}
@@ -207,7 +207,7 @@ export default function SignupPage() {
                         <div className="absolute inset-0 flex items-center">
                             <span className="w-full border-t border-slate-100 dark:border-slate-800" />
                         </div>
-                        <div className="relative flex justify-center text-xs uppercase">
+                        <div className="relative flex justify-center text-xs">
                             <span className="bg-white dark:bg-slate-900 px-2 text-slate-500 dark:text-slate-500 font-bold">Or continue with</span>
                         </div>
                     </div>

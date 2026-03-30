@@ -10,6 +10,7 @@ class DataUploadLog(models.Model):
         ('OPTIMIZATION', 'Strategy Training'),
         ('SIGNALS', 'Signal Generation'),
         ('BROKER_ANALYSIS', 'Broker Analysis'),
+        ('EVALUATION', 'Signal Evaluation'),
     )
     STATUS_CHOICES = (
         ('PENDING', 'Pending'),

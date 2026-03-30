@@ -265,8 +265,8 @@ function FloorsheetContent() {
                                         <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                     </div>
                                     <div>
-                                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Total Turnover</p>
-                                        <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{formatCurrency(summary?.total_turnover || 0)}</p>
+                                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">Total turnover</p>
+                                        <p className="text-xl font-black text-slate-900 dark:text-slate-100">{formatCurrency(summary?.total_turnover || 0)}</p>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -276,8 +276,8 @@ function FloorsheetContent() {
                                         <Users className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                                     </div>
                                     <div>
-                                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Total Volume</p>
-                                        <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{formatNumber(summary?.total_volume || 0)}</p>
+                                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">Total volume</p>
+                                        <p className="text-xl font-black text-slate-900 dark:text-slate-100">{formatNumber(summary?.total_volume || 0)}</p>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -287,8 +287,8 @@ function FloorsheetContent() {
                                         <Activity className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                                     </div>
                                     <div>
-                                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Transactions</p>
-                                        <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{formatNumber(summary?.total_transactions || 0)}</p>
+                                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">Transactions</p>
+                                        <p className="text-xl font-black text-slate-900 dark:text-slate-100">{formatNumber(summary?.total_transactions || 0)}</p>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -298,8 +298,8 @@ function FloorsheetContent() {
                                         <TrendingUp className="w-5 h-5 text-slate-600 dark:text-slate-400" />
                                     </div>
                                     <div>
-                                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Avg Rate</p>
-                                        <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{formatCurrency(summary?.avg_rate || 0)}</p>
+                                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">Average rate</p>
+                                        <p className="text-xl font-black text-slate-900 dark:text-slate-100">{formatCurrency(summary?.avg_rate || 0)}</p>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -360,7 +360,7 @@ function FloorsheetContent() {
                                     <>
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-sm text-left">
-                                                <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 uppercase text-xs font-bold border-b border-slate-200 dark:border-slate-800">
+                                                <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 text-xs font-bold border-b border-slate-200 dark:border-slate-800">
                                                     <tr>
                                                         <th className="px-6 py-3 whitespace-nowrap">Contract</th>
                                                         <th className="px-6 py-3 whitespace-nowrap">Date</th>

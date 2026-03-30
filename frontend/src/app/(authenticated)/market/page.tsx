@@ -377,8 +377,8 @@ export default function DashboardPage() {
             >
                 <TableCell className="py-2.5">
                     <div className="flex flex-col">
-                        <span className="font-semibold text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{stock.ticker}</span>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">{stock.sector || 'Listed Equity'}</span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{stock.ticker}</span>
+                        <span className="text-[10px] text-indigo-600/60 dark:text-indigo-400/60 font-medium">{stock.sector || 'Listed Equity'}</span>
                     </div>
                 </TableCell>
                 <TableCell className="text-right py-2.5 font-mono font-medium text-slate-700 dark:text-slate-300">
@@ -391,7 +391,7 @@ export default function DashboardPage() {
                             {Number(stock.percent_change).toFixed(2)}%
                         </div>
                         {stock.roc !== undefined && stock.roc !== null && (
-                            <span className="text-[9px] font-mono text-slate-500 opacity-80">ROC: {stock.roc}%</span>
+                            <span className="text-[9px] font-mono text-indigo-500/70 dark:text-indigo-400/60 font-bold">ROC: {stock.roc}%</span>
                         )}
                     </div>
                 </TableCell>
@@ -410,8 +410,8 @@ export default function DashboardPage() {
                 <div className="flex animate-infinite-scroll whitespace-nowrap items-center gap-12 px-4">
                     {top_gainers.concat(top_losers).slice(0, 10).map((stock, i) => (
                         <div key={i} className="flex items-center gap-2 cursor-pointer opacity-80 hover:opacity-100 transition-opacity" onClick={() => router.push(`/ticker/${stock.ticker}`)}>
-                            <span className="font-bold text-xs text-slate-200 dark:text-slate-300 tracking-wider">{stock.ticker}</span>
-                            <span className="font-mono text-xs text-slate-400 dark:text-slate-500">{formatNepaliNumber(stock.close)}</span>
+                            <span className="font-bold text-xs text-indigo-100 tracking-wider">{stock.ticker}</span>
+                            <span className="font-mono text-xs text-indigo-400/80">{formatNepaliNumber(stock.close)}</span>
                             <span className={`text-[10px] font-bold px-1.5 rounded-sm ${stock.change >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
                                 {stock.change >= 0 ? '+' : ''}{stock.percent_change.toFixed(1)}%
                             </span>
@@ -420,8 +420,8 @@ export default function DashboardPage() {
                     {/* Duplicate for seamless scroll */}
                     {top_gainers.concat(top_losers).slice(0, 10).map((stock, i) => (
                         <div key={`d-${i}`} className="flex items-center gap-2 cursor-pointer opacity-80 hover:opacity-100 transition-opacity" onClick={() => router.push(`/ticker/${stock.ticker}`)}>
-                            <span className="font-bold text-xs text-slate-200 dark:text-slate-300 tracking-wider">{stock.ticker}</span>
-                            <span className="font-mono text-xs text-slate-400 dark:text-slate-500">{formatNepaliNumber(stock.close)}</span>
+                            <span className="font-bold text-xs text-indigo-100 tracking-wider">{stock.ticker}</span>
+                            <span className="font-mono text-xs text-indigo-400/80">{formatNepaliNumber(stock.close)}</span>
                             <span className={`text-[10px] font-bold px-1.5 rounded-sm ${stock.change >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
                                 {stock.change >= 0 ? '+' : ''}{stock.percent_change.toFixed(1)}%
                             </span>
@@ -487,24 +487,24 @@ export default function DashboardPage() {
                             <div className="absolute -left-8 -top-8 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent blur-2xl opacity-50" />
                             <CardHeader className="p-4 pb-1 border-b border-slate-50 dark:border-slate-800">
                                 <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                    <ActivityIcon size={14} className="text-blue-600" /> SNAPSHOT
+                                    <ActivityIcon size={14} className="text-blue-600" /> Snapshot
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-4 space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
-                                        <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Volume</span>
+                                        <span className="text-[9px] font-bold text-indigo-400 dark:text-indigo-400/60">Volume</span>
                                         <div className="font-mono font-bold text-slate-900 dark:text-slate-100">{(market_summary.total_volume / 1000000).toFixed(1)}M</div>
                                     </div>
                                     <div className="space-y-1 text-right">
-                                        <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">Turnover</span>
+                                        <span className="text-[9px] font-bold text-indigo-400 dark:text-indigo-400/60">Turnover</span>
                                         <div className="font-mono font-bold text-slate-900 dark:text-slate-100">{formatRupees(market_summary.total_turnover / 1000000)}M</div>
                                     </div>
                                 </div>
 
-                                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between group/breadth hover:border-blue-500/30 transition-colors">
+                                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between group/breadth hover:border-indigo-500/30 transition-colors">
                                     <div className="flex flex-col">
-                                        <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase">Breadth Ratio</span>
+                                        <span className="text-[9px] font-bold text-indigo-600/70 dark:text-indigo-400/60">Breadth ratio</span>
                                         <span className="text-lg font-bold text-slate-900 dark:text-slate-100 italic">{(market_summary.advancers / (market_summary.advancers + market_summary.decliners || 1)).toFixed(2)}</span>
                                     </div>
                                     <div className={`h-8 w-8 rounded-lg flex items-center justify-center transition-transform group-hover/breadth:scale-110 ${marketSentiment > 50 ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'}`}>
@@ -565,7 +565,7 @@ export default function DashboardPage() {
                                     <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
                                         <Wallet size={14} className="text-blue-500" /> Smart Money Flow (Top Broker Accumulation)
                                     </CardTitle>
-                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Tracking the biggest net buyers and their targeted stocks.</p>
+                                    <p className="text-[10px] text-indigo-600/70 dark:text-indigo-400/60 font-medium">Tracking the biggest net buyers and their targeted stocks.</p>
                                 </div>
                             </CardHeader>
                             <CardContent className="p-6">
@@ -582,7 +582,7 @@ export default function DashboardPage() {
                                     <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
                                         <Globe size={14} className="text-blue-600 group-hover:rotate-12 transition-transform" /> Market Liquidity Map
                                     </CardTitle>
-                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Size represents turnover, color represents performance</p>
+                                    <p className="text-[10px] text-indigo-600/70 dark:text-indigo-400/60 font-medium">Size represents turnover, color represents performance</p>
                                 </div>
                             </CardHeader>
                             <CardContent className="p-0 relative z-10">
@@ -601,9 +601,9 @@ export default function DashboardPage() {
                             <CardContent className="p-6 pt-0 flex-1 overflow-hidden flex flex-col">
                                 <Tabs defaultValue="gainers" className="w-full h-full flex flex-col">
                                     <TabsList className="grid w-full grid-cols-3 mb-4 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl h-10 border border-slate-200/50 dark:border-slate-800">
-                                        <TabsTrigger value="gainers" className="rounded-lg font-bold text-[10px] tracking-widest data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Top Gainers</TabsTrigger>
-                                        <TabsTrigger value="losers" className="rounded-lg font-bold text-[10px] tracking-widest data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Top Losers</TabsTrigger>
-                                        <TabsTrigger value="roc" className="rounded-lg font-bold text-[10px] tracking-widest data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">ROC Watch</TabsTrigger>
+                                        <TabsTrigger value="gainers" className="rounded-lg font-bold text-[10px] data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Top Gainers</TabsTrigger>
+                                        <TabsTrigger value="losers" className="rounded-lg font-bold text-[10px] data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Top Losers</TabsTrigger>
+                                        <TabsTrigger value="roc" className="rounded-lg font-bold text-[10px] data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">ROC Watch</TabsTrigger>
                                     </TabsList>
                                     <div className="flex-1 overflow-auto -mx-2 px-2 scrollbar-hide">
                                         <TabsContent value="gainers" className="m-0 focus-visible:outline-none">
@@ -659,12 +659,12 @@ export default function DashboardPage() {
                                                 />
                                             </div>
                                             <div className="w-full md:w-64 space-y-4">
-                                                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:border-blue-500/20">
-                                                    <span className="text-[9px] font-bold text-slate-900 dark:text-slate-400 block mb-1 uppercase tracking-wider">Health Index</span>
+                                                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:border-indigo-500/20">
+                                                    <span className="text-[9px] font-bold text-indigo-800 dark:text-indigo-400/60 block mb-1">Health index</span>
                                                     <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 tracking-tighter">72.4 <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold ml-1">Stable</span></div>
                                                 </div>
-                                                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:border-blue-500/20">
-                                                    <span className="text-[9px] font-bold text-slate-900 dark:text-slate-400 block mb-1 uppercase tracking-wider">Confirmation</span>
+                                                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:border-indigo-500/20">
+                                                    <span className="text-[9px] font-bold text-indigo-400 dark:text-indigo-400/60 block mb-1">Confirmation</span>
                                                     <div className="text-[10px] font-bold text-slate-700 dark:text-slate-300 leading-tight">Price action confirmed by volume participation.</div>
                                                 </div>
                                             </div>
@@ -716,7 +716,7 @@ export default function DashboardPage() {
                         <Card className="bg-white/50 dark:bg-slate-900/40 border-none shadow-xl shadow-slate-200/50 dark:shadow-none backdrop-blur-xl overflow-hidden">
                             <CardHeader className="p-4 pb-2 border-b border-slate-100 dark:border-white/5 flex flex-row items-center justify-between">
                                 <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                    <TrendingUp size={14} className="text-blue-600" /> SECTOR PERFORMANCE MATRIX
+                                    <TrendingUp size={14} className="text-blue-600" /> Sector performance matrix
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-0">
@@ -724,11 +724,11 @@ export default function DashboardPage() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow className="border-transparent hover:bg-transparent">
-                                                <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 w-[240px]">Index Name</TableHead>
-                                                <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 text-right">Change (%)</TableHead>
-                                                <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 text-right">Turnover (रू)</TableHead>
-                                                <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 text-right">Volume (Qty)</TableHead>
-                                                <TableHead className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 text-right w-[120px]">Trend</TableHead>
+                                                <TableHead className="text-[10px] font-bold text-indigo-400 dark:text-indigo-500/60 w-[240px]">Index name</TableHead>
+                                                <TableHead className="text-[10px] font-bold text-indigo-400 dark:text-indigo-500/60 text-right">Change (%)</TableHead>
+                                                <TableHead className="text-[10px] font-bold text-indigo-400 dark:text-indigo-500/60 text-right">Turnover (रू)</TableHead>
+                                                <TableHead className="text-[10px] font-bold text-indigo-400 dark:text-indigo-500/60 text-right">Volume (Qty)</TableHead>
+                                                <TableHead className="text-[10px] font-bold text-indigo-400 dark:text-indigo-500/60 text-right w-[120px]">Trend</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -738,10 +738,10 @@ export default function DashboardPage() {
                                                     <TableRow key={i} className="group border-slate-50 dark:border-white/5 hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors">
                                                         <TableCell className="py-3">
                                                             <div className="flex items-center gap-3">
-                                                                <div className={`p-1.5 rounded-lg bg-gradient-to-br ${sectorConfig[sector.name]?.gradient || 'from-slate-500/10 to-slate-600/10'} text-slate-700 dark:text-slate-400 shadow-sm opacity-70 group-hover:opacity-100 transition-opacity`}>
+                                                                <div className={`p-1.5 rounded-lg bg-gradient-to-br ${sectorConfig[sector.name]?.gradient || 'from-indigo-500/10 to-blue-600/10'} text-indigo-600 dark:text-indigo-400 shadow-sm opacity-70 group-hover:opacity-100 transition-opacity`}>
                                                                     {sectorConfig[sector.name]?.icon ? React.cloneElement(sectorConfig[sector.name].icon as React.ReactElement<any>, { size: 14 }) : <Activity size={14} />}
                                                                 </div>
-                                                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase">{sector.name}</span>
+                                                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{sector.name}</span>
                                                             </div>
                                                         </TableCell>
                                                         <TableCell className={`text-right py-3 font-bold text-sm ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
@@ -751,10 +751,10 @@ export default function DashboardPage() {
                                                             </div>
                                                         </TableCell>
                                                         <TableCell className="text-right py-3">
-                                                            <span className="text-xs font-mono font-bold text-slate-900 dark:text-slate-100">{formatRupees(sector.turnover / 1000000)}M</span>
+                                                            <span className="text-xs font-mono font-bold text-indigo-600/70 dark:text-indigo-300">{formatRupees(sector.turnover / 1000000)}M</span>
                                                         </TableCell>
                                                         <TableCell className="text-right py-3">
-                                                            <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">{formatNepaliNumber((sector.volume || sector.turnover / 500).toFixed(0))}</span>
+                                                            <span className="text-xs font-mono font-bold text-indigo-500/60 dark:text-indigo-500/60">{formatNepaliNumber((sector.volume || sector.turnover / 500).toFixed(0))}</span>
                                                         </TableCell>
                                                         <TableCell className="text-right py-3">
                                                             <div className="h-6 w-20 ml-auto opacity-70 group-hover:opacity-100 transition-opacity">

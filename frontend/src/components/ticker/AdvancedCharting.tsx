@@ -73,23 +73,23 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
                     <div style="font-weight: 700; color: ${isDark ? '#94a3b8' : '#64748b'}; margin-bottom: 5px; border-bottom: 1px solid ${isDark ? '#334155' : '#f1f5f9'}; padding-bottom: 3px;">${p.name}</div>
                     <div style="display: flex; flex-direction: column; gap: 3px;">
                         <div style="display: flex; justify-content: space-between; gap: 20px;">
-                            <span style="color: #94a3b8; font-weight: 700;">OPEN</span>
+                            <span style="color: #94a3b8; font-weight: 700;">Open</span>
                             <span style="font-family: monospace; font-weight: 800; color: ${isDark ? '#f1f5f9' : '#1e293b'};">${d.open.toLocaleString()}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between;">
-                            <span style="color: #94a3b8; font-weight: 700;">CLOSE</span>
+                            <span style="color: #94a3b8; font-weight: 700;">Close</span>
                             <span style="font-family: monospace; font-weight: 800; color: ${d.close >= d.open ? '#10b981' : '#ef4444'}">${d.close.toLocaleString()}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between;">
-                            <span style="color: #94a3b8; font-weight: 700;">HIGH</span>
+                            <span style="color: #94a3b8; font-weight: 700;">High</span>
                             <span style="font-family: monospace; font-weight: 800; color: ${isDark ? '#f1f5f9' : '#1e293b'};">${d.high.toLocaleString()}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between;">
-                            <span style="color: #94a3b8; font-weight: 700;">LOW</span>
+                            <span style="color: #94a3b8; font-weight: 700;">Low</span>
                             <span style="font-family: monospace; font-weight: 800; color: ${isDark ? '#f1f5f9' : '#1e293b'};">${d.low.toLocaleString()}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-top: 3px; border-top: 1px solid ${isDark ? '#1e293b' : '#f8fafc'}; padding-top: 3px;">
-                            <span style="color: #94a3b8; font-weight: 700;">VOLUME</span>
+                            <span style="color: #94a3b8; font-weight: 700;">Volume</span>
                             <span style="font-family: monospace; font-weight: 800; color: ${isDark ? '#f1f5f9' : '#1e293b'};">${d.volume.toLocaleString()}</span>
                         </div>
                     </div>
@@ -195,7 +195,7 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
                                 variant="outline"
                                 onClick={() => setTimeframe(t)}
                                 className={cn(
-                                    "text-[9px] font-bold px-2 py-0 border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors uppercase",
+                                    "text-[9px] font-bold px-2 py-0 border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors",
                                     t === timeframe ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100" : "text-slate-400 dark:text-slate-500 bg-transparent"
                                 )}
                             >

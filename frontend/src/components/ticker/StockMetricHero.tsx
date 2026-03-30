@@ -42,11 +42,11 @@ export function StockMetricHero({
                     <div className="flex items-center gap-8">
                         <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800 font-semibold text-[9px] px-1.5 py-0 uppercase">
+                                <Badge variant="outline" className="bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800 font-semibold text-[9px] px-1.5 py-0">
                                     {sector}
                                 </Badge>
                                 <span className="w-1 h-1 rounded-full bg-emerald-500"></span>
-                                <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase">Real-time</span>
+                                <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400">Real-time</span>
                             </div>
                             <div className="flex items-baseline gap-4">
                                 <span className="text-3xl font-bold text-slate-900 dark:text-slate-100 tabular-nums leading-none">
@@ -65,8 +65,8 @@ export function StockMetricHero({
                         {/* 52W Range - Inline Compact */}
                         <div className="hidden xl:block w-56 space-y-2 border-l border-slate-100 dark:border-slate-800 pl-8">
                             <div className="flex justify-between items-end">
-                                <p className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase">52W Range</p>
-                                <p className="text-[10px] font-bold text-slate-900 dark:text-slate-100 tabular-nums">{progress.toFixed(0)}% <span className="text-slate-400 dark:text-slate-500 text-[8px] uppercase">tile</span></p>
+                                <p className="text-[9px] font-semibold text-slate-400 dark:text-slate-500">52W Range</p>
+                                <p className="text-[10px] font-bold text-slate-900 dark:text-slate-100 tabular-nums">{progress.toFixed(0)}% <span className="text-slate-400 dark:text-slate-500 text-[8px]">tile</span></p>
                             </div>
                             <div className="relative h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
                                 <div
@@ -84,14 +84,14 @@ export function StockMetricHero({
                     {/* Right: Actions */}
                     <div className="flex items-center gap-3">
                         <Button
-                            className="h-10 px-6 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-black dark:hover:bg-white rounded-lg font-bold text-xs uppercase transition-all active:scale-95"
+                            className="h-10 px-6 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-black dark:hover:bg-white rounded-lg font-bold text-xs transition-all active:scale-95"
                             onClick={() => onTrade?.('BUY')}
                         >
                             Accumulate
                         </Button>
                         <Button
                             variant="outline"
-                            className="h-10 px-6 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg font-bold text-xs uppercase transition-all active:scale-95"
+                            className="h-10 px-6 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg font-bold text-xs transition-all active:scale-95"
                             onClick={() => onTrade?.('SELL')}
                         >
                             Distribute

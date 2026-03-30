@@ -36,8 +36,8 @@ export function IntelligenceVerdict({
                             <verdict.icon size={18} />
                         </div>
                         <div className="space-y-0.5">
-                            <p className="text-[10px] font-bold opacity-60 uppercase">System Intelligence Verdict</p>
-                            <p className={cn("text-base font-bold uppercase", verdict.color)}>{verdict.label}</p>
+                            <p className="text-[10px] font-bold opacity-60">System intelligence verdict</p>
+                            <p className={cn("text-base font-bold", verdict.color)}>{verdict.label}</p>
                         </div>
                     </div>
                     <Badge variant="outline" className={cn(
@@ -45,14 +45,14 @@ export function IntelligenceVerdict({
                         riskLevel === 'LOW' ? "border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400" :
                             riskLevel === 'MEDIUM' ? "border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400" : "border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-400"
                     )}>
-                        {riskLevel} RISK
+                        {riskLevel.charAt(0) + riskLevel.slice(1).toLowerCase()} risk
                     </Badge>
                 </div>
 
                 <div className="grid grid-cols-2 divide-x divide-slate-100 dark:divide-slate-800">
                     <div className="p-6 space-y-4">
                         <div className="flex justify-between items-end">
-                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Fundamental Strength</p>
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">Fundamental strength</p>
                             <p className="text-xl font-bold text-slate-900 dark:text-slate-100 tabular-nums">{fundamentalScore}%</p>
                         </div>
                         <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -61,7 +61,7 @@ export function IntelligenceVerdict({
                     </div>
                     <div className="p-6 space-y-4">
                         <div className="flex justify-between items-end">
-                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Technical Momentum</p>
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">Technical momentum</p>
                             <p className="text-xl font-bold text-slate-900 dark:text-slate-100 tabular-nums">{technicalScore}%</p>
                         </div>
                         <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
