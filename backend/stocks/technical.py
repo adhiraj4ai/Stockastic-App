@@ -81,9 +81,9 @@ def _calculate_momentum(df, indicators):
     current_willr = _get_scalar(willr.iloc[-1]) if willr is not None and not willr.empty else None
     _add_ind(indicators, 'Momentum', 'Williams %R', current_willr)
 
-    roc = df.ta.roc(length=12)
+    roc = df.ta.roc(length=14)
     current_roc = _get_scalar(roc.iloc[-1]) if roc is not None and not roc.empty else None
-    _add_ind(indicators, 'Momentum', 'ROC (12)', current_roc, suffix="%")
+    _add_ind(indicators, 'Momentum', 'ROC (14)', current_roc, suffix="%")
 
     uo = df.ta.uo()
     current_uo = _get_scalar(uo.iloc[-1]) if uo is not None and not uo.empty else None
@@ -93,7 +93,21 @@ def _calculate_trend(df, indicators):
     """Calculate and add trend indicators."""
     macd = df.ta.macd(fast=12, slow=26, signal=9)
     current_macd = _get_scalar(macd['MACD_12_26_9'].iloc[-1]) if macd is not None and not macd.empty and 'MACD_12_26_9' in macd.columns else None
+    current_macdh = _get_scalar(macd['MACDh_12_26_9'].iloc[-1]) if macd is not None and not macd.empty and 'MACDh_12_26_9' in macd.columns else None
+    current_macds = _get_scalar(macd['MACDs_12_26_9'].iloc[-1]) if macd is not None and not macd.empty and 'MACDs_12_26_9' in macd.columns else None
     _add_ind(indicators, 'Trend', 'MACD (12,26,9)', current_macd)
+    _add_ind(indicators, 'Trend', 'MACD Histogram', current_macdh)
+    _add_ind(indicators, 'Trend', 'MACD Signal', current_macds)
+    
+    # Simple Price Trends (5D, 10D, 1M)
+    # We compare latest close with close from N days ago in the dataframe
+    if len(df) >= 30:
+        latest = float(df['close'].iloc[-1])
+        for label, offset in [('5D Trend', 5), ('10D Trend', 10), ('1M Trend', 22)]:
+            if len(df) > offset:
+                prev = float(df['close'].iloc[-(offset+1)])
+                chg = ((latest - prev) / prev) * 100
+                _add_ind(indicators, 'Trend', label, chg, suffix="%")
 
     adx = df.ta.adx(length=14)
     current_adx = _get_scalar(adx['ADX_14'].iloc[-1]) if adx is not None and not adx.empty and 'ADX_14' in adx.columns else None

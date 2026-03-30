@@ -744,7 +744,7 @@ def _get_broker_accumulation(ticker):
     Calculate top buyers/sellers for multiple time ranges on the fly.
     """
     ranges = {
-        '1D': 1, '1W': 7, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, '2Y': 730
+        '1D': 1, '1W': 7, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, '2Y': 730, 'AT': -1
     }
     
     # Get latest date for this ticker from floorsheet
@@ -756,6 +756,30 @@ def _get_broker_accumulation(ticker):
     results = {}
     
     for label, days in ranges.items():
+        if label == 'AT':
+            # Use Cumulative table for All-Time accuracy
+            from ..models import DailyCumulativeAccumulation
+            latest_cum_date = DailyCumulativeAccumulation.objects.filter(symbol=ticker).aggregate(Max('transaction_date'))['transaction_date__max'] or latest_date
+            
+            buyers = DailyCumulativeAccumulation.objects.filter(
+                symbol=ticker, transaction_date=latest_cum_date
+            ).order_by('-cumulative_buy')[:5]
+            
+            sellers = DailyCumulativeAccumulation.objects.filter(
+                symbol=ticker, transaction_date=latest_cum_date
+            ).order_by('-cumulative_sell')[:5]
+            
+            range_data = []
+            for b in buyers:
+                wac = float(b.cumulative_buy_amount / b.cumulative_buy) if b.cumulative_buy > 0 else 0
+                range_data.append({"broker": str(b.entity_id), "qty": int(b.cumulative_buy), "wac": round(wac, 2), "type": "BUY"})
+            for s in sellers:
+                wac = float(b.cumulative_sell_amount / b.cumulative_sell) if b.cumulative_sell > 0 else 0
+                range_data.append({"broker": str(s.entity_id), "qty": int(s.cumulative_sell), "wac": round(wac, 2), "type": "SELL"})
+            
+            results[label] = range_data
+            continue
+
         if label == '1D':
             start_date = latest_date
         else:
@@ -767,7 +791,8 @@ def _get_broker_accumulation(ticker):
             transaction_date__gte=start_date,
             transaction_date__lte=latest_date
         ).values('buyer_id').annotate(
-            qty=Sum('transaction_quantity')
+            qty=Sum('transaction_quantity'),
+            amount=Sum('transaction_amount')
         ).order_by('-qty')[:5]
         
         # Aggregate Sellers
@@ -776,14 +801,17 @@ def _get_broker_accumulation(ticker):
             transaction_date__gte=start_date,
             transaction_date__lte=latest_date
         ).values('seller_id').annotate(
-            qty=Sum('transaction_quantity')
+            qty=Sum('transaction_quantity'),
+            amount=Sum('transaction_amount')
         ).order_by('-qty')[:5]
         
         range_data = []
         for b in buyers:
-            range_data.append({"broker": str(b['buyer_id']), "qty": int(b['qty']), "type": "BUY"})
+            wac = float(b['amount'] / b['qty']) if b['qty'] > 0 else 0
+            range_data.append({"broker": str(b['buyer_id']), "qty": int(b['qty']), "wac": round(wac, 2), "type": "BUY"})
         for s in sellers:
-            range_data.append({"broker": str(s['seller_id']), "qty": int(s['qty']), "type": "SELL"})
+            wac = float(s['amount'] / s['qty']) if s['qty'] > 0 else 0
+            range_data.append({"broker": str(s['seller_id']), "qty": int(s['qty']), "wac": round(wac, 2), "type": "SELL"})
             
         results[label] = range_data
         
