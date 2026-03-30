@@ -14,7 +14,8 @@ import {
     FileJson,
     Cpu,
     Zap,
-    History
+    History,
+    Radar
 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from "@/components/ui/button";
@@ -68,17 +69,24 @@ export default function PipelinePage() {
     const [brokerLogs, setBrokerLogs] = useState<LogEntry[]>([]);
     const [showBrokerLogs, setShowBrokerLogs] = useState(false);
 
+    // Intel Signal Generation State
+    const [intelStatus, setIntelStatus] = useState<'idle' | 'running' | 'completed' | 'error'>('idle');
+    const [intelLogs, setIntelLogs] = useState<LogEntry[]>([]);
+    const [showIntelLogs, setShowIntelLogs] = useState(false);
+
     // Abort controllers for stopping processes
     const indicatorAbortController = useRef<AbortController | null>(null);
     const optimizationAbortController = useRef<AbortController | null>(null);
     const signalAbortController = useRef<AbortController | null>(null);
     const brokerAbortController = useRef<AbortController | null>(null);
+    const intelAbortController = useRef<AbortController | null>(null);
 
     // Track log IDs for abort functionality
     const [indicatorLogId, setIndicatorLogId] = useState<number | null>(null);
     const [optimizationLogId, setOptimizationLogId] = useState<number | null>(null);
     const [signalLogId, setSignalLogId] = useState<number | null>(null);
     const [brokerLogId, setBrokerLogId] = useState<number | null>(null);
+    const [intelLogId, setIntelLogId] = useState<number | null>(null);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -482,6 +490,108 @@ export default function PipelinePage() {
         }
     };
 
+    const handleRunIntelSignals = async () => {
+        if (intelStatus === 'running') return;
+
+        setIntelStatus('running');
+        setIntelLogs([]);
+        setShowIntelLogs(true);
+
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const url = `${apiUrl}/api/stocks/pipeline/generate_all_signals_stream/`;
+        const token = localStorage.getItem('access_token');
+
+        intelAbortController.current = new AbortController();
+
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+                signal: intelAbortController.current.signal,
+            });
+
+            if (!response.ok) {
+                setIntelStatus('error');
+                toast.error(`Connection failed: ${response.statusText}`);
+                return;
+            }
+
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+
+            if (!reader) {
+                setIntelStatus('error');
+                return;
+            }
+
+            let buffer = '';
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine || !trimmedLine.startsWith('data: ')) continue;
+
+                    try {
+                        const data = JSON.parse(trimmedLine.substring(6));
+
+                        if (data.type === 'init') {
+                            setIntelLogId(data.log_id);
+                            continue;
+                        }
+
+                        if (data.type === 'done') {
+                            setIntelStatus('completed');
+                            toast.success("All intel signals generated successfully!");
+                            fetchHistory();
+                            return;
+                        }
+                        if (data.type === 'error') {
+                            setIntelStatus('error');
+                            toast.error(data.message);
+                            return;
+                        }
+                        if (data.type === 'log' || data.type === 'status') {
+                            setIntelLogs(prev => [...prev, {
+                                type: data.type as any,
+                                message: data.message,
+                                timestamp: new Date()
+                            }]);
+                        }
+                    } catch (e) { }
+                }
+            }
+        } catch (error: any) {
+            if (error.name === 'AbortError') return;
+            setIntelStatus('error');
+            toast.error("Connection lost");
+        }
+    };
+
+    const handleStopIntelSignals = async () => {
+        if (intelAbortController.current) {
+            intelAbortController.current.abort();
+            intelAbortController.current = null;
+            setIntelStatus('idle');
+
+            if (intelLogId) {
+                try {
+                    await api.post('/api/stocks/pipeline/abort_log/', { log_id: intelLogId });
+                    fetchHistory();
+                } catch (err) {
+                    console.error('Failed to mark log as aborted:', err);
+                }
+            }
+            toast.info("Stopped intel signal generation");
+        }
+    };
+
     const onDrop = async (acceptedFiles: File[]) => {
         if (acceptedFiles.length === 0) return;
         const file = acceptedFiles[0];
@@ -701,6 +811,19 @@ export default function PipelinePage() {
                             logs={signalLogs}
                             showLogs={showSignalLogs}
                             onToggleLogs={() => setShowSignalLogs(!showSignalLogs)}
+                        />
+
+                        {/* Step 7: Generate All Intel Signals */}
+                        <PipelineStep
+                            title="7. Generate All Intel Signals"
+                            description="Generate Smart Money, Broker Accumulation, Smart Crossover, and Ichimoku signals. Stores data for Signal Intelligence page."
+                            status={intelStatus}
+                            icon={<Radar className="w-5 h-5" />}
+                            onRun={handleRunIntelSignals}
+                            onStop={handleStopIntelSignals}
+                            logs={intelLogs}
+                            showLogs={showIntelLogs}
+                            onToggleLogs={() => setShowIntelLogs(!showIntelLogs)}
                         />
                     </div>
 

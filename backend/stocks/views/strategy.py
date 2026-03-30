@@ -862,3 +862,80 @@ class StrategySignalViewSet(viewsets.ReadOnlyModelViewSet):
                 'avg_holding_period': round(avg_holding, 1)
             }
         })
+
+
+class GeneratedSignalPagination(PageNumberPagination):
+    page_size = 200
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
+
+
+class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet to serve stored generated signals (Smart Money, Whale Watch engines).
+    Signals are generated via pipeline (generate_all_signals command).
+    """
+    from ..models import GeneratedSignal
+    from ..serializers import GeneratedSignalSerializer
+
+    queryset = GeneratedSignal.objects.all()
+    serializer_class = GeneratedSignalSerializer
+    pagination_class = GeneratedSignalPagination
+    permission_classes = [AllowAny]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['source', 'symbol', 'signal', 'generated_date']
+    search_fields = ['symbol']
+
+    @action(detail=False, methods=['get'])
+    def latest(self, request):
+        """Return only the most recent date's signals, optionally filtered by source."""
+        from ..models import GeneratedSignal
+        from ..serializers import GeneratedSignalSerializer
+
+        source = request.query_params.get('source')
+
+        qs = GeneratedSignal.objects.all()
+        if source:
+            qs = qs.filter(source=source)
+
+        latest_date = qs.order_by('-generated_date').values_list('generated_date', flat=True).first()
+        if not latest_date:
+            return Response([])
+
+        signals = qs.filter(generated_date=latest_date).order_by('-strength')
+        return Response(GeneratedSignalSerializer(signals, many=True).data)
+
+    @action(detail=False, methods=['get'])
+    def summary(self, request):
+        """Aggregated counts by source and signal type for the latest date."""
+        from ..models import GeneratedSignal
+        from django.db.models import Count
+
+        latest_date = GeneratedSignal.objects.order_by('-generated_date').values_list('generated_date', flat=True).first()
+        if not latest_date:
+            return Response({'date': None, 'sources': {}})
+
+        qs = GeneratedSignal.objects.filter(generated_date=latest_date)
+
+        by_source = qs.values('source', 'signal').annotate(count=Count('id'))
+
+        sources = {}
+        for row in by_source:
+            src = row['source']
+            if src not in sources:
+                sources[src] = {'BUY': 0, 'SELL': 0, 'total': 0}
+            sources[src][row['signal']] = row['count']
+            sources[src]['total'] += row['count']
+
+        total = qs.count()
+        buys = qs.filter(signal='BUY').count()
+        sells = qs.filter(signal='SELL').count()
+
+        return Response({
+            'date': latest_date.isoformat(),
+            'total': total,
+            'buys': buys,
+            'sells': sells,
+            'sources': sources,
+        })
+

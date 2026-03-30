@@ -28,6 +28,7 @@ class PipelineViewSet(viewsets.ViewSet):
         'sync_floorsheet': 'Sync Floorsheet Data',
         'update_indexes': 'Update DB Indexes',
         'generate_signals': 'Generate Strategy Signals',
+        'generate_all_signals': 'Generate All Intel Signals',
         'update_indicators': 'Update Technical Indicators',
         'optimize_strategies': 'Global Strategy Optimization',
     }
@@ -132,6 +133,11 @@ class PipelineViewSet(viewsets.ViewSet):
     def update_broker_analysis_stream(self, request):
         log_entry = DataUploadLog.objects.create(file_name='Broker Analysis', upload_type='BROKER_ANALYSIS', status='PENDING')
         return self._run_manage_command_stream(['update_broker_analysis'], log_entry)
+
+    @action(detail=False, methods=['get'])
+    def generate_all_signals_stream(self, request):
+        log_entry = DataUploadLog.objects.create(file_name='All Intel Signals', upload_type='SIGNALS', status='PENDING')
+        return self._run_manage_command_stream(['generate_all_signals'], log_entry)
 
     @action(detail=False, methods=['post'])
     def upload_floorsheet(self, request):

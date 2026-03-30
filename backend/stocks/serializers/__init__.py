@@ -6,4 +6,4 @@ from .strategy import (
     StrategyExperimentDetailSerializer, StrategySymbolConfigSerializer, 
     StrategySignalSerializer
 )
-from .system import NotificationSerializer
+from .system import NotificationSerializer, GeneratedSignalSerializer

@@ -106,3 +106,42 @@ class Notification(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.title}"
 
+
+class GeneratedSignal(models.Model):
+    """
+    Stores all generated signals from various sources (Smart Money, Whale Watch engines, etc.).
+    Signals are generated via pipeline and read by the Signal Intel frontend.
+    """
+    SOURCE_CHOICES = (
+        ('SMART_MONEY', 'Smart Money'),
+        ('BROKER_ACCUMULATION', 'Broker Accumulation'),
+        ('SMART_CROSSOVER', 'Smart Crossover'),
+        ('ICHIMOKU', 'Ichimoku Accumulation'),
+    )
+    SIGNAL_CHOICES = (
+        ('BUY', 'Buy'),
+        ('SELL', 'Sell'),
+    )
+
+    source = models.CharField(max_length=30, choices=SOURCE_CHOICES)
+    symbol = models.CharField(max_length=20, db_index=True)
+    signal = models.CharField(max_length=10, choices=SIGNAL_CHOICES)
+    signal_tier = models.CharField(max_length=50, blank=True, default='')
+    strength = models.FloatField(default=0)
+    ltp = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    rationale = models.TextField(blank=True, default='')
+    metadata = models.JSONField(default=dict, blank=True)
+    generated_date = models.DateField(db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'generated_signals'
+        ordering = ['-generated_date', '-strength']
+        unique_together = ('source', 'symbol', 'generated_date')
+        indexes = [
+            models.Index(fields=['source', 'generated_date']),
+            models.Index(fields=['symbol', 'generated_date']),
+        ]
+
+    def __str__(self):
+        return f"{self.symbol} - {self.source}: {self.signal} ({self.generated_date})"

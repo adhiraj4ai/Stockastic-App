@@ -23,22 +23,24 @@ import {
 
 // ─── Shared types ──────────────────────────────────────────────────────────────
 
-interface SmartSignal {
-    symbol: string; name: string; sector: string;
-    cluster_count: number; inst_net_5d: number; top_broker_wac: number;
-    ltp: number; signal_type: 'Platinum Buy' | 'Gold Signal' | 'Silver Signal' | 'Bullish Divergence';
-    rationale: string; strength: string; markup_percent: number; price_change_5d: number;
+/** Stored signal from GeneratedSignal model */
+interface GeneratedSignal {
+    id: number;
+    source: 'SMART_MONEY' | 'BROKER_ACCUMULATION' | 'SMART_CROSSOVER' | 'ICHIMOKU';
+    symbol: string;
+    signal: 'BUY' | 'SELL';
+    signal_tier: string;
+    strength: number;
+    ltp: string;
+    rationale: string;
+    metadata: any;
+    generated_date: string;
 }
 
 interface StrategySignal {
     id: number; strategy_name: string; strategy_description: string;
     symbol: string; date: string; signal: 'BUY' | 'SELL' | 'HOLD' | 'NEUTRAL';
     last_close: string; metadata: any;
-}
-
-interface WhaleRec {
-    symbol: string; signal: 'BUY' | 'SELL'; strength: number;
-    reason: string; close: number; date: string; rsi?: number; macd_hist?: number;
 }
 
 // ─── Normalised unified signal ─────────────────────────────────────────────────
@@ -53,11 +55,14 @@ interface UnifiedSignal {
     conviction: number; // 1–3, number of agreeing sources
 }
 
-const WHALE_ENGINES = [
-    { key: 'broker', label: 'Broker Accum.', endpoint: '/api/stocks/broker-accumulation-recommendations/' },
-    { key: 'crossover', label: 'Smart Crossover', endpoint: '/api/stocks/smart-accumulated-crossover-recommendations/' },
-    { key: 'ichimoku', label: 'Ichimoku', endpoint: '/api/stocks/ichimoku-accumulation-recommendations/' },
-];
+const SOURCE_LABELS: Record<string, string> = {
+    'SMART_MONEY': 'Smart Money',
+    'BROKER_ACCUMULATION': 'Broker Accum.',
+    'SMART_CROSSOVER': 'Smart Crossover',
+    'ICHIMOKU': 'Ichimoku',
+};
+
+const WHALE_SOURCES = ['BROKER_ACCUMULATION', 'SMART_CROSSOVER', 'ICHIMOKU'] as const;
 
 // ─── Helper UI pieces ──────────────────────────────────────────────────────────
 
@@ -72,10 +77,6 @@ function SignalBadge({ direction }: { direction: 'BUY' | 'SELL' }) {
             {direction === 'BUY' ? '▲' : '▼'} {direction}
         </span>
     );
-}
-
-function SourceBadge({ label, color }: { label: string; color: string }) {
-    return <span className={cn('px-2 py-0.5 rounded text-[10px] font-bold border', color)}>{label}</span>;
 }
 
 const CONVICTION_META = [
@@ -153,22 +154,22 @@ function UnifiedSignalCard({
     );
 }
 
-// ─── ALL SOURCES VIEW ──────────────────────────────────────────────────────────
+// ─── ALL SOURCES VIEW (reads from stored data) ────────────────────────────────
 
 interface BaseSignalViewProps {
     onSelect: (signal: { symbol: string; ltp: number; strength: number; direction: 'BUY' | 'SELL' }) => void;
 }
 
 function AllSourcesView({ onSelect }: BaseSignalViewProps) {
-    const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [unified, setUnified] = useState<UnifiedSignal[]>([]);
     const [search, setSearch] = useState('');
     const [dirFilter, setDirFilter] = useState<'ALL' | 'BUY' | 'SELL'>('ALL');
     const [minConviction, setMinConviction] = useState(1);
+    const [generatedDate, setGeneratedDate] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetch = async () => {
+        const fetchData = async () => {
             setLoading(true);
             const map = new Map<string, UnifiedSignal>();
 
@@ -179,21 +180,43 @@ function AllSourcesView({ onSelect }: BaseSignalViewProps) {
             };
 
             try {
-                const [smRes, stRes, wwRes] = await Promise.all([
-                    api.get('/api/stocks/broker-analysis/signals/').catch(() => null),
+                const [genRes, stRes] = await Promise.all([
+                    api.get('/api/stocks/generated-signals/latest/').catch(() => null),
                     api.get('/api/stocks/signals/', { params: { page_size: 500 } }).catch(() => null),
-                    api.get(WHALE_ENGINES[0].endpoint).catch(() => null)
                 ]);
 
-                if (smRes?.data) {
-                    for (const s of smRes.data as SmartSignal[]) {
-                        const dir = s.markup_percent >= 0 ? 'BUY' : 'SELL';
-                        const u = upsert(s.symbol, dir, s.ltp);
-                        u.smartMoney = { tier: s.signal_type, markup: s.markup_percent, rationale: s.rationale, brokers: s.cluster_count };
-                        u.conviction++;
+                // Process stored generated signals (Smart Money + Whale Watch)
+                if (genRes?.data) {
+                    for (const sig of genRes.data as GeneratedSignal[]) {
+                        const ltp = parseFloat(sig.ltp) || 0;
+                        const u = upsert(sig.symbol, sig.signal, ltp);
+
+                        if (sig.source === 'SMART_MONEY') {
+                            u.smartMoney = {
+                                tier: sig.signal_tier,
+                                markup: sig.metadata?.markup_percent || 0,
+                                rationale: sig.rationale,
+                                brokers: sig.metadata?.cluster_count || 0,
+                            };
+                            u.conviction++;
+                        } else {
+                            // Whale Watch engines
+                            u.whale = {
+                                engine: SOURCE_LABELS[sig.source] || sig.source,
+                                strength: sig.strength,
+                                reason: sig.rationale,
+                                rsi: sig.metadata?.rsi,
+                            };
+                            u.conviction++;
+                        }
+
+                        if (!generatedDate && sig.generated_date) {
+                            setGeneratedDate(sig.generated_date);
+                        }
                     }
                 }
 
+                // Process strategy signals (already stored in StrategySignal model)
                 if (stRes?.data?.results) {
                     const grouped = new Map<string, { dir: 'BUY' | 'SELL'; names: string[]; date: string; ltp: number }>();
                     for (const s of stRes.data.results as StrategySignal[]) {
@@ -212,22 +235,13 @@ function AllSourcesView({ onSelect }: BaseSignalViewProps) {
                         u.conviction++;
                     }
                 }
-
-                if (wwRes?.data) {
-                    for (const r of wwRes.data as WhaleRec[]) {
-                        if (r.signal !== 'BUY' && r.signal !== 'SELL') continue;
-                        const u = upsert(r.symbol, r.signal, r.close);
-                        u.whale = { engine: WHALE_ENGINES[0].label, strength: r.strength, reason: r.reason, rsi: r.rsi };
-                        u.conviction++;
-                    }
-                }
             } catch (_) { }
 
             const sorted = [...map.values()].sort((a, b) => b.conviction - a.conviction || b.ltp - a.ltp);
             setUnified(sorted);
             setLoading(false);
         };
-        fetch();
+        fetchData();
     }, []);
 
     const filtered = useMemo(() => unified.filter(u =>
@@ -240,10 +254,16 @@ function AllSourcesView({ onSelect }: BaseSignalViewProps) {
     const sells = unified.filter(u => u.direction === 'SELL').length;
     const multiSource = unified.filter(u => u.conviction >= 2).length;
 
-    if (loading) return <PageLoader text="Compiling intelligence hub…" />;
+    if (loading) return <PageLoader text="Loading stored intelligence…" />;
 
     return (
         <div className="space-y-6">
+            {generatedDate && (
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    Intelligence Data from {generatedDate}
+                </div>
+            )}
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
                     { label: 'Buy Signals', value: buys, icon: <TrendingUp size={14} />, color: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/20' },
@@ -297,6 +317,7 @@ function AllSourcesView({ onSelect }: BaseSignalViewProps) {
                 <div className="flex flex-col items-center justify-center py-24 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-3xl">
                     <Layers className="w-8 h-8 text-slate-200 dark:text-slate-700 mb-3" />
                     <p className="text-xs font-black text-slate-400 uppercase tracking-widest">No matching intelligence found</p>
+                    <p className="text-[10px] text-slate-400 mt-2">Run &quot;Generate All Intel Signals&quot; from the Pipeline page to populate data.</p>
                 </div>
             ) : (
                 <div className="grid gap-3 animate-in fade-in slide-in-from-top-2 duration-500">
@@ -319,16 +340,16 @@ function AllSourcesView({ onSelect }: BaseSignalViewProps) {
     );
 }
 
-// ─── SMART MONEY VIEW ─────────────────────────────────────────────────────────
+// ─── SMART MONEY VIEW (reads from stored GeneratedSignal with source=SMART_MONEY) ─
 
 function SmartMoneyView({ onSelect }: BaseSignalViewProps) {
-    const [signals, setSignals] = useState<SmartSignal[]>([]);
+    const [signals, setSignals] = useState<GeneratedSignal[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeSection, setActiveSection] = useState('platinum');
 
     useEffect(() => {
-        api.get('/api/stocks/broker-analysis/signals/')
-            .then(r => setSignals(r.data))
+        api.get('/api/stocks/generated-signals/latest/', { params: { source: 'SMART_MONEY' } })
+            .then(r => setSignals(r.data ?? []))
             .catch(() => { })
             .finally(() => setLoading(false));
     }, []);
@@ -336,10 +357,10 @@ function SmartMoneyView({ onSelect }: BaseSignalViewProps) {
     if (loading) return <Loader size />;
 
     const sections = [
-        { id: 'platinum', label: 'Platinum', badge: 'Optimal Entry', dot: 'bg-indigo-500', badgeCls: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300', items: signals.filter(s => s.signal_type === 'Platinum Buy') },
-        { id: 'gold', label: 'Gold', badge: 'High Conviction', dot: 'bg-amber-500', badgeCls: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300', items: signals.filter(s => s.signal_type === 'Gold Signal') },
-        { id: 'silver', label: 'Silver', badge: 'Institutional Entry', dot: 'bg-slate-400', badgeCls: 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300', items: signals.filter(s => s.signal_type === 'Silver Signal') },
-        { id: 'divergence', label: 'Divergence', badge: 'Bullish Divergence', dot: 'bg-emerald-500', badgeCls: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300', items: signals.filter(s => s.signal_type === 'Bullish Divergence') },
+        { id: 'platinum', label: 'Platinum', badge: 'Optimal Entry', dot: 'bg-indigo-500', badgeCls: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300', items: signals.filter(s => s.signal_tier === 'Platinum Buy') },
+        { id: 'gold', label: 'Gold', badge: 'High Conviction', dot: 'bg-amber-500', badgeCls: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300', items: signals.filter(s => s.signal_tier === 'Gold Signal') },
+        { id: 'silver', label: 'Silver', badge: 'Institutional Entry', dot: 'bg-slate-400', badgeCls: 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300', items: signals.filter(s => s.signal_tier === 'Silver Signal') },
+        { id: 'divergence', label: 'Divergence', badge: 'Bullish Divergence', dot: 'bg-emerald-500', badgeCls: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300', items: signals.filter(s => s.signal_tier === 'Bullish Divergence') },
     ];
 
     const current = sections.find(s => s.id === activeSection) || sections[0];
@@ -378,12 +399,12 @@ function SmartMoneyView({ onSelect }: BaseSignalViewProps) {
                             <UnifiedSignalCard 
                                 key={sig.symbol}
                                 symbol={sig.symbol}
-                                direction={sig.markup_percent >= 0 ? 'BUY' : 'SELL'}
-                                ltp={sig.ltp}
-                                strength={parseFloat(sig.strength) || 50}
+                                direction={sig.signal}
+                                ltp={parseFloat(sig.ltp) || 0}
+                                strength={sig.strength}
                                 reason={sig.rationale}
-                                tagline={sig.signal_type}
-                                conviction={sig.signal_type === 'Platinum Buy' ? 3 : sig.signal_type === 'Gold Signal' ? 2 : 1}
+                                tagline={sig.signal_tier}
+                                conviction={sig.signal_tier === 'Platinum Buy' ? 3 : sig.signal_tier === 'Gold Signal' ? 2 : 1}
                                 onSelect={onSelect}
                             />
                         ))}
@@ -395,7 +416,7 @@ function SmartMoneyView({ onSelect }: BaseSignalViewProps) {
 }
 
 
-// ─── STRATEGIES VIEW ─────────────────────────────────────────────────────────
+// ─── STRATEGIES VIEW (already reads from stored StrategySignal) ───────────────
 
 function StrategiesView({ onSelect }: BaseSignalViewProps) {
     const [signals, setSignals] = useState<StrategySignal[]>([]);
@@ -468,27 +489,28 @@ function StrategiesView({ onSelect }: BaseSignalViewProps) {
     );
 }
 
-// ─── WHALE WATCH VIEW ─────────────────────────────────────────────────────────
+// ─── WHALE WATCH VIEW (reads from stored GeneratedSignal with whale sources) ──
 
 function WhaleWatchView({ onSelect }: BaseSignalViewProps) {
-    const [engineIdx, setEngineIdx] = useState(0);
-    const [recs, setRecs] = useState<WhaleRec[]>([]);
+    const [sourceIdx, setSourceIdx] = useState(0);
+    const [signals, setSignals] = useState<GeneratedSignal[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
-    const router = useRouter();
+
+    const currentSource = WHALE_SOURCES[sourceIdx];
 
     useEffect(() => {
         setLoading(true);
-        api.get(WHALE_ENGINES[engineIdx].endpoint)
-            .then(r => setRecs(r.data ?? []))
-            .catch(() => setRecs([]))
+        api.get('/api/stocks/generated-signals/latest/', { params: { source: currentSource } })
+            .then(r => setSignals(r.data ?? []))
+            .catch(() => setSignals([]))
             .finally(() => setLoading(false));
-    }, [engineIdx]);
+    }, [currentSource]);
 
     const filtered = useMemo(() =>
-        recs.filter(r => (r.signal === 'BUY' || r.signal === 'SELL') && (!search || r.symbol.includes(search.toUpperCase())))
+        signals.filter(s => !search || s.symbol.includes(search.toUpperCase()))
             .sort((a, b) => b.strength - a.strength),
-        [recs, search]);
+        [signals, search]);
 
     const buys = filtered.filter(r => r.signal === 'BUY');
     const sells = filtered.filter(r => r.signal === 'SELL');
@@ -497,13 +519,13 @@ function WhaleWatchView({ onSelect }: BaseSignalViewProps) {
         <div className="space-y-6">
             <div className="flex flex-wrap gap-4 items-center justify-between">
                 <div className="flex flex-wrap gap-2 p-1 bg-slate-100/50 dark:bg-slate-800/40 rounded-xl border border-slate-200/50 dark:border-slate-700/50 backdrop-blur-sm">
-                    {WHALE_ENGINES.map((e, i) => (
-                        <button key={e.key} onClick={() => setEngineIdx(i)}
+                    {WHALE_SOURCES.map((src, i) => (
+                        <button key={src} onClick={() => setSourceIdx(i)}
                             className={cn('px-4 py-2 rounded-lg text-xs font-bold transition-all',
-                                engineIdx === i 
+                                sourceIdx === i 
                                     ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm border border-slate-200/50 dark:border-slate-600/50' 
                                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200')}>
-                            {e.label}
+                            {SOURCE_LABELS[src]}
                         </button>
                     ))}
                 </div>
@@ -522,17 +544,17 @@ function WhaleWatchView({ onSelect }: BaseSignalViewProps) {
                 <div className="flex items-center gap-1.5 text-rose-500 bg-rose-50 dark:bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-100 dark:border-rose-500/20">{sells.length} Sell Signals</div>
             </div>
 
-            {loading ? <Loader size /> : filtered.length === 0 ? <Empty label="No signals from this engine" /> : (
+            {loading ? <Loader size /> : filtered.length === 0 ? <Empty label="No signals from this engine. Run pipeline to generate." /> : (
                 <div className="grid gap-2 animate-in fade-in slide-in-from-top-2 duration-500">
-                    {filtered.map(r => (
+                    {filtered.map(sig => (
                         <UnifiedSignalCard 
-                            key={r.symbol}
-                            symbol={r.symbol}
-                            direction={r.signal}
-                            ltp={r.close}
-                            strength={r.strength}
-                            reason={r.reason}
-                            tagline={WHALE_ENGINES[engineIdx].label}
+                            key={sig.symbol}
+                            symbol={sig.symbol}
+                            direction={sig.signal}
+                            ltp={parseFloat(sig.ltp) || 0}
+                            strength={sig.strength}
+                            reason={sig.rationale}
+                            tagline={SOURCE_LABELS[sig.source]}
                             onSelect={onSelect}
                         />
                     ))}
@@ -563,7 +585,7 @@ function Empty({ label }: { label: string }) {
 // ─── ROOT ──────────────────────────────────────────────────────────────────────
 
 const TABS = [
-    { key: 'all', label: 'Command Center', icon: <Radar size={16} />, desc: 'Real-time alpha discovery from across the market ecosystem.' },
+    { key: 'all', label: 'Command Center', icon: <Radar size={16} />, desc: 'Stored alpha discovery from across the market ecosystem.' },
     { key: 'smart', label: 'Smart Money', icon: <Zap size={16} />, desc: 'Institutional broker flow and professional accumulation zones.' },
     { key: 'whale', label: 'Whale Watch', icon: <Activity size={16} />, desc: 'Deep technical analysis and large order execution tracking.' },
     { key: 'strategies', label: 'Strategies', icon: <Binary size={16} />, desc: 'Quantitative signal engines and automated technical setups.' },

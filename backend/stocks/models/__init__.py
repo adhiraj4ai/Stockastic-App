@@ -12,4 +12,4 @@ from .strategy import (
     ScopeType, Strategy, StrategyExperiment, 
     StrategySymbolConfig, StrategySignal
 )
-from .system import DataUploadLog, Notification
+from .system import DataUploadLog, Notification, GeneratedSignal

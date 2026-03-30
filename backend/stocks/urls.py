@@ -21,6 +21,7 @@ router.register(r'notifications', notifications.NotificationViewSet, basename='n
 router.register(r'financial-reports', market.FinancialReportViewSet, basename='financial-reports')
 router.register(r'fundamentals', market.StockFundamentalViewSet, basename='fundamentals')
 router.register(r'signals', strategy.StrategySignalViewSet, basename='strategy-signals')
+router.register(r'generated-signals', strategy.GeneratedSignalViewSet, basename='generated-signals')
 router.register(r'broker-analysis', broker.BrokerViewSet, basename='broker-analysis')
 router.register(r'floorsheet', floorsheet.FloorsheetViewSet, basename='floorsheet-analytics')
 

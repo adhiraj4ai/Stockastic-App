@@ -26,7 +26,7 @@ export function BentoMetrics({ fundamental }: BentoMetricsProps) {
     // Extract Technical Levels
     // console.log('Fundamental Data:', fundamental);
     const indicators = fundamental?.technical_indicators || [];
-    const getPivot = (key: string) => indicators.find((i: any) => i.name.includes(key))?.value || '-';
+    const getPivot = (key: string) => indicators.find((i: any) => i.name?.includes(key))?.value || '-';
 
     const p = getPivot('Pivot (P)');
     const r1 = getPivot('Resistance 1');
