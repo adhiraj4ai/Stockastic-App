@@ -64,6 +64,50 @@ const SOURCE_LABELS: Record<string, string> = {
 
 const WHALE_SOURCES = ['BROKER_ACCUMULATION', 'SMART_CROSSOVER', 'ICHIMOKU'] as const;
 
+// ─── Freshness Utility ────────────────────────────────────────────────────────
+const getFreshness = (dateString?: string) => {
+    if (!dateString) return { status: 'historical', label: 'Historical', color: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' };
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    
+    if (diffDays <= 1) return { status: 'active', label: 'Active', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800' };
+    if (diffDays <= 3) return { status: 'recent', label: 'Recent', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800' };
+    return { status: 'historical', label: 'Historical', color: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700' };
+};
+
+// ─── Actionability Utility ────────────────────────────────────────────────────
+const getActionability = (signalPrice: number, currentPrice?: number, signal?: string) => {
+    if (!currentPrice || signal === 'HOLD' || signal === 'NEUTRAL') return null;
+    const change = ((currentPrice - signalPrice) / signalPrice) * 100;
+    const isBuy = signal === 'BUY';
+    const isSell = signal === 'SELL';
+    
+    if (isBuy) {
+        if (change < -5) return { label: 'Invalidated', color: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400 border-rose-200', status: 'invalid' };
+        if (change > 3) return { label: 'Entry Missed', color: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border-slate-200', status: 'missed' };
+        return { label: 'In Entry Zone', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 border-emerald-200', status: 'valid' };
+    }
+    if (isSell) {
+        if (change > 5) return { label: 'Invalidated', color: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400 border-rose-200', status: 'invalid' };
+        if (change < -3) return { label: 'Entry Missed', color: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border-slate-200', status: 'missed' };
+        return { label: 'In Entry Zone', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 border-emerald-200', status: 'valid' };
+    }
+    return null;
+};
+
+// ─── Filter Utility ───────────────────────────────────────────────────────────
+const isSignalActionable = (signalPrice: number, currentPrice?: number, signalDirection?: 'BUY'|'SELL', date?: string) => {
+    const freshness = getFreshness(date);
+    if (freshness.status === 'historical') return false;
+    if (signalDirection) {
+        const action = getActionability(signalPrice, currentPrice, signalDirection);
+        if (action && action.status !== 'valid') return false;
+    }
+    return true;
+};
+
 // ─── Helper UI pieces ──────────────────────────────────────────────────────────
 
 function SignalBadge({ direction }: { direction: 'BUY' | 'SELL' }) {
@@ -90,6 +134,8 @@ function UnifiedSignalCard({
     symbol, 
     direction, 
     ltp, 
+    currentPrice,
+    date,
     strength, 
     reason, 
     tagline, 
@@ -99,55 +145,80 @@ function UnifiedSignalCard({
     symbol: string; 
     direction: 'BUY' | 'SELL'; 
     ltp: number; 
+    currentPrice?: number;
+    date?: string;
     strength?: number; 
     reason?: string; 
     tagline?: string; 
     conviction?: number;
     onSelect: (s: { symbol: string; ltp: number; strength: number; direction: 'BUY' | 'SELL' }) => void;
 }) {
+    const freshness = getFreshness(date);
+    const action = getActionability(ltp, currentPrice, direction);
+    const change = currentPrice ? ((currentPrice - ltp) / ltp) * 100 : null;
+    const isSuccess = currentPrice && ((direction === 'BUY' && change! > 0) || (direction === 'SELL' && change! < 0));
+
     return (
         <div 
             onClick={() => onSelect({ symbol, ltp, strength: strength || 50, direction })}
             className={cn(
-                'group relative rounded-2xl border border-l-[6px] p-5 cursor-pointer transition-all hover:shadow-2xl hover:-translate-y-0.5 bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl',
-                direction === 'BUY' ? 'border-l-emerald-500 border-slate-200/60 dark:border-emerald-500/30' : 'border-l-rose-500 border-slate-200/60 dark:border-rose-500/30'
+                'group relative rounded-2xl border border-l-[6px] p-5 cursor-pointer transition-all hover:shadow-2xl hover:-translate-y-0.5 bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6',
+                direction === 'BUY' ? 'border-l-emerald-500 border-slate-200/60 dark:border-emerald-500/30' : 'border-l-rose-500 border-slate-200/60 dark:border-rose-500/30',
+                action && action.status !== 'valid' && 'opacity-60 hover:opacity-100' // Dim missed/invalidated signals natively
             )}>
-            <div className="flex items-center justify-between gap-6">
-                <div className="flex items-center gap-5 w-44 shrink-0">
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-3">
-                            <Link href={`/ticker/${symbol}`} onClick={(e) => e.stopPropagation()} className="text-lg font-black tracking-tight text-slate-900 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-                                {symbol}
-                            </Link>
-                            <SignalBadge direction={direction} />
-                        </div>
-                        {tagline && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate">{tagline}</p>}
+            
+            <div className="flex items-center gap-5 w-44 shrink-0">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                        <Link href={`/ticker/${symbol}`} onClick={(e) => e.stopPropagation()} className="text-lg font-black tracking-tight text-slate-900 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                            {symbol}
+                        </Link>
+                        <SignalBadge direction={direction} />
                     </div>
+                    {tagline && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate">{tagline}</p>}
                 </div>
+            </div>
 
-                <div className="flex-1 hidden md:block min-w-0">
-                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 leading-relaxed truncate max-w-xl">
-                        {reason}
-                    </p>
+            <div className="flex-1 hidden md:block min-w-0">
+                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 leading-relaxed truncate max-w-xl mb-2">
+                    {reason}
+                </p>
+                <div className="flex items-center gap-2">
+                    {date && <span className={cn("px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider", freshness.color)}>{freshness.label}</span>}
+                    {conviction !== undefined && conviction > 1 && (
+                        <span className={cn('text-[9px] font-black uppercase tracking-tighter', CONVICTION_META[conviction]?.color)}>
+                            {conviction >= 3 ? 'Platinum Setup' : 'Confirmed'}
+                        </span>
+                    )}
                 </div>
+            </div>
 
-                <div className="shrink-0 text-right h-full flex items-center gap-6">
-                    <div className="space-y-1">
-                        <div className="text-lg font-black font-mono text-slate-900 dark:text-slate-100 tracking-tighter">Rs. {ltp.toLocaleString()}</div>
-                        <div className="flex items-center justify-end gap-2 pr-1">
-                            {conviction !== undefined && conviction > 1 && (
-                                <span className={cn('text-[9px] font-black uppercase tracking-tighter', CONVICTION_META[conviction]?.color)}>
-                                    {conviction >= 3 ? 'Platinum Setup' : 'Confirmed'}
-                                </span>
-                            )}
-                            {strength !== undefined && (
-                                <span className="text-[9px] font-black text-slate-400">STR {strength.toFixed(0)}%</span>
-                            )}
-                        </div>
+            <div className="shrink-0 text-right h-full flex items-center gap-6">
+                
+                {/* Performance Box */}
+                {currentPrice && change !== null ? (
+                    <div className="flex flex-col items-center gap-1">
+                        <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold tabular-nums border", isSuccess ? "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/30" : "bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800/30")}>
+                            {change > 0 ? '+' : ''}{change.toFixed(1)}%
+                        </span>
+                        {action && (
+                            <span className={cn("px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border", action.color)}>
+                                {action.label}
+                            </span>
+                        )}
                     </div>
-                    <div className="p-2 rounded-xl text-slate-200 group-hover:text-indigo-400 transition-colors">
-                        <Activity size={16} />
-                    </div>
+                ) : null}
+
+                <div className="space-y-1 text-right">
+                    <div className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-none font-mono">Entry</div>
+                    <div className="text-lg font-black font-mono text-slate-900 dark:text-slate-100 tracking-tighter leading-none">Rs. {ltp.toLocaleString()}</div>
+                    {strength !== undefined && (
+                        <div className="text-[9px] font-black text-slate-400 mt-1">STR {strength.toFixed(0)}%</div>
+                    )}
+                </div>
+                
+                <div className="p-2 rounded-xl text-slate-200 group-hover:text-indigo-400 transition-colors">
+                    <Activity size={16} />
                 </div>
             </div>
         </div>
@@ -158,9 +229,11 @@ function UnifiedSignalCard({
 
 interface BaseSignalViewProps {
     onSelect: (signal: { symbol: string; ltp: number; strength: number; direction: 'BUY' | 'SELL' }) => void;
+    liveMarketMap: Record<string, number>;
+    showHistorical: boolean;
 }
 
-function AllSourcesView({ onSelect }: BaseSignalViewProps) {
+function AllSourcesView({ onSelect, liveMarketMap, showHistorical }: BaseSignalViewProps) {
     const [loading, setLoading] = useState(true);
     const [unified, setUnified] = useState<UnifiedSignal[]>([]);
     const [search, setSearch] = useState('');
@@ -244,11 +317,16 @@ function AllSourcesView({ onSelect }: BaseSignalViewProps) {
         fetchData();
     }, []);
 
-    const filtered = useMemo(() => unified.filter(u =>
-        u.conviction >= minConviction &&
-        (dirFilter === 'ALL' || u.direction === dirFilter) &&
-        (!search || u.symbol.toLowerCase().includes(search.toLowerCase()))
-    ), [unified, search, dirFilter, minConviction]);
+    const filtered = useMemo(() => unified.filter(u => {
+        if (u.conviction < minConviction) return false;
+        if (dirFilter !== 'ALL' && u.direction !== dirFilter) return false;
+        if (search && !u.symbol.toLowerCase().includes(search.toLowerCase())) return false;
+        if (!showHistorical) {
+            const actionable = isSignalActionable(u.ltp, liveMarketMap[u.symbol], u.direction, u.strategy?.date || generatedDate || undefined);
+            if (!actionable) return false;
+        }
+        return true;
+    }), [unified, search, dirFilter, minConviction, showHistorical, liveMarketMap, generatedDate]);
 
     const buys = unified.filter(u => u.direction === 'BUY').length;
     const sells = unified.filter(u => u.direction === 'SELL').length;
@@ -327,6 +405,8 @@ function AllSourcesView({ onSelect }: BaseSignalViewProps) {
                             symbol={u.symbol}
                             direction={u.direction}
                             ltp={u.ltp}
+                            currentPrice={liveMarketMap[u.symbol]}
+                            date={u.strategy?.date || generatedDate || undefined}
                             strength={u.whale?.strength || (u.smartMoney ? u.smartMoney.markup + 50 : 50)}
                             conviction={u.conviction}
                             reason={u.smartMoney?.rationale || u.whale?.reason || u.strategy?.names.join(' · ') || 'System Breakout'}
@@ -342,7 +422,7 @@ function AllSourcesView({ onSelect }: BaseSignalViewProps) {
 
 // ─── SMART MONEY VIEW (reads from stored GeneratedSignal with source=SMART_MONEY) ─
 
-function SmartMoneyView({ onSelect }: BaseSignalViewProps) {
+function SmartMoneyView({ onSelect, liveMarketMap, showHistorical }: BaseSignalViewProps) {
     const [signals, setSignals] = useState<GeneratedSignal[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeSection, setActiveSection] = useState('platinum');
@@ -356,11 +436,17 @@ function SmartMoneyView({ onSelect }: BaseSignalViewProps) {
 
     if (loading) return <Loader size />;
 
+    const filterFn = (s: GeneratedSignal, tier: string) => {
+        if (s.signal_tier !== tier) return false;
+        if (!showHistorical && !isSignalActionable(parseFloat(s.ltp) || 0, liveMarketMap[s.symbol], s.signal, s.generated_date)) return false;
+        return true;
+    };
+
     const sections = [
-        { id: 'platinum', label: 'Platinum', badge: 'Optimal Entry', dot: 'bg-indigo-500', badgeCls: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300', items: signals.filter(s => s.signal_tier === 'Platinum Buy') },
-        { id: 'gold', label: 'Gold', badge: 'High Conviction', dot: 'bg-amber-500', badgeCls: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300', items: signals.filter(s => s.signal_tier === 'Gold Signal') },
-        { id: 'silver', label: 'Silver', badge: 'Institutional Entry', dot: 'bg-slate-400', badgeCls: 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300', items: signals.filter(s => s.signal_tier === 'Silver Signal') },
-        { id: 'divergence', label: 'Divergence', badge: 'Bullish Divergence', dot: 'bg-emerald-500', badgeCls: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300', items: signals.filter(s => s.signal_tier === 'Bullish Divergence') },
+        { id: 'platinum', label: 'Platinum', badge: 'Optimal Entry', dot: 'bg-indigo-500', badgeCls: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300', items: signals.filter(s => filterFn(s, 'Platinum Buy')) },
+        { id: 'gold', label: 'Gold', badge: 'High Conviction', dot: 'bg-amber-500', badgeCls: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300', items: signals.filter(s => filterFn(s, 'Gold Signal')) },
+        { id: 'silver', label: 'Silver', badge: 'Institutional Entry', dot: 'bg-slate-400', badgeCls: 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300', items: signals.filter(s => filterFn(s, 'Silver Signal')) },
+        { id: 'divergence', label: 'Divergence', badge: 'Bullish Divergence', dot: 'bg-emerald-500', badgeCls: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300', items: signals.filter(s => filterFn(s, 'Bullish Divergence')) },
     ];
 
     const current = sections.find(s => s.id === activeSection) || sections[0];
@@ -418,7 +504,7 @@ function SmartMoneyView({ onSelect }: BaseSignalViewProps) {
 
 // ─── STRATEGIES VIEW (already reads from stored StrategySignal) ───────────────
 
-function StrategiesView({ onSelect }: BaseSignalViewProps) {
+function StrategiesView({ onSelect, liveMarketMap, showHistorical }: BaseSignalViewProps) {
     const [signals, setSignals] = useState<StrategySignal[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -437,10 +523,11 @@ function StrategiesView({ onSelect }: BaseSignalViewProps) {
         for (const s of signals) {
             if (filter !== 'ALL' && s.signal !== filter) continue;
             if (search && !s.symbol.toLowerCase().includes(search.toLowerCase())) continue;
+            if (!showHistorical && !isSignalActionable(parseFloat(s.last_close) || 0, liveMarketMap[s.symbol], s.signal as 'BUY'|'SELL', s.date)) continue;
             (map.get(s.symbol) ?? map.set(s.symbol, []).get(s.symbol)!).push(s);
         }
         return [...map.entries()].sort((a, b) => b[1].length - a[1].length);
-    }, [signals, filter, search]);
+    }, [signals, filter, search, showHistorical, liveMarketMap]);
 
     if (loading) return <Loader size />;
 
@@ -476,6 +563,8 @@ function StrategiesView({ onSelect }: BaseSignalViewProps) {
                                 symbol={symbol}
                                 direction={dominant as 'BUY' | 'SELL'}
                                 ltp={ltp}
+                                currentPrice={liveMarketMap[symbol]}
+                                date={sigs[0]?.date}
                                 strength={70}
                                 reason={sigs[0]?.strategy_description || sigs.map(s => s.strategy_name).join(' · ')}
                                 tagline={`${sigs.length} Strategy Signals`}
@@ -491,7 +580,7 @@ function StrategiesView({ onSelect }: BaseSignalViewProps) {
 
 // ─── WHALE WATCH VIEW (reads from stored GeneratedSignal with whale sources) ──
 
-function WhaleWatchView({ onSelect }: BaseSignalViewProps) {
+function WhaleWatchView({ onSelect, liveMarketMap, showHistorical }: BaseSignalViewProps) {
     const [sourceIdx, setSourceIdx] = useState(0);
     const [signals, setSignals] = useState<GeneratedSignal[]>([]);
     const [loading, setLoading] = useState(true);
@@ -508,9 +597,12 @@ function WhaleWatchView({ onSelect }: BaseSignalViewProps) {
     }, [currentSource]);
 
     const filtered = useMemo(() =>
-        signals.filter(s => !search || s.symbol.includes(search.toUpperCase()))
-            .sort((a, b) => b.strength - a.strength),
-        [signals, search]);
+        signals.filter(s => {
+            if (search && !s.symbol.toUpperCase().includes(search.toUpperCase())) return false;
+            if (!showHistorical && !isSignalActionable(parseFloat(s.ltp) || 0, liveMarketMap[s.symbol], s.signal, s.generated_date)) return false;
+            return true;
+        }).sort((a, b) => b.strength - a.strength),
+        [signals, search, showHistorical, liveMarketMap]);
 
     const buys = filtered.filter(r => r.signal === 'BUY');
     const sells = filtered.filter(r => r.signal === 'SELL');
@@ -552,6 +644,8 @@ function WhaleWatchView({ onSelect }: BaseSignalViewProps) {
                             symbol={sig.symbol}
                             direction={sig.signal}
                             ltp={parseFloat(sig.ltp) || 0}
+                            currentPrice={liveMarketMap[sig.symbol]}
+                            date={sig.generated_date}
                             strength={sig.strength}
                             reason={sig.rationale}
                             tagline={SOURCE_LABELS[sig.source]}
@@ -594,6 +688,19 @@ const TABS = [
 export default function IntelHubClient() {
     const [tab, setTab] = useState('all');
     const [selectedSignal, setSelectedSignal] = useState<{ symbol: string; ltp: number; strength: number; direction: 'BUY' | 'SELL' } | null>(null);
+    const [liveMarketMap, setLiveMarketMap] = useState<Record<string, number>>({});
+    const [showHistorical, setShowHistorical] = useState(false);
+
+    useEffect(() => {
+        api.get('/api/stocks/summary/').then(res => {
+            const d = res.data;
+            const map: Record<string, number> = {};
+            [...(d.top_gainers||[]), ...(d.top_losers||[]), ...(d.top_volume||[]), ...(d.top_turnover||[])].forEach((s: any) => {
+                if (s.ticker && s.close) map[s.ticker] = s.close;
+            });
+            setLiveMarketMap(map);
+        }).catch(err => console.error("Failed fetching summary for live prices", err));
+    }, []);
 
     return (
         <DashboardLayout
@@ -601,34 +708,57 @@ export default function IntelHubClient() {
             subtitle={TABS.find(t => t.key === tab)?.desc}
         >
             <div className="space-y-8 pb-20">
-                {/* Navigation bar */}
-                <div className="flex flex-wrap gap-2 p-1.5 bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl w-fit">
-                    {TABS.map(t => (
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    {/* Navigation bar */}
+                    <div className="flex flex-wrap gap-2 p-1.5 bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl w-fit">
+                        {TABS.map(t => (
+                            <button
+                                key={t.key}
+                                onClick={() => setTab(t.key)}
+                                className={cn(
+                                    'flex items-center gap-2.5 px-6 py-3 rounded-xl text-xs font-black transition-all group overflow-hidden relative',
+                                    tab === t.key
+                                        ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xl shadow-slate-200/30 dark:shadow-none border border-slate-200/50 dark:border-slate-700/50'
+                                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50'
+                                )}
+                            >
+                                <span className={cn('transition-transform duration-500 group-hover:scale-125', tab === t.key ? 'text-indigo-500' : 'text-slate-400')}>
+                                    {t.icon}
+                                </span>
+                                <span className="relative z-10">{t.label}</span>
+                                {tab === t.key && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-500/50" />}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex items-center gap-2 px-2">
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:block">Historical/Invalidated</span>
                         <button
-                            key={t.key}
-                            onClick={() => setTab(t.key)}
+                            onClick={() => setShowHistorical(!showHistorical)}
                             className={cn(
-                                'flex items-center gap-2.5 px-6 py-3 rounded-xl text-xs font-black transition-all group overflow-hidden relative',
-                                tab === t.key
-                                    ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xl shadow-slate-200/30 dark:shadow-none border border-slate-200/50 dark:border-slate-700/50'
-                                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50'
+                                "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 border border-transparent shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]",
+                                showHistorical ? "bg-indigo-500 dark:bg-indigo-600" : "bg-slate-200 dark:bg-slate-700"
                             )}
+                            role="switch"
+                            aria-checked={showHistorical}
                         >
-                            <span className={cn('transition-transform duration-500 group-hover:scale-125', tab === t.key ? 'text-indigo-500' : 'text-slate-400')}>
-                                {t.icon}
-                            </span>
-                            <span className="relative z-10">{t.label}</span>
-                            {tab === t.key && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-500/50" />}
+                            <span className="sr-only">Toggle historical signals</span>
+                            <span 
+                                className={cn(
+                                    "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                                    showHistorical ? "translate-x-2" : "-translate-x-2"
+                                )} 
+                            />
                         </button>
-                    ))}
+                    </div>
                 </div>
 
                 {/* Main Content Area with staggered animation */}
                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-700">
-                    {tab === 'all'        && <AllSourcesView onSelect={setSelectedSignal} />}
-                    {tab === 'smart'      && <SmartMoneyView onSelect={setSelectedSignal} />}
-                    {tab === 'strategies' && <StrategiesView onSelect={setSelectedSignal} />}
-                    {tab === 'whale'      && <WhaleWatchView onSelect={setSelectedSignal} />}
+                    {tab === 'all'        && <AllSourcesView onSelect={setSelectedSignal} liveMarketMap={liveMarketMap} showHistorical={showHistorical} />}
+                    {tab === 'smart'      && <SmartMoneyView onSelect={setSelectedSignal} liveMarketMap={liveMarketMap} showHistorical={showHistorical} />}
+                    {tab === 'strategies' && <StrategiesView onSelect={setSelectedSignal} liveMarketMap={liveMarketMap} showHistorical={showHistorical} />}
+                    {tab === 'whale'      && <WhaleWatchView onSelect={setSelectedSignal} liveMarketMap={liveMarketMap} showHistorical={showHistorical} />}
                 </div>
             </div>
 
