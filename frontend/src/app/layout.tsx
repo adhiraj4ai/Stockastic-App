@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Outfit, JetBrains_Mono } from "next/font/google";
+import { Onest, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 
-const outfit = Outfit({
-  variable: "--font-outfit",
+const onest = Onest({
+  variable: "--font-onest",
   subsets: ["latin"],
   display: "swap",
 });
@@ -30,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${outfit.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${onest.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <body
         suppressHydrationWarning
         className="font-sans bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen"
