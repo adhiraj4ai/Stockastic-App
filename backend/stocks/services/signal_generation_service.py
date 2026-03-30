@@ -55,6 +55,29 @@ class SignalGenerationService:
         for sig in signals:
             try:
                 ltp = float(sig.get('ltp', 0))
+                
+                # Default SL/TP
+                tp2 = sig.get('target_price')
+                sl = sig.get('stop_loss_price')
+                
+                # Calculate Detailed Trade Plan
+                metadata = sig.get('metadata', {})
+                if ltp > 0:
+                    if sig['signal'] == 'BUY':
+                        tp1 = round(ltp * 1.05, 2)
+                        tp2 = round(ltp * 1.10, 2)
+                        tp3 = round(ltp * 1.15, 2)
+                        wac = metadata.get('top_broker_wac', 0)
+                        # SL is institutional cost - 2% if cost is below LTP, else 5% below LTP
+                        sl = round(wac * 0.98, 2) if (wac > 0 and wac < ltp) else round(ltp * 0.95, 2)
+                        metadata.update({'tp1': tp1, 'tp2': tp2, 'tp3': tp3, 'sl': sl})
+                    elif sig['signal'] == 'SELL':
+                        tp1 = round(ltp * 0.95, 2)
+                        tp2 = round(ltp * 0.90, 2)
+                        tp3 = round(ltp * 0.85, 2)
+                        sl = round(ltp * 1.05, 2)
+                        metadata.update({'tp1': tp1, 'tp2': tp2, 'tp3': tp3, 'sl': sl})
+
                 obj, created = GeneratedSignal.objects.update_or_create(
                     source=source,
                     symbol=sig['symbol'],
@@ -65,19 +88,12 @@ class SignalGenerationService:
                         'strength': sig.get('strength', 0),
                         'ltp': ltp,
                         'rationale': sig.get('rationale', ''),
-                        'metadata': sig.get('metadata', {}),
+                        'metadata': metadata,
+                        'target_price': tp2,
+                        'stop_loss_price': sl,
                     }
                 )
                 
-                if created and ltp > 0:
-                    if sig['signal'] == 'BUY':
-                        obj.target_price = round(ltp * 1.10, 2)
-                        obj.stop_loss_price = round(ltp * 0.95, 2)
-                    elif sig['signal'] == 'SELL':
-                        obj.target_price = round(ltp * 0.90, 2)
-                        obj.stop_loss_price = round(ltp * 1.05, 2)
-                    obj.save(update_fields=['target_price', 'stop_loss_price'])
-                    
                 saved += 1
             except Exception as e:
                 logger.error(f"Failed to save signal for {sig.get('symbol')}: {e}")

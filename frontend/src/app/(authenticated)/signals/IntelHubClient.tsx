@@ -61,6 +61,9 @@ interface UnifiedSignal {
     ltp: number;
     target_price?: number;
     stop_loss_price?: number;
+    tp1?: number;
+    tp2?: number;
+    tp3?: number;
     status?: 'ACTIVE' | 'WON' | 'LOST' | 'CLOSED_MANUAL';
     smartMoney?: { tier: string; markup: number; rationale: string; brokers: number };
     strategy?: { names: string[]; count: number; date: string };
@@ -234,6 +237,9 @@ function UnifiedSignalCard({
     conviction,
     targetPrice,
     stopLoss,
+    tp1,
+    tp2,
+    tp3,
     status,
     smartMoneyMetadata,
     onSelect 
@@ -250,6 +256,9 @@ function UnifiedSignalCard({
     conviction?: number;
     targetPrice?: number;
     stopLoss?: number;
+    tp1?: number;
+    tp2?: number;
+    tp3?: number;
     status?: 'ACTIVE' | 'WON' | 'LOST' | 'CLOSED_MANUAL';
     smartMoneyMetadata?: any;
     onSelect: (s: any) => void;
@@ -264,7 +273,7 @@ function UnifiedSignalCard({
 
     return (
         <div 
-            onClick={() => onSelect({ symbol, ltp, strength: strength || 50, direction, targetPrice, stopLoss, status })}
+            onClick={() => onSelect({ symbol, ltp, currentPrice, strength: strength || 50, direction, targetPrice, stopLoss, tp1, tp2, tp3, status })}
             className={cn(
                 'group relative rounded-3xl border p-5 cursor-pointer transition-all hover:shadow-2xl hover:-translate-y-0.5 bg-white/70 dark:bg-slate-900/50 backdrop-blur-xl flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-6 overflow-hidden',
                 direction === 'BUY' ? 'border-emerald-500/10 hover:border-emerald-500/30' : 'border-rose-500/10 hover:border-rose-500/30',
@@ -451,6 +460,12 @@ function AllSourcesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
                             u.conviction++;
                         }
 
+                        // Extract detailed trade plan from metadata
+                        if (sig.metadata?.tp1) u.tp1 = sig.metadata.tp1;
+                        if (sig.metadata?.tp2) u.tp2 = sig.metadata.tp2;
+                        if (sig.metadata?.tp3) u.tp3 = sig.metadata.tp3;
+                        if (sig.metadata?.sl) u.stop_loss_price = sig.metadata.sl;
+
                         if (!generatedDate && sig.generated_date) {
                             setGeneratedDate(sig.generated_date);
                         }
@@ -584,6 +599,9 @@ function AllSourcesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
                             tagline={u.smartMoney?.tier || (u.strategy ? `${u.strategy.count} Strategies` : 'Whale Accumulation')}
                             targetPrice={u.target_price}
                             stopLoss={u.stop_loss_price}
+                            tp1={u.tp1}
+                            tp2={u.tp2}
+                            tp3={u.tp3}
                             status={u.status}
                             indicators={batchIndicators[u.symbol]}
                             smartMoneyMetadata={u.smartMoney}
@@ -878,10 +896,14 @@ export default function IntelHubClient() {
     const [selectedSignal, setSelectedSignal] = useState<{ 
         symbol: string; 
         ltp: number; 
+        currentPrice?: number;
         strength: number; 
         direction: 'BUY' | 'SELL';
         targetPrice?: number;
         stopLoss?: number;
+        tp1?: number;
+        tp2?: number;
+        tp3?: number;
         status?: string;
     } | null>(null);
     const [liveMarketMap, setLiveMarketMap] = useState<Record<string, number>>({});
@@ -993,11 +1015,15 @@ export default function IntelHubClient() {
                     {selectedSignal && (
                         <DailySignalStatus 
                             symbol={selectedSignal.symbol}
-                            cmp={selectedSignal.ltp}
+                            cmp={selectedSignal.currentPrice || selectedSignal.ltp}
+                            entryPrice={selectedSignal.ltp}
                             strength={selectedSignal.strength}
                             direction={selectedSignal.direction}
                             targetPrice={selectedSignal.targetPrice}
                             stopLoss={selectedSignal.stopLoss}
+                            tp1={selectedSignal.tp1}
+                            tp2={selectedSignal.tp2}
+                            tp3={selectedSignal.tp3}
                             status={selectedSignal.status}
                             className="shadow-2xl border-slate-200 dark:border-slate-800"
                         />

@@ -17,10 +17,14 @@ import { StockLoader } from '@/components/ui/StockLoader';
 interface DailySignalStatusProps {
     symbol: string;
     cmp: number;
+    entryPrice: number;
     strength: number;
     direction: 'BUY' | 'SELL';
     targetPrice?: number;
     stopLoss?: number;
+    tp1?: number;
+    tp2?: number;
+    tp3?: number;
     status?: string;
     className?: string;
 }
@@ -56,13 +60,36 @@ interface SignalHistory {
     reason?: string;
 }
 
+const getActionability = (signalPrice: number, currentPrice?: number, signal?: string) => {
+    if (!currentPrice || signal === 'HOLD' || signal === 'NEUTRAL') return null;
+    const change = ((currentPrice - signalPrice) / signalPrice) * 100;
+    const isBuy = signal === 'BUY';
+    const isSell = signal === 'SELL';
+    
+    if (isBuy) {
+        if (change < -5) return { label: 'Invalidated', color: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400 border-rose-200', status: 'invalid' };
+        if (change > 3) return { label: 'Entry Missed', color: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border-slate-200', status: 'missed' };
+        return { label: 'In Entry Zone', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 border-emerald-200', status: 'valid' };
+    }
+    if (isSell) {
+        if (change > 5) return { label: 'Invalidated', color: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400 border-rose-200', status: 'invalid' };
+        if (change < -3) return { label: 'Entry Missed', color: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border-slate-200', status: 'missed' };
+        return { label: 'In Entry Zone', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 border-emerald-200', status: 'valid' };
+    }
+    return null;
+};
+
 export function DailySignalStatus({ 
     symbol, 
     cmp, 
+    entryPrice,
     strength, 
     direction, 
     targetPrice, 
     stopLoss, 
+    tp1,
+    tp2,
+    tp3,
     status, 
     className 
 }: DailySignalStatusProps) {
@@ -132,7 +159,9 @@ export function DailySignalStatus({
     const t10dVal = parseFloat(t10d?.value || '0');
     const t1mVal = parseFloat(t1m?.value || '0');
     
-    const primaryTarget = targetPrice || (direction === 'BUY' ? cmp * 1.08 : cmp * 0.92);
+    const action = getActionability(entryPrice, cmp, direction);
+    
+    const primaryTarget = targetPrice || (direction === 'BUY' ? entryPrice * 1.05 : entryPrice * 0.95);
     const primaryStop = stopLoss || (direction === 'BUY' ? cmp * 0.96 : cmp * 1.04);
     
     const targetDist = ((primaryTarget - cmp) / (cmp || 1)) * 100;
@@ -215,32 +244,98 @@ export function DailySignalStatus({
             {/* Scrollable Content Container */}
             <div className="flex-1 overflow-y-auto no-scrollbar pb-10">
                 {/* Trade Dashboard Tiles */}
-                <div className="px-8 pt-6 grid grid-cols-1 md:grid-cols-3 gap-5">
-                    <div className="p-6 rounded-3xl border border-emerald-200/50 dark:border-emerald-500/20 bg-emerald-50/20 dark:bg-emerald-500/5 transition-all hover:bg-emerald-50/40 dark:hover:bg-emerald-500/10">
-                        <div className="flex justify-between items-start mb-4">
-                            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600"><Target size={18} /></div>
-                            <span className="text-[10px] font-bold text-emerald-600/60 font-mono">{targetDist > 0 ? '+' : ''}{targetDist.toFixed(1)}% Distance</span>
+                <div className="px-8 pt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="p-5 rounded-3xl border border-emerald-200/50 dark:border-emerald-500/20 bg-emerald-50/20 dark:bg-emerald-500/5 transition-all hover:bg-emerald-50/40 dark:hover:bg-emerald-500/10">
+                        <div className="flex justify-between items-start mb-3">
+                            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600"><Target size={16} /></div>
+                            <span className="text-[9px] font-bold text-emerald-600/60 font-mono">{targetDist > 0 ? '+' : ''}{targetDist.toFixed(1)}%</span>
                         </div>
-                        <div className="text-[10px] font-bold text-slate-900/60 dark:text-slate-400/50 mb-1 tracking-tight">Target price</div>
-                        <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tighter leading-none">Rs. {primaryTarget.toLocaleString()}</div>
+                        <div className="text-[9px] font-bold text-slate-900/60 dark:text-slate-400/50 mb-1 tracking-tight uppercase">Primary Target</div>
+                        <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tighter leading-none">Rs. {primaryTarget.toLocaleString()}</div>
                     </div>
 
-                    <div className="p-6 rounded-3xl border border-rose-200/50 dark:border-rose-500/20 bg-rose-50/20 dark:bg-rose-500/5 transition-all hover:bg-rose-50/40 dark:hover:bg-rose-500/10">
-                        <div className="flex justify-between items-start mb-4">
-                            <div className="p-2 rounded-xl bg-rose-500/10 text-rose-600"><ShieldAlert size={18} /></div>
-                            <span className="text-[10px] font-bold text-rose-600/60 font-mono">{Math.abs(stopDist).toFixed(1)}% Exposure</span>
+                    <div className="p-5 rounded-3xl border border-rose-200/50 dark:border-rose-500/20 bg-rose-50/20 dark:bg-rose-500/5 transition-all hover:bg-rose-50/40 dark:hover:bg-rose-500/10">
+                        <div className="flex justify-between items-start mb-3">
+                            <div className="p-2 rounded-xl bg-rose-500/10 text-rose-600"><ShieldAlert size={16} /></div>
+                            <span className="text-[9px] font-bold text-rose-600/60 font-mono">{Math.abs(stopDist).toFixed(1)}% Risk</span>
                         </div>
-                        <div className="text-[10px] font-bold text-slate-900/60 dark:text-slate-400/50 mb-1 tracking-tight">Stop loss</div>
-                        <div className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono tracking-tighter leading-none">Rs. {primaryStop.toLocaleString()}</div>
+                        <div className="text-[9px] font-bold text-slate-900/60 dark:text-slate-400/50 mb-1 tracking-tight uppercase">Stop loss</div>
+                        <div className="text-xl font-black text-rose-600 dark:text-rose-400 font-mono tracking-tighter leading-none">Rs. {primaryStop.toLocaleString()}</div>
                     </div>
 
-                    <div className="p-6 rounded-3xl border border-slate-300/50 dark:border-slate-700/20 bg-slate-100/40 dark:bg-slate-900/20 transition-all hover:bg-slate-200/40 dark:hover:bg-white/10">
-                        <div className="flex justify-between items-start mb-4">
-                            <div className="p-2 rounded-xl bg-black/10 dark:bg-white/10 text-black dark:text-white"><Gauge size={18} /></div>
-                            <span className="text-[10px] font-bold text-slate-900/60 dark:text-slate-400/60 font-mono">{riskReward}:1 Efficiency</span>
+                    <div className="p-5 rounded-3xl border border-slate-300/50 dark:border-slate-700/20 bg-slate-100/40 dark:bg-slate-900/20 transition-all hover:bg-slate-200/40 dark:hover:bg-white/10">
+                        <div className="flex justify-between items-start mb-3">
+                            <div className="p-2 rounded-xl bg-black/10 dark:bg-white/10 text-black dark:text-white"><Gauge size={16} /></div>
+                            <span className="text-[9px] font-bold text-slate-900/60 dark:text-slate-400/60 font-mono">{riskReward}:1 R/R</span>
                         </div>
-                        <div className="text-[10px] font-bold text-slate-900/60 dark:text-slate-400/50 mb-1 tracking-tight">Setup score</div>
-                        <div className="text-2xl font-black text-black dark:text-white font-mono tracking-tighter leading-none">{strength}% Gravity</div>
+                        <div className="text-[9px] font-bold text-slate-900/60 dark:text-slate-400/50 mb-1 tracking-tight uppercase">Efficiency</div>
+                        <div className="text-xl font-black text-black dark:text-white font-mono tracking-tighter leading-none">{strength}% Gravity</div>
+                    </div>
+
+                    <div className={cn(
+                        "p-5 rounded-3xl border transition-all flex flex-col justify-center",
+                        direction === 'BUY' ? "border-emerald-500/30 bg-emerald-500/5" : "border-rose-500/30 bg-rose-500/5"
+                    )}>
+                        <div className="text-[9px] font-black uppercase tracking-widest opacity-40 mb-1">{direction} Zone</div>
+                        <div className="text-lg font-black tracking-tighter leading-tight">
+                            {action?.label || 'Monitoring'}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Triple-Target Trade Execution Strategy */}
+                <div className="px-8 mt-6">
+                    <div className="rounded-[2.5rem] p-8 border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl relative overflow-hidden">
+                        <div className="absolute right-0 top-0 p-10 opacity-5 -rotate-12 translate-x-1/4 -translate-y-1/4">
+                            <Zap size={200} />
+                        </div>
+                        
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8 relative z-10">
+                            <div>
+                                <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tighter flex items-center gap-2">
+                                    <Zap size={18} className="text-amber-500 fill-amber-500" />
+                                    Trade Execution Strategy
+                                </h3>
+                                <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Multi-Target Accumulation Cycle</p>
+                            </div>
+                            <div className="px-4 py-2 rounded-2xl bg-black dark:bg-white text-white dark:text-black text-[10px] font-black tracking-widest uppercase">
+                                Setup Verified
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+                            {[
+                                { label: 'TP 1: (Base)', price: tp1 || primaryTarget, weight: 'Conservative' },
+                                { label: 'TP 2: (Runner)', price: tp2 || primaryTarget * 1.05, weight: 'Moderate' },
+                                { label: 'TP 3: (Moonshot)', price: tp3 || primaryTarget * 1.10, weight: 'Aggressive' }
+                            ].map((tp, idx) => {
+                                const dist = ((tp.price - cmp) / cmp) * 100;
+                                const isHit = direction === 'BUY' ? cmp >= tp.price : cmp <= tp.price;
+                                
+                                return (
+                                    <div key={idx} className={cn(
+                                        "p-5 rounded-3xl border transition-all",
+                                        isHit ? "bg-emerald-500/10 border-emerald-500/30" : "bg-white dark:bg-slate-900/40 border-slate-200 dark:border-slate-800"
+                                    )}>
+                                        <div className="flex justify-between items-center mb-4">
+                                            <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{tp.weight}</span>
+                                            {isHit && <Badge className="bg-emerald-500 text-white text-[8px] animate-pulse">HIT</Badge>}
+                                        </div>
+                                        <div className="text-[10px] font-bold text-slate-900/60 dark:text-slate-400/50 mb-1">{tp.label}</div>
+                                        <div className="text-2xl font-black font-mono text-slate-900 dark:text-white tracking-widest">Rs.{tp.price.toLocaleString()}</div>
+                                        <div className="mt-4 flex items-center justify-between">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase">Distance</span>
+                                            <span className={cn(
+                                                "text-[10px] font-black font-mono",
+                                                idx === 0 ? "text-emerald-500" : idx === 1 ? "text-amber-500" : "text-blue-500"
+                                            )}>
+                                                {dist > 0 ? '+' : ''}{dist.toFixed(1)}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
 
