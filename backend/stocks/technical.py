@@ -215,7 +215,7 @@ def _calculate_support_resistance(df, indicators):
     p_close = year_window['close'].iloc[-1]
     pivot_p = (p_high + p_low + p_close) / 3
     
-    _add_ind(indicators, 'Support & Resistance', 'Pivot Point (P)', pivot_p)
+    _add_ind(indicators, 'Support & Resistance', 'Pivot (P)', pivot_p)
     
     # Assign up to 3 levels for R and S
     for i in range(3):

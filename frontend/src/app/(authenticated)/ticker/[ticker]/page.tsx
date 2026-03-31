@@ -627,7 +627,7 @@ export default function StockDetailPage() {
     // ... (inside the component return)
 
     return (
-        <DashboardLayout noPadding>
+        <DashboardLayout noPadding tickerPrice={data.price.close} priceChange={data.price.percent_change}>
             <div className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 terminal-grid-light selection:bg-blue-500/10 font-sans relative">
 
 
@@ -658,16 +658,16 @@ export default function StockDetailPage() {
                     {/* 2. CORE ANALYTICS HUB */}
                     <div className="space-y-8">
                         <Tabs
-                            defaultValue="technical"
+                            defaultValue="signals"
                             className="w-full"
                             value={activeTab}
                             onValueChange={setActiveTab}
                         >
                             <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-4 mb-8">
                                 <div className="flex items-center gap-6">
-                                    <TabsList className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 h-10 rounded-xl shadow-sm">
-                                        <TabsTrigger value="technical" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Technical Analysis</TabsTrigger>
+                                    <TabsList className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 h-10 rounded-xl shadow-smCondensed">
                                         <TabsTrigger value="signals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all">Signals</TabsTrigger>
+                                        <TabsTrigger value="technical" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Technical Analysis</TabsTrigger>
                                         <TabsTrigger value="fundamentals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Fundamentals</TabsTrigger>
                                         <TabsTrigger value="accumulation" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all">Accumulation</TabsTrigger>
                                     </TabsList>

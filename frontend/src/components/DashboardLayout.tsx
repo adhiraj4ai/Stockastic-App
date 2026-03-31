@@ -5,12 +5,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { LayoutDashboard, TrendingUp, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Users, BarChart3, History, Star, Brain, Radar, Landmark, ScanLine, Zap, Share2, Crosshair, DollarSign, Layers, GitMerge } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, TrendingDown, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Users, BarChart3, History, Star, Brain, Radar, Landmark, ScanLine, Zap, Share2, Crosshair, DollarSign, Layers, GitMerge } from 'lucide-react';
 import { FullPageLoader } from '@/components/ui/StockLoader';
 import { SearchBar } from './SearchBar';
 import { ChatSidebar } from './ChatSidebar';
 import { AlertsDropdown } from './AlertsDropdown';
 import { SymbolSelector } from './SymbolSelector';
+import { cn } from '@/lib/utils';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -80,7 +81,6 @@ const stocks = [
     { symbol: 'AMZN', name: 'Amazon.com Inc.' },
     { symbol: 'MSFT', name: 'Microsoft Corporation' }
 ];
-
 function DashboardContent({
     children,
     title,
@@ -89,7 +89,9 @@ function DashboardContent({
     showBack,
     hideHeader = false,
     headerContent,
-    extraHeaderItems
+    extraHeaderItems,
+    tickerPrice,
+    priceChange
 }: {
     children: React.ReactNode;
     title?: React.ReactNode;
@@ -99,6 +101,8 @@ function DashboardContent({
     hideHeader?: boolean;
     headerContent?: React.ReactNode;
     extraHeaderItems?: React.ReactNode;
+    tickerPrice?: number;
+    priceChange?: number;
 }) {
     const pathname = usePathname();
     const router = useRouter();
@@ -436,10 +440,35 @@ function DashboardContent({
                             {pathname.startsWith('/ticker/') && (() => {
                                 const currentTicker = pathname.split('/ticker/')[1]?.split('/')[0];
                                 return (
-                                    <SymbolSelector
-                                        value={currentTicker}
-                                        onChange={(symbol) => router.push(`/ticker/${symbol}`)}
-                                    />
+                                    <div className="flex items-center bg-white dark:bg-slate-950/40 border border-slate-200/60 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm transition-all hover:shadow-md group">
+                                        <SymbolSelector
+                                            value={currentTicker}
+                                            onChange={(symbol) => router.push(`/ticker/${symbol}`)}
+                                            className="border-none shadow-none hover:shadow-none bg-transparent dark:bg-transparent rounded-r-none h-11 px-5"
+                                        />
+                                        {tickerPrice !== undefined && (
+                                            <>
+                                                <div className="w-[1px] h-6 bg-slate-200 dark:bg-slate-800/80" />
+                                                <div className="flex flex-col items-start px-5 py-1 justify-center min-w-[100px]">
+                                                    <div className="flex items-center gap-1.5 leading-none">
+                                                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">LTP</span>
+                                                        <span className="text-sm font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+                                                            रू {tickerPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                        </span>
+                                                    </div>
+                                                    {priceChange !== undefined && (
+                                                        <div className={cn(
+                                                            "text-[10px] font-bold flex items-center gap-0.5 mt-0.5",
+                                                            priceChange >= 0 ? "text-emerald-500" : "text-rose-500"
+                                                        )}>
+                                                            {priceChange >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                                                            {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}%
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
                                 );
                             })()}
                         </div>

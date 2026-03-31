@@ -979,10 +979,9 @@ def stock_detail(request, ticker):
     except Company.DoesNotExist:
         company_data = None
 
-    technical_indicators = fundamental.technical_indicators if fundamental and fundamental.technical_indicators else []
-    if not technical_indicators:
-        # Calculate on the fly if missing from database
-        technical_indicators = get_technical_indicators(ticker)
+    # Calculate technical indicators on the fly to ensure structural accuracy (S/R, MACD, etc.)
+    # This bypasses stale database caches for the specific ticker being viewed.
+    technical_indicators = get_technical_indicators(ticker)
 
     return Response({
         'company': company_data,
