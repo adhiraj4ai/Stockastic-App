@@ -2,7 +2,7 @@ import logging
 from datetime import date
 from collections import defaultdict
 from ..models import GeneratedSignal
-from ..models.market import StockPrice
+from ..models.market import DailyStockPrice
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class SignalEvaluationService:
 
         for symbol, signals in signals_by_symbol.items():
             # Get the latest price for the symbol
-            latest_price_obj = StockPrice.objects.filter(symbol=symbol).order_by('-transaction_date').first()
+            latest_price_obj = DailyStockPrice.objects.filter(ticker=symbol).order_by('-date').first()
             if not latest_price_obj:
                 continue
 
@@ -42,7 +42,7 @@ class SignalEvaluationService:
             latest_high = latest_price_obj.high
             latest_low = latest_price_obj.low
             latest_close = latest_price_obj.close
-            latest_date = latest_price_obj.transaction_date
+            latest_date = latest_price_obj.date
 
             for sig in signals:
                 # Can't evaluate on the exact generation day realistically unless intraday data

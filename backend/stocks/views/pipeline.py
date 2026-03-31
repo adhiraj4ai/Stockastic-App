@@ -11,6 +11,7 @@ import json
 import threading
 import io
 import csv
+import re
 
 from ..models import DataUploadLog, DailyStockPrice, DailyFloorsheet
 from ..serializers import DailyStockPriceSerializer
@@ -99,11 +100,38 @@ class PipelineViewSet(viewsets.ViewSet):
             cmd = ['python', manage_py] + command_args
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
             
+            records_found = 0
             for line in process.stdout:
-                yield f"data: {json.dumps({'type': 'log', 'message': line.strip()})}\n\n"
+                line_str = line.strip()
+                # 1. Parse for common patterns
+                # Signals: Total signals saved: 123
+                sig_match = re.search(r"Total signals saved: (\d+)", line_str)
+                if sig_match: records_found = int(sig_match.group(1))
+                
+                # Signals (alternate): Saved: 123, Skipped: 45
+                saved_match = re.search(r"Saved: (\d+), Skipped:", line_str)
+                if saved_match: records_found = int(saved_match.group(1))
+                
+                # Evaluation: Evaluation complete: 10 WON, 5 LOST
+                eval_match = re.search(r"Evaluation complete: (\d+) WON, (\d+) LOST", line_str)
+                if eval_match: records_found = int(eval_match.group(1)) + int(eval_match.group(2))
+                
+                # Indicators: Successfully updated technical indicators for 250 stocks.
+                ind_match = re.search(r"Successfully updated technical indicators for (\d+)", line_str)
+                if ind_match: records_found = int(ind_match.group(1))
+                
+                # Broad Progress: Processed 50/250
+                prog_match = re.search(r"Processed (\d+)/\d+", line_str)
+                if prog_match: records_found = max(records_found, int(prog_match.group(1)))
+
+                yield f"data: {json.dumps({'type': 'log', 'message': line_str})}\n\n"
             
             process.wait()
+            if process.returncode != 0:
+                yield f"data: {json.dumps({'type': 'error', 'message': f'Process failed with exit code {process.returncode}. Check logs for details.'})}\n\n"
+            
             log_entry.status = 'SUCCESS' if process.returncode == 0 else 'FAILED'
+            log_entry.records_count = records_found
             log_entry.save()
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
         
