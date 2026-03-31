@@ -49,6 +49,20 @@ export default function TrendsPage() {
 
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    const [selectedSector, setSelectedSector] = useState('All');
+    const [sectors, setSectors] = useState<{ name: string; count: number }[]>([]);
+
+    useEffect(() => {
+        const fetchSectors = async () => {
+            try {
+                const res = await api.get('/api/stocks/companies/sectors/');
+                setSectors(res.data);
+            } catch (err) {
+                console.error('Failed to fetch sectors', err);
+            }
+        };
+        fetchSectors();
+    }, []);
 
     useEffect(() => {
         const fetchTrends = async () => {
@@ -74,10 +88,12 @@ export default function TrendsPage() {
     };
 
     const sortedTrends = [...trends]
-        .filter(t =>
-            t.symbol.toLowerCase().includes(search.toLowerCase()) ||
-            String(t.broker).includes(search)
-        )
+        .filter(t => {
+            const matchesSearch = t.symbol.toLowerCase().includes(search.toLowerCase()) ||
+                                String(t.broker).includes(search);
+            const matchesSector = selectedSector === 'All' || t.sector === selectedSector;
+            return matchesSearch && matchesSector;
+        })
         .sort((a, b) => {
             const key = sortConfig.key;
             const aValue = a[key as keyof BrokerTrend];
@@ -93,7 +109,7 @@ export default function TrendsPage() {
 
     useEffect(() => {
         setPage(1);
-    }, [search, sortConfig, range]);
+    }, [search, sortConfig, range, selectedSector]);
 
     const totalPages = Math.ceil(sortedTrends.length / pageSize) || 1;
     const paginatedTrends = sortedTrends.slice((page - 1) * pageSize, page * pageSize);
@@ -121,6 +137,33 @@ export default function TrendsPage() {
                                     )}
                                 >
                                     {t.label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="bg-white dark:bg-slate-900/60 p-1 rounded-xl border border-slate-200 dark:border-white/5 shadow-inner flex overflow-x-auto no-scrollbar max-w-[200px] md:max-w-xs lg:max-w-md">
+                            <button
+                                onClick={() => setSelectedSector('All')}
+                                className={cn(
+                                    "px-4 py-1.5 rounded-lg text-[10px] font-black transition-all duration-300 tracking-tighter whitespace-nowrap",
+                                    selectedSector === 'All'
+                                        ? "bg-slate-900 dark:bg-indigo-600 text-white shadow-lg"
+                                        : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                )}
+                            >
+                                ALL SECTORS
+                            </button>
+                            {sectors.map((s) => (
+                                <button
+                                    key={s.name}
+                                    onClick={() => setSelectedSector(s.name)}
+                                    className={cn(
+                                        "px-4 py-1.5 rounded-lg text-[10px] font-black transition-all duration-300 tracking-tighter whitespace-nowrap",
+                                        selectedSector === s.name
+                                            ? "bg-slate-900 dark:bg-indigo-600 text-white shadow-lg"
+                                            : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                    )}
+                                >
+                                    {s.name.toUpperCase()}
                                 </button>
                             ))}
                         </div>

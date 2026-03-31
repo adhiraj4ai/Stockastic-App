@@ -21,6 +21,7 @@ export interface BrokerTrend {
     range_net?: number;
     wac?: number;
     ltp: number;
+    sector?: string;
     trend_5d: string;
     change_5d: number;
     trend_10d: string;
