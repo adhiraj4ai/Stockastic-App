@@ -176,22 +176,53 @@ def _calculate_volume(df, indicators):
     _add_ind(indicators, 'Volume', 'CMF (20)', _get_scalar(cmf.iloc[-1]) if cmf is not None else None)
 
 def _calculate_support_resistance(df, indicators):
-    """Calculate and add support and resistance levels using 5 years of data."""
-    last_date = df.index[-1]
-    start_date = last_date - pd.Timedelta(days=1825)  # 5 years
-    window = df[df.index > start_date]
+    """
+    Calculate support and resistance levels using Structural Swing Points (HH/HL).
+    This identifies local price peaks and troughs as structural barriers.
+    """
+    if len(df) < 50:
+        return
+
+    # Use a window for identifying "significant" swing points
+    # 20 bars is a good balance for Daily/Weekly structure
+    n = 15
     
-    if not window.empty:
-        h, l, c = window['high'].max(), window['low'].min(), window['close'].iloc[-1]
-        p = (h + l + c) / 3
-        r1, s1 = (2 * p) - l, (2 * p) - h
-        r2, s2 = p + (h - l), p - (h - l)
-        r3, s3 = p + 2 * (h - l), p - 2 * (h - l)
-        
-        for name, val in [('Pivot (P)', p), ('Resistance 1 (R1)', r1), ('Support 1 (S1)', s1),
-                          ('Resistance 2 (R2)', r2), ('Support 2 (S2)', s2),
-                          ('Resistance 3 (R3)', r3), ('Support 3 (S3)', s3)]:
-            _add_ind(indicators, 'Support & Resistance', name, val)
+    # Identify local maxima (Swing Highs) and minima (Swing Lows)
+    # We use historical windows to avoid look-ahead bias
+    df['is_peak'] = (df['high'] == df['high'].rolling(window=2*n+1, center=True).max())
+    df['is_trough'] = (df['low'] == df['low'].rolling(window=2*n+1, center=True).min())
+    
+    # Filter for valid swing points in the last year or so
+    # This prevents using extremely old levels that are no longer relevant
+    lookback_period = 252 * 2 # 2 years
+    recent_df = df.tail(lookback_period)
+    
+    peaks = recent_df[recent_df['is_peak']]['high'].unique()
+    troughs = recent_df[recent_df['is_trough']]['low'].unique()
+    
+    current_price = float(df['close'].iloc[-1])
+    
+    # Categorize into Support and Resistance relative to current price
+    resistances = sorted([p for p in peaks if p > current_price])
+    supports = sorted([t for t in troughs if t < current_price], reverse=True)
+    
+    # Extract traditional Pivot (Classic P) as a baseline anchor
+    # Using the last completed year/segment can be more traditional, 
+    # but here we use a 1-year HLC for the anchor.
+    year_window = df.tail(252)
+    p_high = year_window['high'].max()
+    p_low = year_window['low'].min()
+    p_close = year_window['close'].iloc[-1]
+    pivot_p = (p_high + p_low + p_close) / 3
+    
+    _add_ind(indicators, 'Support & Resistance', 'Pivot Point (P)', pivot_p)
+    
+    # Assign up to 3 levels for R and S
+    for i in range(3):
+        if i < len(resistances):
+            _add_ind(indicators, 'Support & Resistance', f'Resistance {i+1}', resistances[i])
+        if i < len(supports):
+            _add_ind(indicators, 'Support & Resistance', f'Support {i+1}', supports[i])
 
 def get_technical_indicators(ticker, days=365):
     """Entry point for calculating technical indicators."""

@@ -256,7 +256,7 @@ function ConsensusHero({ consensus, buyPct, sellPct, total, intelCount }: { cons
 }
 
 // ─── Main Component ────────────────────────────────────────────────────────────
-export default function TickerSignals({ symbol, currentPrice, intelligence }: { symbol: string; currentPrice?: number; intelligence?: any }) {
+export default function TickerSignals({ symbol, currentPrice, intelligence, fundamental }: { symbol: string; currentPrice?: number; intelligence?: any; fundamental?: any }) {
     const [strategySignals, setStrategySignals] = useState<StrategySignal[]>([]);
     const [intelSignals, setIntelSignals] = useState<GeneratedSignal[]>([]);
     const [loading, setLoading] = useState(true);
@@ -280,31 +280,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence }: { 
         fetchAll();
     }, [symbol]);
 
-    // Strategy signal analysis (Purified consensus)
-    const strategyAnalysis = useMemo(() => {
-        const actionableSignals = strategySignals.filter(s => {
-            const freshness = getFreshness(s.date);
-            const action = getActionability(parseFloat(s.last_close), currentPrice, s.signal, intelligence);
-            return freshness.status !== 'historical' && (!action || action.status === 'valid');
-        });
-
-        const buys = actionableSignals.filter(s => s.signal === 'BUY');
-        const sells = actionableSignals.filter(s => s.signal === 'SELL');
-        const holds = actionableSignals.filter(s => s.signal === 'HOLD');
-        const total = actionableSignals.length;
-
-        let consensus: 'BUY' | 'SELL' | 'HOLD' | 'NEUTRAL' = 'NEUTRAL';
-        if (buys.length > sells.length && buys.length > holds.length) consensus = 'BUY';
-        else if (sells.length > buys.length && sells.length > holds.length) consensus = 'SELL';
-        else if (holds.length > buys.length && holds.length > sells.length) consensus = 'HOLD';
-
-        const buyPct = total > 0 ? (buys.length / total) * 100 : 0;
-        const sellPct = total > 0 ? (sells.length / total) * 100 : 0;
-
-        return { buys, sells, holds, total, consensus, buyPct, sellPct, rawTotal: strategySignals.length };
-    }, [strategySignals, currentPrice]);
-
-    // Derived visibility for strategy list
+    // Derived visibility for strategy list (Technical Signals)
     const visibleStrats = useMemo(() => {
         if (showHistoricalStrats) return strategySignals;
         return strategySignals.filter(s => {
@@ -316,31 +292,45 @@ export default function TickerSignals({ symbol, currentPrice, intelligence }: { 
     
     const hiddenStratsCount = strategySignals.length - visibleStrats.length;
 
-    // Intel signal grouping by source
-    const intelBySource = useMemo(() => {
-        const groups = new Map<string, GeneratedSignal[]>();
+    // Categorization for Intelligence signals
+    const { buySellSignals, accumulationSignals } = useMemo(() => {
+        const buySellSources = ['SMART_CROSSOVER', 'ICHIMOKU'];
+        const accumulationSources = ['SMART_MONEY', 'BROKER_ACCUMULATION'];
+
+        const buySellMap = new Map<string, GeneratedSignal[]>();
+        const accMap = new Map<string, GeneratedSignal[]>();
+
         for (const sig of intelSignals) {
-            const arr = groups.get(sig.source) ?? [];
-            arr.push(sig);
-            groups.set(sig.source, arr);
+            if (buySellSources.includes(sig.source)) {
+                const arr = buySellMap.get(sig.source) ?? [];
+                arr.push(sig);
+                buySellMap.set(sig.source, arr);
+            } else if (accumulationSources.includes(sig.source)) {
+                const arr = accMap.get(sig.source) ?? [];
+                arr.push(sig);
+                accMap.set(sig.source, arr);
+            }
         }
-        return groups;
-    }, [intelSignals]);
 
-    // Derived visibility for intel sources
-    const visibleIntelSources = useMemo(() => {
-        const entries = Array.from(intelBySource.entries());
-        if (showHistoricalIntel) return entries;
-        
-        return entries.filter(([_, signals]) => {
-            const latestSignal = [...signals].sort((a, b) => b.generated_date.localeCompare(a.generated_date))[0];
-            const freshness = getFreshness(latestSignal.generated_date);
-            const action = getActionability(parseFloat(latestSignal.ltp), currentPrice, latestSignal.signal, intelligence);
-            return freshness.status !== 'historical' && (!action || action.status === 'valid');
-        });
-    }, [intelBySource, currentPrice, showHistoricalIntel, intelligence]);
+        const filterVisible = (map: Map<string, GeneratedSignal[]>) => {
+            const entries = Array.from(map.entries());
+            if (showHistoricalIntel) return entries;
+            
+            return entries.filter(([_, signals]) => {
+                const latest = [...signals].sort((a, b) => b.generated_date.localeCompare(a.generated_date))[0];
+                const freshness = getFreshness(latest.generated_date);
+                const action = getActionability(parseFloat(latest.ltp), currentPrice, latest.signal, intelligence);
+                return freshness.status !== 'historical' && (!action || action.status === 'valid');
+            });
+        };
 
-    const hiddenIntelCount = intelBySource.size - visibleIntelSources.length;
+        return {
+            buySellSignals: filterVisible(buySellMap),
+            accumulationSignals: filterVisible(accMap),
+            totalBuySell: buySellMap.size,
+            totalAcc: accMap.size
+        };
+    }, [intelSignals, currentPrice, showHistoricalIntel, intelligence]);
 
     if (loading) {
         return (
@@ -350,10 +340,10 @@ export default function TickerSignals({ symbol, currentPrice, intelligence }: { 
         );
     }
 
-    const hasSignals = strategySignals.length > 0 || intelSignals.length > 0;
+    const hasSignals = strategySignals.length > 0 || intelSignals.length > 0 || fundamental;
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-10">
             {!hasSignals ? (
                 <div className="flex flex-col items-center justify-center py-24 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
                     <Radar className="w-10 h-10 text-slate-300 dark:text-slate-700 mb-4" />
@@ -362,116 +352,17 @@ export default function TickerSignals({ symbol, currentPrice, intelligence }: { 
                 </div>
             ) : (
                 <>
-                    {/* Top Summary / Consensus */}
-                    <ConsensusHero 
-                        consensus={strategyAnalysis.consensus} 
-                        buyPct={strategyAnalysis.buyPct} 
-                        sellPct={strategyAnalysis.sellPct} 
-                        total={strategyAnalysis.total}
-                        intelCount={intelBySource.size}
-                    />
-
-                    {/* Intelligence Signals Section */}
+                    {/* 1. TECHNICAL SIGNALS (Strategies Table) */}
                     <div className="space-y-4">
-                        <div className="flex items-center justify-between px-1">
-                            <div className="flex items-center gap-2">
-                                <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                                    <Brain size={16} />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">Intelligence Signals</h3>
-                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium tracking-tight">AI & structural signals</p>
-                                </div>
-                            </div>
-                            {hiddenIntelCount > 0 && (
-                                <button 
-                                    onClick={() => setShowHistoricalIntel(!showHistoricalIntel)}
-                                    className="text-[10px] font-bold uppercase tracking-tight text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                                >
-                                    {showHistoricalIntel ? `Hide ${hiddenIntelCount}` : `Show ${hiddenIntelCount} Historical`}
-                                </button>
-                            )}
-                        </div>
-
-                        {intelSignals.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {visibleIntelSources.length === 0 && (
-                                    <div className="col-span-full py-12 text-center text-sm text-slate-400 italic border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                                        No active intelligence engines.
-                                    </div>
-                                )}
-                                {visibleIntelSources.map(([source, signals]) => {
-                                    const SourceIcon = SOURCE_ICONS[source] || Activity;
-                                    const colors = SOURCE_COLORS[source] || SOURCE_COLORS['SMART_MONEY'];
-                                    const latestSignal = [...signals].sort((a, b) => b.generated_date.localeCompare(a.generated_date))[0];
-                                    const freshness = getFreshness(latestSignal.generated_date);
-
-                                    return (
-                                        <div 
-                                            key={source} 
-                                            className={cn(
-                                                "rounded-xl border p-4 transition-all duration-300 bg-white dark:bg-slate-900/50", 
-                                                colors.border,
-                                                freshness.status === 'historical' && "opacity-60"
-                                            )}
-                                        >
-                                            <div className="space-y-4">
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={cn("p-2 rounded-lg border", colors.bg, colors.border)}>
-                                                            <SourceIcon size={16} className={colors.text} />
-                                                        </div>
-                                                        <div>
-                                                            <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-tight">
-                                                                {SOURCE_LABELS[source] || source}
-                                                            </h4>
-                                                            <div className={cn("inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border uppercase tracking-tighter", freshness.color)}>
-                                                                <freshness.icon size={8} />
-                                                                {freshness.label}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex flex-col items-end gap-1.5">
-                                                        <SignalBadge signal={latestSignal.signal} size="sm" />
-                                                        <PerformanceBadge signalPrice={parseFloat(latestSignal.ltp)} currentPrice={currentPrice} signal={latestSignal.signal} intelligence={intelligence} />
-                                                    </div>
-                                                </div>
-
-                                                <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800">
-                                                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-normal line-clamp-3">
-                                                        {latestSignal.rationale || 'Quantitative structural analysis.'}
-                                                    </p>
-                                                </div>
-
-                                                <div className="space-y-1.5">
-                                                    <div className="flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
-                                                        <span>Confidence</span>
-                                                        <span className="text-slate-700 dark:text-slate-300">{latestSignal.strength}%</span>
-                                                    </div>
-                                                    <div className="h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-slate-400 dark:bg-slate-500 rounded-full" style={{ width: `${latestSignal.strength}%` }} />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        ) : (
-                            <div className="py-12 text-center text-sm text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                                No intelligence engines reported.
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Technical Strategies Table */}
-                    <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                         <div className="flex items-center justify-between px-1">
                             <div className="flex items-center gap-2">
                                 <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                                     <Layers size={16} />
                                 </div>
-                                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">Technical Strategies</h3>
+                                <div>
+                                    <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">Technical Signals</h3>
+                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium tracking-tight">Strategy engines & backtests</p>
+                                </div>
                             </div>
                             {hiddenStratsCount > 0 && (
                                 <button 
@@ -483,7 +374,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence }: { 
                             )}
                         </div>
 
-                        <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
+                        <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40">
                             <table className="w-full text-xs">
                                 <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
                                     <tr>
@@ -497,19 +388,13 @@ export default function TickerSignals({ symbol, currentPrice, intelligence }: { 
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                     {visibleStrats.length === 0 && (
                                         <tr>
-                                            <td colSpan={5} className="py-8 text-center text-slate-400 italic">
-                                                Scanning strategies...
-                                            </td>
+                                            <td colSpan={5} className="py-8 text-center text-slate-400 italic">No active technical strategies.</td>
                                         </tr>
                                     )}
                                     {visibleStrats.map(sig => {
                                         const freshness = getFreshness(sig.date);
-
                                         return (
-                                            <tr key={sig.id} className={cn(
-                                                "transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/50",
-                                                freshness.status === 'historical' && "opacity-40"
-                                            )}>
+                                            <tr key={sig.id} className={cn("transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/50", freshness.status === 'historical' && "opacity-40")}>
                                                 <td className="px-4 py-3">
                                                     <div className="font-bold text-slate-700 dark:text-slate-200">{sig.strategy_name}</div>
                                                     <div className="text-[10px] text-slate-400 truncate max-w-[150px]">{sig.strategy_description}</div>
@@ -520,9 +405,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence }: { 
                                                         {freshness.label}
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-3 text-center">
-                                                    <SignalBadge signal={sig.signal} />
-                                                </td>
+                                                <td className="px-4 py-3 text-center"><SignalBadge signal={sig.signal} /></td>
                                                 <td className="px-4 py-3 text-center">
                                                     <PerformanceBadge signalPrice={parseFloat(sig.last_close)} currentPrice={currentPrice} signal={sig.signal} intelligence={intelligence} />
                                                 </td>
@@ -537,8 +420,131 @@ export default function TickerSignals({ symbol, currentPrice, intelligence }: { 
                             </table>
                         </div>
                     </div>
+
+                    {/* 2. FUNDAMENTAL SIGNALS (Core Health Summary) */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 px-1">
+                            <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                <Activity size={16} />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">Fundamental Signals</h3>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium tracking-tight">Business health & metrics</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="md:col-span-1 rounded-xl border p-4 bg-white dark:bg-slate-900/50 flex flex-col justify-between">
+                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Fundamental Score</span>
+                                <div className="flex items-baseline gap-1 mt-2">
+                                    <span className="text-3xl font-bold text-slate-800 dark:text-white tabular-nums">{intelligence?.fundamentalScore || 0}</span>
+                                    <span className="text-xs font-medium text-slate-400">/ 100</span>
+                                </div>
+                                <div className="h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-4">
+                                    <div 
+                                        className={cn("h-full rounded-full", (intelligence?.fundamentalScore || 0) > 70 ? 'bg-emerald-500' : 'bg-amber-500')} 
+                                        style={{ width: `${intelligence?.fundamentalScore || 0}%` }} 
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="md:col-span-3 grid grid-cols-3 gap-4">
+                                {[
+                                    { label: 'P/E RATIO', value: fundamental?.pe_ratio ? fundamental.pe_ratio.toFixed(2) : 'N/A', sub: 'Price/Earnings' },
+                                    { label: 'ROE', value: fundamental?.fundamental_indicators?.find((i: any) => i.name.includes('ROE'))?.value || 'N/A', sub: 'Return on Equity' },
+                                    { label: 'DIV YIELD', value: fundamental?.dividend_yield ? fundamental.dividend_yield.toFixed(2) + '%' : 'N/A', sub: 'Sector comparison' }
+                                ].map((m, idx) => (
+                                    <div key={idx} className="rounded-xl border border-slate-100 dark:border-slate-800 p-4 bg-slate-50/30 dark:bg-slate-800/20">
+                                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{m.label}</span>
+                                        <div className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1">{m.value}</div>
+                                        <div className="text-[8px] text-slate-400 mt-0.5">{m.sub}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 3. BUY/SELL SIGNALS (Intelligence Grid) */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 px-1">
+                            <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                <Zap size={16} />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">Buy/Sell Signals</h3>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium tracking-tight">Trend & momentum crossovers</p>
+                            </div>
+                        </div>
+
+                        {buySellSignals.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {buySellSignals.map(([source, signals]) => (
+                                    <IntelCard key={source} source={source} signals={signals} currentPrice={currentPrice} intelligence={intelligence} />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-8 text-center text-sm text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">No active trend signals.</div>
+                        )}
+                    </div>
+
+                    {/* 4. ACCUMULATION SIGNALS (Intelligence Grid) */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 px-1">
+                            <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                <BarChart3 size={16} />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">Accumulation Signals</h3>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium tracking-tight">Institutional volume & whale watch</p>
+                            </div>
+                        </div>
+
+                        {accumulationSignals.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {accumulationSignals.map(([source, signals]) => (
+                                    <IntelCard key={source} source={source} signals={signals} currentPrice={currentPrice} intelligence={intelligence} />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-8 text-center text-sm text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">No active accumulation signals.</div>
+                        )}
+                    </div>
                 </>
             )}
+        </div>
+    );
+}
+
+// ─── Helper Component: IntelCard ──────────────────────────────────────────
+
+function IntelCard({ source, signals, currentPrice, intelligence }: { source: string; signals: GeneratedSignal[]; currentPrice?: number; intelligence?: any }) {
+    const SourceIcon = SOURCE_ICONS[source] || Activity;
+    const colors = SOURCE_COLORS[source] || SOURCE_COLORS['SMART_MONEY'];
+    const latestSignal = [...signals].sort((a, b) => b.generated_date.localeCompare(a.generated_date))[0];
+    const freshness = getFreshness(latestSignal.generated_date);
+
+    return (
+        <div className={cn("rounded-xl border p-4 transition-all duration-300 bg-white dark:bg-slate-900/50", colors.border, freshness.status === 'historical' && "opacity-60")}>
+            <div className="space-y-4">
+                <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className={cn("p-2 rounded-lg border", colors.bg, colors.border)}><SourceIcon size={16} className={colors.text} /></div>
+                        <div>
+                            <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-tight">{SOURCE_LABELS[source] || source}</h4>
+                            <div className={cn("inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border uppercase tracking-tighter", freshness.color)}>
+                                <freshness.icon size={8} />{freshness.label}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5">
+                        <SignalBadge signal={latestSignal.signal} size="sm" />
+                        <PerformanceBadge signalPrice={parseFloat(latestSignal.ltp)} currentPrice={currentPrice} signal={latestSignal.signal} intelligence={intelligence} />
+                    </div>
+                </div>
+                <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800">
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-normal line-clamp-2">{latestSignal.rationale || 'Quantitative intelligence signal.'}</p>
+                </div>
+            </div>
         </div>
     );
 }
