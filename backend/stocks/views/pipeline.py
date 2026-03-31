@@ -120,8 +120,12 @@ class PipelineViewSet(viewsets.ViewSet):
                 ind_match = re.search(r"Successfully updated technical indicators for (\d+)", line_str)
                 if ind_match: records_found = int(ind_match.group(1))
                 
-                # Broad Progress: Processed 50/250
-                prog_match = re.search(r"Processed (\d+)/\d+", line_str)
+                # Broker Analysis: Broker analysis complete. Total accumulation records: 1234
+                broker_match = re.search(r"Broker analysis complete\. Total accumulation records: (\d+)", line_str)
+                if broker_match: records_found = int(broker_match.group(1))
+                
+                # Broad Progress: Processed 50/250 or Processed symbol 50/250
+                prog_match = re.search(r"Processed (?:symbol )?(\d+)/\d+", line_str)
                 if prog_match: records_found = max(records_found, int(prog_match.group(1)))
 
                 yield f"data: {json.dumps({'type': 'log', 'message': line_str})}\n\n"
