@@ -46,6 +46,7 @@ export interface PortfolioItem {
             strategy_name: string;
             strategy_description: string;
         }>;
+        buy_count?: number;
     };
     health_score?: number;
     fundamental_metrics?: {
@@ -146,48 +147,48 @@ export function PortfolioTable({
                                     <TableCell className="text-center font-bold text-gray-400 dark:text-gray-500 text-sm py-4 px-6">
                                         {(currentPage - 1) * pageSize + idx + 1}
                                     </TableCell>
-                                    <TableCell className="font-semibold py-4">
+                                    <TableCell className="font-bold tracking-tight py-4">
                                         <div className="flex flex-col gap-1.5">
                                             <div className="flex items-center gap-2">
                                                 <StockLink ticker={item.ticker} />
                                                 {isUnderwater && (
                                                     <Badge variant="secondary" className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-100 dark:border-red-800 text-[9px] px-1.5 h-4 flex items-center gap-1">
-                                                        UNDERWATER
+                                                        Underwater
                                                     </Badge>
                                                 )}
                                                 {hasStrategy && (
                                                     <Badge variant="secondary" className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-800 text-[9px] px-1.5 h-4 flex items-center gap-1 animate-pulse">
-                                                        <Radio className="h-2 w-2" /> ACTIVE
+                                                        <Radio className="h-2 w-2" /> Active
                                                     </Badge>
                                                 )}
                                             </div>
                                             {(item.stop_loss_price || item.target_price) && (
                                                 <div className="flex flex-wrap gap-1">
-                                                    {item.stop_loss_price && <span className="text-xs bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded border border-red-100 dark:border-red-800 font-bold uppercase tracking-tighter shadow-sm">SL: {Number(item.stop_loss_price).toFixed(0)}</span>}
-                                                    {item.target_price && <span className="text-xs bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded border border-green-100 dark:border-green-800 font-bold uppercase tracking-tighter shadow-sm">TP: {Number(item.target_price).toFixed(0)}</span>}
-                                                    {rrRatio !== 'N/A' && <span className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-800 font-bold uppercase tracking-tighter shadow-sm">R/R: {rrRatio}</span>}
+                                                    {item.stop_loss_price && <span className="text-xs bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded border border-red-100 dark:border-red-800 font-bold tracking-tight shadow-sm">SL: {Number(item.stop_loss_price).toFixed(0)}</span>}
+                                                    {item.target_price && <span className="text-xs bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded border border-green-100 dark:border-green-800 font-bold tracking-tight shadow-sm">TP: {Number(item.target_price).toFixed(0)}</span>}
+                                                    {rrRatio !== 'N/A' && <span className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-800 font-bold tracking-tight shadow-sm">R/R: {rrRatio}</span>}
                                                 </div>
                                             )}
                                         </div>
                                     </TableCell>
-                                    <TableCell className="text-right text-gray-600 dark:text-slate-400 font-medium py-4">{formatNepaliNumber(item.quantity)}</TableCell>
-                                    <TableCell className="text-right text-gray-600 dark:text-slate-400 font-medium py-4">{formatNepaliNumber(Number(item.wacc || item.buy_price).toFixed(2))}</TableCell>
-                                    <TableCell className="text-right text-gray-900 dark:text-slate-100 font-bold py-4">{formatNepaliNumber(item.current_price)}</TableCell>
-                                    <TableCell className="text-right font-black text-gray-900 dark:text-slate-100 py-4">{formatNepaliNumber(item.current_value)}</TableCell>
+                                    <TableCell className="text-right text-gray-600 dark:text-slate-400 font-bold tracking-tight py-4">{formatNepaliNumber(item.quantity)}</TableCell>
+                                    <TableCell className="text-right text-gray-600 dark:text-slate-400 font-bold tracking-tight py-4">{formatNepaliNumber(Number(item.wacc || item.buy_price).toFixed(2))}</TableCell>
+                                    <TableCell className="text-right text-gray-900 dark:text-slate-100 font-bold tracking-tight py-4">{formatNepaliNumber(item.current_price)}</TableCell>
+                                    <TableCell className="text-right font-bold text-gray-900 dark:text-slate-100 tracking-tight py-4">{formatNepaliNumber(item.current_value)}</TableCell>
                                     <TableCell className={`text-right ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'} py-4`}>
-                                        <div className="font-black text-base">
+                                        <div className="font-bold text-base tracking-tight">
                                             {isPos ? '+' : ''}{formatNepaliNumber(pl)}
                                         </div>
-                                        <div className={`text-xs font-black uppercase tracking-tighter ${isPos ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'} px-1 rounded inline-block mt-0.5`}>
+                                        <div className={`text-xs font-bold tracking-tight ${isPos ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'} px-1 rounded inline-block mt-0.5`}>
                                             {Number(item.gain_loss_percent).toFixed(2)}%
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right py-4">
-                                        <div className="font-bold text-gray-600 dark:text-slate-400 text-sm text-right">
+                                        <div className="font-bold text-gray-600 dark:text-slate-400 text-sm text-right tracking-tight">
                                             {(item.value_yield || 0).toFixed(1)}%
                                         </div>
                                     </TableCell>
-                                    <TableCell className={`text-right font-black ${isDayPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'} py-4`}>
+                                    <TableCell className={`text-right font-bold tracking-tight ${isDayPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'} py-4`}>
                                         {isDayPos ? '+' : ''}{formatNepaliNumber(dayPl)}
                                     </TableCell>
                                     <TableCell className="text-center py-4">
@@ -207,9 +208,9 @@ export function PortfolioTable({
                                                 <TooltipContent className="p-0 border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
                                                     <div className="w-52 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
                                                         <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
-                                                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Fundamental Health</h4>
+                                                            <h4 className="text-xs font-bold tracking-normal text-slate-500">Fundamental health</h4>
                                                             <div className="flex items-center gap-2 mt-1">
-                                                                <span className="text-xl font-black text-slate-900 dark:text-slate-100">{item.health_score}</span>
+                                                                <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{item.health_score}</span>
                                                                 <span className="text-[10px] font-medium text-slate-400">/ 100</span>
                                                             </div>
                                                         </div>

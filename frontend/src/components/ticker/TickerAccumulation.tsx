@@ -26,7 +26,7 @@ function TrendBadge({ trend, change }: { trend: string; change: number }) {
     const isUp = trend === 'Increasing';
     const isDown = trend === 'Decreasing';
     return (
-        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black ${
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-tight ${
             isUp
                 ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
                 : isDown
@@ -209,14 +209,14 @@ export default function TickerAccumulation({ symbol }: TickerAccumulationProps) 
         <div className="space-y-6">
             {/* Range Selector */}
             <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-slate-400 tracking-widest mr-1">Period</span>
+                <span className="text-[10px] font-medium text-slate-400 tracking-tight mr-1">Period</span>
                 {RANGES.map(r => (
                     <Button
                         key={r}
                         size="sm"
                         variant={range === r ? 'default' : 'outline'}
                         onClick={() => setRange(r)}
-                        className={`rounded-xl px-4 h-8 font-bold text-xs transition-all ${
+                        className={`rounded-xl px-4 h-8 font-semibold text-xs transition-all tracking-tight ${
                             range === r
                                 ? 'bg-black dark:bg-white text-white dark:text-black shadow-md scale-105'
                                 : 'text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-black'
@@ -230,27 +230,27 @@ export default function TickerAccumulation({ symbol }: TickerAccumulationProps) 
             {/* Smart Money Overview */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
-                    <p className="text-[10px] font-black text-slate-400 tracking-widest mb-3">Smart money flow</p>
-                    <p className={`text-2xl font-black tracking-tight ${isAccumulating ? 'text-emerald-600 dark:text-emerald-400' : netFlow < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`}>
+                    <p className="text-[10px] font-medium text-slate-400 tracking-tight mb-3">Smart money flow</p>
+                    <p className={`text-2xl font-bold tracking-tight ${isAccumulating ? 'text-emerald-600 dark:text-emerald-400' : netFlow < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`}>
                         {netFlow > 0 ? '+' : ''}{formatNepaliNumber(netFlow)}
                     </p>
                     <p className="text-[10px] text-slate-400 mt-1 font-semibold">Net shares via top 15 brokers</p>
                 </div>
 
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
-                    <p className="text-[10px] font-black text-slate-400 tracking-widest mb-3">Accumulation ratio</p>
-                    <p className={`text-2xl font-black tracking-tight ${accRatio > 50 ? 'text-emerald-600 dark:text-emerald-400' : accRatio > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'}`}>
+                    <p className="text-[10px] font-medium text-slate-400 tracking-tight mb-3">Accumulation ratio</p>
+                    <p className={`text-2xl font-bold tracking-tight ${accRatio > 50 ? 'text-emerald-600 dark:text-emerald-400' : accRatio > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'}`}>
                         {accumData ? `${accRatio.toFixed(1)}%` : '–'}
                     </p>
                     <p className="text-[10px] text-slate-400 mt-1 font-semibold">Smart money % of total volume</p>
                 </div>
 
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
-                    <p className="text-[10px] font-black text-slate-400 tracking-widest mb-2">Top smart buyers</p>
+                    <p className="text-[10px] font-medium text-slate-400 tracking-tight mb-2">Top smart buyers</p>
                     <div className="flex flex-wrap gap-1.5 mt-2">
                         {(accumData?.top_buyers?.slice(0, 5) || []).map((b: any) => (
                             <Link href={`/broker/${b}`} key={b}>
-                                <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-md text-xs font-bold border border-emerald-200 dark:border-emerald-800/50 hover:opacity-75 transition-opacity cursor-pointer">
+                                <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-md text-xs font-semibold border border-emerald-200 dark:border-emerald-800/50 hover:opacity-75 transition-opacity cursor-pointer tracking-tight">
                                     #{b}
                                 </span>
                             </Link>
@@ -260,11 +260,11 @@ export default function TickerAccumulation({ symbol }: TickerAccumulationProps) 
                 </div>
 
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
-                    <p className="text-[10px] font-black text-slate-400 tracking-widest mb-2">Top smart sellers</p>
+                    <p className="text-[10px] font-medium text-slate-400 tracking-tight mb-2">Top smart sellers</p>
                     <div className="flex flex-wrap gap-1.5 mt-2">
                         {(accumData?.top_sellers?.slice(0, 5) || []).map((b: any) => (
                             <Link href={`/broker/${b}`} key={b}>
-                                <span className="px-2 py-0.5 bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 rounded-md text-xs font-bold border border-rose-200 dark:border-rose-800/50 hover:opacity-75 transition-opacity cursor-pointer">
+                                <span className="px-2 py-0.5 bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 rounded-md text-xs font-semibold border border-rose-200 dark:border-rose-800/50 hover:opacity-75 transition-opacity cursor-pointer tracking-tight">
                                     #{b}
                                 </span>
                             </Link>
@@ -277,8 +277,8 @@ export default function TickerAccumulation({ symbol }: TickerAccumulationProps) 
             {/* Top Holder Trend Chart */}
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                 <div className="p-5 border-b border-slate-100 dark:border-slate-800">
-                    <h3 className="font-bold text-slate-800 dark:text-slate-100">Top Holder Accumulation Trend</h3>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Cumulative net position of top 5 brokers over time</p>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-100 tracking-tight">Top holder accumulation trend</h3>
+                    <p className="text-[11px] text-slate-400 font-medium mt-0.5 tracking-tight">Cumulative net position of top 5 brokers over time</p>
                 </div>
                 <div className="p-4 h-72">
                     {graphData?.data?.length ? (
@@ -295,8 +295,8 @@ export default function TickerAccumulation({ symbol }: TickerAccumulationProps) 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                     <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-emerald-50/60 dark:bg-emerald-900/10">
-                        <h3 className="font-bold text-emerald-800 dark:text-emerald-400 text-sm">Aggressive Buying Pressure</h3>
-                        <p className="text-[10px] text-slate-400 mt-0.5">Brokers with highest net purchases this period</p>
+                        <h3 className="font-bold text-emerald-800 dark:text-emerald-400 text-sm tracking-tight">Aggressive buying pressure</h3>
+                        <p className="text-[10px] text-slate-400 font-medium mt-0.5 tracking-tight">Brokers with highest net purchases this period</p>
                     </div>
                     <div className="p-4 h-56">
                         {graphData?.buy_leaders?.length ? (
@@ -309,8 +309,8 @@ export default function TickerAccumulation({ symbol }: TickerAccumulationProps) 
 
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                     <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-rose-50/60 dark:bg-rose-900/10">
-                        <h3 className="font-bold text-rose-800 dark:text-rose-400 text-sm">Aggressive Selling Pressure</h3>
-                        <p className="text-[10px] text-slate-400 mt-0.5">Brokers with highest net sales this period</p>
+                        <h3 className="font-bold text-rose-800 dark:text-rose-400 text-sm tracking-tight">Aggressive selling pressure</h3>
+                        <p className="text-[10px] text-slate-400 font-medium mt-0.5 tracking-tight">Brokers with highest net sales this period</p>
                     </div>
                     <div className="p-4 h-56">
                         {graphData?.sell_leaders?.length ? (
@@ -327,8 +327,8 @@ export default function TickerAccumulation({ symbol }: TickerAccumulationProps) 
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                     <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                         <div>
-                            <h3 className="font-bold text-slate-800 dark:text-slate-100">Holder Position & Trend</h3>
-                            <p className="text-[11px] text-slate-400 mt-0.5">Significant holders of {symbol} with multi-timeframe trend</p>
+                            <h3 className="font-bold text-slate-800 dark:text-slate-100 tracking-tight">Holder position & trend</h3>
+                            <p className="text-[11px] text-slate-400 font-medium mt-0.5 tracking-tight">Significant holders of {symbol} with multi-timeframe trend</p>
                         </div>
                         <Link href={`/accumulation?tab=history&symbol=${symbol}`}>
                             <Button variant="ghost" size="sm" className="text-xs font-bold text-slate-900 dark:text-slate-200 gap-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">
@@ -354,7 +354,7 @@ export default function TickerAccumulation({ symbol }: TickerAccumulationProps) 
                                         <th
                                             key={col}
                                             onClick={() => handleSort(col)}
-                                            className={`px-5 py-3 text-[10px] font-black text-slate-400 tracking-wider cursor-pointer select-none hover:text-black dark:hover:text-white transition-colors ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'}`}
+                                            className={`px-5 py-3 text-[10px] font-semibold text-slate-400 tracking-tight cursor-pointer select-none hover:text-black dark:hover:text-white transition-colors ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'}`}
                                         >
                                             {label}<SortIcon col={col} />
                                         </th>
@@ -369,22 +369,22 @@ export default function TickerAccumulation({ symbol }: TickerAccumulationProps) 
                                     return (
                                         <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group">
                                             <td className="px-5 py-3">
-                                                <Link href={`/broker/${row.broker}`} className="font-black text-black dark:text-white hover:underline text-sm">
+                                                <Link href={`/broker/${row.broker}`} className="font-semibold text-black dark:text-white hover:underline text-sm tracking-tight">
                                                     #{row.broker}
                                                 </Link>
                                             </td>
-                                            <td className="px-5 py-3 text-right font-mono font-bold text-slate-700 dark:text-slate-200">
+                                            <td className="px-5 py-3 text-right font-mono font-semibold text-slate-700 dark:text-slate-200 tracking-tight">
                                                 {formatNepaliNumber(row.cumulative_net)}
                                             </td>
                                             <td className="px-5 py-3 text-right font-mono text-slate-500 dark:text-slate-400">
                                                 {wac > 0 ? formatRupees(wac, 0) : '–'}
                                             </td>
-                                            <td className="px-5 py-3 text-right font-mono font-bold text-slate-700 dark:text-slate-200">
+                                            <td className="px-5 py-3 text-right font-mono font-semibold text-slate-700 dark:text-slate-200 tracking-tight">
                                                 {ltp > 0 ? formatRupees(ltp, 0) : '–'}
                                             </td>
                                             <td className="px-5 py-3 text-right">
                                                 {pnlPct !== null ? (
-                                                    <span className={`text-xs font-black ${pnlPct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                                    <span className={`text-xs font-semibold tracking-tight ${pnlPct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                                         {pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(1)}%
                                                     </span>
                                                 ) : '–'}

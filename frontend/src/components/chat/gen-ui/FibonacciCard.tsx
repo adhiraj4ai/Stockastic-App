@@ -43,17 +43,17 @@ const FibonacciCard: React.FC<FibonacciCardProps> = ({
         >
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h3 className="font-black text-gray-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
-                        Fibonacci Analysis
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${trend === 'UPTREND' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-                            {trend}
+                    <h3 className="font-bold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
+                        Fibonacci analysis
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold tracking-tight ${trend === 'UPTREND' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                            {trend === 'UPTREND' ? 'Uptrend' : 'Downtrend'}
                         </span>
                     </h3>
-                    <p className="text-[10px] font-bold text-gray-500 dark:text-gray-500 uppercase">{symbol} • Retracement targets</p>
+                    <p className="text-[10px] font-medium text-gray-500 dark:text-gray-500 tracking-tight">{symbol} • retracement targets</p>
                 </div>
                 <div className="text-right">
-                    <div className="text-lg font-black text-gray-900 dark:text-white">Rs. {current_price}</div>
-                    <div className="text-[10px] font-bold text-gray-400">CURRENT PRICE</div>
+                    <div className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">Rs. {current_price}</div>
+                    <div className="text-[10px] font-medium text-gray-400 tracking-tight">Current price</div>
                 </div>
             </div>
 
@@ -61,10 +61,10 @@ const FibonacciCard: React.FC<FibonacciCardProps> = ({
                 {levels.map((level, idx) => (
                     <div key={level.label} className="relative group">
                         <div className="flex justify-between items-center mb-1">
-                            <span className={`text-[10px] font-black ${level.price === current_price ? 'text-emerald-500' : 'text-gray-400'}`}>
+                            <span className={`text-[10px] font-medium tracking-tight ${level.price === current_price ? 'text-emerald-500' : 'text-gray-400'}`}>
                                 {level.label}
                             </span>
-                            <span className="text-[10px] font-black text-gray-900 dark:text-gray-200">
+                            <span className="text-[10px] font-semibold text-gray-900 dark:text-gray-200 tracking-tight">
                                 Rs. {level.price}
                             </span>
                         </div>
@@ -87,18 +87,18 @@ const FibonacciCard: React.FC<FibonacciCardProps> = ({
 
             <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-gray-100 dark:border-gray-800/50">
                 <div>
-                    <div className="text-[9px] font-black text-emerald-600 dark:text-emerald-500 mb-1 flex items-center gap-1">
-                        <Target size={10} /> NEAREST SUPPORT
+                    <div className="text-[9px] font-medium text-emerald-600 dark:text-emerald-500 mb-1 flex items-center gap-1 tracking-tight">
+                        <Target size={10} /> Nearest support
                     </div>
-                    <div className="text-xs font-black text-gray-700 dark:text-gray-300">
+                    <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 tracking-tight">
                         {nearest_support ? `Rs. ${nearest_support.price}` : 'N/A'}
                     </div>
                 </div>
                 <div>
-                    <div className="text-[9px] font-black text-rose-600 dark:text-rose-500 mb-1 flex items-center gap-1">
-                        <Target size={10} /> NEAREST RESISTANCE
+                    <div className="text-[9px] font-medium text-rose-600 dark:text-rose-500 mb-1 flex items-center gap-1 tracking-tight">
+                        <Target size={10} /> Nearest resistance
                     </div>
-                    <div className="text-xs font-black text-gray-700 dark:text-gray-300">
+                    <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 tracking-tight">
                         {nearest_resistance ? `Rs. ${nearest_resistance.price}` : 'N/A'}
                     </div>
                 </div>

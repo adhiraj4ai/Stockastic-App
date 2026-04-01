@@ -52,7 +52,7 @@ export function DataTable({ data }: DataTableProps) {
                                 <th
                                     key={col}
                                     onClick={() => requestSort(col)}
-                                    className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none whitespace-nowrap group"
+                                    className="px-4 py-3 text-xs font-semibold text-gray-500 tracking-tight cursor-pointer hover:bg-gray-100 transition-colors select-none whitespace-nowrap group"
                                 >
                                     <div className="flex items-center gap-1">
                                         {col.replace(/_/g, ' ')}

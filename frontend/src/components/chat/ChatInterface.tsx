@@ -63,12 +63,12 @@ export default function ChatInterface({
                         </div>
                         <div>
                             <h1 className="font-bold text-lg text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
-                                Stockastic AI
-                                <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-mono uppercase tracking-wider">
+                                Stockastic
+                                <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-mono tracking-tight opacity-70">
                                     Beta
                                 </span>
                             </h1>
-                            <p className="text-xs text-gray-500 font-medium">Powered by Phi-3.5 & LangGraph</p>
+                            <p className="text-xs text-gray-500 font-medium tracking-tight">Powered by phi-3.5 & langGraph</p>
                         </div>
                     </div>
                     <button
@@ -90,7 +90,7 @@ export default function ChatInterface({
                                 <div className="w-16 h-16 bg-gradient-to-tr from-emerald-500/20 to-blue-500/20 rounded-2xl flex items-center justify-center mx-auto border border-white/20 dark:border-white/5 shadow-2xl shadow-emerald-500/10 ring-1 ring-white/10">
                                     <Sparkles size={32} className="text-emerald-500 dark:text-emerald-400" />
                                 </div>
-                                <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-gray-900 to-gray-500 dark:from-white dark:to-gray-500">
+                                <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-gray-900 to-gray-500 dark:from-white dark:to-gray-500 tracking-tight">
                                     How can I help you?
                                 </h2>
                                 <p className="text-gray-500 text-sm leading-relaxed">
@@ -151,8 +151,8 @@ export default function ChatInterface({
                         </button>
                     </form>
                     <div className="text-center mt-3">
-                        <p className="text-[10px] text-gray-500 dark:text-gray-600 font-mono">
-                            Stockastic AI (Beta) • Market data may be delayed
+                        <p className="text-[10px] text-gray-500 dark:text-gray-600 font-medium tracking-tight">
+                            Stockastic ai (beta) • Market data may be delayed
                         </p>
                     </div>
                 </div>

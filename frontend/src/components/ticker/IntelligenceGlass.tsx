@@ -135,7 +135,7 @@ export function IntelligenceGlass({
                                 <span className="text-slate-500 dark:text-slate-400 font-mono">@ {formatRupees(portfolioPosition.wacc)}</span>
                                 {portfolioPnl !== null && (
                                     <span className={cn(
-                                        "px-1.5 py-0.5 rounded font-mono font-black text-[10px]",
+                                        "px-1.5 py-0.5 rounded font-mono font-bold text-[10px]",
                                         portfolioPnl >= 0
                                             ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
                                             : "bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400"

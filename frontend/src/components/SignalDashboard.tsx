@@ -190,12 +190,12 @@ export default function SignalDashboard({ symbol }: { symbol: string }) {
                     ) : (
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30">
+                                <tr className="text-[10px] tracking-tight text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30">
                                     <th className="p-3 font-bold">Strategy</th>
                                     <th className="p-3 font-bold text-center">Signal</th>
                                     <th className="p-3 font-bold text-center">Date</th>
-                                    <th className="p-3 font-bold text-center">RSI Value</th>
-                                    <th className="p-3 font-bold">Logic / Reason</th>
+                                    <th className="p-3 font-bold text-center">RSI value</th>
+                                    <th className="p-3 font-bold">Logic / reason</th>
                                     <th className="p-3 font-bold">Parameters</th>
                                 </tr>
                             </thead>
@@ -235,12 +235,12 @@ export default function SignalDashboard({ symbol }: { symbol: string }) {
                                                     const formatted = formatParams(params);
                                                     
                                                     if (formatted.length === 0) {
-                                                        return <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-600">Standard</span>;
+                                                        return <span className="text-[10px] tracking-tight font-semibold text-slate-400 dark:text-slate-600">Standard</span>;
                                                     }
                                                     
                                                     return formatted.map(({ key, value }) => (
                                                         <div key={key} className="group/chip flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700 transition-all shadow-sm">
-                                                            <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase">{key}</span>
+                                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">{key}</span>
                                                             <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 font-mono">{value}</span>
                                                         </div>
                                                     ));

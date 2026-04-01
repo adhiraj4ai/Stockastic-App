@@ -93,7 +93,7 @@ function SignalBadge({ signal, size = 'sm' }: { signal: string; size?: 'sm' | 'l
 
     return (
         <span className={cn(
-            'inline-flex items-center gap-1 rounded-full font-black tracking-wide border',
+            'inline-flex items-center gap-1 rounded-full font-bold tracking-tight border',
             size === 'lg' ? 'px-3 py-1 text-xs' : 'px-2 py-0.5 text-[10px]',
             isBuy && 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700',
             isSell && 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-700',
@@ -113,12 +113,12 @@ function StrengthMeter({ value, label }: { value: number; label?: string }) {
     const color = value >= 70 ? 'bg-emerald-500' : value >= 40 ? 'bg-amber-500' : 'bg-rose-500';
     return (
         <div className="space-y-1">
-            {label && <span className="text-[9px] font-bold text-slate-400 tracking-wider">{label}</span>}
+            {label && <span className="text-[9px] font-medium text-slate-400 tracking-tight">{label}</span>}
             <div className="flex items-center gap-2">
                 <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div className={cn("h-full rounded-full transition-all duration-700", color)} style={{ width: `${Math.min(value, 100)}%` }} />
                 </div>
-                <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 tabular-nums w-8 text-right">{value.toFixed(0)}%</span>
+                <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 tabular-nums w-8 text-right tracking-tight">{value.toFixed(0)}%</span>
             </div>
         </div>
     );
@@ -175,7 +175,7 @@ function VerdictBadge({ signalPrice, currentPrice, signal, intelligence }: { sig
     const action = getActionability(signalPrice, currentPrice, signal, intelligence);
     if (!action) return null;
     return (
-        <span className={cn("px-2 py-0.5 rounded text-[9px] font-black tracking-wider border", action.color)}>
+        <span className={cn("px-2 py-0.5 rounded text-[9px] font-semibold tracking-tight border", action.color)}>
             {action.label}
         </span>
     );
@@ -190,7 +190,7 @@ function PerformanceBadge({ signalPrice, currentPrice, signal, intelligence }: {
     return (
         <div className="flex flex-col items-center gap-1">
             <div className={cn(
-                "px-2 py-0.5 rounded text-[10px] font-bold tabular-nums border",
+                "px-2 py-0.5 rounded text-[10px] font-bold tabular-nums border tracking-tight",
                 isSuccess 
                     ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border-emerald-100 dark:border-emerald-800/30" 
                     : "bg-rose-50 dark:bg-rose-900/20 text-rose-600 border-rose-100 dark:border-rose-800/30"
@@ -218,7 +218,7 @@ function ConsensusHero({ consensus, buyPct, sellPct, total, intelCount }: { cons
                     {isBuy ? <TrendingUp size={24} /> : isSell ? <TrendingDown size={24} /> : <Activity size={24} />}
                 </div>
                 <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Market Consensus</p>
+                    <p className="text-[10px] font-medium tracking-tight text-slate-400 dark:text-slate-500">Market consensus</p>
                     <h2 className={cn(
                         "text-xl font-bold tracking-tight",
                         isBuy ? "text-emerald-600 dark:text-emerald-400" : isSell ? "text-rose-600 dark:text-rose-400" : "text-slate-800 dark:text-slate-200"
@@ -230,7 +230,7 @@ function ConsensusHero({ consensus, buyPct, sellPct, total, intelCount }: { cons
 
             <div className="flex items-center gap-6">
                 <div className="w-48 space-y-1.5">
-                    <div className="flex justify-between text-[9px] font-bold uppercase text-slate-400 tracking-tight">
+                    <div className="flex justify-between text-[9px] font-medium text-slate-400 tracking-tight">
                         <span className="text-emerald-500">Bullish {buyPct.toFixed(0)}%</span>
                         <span className="text-rose-500">{sellPct.toFixed(0)}% Bearish</span>
                     </div>
@@ -242,12 +242,12 @@ function ConsensusHero({ consensus, buyPct, sellPct, total, intelCount }: { cons
                 
                 <div className="flex items-center gap-3 border-l border-slate-200 dark:border-slate-800 pl-6">
                     <div className="text-center">
-                        <div className="text-[9px] font-bold text-slate-400 uppercase">Engines</div>
-                        <div className="text-sm font-bold text-slate-700 dark:text-slate-300">{total}</div>
+                        <div className="text-[9px] font-medium text-slate-400 tracking-tight">Engines</div>
+                        <div className="text-sm font-bold text-slate-700 dark:text-slate-300 tracking-tight">{total}</div>
                     </div>
                     <div className="text-center">
-                        <div className="text-[9px] font-bold text-slate-400 uppercase">Intel</div>
-                        <div className="text-sm font-bold text-slate-700 dark:text-slate-300">{intelCount}</div>
+                        <div className="text-[9px] font-medium text-slate-400 tracking-tight">Intel</div>
+                        <div className="text-sm font-bold text-slate-700 dark:text-slate-300 tracking-tight">{intelCount}</div>
                     </div>
                 </div>
             </div>
@@ -347,7 +347,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
             {!hasSignals ? (
                 <div className="flex flex-col items-center justify-center py-24 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
                     <Radar className="w-10 h-10 text-slate-300 dark:text-slate-700 mb-4" />
-                    <p className="text-base font-bold text-slate-500 dark:text-slate-400">No active signals found for {symbol}</p>
+                    <p className="text-base font-bold text-slate-500 dark:text-slate-400 tracking-tight">No active signals found for {symbol}</p>
                     <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Run the intelligence pipeline to generate signals.</p>
                 </div>
             ) : (
@@ -360,16 +360,16 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                                     <Layers size={16} />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">Technical Signals</h3>
+                                    <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base tracking-tight">Technical signals</h3>
                                     <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium tracking-tight">Strategy engines & backtests</p>
                                 </div>
                             </div>
                             {hiddenStratsCount > 0 && (
                                 <button 
                                     onClick={() => setShowHistoricalStrats(!showHistoricalStrats)}
-                                    className="text-[10px] font-bold uppercase tracking-tight text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                                    className="text-[10px] font-bold tracking-tight text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                                 >
-                                    {showHistoricalStrats ? `Hide ${hiddenStratsCount}` : `Show ${hiddenStratsCount} Legacy`}
+                                    {showHistoricalStrats ? `Hide ${hiddenStratsCount}` : `Show ${hiddenStratsCount} legacy`}
                                 </button>
                             )}
                         </div>
@@ -378,11 +378,11 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                             <table className="w-full text-xs">
                                 <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
                                     <tr>
-                                        <th className="px-4 py-3 text-left font-bold text-slate-400 uppercase tracking-tighter text-[9px]">Strategy</th>
-                                        <th className="px-4 py-3 text-center font-bold text-slate-400 uppercase tracking-tighter text-[9px]">Status</th>
-                                        <th className="px-4 py-3 text-center font-bold text-slate-400 uppercase tracking-tighter text-[9px]">Signal</th>
-                                        <th className="px-4 py-3 text-center font-bold text-slate-400 uppercase tracking-tighter text-[9px]">Action</th>
-                                        <th className="px-4 py-3 text-center font-bold text-slate-400 uppercase tracking-tighter text-[9px]">Price</th>
+                                        <th className="px-4 py-3 text-left font-semibold text-slate-400 tracking-tight text-[9px]">Strategy</th>
+                                        <th className="px-4 py-3 text-center font-semibold text-slate-400 tracking-tight text-[9px]">Status</th>
+                                        <th className="px-4 py-3 text-center font-semibold text-slate-400 tracking-tight text-[9px]">Signal</th>
+                                        <th className="px-4 py-3 text-center font-semibold text-slate-400 tracking-tight text-[9px]">Action</th>
+                                        <th className="px-4 py-3 text-center font-semibold text-slate-400 tracking-tight text-[9px]">Price</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -396,11 +396,11 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                                         return (
                                             <tr key={sig.id} className={cn("transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/50", freshness.status === 'historical' && "opacity-40")}>
                                                 <td className="px-4 py-3">
-                                                    <div className="font-bold text-slate-700 dark:text-slate-200">{sig.strategy_name}</div>
-                                                    <div className="text-[10px] text-slate-400 truncate max-w-[150px]">{sig.strategy_description}</div>
+                                                    <div className="font-semibold text-slate-700 dark:text-slate-200 tracking-tight">{sig.strategy_name}</div>
+                                                    <div className="text-[10px] text-slate-400 truncate max-w-[150px] tracking-tight">{sig.strategy_description}</div>
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
-                                                    <div className={cn("inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold border uppercase tracking-tighter", freshness.color)}>
+                                                    <div className={cn("inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border tracking-tight", freshness.color)}>
                                                         <freshness.icon size={8} />
                                                         {freshness.label}
                                                     </div>
@@ -410,7 +410,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                                                     <PerformanceBadge signalPrice={parseFloat(sig.last_close)} currentPrice={currentPrice} signal={sig.signal} intelligence={intelligence} />
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
-                                                    <div className="font-bold text-slate-700 dark:text-slate-300">{formatRupees(parseFloat(sig.last_close))}</div>
+                                                    <div className="font-semibold text-slate-700 dark:text-slate-300 tracking-tight">{formatRupees(parseFloat(sig.last_close))}</div>
                                                     <div className="text-[9px] text-slate-400">{sig.date}</div>
                                                 </td>
                                             </tr>
@@ -428,17 +428,17 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                                 <Activity size={16} />
                             </div>
                             <div>
-                                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">Fundamental Signals</h3>
+                                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base tracking-tight">Fundamental signals</h3>
                                 <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium tracking-tight">Business health & metrics</p>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div className="md:col-span-1 rounded-xl border p-4 bg-white dark:bg-slate-900/50 flex flex-col justify-between">
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Fundamental Score</span>
+                                <span className="text-[9px] font-medium text-slate-400 tracking-tight leading-none">Fundamental score</span>
                                 <div className="flex items-baseline gap-1 mt-2">
-                                    <span className="text-3xl font-bold text-slate-800 dark:text-white tabular-nums">{intelligence?.fundamentalScore || 0}</span>
-                                    <span className="text-xs font-medium text-slate-400">/ 100</span>
+                                    <span className="text-3xl font-bold text-slate-800 dark:text-white tabular-nums tracking-tight">{intelligence?.fundamentalScore || 0}</span>
+                                    <span className="text-xs font-medium text-slate-400 tracking-tight">/ 100</span>
                                 </div>
                                 <div className="h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-4">
                                     <div 
@@ -450,14 +450,14 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
 
                             <div className="md:col-span-3 grid grid-cols-3 gap-4">
                                 {[
-                                    { label: 'P/E RATIO', value: fundamental?.pe_ratio ? fundamental.pe_ratio.toFixed(2) : 'N/A', sub: 'Price/Earnings' },
+                                    { label: 'P/E ratio', value: fundamental?.pe_ratio ? fundamental.pe_ratio.toFixed(2) : 'N/A', sub: 'Price/Earnings' },
                                     { label: 'ROE', value: fundamental?.fundamental_indicators?.find((i: any) => i.name.includes('ROE'))?.value || 'N/A', sub: 'Return on Equity' },
-                                    { label: 'DIV YIELD', value: fundamental?.dividend_yield ? fundamental.dividend_yield.toFixed(2) + '%' : 'N/A', sub: 'Sector comparison' }
+                                    { label: 'Div yield', value: fundamental?.dividend_yield ? fundamental.dividend_yield.toFixed(2) + '%' : 'N/A', sub: 'Sector comparison' }
                                 ].map((m, idx) => (
                                     <div key={idx} className="rounded-xl border border-slate-100 dark:border-slate-800 p-4 bg-slate-50/30 dark:bg-slate-800/20">
-                                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{m.label}</span>
-                                        <div className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1">{m.value}</div>
-                                        <div className="text-[8px] text-slate-400 mt-0.5">{m.sub}</div>
+                                        <span className="text-[8px] font-medium text-slate-400 tracking-tight">{m.label}</span>
+                                        <div className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-1 tracking-tight">{m.value}</div>
+                                        <div className="text-[8px] text-slate-400 mt-0.5 tracking-tight">{m.sub}</div>
                                     </div>
                                 ))}
                             </div>
@@ -471,7 +471,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                                 <Zap size={16} />
                             </div>
                             <div>
-                                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">Buy/Sell Signals</h3>
+                                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base tracking-tight">Buy/sell signals</h3>
                                 <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium tracking-tight">Trend & momentum crossovers</p>
                             </div>
                         </div>
@@ -494,7 +494,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                                 <BarChart3 size={16} />
                             </div>
                             <div>
-                                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">Accumulation Signals</h3>
+                                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base tracking-tight">Accumulation signals</h3>
                                 <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium tracking-tight">Institutional volume & whale watch</p>
                             </div>
                         </div>
@@ -530,8 +530,8 @@ function IntelCard({ source, signals, currentPrice, intelligence }: { source: st
                     <div className="flex items-center gap-3">
                         <div className={cn("p-2 rounded-lg border", colors.bg, colors.border)}><SourceIcon size={16} className={colors.text} /></div>
                         <div>
-                            <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-tight">{SOURCE_LABELS[source] || source}</h4>
-                            <div className={cn("inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border uppercase tracking-tighter", freshness.color)}>
+                             <h4 className="font-semibold text-sm text-slate-800 dark:text-slate-100 leading-tight tracking-tight">{SOURCE_LABELS[source] || source}</h4>
+                            <div className={cn("inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border tracking-tight", freshness.color)}>
                                 <freshness.icon size={8} />{freshness.label}
                             </div>
                         </div>
@@ -542,7 +542,7 @@ function IntelCard({ source, signals, currentPrice, intelligence }: { source: st
                     </div>
                 </div>
                 <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800">
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-normal line-clamp-2">{latestSignal.rationale || 'Quantitative intelligence signal.'}</p>
+                     <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-normal line-clamp-2 tracking-tight">{latestSignal.rationale || 'Quantitative intelligence signal.'}</p>
                 </div>
             </div>
         </div>

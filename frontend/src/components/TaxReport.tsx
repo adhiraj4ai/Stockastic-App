@@ -55,9 +55,9 @@ export function TaxReport({ selectedAccount }: { selectedAccount: string }) {
                 <p className="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>
                 <button 
                     onClick={fetchTaxReport}
-                    className="mt-4 text-xs font-black uppercase tracking-widest text-red-700 dark:text-red-300 underline"
+                    className="mt-4 text-xs font-bold tracking-tight text-red-700 dark:text-red-300 underline"
                 >
-                    Try Again
+                    Try again
                 </button>
             </div>
         );
@@ -79,7 +79,7 @@ export function TaxReport({ selectedAccount }: { selectedAccount: string }) {
                     <Receipt className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div>
-                    <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight">Fiscal Year Tax Summary</h3>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight">Fiscal year tax summary</h3>
                     <p className="text-xs text-slate-500 font-medium">Realized P&L and CGT breakdown for Nepal fiscal years</p>
                 </div>
             </div>
@@ -89,23 +89,23 @@ export function TaxReport({ selectedAccount }: { selectedAccount: string }) {
                     <Card key={year.fiscal_year} className="overflow-hidden border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
                         <CardHeader className="bg-slate-50/50 dark:bg-slate-800/50 pb-4">
                             <CardTitle className="flex items-center justify-between">
-                                <span className="text-sm font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">FY {year.fiscal_year}</span>
+                                <span className="text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight">FY {year.fiscal_year}</span>
                                 <Badge variant="secondary" className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-[10px] font-bold">
-                                    {year.trades_count} Trades
+                                    {year.trades_count} trades
                                 </Badge>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-5 space-y-4">
                             <div className="flex justify-between items-end">
                                 <div>
-                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Realized Net P&L</div>
-                                    <div className={`text-2xl font-black ${year.realized_pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                    <div className="text-[10px] font-bold text-slate-400 tracking-tight mb-1">Realized net P&L</div>
+                                    <div className={`text-2xl font-bold ${year.realized_pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                         {year.realized_pnl >= 0 ? '+' : ''}{formatRupees(year.realized_pnl)}
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">CGT Paid</div>
-                                    <div className="text-lg font-black text-amber-600 dark:text-amber-400">
+                                    <div className="text-[10px] font-bold text-slate-400 tracking-tight mb-1">CGT paid</div>
+                                    <div className="text-lg font-bold text-amber-600 dark:text-amber-400">
                                         {formatRupees(year.cgt_paid)}
                                     </div>
                                 </div>
@@ -113,11 +113,11 @@ export function TaxReport({ selectedAccount }: { selectedAccount: string }) {
 
                             {year.top_gainers.length > 0 && (
                                 <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Top Performers</div>
+                                    <div className="text-[9px] font-bold text-slate-400 tracking-tight mb-2">Top performers</div>
                                     <div className="space-y-2">
                                         {year.top_gainers.map((g) => (
                                             <div key={g.ticker} className="flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
-                                                <span className="text-[11px] font-black text-slate-700 dark:text-slate-300">{g.ticker}</span>
+                                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">{g.ticker}</span>
                                                 <span className={`text-[11px] font-bold ${g.pnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                     {g.pnl >= 0 ? '+' : ''}{formatRupees(g.pnl)}
                                                 </span>

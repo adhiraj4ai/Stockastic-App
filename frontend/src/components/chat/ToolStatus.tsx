@@ -56,7 +56,7 @@ export const ToolStatus: React.FC<ToolStatusProps> = ({ toolName, args, result, 
                     >
                         <div className="mt-2 ml-2 pl-4 border-l-2 border-gray-200 dark:border-gray-800 space-y-2">
                             <div className="space-y-1">
-                                <span className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Input</span>
+                                <span className="text-[10px] font-semibold tracking-tight text-gray-500">Input</span>
                                 <div className="p-2 rounded-lg bg-gray-50 border border-gray-200 font-mono text-xs text-gray-600 overflow-x-auto dark:bg-gray-950/50 dark:border-gray-800 dark:text-gray-300">
                                     {args}
                                 </div>
@@ -64,7 +64,7 @@ export const ToolStatus: React.FC<ToolStatusProps> = ({ toolName, args, result, 
 
                             {result && (
                                 <div className="space-y-1">
-                                    <span className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Result</span>
+                                    <span className="text-[10px] font-semibold tracking-tight text-gray-500">Result</span>
                                     <div className="p-2 rounded-lg bg-gray-50 border border-gray-200 font-mono text-xs text-gray-600 overflow-x-auto max-h-40 overflow-y-auto custom-scrollbar dark:bg-gray-950/50 dark:border-gray-800 dark:text-gray-400">
                                         {result}
                                     </div>

@@ -28,9 +28,9 @@ export const VolumeShockers = ({ stocks }: VolumeShockersProps) => {
         <Table>
             <TableHeader>
                 <TableRow className="border-none hover:bg-transparent">
-                    <TableHead className="h-8 text-[10px] font-bold tracking-widest text-slate-900 dark:text-slate-400">Ticker</TableHead>
-                    <TableHead className="h-8 text-[10px] font-bold tracking-widest text-slate-900 dark:text-slate-400 text-right">Intensity</TableHead>
-                    <TableHead className="h-8 text-[10px] font-bold tracking-widest text-slate-900 dark:text-slate-400 text-right">Activity</TableHead>
+                    <TableHead className="h-8 text-[10px] font-bold tracking-tight text-slate-900 dark:text-slate-400">Ticker</TableHead>
+                    <TableHead className="h-8 text-[10px] font-bold tracking-tight text-slate-900 dark:text-slate-400 text-right">Intensity</TableHead>
+                    <TableHead className="h-8 text-[10px] font-bold tracking-tight text-slate-900 dark:text-slate-400 text-right">Activity</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>

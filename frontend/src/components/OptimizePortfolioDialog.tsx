@@ -181,7 +181,7 @@ export function OptimizePortfolioDialog({ isOpen, onClose, currentHoldings, acco
                                     <div className="text-2xl font-bold text-gray-900">
                                         {(result.metrics.expected_return * 100).toFixed(2)}%
                                     </div>
-                                    <div className="text-[10px] text-blue-500 mt-1 uppercase tracking-tighter">Annualized Estimate</div>
+                                    <div className="text-[10px] text-blue-500 mt-1 font-semibold tracking-tight">Annualized estimate</div>
                                 </div>
                                 <div className="bg-purple-50 rounded-xl p-4 border border-purple-100 transition-all hover:bg-purple-100/50">
                                     <div className="text-sm font-medium text-purple-600 mb-1 flex items-center gap-1">
@@ -190,7 +190,7 @@ export function OptimizePortfolioDialog({ isOpen, onClose, currentHoldings, acco
                                     <div className="text-2xl font-bold text-gray-900">
                                         {(result.metrics.volatility * 100).toFixed(2)}%
                                     </div>
-                                    <div className="text-[10px] text-purple-500 mt-1 uppercase tracking-tighter">Annualized Standard Dev</div>
+                                    <div className="text-[10px] text-purple-500 mt-1 font-semibold tracking-tight">Annualized standard dev</div>
                                 </div>
                                 <div className="bg-red-50 rounded-xl p-4 border border-red-100 transition-all hover:bg-red-100/50">
                                     <div className="text-sm font-medium text-red-600 mb-1 flex items-center gap-1">
@@ -199,7 +199,7 @@ export function OptimizePortfolioDialog({ isOpen, onClose, currentHoldings, acco
                                     <div className="text-2xl font-bold text-gray-900 text-red-700">
                                         {(result.metrics.max_drawdown * 100).toFixed(2)}%
                                     </div>
-                                    <div className="text-[10px] text-red-500 mt-1 uppercase tracking-tighter">Max Historical Peak-to-Trough Loss</div>
+                                    <div className="text-[10px] text-red-500 mt-1 font-semibold tracking-tight">Max draw-down loss</div>
                                 </div>
                                 <div className="bg-orange-50 rounded-xl p-4 border border-orange-100 transition-all hover:bg-orange-100/50">
                                     <div className="text-sm font-medium text-orange-600 mb-1 flex items-center gap-1">
@@ -208,7 +208,7 @@ export function OptimizePortfolioDialog({ isOpen, onClose, currentHoldings, acco
                                     <div className="text-2xl font-bold text-gray-900">
                                         {(result.metrics.sharpe_ratio || 0).toFixed(2)}
                                     </div>
-                                    <div className="text-[10px] text-orange-500 mt-1 uppercase tracking-tighter">Risk-Adjusted Return</div>
+                                    <div className="text-[10px] text-orange-500 mt-1 font-semibold tracking-tight">Risk-adjusted return</div>
                                 </div>
                             </div>
 
@@ -303,7 +303,7 @@ export function OptimizePortfolioDialog({ isOpen, onClose, currentHoldings, acco
                                         {selectedMethod === 'max_diversification' && " It spreads bets to minimize impact from any single sector or asset."}
                                         {selectedMethod === 'risk_parity' && " It ensures no single stock dominates the risk profile of your portfolio."}
                                     </p>
-                                    <div className="flex gap-4 mt-2 text-xs font-semibold uppercase tracking-wider">
+                                    <div className="flex gap-4 mt-2 text-xs font-semibold tracking-tight">
                                         <span className="text-blue-600">Max Weight: 50%</span>
                                         <span className="text-blue-600">Sample: 2 Years</span>
                                         <span className="text-blue-600">Solver: Clarabel</span>

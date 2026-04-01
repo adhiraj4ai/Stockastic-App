@@ -124,7 +124,7 @@ export function RiskRadar({ accountId }: { accountId?: string }) {
             <div className="space-y-4">
                 <Card className="border-none bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm shadow-xl h-full">
                     <CardHeader>
-                        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-500">Risk Diagnostics</CardTitle>
+                        <CardTitle className="text-sm font-semibold tracking-tight text-slate-500">Risk diagnostics</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {data.alerts.length === 0 ? (
@@ -149,7 +149,7 @@ export function RiskRadar({ accountId }: { accountId?: string }) {
 
                         <div className="mt-6 p-4 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
                             <h4 className="text-xs font-bold text-slate-500 mb-3 flex items-center gap-1">
-                                <Info className="h-3 w-3" /> ANALYTICS TIP
+                                <span className="uppercase tracking-tight text-[10px] opacity-70 flex items-center gap-1"><Info className="h-3 w-3" /> Analytics tip</span>
                             </h4>
                             <p className="text-xs text-slate-600 dark:text-slate-400 italic">
                                 "{data.summary.risk_level === 'HIGH'

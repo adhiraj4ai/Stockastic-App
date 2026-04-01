@@ -36,9 +36,9 @@ export const MiniSectorCard = ({
                                     {React.cloneElement(icon as React.ReactElement<any>, { size: 12 })}
                                 </div>
                             )}
-                            <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 tracking-wider uppercase truncate max-w-[80px]">{name}</span>
+                            <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 tracking-tight truncate max-w-[80px]">{name}</span>
                         </div>
-                        <div className={`text-xl font-black tracking-tighter ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                        <div className={`text-xl font-bold tracking-tight ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                             {isPositive ? '+' : ''}{change.toFixed(2)}%
                         </div>
                     </div>
@@ -49,7 +49,7 @@ export const MiniSectorCard = ({
 
                 <div className="flex justify-between items-center pt-2.5 border-t border-slate-100 dark:border-white/5">
                     <div className="flex flex-col">
-                        <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight">Turnover</span>
+                        <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 tracking-tight">Turnover</span>
                         <span className="text-[10px] font-mono font-bold text-slate-800 dark:text-slate-200">Rs. {(turnover / 1000000).toFixed(1)}M</span>
                     </div>
                     <div className={`h-1 w-1 rounded-full ${isPositive ? 'bg-emerald-500' : 'bg-rose-500'}`} />

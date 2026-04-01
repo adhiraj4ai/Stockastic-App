@@ -262,7 +262,7 @@ export function AlertsDropdown() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80 p-0 border-none shadow-2xl overflow-hidden rounded-xl">
                 <div className="bg-slate-900 dark:bg-slate-800 px-4 py-3 flex justify-between items-center">
-                    <DropdownMenuLabel className="p-0 text-white font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                    <DropdownMenuLabel className="p-0 text-white font-bold text-xs flex items-center gap-2 tracking-tight">
                         <Bell size={14} className="text-blue-400" /> Alerts
                     </DropdownMenuLabel>
                     <div className="flex items-center gap-2">
@@ -274,7 +274,7 @@ export function AlertsDropdown() {
                             <RefreshCw size={12} />
                         </button>
                         {unreadCount > 0 && (
-                            <span className="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded font-black">
+                            <span className="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded font-bold tracking-tight">
                                 {unreadCount} NEW
                             </span>
                         )}
@@ -287,7 +287,7 @@ export function AlertsDropdown() {
                             <div className="bg-slate-50 dark:bg-slate-800 w-10 h-10 rounded-full flex items-center justify-center mx-auto text-slate-300 dark:text-slate-600">
                                 <Bell size={20} />
                             </div>
-                            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">No alerts</p>
+                            <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 tracking-tight">No alerts</p>
                         </div>
                     ) : (
                         alerts.map((alert) => (
@@ -303,8 +303,8 @@ export function AlertsDropdown() {
                                     </div>
                                     <div className="space-y-1 flex-1">
                                         <div className="flex justify-between items-start">
-                                            <h4 className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight">{alert.title}</h4>
-                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">
+                                            <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 tracking-tight">{alert.title}</h4>
+                                            <span className="text-[9px] font-medium text-slate-400 dark:text-slate-500 tracking-tight">
                                                 {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true })}
                                             </span>
                                         </div>
@@ -313,7 +313,7 @@ export function AlertsDropdown() {
                                         </p>
                                         {alert.ticker && (
                                             <div className="pt-1">
-                                                <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
+                                                <span className="text-[9px] font-semibold text-blue-600 dark:text-blue-400 tracking-tight">
                                                     {alert.ticker}
                                                 </span>
                                             </div>
@@ -329,14 +329,14 @@ export function AlertsDropdown() {
                     {unreadCount > 0 && (
                         <button
                             onClick={(e) => { e.stopPropagation(); markAllAsRead(); }}
-                            className="flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all"
+                            className="flex-1 py-2 rounded-lg text-[10px] font-semibold tracking-tight text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all font-medium"
                         >
                             Mark all read
                         </button>
                     )}
                     <button
                         onClick={(e) => { e.stopPropagation(); router.push('/notifications'); }}
-                        className="flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all flex items-center justify-center gap-1"
+                        className="flex-1 py-2 rounded-lg text-[10px] font-semibold tracking-tight text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all flex items-center justify-center gap-1"
                     >
                         <ExternalLink size={10} /> View all
                     </button>

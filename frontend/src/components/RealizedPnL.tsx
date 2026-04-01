@@ -87,9 +87,9 @@ export function RealizedPnL({ selectedAccount }: RealizedPnLProps) {
                 }`}>
                     <div className="flex items-center gap-1.5 mb-1">
                         {isPositive ? <TrendingUp size={14} className="text-emerald-600 dark:text-emerald-400" /> : <TrendingDown size={14} className="text-rose-600 dark:text-rose-400" />}
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Realized P&L</span>
+                        <span className="text-[10px] font-medium tracking-tight text-slate-500 dark:text-slate-400">Realized p&l</span>
                     </div>
-                    <div className={`text-2xl font-black ${isPositive ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
+                    <div className={`text-2xl font-bold tracking-tight ${isPositive ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
                         {isPositive ? '+' : ''}{formatRupees(summary.total_realized_pnl)}
                     </div>
                 </div>
@@ -97,9 +97,9 @@ export function RealizedPnL({ selectedAccount }: RealizedPnLProps) {
                 <div className="bg-white dark:bg-slate-900 rounded-xl border border-amber-100 dark:border-amber-900/30 p-4 shadow-sm">
                     <div className="flex items-center gap-1.5 mb-1">
                         <DollarSign size={14} className="text-amber-600 dark:text-amber-400" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">CGT Paid</span>
+                        <span className="text-[10px] font-medium tracking-tight text-slate-500 dark:text-slate-400">CGT paid</span>
                     </div>
-                    <div className="text-2xl font-black text-amber-700 dark:text-amber-400">
+                    <div className="text-2xl font-bold text-amber-700 dark:text-amber-400 tracking-tight">
                         {formatRupees(summary.total_cgt_paid)}
                     </div>
                 </div>
@@ -107,9 +107,9 @@ export function RealizedPnL({ selectedAccount }: RealizedPnLProps) {
                 <div className="bg-white dark:bg-slate-900 rounded-xl border border-blue-100 dark:border-blue-900/30 p-4 shadow-sm">
                     <div className="flex items-center gap-1.5 mb-1">
                         <Target size={14} className="text-blue-600 dark:text-blue-400" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Total Trades</span>
+                        <span className="text-[10px] font-medium tracking-tight text-slate-500 dark:text-slate-400">Total trades</span>
                     </div>
-                    <div className="text-2xl font-black text-blue-700 dark:text-blue-400">
+                    <div className="text-2xl font-bold text-blue-700 dark:text-blue-400 tracking-tight">
                         {summary.total_trades}
                     </div>
                 </div>
@@ -117,9 +117,9 @@ export function RealizedPnL({ selectedAccount }: RealizedPnLProps) {
                 <div className="bg-white dark:bg-slate-900 rounded-xl border border-purple-100 dark:border-purple-900/30 p-4 shadow-sm">
                     <div className="flex items-center gap-1.5 mb-1">
                         <Award size={14} className="text-purple-600 dark:text-purple-400" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Win Rate</span>
+                        <span className="text-[10px] font-medium tracking-tight text-slate-500 dark:text-slate-400">Win rate</span>
                     </div>
-                    <div className="text-2xl font-black text-purple-700 dark:text-purple-400">
+                    <div className="text-2xl font-bold text-purple-700 dark:text-purple-400 tracking-tight">
                         {summary.win_rate}%
                     </div>
                     <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-2 overflow-hidden">
@@ -138,13 +138,13 @@ export function RealizedPnL({ selectedAccount }: RealizedPnLProps) {
                         <Table>
                             <TableHeader>
                                 <TableRow className="bg-gray-50/50 dark:bg-slate-800/30">
-                                    <TableHead className="font-bold text-gray-900 dark:text-slate-100">Ticker</TableHead>
-                                    <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">Sold Qty</TableHead>
-                                    <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">Avg Cost</TableHead>
-                                    <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">Avg Sell</TableHead>
-                                    <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">Realized P&L</TableHead>
-                                    <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">CGT</TableHead>
-                                    <TableHead className="text-center font-bold text-gray-900 dark:text-slate-100">Win Rate</TableHead>
+                                    <TableHead className="font-semibold text-gray-900 dark:text-slate-100 tracking-tight">Ticker</TableHead>
+                                    <TableHead className="text-right font-semibold text-gray-900 dark:text-slate-100 tracking-tight">Sold qty</TableHead>
+                                    <TableHead className="text-right font-semibold text-gray-900 dark:text-slate-100 tracking-tight">Avg cost</TableHead>
+                                    <TableHead className="text-right font-semibold text-gray-900 dark:text-slate-100 tracking-tight">Avg sell</TableHead>
+                                    <TableHead className="text-right font-semibold text-gray-900 dark:text-slate-100 tracking-tight">Realized p&l</TableHead>
+                                    <TableHead className="text-right font-semibold text-gray-900 dark:text-slate-100 tracking-tight">CGT</TableHead>
+                                    <TableHead className="text-center font-semibold text-gray-900 dark:text-slate-100 tracking-tight">Win rate</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -153,18 +153,18 @@ export function RealizedPnL({ selectedAccount }: RealizedPnLProps) {
                                     const tickerWinRate = item.sell_count > 0 ? (item.profitable_sells / item.sell_count * 100) : 0;
                                     return (
                                         <TableRow key={item.ticker} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
-                                            <TableCell className="font-black text-slate-900 dark:text-slate-100">{item.ticker}</TableCell>
-                                            <TableCell className="text-right font-bold text-slate-600 dark:text-slate-400">{item.total_sold_qty}</TableCell>
-                                            <TableCell className="text-right font-medium text-slate-600 dark:text-slate-400">{formatRupees(item.avg_cost)}</TableCell>
-                                            <TableCell className="text-right font-medium text-slate-600 dark:text-slate-400">{formatRupees(item.avg_sell_price)}</TableCell>
-                                            <TableCell className={`text-right font-black ${isProfit ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                            <TableCell className="font-semibold text-slate-900 dark:text-slate-100 tracking-tight">{item.ticker}</TableCell>
+                                            <TableCell className="text-right font-semibold text-slate-600 dark:text-slate-400 tracking-tight">{item.total_sold_qty}</TableCell>
+                                            <TableCell className="text-right font-normal text-slate-600 dark:text-slate-400 tracking-tight">{formatRupees(item.avg_cost)}</TableCell>
+                                            <TableCell className="text-right font-normal text-slate-600 dark:text-slate-400 tracking-tight">{formatRupees(item.avg_sell_price)}</TableCell>
+                                            <TableCell className={`text-right font-semibold tracking-tight ${isProfit ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                                 {isProfit ? '+' : ''}{formatRupees(item.realized_pnl)}
                                             </TableCell>
-                                            <TableCell className="text-right text-xs font-bold text-amber-600 dark:text-amber-400">
+                                            <TableCell className="text-right text-xs font-semibold text-amber-600 dark:text-amber-400 tracking-tight">
                                                 {item.cgt_paid > 0 ? formatRupees(item.cgt_paid) : '—'}
                                             </TableCell>
                                             <TableCell className="text-center">
-                                                <Badge variant="secondary" className={`text-[9px] font-black px-2 ${tickerWinRate >= 60 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : tickerWinRate >= 40 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400'}`}>
+                                                <Badge variant="secondary" className={`text-[9px] font-semibold px-2 tracking-tight ${tickerWinRate >= 60 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : tickerWinRate >= 40 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400'}`}>
                                                     {item.profitable_sells}/{item.sell_count} ({tickerWinRate.toFixed(0)}%)
                                                 </Badge>
                                             </TableCell>

@@ -71,9 +71,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ role, content, isS
                                         console.error("Gen-UI Parse Error:", e);
                                         return (
                                             <div className="p-4 rounded-xl border border-rose-500/20 bg-rose-500/5 backdrop-blur-md my-4">
-                                                <div className="flex items-center gap-2 text-rose-500 font-bold text-xs uppercase tracking-wider mb-2">
+                                                <div className="flex items-center gap-2 text-rose-500 font-bold text-xs tracking-tight mb-2">
                                                     <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                                                    Rendering Error
+                                                    Rendering error
                                                 </div>
                                                 <p className="text-sm text-gray-400 font-mono break-all bg-black/20 p-2 rounded">
                                                     {e.message || "Invalid Gen-UI JSON structure"}
@@ -131,7 +131,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ role, content, isS
                                 </div>
                             ),
                             th: ({ children }) => (
-                                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90 border-b border-gray-200 dark:border-gray-800">
+                                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-400 tracking-tight backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90 border-b border-gray-200 dark:border-gray-800">
                                     {children}
                                 </th>
                             ),

@@ -47,15 +47,15 @@ function MetricRow({
         <div className="flex items-center border-b border-slate-50 dark:border-slate-800/50 last:border-0">
             <div className="w-[140px] shrink-0 flex items-center gap-2 py-3 px-4">
                 {icon && <span className="text-slate-400 dark:text-slate-500">{icon}</span>}
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">{label}</span>
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 tracking-tight">{label}</span>
             </div>
             {values.map((val, idx) => (
                 <div key={idx} className="flex-1 text-center py-3">
-                    <span className={`text-sm font-black ${bestIdx === idx ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                    <span className={`text-sm font-bold tracking-tight ${bestIdx === idx ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`}>
                         {formatValue(val)}
                     </span>
                     {bestIdx === idx && (
-                        <span className="ml-1 text-[8px] font-black text-blue-500 dark:text-blue-400">★</span>
+                        <span className="ml-1 text-[8px] font-bold text-blue-500 dark:text-blue-400">★</span>
                     )}
                 </div>
             ))}
@@ -98,12 +98,12 @@ export function CompareHoldingsDialog({ open, onOpenChange, items }: CompareHold
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
                 <DialogHeader className="pb-4 border-b border-slate-100 dark:border-slate-800">
-                    <DialogTitle className="flex items-center gap-3 text-xl font-black text-slate-900 dark:text-slate-100">
+                    <DialogTitle className="flex items-center gap-3 text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
                         <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
                             <Scale className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                         </div>
-                        Holdings Comparison
-                        <Badge variant="secondary" className="text-[9px] font-bold ml-2 px-2 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                        Holdings comparison
+                        <Badge variant="secondary" className="text-[9px] font-bold ml-2 px-2 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 tracking-tight">
                             {items.length} Selected
                         </Badge>
                     </DialogTitle>
@@ -117,9 +117,9 @@ export function CompareHoldingsDialog({ open, onOpenChange, items }: CompareHold
                             <div className="flex flex-col items-center gap-1">
                                 <div className="flex items-center gap-1.5">
                                     <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COMPARE_COLORS[idx] }} />
-                                    <span className="font-black text-sm text-slate-900 dark:text-slate-100">{item.ticker}</span>
+                                    <span className="font-bold text-sm text-slate-900 dark:text-slate-100 tracking-tight">{item.ticker}</span>
                                 </div>
-                                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">
+                                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 tracking-tighter">
                                     {item.sector || 'Unknown'}
                                 </span>
                             </div>
@@ -202,8 +202,8 @@ export function CompareHoldingsDialog({ open, onOpenChange, items }: CompareHold
                 {/* Radar Chart */}
                 {radarData.length > 0 && (
                     <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4 px-4">
-                            Comparative Analysis
+                        <h4 className="text-xs font-bold tracking-tight text-slate-400 dark:text-slate-500 mb-4 px-4">
+                            Comparative analysis
                         </h4>
                         <ResponsiveContainer width="100%" height={280}>
                             <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="70%">

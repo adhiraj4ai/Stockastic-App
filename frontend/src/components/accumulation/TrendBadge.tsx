@@ -17,7 +17,7 @@ export const TrendBadge = ({ trend, change }: { trend: string, change: number })
     return (
         <div className={`flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border ${colorClass} w-full max-w-[100px] mx-auto shadow-sm transition-all hover:scale-105`}>
             <Icon className="w-3.5 h-3.5 stroke-[3px]" />
-            <span className="text-xs font-black font-mono tracking-tight">
+            <span className="text-xs font-bold font-mono tracking-tight">
                 {Math.abs(change ?? 0).toFixed(1)}%
             </span>
         </div>

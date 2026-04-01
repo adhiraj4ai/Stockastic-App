@@ -84,8 +84,7 @@ export function StockLoader({ status = "ANALYZING MARKET" }: StockLoaderProps) {
                             fontSize: '42px',
                             fontWeight: 'bold',
                             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                            letterSpacing: '0.2em',
-                            textTransform: 'uppercase'
+                            letterSpacing: '-0.02em',
                         }}
                     >
                         Stockastic

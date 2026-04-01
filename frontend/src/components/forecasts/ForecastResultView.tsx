@@ -224,7 +224,7 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
             case 'FAILED':
                 return <Badge className="bg-red-500/10 text-red-600 border-red-200/50 px-3 py-1 rounded-full text-[10px] font-bold">Failed</Badge>;
             default:
-                return <Badge variant="outline" className="px-3 py-1 rounded-full text-[10px] font-bold tracking-widest">{status}</Badge>;
+                return <Badge variant="outline" className="px-3 py-1 rounded-full text-[10px] font-bold tracking-tight">{status}</Badge>;
         }
     };
 
@@ -267,27 +267,27 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
                 <CardContent className="px-4 py-2">
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-x-3 gap-y-1.5">
                         <div>
-                            <div className="text-[10px] text-slate-400 mb-0.5 font-medium uppercase tracking-wider">Model</div>
-                            <div className="text-xs font-bold text-slate-900">{job.model_type}</div>
+                            <div className="text-[10px] text-slate-400 mb-0.5 font-medium tracking-tight">Model</div>
+                            <div className="text-xs font-bold text-slate-900 tracking-tight">{job.model_type}</div>
                         </div>
                         <div>
-                            <div className="text-[10px] text-slate-400 mb-0.5 font-medium uppercase tracking-wider">Symbol</div>
-                            <div className="text-xs font-bold text-slate-900">{job.symbol}</div>
+                            <div className="text-[10px] text-slate-400 mb-0.5 font-medium tracking-tight">Symbol</div>
+                            <div className="text-xs font-bold text-slate-900 tracking-tight">{job.symbol}</div>
                         </div>
                         <div>
-                            <div className="text-[10px] text-slate-400 mb-0.5 font-medium uppercase tracking-wider">Duration</div>
-                            <div className="text-xs font-bold text-slate-900">{job.duration ? `${job.duration.toFixed(1)}s` : 'N/A'}</div>
+                            <div className="text-[10px] text-slate-400 mb-0.5 font-medium tracking-tight">Duration</div>
+                            <div className="text-xs font-bold text-slate-900 tracking-tight">{job.duration ? `${job.duration.toFixed(1)}s` : 'N/A'}</div>
                         </div>
                         <div>
-                            <div className="text-[10px] text-slate-400 mb-0.5 font-medium uppercase tracking-wider">Status</div>
+                            <div className="text-[10px] text-slate-400 mb-0.5 font-medium tracking-tight">Status</div>
                             <div className="text-xs font-bold">{getStatusBadge(job.status)}</div>
                         </div>
                         {job.hyperparameters && Object.entries(job.hyperparameters).map(([key, value]) => (
                             <div key={key}>
-                                <div className="text-[10px] text-slate-400 mb-0.5 font-medium uppercase tracking-wider truncate" title={key.replace(/_/g, ' ')}>
+                                <div className="text-[10px] text-slate-400 mb-0.5 font-medium tracking-tight truncate" title={key.replace(/_/g, ' ')}>
                                     {key.replace(/_/g, ' ')}
                                 </div>
-                                <div className="text-xs font-bold text-slate-900 truncate">
+                                <div className="text-xs font-bold text-slate-900 truncate tracking-tight">
                                     {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value)}
                                 </div>
                             </div>
@@ -310,8 +310,8 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
                             <table className="w-full">
                                 <thead className="bg-slate-50/50 border-b border-slate-100">
                                     <tr>
-                                        <th className="px-4 py-2 text-left text-[10px] font-bold text-slate-600">Metric</th>
-                                        <th className="px-4 py-2 text-right text-[10px] font-bold text-slate-600">Value</th>
+                                        <th className="px-4 py-2 text-left text-[10px] font-semibold text-slate-600 tracking-tight">Metric</th>
+                                        <th className="px-4 py-2 text-right text-[10px] font-semibold text-slate-600 tracking-tight">Value</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
@@ -363,9 +363,9 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
                             <table className="w-full text-left">
                                 <thead className="bg-slate-50 sticky top-0 z-10">
                                     <tr>
-                                        <th className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Date</th>
-                                        <th className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Price</th>
-                                        <th className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Range</th>
+                                        <th className="px-4 py-2 text-[10px] font-semibold text-slate-500 tracking-tight">Date</th>
+                                        <th className="px-4 py-2 text-[10px] font-semibold text-slate-500 tracking-tight">Price</th>
+                                        <th className="px-4 py-2 text-[10px] font-semibold text-slate-500 tracking-tight text-right">Range</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">

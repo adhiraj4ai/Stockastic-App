@@ -113,13 +113,13 @@ export function PortfolioGoals({ selectedAccount }: { selectedAccount: string })
                         <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
                             <button 
                                 onClick={() => setView('SECTOR')}
-                                className={`px-3 py-1.5 text-xs font-black uppercase tracking-widest rounded-md transition-all ${view === 'SECTOR' ? 'bg-white dark:bg-slate-800 text-blue-600 shadow-sm' : 'text-slate-500'}`}
+                                className={`px-3 py-1.5 text-xs font-bold tracking-tight rounded-md transition-all ${view === 'SECTOR' ? 'bg-white dark:bg-slate-800 text-blue-600 shadow-sm' : 'text-slate-500'}`}
                             >
                                 Sectors
                             </button>
                             <button 
                                 onClick={() => setView('TAG')}
-                                className={`px-3 py-1.5 text-xs font-black uppercase tracking-widest rounded-md transition-all ${view === 'TAG' ? 'bg-white dark:bg-slate-800 text-blue-600 shadow-sm' : 'text-slate-500'}`}
+                                className={`px-3 py-1.5 text-xs font-bold tracking-tight rounded-md transition-all ${view === 'TAG' ? 'bg-white dark:bg-slate-800 text-blue-600 shadow-sm' : 'text-slate-500'}`}
                             >
                                 Tags
                             </button>
@@ -165,8 +165,8 @@ export function PortfolioGoals({ selectedAccount }: { selectedAccount: string })
                                         {viewTargets.map(t => (
                                             <div key={t.id} className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800">
                                                 <div className="flex flex-col">
-                                                    <span className="text-xs font-black text-slate-700 dark:text-slate-300">{t.category_name}</span>
-                                                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400">Target: {t.target_percentage}%</span>
+                                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 tracking-tight">{t.category_name}</span>
+                                                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 tracking-tight">Target: {t.target_percentage}%</span>
                                                 </div>
                                                 <button 
                                                     onClick={() => t.id && handleDeleteTarget(t.id)}
@@ -192,8 +192,8 @@ export function PortfolioGoals({ selectedAccount }: { selectedAccount: string })
                 {currentMetrics.length === 0 ? (
                     <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-50/50 dark:bg-slate-900/10">
                          <PieChart className="h-10 w-10 text-slate-200 dark:text-slate-800 mb-3" />
-                         <p className="text-sm font-medium text-slate-500 dark:text-slate-400">No holdings found for {view.toLowerCase()}s.</p>
-                         <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest font-black">Add some transactions to see metrics</p>
+                         <p className="text-sm font-medium text-slate-500 dark:text-slate-400 tracking-tight">No holdings found for {view.toLowerCase()}s.</p>
+                         <p className="text-[10px] text-slate-400 mt-1 tracking-tight font-bold">Add some transactions to see metrics</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-slate-100 dark:divide-slate-800">
@@ -222,8 +222,8 @@ export function PortfolioGoals({ selectedAccount }: { selectedAccount: string })
                                 </ResponsiveContainer>
                             </div>
                             <div className="text-center mt-4">
-                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Portfolio Value</div>
-                                <div className="text-2xl font-black text-slate-900 dark:text-slate-100">{formatRupees(metrics.total_value)}</div>
+                                <div className="text-[10px] font-medium text-slate-400 tracking-tight">Portfolio value</div>
+                                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">{formatRupees(metrics.total_value)}</div>
                             </div>
                         </div>
 
@@ -231,7 +231,7 @@ export function PortfolioGoals({ selectedAccount }: { selectedAccount: string })
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2 mb-2 sticky top-0 bg-white dark:bg-[#020617] py-1 z-10">
                                     <Info className="h-3.5 w-3.5 text-slate-400" />
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Target vs Current Comparison</span>
+                                    <span className="text-[10px] font-semibold text-slate-500 tracking-tight">Target vs current comparison</span>
                                 </div>
                                 
                                 {currentMetrics.map((m, idx) => (
@@ -239,21 +239,21 @@ export function PortfolioGoals({ selectedAccount }: { selectedAccount: string })
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
-                                                <span className="text-xs font-black text-slate-800 dark:text-slate-200">{m.category}</span>
+                                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight">{m.category}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                {m.target_percentage > 0 && m.recommended_action === 'INCREASE' && <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800 text-[10px] font-black uppercase">Underweight</Badge>}
-                                                {m.target_percentage > 0 && m.recommended_action === 'TRIM' && <Badge className="bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-800 text-[10px] font-black uppercase">Overweight</Badge>}
-                                                {m.target_percentage > 0 && m.recommended_action === 'HOLD' && <Badge className="bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800 text-[10px] font-black uppercase">Neutral</Badge>}
-                                                {m.target_percentage === 0 && <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">No Target Set</span>}
+                                                {m.target_percentage > 0 && m.recommended_action === 'INCREASE' && <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800 text-[10px] font-semibold tracking-tight">Underweight</Badge>}
+                                                {m.target_percentage > 0 && m.recommended_action === 'TRIM' && <Badge className="bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-800 text-[10px] font-semibold tracking-tight">Overweight</Badge>}
+                                                {m.target_percentage > 0 && m.recommended_action === 'HOLD' && <Badge className="bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800 text-[10px] font-semibold tracking-tight">Neutral</Badge>}
+                                                {m.target_percentage === 0 && <span className="text-[9px] font-medium text-slate-400 tracking-tighter">No target set</span>}
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                                                <div className="flex justify-between text-[9px] font-medium text-slate-400 tracking-tight mb-1">
                                                     <span>Current</span>
-                                                    <span className="text-slate-700 dark:text-slate-300">{m.current_percentage}%</span>
+                                                    <span className="text-slate-700 dark:text-slate-300 font-semibold">{m.current_percentage}%</span>
                                                 </div>
                                                 <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                                     <div 
@@ -263,9 +263,9 @@ export function PortfolioGoals({ selectedAccount }: { selectedAccount: string })
                                                 </div>
                                             </div>
                                             <div>
-                                                <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                                                <div className="flex justify-between text-[9px] font-medium text-slate-400 tracking-tight mb-1">
                                                     <span>Target</span>
-                                                    <span className="text-blue-600 dark:text-blue-400">{m.target_percentage || 0}%</span>
+                                                    <span className="text-blue-600 dark:text-blue-400 font-semibold">{m.target_percentage || 0}%</span>
                                                 </div>
                                                 <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                                     <div 
@@ -277,22 +277,22 @@ export function PortfolioGoals({ selectedAccount }: { selectedAccount: string })
                                         </div>
                                         
                                         {m.target_percentage > 0 && Math.abs(m.deviation_percentage) > 0.01 && (
-                                            <div className="text-[10px] font-bold text-slate-500 mt-1">
+                                            <div className="text-[10px] font-medium text-slate-500 mt-1 tracking-tight">
                                                 {m.deviation_percentage > 0 ? (
                                                     <span className="flex items-center gap-1">
                                                         <TrendingUp className="h-3 w-3 text-rose-500" />
-                                                        Exceeds target by <span className="text-rose-600 font-black">{Math.abs(m.deviation_percentage).toFixed(2)}%</span>
+                                                        Exceeds target by <span className="text-rose-600 font-bold">{Math.abs(m.deviation_percentage).toFixed(2)}%</span>
                                                         <span className="text-slate-400 mx-1">•</span>
-                                                        Suggests <span className="text-slate-700 dark:text-slate-300 uppercase">Trim</span> approx.
-                                                        <span className="font-black text-slate-700 dark:text-slate-300">{formatRupees(Math.abs(m.deviation_percentage / 100 * metrics.total_value))}</span>
+                                                        Suggests <span className="text-slate-700 dark:text-slate-300">trim</span> approx.
+                                                        <span className="font-bold text-slate-700 dark:text-slate-300">{formatRupees(Math.abs(m.deviation_percentage / 100 * metrics.total_value))}</span>
                                                     </span>
                                                 ) : (
                                                     <span className="flex items-center gap-1">
                                                         <TrendingDown className="h-3 w-3 text-emerald-500" />
-                                                        Short of target by <span className="text-emerald-600 font-black">{Math.abs(m.deviation_percentage).toFixed(2)}%</span>
+                                                        Short of target by <span className="text-emerald-600 font-bold">{Math.abs(m.deviation_percentage).toFixed(2)}%</span>
                                                         <span className="text-slate-400 mx-1">•</span>
-                                                        Suggests <span className="text-slate-700 dark:text-slate-300 uppercase">Add</span> approx.
-                                                        <span className="font-black text-slate-700 dark:text-slate-300">{formatRupees(Math.abs(m.deviation_percentage / 100 * metrics.total_value))}</span>
+                                                        Suggests <span className="text-slate-700 dark:text-slate-300">add</span> approx.
+                                                        <span className="font-bold text-slate-700 dark:text-slate-300">{formatRupees(Math.abs(m.deviation_percentage / 100 * metrics.total_value))}</span>
                                                     </span>
                                                 )}
                                             </div>

@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import {
     ArrowUpDown, MoreHorizontal, Filter, Download,
-    Plus, Search, Trash2, Edit2, TrendingUp, TrendingDown,
+    Plus, Trash2, Edit2, TrendingUp, TrendingDown,
     Calendar, FolderPlus, Calculator, Eye, Target,
     ShieldAlert, Activity, CheckCircle2, Zap, Wallet, DollarSign,
     BarChart3 as BarIcon, Grid3X3, Users, Wand2, PlusCircle, MinusCircle, Radio,
@@ -109,8 +109,6 @@ function PortfolioContent() {
         alert_enabled: false,
         notes: ''
     });
-    const [searchQuery, setSearchQuery] = useState('');
-    const [watchlistSearchQuery, setWatchlistSearchQuery] = useState('');
     const [watchlistCurrentPage, setWatchlistCurrentPage] = useState(1);
     const [currentPage, setCurrentPage] = useState(1);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
@@ -194,6 +192,7 @@ function PortfolioContent() {
 
     const handlePromoteToPortfolio = (ticker: string) => {
         setPromoteTicker(ticker);
+        setDefaultModalAccount(selectedAccount !== 'all' ? selectedAccount : '');
         setIsModalOpen(true);
     };
 
@@ -293,10 +292,7 @@ function PortfolioContent() {
 
     // Filter and Sort Items
     const sortedAndFilteredItems = useMemo(() => {
-        let result = displayedItems.filter(item =>
-            item.ticker.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (item.sector && item.sector.toLowerCase().includes(searchQuery.toLowerCase()))
-        );
+        let result = [...displayedItems];
 
         if (sortConfig.key) {
             result.sort((a, b) => {
@@ -315,7 +311,7 @@ function PortfolioContent() {
             });
         }
         return result;
-    }, [displayedItems, searchQuery, sortConfig]);
+    }, [displayedItems, sortConfig]);
 
     // Calculate Summary based on Filtered Items
     const totalInvestment = sortedAndFilteredItems.reduce((acc, item) => acc + Number(item.investment_value), 0);
@@ -355,14 +351,9 @@ function PortfolioContent() {
 
     // Watchlist Logic
     const sortedAndFilteredWatchlist = useMemo(() => {
-        let result = watchlist.filter(item =>
-            item.ticker.toLowerCase().includes(watchlistSearchQuery.toLowerCase()) ||
-            (item.sector && item.sector.toLowerCase().includes(watchlistSearchQuery.toLowerCase()))
-        );
-
-        // Default sort by ticker for watchlist
+        let result = [...watchlist];
         return result.sort((a, b) => a.ticker.localeCompare(b.ticker));
-    }, [watchlist, watchlistSearchQuery]);
+    }, [watchlist]);
 
     const paginatedWatchlist = useMemo(() => {
         const startIndex = (watchlistCurrentPage - 1) * pageSize;
@@ -441,20 +432,6 @@ function PortfolioContent() {
                                 <FolderPlus className="h-5 w-5" />
                             </button>
 
-                            <button
-                                onClick={() => {
-                                    if (accounts.length === 0) {
-                                        alert("You need to create a portfolio account first!");
-                                        setIsCreateAccountOpen(true);
-                                    } else {
-                                        setIsModalOpen(true);
-                                    }
-                                }}
-                                className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-lg active:scale-95"
-                            >
-                                <Plus className="h-5 w-5" />
-                                <span className="hidden sm:inline">Add Transaction</span>
-                            </button>
 
                             <button
                                 onClick={() => router.push(`/portfolio/optimize?account=${selectedAccount}`)}
@@ -556,15 +533,16 @@ function PortfolioContent() {
                     </div>
                 )}
 
+
                 {/* Holdings Table - MOVED UP - Only for Holdings */}
                 {activeTab === 'holdings' && (
                     <Card className="shadow-lg border-blue-50/50 dark:border-slate-800 dark:bg-slate-900">
                         <CardHeader className="py-4 px-6 border-b border-gray-50 dark:border-slate-800">
-                            <CardTitle className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <CardTitle className="flex flex-col md:flex-row md:items-center justify-start gap-6">
                                 <div className="flex items-center gap-2 text-slate-800 dark:text-slate-100">
                                     <Grid3X3 className="h-5 w-5 text-gray-400 dark:text-slate-500" />
-                                    <span>Strategic Holdings</span>
-                                    <div className="flex items-center gap-1.5">
+                                    <span className="font-bold">Strategic Holdings</span>
+                                    <div className="flex items-center gap-1.5 ml-2">
                                         <Badge className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800 hover:bg-emerald-50 text-[10px] px-2 py-0 h-5 font-black">
                                             #{stats.profit} Profit
                                         </Badge>
@@ -572,23 +550,29 @@ function PortfolioContent() {
                                             #{stats.loss} Loss
                                         </Badge>
                                     </div>
-                                    {selectedAccount !== 'all' && (
-                                        <span className="text-gray-400 dark:text-slate-500 ml-2 text-sm font-normal">
-                                            (Account: {accounts.find(a => a.id.toString() == selectedAccount)?.name}
-                                            {accounts.find(a => a.id.toString() == selectedAccount)?.account_type === 'PAPER' ? ' - Paper Trading' : ''})
-                                        </span>
-                                    )}
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-                                        <Input
-                                            placeholder="Search items..."
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="pl-9 h-9 w-64 text-xs font-medium bg-gray-50/50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-900 dark:text-slate-200 transition-all"
-                                        />
-                                    </div>
+
+                                <div className="flex flex-wrap items-center gap-4">
+                                    {selectedAccount !== 'all' && (
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-gray-400 dark:text-slate-500 text-sm font-normal">
+                                                (Account: {accounts.find(a => a.id.toString() == selectedAccount)?.name}
+                                                {accounts.find(a => a.id.toString() == selectedAccount)?.account_type === 'PAPER' ? ' - Paper Trading' : ''})
+                                            </span>
+                                            <button
+                                                onClick={() => {
+                                                    setDefaultModalAccount(selectedAccount);
+                                                    setPromoteTicker('');
+                                                    setIsModalOpen(true);
+                                                }}
+                                                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-[10px] font-bold transition-all shadow-sm active:scale-95"
+                                            >
+                                                <Plus className="h-3 w-3" />
+                                                Add Transaction
+                                            </button>
+                                        </div>
+                                    )}
+
                                     {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 dark:border-slate-100"></div>}
                                 </div>
                             </CardTitle>
@@ -604,7 +588,6 @@ function PortfolioContent() {
                                     <div className="space-y-8 p-6">
                                         {accounts.map(acc => {
                                             const accountItems = displayedItems.filter(item => item.account === acc.id);
-                                            if (accountItems.length === 0) return null;
 
                                             // Calculate Totals for Header
                                             const accTotalValue = accountItems.reduce((sum, item) => sum + Number(item.current_value), 0);
@@ -612,14 +595,27 @@ function PortfolioContent() {
 
                                             return (
                                                 <div key={acc.id} className="space-y-3">
-                                                    <div className="flex items-center gap-3 border-l-4 border-blue-500 pl-3">
-                                                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">{acc.name}</h3>
-                                                        <Badge variant="outline" className="text-xs font-mono">
-                                                            {formatRupees(accTotalValue)}
-                                                        </Badge>
-                                                        <span className={`text-xs font-bold ${accTotalGain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                            {accTotalGain >= 0 ? '+' : ''}{formatRupees(accTotalGain)}
-                                                        </span>
+                                                    <div className="flex flex-wrap items-center justify-between gap-3 border-l-4 border-blue-500 pl-3 pr-2">
+                                                        <div className="flex items-center gap-3">
+                                                            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">{acc.name}</h3>
+                                                            <Badge variant="outline" className="text-xs font-mono">
+                                                                {formatRupees(accTotalValue)}
+                                                            </Badge>
+                                                            <span className={`text-xs font-bold ${accTotalGain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                                {accTotalGain >= 0 ? '+' : ''}{formatRupees(accTotalGain)}
+                                                            </span>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => {
+                                                                setDefaultModalAccount(acc.id.toString());
+                                                                setPromoteTicker('');
+                                                                setIsModalOpen(true);
+                                                            }}
+                                                            className="flex items-center gap-1.5 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white px-3 py-1 rounded-md text-[10px] font-bold transition-all shadow-sm active:scale-95"
+                                                        >
+                                                            <Plus className="h-3 w-3" />
+                                                            Add Transaction
+                                                        </button>
                                                     </div>
                                                     <div className="rounded-xl border border-gray-100 dark:border-slate-800 overflow-hidden shadow-sm">
                                                         <PortfolioTable
@@ -987,18 +983,6 @@ function PortfolioContent() {
                         <CardHeader className="border-b border-gray-50 dark:border-slate-800 pb-2">
                             <CardTitle className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 dark:text-slate-500" />
-                                        <Input
-                                            placeholder="Quick filter..."
-                                            value={watchlistSearchQuery}
-                                            onChange={(e) => {
-                                                setWatchlistSearchQuery(e.target.value);
-                                                setWatchlistCurrentPage(1);
-                                            }}
-                                            className="pl-9 h-9 w-48 text-xs font-medium bg-gray-50/50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-900 dark:text-slate-100 transition-all"
-                                        />
-                                    </div>
                                     <button
                                         onClick={() => {
                                             setSelectedWatchlistItem(null);

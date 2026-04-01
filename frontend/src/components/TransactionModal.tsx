@@ -69,8 +69,8 @@ export default function TransactionModal({
                     });
                     if (res.data.username === 'ashmi') {
                         setIsAshmi(true);
-                        // Auto-select first account if not already selected
-                        if (accounts.length > 0 && !formData.account) {
+                        // Auto-select first account ONLY if not explicitly provided by props
+                        if (accounts.length > 0 && !formData.account && !defaultAccount) {
                             setFormData(prev => ({ ...prev, account: accounts[0].id.toString() }));
                         }
                     }
@@ -244,14 +244,14 @@ export default function TransactionModal({
                             <button
                                 key={type}
                                 onClick={() => setActiveTab(type)}
-                                className={`flex-1 py-3 px-4 min-w-[100px] text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === type
+                                className={`flex-1 py-3 px-4 min-w-[100px] text-sm font-medium transition-colors border-b-2 whitespace-nowrap tracking-tight ${activeTab === type
                                     ? type === 'BUY' || type === 'BUY_TO_COVER' ? 'border-green-500 text-green-600 dark:text-green-400 bg-green-50/50 dark:bg-green-900/20'
                                         : type === 'SELL' || type === 'SHORT_SELL' ? 'border-red-500 text-red-600 dark:text-red-400 bg-red-50/50 dark:bg-red-900/20'
                                             : 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20'
                                     : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800'
                                     }`}
                             >
-                                {type === 'BONUS' ? 'BONUS SHARE' : type === 'DIVIDEND' ? 'CASH DIVIDEND' : type === 'SHORT_SELL' ? 'SHORT SELL' : type === 'BUY_TO_COVER' ? 'BUY TO COVER' : type}
+                                {type === 'BONUS' ? 'Bonus share' : type === 'DIVIDEND' ? 'Cash dividend' : type === 'SHORT_SELL' ? 'Short sell' : type === 'BUY_TO_COVER' ? 'Buy to cover' : type.charAt(0) + type.slice(1).toLowerCase()}
                             </button>
                         ))
                     })()}
@@ -263,7 +263,7 @@ export default function TransactionModal({
                     <div className="space-y-4">
                         {accounts.length > 0 ? (
                             <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
-                                <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 block">Portfolio Account</label>
+                                <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 tracking-tight mb-1.5 block">Portfolio account</label>
                                 <Select
                                     value={formData.account ? formData.account.toString() : ""}
                                     onValueChange={(value) => setFormData({ ...formData, account: value })}
@@ -292,14 +292,14 @@ export default function TransactionModal({
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Ticker Symbol</label>
+                                <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 tracking-tight">Ticker symbol</label>
                                 <CompanySelect
                                     value={formData.ticker}
                                     onChange={(val) => setFormData({ ...formData, ticker: val })}
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Transaction Date</label>
+                                <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 tracking-tight">Transaction date</label>
                                 <div className="relative">
                                     <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                                     <input
@@ -315,7 +315,7 @@ export default function TransactionModal({
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Quantity (Units)</label>
+                                <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 tracking-tight">Quantity (Units)</label>
                                 <input
                                     type="number"
                                     required
@@ -327,7 +327,7 @@ export default function TransactionModal({
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                                <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 tracking-tight">
                                     {activeTab === 'BONUS' ? 'Paid Up Value' : activeTab === 'DIVIDEND' ? 'Amount (Rs)' : 'Rate (Rs/Share)'}
                                 </label>
                                 <div className="relative">
@@ -349,7 +349,7 @@ export default function TransactionModal({
                     {/* Reason Dropdown (Only for SELL) */}
                     {activeTab === 'SELL' && (
                         <div className="space-y-2">
-                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Reason for Selling</label>
+                            <label className="text-xs font-semibold text-gray-500 tracking-tight">Reason for selling</label>
                             <Select
                                 value={formData.reason}
                                 onValueChange={(value) => setFormData({ ...formData, reason: value })}
@@ -375,7 +375,7 @@ export default function TransactionModal({
                         <div className="mt-4 p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-100 dark:border-slate-700">
                             <div className="flex items-center gap-2 mb-3 text-gray-700 dark:text-slate-200 font-medium text-sm">
                                 <Calculator className="h-4 w-4" />
-                                <span className="text-xs uppercase tracking-wider font-semibold">Estimated Breakdown</span>
+                                <span className="text-xs tracking-tight font-bold">Estimated breakdown</span>
                             </div>
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between text-gray-500 dark:text-slate-400">

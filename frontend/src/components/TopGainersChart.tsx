@@ -68,7 +68,7 @@ export const TopGainersChart = ({ gainers, height = 300, metricTitle = 'One-Mont
     if (loading) {
         return (
             <div className="w-full flex items-center justify-center bg-slate-50/10 rounded-2xl animate-pulse" style={{ height }}>
-                <span className="text-[10px] uppercase font-black tracking-widest text-slate-400">Loading Performance Data...</span>
+                <span className="text-[10px] font-bold tracking-tight text-slate-400">Loading performance data...</span>
             </div>
         );
     }
@@ -183,7 +183,7 @@ export const TopGainersChart = ({ gainers, height = 300, metricTitle = 'One-Mont
                 const dateObj = new Date(params[0].axisValue);
                 const dateDisplay = dateObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 
-                let res = `<div style="font-weight: 900; margin-bottom: 10px; font-size: 13px; color: ${isDark ? '#f8fafc' : '#0f172a'}; border-bottom: 1px solid ${isDark ? '#334155' : '#f1f5f9'}; padding-bottom: 6px;">${dateDisplay}</div>`;
+                let res = `<div style="font-weight: 700; margin-bottom: 10px; font-size: 13px; color: ${isDark ? '#f8fafc' : '#0f172a'}; border-bottom: 1px solid ${isDark ? '#334155' : '#f1f5f9'}; padding-bottom: 6px;">${dateDisplay}</div>`;
 
                 // Sort params by value descending
                 const sortedParams = [...params].sort((a, b) => b.value - a.value);
@@ -209,7 +209,7 @@ export const TopGainersChart = ({ gainers, height = 300, metricTitle = 'One-Mont
                                     <span style="width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff; background: ${item.color}; box-shadow: 0 0 4px rgba(0,0,0,0.1);"></span>
                                     ${item.seriesName}
                                 </span>
-                                <span style="font-weight: 900; font-family: 'JetBrains Mono', monospace; font-size: 11px;">
+                                <span style="font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 11px;">
                                     Rs. ${Number(currentValue).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                                 </span>
                             </div>

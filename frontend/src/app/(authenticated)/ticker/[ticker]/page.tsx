@@ -675,16 +675,16 @@ export default function StockDetailPage() {
                             </div>
 
                             <div className="animate-in fade-in zoom-in-95 duration-700">
-                                <TabsContent value="technical" className="mt-0 space-y-8">
+                                <TabsContent value="technical" forceMount className="mt-0 space-y-8 data-[state=inactive]:hidden">
                                     <TechnicalAnalysis symbol={ticker} data={data} history={history} />
                                 </TabsContent>
 
 
-                                <TabsContent value="signals" className="mt-0">
+                                <TabsContent value="signals" forceMount className="mt-0 data-[state=inactive]:hidden">
                                     <TickerSignals symbol={ticker} currentPrice={data.price.close} intelligence={intelligence} fundamental={data.fundamental} />
                                 </TabsContent>
 
-                                <TabsContent value="fundamentals" className="mt-0 space-y-8">
+                                <TabsContent value="fundamentals" forceMount className="mt-0 space-y-8 data-[state=inactive]:hidden">
                                     {/* Fundamental Benchmarks */}
                                     <div className="glass-card-light rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
                                         <div className="flex items-center gap-3 mb-10">

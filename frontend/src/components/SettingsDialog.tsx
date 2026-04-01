@@ -417,7 +417,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                 ) : (
                                     <>
                                         <div className="mb-8">
-                                            <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">General Settings</h2>
+                                            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">General settings</h2>
                                             <p className="text-slate-500 dark:text-slate-400 mt-1">Update your personal information and profile picture.</p>
                                         </div>
 
@@ -461,8 +461,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div className="space-y-2">
-                                                    <label className="text-xss uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 ml-1">
-                                                        First Name
+                                                    <label className="font-semibold tracking-tight text-slate-500 dark:text-slate-400 ml-1">
+                                                        First name
                                                     </label>
                                                     <Input
                                                         value={user?.first_name || ''}
@@ -472,8 +472,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <label className="text-xss uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 ml-1">
-                                                        Last Name
+                                                    <label className="text-xss tracking-tight font-semibold text-slate-500 dark:text-slate-400 ml-1">
+                                                        Last name
                                                     </label>
                                                     <Input
                                                         value={user?.last_name || ''}
@@ -483,7 +483,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <label className="text-xss uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 ml-1">
+                                                    <label className="text-xss tracking-tight font-semibold text-slate-500 dark:text-slate-400 ml-1">
                                                         Nickname
                                                     </label>
                                                     <Input
@@ -494,7 +494,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <label className="text-xss uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 ml-1">
+                                                    <label className="text-xss tracking-tight font-semibold text-slate-500 dark:text-slate-400 ml-1">
                                                         Phone
                                                     </label>
                                                     <Input
@@ -507,7 +507,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                             </div>
 
                                             <div className="space-y-2 pt-2">
-                                                <label className="text-xss uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 ml-1">Email Address</label>
+                                                <label className="text-xss tracking-tight font-semibold text-slate-500 dark:text-slate-400 ml-1">Email address</label>
                                                 <Input
                                                     value={user?.email || ''}
                                                     onChange={(e) => setUser(prev => prev ? { ...prev, email: e.target.value } : null)}
@@ -517,7 +517,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-xss uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 ml-1">Username</label>
+                                                <label className="text-xss tracking-tight font-semibold text-slate-500 dark:text-slate-400 ml-1">Username</label>
                                                 <Input value={user?.username || ''} disabled className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium cursor-not-allowed border-slate-200 dark:border-slate-700" />
                                                 <p className="text-xs text-slate-400 dark:text-slate-500 ml-1">Username cannot be changed.</p>
                                             </div>
@@ -535,7 +535,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                             {/* Appearance Tab */}
                             <TabsContent value="appearance" className="focus-visible:outline-none mt-0 max-w-4xl mx-auto animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
                                 <div className="mb-8">
-                                    <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Appearance</h2>
+                                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Appearance</h2>
                                     <p className="text-slate-500 dark:text-slate-400 mt-1">Customize the look and feel of the application.</p>
                                 </div>
 
@@ -578,7 +578,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                             {/* Security Tab */}
                             <TabsContent value="security" className="focus-visible:outline-none mt-0 max-w-4xl mx-auto animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
                                 <div className="mb-8">
-                                    <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Security</h2>
+                                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Security</h2>
                                     <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your password, 2FA, and active sessions.</p>
                                 </div>
 

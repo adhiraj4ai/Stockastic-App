@@ -56,8 +56,8 @@ function CustomizedContent(props: any) {
                     fill={textColor}
                     textAnchor="middle"
                     dominantBaseline="central"
-                    className="font-black"
-                    style={{ fontSize: Math.min(14, width / name.length * 1.3), fontWeight: 900 }}
+                    className="font-bold"
+                    style={{ fontSize: Math.min(14, width / name.length * 1.3), fontWeight: 700 }}
                 >
                     {name}
                 </text>
@@ -69,7 +69,7 @@ function CustomizedContent(props: any) {
                     fill={textColor}
                     textAnchor="middle"
                     dominantBaseline="central"
-                    style={{ fontSize: 10, fontWeight: 800, opacity: 0.9 }}
+                    style={{ fontSize: 10, fontWeight: 700, opacity: 0.9 }}
                 >
                     {isPositive ? '+' : ''}{pnlPercent.toFixed(1)}%
                 </text>
@@ -87,13 +87,13 @@ function CustomTooltip({ active, payload }: any) {
     return (
         <div className="bg-gray-900/95 dark:bg-slate-950/95 text-white p-3 rounded-xl shadow-2xl border border-gray-700/50 dark:border-slate-700/50 backdrop-blur-sm min-w-[180px]">
             <div className="flex items-center justify-between border-b border-gray-700 dark:border-slate-700 pb-2 mb-2">
-                <span className="font-black text-sm">{data.name}</span>
-                <span className="text-[9px] font-bold text-slate-400 uppercase">{data.sector}</span>
+                <span className="font-bold text-sm">{data.name}</span>
+                <span className="text-[9px] font-bold text-slate-400">{data.sector}</span>
             </div>
             <div className="space-y-1.5 text-xs">
                 <div className="flex justify-between">
                     <span className="text-slate-400">Value</span>
-                    <span className="font-black">{formatRupees(data.value)}</span>
+                    <span className="font-bold">{formatRupees(data.value)}</span>
                 </div>
                 <div className="flex justify-between">
                     <span className="text-slate-400">Weight</span>
@@ -101,13 +101,13 @@ function CustomTooltip({ active, payload }: any) {
                 </div>
                 <div className="flex justify-between">
                     <span className="text-slate-400">P&L</span>
-                    <span className={`font-black ${data.pnlPercent >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    <span className={`font-bold ${data.pnlPercent >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                         {data.pnlPercent >= 0 ? '+' : ''}{data.pnlPercent.toFixed(2)}%
                     </span>
                 </div>
                 <div className="flex justify-between">
                     <span className="text-slate-400">Profit</span>
-                    <span className={`font-black ${data.pnlAmount >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    <span className={`font-bold ${data.pnlAmount >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                         {formatRupees(data.pnlAmount)}
                     </span>
                 </div>
@@ -159,7 +159,7 @@ export function PortfolioTreemap({ items, totalValue, onItemClick }: PortfolioTr
             </ResponsiveContainer>
 
             {/* Legend */}
-            <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 px-2">
+            <div className="flex items-center justify-between text-[9px] font-bold tracking-tight text-slate-400 dark:text-slate-500 px-2">
                 <span>Bearish</span>
                 <div className="flex gap-1">
                     <div className="h-2.5 w-6 rounded-sm bg-red-600" />

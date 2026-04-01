@@ -121,7 +121,7 @@ export function AccountSettingsDialog({
                     <div className="space-y-6 py-4">
                         {/* Account Summary Card */}
                         <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-100 dark:border-slate-700 space-y-3">
-                            <h4 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Account Summary</h4>
+                            <h4 className="text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight">Account summary</h4>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <span className="text-xs text-slate-500 block">Cash Balance</span>
@@ -135,8 +135,8 @@ export function AccountSettingsDialog({
                                 </div>
                                 <div className="col-span-2 pt-2 border-t border-slate-200 dark:border-slate-700">
                                     <div className="flex justify-between items-end">
-                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Total Account Value</span>
-                                        <span className="text-xl font-black text-slate-900 dark:text-slate-100">
+                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Total account value</span>
+                                        <span className="text-xl font-bold text-slate-900 dark:text-slate-100">
                                             {formatRupees(totalValue)}
                                         </span>
                                     </div>

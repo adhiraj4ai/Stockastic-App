@@ -70,8 +70,8 @@ function ThoughtContainer({ rawContent, role, isFinished }: { rawContent: string
                 className="flex items-center gap-2 cursor-pointer text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors select-none"
             >
                 {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                <div className="font-mono text-[10px] uppercase tracking-wider font-bold">
-                    Process & Reasoning
+                <div className="font-sans text-[10px] font-bold tracking-tight">
+                    Process & reasoning
                 </div>
             </div>
             {isOpen && (
@@ -82,7 +82,7 @@ function ThoughtContainer({ rawContent, role, isFinished }: { rawContent: string
                     <div className="flex flex-col gap-4 text-[13px] font-mono text-slate-600 dark:text-slate-400 [&_div.prose]:font-mono [&_div.prose]:text-[13px] [&_div.prose]:max-w-none [&_pre]:!text-[11px] [&_pre]:!bg-slate-900 [&_pre]:!p-2 [&_pre]:!rounded-md [&_pre]:!border [&_pre]:!border-slate-200 dark:[&_pre]:!border-slate-800">
                         {thoughts.map((item, idx) => (
                             <div key={idx} className="space-y-1">
-                                <div className="font-black text-slate-400 dark:text-slate-500 uppercase text-[9px] tracking-widest">{item.header}</div>
+                                <div className="font-bold text-slate-400 dark:text-slate-500 text-[9px] tracking-tight">{item.header}</div>
                                 <MessageRenderer content={item.content} role={role} isFinished={isFinished} />
                             </div>
                         ))}
@@ -253,7 +253,7 @@ function MarkdownRenderer({ content }: { content: string }) {
                     },
                     table({ children }) { return <div className="overflow-x-auto my-1.5 border rounded-lg border-slate-200 dark:border-slate-800 max-w-xl mx-auto backdrop-blur-sm bg-white/50 dark:bg-slate-900/50"><table className="w-full text-left border-collapse">{children}</table></div>; },
                     thead({ children }) { return <thead className="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-100 dark:border-slate-800">{children}</thead>; },
-                    th({ children }) { return <th className="px-4 py-2 font-black text-slate-700 dark:text-slate-400 text-xs uppercase tracking-wider">{children}</th>; },
+                    th({ children }) { return <th className="px-4 py-2 font-semibold text-slate-700 dark:text-slate-400 text-xs tracking-tight">{children}</th>; },
                     td({ children }) { return <td className="px-4 py-2 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400">{children}</td>; },
                     p({ children }) { return <p className="mb-2 last:mb-0 text-slate-700 dark:text-slate-300 leading-relaxed font-medium">{children}</p>; },
                     img({ node, ...props }: any) { return <div className="my-4 flex justify-center"><img className="rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm max-w-md w-full object-cover" {...props} /></div>; }
@@ -374,7 +374,7 @@ export function ChatInterface({ hideHeader = false, messages = [], onSendMessage
                         const isActive = msg.id === activeMessageId;
                         return (
                             <div key={msg.id} className="group flex items-center gap-4 pointer-events-auto">
-                                <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0 bg-background/80 backdrop-blur-md text-[10px] py-1.5 px-3 rounded-full border border-border/50 text-foreground/70 font-mono tracking-widest uppercase shadow-2xl pointer-events-none truncate max-w-[180px]">
+                                <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0 bg-background/80 backdrop-blur-md text-[10px] py-1.5 px-3 rounded-full border border-border/50 text-foreground/70 font-medium tracking-tight shadow-2xl pointer-events-none truncate max-w-[180px]">
                                     {msg.content}
                                 </div>
                                 <button
@@ -396,8 +396,8 @@ export function ChatInterface({ hideHeader = false, messages = [], onSendMessage
                     <header className="px-8 py-5 flex items-center justify-between shrink-0 backdrop-blur-sm bg-background/5 border-b border-border/10">
                         <div className="flex items-center gap-3">
                             <div className="w-2 h-2 rounded-full bg-primary horizon-glow" />
-                            <span className="text-xs font-black tracking-[0.2em] uppercase text-foreground/40 font-mono">
-                                Stockastic Horizon • <span className="text-primary italic">Gemini 2.0</span>
+                            <span className="text-xs font-semibold tracking-tight text-foreground/40">
+                                Stockastic horizon • <span className="text-primary italic">Gemini 2.0</span>
                             </span>
                         </div>
                     </header>
@@ -427,7 +427,7 @@ export function ChatInterface({ hideHeader = false, messages = [], onSendMessage
                                             onClick={() => onSendMessage(action)}
                                             className="px-6 py-4 rounded-2xl bg-foreground/5 hover:bg-foreground/10 border border-border/10 text-sm font-bold text-foreground/60 transition-all hover:scale-[1.02] active:scale-[0.98] text-left group"
                                         >
-                                            <span className="block text-[10px] text-primary uppercase tracking-widest mb-1 opacity-50 group-hover:opacity-100 transition-opacity">Insight</span>
+                                            <span className="block text-[10px] text-primary tracking-tight mb-1 opacity-50 group-hover:opacity-100 transition-opacity">Insight</span>
                                             {action}
                                         </button>
                                     ))}
@@ -469,9 +469,9 @@ export function ChatInterface({ hideHeader = false, messages = [], onSendMessage
                                                                         <div className="space-y-4">
                                                                             <MessageRenderer content={cleanContent} role={msg.role} isFinished={isFinished} />
                                                                             {!isFinished && (
-                                                                                <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-[0.2em] text-primary/60">
+                                                                                <div className="flex items-center gap-3 text-xs font-medium tracking-tight text-primary/60">
                                                                                     <div className="w-1.5 h-1.5 rounded-full bg-primary horizon-glow" />
-                                                                                    Synthesizing Data...
+                                                                                    Synthesizing data...
                                                                                 </div>
                                                                             )}
                                                                         </div>
@@ -485,9 +485,9 @@ export function ChatInterface({ hideHeader = false, messages = [], onSendMessage
                                         })}
 
                                         {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
-                                            <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-[0.2em] text-primary/60">
+                                            <div className="flex items-center gap-3 text-xs font-medium tracking-tight text-primary/60">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-primary horizon-glow" />
-                                                Aligning Horizon...
+                                                Aligning horizon...
                                             </div>
                                         )}
                                     </AnimatePresence>

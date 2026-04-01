@@ -69,9 +69,9 @@ export function ChatHistorySidebar({
             {/* History List */}
             <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1 custom-scrollbar">
                 <div className="px-4 py-2">
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 mb-4 px-1 flex items-center gap-2">
+                    <h4 className="text-[10px] font-medium text-muted-foreground/40 mb-4 px-1 flex items-center gap-2 tracking-tight">
                         <Clock size={10} />
-                        Recent History
+                        Recent history
                     </h4>
                 </div>
 
@@ -135,14 +135,14 @@ export function ChatHistorySidebar({
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="horizon-glass border-border/30 rounded-2xl p-1 z-[100] shadow-2xl">
                                                 <DropdownMenuItem
-                                                    className="rounded-xl p-3 font-bold text-[11px] uppercase tracking-widest text-muted-foreground/70"
+                                                    className="rounded-xl p-3 font-semibold text-[11px] tracking-tight text-muted-foreground/70"
                                                     onSelect={() => { setEditingId(item.id); setEditValue(item.title); }}
                                                 >
                                                     <Edit2 size={12} className="mr-3" />
                                                     <span>Rename</span>
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
-                                                    className="rounded-xl p-3 font-bold text-[11px] uppercase tracking-widest text-rose-500 focus:text-rose-600 focus:bg-rose-50/10"
+                                                    className="rounded-xl p-3 font-semibold text-[11px] tracking-tight text-rose-500 focus:text-rose-600 focus:bg-rose-50/10"
                                                     onSelect={() => onDeleteChat?.(item.id)}
                                                 >
                                                     <Trash2 size={12} className="mr-3" />
@@ -161,7 +161,7 @@ export function ChatHistorySidebar({
             {/* Footer info */}
             <div className="p-6 border-t border-border/5 bg-foreground/[0.02]">
                 <div className="flex items-center justify-between px-2">
-                    <span className="text-[10px] font-black text-muted-foreground/30 uppercase tracking-[0.2em] font-mono">Horizon Stable</span>
+                    <span className="text-[10px] font-medium text-muted-foreground/30 tracking-tight">Horizon stable</span>
                     <div className="flex gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-primary/40 horizon-glow" />
                     </div>

@@ -89,10 +89,10 @@ export const SocialPostCard = ({ type, data }: SocialPostCardProps) => {
             <div className="space-y-6">
                 <div className="flex justify-between items-start">
                     <div className="space-y-1">
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Market Pulse</span>
-                        <h3 className="text-3xl font-black text-white tracking-tighter flex items-baseline gap-2">
+                        <span className="text-[10px] font-medium text-slate-400 tracking-tight">Market pulse</span>
+                        <h3 className="text-3xl font-bold text-white tracking-tighter flex items-baseline gap-2">
                             {total_points.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            <span className={`text-sm font-bold ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            <span className={`text-sm font-semibold ${isPositive ? 'text-emerald-400' : 'text-rose-400'} tracking-tight`}>
                                 {isPositive ? '+' : ''}{percent_change.toFixed(2)}%
                             </span>
                         </h3>
@@ -104,17 +104,17 @@ export const SocialPostCard = ({ type, data }: SocialPostCardProps) => {
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1">Turnover</span>
-                        <div className="text-xl font-black text-white">Rs. {(total_turnover / 10000000).toFixed(2)}<span className="text-xs ml-1 opacity-60">Cr</span></div>
+                        <span className="text-[10px] font-medium text-slate-500 block mb-1 tracking-tight">Turnover</span>
+                        <div className="text-xl font-bold text-white tracking-tight">Rs. {(total_turnover / 10000000).toFixed(2)}<span className="text-xs ml-1 opacity-60">Cr</span></div>
                     </div>
                     <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1">Sentiment</span>
-                        <div className="text-xl font-black text-white">{(advancers / (advancers + decliners || 1)).toFixed(2)}<span className="text-xs ml-1 opacity-60">Ratio</span></div>
+                        <span className="text-[10px] font-medium text-slate-500 block mb-1 tracking-tight">Sentiment</span>
+                        <div className="text-xl font-bold text-white tracking-tight">{(advancers / (advancers + decliners || 1)).toFixed(2)}<span className="text-xs ml-1 opacity-60">Ratio</span></div>
                     </div>
                 </div>
 
                 <div className="space-y-2">
-                    <div className="flex justify-between text-[10px] font-black tracking-widest uppercase">
+                    <div className="flex justify-between text-[10px] font-semibold tracking-tight">
                         <span className="text-emerald-400">Advancers ({advancers})</span>
                         <span className="text-rose-400">Decliners ({decliners})</span>
                     </div>
@@ -140,8 +140,8 @@ export const SocialPostCard = ({ type, data }: SocialPostCardProps) => {
                     {icon}
                 </div>
                 <div>
-                    <h3 className="text-xl font-black text-white tracking-tight">{title}</h3>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{subtitle}</p>
+                    <h3 className="text-xl font-bold text-white tracking-tight">{title}</h3>
+                    <p className="text-[10px] text-slate-500 font-medium tracking-tight">{subtitle}</p>
                 </div>
             </div>
 
@@ -155,7 +155,7 @@ export const SocialPostCard = ({ type, data }: SocialPostCardProps) => {
                         className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group"
                     >
                         <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-xl bg-slate-900 flex items-center justify-center font-black text-xs border border-white/5 group-hover:border-blue-500/50 transition-colors">
+                            <div className="h-10 w-10 rounded-xl bg-slate-900 flex items-center justify-center font-bold text-xs border border-white/5 group-hover:border-blue-500/50 transition-colors tracking-tight">
                                 {stock.ticker}
                             </div>
                             <div className="flex flex-col">
@@ -164,7 +164,7 @@ export const SocialPostCard = ({ type, data }: SocialPostCardProps) => {
                             </div>
                         </div>
                         <div className="text-right">
-                            <div className={`text-sm font-black ${stock[valueKey] >= 0 ? 'text-emerald-400' : 'text-rose-400'} flex items-center justify-end gap-1`}>
+                            <div className={`text-sm font-bold ${stock[valueKey] >= 0 ? 'text-emerald-400' : 'text-rose-400'} flex items-center justify-end gap-1 tracking-tight`}>
                                 {isPercentage && (stock[valueKey] >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />)}
                                 {isPercentage ? `${stock[valueKey].toFixed(2)}%` : `Rs. ${(stock[valueKey] / 1000000).toFixed(1)}M`}
                             </div>
@@ -183,22 +183,22 @@ export const SocialPostCard = ({ type, data }: SocialPostCardProps) => {
                     <BarChart3 size={20} />
                 </div>
                 <div>
-                    <h3 className="text-xl font-black text-white tracking-tight">Sector Heat Map</h3>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Macro Market Movement</p>
+                    <h3 className="text-xl font-bold text-white tracking-tight">Sector heat map</h3>
+                    <p className="text-[10px] text-slate-500 font-medium tracking-tight">Macro market movement</p>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 gap-3">
                 {data.sector_summary.slice(0, 6).map((sector: any, i: number) => (
                     <div key={sector.name} className="flex items-center gap-4">
-                        <div className="w-24 text-[10px] font-black uppercase text-slate-400 truncate">{sector.name}</div>
+                        <div className="w-24 text-[10px] font-bold text-slate-400 truncate tracking-tight">{sector.name}</div>
                         <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden flex border border-white/5">
                             <div
                                 className={`h-full rounded-full ${sector.change >= 0 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.3)]'}`}
                                 style={{ width: `${Math.min(100, Math.abs(sector.change) * 20)}%`, marginLeft: sector.change < 0 ? 'auto' : '0' }}
                             />
                         </div>
-                        <div className={`w-12 text-[10px] font-bold text-right ${sector.change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        <div className={`w-12 text-[10px] font-semibold text-right ${sector.change >= 0 ? 'text-emerald-400' : 'text-rose-400'} tracking-tight`}>
                             {sector.change >= 0 ? '+' : ''}{sector.change.toFixed(2)}%
                         </div>
                     </div>
@@ -235,7 +235,7 @@ export const SocialPostCard = ({ type, data }: SocialPostCardProps) => {
                         />
                     </div>
                     <div className="text-right">
-                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                        <div className="text-[10px] font-medium text-slate-500 tracking-tight">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
                         <div className="text-[8px] font-mono text-slate-600">SNAPSHOT ID: {Math.random().toString(36).substring(7).toUpperCase()}</div>
                     </div>
                 </div>
@@ -253,8 +253,8 @@ export const SocialPostCard = ({ type, data }: SocialPostCardProps) => {
                 <div className="relative z-10 pt-6 border-t border-white/5 flex items-center justify-between mt-auto">
                     <div className="flex items-center gap-4">
                         <div className="flex flex-col">
-                            <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Platform</span>
-                            <span className="text-[10px] font-black text-white">stockastic.market</span>
+                            <span className="text-[8px] font-medium text-slate-500 tracking-tight">Platform</span>
+                            <span className="text-[10px] font-bold text-white tracking-tight">stockastic.market</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -271,19 +271,19 @@ export const SocialPostCard = ({ type, data }: SocialPostCardProps) => {
             <div className="grid grid-cols-2 gap-4">
                 <Button
                     variant="outline"
-                    className="rounded-xl border-white/5 bg-white/5 hover:bg-white/10 text-white gap-2 h-12"
+                    className="rounded-xl border-white/5 bg-white/5 hover:bg-white/10 text-white gap-2 h-12 font-semibold tracking-tight"
                     onClick={copyToClipboard}
                 >
                     <Copy size={16} />
-                    Copy Text
+                    Copy text
                 </Button>
                 <Button
                     variant="default"
-                    className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white gap-2 h-12 shadow-lg shadow-blue-500/20"
+                    className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white gap-2 h-12 shadow-lg shadow-blue-500/20 font-semibold tracking-tight"
                     onClick={handleSaveImage}
                 >
                     <Download size={16} />
-                    Save Image
+                    Save image
                 </Button>
             </div>
         </div>

@@ -18,11 +18,11 @@ export function FundamentalCore({ metrics }: FundamentalCoreProps) {
     return (
         <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/30 dark:bg-slate-800/20">
-                <CardTitle className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                <CardTitle className="text-[10px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-2 tracking-tight">
                     <Activity size={14} className="text-blue-500" />
-                    Fundamental DNA & Ratios
+                    Fundamental DNA & ratios
                 </CardTitle>
-                <div className="text-[9px] font-bold text-slate-300 tracking-widest">Q4 2025</div>
+                <div className="text-[9px] font-medium text-slate-300 tracking-tight">Q4 2025</div>
             </div>
             <CardContent className="p-0">
                 <div className="grid grid-cols-2 md:grid-cols-3 divide-x divide-y divide-slate-100 dark:divide-slate-800">
@@ -32,14 +32,14 @@ export function FundamentalCore({ metrics }: FundamentalCoreProps) {
                                 <div className={cn("p-2 rounded-lg bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 group-hover:scale-110 transition-transform", m.color)}>
                                     <m.icon size={16} />
                                 </div>
-                                <div className="text-[9px] font-bold text-slate-300">Ref: 2025.Q4</div>
+                                <div className="text-[9px] font-medium text-slate-300 tracking-tight">Ref: 2025.Q4</div>
                             </div>
                             <div className="space-y-0.5">
-                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">{m.label}</p>
-                                <p className="text-xl font-bold text-slate-900 dark:text-slate-100 tabular-nums">{m.value}</p>
+                                <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 tracking-tight">{m.label}</p>
+                                <p className="text-xl font-bold text-slate-900 dark:text-slate-100 tabular-nums tracking-tight">{m.value}</p>
                             </div>
                             {m.description && (
-                                <p className="text-[9px] font-medium text-slate-400 leading-tight italic">
+                                <p className="text-[9px] font-normal text-slate-400 leading-tight italic tracking-tight">
                                     {m.description}
                                 </p>
                             )}

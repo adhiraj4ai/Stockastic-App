@@ -139,7 +139,7 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
             <div className="bg-gray-50/50 dark:bg-slate-800/30 border-b dark:border-slate-800 px-8 py-6">
                 <div className="flex items-center mb-6">
                     <div className="flex items-center gap-3">
-                        <h3 className="text-xs font-black uppercase tracking-wider text-gray-700 dark:text-slate-300">Company Information</h3>
+                        <h3 className="text-xs font-bold text-gray-700 dark:text-slate-300 tracking-tight">Company information</h3>
                         {editingMetadata ? (
                             <div className="flex items-center gap-1">
                                 <Button
@@ -174,7 +174,7 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-y-6">
                     <div className="flex flex-col gap-1 min-w-[140px]">
-                        <Label className="text-xs font-black uppercase tracking-wider text-gray-400 dark:text-slate-500">Listed Date</Label>
+                        <Label className="text-xs font-bold text-gray-400 dark:text-slate-500 tracking-tight">Listed date</Label>
                         {editingMetadata ? (
                             <Input
                                 type="date"
@@ -187,7 +187,7 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                         )}
                     </div>
                     <div className="flex flex-col gap-1 min-w-[160px]">
-                        <Label className="text-xs font-black uppercase tracking-wider text-gray-400 dark:text-slate-500">Market Capitalization</Label>
+                        <Label className="text-xs font-bold text-gray-400 dark:text-slate-500 tracking-tight">Market capitalization</Label>
                         {editingMetadata ? (
                             <Input
                                 type="number"
@@ -201,7 +201,7 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                         )}
                     </div>
                     <div className="flex flex-col gap-1 min-w-[160px]">
-                        <Label className="text-xs font-black uppercase tracking-wider text-gray-400 dark:text-slate-500">Free Float Market Capitalization</Label>
+                        <Label className="text-xs font-bold text-gray-400 dark:text-slate-500 tracking-tight">Free float market capitalization</Label>
                         {editingMetadata ? (
                             <Input
                                 type="number"
@@ -215,7 +215,7 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                         )}
                     </div>
                     <div className="flex flex-col gap-1 min-w-[160px]">
-                        <Label className="text-xs font-black uppercase tracking-wider text-gray-400 dark:text-slate-500">Shares Outstanding</Label>
+                        <Label className="text-xs font-bold text-gray-400 dark:text-slate-500 tracking-tight">Shares outstanding</Label>
                         {editingMetadata ? (
                             <Input
                                 type="number"
@@ -229,7 +229,7 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                         )}
                     </div>
                     <div className="flex flex-col gap-1 min-w-[160px]">
-                        <Label className="text-xs font-black uppercase tracking-wider text-gray-400 dark:text-slate-500">Public Shares</Label>
+                        <Label className="text-xs font-bold text-gray-400 dark:text-slate-500 tracking-tight">Public shares</Label>
                         {editingMetadata ? (
                             <Input
                                 type="number"
@@ -252,7 +252,7 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                     <div className="space-y-6">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="w-1 h-5 bg-blue-500 rounded-full" />
-                            <h3 className="text-xs font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">Valuation</h3>
+                            <h3 className="text-xs font-bold text-gray-900 dark:text-slate-100 tracking-tight">Valuation</h3>
                         </div>
                         <div className="space-y-4">
                             {[
@@ -277,7 +277,7 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                     <div className="space-y-6">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="w-1 h-5 bg-green-500 rounded-full" />
-                            <h3 className="text-xs font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">Return</h3>
+                            <h3 className="text-xs font-bold text-gray-900 dark:text-slate-100 tracking-tight">Return</h3>
                         </div>
                         <div className="space-y-4">
                             {[
@@ -300,7 +300,7 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                     <div className="space-y-6">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="w-1 h-5 bg-purple-500 rounded-full" />
-                            <h3 className="text-xs font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">Growth & Performance</h3>
+                            <h3 className="text-xs font-bold text-gray-900 dark:text-slate-100 tracking-tight">Growth & performance</h3>
                         </div>
                         <div className="space-y-4">
                             <div className="flex justify-between items-center group py-0.5">
@@ -342,7 +342,7 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                     <div className="space-y-6">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="w-1 h-5 bg-gray-400 dark:bg-slate-600 rounded-full" />
-                            <h3 className="text-xs font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">Insights</h3>
+                            <h3 className="text-xs font-bold text-gray-900 dark:text-slate-100 tracking-tight">Insights</h3>
                         </div>
                         <div className="bg-gray-50/50 dark:bg-slate-800/30 rounded-xl p-5 border border-dashed border-gray-200 dark:border-slate-700">
                             <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed font-medium mb-4">
