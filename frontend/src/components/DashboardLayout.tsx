@@ -65,8 +65,15 @@ const navItems = [
         ]
     },
     { name: 'Financials', href: '/financials', icon: FileText },
-    { name: 'Strategies', href: '/strategies', icon: Lightbulb },
-    { name: 'Signal Intel', href: '/signals', icon: Layers },
+    {
+        name: 'Signals & Strategies',
+        icon: Layers,
+        subItems: [
+            { name: 'Intel Hub', href: '/signals', icon: Radar },
+            { name: 'Strategies', href: '/strategies', icon: Lightbulb },
+            { name: 'Track Record', href: '/signals/track-record', icon: History },
+        ]
+    },
     // { name: 'Forecasts', href: '/forecasts', icon: Brain },
     { name: 'Pipeline', href: '/pipeline', icon: Settings },
 ];
@@ -309,9 +316,8 @@ function DashboardContent({
                                                                 item.name === 'Finfolio' ? 'text-emerald-500 dark:text-emerald-400' :
                                                                     item.name === 'Accumulation' ? 'text-orange-500 dark:text-orange-400' :
                                                                         item.name === 'Financials' ? 'text-cyan-500 dark:text-cyan-400' :
-                                                                            item.name === 'Strategies' ? 'text-yellow-500 dark:text-yellow-400' :
-                                                                                item.name === 'Signal Intel' ? 'text-pink-500 dark:text-pink-400' :
-                                                                                    item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
+                                                                            item.name === 'Signals & Strategies' ? 'text-pink-500 dark:text-pink-400' :
+                                                                                item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
                                                                                         'text-slate-900/40 dark:text-slate-500/60'
                                                 } />
                                             </div>
@@ -337,9 +343,8 @@ function DashboardContent({
                                                         item.name === 'Chat' ? 'text-purple-500 dark:text-purple-400' :
                                                             item.name === 'Ticker' ? 'text-green-500 dark:text-green-400' :
                                                                 item.name === 'Financials' ? 'text-cyan-500 dark:text-cyan-400' :
-                                                                    item.name === 'Strategies' ? 'text-yellow-500 dark:text-yellow-400' :
-                                                                        item.name === 'Signal Intel' ? 'text-pink-500 dark:text-pink-400' :
-                                                                            item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
+                                                                    item.name === 'Signals & Strategies' ? 'text-pink-500 dark:text-pink-400' :
+                                                                        item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
                                                                                 'text-slate-900/40 dark:text-slate-500/60'
                                             } />
                                         </div>

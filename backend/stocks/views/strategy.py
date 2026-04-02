@@ -883,8 +883,19 @@ class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = GeneratedSignalPagination
     permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['source', 'symbol', 'signal', 'generated_date']
+    filterset_fields = ['source', 'symbol', 'signal', 'generated_date', 'status', 'closed_date']
     search_fields = ['symbol']
+
+    @action(detail=False, methods=['get'])
+    def track_record(self, request):
+        """Return historically closed signals (target hit or stop loss) paginated."""
+        qs = self.get_queryset().filter(status__in=['WON', 'LOST']).order_by('-generated_date')
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
 
     @action(detail=False, methods=['get'])
     def latest(self, request):
