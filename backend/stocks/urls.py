@@ -40,6 +40,7 @@ urlpatterns = [
     path('financials/<str:ticker>/', market.stock_financials, name='stock_financials'),
     path('sector-history/<str:sector_name>/', market.sector_history, name='sector_history'),
     path('sector-rotation/', sector_rotation.get_sector_rotation, name='sector_rotation'),
+    path('sector-rotation-study/', sector_rotation.get_sector_rotation_study, name='sector_rotation_study'),
     path('floorsheet_list/', market.floorsheet_list, name='floorsheet_list'),
     
     # Broker & Accumulation
