@@ -231,6 +231,7 @@ function ResultCell({ sig }: { sig: GeneratedSignal }) {
 
     if (sig.status === 'LOST' && entry) {
         const slPrice = sl || exitPrice;
+        const pnlValue = pnl != null ? parseFloat(pnl as any) : null;
         return (
             <div className="space-y-1.5">
                 <div className="flex items-center gap-1.5">
@@ -248,10 +249,10 @@ function ResultCell({ sig }: { sig: GeneratedSignal }) {
                         <span className="text-slate-400">Exit</span>
                         <span className="font-bold text-rose-500 dark:text-rose-400">{fmt(slPrice)}</span>
                     </div>
-                    {pnl != null && (
+                    {pnlValue != null && (
                         <div className="flex items-center gap-1">
                             <TrendingDown size={9} className="text-rose-500" />
-                            <span className="font-bold text-rose-500">{pnl > 0 ? '+' : ''}{pnl.toFixed(1)}%</span>
+                            <span className="font-bold text-rose-500">{pnlValue > 0 ? '+' : ''}{pnlValue.toFixed(1)}%</span>
                             <span className="text-slate-400 ml-1">loss contained</span>
                         </div>
                     )}
@@ -261,6 +262,7 @@ function ResultCell({ sig }: { sig: GeneratedSignal }) {
     }
 
     if (sig.status === 'CLOSED_MANUAL' && exitPrice) {
+        const pnlValue = pnl != null ? parseFloat(pnl as any) : null;
         return (
             <div className="space-y-1.5">
                 <div className="flex items-center gap-1.5">
@@ -275,13 +277,13 @@ function ResultCell({ sig }: { sig: GeneratedSignal }) {
                         <span className="text-slate-400">Exit</span>
                         <span className="font-bold text-slate-700 dark:text-slate-300">{fmt(exitPrice)}</span>
                     </div>
-                    {pnl != null && (
+                    {pnlValue != null && (
                         <div className={cn(
                             'flex items-center gap-1',
-                            pnl >= 0 ? 'text-emerald-500' : 'text-rose-500'
+                            pnlValue >= 0 ? 'text-emerald-500' : 'text-rose-500'
                         )}>
-                            {pnl >= 0 ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
-                            <span className="font-bold">{pnl > 0 ? '+' : ''}{pnl.toFixed(1)}%</span>
+                            {pnlValue >= 0 ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
+                            <span className="font-bold">{pnlValue > 0 ? '+' : ''}{pnlValue.toFixed(1)}%</span>
                         </div>
                     )}
                 </div>
@@ -381,10 +383,10 @@ export default function TrackRecordClient() {
         const lost = signals.filter(s => s.status === 'LOST');
 
         const avgWinPnl = won.length
-            ? won.reduce((acc, s) => acc + (s.pnl_percent || 0), 0) / won.length
+            ? won.reduce((acc, s) => acc + parseFloat((s.pnl_percent as any) || 0), 0) / won.length
             : null;
         const avgLossPnl = lost.length
-            ? lost.reduce((acc, s) => acc + (s.pnl_percent || 0), 0) / lost.length
+            ? lost.reduce((acc, s) => acc + parseFloat((s.pnl_percent as any) || 0), 0) / lost.length
             : null;
         const winRate = resolved.length ? Math.round((won.length / resolved.length) * 100) : null;
 
