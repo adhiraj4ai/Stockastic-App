@@ -425,19 +425,30 @@ function AllSourcesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
                     for (const sig of genRes.data as GeneratedSignal[]) {
                         const ltp = parseFloat(sig.ltp) || 0;
                         const u = upsert(sig.symbol, sig.signal, ltp);
-                        if (sig.target_price) u.target_price = sig.target_price;
-                        if (sig.stop_loss_price) u.stop_loss_price = sig.stop_loss_price;
-                        if (sig.status) u.status = sig.status;
+                        if (sig.signal === u.direction) {
+                            if (sig.target_price) u.target_price = sig.target_price;
+                            if (sig.stop_loss_price) u.stop_loss_price = sig.stop_loss_price;
+                            if (sig.status) u.status = sig.status;
+                            if (sig.metadata?.tp1) u.tp1 = sig.metadata.tp1;
+                            if (sig.metadata?.tp2) u.tp2 = sig.metadata.tp2;
+                            if (sig.metadata?.tp3) u.tp3 = sig.metadata.tp3;
+                            if (sig.metadata?.sl) u.stop_loss_price = sig.metadata.sl;
+                        }
+
                         if (sig.source === 'SMART_MONEY') {
                             u.smartMoney = { tier: sig.signal_tier, markup: sig.metadata?.markup_percent || 0, rationale: sig.rationale, brokers: sig.metadata?.cluster_count || 0 };
                         } else {
-                            u.whale = { engine: SOURCE_LABELS[sig.source] || sig.source, strength: sig.strength, reason: sig.rationale, rsi: sig.metadata?.rsi };
+                            if (sig.signal === u.direction) {
+                                u.whale = { engine: SOURCE_LABELS[sig.source] || sig.source, strength: sig.strength, reason: sig.rationale, rsi: sig.metadata?.rsi };
+                            } else if (!u.whale) {
+                                // If directions conflict but we don't have a whale signal yet, keep it anyway just for the text
+                                u.whale = { engine: SOURCE_LABELS[sig.source] || sig.source, strength: sig.strength, reason: sig.rationale, rsi: sig.metadata?.rsi };
+                            }
                         }
-                        u.conviction++;
-                        if (sig.metadata?.tp1) u.tp1 = sig.metadata.tp1;
-                        if (sig.metadata?.tp2) u.tp2 = sig.metadata.tp2;
-                        if (sig.metadata?.tp3) u.tp3 = sig.metadata.tp3;
-                        if (sig.metadata?.sl) u.stop_loss_price = sig.metadata.sl;
+                        
+                        if (sig.signal === u.direction) {
+                            u.conviction++;
+                        }
                         if (!generatedDate && sig.generated_date) setGeneratedDate(sig.generated_date);
                     }
                 }

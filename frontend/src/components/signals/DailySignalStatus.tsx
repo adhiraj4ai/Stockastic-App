@@ -94,7 +94,7 @@ function PriceLadder({ sl, entry, cmp, tp1, tp2, tp3 }: {
                     style={{ left: `${Math.min(pct(sl), pct(entry))}%`, width: `${Math.abs(pct(entry) - pct(sl))}%` }} />
                 {/* Profit fill */}
                 <div className="absolute h-0.5 bg-emerald-200 dark:bg-emerald-900/50 rounded-full top-3"
-                    style={{ left: `${pct(entry)}%`, width: `${pct(tp3) - pct(entry)}%` }} />
+                    style={{ left: `${Math.min(pct(entry), pct(tp3))}%`, width: `${Math.abs(pct(tp3) - pct(entry))}%` }} />
 
                 {nodes.map((n) => (
                     <div key={n.label} className="absolute -translate-x-1/2" style={{ left: `${pct(n.price)}%` }}>
@@ -535,7 +535,15 @@ export function DailySignalStatus({
                                 const risk = Math.max(0.01, Math.abs(entryPrice - primaryStop));
                                 const reward = Math.abs(tp.price - entryPrice);
                                 const rr = (reward / risk).toFixed(2);
-                                const gainPct = (((tp.price - entryPrice) / entryPrice) * 100).toFixed(1);
+                                
+                                // Calculate actual return percentage (positive for successful shorts)
+                                const returnPct = isBuy 
+                                    ? ((tp.price - entryPrice) / entryPrice) * 100 
+                                    : ((entryPrice - tp.price) / entryPrice) * 100;
+                                    
+                                const isProfit = returnPct > 0;
+                                const formattedPct = returnPct.toFixed(1);
+
                                 return (
                                     <div key={tp.label} className={cn(
                                         'flex items-center justify-between px-3 py-2',
@@ -547,8 +555,8 @@ export function DailySignalStatus({
                                             <span className="text-xs tabular-nums text-slate-400">Rs.{tp.price.toLocaleString()}</span>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <span className={cn('text-xs tabular-nums font-semibold', isBuy ? 'text-emerald-500' : 'text-rose-500')}>
-                                                {isBuy ? '+' : ''}{gainPct}%
+                                            <span className={cn('text-xs tabular-nums font-semibold', isProfit ? 'text-emerald-500' : 'text-rose-500')}>
+                                                {isProfit ? '+' : ''}{formattedPct}%
                                             </span>
                                             <span className="text-xs font-bold tabular-nums text-slate-700 dark:text-slate-200">
                                                 {rr}:1
