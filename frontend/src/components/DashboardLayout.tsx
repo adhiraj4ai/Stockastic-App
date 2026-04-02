@@ -59,6 +59,7 @@ const navItems = [
             { name: 'Command Center', href: '/accumulation/dashboard', icon: Layers },
             { name: 'Broker Trends', href: '/accumulation/trends', icon: BarChart3 },
             { name: 'Accumulation History', href: '/accumulation/history', icon: History },
+            { name: 'Price Study', href: '/accumulation/price-study', icon: TrendingUp },
             { name: 'Broker Favorites', href: '/accumulation/favorites', icon: Star },
             { name: 'Share Transfer', href: '/accumulation/share-transfer', icon: Share2 },
             { name: 'Accumulators Navigator', href: '/accumulation/navigator', icon: Users },

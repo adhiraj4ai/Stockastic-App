@@ -10,6 +10,7 @@ const titles: Record<string, string> = {
     '/accumulation/navigator': 'Accumulators Navigator',
     '/accumulation/history': 'Accumulation History',
     '/accumulation/share-transfer': 'Share Transfer Dashboard',
+    '/accumulation/price-study': 'Accumulation → Price Study',
 };
 
 export default function AccumulationLayout({
