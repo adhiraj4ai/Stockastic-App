@@ -164,7 +164,7 @@ function SectorFilter({ sectors, value, onChange }: {
     if (sectors.length === 0) return null;
     return (
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5">
-            <span className="text-[10px] font-bold text-slate-400 shrink-0 uppercase tracking-wider">Sector</span>
+            <span className="text-[10px] font-bold text-slate-400 shrink-0">Sector</span>
             <div className="flex items-center gap-1.5 flex-nowrap">
                 <button
                     onClick={() => onChange('ALL')}
@@ -519,7 +519,7 @@ function AllSourcesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
                                 dirFilter === d
                                     ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
                                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200')}>
-                            {d}
+                            {d === 'ALL' ? 'All' : d}
                         </button>
                     ))}
                 </div>
@@ -700,7 +700,7 @@ function StrategiesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
                                 filter === d
                                     ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
                                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200')}>
-                            {d}
+                            {d === 'ALL' ? 'All' : d}
                         </button>
                     ))}
                 </div>
@@ -895,32 +895,18 @@ export default function IntelHubClient() {
     };
 
     return (
-        <DashboardLayout title="Signal Intelligence">
-            <div className="pb-20 space-y-6">
+        <DashboardLayout>
+            <div className="pb-20 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-                {/* ── Header controls ── */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                    {/* Tabs */}
-                    <div className="flex p-0.5 bg-slate-100 dark:bg-slate-900/60 rounded-xl border border-slate-200/60 dark:border-slate-800/50 w-fit">
-                        {TABS.map(t => (
-                            <button key={t.key} onClick={() => setTab(t.key)}
-                                className={cn(
-                                    'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all',
-                                    tab === t.key
-                                        ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm border border-slate-200/50 dark:border-slate-700/50'
-                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                                )}>
-                                <span className={tab === t.key ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-600'}>
-                                    {t.icon}
-                                </span>
-                                {t.label}
-                            </button>
-                        ))}
+                {/* ── Page header ── */}
+                <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+                    <div>
+                        <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Signal Intelligence</h1>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Real-time signals from multiple engines, ranked by conviction</p>
                     </div>
-
                     {/* Historical toggle */}
                     <div className="flex items-center gap-2 sm:ml-auto">
-                        <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">Show historical</span>
+                        <span className="text-xs font-medium text-slate-400 dark:text-slate-500">Show historical</span>
                         <button
                             onClick={() => setShowHistorical(!showHistorical)}
                             role="switch"
@@ -935,6 +921,24 @@ export default function IntelHubClient() {
                             )} />
                         </button>
                     </div>
+                </div>
+
+                {/* ── Tab navigation ── */}
+                <div className="flex p-0.5 bg-slate-100 dark:bg-slate-900/60 rounded-xl border border-slate-200/60 dark:border-slate-800/50 w-fit">
+                    {TABS.map(t => (
+                        <button key={t.key} onClick={() => setTab(t.key)}
+                            className={cn(
+                                'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all',
+                                tab === t.key
+                                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm border border-slate-200/50 dark:border-slate-700/50'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                            )}>
+                            <span className={tab === t.key ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-600'}>
+                                {t.icon}
+                            </span>
+                            {t.label}
+                        </button>
+                    ))}
                 </div>
 
                 {/* ── Performance stats ── */}

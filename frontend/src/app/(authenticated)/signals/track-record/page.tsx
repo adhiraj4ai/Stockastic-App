@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export default function SignalTrackRecordPage() {
     return (
-        <DashboardLayout title="Track Record" subtitle="Historical signal performance and win/loss analysis">
+        <DashboardLayout>
             <Suspense fallback={
                 <div className="flex z-50 h-[calc(100vh-100px)] w-full items-center justify-center bg-transparent">
                     <div className="flex flex-col items-center gap-3">
