@@ -18,6 +18,8 @@ import { PageLoader } from '@/components/ui/StockLoader';
 import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { exportToCsv } from '@/lib/csv';
+import { DatePicker } from './ui/DatePicker';
+import { format } from 'date-fns';
 
 interface Transaction {
     id: number;
@@ -56,8 +58,8 @@ export function TransactionHistory({ selectedAccount, onEdit }: TransactionHisto
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [typeFilter, setTypeFilter] = useState('ALL');
-    const [fromDate, setFromDate] = useState('');
-    const [toDate, setToDate] = useState('');
+    const [fromDate, setFromDate] = useState<Date>();
+    const [toDate, setToDate] = useState<Date>();
     const [currentPage, setCurrentPage] = useState(1);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
         key: 'transaction_date', direction: 'desc'
@@ -110,10 +112,12 @@ export function TransactionHistory({ selectedAccount, onEdit }: TransactionHisto
 
         // Date range
         if (fromDate) {
-            result = result.filter(t => new Date(t.transaction_date) >= new Date(fromDate));
+            result = result.filter(t => new Date(t.transaction_date).getTime() >= fromDate.getTime());
         }
         if (toDate) {
-            result = result.filter(t => new Date(t.transaction_date) <= new Date(toDate + 'T23:59:59'));
+            const endOfDay = new Date(toDate);
+            endOfDay.setHours(23, 59, 59, 999);
+            result = result.filter(t => new Date(t.transaction_date).getTime() <= endOfDay.getTime());
         }
 
         // Sort
@@ -218,30 +222,28 @@ export function TransactionHistory({ selectedAccount, onEdit }: TransactionHisto
                 </Select>
 
                 <div className="flex items-center gap-2">
-                    <div className="relative">
-                        <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
-                        <input
-                            type="date"
-                            value={fromDate}
-                            onChange={(e) => { setFromDate(e.target.value); setCurrentPage(1); }}
-                            className="pl-7 pr-2 h-9 border border-gray-200 dark:border-slate-700 rounded-md text-xs font-medium bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300"
+                    <div className="w-[150px]">
+                        <DatePicker
+                            date={fromDate}
+                            setDate={(date) => { setFromDate(date); setCurrentPage(1); }}
+                            placeholder="From date"
+                            className="h-9"
                         />
                     </div>
-                    <span className="text-xs text-slate-400 font-bold">to</span>
-                    <div className="relative">
-                        <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
-                        <input
-                            type="date"
-                            value={toDate}
-                            onChange={(e) => { setToDate(e.target.value); setCurrentPage(1); }}
-                            className="pl-7 pr-2 h-9 border border-gray-200 dark:border-slate-700 rounded-md text-xs font-medium bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300"
+                    <span className="text-xs text-slate-400 font-bold lowercase">to</span>
+                    <div className="w-[150px]">
+                        <DatePicker
+                            date={toDate}
+                            setDate={(date) => { setToDate(date); setCurrentPage(1); }}
+                            placeholder="To date"
+                            className="h-9"
                         />
                     </div>
                 </div>
 
                 {(searchQuery || typeFilter !== 'ALL' || fromDate || toDate) && (
                     <button
-                        onClick={() => { setSearchQuery(''); setTypeFilter('ALL'); setFromDate(''); setToDate(''); setCurrentPage(1); }}
+                        onClick={() => { setSearchQuery(''); setTypeFilter('ALL'); setFromDate(undefined); setToDate(undefined); setCurrentPage(1); }}
                         className="h-9 px-3 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 hover:border-red-200 dark:hover:border-red-800 transition-all"
                     >
                         Clear Filters

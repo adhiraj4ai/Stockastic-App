@@ -12,6 +12,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { DatePicker } from './ui/DatePicker';
+import { format } from 'date-fns';
 
 export interface PortfolioAccount {
     id: number;
@@ -48,7 +50,7 @@ export default function TransactionModal({
     const [activeTab, setActiveTab] = useState<TransactionType>(defaultType as TransactionType);
     const [formData, setFormData] = useState({
         ticker: '',
-        transaction_date: new Date().toISOString().split('T')[0],
+        transaction_date: new Date(),
         quantity: '',
         rate: '',
         account: '', // Account ID
@@ -134,7 +136,7 @@ export default function TransactionModal({
                 // Populate form for editing
                 setFormData({
                     ticker: transactionToEdit.ticker,
-                    transaction_date: new Date(transactionToEdit.transaction_date).toISOString().split('T')[0],
+                    transaction_date: new Date(transactionToEdit.transaction_date),
                     quantity: transactionToEdit.quantity.toString(),
                     rate: transactionToEdit.rate.toString(),
                     account: transactionToEdit.account ? transactionToEdit.account.toString() : (accounts.length > 0 ? accounts[0].id.toString() : ''),
@@ -146,7 +148,7 @@ export default function TransactionModal({
                 setFormData(prev => ({
                     ...prev,
                     ticker: defaultTicker,
-                    transaction_date: new Date().toISOString().split('T')[0],
+                    transaction_date: new Date(),
                     quantity: '',
                     rate: '',
                     reason: '',
@@ -175,7 +177,7 @@ export default function TransactionModal({
             const payload: any = {
                 ...formData,
                 transaction_type: activeTab,
-                transaction_date: new Date(formData.transaction_date).toISOString() // Send full ISO
+                transaction_date: formData.transaction_date.toISOString() // Send full ISO
             };
 
             // Only send account if selected (API handles null as default/no account)
@@ -200,7 +202,7 @@ export default function TransactionModal({
                 setFormData(prev => ({
                     ...prev,
                     ticker: '',
-                    transaction_date: new Date().toISOString().split('T')[0],
+                    transaction_date: new Date(),
                     quantity: '',
                     rate: '',
                     reason: '',
@@ -300,16 +302,11 @@ export default function TransactionModal({
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 tracking-tight">Transaction date</label>
-                                <div className="relative">
-                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                    <input
-                                        type="date"
-                                        required
-                                        className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-slate-100 text-sm font-medium h-10"
-                                        value={formData.transaction_date}
-                                        onChange={(e) => setFormData({ ...formData, transaction_date: e.target.value })}
-                                    />
-                                </div>
+                                <DatePicker
+                                    date={formData.transaction_date}
+                                    setDate={(date) => date && setFormData({ ...formData, transaction_date: date })}
+                                    className="h-10"
+                                />
                             </div>
                         </div>
 

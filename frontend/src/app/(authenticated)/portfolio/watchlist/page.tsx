@@ -19,6 +19,8 @@ import {
     Calendar, Zap, Rocket, ChevronLeft, ChevronRight, Download
 } from 'lucide-react';
 import { exportToCsv } from '@/lib/csv';
+import { DatePicker } from '@/components/ui/DatePicker';
+import { format } from 'date-fns';
 
 interface WatchlistItem {
     id: number;
@@ -80,6 +82,8 @@ export default function WatchlistPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [promoteTicker, setPromoteTicker] = useState('');
     const [accounts, setAccounts] = useState<PortfolioAccount[]>([]);
+    const [fromDate, setFromDate] = useState<Date>();
+    const [toDate, setToDate] = useState<Date>();
     const pageSize = 10;
 
     const fetchWatchlist = async () => {
@@ -175,13 +179,22 @@ export default function WatchlistPage() {
     };
 
     const sortedAndFiltered = useMemo(() => {
-        return watchlist
-            .filter(item =>
-                item.ticker.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (item.sector && item.sector.toLowerCase().includes(searchQuery.toLowerCase()))
-            )
-            .sort((a, b) => a.ticker.localeCompare(b.ticker));
-    }, [watchlist, searchQuery]);
+        let result = watchlist.filter(item =>
+            item.ticker.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (item.sector && item.sector.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+
+        if (fromDate) {
+            result = result.filter(item => new Date(item.added_at).getTime() >= fromDate.getTime());
+        }
+        if (toDate) {
+            const endOfDay = new Date(toDate);
+            endOfDay.setHours(23, 59, 59, 999);
+            result = result.filter(item => new Date(item.added_at).getTime() <= endOfDay.getTime());
+        }
+
+        return result.sort((a, b) => a.ticker.localeCompare(b.ticker));
+    }, [watchlist, searchQuery, fromDate, toDate]);
 
     const paginated = useMemo(() => {
         const start = (currentPage - 1) * pageSize;
@@ -229,6 +242,34 @@ export default function WatchlistPage() {
                                         className="pl-9 h-9 w-48 text-xs font-medium bg-gray-50/50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-900 dark:text-slate-100 transition-all"
                                     />
                                 </div>
+                                <div className="flex items-center gap-2">
+                                    <DatePicker
+                                        date={fromDate}
+                                        setDate={(date) => { setFromDate(date); setCurrentPage(1); }}
+                                        placeholder="From"
+                                        className="h-9 w-32 text-[10px]"
+                                    />
+                                    <span className="text-[10px] font-bold text-slate-400">to</span>
+                                    <DatePicker
+                                        date={toDate}
+                                        setDate={(date) => { setToDate(date); setCurrentPage(1); }}
+                                        placeholder="To"
+                                        className="h-9 w-32 text-[10px]"
+                                    />
+                                </div>
+                                {(searchQuery || fromDate || toDate) && (
+                                    <button
+                                        onClick={() => {
+                                            setSearchQuery('');
+                                            setFromDate(undefined);
+                                            setToDate(undefined);
+                                            setCurrentPage(1);
+                                        }}
+                                        className="h-9 px-3 text-[10px] font-black text-slate-500 hover:text-red-500 transition-colors uppercase tracking-widest"
+                                    >
+                                        Clear
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => {
                                         setSelectedWatchlistItem(null);
