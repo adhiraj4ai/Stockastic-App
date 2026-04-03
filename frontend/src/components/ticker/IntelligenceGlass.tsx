@@ -4,6 +4,7 @@ import { BrainCircuit, Info, ShieldCheck, AlertTriangle, Zap, ArrowUpRight, Arro
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { formatRupees } from '@/lib/formatters';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 interface PortfolioPosition {
     ticker: string;
@@ -116,7 +117,10 @@ export function IntelligenceGlass({
                             <verdict.icon size={22} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">Cognitive intelligence</p>
+                            <div className="flex items-center">
+                                <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">Cognitive intelligence</p>
+                                <InfoTooltip content="Real-time proprietary analysis of technical and fundamental vectors to determine the primary market bias." />
+                            </div>
                             <h2 className={cn("text-2xl font-bold tracking-tight", verdict.color)}>{verdict.label}</h2>
                         </div>
                     </div>
@@ -172,7 +176,10 @@ export function IntelligenceGlass({
             <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-1.5">
                     <div className="flex justify-between items-end">
-                        <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">Fundamental Alpha</span>
+                        <div className="flex items-center">
+                            <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">Fundamental Alpha</span>
+                            <InfoTooltip content="Score (0-100) reflecting the underlying business quality (EPS, ROE, Margin stability)." />
+                        </div>
                         <span className="text-base font-bold text-slate-900 dark:text-slate-100 tabular-nums">{fundamentalScore}%</span>
                     </div>
                     <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -182,7 +189,10 @@ export function IntelligenceGlass({
 
                 <div className="space-y-1.5">
                     <div className="flex justify-between items-end">
-                        <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">Technical Strength</span>
+                        <div className="flex items-center">
+                            <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">Technical Strength</span>
+                            <InfoTooltip content="Score (0-100) reflecting price and volume momentum (Trend, RSI, OBV crossovers)." />
+                        </div>
                         <span className="text-base font-bold text-slate-900 dark:text-slate-100 tabular-nums">{technicalScore}%</span>
                     </div>
                     <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">

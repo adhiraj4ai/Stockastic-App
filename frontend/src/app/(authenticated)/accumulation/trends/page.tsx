@@ -25,6 +25,7 @@ import { BrokerTrend } from '@/types/accumulation';
 import { TrendBadge } from '@/components/accumulation/TrendBadge';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 const timeRanges = [
     { label: '1D', value: '1D' },
@@ -194,7 +195,11 @@ export default function TrendsPage() {
                                         <div className="flex items-center gap-2">Broker <SortIcon column="broker" /></div>
                                     </TableHead>
                                     <TableHead className="text-right px-6 cursor-pointer font-bold text-gray-900 dark:text-slate-100" onClick={() => handleSort('range_net')}>
-                                        <div className="flex items-center justify-end gap-2 text-emerald-600 dark:text-emerald-400">Net Acc. <SortIcon column="range_net" /></div>
+                                        <div className="flex items-center justify-end gap-2 text-emerald-600 dark:text-emerald-400">
+                                            Net Acc. 
+                                            <InfoTooltip content="Total units net-bought (or sold) by this broker within the selected time range. High positive values indicate institutional accumulation." />
+                                            <SortIcon column="range_net" />
+                                        </div>
                                     </TableHead>
                                     <TableHead className="text-right px-6 cursor-pointer font-bold text-gray-900 dark:text-slate-100" onClick={() => handleSort('cumulative_net')}>
                                         <div className="flex items-center justify-end gap-2 text-[11px] uppercase tracking-wider">Total Pos. <SortIcon column="cumulative_net" /></div>
@@ -203,7 +208,11 @@ export default function TrendsPage() {
                                         <div className="flex items-center justify-end gap-2 text-[11px] uppercase tracking-wider">LTP <SortIcon column="ltp" /></div>
                                     </TableHead>
                                     <TableHead className="text-right px-6 cursor-pointer font-bold text-orange-500 dark:text-orange-400 font-black tracking-widest text-[10px]" onClick={() => handleSort('wac')}>
-                                        <div className="flex items-center justify-end gap-2">WAC <SortIcon column="wac" /></div>
+                                        <div className="flex items-center justify-end gap-2">
+                                            WAC 
+                                            <InfoTooltip content="Weighted Average Cost: The estimated average price at which this broker accumulated their current position." />
+                                            <SortIcon column="wac" />
+                                        </div>
                                     </TableHead>
                                     <TableHead className="text-center px-4 cursor-pointer font-bold text-gray-900 dark:text-slate-100 text-[10px] tracking-widest" onClick={() => handleSort('change_5d')}>
                                         <div className="flex items-center justify-center gap-2">5D <SortIcon column="change_5d" /></div>

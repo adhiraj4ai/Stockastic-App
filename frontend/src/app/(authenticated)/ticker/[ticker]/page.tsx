@@ -24,6 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { FullPageLoader } from '@/components/ui/StockLoader';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 // Terminal Suite Components
 import { IntelligenceGlass } from '@/components/ticker/IntelligenceGlass';
@@ -36,6 +37,7 @@ import TechnicalAnalysis from '@/components/ticker/TechnicalAnalysis';
 import IndicatorTooltip from '@/components/ticker/IndicatorTooltip';
 import TickerAccumulation from '@/components/ticker/TickerAccumulation';
 import TickerSignals from '@/components/ticker/TickerSignals';
+import PriceActionTerminal from '@/components/ticker/PriceActionTerminal';
 
 interface StockDetailData {
     company: {
@@ -668,6 +670,7 @@ export default function StockDetailPage() {
                                     <TabsList className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 h-10 rounded-xl shadow-smCondensed">
                                         <TabsTrigger value="signals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all">Signals</TabsTrigger>
                                         <TabsTrigger value="technical" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Technical Analysis</TabsTrigger>
+                                        <TabsTrigger value="price_action" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:shadow-sm transition-all">Price Action</TabsTrigger>
                                         <TabsTrigger value="fundamentals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Fundamentals</TabsTrigger>
                                         <TabsTrigger value="accumulation" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all">Accumulation</TabsTrigger>
                                     </TabsList>
@@ -684,6 +687,10 @@ export default function StockDetailPage() {
                                     <TickerSignals symbol={ticker} currentPrice={data.price.close} intelligence={intelligence} fundamental={data.fundamental} />
                                 </TabsContent>
 
+                                <TabsContent value="price_action" forceMount className="mt-0 space-y-8 data-[state=inactive]:hidden">
+                                    <PriceActionTerminal symbol={ticker} />
+                                </TabsContent>
+
                                 <TabsContent value="fundamentals" forceMount className="mt-0 space-y-8 data-[state=inactive]:hidden">
                                     {/* Fundamental Benchmarks */}
                                     <div className="glass-card-light rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
@@ -692,7 +699,10 @@ export default function StockDetailPage() {
                                                 <BarChart2 size={18} />
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-slate-800 dark:text-slate-100 text-lg">Fundamental Benchmarks</h4>
+                                                <h4 className="font-bold text-slate-800 dark:text-slate-100 text-lg flex items-center">
+                                                    Fundamental Benchmarks
+                                                    <InfoTooltip content="Side-by-side comparison of this company's valuation and efficiency metrics against the sector's highest and lowest performers." />
+                                                </h4>
                                                 <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">Sector-wide comparison</p>
                                             </div>
                                         </div>
@@ -769,7 +779,10 @@ export default function StockDetailPage() {
                                                 <PieChart size={18} />
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-slate-800 dark:text-slate-100">Dividend Distribution History</h4>
+                                                <h4 className="font-bold text-slate-800 dark:text-slate-100 flex items-center">
+                                                    Dividend Distribution History
+                                                    <InfoTooltip content="Timeline of historical shareholder rewards, including cash dividends and bonus share percentages." />
+                                                </h4>
                                                 <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">Shareholder rewards timeline</p>
                                             </div>
                                         </div>

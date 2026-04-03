@@ -42,6 +42,7 @@ import { Input } from '@/components/ui/input';
 import { Variants } from 'framer-motion';
 import { PortfolioSummary } from '@/components/PortfolioSummary';
 import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -457,8 +458,10 @@ export default function DashboardPage() {
                         <Card className="bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none hover:shadow-2xl transition-all duration-500 cursor-default group backdrop-blur-xl relative overflow-hidden">
                             <div className="absolute -right-8 -top-8 w-32 h-32 bg-gradient-to-br from-rose-500/10 to-transparent blur-2xl opacity-50" />
                             <CardHeader className="p-3 pb-1">
-                                <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                    <HeartPulse size={14} className="text-rose-500" /> Market Sentiment
+                                <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center">
+                                    <HeartPulse size={14} className="text-rose-500 mr-2" /> 
+                                    Market Sentiment
+                                    <InfoTooltip content="Aggregated market bias (0-100) based on Advancers vs Decliners and price momentum." />
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-6 pt-0">
@@ -486,8 +489,10 @@ export default function DashboardPage() {
                         <Card className="bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden relative backdrop-blur-xl">
                             <div className="absolute -left-8 -top-8 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent blur-2xl opacity-50" />
                             <CardHeader className="p-4 pb-1 border-b border-slate-50 dark:border-slate-800">
-                                <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                    <ActivityIcon size={14} className="text-blue-600" /> Snapshot
+                                <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight flex items-center">
+                                    <ActivityIcon size={14} className="text-blue-600 mr-2" /> 
+                                    Snapshot
+                                    <InfoTooltip content="Daily liquidity metrics including total volume (qty) and turnover (value) traded." />
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-4 space-y-4">
@@ -562,10 +567,12 @@ export default function DashboardPage() {
                         <Card className="lg:col-span-3 bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
                             <CardHeader className="p-5 pb-2 border-b border-slate-50 dark:border-white/5">
                                 <div className="space-y-1">
-                                    <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                        <Wallet size={14} className="text-blue-500" /> Smart Money Flow (Top Broker Accumulation)
+                                    <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center">
+                                        <Wallet size={14} className="text-blue-500 mr-2" /> 
+                                        Smart Money Flow
+                                        <InfoTooltip content="Visualizes high-impact net-buying by the top institutional brokers." />
                                     </CardTitle>
-                                    <p className="text-[10px] text-indigo-600/70 dark:text-indigo-400/60 font-medium">Tracking the biggest net buyers and their targeted stocks.</p>
+                                    <p className="text-[10px] text-indigo-600/70 dark:text-indigo-400/60 font-medium tracking-tight">Tracking the biggest net buyers and their targeted stocks.</p>
                                 </div>
                             </CardHeader>
                             <CardContent className="p-6">
@@ -579,10 +586,12 @@ export default function DashboardPage() {
                             <div className="absolute -right-12 -bottom-12 w-48 h-48 bg-gradient-to-tl from-blue-500/10 to-transparent blur-3xl opacity-50" />
                             <CardHeader className="p-5 border-b border-slate-50 dark:border-white/5 flex flex-row items-center justify-between relative z-10">
                                 <div className="space-y-1">
-                                    <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                        <Globe size={14} className="text-blue-600 group-hover:rotate-12 transition-transform" /> Market Liquidity Map
+                                    <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center">
+                                        <Globe size={14} className="text-blue-600 mr-2 group-hover:rotate-12 transition-transform" /> 
+                                        Market Liquidity Map
+                                        <InfoTooltip content="Bubble chart where size represents turnover and color represents daily percentage change." />
                                     </CardTitle>
-                                    <p className="text-[10px] text-indigo-600/70 dark:text-indigo-400/60 font-medium">Size represents turnover, color represents performance</p>
+                                    <p className="text-[10px] text-indigo-600/70 dark:text-indigo-400/60 font-medium tracking-tight">Size represents turnover, color represents performance</p>
                                 </div>
                             </CardHeader>
                             <CardContent className="p-0 relative z-10">
@@ -645,8 +654,10 @@ export default function DashboardPage() {
                             <div className="lg:col-span-12">
                                 <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full">
                                     <CardHeader className="p-3 pb-1">
-                                        <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                            <ActivityIcon size={14} className="text-blue-500" /> Rally Quality Matrix
+                                        <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center">
+                                            <ActivityIcon size={14} className="text-blue-500 mr-2" /> 
+                                            Rally Quality Matrix
+                                            <InfoTooltip content="A proprietary assessment of the market trend's sustainability based on Volume, Turnover, Breadth, and Participation." />
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="p-6 pt-0">
@@ -680,8 +691,10 @@ export default function DashboardPage() {
                             {/* Sector Rankings */}
                             <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full">
                                 <CardHeader className="p-3 pb-1 flex flex-row items-center justify-between">
-                                    <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                        <BarChart3 size={14} /> Sector Performance
+                                    <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center">
+                                        <BarChart3 size={14} className="mr-2" /> 
+                                        Sector Performance
+                                        <InfoTooltip content="Treemap showing which sectors are attracting the most capital (turnover) and their relative performance." />
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-6 pt-0 h-[350px]">
@@ -694,8 +707,10 @@ export default function DashboardPage() {
                             <div className="lg:col-span-3">
                                 <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full">
                                     <CardHeader className="p-3 pb-1">
-                                        <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                            <ActivityIcon size={14} className="text-indigo-500" /> Rotation & Convergence
+                                        <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center">
+                                            <ActivityIcon size={14} className="text-indigo-500 mr-2" /> 
+                                            Rotation & Convergence
+                                            <InfoTooltip content="Visualizes the lifecycle of sectors as they rotate from leading to lagging phases." />
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="p-6 pt-0">
@@ -715,8 +730,10 @@ export default function DashboardPage() {
                     >
                         <Card className="bg-white/50 dark:bg-slate-900/40 border-none shadow-xl shadow-slate-200/50 dark:shadow-none backdrop-blur-xl overflow-hidden">
                             <CardHeader className="p-4 pb-2 border-b border-slate-100 dark:border-white/5 flex flex-row items-center justify-between">
-                                <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                    <TrendingUp size={14} className="text-blue-600" /> Sector performance matrix
+                                <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center">
+                                    <TrendingUp size={14} className="text-blue-600 mr-2" /> 
+                                    Sector Performance Matrix
+                                    <InfoTooltip content="Detailed breakdown of index changes, turnover, and volume across all market sectors." />
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-0">

@@ -52,6 +52,7 @@ import {
 import CreateStrategyModal from '@/components/CreateStrategyModal';
 import ExperimentsTab from './[id]/tabs/ExperimentsTab';
 import RecommendationsTab from './RecommendationsTab';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 interface Strategy {
     id: number;
@@ -249,6 +250,7 @@ function StrategiesContent() {
                             >
                                 <Zap className="w-4 h-4 mr-2" />
                                 All Strategies
+                                <InfoTooltip content="Collection of your custom algorithmic models and standard market analysis frameworks." />
                             </TabsTrigger>
                             <TabsTrigger
                                 value="published"
@@ -256,6 +258,7 @@ function StrategiesContent() {
                             >
                                 <FileCheck className="w-4 h-4 mr-2" />
                                 Published
+                                <InfoTooltip content="Configurations currently deployed across specific sectors or the entire market." />
                             </TabsTrigger>
                             <TabsTrigger
                                 value="experiment-logs"
@@ -263,6 +266,7 @@ function StrategiesContent() {
                             >
                                 <Beaker className="w-4 h-4 mr-2" />
                                 Experiment Logs
+                                <InfoTooltip content="Historical record of backtests, parameter tweaks, and strategy performance iterations." />
                             </TabsTrigger>
 
                             <TabsTrigger
@@ -271,6 +275,7 @@ function StrategiesContent() {
                             >
                                 <Target className="w-4 h-4 mr-2" />
                                 Recommendations
+                                <InfoTooltip content="Algorithmic signals and trade setups generated based on your published models." />
                             </TabsTrigger>
                         </TabsList>
 
@@ -401,6 +406,45 @@ function StrategiesContent() {
                         ) : (
                             viewMode === 'grid' ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                    {/* System Strategy: PA Screener */}
+                                    <Card
+                                        className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-2 border-amber-500/30 hover:border-amber-500 flex flex-col cursor-pointer bg-amber-50/10 dark:bg-amber-900/10 rounded-xl"
+                                        onClick={() => router.push(`/market/pa-screener`)}
+                                    >
+                                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-400" />
+                                        
+                                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-br from-amber-50/50 dark:from-amber-900/20 via-white dark:via-slate-900 to-transparent">
+                                            <div className="flex items-start gap-3">
+                                                <div className="h-11 w-11 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-md group-hover:scale-105 transition-all duration-300 bg-amber-500">
+                                                    <Target size={20} />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                                                        <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                                                            <h3 className="text-base font-black text-slate-900 dark:text-slate-100 leading-tight group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                                                                Global PA Screener
+                                                            </h3>
+                                                            <Badge className="w-fit text-[9px] bg-slate-800 text-white">SYSTEM NODE</Badge>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="px-4 py-1.5 flex-1 bg-white/50 dark:bg-slate-900/50">
+                                            <p className="text-xs font-medium text-slate-600 dark:text-slate-400 leading-relaxed">
+                                                Autonomous institutional screener tracking Smart Money Concepts (FVG, BoS) and native candlestick setups across the entire market globally.
+                                            </p>
+                                        </div>
+
+                                        <div className="px-3 py-2 flex gap-2 bg-white/50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800">
+                                            <button className="flex-1 py-1.5 flex items-center justify-center gap-1.5 text-xs font-black text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 transition-all rounded-lg">
+                                                <Zap size={14} /> Open Scanner
+                                            </button>
+                                        </div>
+                                    </Card>
+
+                                    {/* User Strategies */}
                                     {filteredStrategies.map((strategy) => (
                                         <Card
                                             key={strategy.id}
@@ -515,6 +559,34 @@ function StrategiesContent() {
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                                {/* System Strategy: PA Screener */}
+                                                <tr className="bg-amber-50/30 dark:bg-amber-900/10 hover:bg-amber-100/50 dark:hover:bg-amber-900/20 group cursor-pointer transition-colors duration-200" onClick={() => router.push(`/market/pa-screener`)}>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="h-10 w-10 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform bg-amber-500">
+                                                                <Target size={18} />
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <div className="flex items-center gap-2 font-black text-amber-700 dark:text-amber-500">
+                                                                    Global PA Screener <Badge className="text-[9px] bg-slate-800 text-white border-none py-0 h-4">SYSTEM CORE</Badge>
+                                                                </div>
+                                                                <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[240px] font-medium leading-relaxed mt-0.5">
+                                                                    Institutional algorithmic scanning across the entire market globally.
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-xs font-bold text-slate-400">Always Active</span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <Button variant="ghost" size="sm" className="text-amber-600 font-bold bg-amber-100 dark:bg-amber-900/30">
+                                                            Open Scanner <ExternalLink size={14} className="ml-1" />
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+
+                                                {/* User Strategies */}
                                                 {filteredStrategies.map((strategy) => (
                                                     <tr
                                                         key={strategy.id}

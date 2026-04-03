@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { PageLoader } from '@/components/ui/StockLoader';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import ReactECharts from 'echarts-for-react';
 import {
     TrendingUp, X, Search, Activity,
@@ -198,7 +199,10 @@ function WinRateChart({ winRates }: { winRates: StudyData['study']['win_rates'] 
 
     return (
         <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
-            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">Win Rate by Horizon</h3>
+            <div className="flex items-center mb-4">
+                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Win Rate by Horizon</h3>
+                <InfoTooltip content="Probability that the price moves higher across 5, 10, 20, and 30 day periods after an accumulation event." />
+            </div>
             <ReactECharts option={option} style={{ height: 240 }} notMerge />
         </div>
     );
@@ -262,7 +266,10 @@ function AvgReturnChart({
 
     return (
         <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
-            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">Avg vs Median Return</h3>
+            <div className="flex items-center mb-4">
+                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Avg vs Median Return</h3>
+                <InfoTooltip content="Median Return provides the 'typical' outcome, while Avg shows the broad potential including outliers." />
+            </div>
             <ReactECharts option={option} style={{ height: 240 }} notMerge />
         </div>
     );
@@ -335,9 +342,12 @@ function ScatterChart({ scatterData }: { scatterData: StudyData['study']['scatte
     return (
         <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                    Accumulation Intensity vs 10d Return
-                </h3>
+                <div className="flex items-center">
+                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                        Accumulation Intensity vs 10d Return
+                    </h3>
+                    <InfoTooltip content="Correlation study: Does higher accumulation intensity lead to higher returns? The regression line shows the overall trend." />
+                </div>
                 <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">{filtered.length} events</span>
             </div>
             <ReactECharts option={option} style={{ height: 300 }} notMerge />
@@ -416,9 +426,12 @@ function LagAnalysisChart({ lagAnalysis }: { lagAnalysis: StudyData['study']['la
 
     return (
         <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
-            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">
-                Lag Analysis — Which Horizon Has the Best Edge?
-            </h3>
+            <div className="flex items-center mb-4">
+                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    Lag Analysis — Which Horizon Has the Best Edge?
+                </h3>
+                <InfoTooltip content="Maps where the predictive edge is strongest over time. Helps in choosing the optimal holding period." />
+            </div>
             <ReactECharts option={option} style={{ height: 260 }} notMerge />
         </div>
     );
@@ -625,9 +638,12 @@ function ProjectionChart({ forecast }: { forecast: ForecastData }) {
     return (
         <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                    Price Projection — {forecast.symbol}
-                </h3>
+                <div className="flex items-center">
+                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                        Price Projection — {forecast.symbol}
+                    </h3>
+                    <InfoTooltip content="Price forecasts based on historical analogs. Shaded areas represent high-probability price bands (P25-P75)." />
+                </div>
                 <div className="flex items-center gap-3 text-[11px] text-slate-400 font-medium">
                     <span className="flex items-center gap-1.5">
                         <span className="w-3 h-3 rounded-full bg-orange-400 inline-block" />

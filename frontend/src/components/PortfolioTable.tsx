@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/tooltip";
 import StockLink from '@/components/StockLink';
 import { formatNepaliNumber } from '@/lib/formatters';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 export interface PortfolioItem {
     id: number;
@@ -93,30 +94,67 @@ export function PortfolioTable({
                     <TableRow className="bg-gray-50/50 dark:bg-slate-800/30 hover:bg-gray-50/50 dark:hover:bg-slate-800/30">
                         <TableHead className="w-[50px] font-bold text-gray-900 dark:text-slate-100 py-4 px-6 text-center">SN</TableHead>
                         <TableHead className="font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => onSort('ticker')}>
-                            <div className="flex items-center gap-1">Ticker <ArrowUpDown size={12} className="opacity-50" /></div>
+                            <div className="flex items-center gap-1">
+                                Ticker 
+                                <InfoTooltip content="The unique stock symbol and business sector category." />
+                                <ArrowUpDown size={12} className="opacity-50" />
+                            </div>
                         </TableHead>
                         <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => onSort('quantity')}>
-                            <div className="flex items-center justify-end gap-1">Quantity <ArrowUpDown size={12} className="opacity-50" /></div>
+                            <div className="flex items-center justify-end gap-1">
+                                Quantity 
+                                <InfoTooltip content="Total number of units currently held in this position." />
+                                <ArrowUpDown size={12} className="opacity-50" />
+                            </div>
                         </TableHead>
                         <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => onSort('wacc')}>
-                            <div className="flex items-center justify-end gap-1">WACC (रू) <ArrowUpDown size={12} className="opacity-50" /></div>
+                            <div className="flex items-center justify-end gap-1">
+                                WACC (रू) 
+                                <InfoTooltip content="Weighted Average Cost of Capital (Break-even entry price including commissions)." />
+                                <ArrowUpDown size={12} className="opacity-50" />
+                            </div>
                         </TableHead>
                         <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => onSort('current_price')}>
-                            <div className="flex items-center justify-end gap-1">LTP (रू) <ArrowUpDown size={12} className="opacity-50" /></div>
+                            <div className="flex items-center justify-end gap-1">
+                                LTP (रू) 
+                                <InfoTooltip content="Last Traded Price. The current real-time market value per unit." />
+                                <ArrowUpDown size={12} className="opacity-50" />
+                            </div>
                         </TableHead>
                         <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => onSort('current_value')}>
-                            <div className="flex items-center justify-end gap-1">Total Value (रू) <ArrowUpDown size={12} className="opacity-50" /></div>
+                            <div className="flex items-center justify-end gap-1">
+                                Total Value (रू) 
+                                <InfoTooltip content="The total monetary valuation of the position at current market prices." />
+                                <ArrowUpDown size={12} className="opacity-50" />
+                            </div>
                         </TableHead>
                         <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => onSort('gain_loss')}>
-                            <div className="flex items-center justify-end gap-1">Profit/Loss (रू) <ArrowUpDown size={12} className="opacity-50" /></div>
+                            <div className="flex items-center justify-end gap-1">
+                                Profit/Loss (रू) 
+                                <InfoTooltip content="Unrealized profit or loss (Current Value minus initial Investment)." />
+                                <ArrowUpDown size={12} className="opacity-50" />
+                            </div>
                         </TableHead>
                         <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => onSort('value_yield')}>
-                            <div className="flex items-center justify-end gap-1" title="Profit to Total Value Ratio">Value Yield <ArrowUpDown size={12} className="opacity-50" /></div>
+                            <div className="flex items-center justify-end gap-1">
+                                Value Yield 
+                                <InfoTooltip content="The percentage of profit relative to the total current value of the position." />
+                                <ArrowUpDown size={12} className="opacity-50" />
+                            </div>
                         </TableHead>
                         <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => onSort('day_gain_loss')}>
-                            <div className="flex items-center justify-end gap-1">Today's P/L (रू) <ArrowUpDown size={12} className="opacity-50" /></div>
+                            <div className="flex items-center justify-end gap-1">
+                                Today's P/L (रू) 
+                                <InfoTooltip content="Profit or loss generated specifically during the current trading session." />
+                                <ArrowUpDown size={12} className="opacity-50" />
+                            </div>
                         </TableHead>
-                        <TableHead className="text-center font-bold text-gray-900 dark:text-slate-100">Health</TableHead>
+                        <TableHead className="text-center font-bold text-gray-900 dark:text-slate-100">
+                            <div className="flex items-center justify-center gap-1">
+                                Health
+                                <InfoTooltip content="Proprietary health score based on business fundamentals (Valuation, Growth, Efficiency)." />
+                            </div>
+                        </TableHead>
                         <TableHead className="text-center font-bold text-gray-900 dark:text-slate-100">Action</TableHead>
                     </TableRow>
                 </TableHeader>

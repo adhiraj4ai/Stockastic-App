@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BrainCircuit, Info, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 interface IntelligenceVerdictProps {
     fundamentalScore: number; // 0-100
@@ -36,8 +37,11 @@ export function IntelligenceVerdict({
                             <verdict.icon size={18} />
                         </div>
                         <div className="space-y-0.5">
+                        <div className="flex items-center">
                             <p className="text-[10px] font-bold opacity-60">System intelligence verdict</p>
-                            <p className={cn("text-base font-bold", verdict.color)}>{verdict.label}</p>
+                            <InfoTooltip content="A weighted analysis combining fundamental health and technical momentum to provide a directional bias." />
+                        </div>
+                        <p className={cn("text-base font-bold", verdict.color)}>{verdict.label}</p>
                         </div>
                     </div>
                     <Badge variant="outline" className={cn(
@@ -52,7 +56,10 @@ export function IntelligenceVerdict({
                 <div className="grid grid-cols-2 divide-x divide-slate-100 dark:divide-slate-800">
                     <div className="p-6 space-y-4">
                         <div className="flex justify-between items-end">
-                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">Fundamental strength</p>
+                            <div className="flex items-center">
+                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">Fundamental strength</p>
+                                <InfoTooltip content="Score (0-100) based on EPS growth, ROE, debt-to-equity, and other business health metrics." />
+                            </div>
                             <p className="text-xl font-bold text-slate-900 dark:text-slate-100 tabular-nums">{fundamentalScore}%</p>
                         </div>
                         <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -61,7 +68,10 @@ export function IntelligenceVerdict({
                     </div>
                     <div className="p-6 space-y-4">
                         <div className="flex justify-between items-end">
-                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">Technical momentum</p>
+                            <div className="flex items-center">
+                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">Technical momentum</p>
+                                <InfoTooltip content="Score (0-100) based on RSI, MACD crossovers, and volume-weighted price action." />
+                            </div>
                             <p className="text-xl font-bold text-slate-900 dark:text-slate-100 tabular-nums">{technicalScore}%</p>
                         </div>
                         <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">

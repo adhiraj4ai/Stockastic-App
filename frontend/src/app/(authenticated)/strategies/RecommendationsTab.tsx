@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Play, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 interface Recommendation {
     strategy_id: number;
@@ -44,7 +45,10 @@ export default function RecommendationsTab() {
         <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-6">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">Market Recommendations</h2>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 flex items-center">
+                        Market Recommendations
+                        <InfoTooltip content="Real-time trade recommendations and setups generated automatically by your published algorithmic models." />
+                    </h2>
                     <p className="text-sm text-gray-500 dark:text-slate-400">Active signals from your published strategies running on latest market data.</p>
                 </div>
                 <Button variant="outline" size="sm" onClick={fetchRecommendations} disabled={loading} className="dark:border-slate-800 dark:bg-slate-900">

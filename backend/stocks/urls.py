@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations, chart, fibonacci, floorsheet, dividends, risk, sector_rotation, price_forecast
+    market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations, chart, fibonacci, floorsheet, dividends, risk, sector_rotation, price_forecast, price_action
 )
 
 
@@ -79,6 +79,10 @@ urlpatterns = [
     
     # Fibonacci Retracement
     path('fibonacci/<str:ticker>/', fibonacci.get_fibonacci_levels, name='fibonacci_levels'),
+
+    # Price Action Analysis
+    path('price-action-screener/', price_action.PriceActionScannerView.as_view(), name='price_action_screener'),
+    path('price-action/<str:ticker>/', price_action.PriceActionView.as_view(), name='price_action'),
 
     # Accumulation Price Study & Forecast
     path('accumulation-study/', price_forecast.AccumulationPriceStudyView.as_view(), name='accumulation_study'),

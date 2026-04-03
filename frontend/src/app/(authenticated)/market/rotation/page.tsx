@@ -8,6 +8,7 @@ import api from '@/lib/api';
 import { FullPageLoader } from '@/components/ui/StockLoader';
 import { cn } from '@/lib/utils';
 import { SectorWinRateChart, SectorAvgReturnChart, SectorScatterChart, SectorLagAnalysisChart } from './SectorStudyComponents';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 // --- Types ---
 
@@ -185,8 +186,11 @@ export default function SectorRotationPage() {
                     <div className="flex items-center gap-3 px-1">
                         <Activity className="text-orange-500" size={24} />
                         <div>
-                            <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Active Rotation Signals</h2>
-                            <p className="text-xs font-medium text-slate-500">Sectors currently flashing heavy accumulation, projecting future outperformance.</p>
+                            <div className="flex items-center">
+                                <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Active Rotation Signals</h2>
+                                <InfoTooltip content="Sectors currently acting as magnets for heavy capital inflows. The 'Projected 20d Excess' estimates sector outperformance based on historical regression." />
+                            </div>
+                            <p className="text-xs font-medium text-slate-500 mt-0.5">Sectors currently flashing heavy accumulation, projecting future outperformance.</p>
                         </div>
                     </div>
 
@@ -282,8 +286,11 @@ export default function SectorRotationPage() {
                     <div className="flex items-center gap-3 px-1">
                         <Layers className="text-slate-400" size={24} />
                         <div>
-                            <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Raw Sector Matrix</h2>
-                            <p className="text-xs font-medium text-slate-500">Traditional broad market absolute returns across timelines.</p>
+                            <div className="flex items-center">
+                                <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Raw Sector Matrix</h2>
+                                <InfoTooltip content="The classic performance matrix tracking absolute sector returns across broad timelines, regardless of accumulation metrics." />
+                            </div>
+                            <p className="text-xs font-medium text-slate-500 mt-0.5">Traditional broad market absolute returns across timelines.</p>
                         </div>
                     </div>
                     

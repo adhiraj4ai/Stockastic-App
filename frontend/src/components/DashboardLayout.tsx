@@ -36,6 +36,7 @@ const navItems = [
             { name: 'Bulk Transactions', href: '/market/bulk', icon: Layers },
             { name: 'Matching Transactions', href: '/market/matching', icon: GitMerge },
             { name: 'Social Highlights', href: '/social', icon: Share2 },
+            { name: 'Global PA Screener', href: '/market/pa-screener', icon: Target },
         ]
     },
     // Chat moved to top nav

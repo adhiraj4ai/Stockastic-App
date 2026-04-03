@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PageLoader } from '@/components/ui/StockLoader';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import Link from 'next/link';
 
 // ─── Types ────────────────────────────────────────────────────────
@@ -316,12 +317,15 @@ function FilterPill({ active, onClick, children }: {
 
 // ─── Summary Stat ─────────────────────────────────────────────────
 
-function StatCard({ label, value, sub, accent }: {
-    label: string; value: string; sub?: string; accent?: 'green' | 'red' | 'blue' | 'default';
+function StatCard({ label, value, sub, accent, tooltip }: {
+    label: string; value: string; sub?: string; accent?: 'green' | 'red' | 'blue' | 'default'; tooltip?: string;
 }) {
     return (
         <div className="bg-white dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-4">
-            <p className="text-[10px] font-bold text-slate-400 mb-1">{label}</p>
+            <div className="flex items-center mb-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+                {tooltip && <InfoTooltip content={tooltip} />}
+            </div>
             <div className={cn(
                 'text-2xl font-black tracking-tight',
                 accent === 'green' ? 'text-emerald-500' :
@@ -418,24 +422,28 @@ export default function TrackRecordClient() {
                     value={metrics.winRate != null ? `${metrics.winRate}%` : '—'}
                     sub={`${metrics.won}W · ${metrics.lost}L of ${metrics.resolved} resolved`}
                     accent={metrics.winRate != null && metrics.winRate >= 50 ? 'green' : 'red'}
+                    tooltip="Probability of a signal hitting at least TP1 before SL."
                 />
                 <StatCard
                     label="Avg profit on wins"
                     value={metrics.avgWinPnl != null ? `+${metrics.avgWinPnl.toFixed(1)}%` : '—'}
                     sub="Profit captured per winning signal"
                     accent="green"
+                    tooltip="The average percentage return across all winning trades (from entry to target exit)."
                 />
                 <StatCard
                     label="Loss contained by SL"
                     value={metrics.avgLossPnl != null ? `${metrics.avgLossPnl.toFixed(1)}%` : '—'}
                     sub="Avg loss limited by stop loss"
                     accent="red"
+                    tooltip="The average percentage loss on trades that hit the stop-loss level."
                 />
                 <StatCard
                     label="Risk : reward"
                     value={metrics.rr ? `1 : ${metrics.rr}` : '—'}
                     sub={`${metrics.total} total signals tracked`}
                     accent="blue"
+                    tooltip="The ratio of average profit per win vs average loss per SL hit. Higher is better."
                 />
             </div>
 
@@ -516,9 +524,24 @@ export default function TrackRecordClient() {
                                 <th className="px-5 py-3 text-[10px] font-bold text-slate-400 whitespace-nowrap">Symbol</th>
                                 <th className="px-5 py-3 text-[10px] font-bold text-slate-400 whitespace-nowrap">Engine · Tier</th>
                                 <th className="px-5 py-3 text-[10px] font-bold text-slate-400 whitespace-nowrap">Dates</th>
-                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 whitespace-nowrap">Price levels</th>
-                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 whitespace-nowrap">Result</th>
-                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 whitespace-nowrap text-right">P&amp;L</th>
+                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 whitespace-nowrap">
+                                    <div className="flex items-center">
+                                        Price levels
+                                        <InfoTooltip content="Key algorithmic levels including Entry, Targets (TP1-TP3), and Stop Loss." />
+                                    </div>
+                                </th>
+                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 whitespace-nowrap">
+                                    <div className="flex items-center">
+                                        Result
+                                        <InfoTooltip content="Visual summary of the trade outcome. Shows which targets were cleared or if the SL was hit." />
+                                    </div>
+                                </th>
+                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 whitespace-nowrap text-right">
+                                    <div className="flex items-center justify-end">
+                                        P&L
+                                        <InfoTooltip content="Percentage return achieved from entry to the point of exit/closure." />
+                                    </div>
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">

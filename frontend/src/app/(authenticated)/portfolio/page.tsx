@@ -27,6 +27,7 @@ import { FullPageLoader } from '@/components/ui/StockLoader';
 import { Badge } from '@/components/ui/badge';
 import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
 import { Input } from '@/components/ui/input';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import {
     Tooltip,
     TooltipContent,
@@ -452,7 +453,10 @@ function PortfolioContent() {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         <Card className="bg-gradient-to-br from-white to-blue-50/30 dark:from-slate-950 dark:to-slate-900 border-blue-100 dark:border-blue-900/30 shadow-sm hover:shadow-md transition-all">
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Capital Deployed</CardTitle>
+                                <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                                    Capital Deployed
+                                    <InfoTooltip content="Total initial investment across all active holdings in the selected account." />
+                                </CardTitle>
                                 <Wallet className="h-4 w-4 text-blue-500" />
                             </CardHeader>
                             <CardContent>
@@ -467,7 +471,10 @@ function PortfolioContent() {
 
                         <Card className="bg-gradient-to-br from-white to-purple-50/30 dark:from-slate-950 dark:to-slate-900 border-purple-100 dark:border-purple-900/30 shadow-sm hover:shadow-md transition-all">
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Portfolio Value</CardTitle>
+                                <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                                    Portfolio Value
+                                    <InfoTooltip content="Current market valuation of all holdings based on real-time price feeds." />
+                                </CardTitle>
                                 <DollarSign className="h-4 w-4 text-purple-500" />
                             </CardHeader>
                             <CardContent>
@@ -485,7 +492,10 @@ function PortfolioContent() {
                             : "bg-gradient-to-br from-white to-red-50/50 dark:from-slate-950 dark:to-red-900/20 border-red-100 dark:border-red-900/30"
                             }`}>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Returns</CardTitle>
+                                <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                                    Total Returns
+                                    <InfoTooltip content="Net unrealized profit or loss since inception, including reinvested capital." />
+                                </CardTitle>
                                 {totalGainLoss >= 0 ? <TrendingUp className="h-4 w-4 text-green-500" /> : <TrendingDown className="h-4 w-4 text-red-500" />}
                             </CardHeader>
                             <CardContent>
@@ -512,7 +522,10 @@ function PortfolioContent() {
                             : "bg-gradient-to-br from-white to-red-50/50 dark:from-slate-950 dark:to-red-900/20 border-red-100 dark:border-red-900/30"
                             }`}>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Session Swing</CardTitle>
+                                <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                                    Session Swing
+                                    <InfoTooltip content="Intraday profit or loss change for the current market session." />
+                                </CardTitle>
                                 <Zap className={`h-4 w-4 ${totalDayGainLoss >= 0 ? 'text-amber-500' : 'text-red-400'}`} />
                             </CardHeader>
                             <CardContent>
@@ -542,6 +555,7 @@ function PortfolioContent() {
                                 <div className="flex items-center gap-2 text-slate-800 dark:text-slate-100">
                                     <Grid3X3 className="h-5 w-5 text-gray-400 dark:text-slate-500" />
                                     <span className="font-bold">Strategic Holdings</span>
+                                    <InfoTooltip content="Real-time list of all active positions, tracking entry costs, current value, and profit metrics." />
                                     <div className="flex items-center gap-1.5 ml-2">
                                         <Badge className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800 hover:bg-emerald-50 text-[10px] px-2 py-0 h-5 font-black">
                                             #{stats.profit} Profit
@@ -750,9 +764,10 @@ function PortfolioContent() {
                         {/* Sector Analysis */}
                         <Card className="lg:col-span-8 shadow-sm dark:bg-slate-900 dark:border-slate-800">
                             <CardHeader className="flex flex-row items-center justify-between">
-                                <CardTitle className="text-lg flex items-center gap-2 dark:text-slate-100">
-                                    <BarIcon className="h-5 w-5 text-blue-500" />
+                                <CardTitle className="text-lg flex items-center dark:text-slate-100">
+                                    <BarIcon className="h-5 w-5 text-blue-500 mr-2" />
                                     Portfolio Visualizer
+                                    <InfoTooltip content="Graphical deep-dive into your asset allocation, sector diversification, and performance contribution." />
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>

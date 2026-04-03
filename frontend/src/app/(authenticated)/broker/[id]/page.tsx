@@ -17,6 +17,7 @@ import {
 import { Loader2, ArrowLeft, PieChart as PieChartIcon, Briefcase, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 interface BrokerHolding {
     symbol: string;
@@ -116,7 +117,10 @@ export default function BrokerPage() {
                     {/* Stats Card */}
                     <Card className="md:col-span-2 bg-gradient-to-br from-blue-600 to-blue-800 text-white border-none shadow-xl">
                         <CardHeader>
-                            <CardTitle className="text-blue-100 font-medium text-sm uppercase tracking-wider">Estimated Portfolio Value</CardTitle>
+                            <CardTitle className="text-blue-100 font-medium text-sm uppercase tracking-wider flex items-center">
+                                Estimated Portfolio Value
+                                <InfoTooltip content="Calculated based on net cumulative buy/sell transactions tracked for this broker across all active stocks." />
+                            </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="text-4xl font-black font-mono">
@@ -131,8 +135,10 @@ export default function BrokerPage() {
                     {/* Sector Chart */}
                     <Card className="bg-white border-none shadow-lg">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-bold text-gray-500 uppercase flex items-center gap-2">
-                                <PieChartIcon className="w-4 h-4" /> Sector Allocation
+                            <CardTitle className="text-sm font-bold text-gray-500 uppercase flex items-center">
+                                <PieChartIcon className="w-4 h-4 mr-2" /> 
+                                Sector Allocation
+                                <InfoTooltip content="Distribution of the broker's portfolio value across different industry sectors." />
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="h-[200px]">
@@ -161,9 +167,10 @@ export default function BrokerPage() {
                 {/* Holdings Table */}
                 <Card className="border-none shadow-xl bg-white/80 backdrop-blur-sm">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <TrendingUp className="w-5 h-5 text-green-600" />
+                        <CardTitle className="flex items-center">
+                            <TrendingUp className="w-5 h-5 text-green-600 mr-2" />
                             Current Holdings
+                            <InfoTooltip content="List of stocks where this broker maintains a net positive cumulative position based on historical trade tracking." />
                         </CardTitle>
                         <CardDescription>
                             Stocks where this broker has a positive net cumulative position.

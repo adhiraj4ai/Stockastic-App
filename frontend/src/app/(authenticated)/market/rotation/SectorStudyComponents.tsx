@@ -1,6 +1,7 @@
 'use client';
 
 import ReactECharts from 'echarts-for-react';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 function fmtPrice(n: number): string {
     return `रू${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
@@ -87,7 +88,10 @@ export function SectorWinRateChart({ winRates }: { winRates: Record<string, numb
 
     return (
         <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
-            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">Excess Return Probability (Win Rate)</h3>
+            <div className="flex items-center mb-4">
+                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Excess Return Probability (Win Rate)</h3>
+                <InfoTooltip content="Shows the historical probability (%) that an accumulated sector outperforms the broad market across subsequent 5d, 10d, 20d, and 30d periods." />
+            </div>
             <ReactECharts option={option} style={{ height: 240 }} notMerge />
         </div>
     );
@@ -156,7 +160,10 @@ export function SectorAvgReturnChart({
 
     return (
         <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
-            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">Avg vs Median Outperformance</h3>
+            <div className="flex items-center mb-4">
+                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Avg vs Median Outperformance</h3>
+                <InfoTooltip content="Illustrates typical sector excess returns. Use Median to understand the 'average' scenario without distortions, and Avg to gauge outlier potential." />
+            </div>
             <ReactECharts option={option} style={{ height: 240 }} notMerge />
         </div>
     );
@@ -227,9 +234,12 @@ export function SectorScatterChart({ scatterData }: { scatterData: Array<any> })
     return (
         <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                    Intensity vs Subsequent 20d Outperformance
-                </h3>
+                <div className="flex items-center">
+                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                        Intensity vs Subsequent 20d Outperformance
+                    </h3>
+                    <InfoTooltip content="Scatter plot demonstrating the correlation between the intensity of broker net-buying and the subsequent 20-day excess return. Shows if heavier buying translates to stronger outperformance, indicated by the dashed regression line." />
+                </div>
                 <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">{filtered.length} events</span>
             </div>
             <ReactECharts option={option} style={{ height: 300 }} notMerge />
@@ -306,9 +316,12 @@ export function SectorLagAnalysisChart({ lagAnalysis }: { lagAnalysis: Array<any
 
     return (
         <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
-            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">
-                Lag Analysis — Duration of Sector Edge
-            </h3>
+            <div className="flex items-center mb-4">
+                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    Lag Analysis — Duration of Sector Edge
+                </h3>
+                <InfoTooltip content="Maps the predictive edge over time. Helps identify the 'sweet spot' for holding accumulated sectors before momentum decays." />
+            </div>
             <ReactECharts option={option} style={{ height: 260 }} notMerge />
         </div>
     );

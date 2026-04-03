@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { StockLoader, PageLoader } from '@/components/ui/StockLoader';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import Link from 'next/link';
 import { DailySignalStatus } from '@/components/signals/DailySignalStatus';
 import {
@@ -203,7 +204,10 @@ function SignalPerformanceStats({ stats }: { stats: EnginePerformance[] }) {
             {stats.map((s) => (
                 <div key={s.source} className="rounded-xl border border-slate-200/60 dark:border-slate-800/50 bg-white dark:bg-slate-900/40 p-4 flex items-center gap-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate mb-0.5">{SOURCE_LABELS[s.source] || s.source}</p>
+                        <div className="flex items-center mb-0.5">
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate">{SOURCE_LABELS[s.source] || s.source}</p>
+                            <InfoTooltip content={`Historical performance of the ${SOURCE_LABELS[s.source] || s.source} engine based on completed signals.`} />
+                        </div>
                         <div className="flex items-baseline gap-1.5">
                             <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter">{s.win_rate}%</span>
                             <span className="text-[10px] text-slate-400">win</span>
@@ -292,14 +296,17 @@ function UnifiedSignalCard({
                                 </span>
                             )}
                             {conviction !== undefined && conviction >= 2 && (
-                                <span className={cn(
-                                    'text-[10px] font-bold px-1.5 py-0.5 rounded-md border',
-                                    conviction >= 3
-                                        ? 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/40'
-                                        : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
-                                )}>
-                                    {conviction >= 3 ? 'Triple conviction' : 'Dual confirmation'}
-                                </span>
+                                <div className="flex items-center">
+                                    <span className={cn(
+                                        'text-[10px] font-bold px-1.5 py-0.5 rounded-md border',
+                                        conviction >= 3
+                                            ? 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/40'
+                                            : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
+                                    )}>
+                                        {conviction >= 3 ? 'Triple conviction' : 'Dual confirmation'}
+                                    </span>
+                                    <InfoTooltip content="Proprietary confidence score. Triple conviction indicates agreement across 3+ distinct algorithmic models (Smart Money, Volume, Momentum)." />
+                                </div>
                             )}
                             {smartMoneyMetadata?.cluster_count > 0 && (
                                 <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
@@ -336,6 +343,10 @@ function UnifiedSignalCard({
                 <div className="flex items-center gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/60">
                     {/* Indicators */}
                     <div className="flex items-center gap-3 flex-1">
+                        <div className="flex items-center group/confirm">
+                            <Activity size={13} className="text-slate-400" />
+                            <InfoTooltip content="Real-time technical indicators (RSI & MACD) used to confirm the momentum behind the signal." />
+                        </div>
                         <div className="flex flex-col">
                             <span className="text-[9px] text-slate-400 font-bold uppercase">RSI</span>
                             <span className={cn(
