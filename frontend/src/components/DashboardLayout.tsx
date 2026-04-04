@@ -37,6 +37,7 @@ const navItems = [
             { name: 'Matching Transactions', href: '/market/matching', icon: GitMerge },
             { name: 'Social Highlights', href: '/social', icon: Share2 },
             { name: 'Global PA Screener', href: '/market/pa-screener', icon: Target },
+            { name: 'Volume Profile', href: '/market/volume-profile', icon: BarChart3 },
         ]
     },
     // Chat moved to top nav
@@ -58,12 +59,15 @@ const navItems = [
         icon: Activity,
         subItems: [
             { name: 'Command Center', href: '/accumulation/dashboard', icon: Layers },
+            { name: 'Smart Money', href: '/accumulation/smart-money', icon: Brain },
             { name: 'Broker Trends', href: '/accumulation/trends', icon: BarChart3 },
+            { name: 'Focus Ranking', href: '/accumulation/focus-ranking', icon: Target },
             { name: 'Accumulation History', href: '/accumulation/history', icon: History },
             { name: 'Price Study', href: '/accumulation/price-study', icon: TrendingUp },
             { name: 'Broker Favorites', href: '/accumulation/favorites', icon: Star },
             { name: 'Share Transfer', href: '/accumulation/share-transfer', icon: Share2 },
             { name: 'Accumulators Navigator', href: '/accumulation/navigator', icon: Users },
+            { name: 'Below Cost Positions', href: '/accumulation/below-cost', icon: TrendingDown },
         ]
     },
     { name: 'Financials', href: '/financials', icon: FileText },

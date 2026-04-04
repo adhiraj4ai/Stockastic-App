@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import { Card } from '@/components/ui/card';
 import { CompanySelect } from '@/components/CompanySelect';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { 
     BarChart3, 
@@ -293,7 +294,6 @@ export default function VolumeProfilePage() {
                                     <div className="p-4 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-xl border border-indigo-100 dark:border-indigo-900/20">
                                         <div className="flex gap-2">
                                             <InfoTooltip 
-                                                title="Intel Insights" 
                                                 content="The Point of Control (POC) represents the 'fair price' where the most substantial liquidity was found. The Value Area encapsulates 70% of the movement, showing where the majority of market participants agreed on value."
                                             />
                                             <p className="text-[10px] font-bold text-indigo-700 dark:text-indigo-400 leading-relaxed uppercase tracking-tight">Institutional Agreement Zone is highlighted in Teal.</p>
