@@ -1046,15 +1046,7 @@ export default function AccumulationPriceStudyPage() {
             {/* Page Header */}
             <div className="flex flex-col md:flex-row md:items-center gap-4">
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
-                        <div className="p-2 rounded-xl bg-orange-500/10">
-                            <TrendingUp size={20} className="text-orange-500" />
-                        </div>
-                        <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                            Accumulation → Price Study
-                        </h1>
-                    </div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 font-medium ml-12">
+                    <p className="text-sm text-slate-500 dark:text-slate-400 font-medium pt-1">
                         {isSymbolMode
                             ? `Showing forecast for ${symbol} based on historical accumulation events`
                             : 'Does broker accumulation predict future price? Here\'s proof.'}

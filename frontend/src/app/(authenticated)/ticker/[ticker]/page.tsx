@@ -37,6 +37,7 @@ import TechnicalAnalysis from '@/components/ticker/TechnicalAnalysis';
 import IndicatorTooltip from '@/components/ticker/IndicatorTooltip';
 import TickerAccumulation from '@/components/ticker/TickerAccumulation';
 import TickerSignals from '@/components/ticker/TickerSignals';
+import TickerSmartMoney from '@/components/ticker/TickerSmartMoney';
 import PriceActionTerminal from '@/components/ticker/PriceActionTerminal';
 
 interface StockDetailData {
@@ -673,6 +674,7 @@ export default function StockDetailPage() {
                                         <TabsTrigger value="accumulation" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all">Accumulation</TabsTrigger>
                                         <TabsTrigger value="technical" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Technical Analysis</TabsTrigger>
                                         <TabsTrigger value="fundamentals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Fundamentals</TabsTrigger>
+                                        <TabsTrigger value="smart_money" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-amber-600 dark:data-[state=active]:text-amber-400 data-[state=active]:shadow-sm transition-all">Smart Money</TabsTrigger>
                                     </TabsList>
                                 </div>
                             </div>
@@ -934,6 +936,10 @@ export default function StockDetailPage() {
 
                                 <TabsContent value="accumulation" className="mt-0">
                                     <TickerAccumulation symbol={ticker} />
+                                </TabsContent>
+
+                                <TabsContent value="smart_money" forceMount className="mt-0 data-[state=inactive]:hidden">
+                                    <TickerSmartMoney symbol={ticker} />
                                 </TabsContent>
 
                             </div>
