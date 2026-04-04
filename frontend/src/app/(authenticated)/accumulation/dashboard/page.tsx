@@ -13,7 +13,7 @@ import { PageLoader } from '@/components/ui/StockLoader';
 import Link from 'next/link';
 import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
 import {
-    AccumulationData, AggressivePattern, BelowCostPosition,
+    AccumulationData, AggressivePattern,
     SmartMoneyData, BrokerDetailData,
 } from '@/types/accumulation';
 import { TrendBadge } from '@/components/accumulation/TrendBadge';
@@ -36,7 +36,6 @@ const TIME_RANGES = [
 
 const CHART_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] as const;
 const PAGE_SIZE = 20;
-const BELOW_COST_PAGE_SIZE = 50;
 
 const TABLE_COLS = [
     { label: 'Ticker',    col: 'symbol',             align: 'left',   accent: '',        hide: '' },
@@ -49,7 +48,7 @@ const TABLE_COLS = [
     { label: 'Sellers',   col: null,                 align: 'center', accent: '',        hide: 'md' },
 ] as const;
 
-type BottomTab = 'aggressive' | 'smart-money' | 'below-cost';
+type BottomTab = 'aggressive' | 'smart-money';
 
 // ─── Helper components (stable, outside main component) ──────────────────────
 
@@ -152,7 +151,6 @@ export default function AccumulationDashboard() {
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [page, setPage] = useState(1);
-    const [bcPage, setBcPage] = useState(1);
     const [sortConfig, setSortConfig] = useState<{ key: keyof AccumulationData; direction: 'asc' | 'desc' }>({
         key: 'net_qty', direction: 'desc',
     });
@@ -161,13 +159,11 @@ export default function AccumulationDashboard() {
     const [overviewData, setOverviewData]   = useState<AccumulationData[]>([]);
     const [aggressiveData, setAggressiveData] = useState<{ accumulators: AggressivePattern[]; distributors: AggressivePattern[] }>({ accumulators: [], distributors: [] });
     const [smartMoneyData, setSmartMoneyData] = useState<SmartMoneyData | null>(null);
-    const [belowCostData, setBelowCostData]   = useState<BelowCostPosition[]>([]);
 
     // Loading
     const [loadingOverview,   setLoadingOverview]   = useState(true);
     const [loadingAggressive, setLoadingAggressive] = useState(true);
     const [loadingSmartMoney, setLoadingSmartMoney] = useState(true);
-    const [loadingBelowCost,  setLoadingBelowCost]  = useState(false);
     const [loadingDetail,     setLoadingDetail]     = useState(false);
 
     // Master-detail
@@ -177,13 +173,13 @@ export default function AccumulationDashboard() {
     // Bottom tab
     const [activeTab, setActiveTab] = useState<BottomTab>('aggressive');
 
-    // Abort controller refs — prevent stale responses overwriting fresh data
-    const abortOverview   = useRef<AbortController | null>(null);
-    const abortDetail     = useRef<AbortController | null>(null);
-    const abortBelowCost  = useRef<AbortController | null>(null);
+    // Smart Money local range
+    const [smartMoneyRange, setSmartMoneyRange] = useState('1D');
 
-    // Track which range's below-cost data we have (avoids redundant `belowCostLoaded` state)
-    const belowCostRangeRef = useRef<string | null>(null);
+    // Abort controller refs — prevent stale responses overwriting fresh data
+    const abortOverview    = useRef<AbortController | null>(null);
+    const abortDetail      = useRef<AbortController | null>(null);
+    const abortSmartMoney  = useRef<AbortController | null>(null);
 
     // ─── Debounce search ────────────────────────────────────────────────────
     useEffect(() => {
@@ -216,32 +212,22 @@ export default function AccumulationDashboard() {
         return () => abortOverview.current?.abort();
     }, [range]);
 
-    // ─── Fetch: Smart Money (once on mount) ─────────────────────────────────
+    // ─── Fetch: Smart Money (lazy — only when tab is active, refetch on range) ─
     useEffect(() => {
-        api.get('/api/stocks/floorsheet/smart_money/')
+        if (activeTab !== 'smart-money') return;
+
+        abortSmartMoney.current?.abort();
+        abortSmartMoney.current = new AbortController();
+        const { signal } = abortSmartMoney.current;
+
+        setLoadingSmartMoney(true);
+        api.get(`/api/stocks/floorsheet/smart_money/?range=${smartMoneyRange}`, { signal })
             .then(res => setSmartMoneyData(res.data))
-            .catch(err => console.error('Failed to fetch smart money', err))
+            .catch(err => { if (err.name !== 'AbortError') console.error('Failed to fetch smart money', err); })
             .finally(() => setLoadingSmartMoney(false));
-    }, []);
 
-    // ─── Fetch: Below Cost (lazy — only when tab is active, refetch on range) ─
-    useEffect(() => {
-        if (activeTab !== 'below-cost') return;
-        if (belowCostRangeRef.current === range && belowCostData.length > 0) return;
-
-        abortBelowCost.current?.abort();
-        abortBelowCost.current = new AbortController();
-        const { signal } = abortBelowCost.current;
-
-        setLoadingBelowCost(true);
-        setBcPage(1);
-        api.get(`/api/stocks/companies/below_cost/?range=${range}`, { signal })
-            .then(res => { setBelowCostData(res.data); belowCostRangeRef.current = range; })
-            .catch(err => { if (err.name !== 'AbortError') console.error('Failed to fetch below cost', err); })
-            .finally(() => setLoadingBelowCost(false));
-
-        return () => abortBelowCost.current?.abort();
-    }, [activeTab, range]);
+        return () => abortSmartMoney.current?.abort();
+    }, [activeTab, smartMoneyRange]);
 
     // ─── Fetch: Detail broker chart (on symbol select or range change) ───────
     useEffect(() => {
@@ -288,9 +274,6 @@ export default function AccumulationDashboard() {
 
     const pagedRows   = useMemo(() => filteredOverview.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [filteredOverview, page]);
     const totalPages  = Math.ceil(filteredOverview.length / PAGE_SIZE) || 1;
-
-    const pagedBelowCost    = useMemo(() => belowCostData.slice((bcPage - 1) * BELOW_COST_PAGE_SIZE, bcPage * BELOW_COST_PAGE_SIZE), [belowCostData, bcPage]);
-    const totalBcPages      = Math.ceil(belowCostData.length / BELOW_COST_PAGE_SIZE) || 1;
 
     const kpi = useMemo(() => ({
         accCount:       overviewData.filter(d => d.net_qty > 0).length,
@@ -807,7 +790,6 @@ export default function AccumulationDashboard() {
                     {([
                         { key: 'aggressive',  label: 'Aggressive Patterns', icon: <Zap className="w-3.5 h-3.5" /> },
                         { key: 'smart-money', label: 'Smart Money',         icon: <Crown className="w-3.5 h-3.5" /> },
-                        { key: 'below-cost',  label: 'Below Cost',          icon: <AlertTriangle className="w-3.5 h-3.5" /> },
                     ] as { key: BottomTab; label: string; icon: React.ReactNode }[]).map(tab => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                             className={cn(
@@ -867,7 +849,19 @@ export default function AccumulationDashboard() {
 
                     {/* ── Smart Money ───────────────────────────────────────── */}
                     {activeTab === 'smart-money' && (
-                        loadingSmartMoney ? <PageLoader text="Loading smart money signals..." /> : (
+                        <>
+                            <div className="flex items-center gap-1.5 mb-5">
+                                {(['1D', '2D', '3D', '1W', '1M', '3M', '6M'] as const).map(r => (
+                                    <button key={r} onClick={() => setSmartMoneyRange(r)}
+                                        className={cn(
+                                            'px-3 py-1.5 text-[11px] font-black rounded-lg border transition-all',
+                                            smartMoneyRange === r
+                                                ? 'bg-amber-500 border-amber-500 text-white shadow-sm'
+                                                : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-amber-300 dark:hover:border-amber-700 hover:text-amber-600 dark:hover:text-amber-400',
+                                        )}>{r}</button>
+                                ))}
+                            </div>
+                        {loadingSmartMoney ? <PageLoader text="Loading smart money signals..." /> : (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 <div>
                                     <h3 className="flex items-center gap-2 text-sm font-black text-amber-700 dark:text-amber-400 mb-4">
@@ -945,104 +939,8 @@ export default function AccumulationDashboard() {
                                     </div>
                                 </div>
                             </div>
-                        )
-                    )}
-
-                    {/* ── Below Cost ────────────────────────────────────────── */}
-                    {activeTab === 'below-cost' && (
-                        loadingBelowCost ? <PageLoader text="Loading below cost positions..." /> : (
-                            <div>
-                                <div className="mb-4">
-                                    <h3 className="flex items-center gap-2 text-sm font-black text-orange-700 dark:text-orange-400">
-                                        <AlertTriangle className="w-4 h-4" />
-                                        Positions Trading Below WAC
-                                        <span className="text-[10px] px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full border border-orange-200 dark:border-orange-800/30">
-                                            {belowCostData.length}
-                                        </span>
-                                    </h3>
-                                </div>
-                                <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-slate-800">
-                                    <table className="w-full text-xs border-separate border-spacing-0">
-                                        <thead>
-                                            <tr className="bg-slate-50 dark:bg-slate-800/50">
-                                                {[
-                                                    { label: 'Symbol',    accent: '' },
-                                                    { label: 'Broker',    accent: '' },
-                                                    { label: 'Total Pos.', accent: '' },
-                                                    { label: 'WAC',       accent: 'orange' },
-                                                    { label: 'LTP',       accent: '' },
-                                                    { label: 'ROC',       accent: 'rose' },
-                                                    { label: '5D',  accent: '' },
-                                                    { label: '10D', accent: '' },
-                                                    { label: '20D', accent: '' },
-                                                    { label: '50D', accent: '' },
-                                                ].map(h => (
-                                                    <th key={h.label} className={cn(
-                                                        'px-3 py-3 text-left font-black uppercase tracking-wider text-[10px] border-b border-slate-100 dark:border-slate-800',
-                                                        h.accent === 'orange' ? 'text-orange-500 dark:text-orange-400'
-                                                            : h.accent === 'rose' ? 'text-rose-500 dark:text-rose-400'
-                                                            : 'text-slate-500 dark:text-slate-400',
-                                                    )}>{h.label}</th>
-                                                ))}
-                                                <th className="w-10 border-b border-slate-100 dark:border-slate-800" />
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
-                                            {pagedBelowCost.length === 0 ? (
-                                                <tr><td colSpan={11} className="p-8 text-center text-slate-400">No below-cost positions found</td></tr>
-                                            ) : pagedBelowCost.map((item, idx) => (
-                                                <tr key={idx} className="group hover:bg-orange-50/20 dark:hover:bg-orange-900/5 transition-colors border-l-2 border-l-orange-200/40 hover:border-l-orange-400">
-                                                    <td className="px-3 py-2.5">
-                                                        <Link href={`/ticker/${item.symbol}`}>
-                                                            <span className="font-black text-slate-900 dark:text-indigo-300 hover:text-indigo-600 dark:hover:text-white transition-colors">{item.symbol}</span>
-                                                        </Link>
-                                                        <div className="text-[9px] text-slate-400 truncate max-w-[70px]">{item.name}</div>
-                                                    </td>
-                                                    <td className="px-3 py-2.5">
-                                                        <Link href={`/broker/${item.broker}`}>
-                                                            <span className="px-1.5 py-0.5 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded text-[10px] font-black border border-slate-100 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors">
-                                                                #{item.broker}
-                                                            </span>
-                                                        </Link>
-                                                    </td>
-                                                    <td className="px-3 py-2.5 font-mono font-bold text-slate-600 dark:text-slate-400 tabular-nums">{formatNepaliNumber(item.cumulative_net)}</td>
-                                                    <td className="px-3 py-2.5 font-mono font-black text-orange-600 dark:text-orange-400 tabular-nums">{formatRupees(item.wac, 1)}</td>
-                                                    <td className="px-3 py-2.5 font-mono font-bold text-slate-800 dark:text-slate-200 tabular-nums">{formatRupees(item.ltp, 1)}</td>
-                                                    <td className="px-3 py-2.5 font-black text-rose-600 dark:text-rose-400 tabular-nums">{item.roc?.toFixed(2)}%</td>
-                                                    <td className="px-2 py-2.5"><TrendBadge trend={item.trend_5d}  change={item.change_5d} /></td>
-                                                    <td className="px-2 py-2.5"><TrendBadge trend={item.trend_10d} change={item.change_10d} /></td>
-                                                    <td className="px-2 py-2.5"><TrendBadge trend={item.trend_20d} change={item.change_20d} /></td>
-                                                    <td className="px-2 py-2.5"><TrendBadge trend={item.trend_50d} change={item.change_50d} /></td>
-                                                    <td className="px-2 py-2.5">
-                                                        <Link href={`/accumulation/history?symbol=${item.symbol}&broker=${item.broker}`}>
-                                                            <Button variant="ghost" size="sm"
-                                                                className="h-6 w-6 p-0 rounded-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-indigo-50 dark:hover:bg-indigo-900/30">
-                                                                <ArrowRight className="w-3 h-3 text-indigo-500" />
-                                                            </Button>
-                                                        </Link>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                {belowCostData.length > BELOW_COST_PAGE_SIZE && (
-                                    <div className="mt-3 px-1 flex items-center justify-between">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{belowCostData.length} positions</span>
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-[10px] font-black text-slate-400">{bcPage} / {totalBcPages}</span>
-                                            <div className="flex gap-1.5">
-                                                <Button variant="outline" size="sm" onClick={() => setBcPage(p => Math.max(1, p - 1))} disabled={bcPage === 1}
-                                                    className="h-7 px-3 text-[10px] font-black rounded-lg border-slate-200 dark:border-white/10">Prev</Button>
-                                                <Button variant="outline" size="sm" onClick={() => setBcPage(p => Math.min(totalBcPages, p + 1))} disabled={bcPage >= totalBcPages}
-                                                    className="h-7 px-3 text-[10px] font-black rounded-lg border-slate-200 dark:border-white/10">Next</Button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )
+                        )}
+                        </>
                     )}
                 </div>
             </div>

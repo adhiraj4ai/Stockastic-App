@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations, chart, fibonacci, floorsheet, dividends, risk, sector_rotation, price_forecast, price_action
+    market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations, chart, fibonacci, floorsheet, dividends, risk, sector_rotation, price_forecast, price_action, volume_profile
 )
 
 
@@ -24,6 +24,7 @@ router.register(r'signals', strategy.StrategySignalViewSet, basename='strategy-s
 router.register(r'generated-signals', strategy.GeneratedSignalViewSet, basename='generated-signals')
 router.register(r'broker-analysis', broker.BrokerViewSet, basename='broker-analysis')
 router.register(r'floorsheet', floorsheet.FloorsheetViewSet, basename='floorsheet-analytics')
+router.register(r'market/volume-profile', volume_profile.VolumeProfileView, basename='volume-profile')
 
 urlpatterns = [
     path('', include(router.urls)),

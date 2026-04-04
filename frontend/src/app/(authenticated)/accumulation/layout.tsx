@@ -11,6 +11,9 @@ const titles: Record<string, string> = {
     '/accumulation/history': 'Accumulation History',
     '/accumulation/share-transfer': 'Share Transfer Dashboard',
     '/accumulation/price-study': 'Accumulation → Price Study',
+    '/accumulation/smart-money': 'Smart Money Intelligence',
+    '/accumulation/focus-ranking': 'Broker Focus Ranking',
+    '/accumulation/below-cost': 'Below Cost Positions',
 };
 
 export default function AccumulationLayout({
