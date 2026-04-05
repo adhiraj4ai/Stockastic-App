@@ -102,11 +102,12 @@ type SortDir = 'asc' | 'desc';
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function SmartMoneyPage() {
-    const [range, setRange] = useState<Range>('1W');
-    const [data, setData] = useState<SmartMoneyFullData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'signals' | 'flow'>('signals');
-    const [sort, setSort] = useState<{ key: SignalSortKey; dir: SortDir }>({ key: 'amount', dir: 'desc' });
+    const [range, setRange]             = useState<Range>('1D');
+    const [data, setData]               = useState<SmartMoneyFullData | null>(null);
+    const [loading, setLoading]         = useState(true);
+    const [activeTab, setActiveTab]     = useState<'signals' | 'flow'>('signals');
+    const [sort, setSort]               = useState<{ key: SignalSortKey; dir: SortDir }>({ key: 'amount', dir: 'desc' });
+    const [selectedId, setSelectedId]   = useState<number | null>(null);
     const abortRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
@@ -124,10 +125,17 @@ export default function SmartMoneyPage() {
     }, [range]);
 
     // ─── Derived data ─────────────────────────────────────────────────────────
+    const selectedBroker = useMemo(() =>
+        data?.leaderboard?.find(b => b.broker_id === selectedId),
+    [data?.leaderboard, selectedId]);
 
-    const sortedSignals = useMemo(() => {
+    const filteredSignals = useMemo(() => {
         if (!data?.signals) return [];
-        const enriched = data.signals.map(s => ({
+        const base = selectedId
+            ? data.signals.filter(s => s.broker_id === selectedId)
+            : data.signals;
+
+        const enriched = base.map(s => ({
             ...s,
             pnl: s.avg_buy_price > 0 ? (s.ltp - s.avg_buy_price) / s.avg_buy_price * 100 : 0,
         }));
@@ -137,10 +145,35 @@ export default function SmartMoneyPage() {
                 :                         a.amount - b.amount;
             return sort.dir === 'desc' ? -v : v;
         });
-    }, [data?.signals, sort]);
+    }, [data?.signals, sort, selectedId]);
 
-    const profitSignals   = useMemo(() => sortedSignals.filter(s => s.pnl >= 0).length, [sortedSignals]);
-    const avgPnl          = useMemo(() => sortedSignals.length ? sortedSignals.reduce((acc, s) => acc + s.pnl, 0) / sortedSignals.length : 0, [sortedSignals]);
+    const filteredFlows = useMemo(() => {
+        if (!data?.symbol_flows || !data?.signals) return [];
+        if (!selectedId) return data.symbol_flows;
+
+        // Calculate symbol flows for the SPECIFIC broker from their signals
+        const brokerSignals = data.signals.filter(s => s.broker_id === selectedId);
+        const map = new Map<string, SymbolFlow>();
+
+        brokerSignals.forEach(s => {
+            const existing = map.get(s.symbol) || {
+                symbol: s.symbol,
+                smart_buy_qty: 0, smart_sell_qty: 0, net_qty: 0,
+                buy_amount: 0, sell_amount: 0, net_amount: 0,
+                broker_count: 1,
+            };
+            existing.smart_buy_qty += s.qty;
+            existing.net_qty       += s.qty;
+            existing.buy_amount    += s.amount;
+            existing.net_amount    += s.amount;
+            map.set(s.symbol, existing);
+        });
+
+        return Array.from(map.values()).sort((a, b) => b.net_amount - a.net_amount);
+    }, [data?.symbol_flows, data?.signals, selectedId]);
+
+    const profitSignals   = useMemo(() => filteredSignals.filter(s => s.pnl >= 0).length, [filteredSignals]);
+    const avgPnl          = useMemo(() => filteredSignals.length ? filteredSignals.reduce((acc, s) => acc + s.pnl, 0) / filteredSignals.length : 0, [filteredSignals]);
 
     // ─── Chart options ────────────────────────────────────────────────────────
 
@@ -197,39 +230,45 @@ export default function SmartMoneyPage() {
                             ],
                         },
                         borderRadius: [0, 4, 4, 0],
+                        opacity: selectedId && selectedId !== b.broker_id ? 0.3 : 1,
                     },
                 })),
                 barMaxWidth: 18,
                 label: {
-                    show: true,
-                    position: 'right',
+                    show: true, position: 'right',
                     formatter: (p: any) => `${p.value.toLocaleString()}`,
-                    color: '#64748b',
-                    fontSize: 10,
-                    fontWeight: '600',
+                    color: '#64748b', fontSize: 10, fontWeight: '600',
                 },
             }],
         };
-    }, [data?.leaderboard]);
+    }, [data?.leaderboard, selectedId]);
 
     const symbolFlowChart = useMemo(() => {
-        if (!data?.symbol_flows?.length) return {};
-        const flows = [...data.symbol_flows].slice(0, 15).reverse();
+        if (!filteredFlows?.length) return {};
+        const flows = [...filteredFlows].slice(0, 15).reverse();
         const maxQty = Math.max(...flows.map(f => f.net_qty));
+
+        // Use selected broker's tier color if available, otherwise neutral institutional amber
+        const tierColor = selectedBroker
+            ? TIER_STYLES[selectedBroker.rank].barColor
+            : '#f59e0b'; // Amber 500
+
         return {
             tooltip: {
                 trigger: 'axis',
                 axisPointer: { type: 'shadow' },
                 formatter: (params: any[]) => {
-                    const flow = data.symbol_flows.find(f => f.symbol === params[0]?.name);
+                    const flow = filteredFlows.find(f => f.symbol === params[0]?.name);
                     if (!flow) return '';
+                    const isPos = flow.net_qty >= 0;
+                    const primaryColor = selectedBroker ? tierColor : (isPos ? '#10b981' : '#f43f5e');
                     return `
                         <div style="font-size:13px;font-weight:600;margin-bottom:6px">${flow.symbol}</div>
                         <div style="display:flex;justify-content:space-between;gap:20px;font-size:11px"><span style="color:#10b981">Smart Buy</span><b style="color:#e2e8f0">+${formatNepaliNumber(flow.smart_buy_qty)}</b></div>
-                        <div style="display:flex;justify-content:space-between;gap:20px;font-size:11px;margin-top:3px"><span style="color:#f87171">Smart Sell</span><b style="color:#e2e8f0">−${formatNepaliNumber(flow.smart_sell_qty)}</b></div>
-                        <div style="display:flex;justify-content:space-between;gap:20px;font-size:11px;margin-top:6px;padding-top:6px;border-top:1px solid #1e293b"><span style="color:#f59e0b;font-weight:600">Net Accum.</span><b style="color:#f59e0b">+${formatNepaliNumber(flow.net_qty)}</b></div>
+                        ${flow.smart_sell_qty > 0 ? `<div style="display:flex;justify-content:space-between;gap:20px;font-size:11px;margin-top:3px"><span style="color:#f87171">Smart Sell</span><b style="color:#e2e8f0">−${formatNepaliNumber(flow.smart_sell_qty)}</b></div>` : ''}
+                        <div style="display:flex;justify-content:space-between;gap:20px;font-size:11px;margin-top:6px;padding-top:6px;border-top:1px solid #1e293b"><span style="color:${primaryColor};font-weight:600">Net Accum.</span><b style="color:${primaryColor}">${isPos ? '+' : ''}${formatNepaliNumber(flow.net_qty)}</b></div>
                         <div style="display:flex;justify-content:space-between;gap:20px;font-size:11px;margin-top:3px"><span style="color:#94a3b8">Net Capital</span><b style="color:#e2e8f0">${formatRupees(flow.net_amount, 0)}</b></div>
-                        <div style="display:flex;justify-content:space-between;gap:20px;font-size:11px;margin-top:3px"><span style="color:#94a3b8">Active Brokers</span><b style="color:#e2e8f0">${flow.broker_count}</b></div>
+                        ${!selectedBroker ? `<div style="display:flex;justify-content:space-between;gap:20px;font-size:11px;margin-top:3px"><span style="color:#94a3b8">Active Brokers</span><b style="color:#e2e8f0">${flow.broker_count}</b></div>` : ''}
                     `;
                 },
                 backgroundColor: '#0f172a',
@@ -255,32 +294,43 @@ export default function SmartMoneyPage() {
             series: [{
                 name: 'Net Accumulation',
                 type: 'bar',
-                data: flows.map(f => ({
-                    value: f.net_qty,
-                    itemStyle: {
-                        color: {
-                            type: 'linear', x: 0, y: 0, x2: 1, y2: 0,
-                            colorStops: [
-                                { offset: 0, color: 'rgba(245,158,11,0.15)' },
-                                { offset: 1, color: '#f59e0b' },
-                            ],
+                data: flows.map(f => {
+                    const isPos = f.net_qty >= 0;
+                    const primaryColor = selectedBroker ? tierColor : (isPos ? '#10b981' : '#f43f5e');
+                    const fadedColor = selectedBroker ? `${tierColor}26` : (isPos ? 'rgba(16,185,129,0.15)' : 'rgba(244,63,94,0.15)');
+                    return {
+                        value: f.net_qty,
+                        itemStyle: {
+                            color: {
+                                type: 'linear', x: 0, y: 0, x2: 1, y2: 0,
+                                colorStops: [
+                                    { offset: 0, color: fadedColor },
+                                    { offset: 1, color: primaryColor },
+                                ],
+                            },
+                            borderRadius: [0, 5, 5, 0],
                         },
-                        borderRadius: [0, 5, 5, 0],
-                    },
-                })),
+                        label: {
+                            color: primaryColor,
+                        },
+                    };
+                }),
                 barMaxWidth: 20,
                 label: {
                     show: true,
                     position: 'right',
-                    formatter: (p: any) => `+${formatNepaliNumber(p.value)}`,
-                    color: '#94a3b8',
+                    formatter: (p: any) => `${p.value >= 0 ? '+' : ''}${formatNepaliNumber(p.value)}`,
                     fontSize: 10,
                     fontWeight: '600',
                 },
-                emphasis: { itemStyle: { color: '#f59e0b' } },
+                emphasis: {
+                    itemStyle: {
+                        color: (p: any) => selectedBroker ? tierColor : (p.data.value >= 0 ? '#10b981' : '#f43f5e')
+                    }
+                },
             }],
         };
-    }, [data?.symbol_flows]);
+    }, [filteredFlows, selectedBroker]);
 
     // ─── Sort toggle helper ───────────────────────────────────────────────────
 
@@ -373,31 +423,48 @@ export default function SmartMoneyPage() {
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                         {kpiCards.map(card => {
                             const c = colorMap[card.color];
+                            const isSelectable = card.label === 'Active Smart Brokers';
                             return (
-                                <div key={card.label} className="bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 p-5 shadow-sm">
-                                    <div className={cn('w-8 h-8 rounded-xl flex items-center justify-center mb-3', c.icon)}>
-                                        {card.icon}
+                                <div key={card.label}
+                                    onClick={() => isSelectable && selectedId && setSelectedId(null)}
+                                    className={cn(
+                                        'bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 p-5 shadow-sm',
+                                        isSelectable && selectedId && 'cursor-pointer hover:border-amber-500/50 transition-colors group'
+                                    )}>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className={cn('w-8 h-8 rounded-xl flex items-center justify-center', c.icon)}>
+                                            {card.icon}
+                                        </div>
+                                        {isSelectable && selectedId && (
+                                            <span className="text-[9px] font-bold text-amber-500 opacity-60 group-hover:opacity-100">Click to reset</span>
+                                        )}
                                     </div>
-                                    <div className={cn('text-xl font-bold tabular-nums', c.val)}>{card.fmt(card.value)}</div>
+                                    <div className={cn('text-xl font-bold tabular-nums', c.val)}>
+                                        {card.fmt(selectedId && isSelectable ? 1 : card.value)}
+                                    </div>
                                     <div className="text-[11px] font-medium text-slate-600 dark:text-slate-300 mt-0.5">{card.label}</div>
-                                    <div className="text-[10px] font-normal text-slate-400 mt-0.5">{card.sub}</div>
+                                    <div className="text-[10px] font-normal text-slate-400 mt-0.5">
+                                        {selectedId && isSelectable ? `Filtering Broker #${selectedId}` : card.sub}
+                                    </div>
                                 </div>
                             );
                         })}
                     </div>
 
                     {/* ── Signal Health Bar ────────────────────────────────────── */}
-                    {sortedSignals.length > 0 && (
+                    {filteredSignals.length > 0 && (
                         <div className="bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 px-6 py-4 shadow-sm flex flex-wrap items-center gap-6">
                             <div className="flex items-center gap-2">
                                 <Activity className="w-4 h-4 text-slate-400" />
-                                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Signal Health</span>
+                                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                    {selectedId ? `Broker #${selectedId}` : 'Institutional'} Signal Health
+                                </span>
                             </div>
                             <div className="flex-1 min-w-[200px]">
                                 <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                                     <div
                                         className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-500"
-                                        style={{ width: `${(profitSignals / sortedSignals.length) * 100}%` }}
+                                        style={{ width: `${(profitSignals / filteredSignals.length) * 100}%` }}
                                     />
                                 </div>
                             </div>
@@ -406,7 +473,7 @@ export default function SmartMoneyPage() {
                                     <ArrowUpRight className="w-3.5 h-3.5" />{profitSignals} profitable
                                 </span>
                                 <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1">
-                                    <ArrowDownRight className="w-3.5 h-3.5" />{sortedSignals.length - profitSignals} in loss
+                                    <ArrowDownRight className="w-3.5 h-3.5" />{filteredSignals.length - profitSignals} in loss
                                 </span>
                                 <span className={cn('flex items-center gap-1', avgPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')}>
                                     <TrendingUp className="w-3.5 h-3.5" />Avg {avgPnl >= 0 ? '+' : ''}{avgPnl.toFixed(2)}%
@@ -432,6 +499,12 @@ export default function SmartMoneyPage() {
                             {data?.leaderboard?.length ? (
                                 <div className="px-3 pt-4 pb-2">
                                     <ReactECharts
+                                        onEvents={{
+                                            'click': (params: any) => {
+                                                const id = parseInt(params.name.replace('#', ''));
+                                                setSelectedId(prev => prev === id ? null : id);
+                                            }
+                                        }}
                                         option={brokerScoreChart}
                                         style={{ height: `${Math.max(140, data.leaderboard.length * 26)}px` }}
                                         opts={{ renderer: 'svg' }}
@@ -461,68 +534,100 @@ export default function SmartMoneyPage() {
                                     const style = TIER_STYLES[broker.rank] ?? TIER_STYLES.C;
                                     const maxScore = data.leaderboard[0]?.score ?? 1;
                                     const barPct = Math.round((broker.score / maxScore) * 100);
+                                    const isSelected = selectedId === broker.broker_id;
                                     return (
-                                        <Link href={`/broker/${broker.broker_id}`} key={broker.broker_id}>
-                                            <div className={cn(
-                                                'p-3 rounded-xl border transition-all hover:shadow-sm group',
-                                                style.bg, style.border,
+                                        <div key={broker.broker_id}
+                                            onClick={() => setSelectedId(isSelected ? null : broker.broker_id)}
+                                            className={cn(
+                                                'p-3 rounded-xl border transition-all cursor-pointer group relative overflow-hidden',
+                                                isSelected ? `${style.bg} ${style.border} ring-1 ring-inset ring-current/20` : 'border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/[0.02]',
                                             )}>
-                                                <div className="flex items-center gap-2.5 mb-2">
-                                                    <div className={cn('w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0', style.badge)}>
-                                                        {idx + 1}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="text-xs font-medium text-slate-700 dark:text-slate-200">Broker #{broker.broker_id}</div>
-                                                        <div className="text-[10px] text-slate-400">{broker.rank} · {style.label}</div>
-                                                    </div>
-                                                    <div className="text-sm font-semibold shrink-0 tabular-nums text-slate-800 dark:text-slate-100">
-                                                        {broker.score.toLocaleString()}<span className="text-[9px] font-normal ml-0.5 opacity-60">pts</span>
-                                                    </div>
+                                            <div className="flex items-center gap-2.5 mb-2 relative z-10">
+                                                <div className={cn('w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0', style.badge)}>
+                                                    {idx + 1}
                                                 </div>
-                                                <div className="h-1 rounded-full bg-black/5 dark:bg-white/5 overflow-hidden">
-                                                    <div
-                                                        className="h-full rounded-full transition-all duration-700"
-                                                        style={{ width: `${barPct}%`, backgroundColor: style.barColor, opacity: 0.7 }}
-                                                    />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-xs font-medium text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                                                        Broker #{broker.broker_id}
+                                                        {isSelected && <Zap className="w-2.5 h-2.5 fill-current" />}
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-400">{broker.rank} · {style.label}</div>
+                                                </div>
+                                                <div className="text-sm font-semibold shrink-0 tabular-nums text-slate-800 dark:text-slate-100">
+                                                    {broker.score.toLocaleString()}<span className="text-[9px] font-normal ml-0.5 opacity-60">pts</span>
                                                 </div>
                                             </div>
-                                        </Link>
+                                            <div className="h-1 rounded-full bg-black/5 dark:bg-white/5 overflow-hidden relative z-10">
+                                                <div
+                                                    className="h-full rounded-full transition-all duration-700"
+                                                    style={{ width: `${barPct}%`, backgroundColor: style.barColor, opacity: isSelected ? 1 : 0.4 }}
+                                                />
+                                            </div>
+                                            <Link href={`/broker/${broker.broker_id}`}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="absolute top-2 right-2 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-slate-200 dark:hover:bg-white/10 transition-all z-20">
+                                                <ArrowUpRight className="w-3 h-3 text-slate-400" />
+                                            </Link>
+                                        </div>
                                     );
                                 })}
                             </div>
                         </div>
 
                         {/* Right column: Signals + Symbol Flow ───────────────── */}
-                        <div className="lg:col-span-2 bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm overflow-hidden">
+                        <div className="lg:col-span-2 bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm overflow-hidden flex flex-col">
+                            {/* Section Header */}
+                            {selectedId && (
+                                <div className="px-5 py-3 border-b border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-white/[0.01] flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className={cn('w-2 h-2 rounded-full animate-pulse', TIER_STYLES[selectedBroker?.rank || 'C'].bg)} style={{ backgroundColor: TIER_STYLES[selectedBroker?.rank || 'C'].barColor }} />
+                                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-tight">
+                                            Institutional Insights: Broker #{selectedId}
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={() => setSelectedId(null)}
+                                        className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
+                                    >
+                                        Clear Filter
+                                    </button>
+                                </div>
+                            )}
+
                             {/* Tab bar */}
                             <div className="border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] px-5 flex items-center gap-1">
                                 {([
                                     { key: 'signals' as const, label: 'Whale Signals', icon: <Zap className="w-3.5 h-3.5" /> },
                                     { key: 'flow' as const,    label: 'Symbol Intelligence', icon: <BarChart3 className="w-3.5 h-3.5" /> },
-                                ]).map(tab => (
-                                    <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                                        className={cn(
-                                            'flex items-center gap-1.5 px-4 py-4 text-xs font-semibold tracking-tight border-b-2 transition-all whitespace-nowrap',
-                                            activeTab === tab.key
-                                                ? 'border-amber-500 text-amber-600 dark:text-amber-400'
-                                                : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300',
-                                        )}>
-                                        {tab.icon}{tab.label}
-                                    </button>
-                                ))}
+                                ]).map(tab => {
+                                    const isActive = activeTab === tab.key;
+                                    const themeColor = selectedBroker ? TIER_STYLES[selectedBroker.rank].barColor : '#f59e0b';
+                                    return (
+                                        <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                                            className={cn(
+                                                'flex items-center gap-1.5 px-4 py-4 text-xs font-semibold tracking-tight border-b-2 transition-all whitespace-nowrap',
+                                                isActive
+                                                    ? 'text-slate-900 dark:text-white'
+                                                    : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300',
+                                            )}
+                                            style={isActive ? { borderBottomColor: themeColor, color: themeColor } : {}}>
+                                            {tab.icon}{tab.label}
+                                        </button>
+                                    );
+                                })}
                                 <div className="ml-auto flex items-center gap-2 pr-1">
-                                    {activeTab === 'signals' && data?.signals?.length ? (
+                                    {activeTab === 'signals' && filteredSignals?.length ? (
                                         <>
-                                            <span className="text-[10px] px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full border border-slate-200 dark:border-slate-700 font-medium">
+                                            <span className="text-[10px] px-2 py-0.5 bg-emerald-500/10 text-emerald-500 rounded-full border border-emerald-500/20 font-medium">
                                                 {profitSignals} profitable
                                             </span>
                                             <span className="text-[10px] px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full border border-slate-200 dark:border-slate-700 font-medium">
-                                                {data.signals.length} signals
+                                                {filteredSignals.length} {selectedId ? 'trades' : 'signals'}
                                             </span>
                                         </>
-                                    ) : activeTab === 'flow' && data?.symbol_flows?.length ? (
+                                    ) : activeTab === 'flow' && filteredFlows?.length ? (
                                         <span className="text-[10px] px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full border border-slate-200 dark:border-slate-700 font-medium">
-                                            {data.symbol_flows.length} stocks
+                                            {filteredFlows.length} stocks
                                         </span>
                                     ) : null}
                                 </div>
@@ -559,13 +664,13 @@ export default function SmartMoneyPage() {
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-50 dark:divide-slate-800/60">
-                                                {!sortedSignals.length ? (
+                                                {!filteredSignals.length ? (
                                                     <tr>
-                                                        <td colSpan={7} className="p-10 text-center text-slate-400 text-sm">
-                                                            No whale signals detected in this period
+                                                        <td colSpan={7} className="p-10 text-center text-slate-400 text-sm italic">
+                                                            {selectedId ? `No active whale signals tracked for Broker #${selectedId}` : 'No whale signals detected in this period'}
                                                         </td>
                                                     </tr>
-                                                ) : sortedSignals.map((signal, idx) => {
+                                                ) : filteredSignals.map((signal, idx) => {
                                                     const isProfit = signal.pnl >= 0;
                                                     const pnlAbs = Math.abs(signal.pnl);
                                                     return (
@@ -627,7 +732,7 @@ export default function SmartMoneyPage() {
                                             <>
                                                 <ReactECharts
                                                     option={symbolFlowChart}
-                                                    style={{ height: `${Math.max(180, Math.min(data.symbol_flows.length, 15) * 28)}px` }}
+                                                    style={{ height: `${Math.max(180, Math.min(filteredFlows.length, 15) * 28)}px` }}
                                                     opts={{ renderer: 'svg' }}
                                                 />
                                                 <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-slate-800">
@@ -640,8 +745,8 @@ export default function SmartMoneyPage() {
                                                             </tr>
                                                         </thead>
                                                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800/60">
-                                                            {data.symbol_flows.map((sf, idx) => (
-                                                                <tr key={sf.symbol} className="hover:bg-amber-50/30 dark:hover:bg-amber-900/5 transition-colors">
+                                                            {filteredFlows.map((sf, idx) => (
+                                                                <tr key={sf.symbol} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
                                                                     <td className="px-4 py-3 text-slate-400 font-bold tabular-nums">{idx + 1}</td>
                                                                     <td className="px-4 py-3">
                                                                         <Link href={`/ticker/${sf.symbol}`}>

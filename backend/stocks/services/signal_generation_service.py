@@ -26,6 +26,7 @@ class SignalGenerationService:
             ('BROKER_ACCUMULATION', SignalGenerationService._generate_broker_accumulation_signals),
             ('SMART_CROSSOVER', SignalGenerationService._generate_smart_crossover_signals),
             ('ICHIMOKU', SignalGenerationService._generate_ichimoku_signals),
+            ('INSTITUTIONAL_ALERTS', SignalGenerationService._generate_institutional_alerts),
         ]
 
         for i, (source_key, generator_fn) in enumerate(sources):
@@ -33,9 +34,16 @@ class SignalGenerationService:
                 progress_callback(i + 1, len(sources), source_key)
             try:
                 signals = generator_fn()
-                saved = SignalGenerationService._persist_signals(source_key, signals)
-                total_saved += saved
-                logger.info(f"[{source_key}] Generated and saved {saved} signals")
+                if source_key == 'INSTITUTIONAL_ALERTS':
+                    # Special case: multi-source generator returns list of dicts with 'source' included
+                    for sub_source, sub_signals in signals.items():
+                        saved = SignalGenerationService._persist_signals(sub_source, sub_signals)
+                        total_saved += saved
+                        logger.info(f"[{sub_source}] Generated and saved {saved} signals via institutional scanner")
+                else:
+                    saved = SignalGenerationService._persist_signals(source_key, signals)
+                    total_saved += saved
+                    logger.info(f"[{source_key}] Generated and saved {saved} signals")
             except Exception as e:
                 logger.error(f"[{source_key}] Failed to generate signals: {e}")
 
@@ -348,3 +356,59 @@ class SignalGenerationService:
             logger.error(f"Ichimoku signal generation error: {e}")
 
         return signals
+
+    @staticmethod
+    def _generate_institutional_alerts():
+        """
+        Consolidated scanner for 10 institutional signal types (Price Action, Mean Reversal, Divg, Dow).
+        Returns a dictionary mapping source keys to lists of signal dicts.
+        """
+        from ..models import Company
+        from ..analytics.signal_scanner import MarketSignalScanner
+        
+        # Mapping for result keys to model sources
+        SOURCE_MAP = {
+            "pa_buy": "PRICE_ACTION", "pa_sell": "PRICE_ACTION",
+            "mr_buy": "MEAN_REVERSAL", "mr_sell": "MEAN_REVERSAL",
+            "rsi_bull_div": "RSI_DIVERGENCE", "rsi_bear_div": "RSI_DIVERGENCE",
+            "macd_bull_div": "MACD_DIVERGENCE", "macd_bear_div": "MACD_DIVERGENCE",
+            "dow_buy": "DOW_SIGNAL", "dow_sell": "DOW_SIGNAL"
+        }
+        
+        # Final grouped results
+        grouped_results = {src: [] for src in set(SOURCE_MAP.values())}
+        
+        try:
+            # Fetch symbols to scan
+            tickers = list(Company.objects.values_list('symbol', flat=True))
+            if not tickers:
+                tickers = list(Company.all_objects.values_list('symbol', flat=True))
+            
+            # Use the optimized MarketSignalScanner logic (reusing existing utility)
+            # We limit to top 250 for pipeline performance; could be increased.
+            scanner = MarketSignalScanner(tickers[:250])
+            all_scan_results = scanner.scan_all()
+            
+            today = date.today()
+            
+            for key, symbols in all_scan_results.items():
+                source = SOURCE_MAP.get(key)
+                if not source: continue
+                
+                signal_type = "BUY" if "buy" in key or "bull" in key or "long" in key else "SELL"
+                
+                for symbol in symbols:
+                    grouped_results[source].append({
+                        'symbol': symbol,
+                        'signal': signal_type,
+                        'signal_tier': key.replace('_', ' ').title(),
+                        'strength': 75, # Default strength for alerts
+                        'rationale': f"Institutional {key.replace('_', ' ')} detected via automated scanner.",
+                        'generated_date': today,
+                        'metadata': {'scan_key': key}
+                    })
+                    
+        except Exception as e:
+            logger.error(f"Institutional alerts generation error: {e}")
+            
+        return grouped_results

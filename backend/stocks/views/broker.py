@@ -518,19 +518,59 @@ def get_broker_portfolio(request):
         return Response({'error': 'broker_id is required'}, status=400)
     
     query = """
-    WITH latest_positions AS (
+    WITH ref_dates AS (
+        SELECT 
+            MAX(transaction_date) as t0,
+            MAX(transaction_date) - INTERVAL '5 days' as t5,
+            MAX(transaction_date) - INTERVAL '10 days' as t10,
+            MAX(transaction_date) - INTERVAL '15 days' as t15,
+            MAX(transaction_date) - INTERVAL '30 days' as t30,
+            MAX(transaction_date) - INTERVAL '90 days' as t90
+        FROM daily_cumulative_accumulation
+        WHERE entity_id = %s
+    ),
+    latest_positions AS (
         SELECT
             ca.symbol, ca.entity_id, ca.cumulative_net,
+            ca.cumulative_buy, ca.cumulative_buy_amount,
             ROW_NUMBER() OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date DESC) as rn
         FROM daily_cumulative_accumulation ca
         WHERE ca.entity_id = %s
+    ),
+    historical_data AS (
+        SELECT 
+            pos.symbol,
+            (SELECT cumulative_net FROM daily_cumulative_accumulation h 
+             WHERE h.symbol = pos.symbol AND h.entity_id = pos.entity_id AND h.transaction_date <= rd.t5 
+             ORDER BY h.transaction_date DESC LIMIT 1) as net_5d,
+            (SELECT cumulative_net FROM daily_cumulative_accumulation h 
+             WHERE h.symbol = pos.symbol AND h.entity_id = pos.entity_id AND h.transaction_date <= rd.t10 
+             ORDER BY h.transaction_date DESC LIMIT 1) as net_10d,
+            (SELECT cumulative_net FROM daily_cumulative_accumulation h 
+             WHERE h.symbol = pos.symbol AND h.entity_id = pos.entity_id AND h.transaction_date <= rd.t15 
+             ORDER BY h.transaction_date DESC LIMIT 1) as net_15d,
+            (SELECT cumulative_net FROM daily_cumulative_accumulation h 
+             WHERE h.symbol = pos.symbol AND h.entity_id = pos.entity_id AND h.transaction_date <= rd.t30 
+             ORDER BY h.transaction_date DESC LIMIT 1) as net_30d,
+            (SELECT cumulative_net FROM daily_cumulative_accumulation h 
+             WHERE h.symbol = pos.symbol AND h.entity_id = pos.entity_id AND h.transaction_date <= rd.t90 
+             ORDER BY h.transaction_date DESC LIMIT 1) as net_90d
+        FROM latest_positions pos, ref_dates rd
+        WHERE pos.rn = 1
     )
     SELECT
         pos.symbol, c."companyName" as name, c."sectorName" as sector,
         pos.cumulative_net as quantity, dsp.close as current_price,
-        COALESCE(pos.cumulative_net * dsp.close, 0) as value
+        COALESCE(pos.cumulative_net * dsp.close, 0) as value,
+        COALESCE(pos.cumulative_buy_amount / NULLIF(pos.cumulative_buy, 0), 0) as wac,
+        (pos.cumulative_net - COALESCE(hd.net_5d, 0)) as trend_5d,
+        (pos.cumulative_net - COALESCE(hd.net_10d, 0)) as trend_10d,
+        (pos.cumulative_net - COALESCE(hd.net_15d, 0)) as trend_15d,
+        (pos.cumulative_net - COALESCE(hd.net_30d, 0)) as trend_1m,
+        (pos.cumulative_net - COALESCE(hd.net_90d, 0)) as trend_3m
     FROM latest_positions pos
     INNER JOIN companies c ON pos.symbol = c.symbol
+    LEFT JOIN historical_data hd ON pos.symbol = hd.symbol
     LEFT JOIN (
         SELECT DISTINCT ON (symbol) symbol, close FROM daily_stock_price ORDER BY symbol, transaction_date DESC
     ) dsp ON pos.symbol = dsp.symbol
@@ -538,7 +578,7 @@ def get_broker_portfolio(request):
     ORDER BY value DESC;
     """
     with connections['default'].cursor() as cursor:
-        cursor.execute(query, [broker_id])
+        cursor.execute(query, [broker_id, broker_id])
         columns = [col[0] for col in cursor.description]
         results = [dict(zip(columns, row)) for row in cursor.fetchall()]
     total_value = sum(h['value'] for h in results if h['value'])

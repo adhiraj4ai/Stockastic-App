@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations, chart, fibonacci, floorsheet, dividends, risk, sector_rotation, price_forecast, price_action, volume_profile
+    market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations, chart, fibonacci, floorsheet, dividends, risk, sector_rotation, price_forecast, price_action, volume_profile, signal_alerts
 )
 
 
@@ -88,4 +88,7 @@ urlpatterns = [
     # Accumulation Price Study & Forecast
     path('accumulation-study/', price_forecast.AccumulationPriceStudyView.as_view(), name='accumulation_study'),
     path('accumulation-forecast/<str:symbol>/', price_forecast.AccumulationForecastView.as_view(), name='accumulation_forecast'),
+
+    # Signal Alerts (New)
+    path('signal-alerts/', signal_alerts.SignalAlertsView.as_view(), name='signal_alerts'),
 ]

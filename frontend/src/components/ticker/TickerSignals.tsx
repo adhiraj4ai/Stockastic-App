@@ -46,6 +46,11 @@ const SOURCE_LABELS: Record<string, string> = {
     'BROKER_ACCUMULATION': 'Broker Accumulation',
     'SMART_CROSSOVER': 'Smart Crossover',
     'ICHIMOKU': 'Ichimoku Cloud',
+    'PRICE_ACTION': 'Price Action',
+    'MEAN_REVERSAL': 'Mean Reversal',
+    'RSI_DIVERGENCE': 'RSI Divergence',
+    'MACD_DIVERGENCE': 'MACD Divergence',
+    'DOW_SIGNAL': 'Dow Signal',
 };
 
 const SOURCE_ICONS: Record<string, any> = {
@@ -53,6 +58,11 @@ const SOURCE_ICONS: Record<string, any> = {
     'BROKER_ACCUMULATION': BarChart3,
     'SMART_CROSSOVER': Activity,
     'ICHIMOKU': Layers,
+    'PRICE_ACTION': Zap,
+    'MEAN_REVERSAL': Brain,
+    'RSI_DIVERGENCE': Activity,
+    'MACD_DIVERGENCE': Activity,
+    'DOW_SIGNAL': Shield,
 };
 
 const SOURCE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -76,6 +86,31 @@ const SOURCE_COLORS: Record<string, { bg: string; text: string; border: string }
         text: 'text-cyan-700 dark:text-cyan-400', 
         border: 'border-cyan-100 dark:border-cyan-800/40'
     },
+    'PRICE_ACTION': {
+        bg: 'bg-emerald-50 dark:bg-emerald-900/10',
+        text: 'text-emerald-700 dark:text-emerald-400',
+        border: 'border-emerald-100 dark:border-emerald-800/40'
+    },
+    'MEAN_REVERSAL': {
+        bg: 'bg-rose-50 dark:bg-rose-900/10',
+        text: 'text-rose-700 dark:text-rose-400',
+        border: 'border-rose-100 dark:border-rose-800/40'
+    },
+    'RSI_DIVERGENCE': {
+        bg: 'bg-indigo-50 dark:bg-indigo-900/10',
+        text: 'text-indigo-700 dark:text-indigo-400',
+        border: 'border-indigo-100 dark:border-indigo-800/40'
+    },
+    'MACD_DIVERGENCE': {
+        bg: 'bg-blue-50 dark:bg-blue-900/10',
+        text: 'text-blue-700 dark:text-blue-400',
+        border: 'border-blue-100 dark:border-blue-800/40'
+    },
+    'DOW_SIGNAL': {
+        bg: 'bg-slate-50 dark:bg-slate-800/40',
+        text: 'text-slate-700 dark:text-slate-300',
+        border: 'border-slate-200 dark:border-slate-700'
+    }
 };
 
 const TIER_COLORS: Record<string, string> = {
@@ -294,12 +329,14 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
     const hiddenStratsCount = strategySignals.length - visibleStrats.length;
 
     // Categorization for Intelligence signals
-    const { buySellSignals, accumulationSignals } = useMemo(() => {
+    const { buySellSignals, accumulationSignals, institutionalAlerts } = useMemo(() => {
         const buySellSources = ['SMART_CROSSOVER', 'ICHIMOKU'];
         const accumulationSources = ['SMART_MONEY', 'BROKER_ACCUMULATION'];
+        const institutionalSources = ['PRICE_ACTION', 'MEAN_REVERSAL', 'RSI_DIVERGENCE', 'MACD_DIVERGENCE', 'DOW_SIGNAL'];
 
         const buySellMap = new Map<string, GeneratedSignal[]>();
         const accMap = new Map<string, GeneratedSignal[]>();
+        const instMap = new Map<string, GeneratedSignal[]>();
 
         for (const sig of intelSignals) {
             if (buySellSources.includes(sig.source)) {
@@ -310,6 +347,10 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                 const arr = accMap.get(sig.source) ?? [];
                 arr.push(sig);
                 accMap.set(sig.source, arr);
+            } else if (institutionalSources.includes(sig.source)) {
+                const arr = instMap.get(sig.source) ?? [];
+                arr.push(sig);
+                instMap.set(sig.source, arr);
             }
         }
 
@@ -328,8 +369,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
         return {
             buySellSignals: filterVisible(buySellMap),
             accumulationSignals: filterVisible(accMap),
-            totalBuySell: buySellMap.size,
-            totalAcc: accMap.size
+            institutionalAlerts: filterVisible(instMap),
         };
     }, [intelSignals, currentPrice, showHistoricalIntel, intelligence]);
 
@@ -469,6 +509,32 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                                 ))}
                             </div>
                         </div>
+                    </div>
+
+                    {/* 3. INSTITUTIONAL ALERTS (Intelligence Grid) */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 px-1">
+                            <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
+                                <Shield size={16} />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-1">
+                                    <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base tracking-tight">Institutional alerts</h3>
+                                    <InfoTooltip content="High-fidelity alerts for Price Action, Mean Reversal, Divergences, and multi-day Structure Breaks (Dow)." />
+                                </div>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium tracking-tight">Advanced technical pulse</p>
+                            </div>
+                        </div>
+
+                        {institutionalAlerts.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {institutionalAlerts.map(([source, signals]) => (
+                                    <IntelCard key={source} source={source} signals={signals} currentPrice={currentPrice} intelligence={intelligence} />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-8 text-center text-sm text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">No active institutional alerts.</div>
+                        )}
                     </div>
 
                     {/* 3. BUY/SELL SIGNALS (Intelligence Grid) */}

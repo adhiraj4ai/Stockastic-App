@@ -118,6 +118,11 @@ class GeneratedSignal(models.Model):
         ('BROKER_ACCUMULATION', 'Broker Accumulation'),
         ('SMART_CROSSOVER', 'Smart Crossover'),
         ('ICHIMOKU', 'Ichimoku Accumulation'),
+        ('PRICE_ACTION', 'Price Action'),
+        ('MEAN_REVERSAL', 'Mean Reversal'),
+        ('RSI_DIVERGENCE', 'RSI Divergence'),
+        ('MACD_DIVERGENCE', 'MACD Divergence'),
+        ('DOW_SIGNAL', 'Dow Signal'),
     )
     SIGNAL_CHOICES = (
         ('BUY', 'Buy'),
