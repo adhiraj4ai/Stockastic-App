@@ -567,7 +567,7 @@ class FloorsheetViewSet(viewsets.ViewSet):
 
         # 3. Global smart broker context (top 10 buyers market-wide in last 30 days)
         allowed_symbols = Company.objects.values_list('symbol', flat=True)
-        thirty_days_ago = now - timedelta(days=30)
+        thirty_days_ago = today - timedelta(days=30)
         global_smart_ids = set(
             DailyFloorsheet.objects.filter(
                 transaction_date__gte=thirty_days_ago, symbol__in=allowed_symbols

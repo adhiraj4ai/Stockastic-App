@@ -171,9 +171,10 @@ const getFreshness = (dateStr: string) => {
     const diffMs = today.getTime() - sigDate.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffDays <= 1) return { label: 'Active', color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20', icon: CheckCircle2, status: 'active' };
-    if (diffDays <= 3) return { label: 'Recent', color: 'text-amber-500 bg-amber-500/10 border-amber-500/20', icon: AlertCircle, status: 'recent' };
-    return { label: 'Historical', color: 'text-slate-400 bg-slate-400/10 border-slate-400/20', icon: History, status: 'historical' };
+    if (diffMs <= 1000 * 60 * 60 * 24) return { label: 'Active', color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20', icon: CheckCircle2, status: 'active' };
+    if (diffDays <= 7) return { label: 'Recent', color: 'text-amber-500 bg-amber-500/10 border-amber-500/20', icon: AlertCircle, status: 'recent' };
+    if (diffDays <= 21) return { label: 'Historical', color: 'text-slate-400 bg-slate-400/10 border-slate-400/20', icon: History, status: 'historical' };
+    return { label: 'Expired', color: 'text-slate-300 bg-slate-300/10 border-slate-300/20', icon: History, status: 'expired' };
 };
 
 // ─── Entry Zone Validation Utility ───────────────────────────────────────────
@@ -308,8 +309,11 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                     api.get('/api/stocks/generated-signals/', { params: { symbol, page_size: 100 } }).catch(() => null),
                 ]);
 
-                setStrategySignals(stratRes?.data?.results ?? []);
-                setIntelSignals(intelRes?.data?.results ?? []);
+                const sData = stratRes?.data;
+                const iData = intelRes?.data;
+
+                setStrategySignals(Array.isArray(sData) ? sData : sData?.results ?? []);
+                setIntelSignals(Array.isArray(iData) ? iData : iData?.results ?? []);
             } catch (_) { }
             setLoading(false);
         };
@@ -322,7 +326,8 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
         return strategySignals.filter(s => {
             const freshness = getFreshness(s.date);
             const action = getActionability(parseFloat(s.last_close), currentPrice, s.signal, intelligence);
-            return freshness.status !== 'historical' && (!action || action.status === 'valid');
+            // Relaxed: Show if NOT expired
+            return freshness.status !== 'expired';
         });
     }, [strategySignals, currentPrice, showHistoricalStrats, intelligence]);
     
@@ -361,8 +366,8 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
             return entries.filter(([_, signals]) => {
                 const latest = [...signals].sort((a, b) => b.generated_date.localeCompare(a.generated_date))[0];
                 const freshness = getFreshness(latest.generated_date);
-                const action = getActionability(parseFloat(latest.ltp), currentPrice, latest.signal, intelligence);
-                return freshness.status !== 'historical' && (!action || action.status === 'valid');
+                // Relaxed: Show if NOT expired
+                return freshness.status !== 'expired';
             });
         };
 
@@ -372,6 +377,23 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
             institutionalAlerts: filterVisible(instMap),
         };
     }, [intelSignals, currentPrice, showHistoricalIntel, intelligence]);
+
+    const consensusStats = useMemo(() => {
+        if (intelSignals.length === 0) return { consensus: 'NEUTRAL', buyPct: 0, sellPct: 0, total: 0, intelCount: 0 };
+        
+        const buys = intelSignals.filter(s => s.signal === 'BUY').length;
+        const sells = intelSignals.filter(s => s.signal === 'SELL').length;
+        const total = intelSignals.length;
+        
+        const buyPct = (buys / total) * 100;
+        const sellPct = (sells / total) * 100;
+        
+        let consensus = 'NEUTRAL';
+        if (buyPct > 60) consensus = 'BUY';
+        else if (sellPct > 60) consensus = 'SELL';
+        
+        return { consensus, buyPct, sellPct, total, intelCount: intelSignals.length };
+    }, [intelSignals]);
 
     if (loading) {
         return (
@@ -393,6 +415,15 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                 </div>
             ) : (
                 <>
+                    {/* 0. CONSENSUS SUMMARY */}
+                    <ConsensusHero 
+                        consensus={consensusStats.consensus}
+                        buyPct={consensusStats.buyPct}
+                        sellPct={consensusStats.sellPct}
+                        total={strategySignals.length}
+                        intelCount={consensusStats.intelCount}
+                    />
+
                     {/* 1. TECHNICAL SIGNALS (Strategies Table) */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between px-1">
@@ -432,7 +463,9 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                     {visibleStrats.length === 0 && (
                                         <tr>
-                                            <td colSpan={5} className="py-8 text-center text-slate-400 italic">No active technical strategies.</td>
+                                            <td colSpan={5} className="py-8 text-center text-slate-400 italic">
+                                                {hiddenStratsCount > 0 ? `No active signals found. Click "Show legacy" to view ${hiddenStratsCount} historical records.` : "No technical strategy signals discovered."}
+                                            </td>
                                         </tr>
                                     )}
                                     {visibleStrats.map(sig => {

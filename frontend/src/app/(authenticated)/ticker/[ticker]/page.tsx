@@ -134,6 +134,8 @@ export default function StockDetailPage() {
         'section-key_ratios'
     ]));
 
+    const [latestSignal, setLatestSignal] = useState<'BUY' | 'SELL' | undefined>(undefined);
+
     const toggleCollapse = (id: string) => {
         setCollapsedItems(prev => {
             const next = new Set(prev);
@@ -208,6 +210,21 @@ export default function StockDetailPage() {
                     const finRes = await api.get(`/api/stocks/financials/${ticker}/`);
                     setFinancials(finRes.data);
                 } catch (fnErr) { console.error("Financials fetch failed", fnErr); }
+
+                // Fetch Latest Signal for Header
+                try {
+                    const signalRes = await api.get('/api/stocks/generated-signals/', { params: { symbol: ticker, page_size: 1 } });
+                    const latest = signalRes.data?.results?.[0] || signalRes.data?.[0];
+                    if (latest) {
+                        // Only show if generated in last 7 days
+                        const sigDate = new Date(latest.generated_date);
+                        const now = new Date();
+                        const diffDays = Math.floor((now.getTime() - sigDate.getTime()) / (1000 * 60 * 60 * 24));
+                        if (diffDays <= 14) {
+                            setLatestSignal(latest.signal);
+                        }
+                    }
+                } catch (sErr) { console.error("Signal fetch failed", sErr); }
 
             } catch (err) {
                 console.error("Failed to fetch stock data", err);
@@ -644,6 +661,7 @@ export default function StockDetailPage() {
                                 price={data.price.close}
                                 change={data.price.change}
                                 percentChange={data.price.percent_change}
+                                signal={latestSignal}
                                 fundamentalScore={intelligence.fundamentalScore}
                                 technicalScore={intelligence.technicalScore}
                                 riskLevel={intelligence.riskLevel}
