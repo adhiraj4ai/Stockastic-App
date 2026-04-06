@@ -5,58 +5,82 @@ from stocks.models import GeneratedSignal, DailyStockPrice
 from django.db import transaction
 
 class Command(BaseCommand):
-    help = 'Evaluates active signals against latest market prices to update won/lost status'
+    help = 'Evaluates active signals against historical market prices (High/Low) to update won/lost status'
 
     def handle(self, *args, **options):
         active_signals = GeneratedSignal.objects.filter(status='ACTIVE')
-        self.stdout.write(f"Found {active_signals.count()} active signals to evaluate.")
+        total_count = active_signals.count()
+        self.stdout.write(f"Evaluating {total_count} active signals...")
 
-        won_count: int = 0
-        lost_count: int = 0
-        
-        # Get latest prices for all symbols in active signals
-        symbols = active_signals.values_list('symbol', flat=True).distinct()
-        latest_prices = {}
-        
-        for symbol in symbols:
-            latest_price = DailyStockPrice.objects.filter(ticker=symbol).order_by('-date').first()
-            if latest_price:
-                latest_prices[symbol] = latest_price.close
+        won_count = 0
+        lost_count = 0
+        processed_count = 0
 
-        with transaction.atomic():
-            for sig in active_signals:
-                current_price = latest_prices.get(sig.symbol)
-                if not current_price:
-                    continue
-                
-                # Convert to Decimal for comparison if needed
-                curr = Decimal(str(current_price))
-                target = sig.target_price
-                sl = sig.stop_loss_price
-                entry = sig.ltp
-                
-                new_status = None
-                
+        # Optimization: Map all prices since the oldest active signal to memory 
+        # to avoid thousands of small DB queries if possible, but 3000 signals is manageable with prefetching.
+        
+        for sig in active_signals:
+            processed_count += 1
+            if processed_count % 100 == 0:
+                self.stdout.write(f"Processed {processed_count}/{total_count} signals...")
+
+            # Get all price action since the signal was generated, in chronological order
+            prices = DailyStockPrice.objects.filter(
+                ticker=sig.symbol, 
+                date__gte=sig.generated_date
+            ).order_by('date')
+
+            target = sig.target_price
+            sl = sig.stop_loss_price
+            entry = sig.ltp
+
+            new_status = None
+            hit_date = None
+            hit_price = None
+
+            for p in prices:
+                curr_high = Decimal(str(p.high))
+                curr_low = Decimal(str(p.low))
+                curr_close = Decimal(str(p.close))
+
                 if sig.signal == 'BUY':
-                    if target and curr >= target:
+                    # Check Target Hit first (High of day)
+                    if target and curr_high >= target:
                         new_status = 'WON'
-                    elif sl and curr <= sl:
+                        hit_price = target # Conservative: user exit at target
+                        hit_date = p.date
+                        break
+                    # Check SL Hit (Low of day)
+                    elif sl and curr_low <= sl:
                         new_status = 'LOST'
+                        hit_price = sl # Conservative
+                        hit_date = p.date
+                        break
                 elif sig.signal == 'SELL':
-                    if target and curr <= target:
+                    # Check Target Hit (Low of day)
+                    if target and curr_low <= target:
                         new_status = 'WON'
-                    elif sl and curr >= sl:
+                        hit_price = target
+                        hit_date = p.date
+                        break
+                    # Check SL Hit (High of day)
+                    elif sl and curr_high >= sl:
                         new_status = 'LOST'
-                
-                if new_status:
+                        hit_price = sl
+                        hit_date = p.date
+                        break
+
+            if new_status:
+                with transaction.atomic():
                     sig.status = new_status
-                    sig.closed_date = timezone.now().date()
-                    # Calculate PnL
+                    sig.closed_date = hit_date
+                    
+                    # Calculate PnL based on hit price
                     if entry and entry > 0:
                         if sig.signal == 'BUY':
-                            sig.pnl_percent = ((curr - entry) / entry) * 100
+                            sig.pnl_percent = ((hit_price - entry) / entry) * 100
                         else:
-                            sig.pnl_percent = ((entry - curr) / entry) * 100
+                            sig.pnl_percent = ((entry - hit_price) / entry) * 100
                     
                     sig.save()
                     if new_status == 'WON':
@@ -64,4 +88,4 @@ class Command(BaseCommand):
                     else:
                         lost_count += 1
 
-        self.stdout.write(self.style.SUCCESS(f"Evaluation complete: {won_count} WON, {lost_count} LOST."))
+        self.stdout.write(f"Evaluation complete: {won_count} WON, {lost_count} LOST.")
