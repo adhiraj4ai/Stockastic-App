@@ -26,6 +26,7 @@ def check_all_user_notifications(self):
             total_watchlist += check_watchlist_alerts(user)
             total_signals += check_signal_alerts(user)
             total_whale += check_whale_watch_alerts(user)
+            check_active_signal_alerts(user)
         except Exception as e:
             print(f"Error checking notifications for user {user.username}: {e}")
 

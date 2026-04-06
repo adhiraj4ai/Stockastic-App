@@ -207,14 +207,15 @@ export default function AlertsPage() {
     const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
     const router = useRouter();
 
+    const [selectedAlert, setSelectedAlert] = useState<Notification | null>(null);
+    const [isDetailOpen, setIsDetailOpen] = useState(false);
+
     const fetchNotifications = useCallback(async () => {
         setLoading(true);
         try {
             const params: Record<string, string> = {};
             if (unreadOnly) params.unread = 'true';
             
-            // Note: Since the backend still expects 'category' we don't pass severity.
-            // We will filter by severity purely on the frontend.
             const res = await api.get('/api/stocks/notifications/', { params });
             setNotifications(res.data);
         } catch (err) {
@@ -244,6 +245,7 @@ export default function AlertsPage() {
         setNotifications(prev => prev.filter(n => !n.read));
         setActionLoading(false);
     };
+
     const triggerCheck = async () => {
         setActionLoading(true);
         await api.post('/api/stocks/notifications/trigger_check/');
@@ -254,8 +256,8 @@ export default function AlertsPage() {
 
     const handleClick = (n: Notification) => {
         if (!n.read) markAsRead(n.id);
-        if (n.redirect_url) router.push(n.redirect_url);
-        else if (n.ticker) router.push(`/ticker/${n.ticker}`);
+        setSelectedAlert(n);
+        setIsDetailOpen(true);
     };
 
     // Filter by severity and category
@@ -287,6 +289,90 @@ export default function AlertsPage() {
     return (
         <DashboardLayout title="Alerts" subtitle="Advanced system monitoring and position tracking">
             <div className="max-w-6xl mx-auto space-y-5">
+
+                {/* Notification Detail Modal */}
+                {selectedAlert && (
+                    <div 
+                        className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm transition-opacity duration-300 ${isDetailOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                        onClick={() => setIsDetailOpen(false)}
+                    >
+                        <div 
+                            className={`bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 transform transition-transform duration-300 ${isDetailOpen ? 'scale-100' : 'scale-95'}`}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className={`h-2 w-full ${getIconClass(selectedAlert.type)} opacity-50`} />
+                            
+                            <div className="p-8 space-y-6">
+                                <div className="flex items-start justify-between">
+                                    <div className={`p-4 rounded-2xl ${getIconClass(selectedAlert.type)}`}>
+                                        {getIcon(selectedAlert.type)}
+                                    </div>
+                                    <button 
+                                        onClick={() => setIsDetailOpen(false)}
+                                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400 transition-colors"
+                                    >
+                                        <Trash2 size={20} className="rotate-45" />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                                        {selectedAlert.title}
+                                    </h3>
+                                    <p className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                                        {format(new Date(selectedAlert.created_at), 'eeee, MMM dd • HH:mm')}
+                                    </p>
+                                </div>
+
+                                <div className="bg-slate-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-slate-100 dark:border-slate-800/60">
+                                    <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                                        {selectedAlert.message}
+                                    </p>
+                                </div>
+
+                                {selectedAlert.ticker === 'SUMMARY' && selectedAlert.metadata?.symbols && (
+                                    <div className="space-y-3">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Impacted Assets</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {selectedAlert.metadata.symbols.map((sym: string) => (
+                                                <span 
+                                                    key={sym}
+                                                    onClick={() => {
+                                                        setIsDetailOpen(false);
+                                                        router.push(`/ticker/${sym}`);
+                                                    }}
+                                                    className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded-xl text-[10px] font-black cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors border border-blue-100/50 dark:border-blue-800/30"
+                                                >
+                                                    {sym}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="pt-4 flex gap-3">
+                                    <button 
+                                        onClick={() => setIsDetailOpen(false)}
+                                        className="flex-1 px-6 py-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black text-xs uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                                    >
+                                        Dismiss
+                                    </button>
+                                    {(selectedAlert.redirect_url || (selectedAlert.ticker && selectedAlert.ticker !== 'SUMMARY')) && (
+                                        <button 
+                                            onClick={() => {
+                                                setIsDetailOpen(false);
+                                                router.push(selectedAlert.redirect_url || `/ticker/${selectedAlert.ticker}`);
+                                            }}
+                                            className="flex-1 px-6 py-4 rounded-2xl bg-blue-600 text-white font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-500/20 transition-all"
+                                        >
+                                            View Details
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Toolbar */}
                 <div className="flex flex-wrap items-center justify-between gap-3">

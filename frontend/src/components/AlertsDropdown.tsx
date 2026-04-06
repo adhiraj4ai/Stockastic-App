@@ -1,14 +1,22 @@
 'use client';
 
 import React from 'react';
-import { Bell, Info, TrendingUp, TrendingDown, AlertTriangle, AlertCircle, CheckCircle, CheckCircle2, Target, Eye, Fish, ExternalLink, RefreshCw, Filter } from 'lucide-react';
+import { Bell, Info, TrendingUp, TrendingDown, AlertCircle, Target, Eye, Fish, ExternalLink, RefreshCw, Filter, LayoutGrid } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from "@/components/ui/dialog";
 import api from '@/lib/api';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
@@ -18,15 +26,7 @@ interface Alert {
     id: number;
     title: string;
     message: string;
-    type: 'STOP_LOSS_HIT' | 'TARGET_REACHED' | 'SIGNIFICANT_GAIN' | 'SIGNIFICANT_LOSS' | 'BELOW_WACC' |
-    'WATCHLIST_BREAKOUT' | 'WATCHLIST_ENTRY' |
-    'SIGNAL_BUY' | 'SIGNAL_SELL' | 'SIGNAL_STRONG_BUY' | 'SIGNAL_STRONG_SELL' |
-    'WHALE_BUY' | 'WHALE_SELL' |
-    'INFO' | 'SUCCESS' | 'WARNING' | 'PRICE_ALERT' | 'TREND_BUY_5D' |
-    'VOLUME_SPIKE' | 'RSI_OVERSOLD' | 'RSI_OVERBOUGHT' | 
-    'MACD_BULLISH' | 'MACD_BEARISH' | 'GOLDEN_CROSS' | 'DEATH_CROSS' |
-    'CONSISTENT_BUYING' | 'CONSISTENT_SELLING' | 'WHALE_ENTRY' |
-    'SECTOR_PUMP' | 'MARKET_BREADTH_SHIFT' | 'PORTFOLIO_DIVERSITY' | 'TAKE_PROFIT';
+    type: string;
     ticker: string | null;
     read: boolean;
     created_at: string;
@@ -34,38 +34,33 @@ interface Alert {
     metadata?: any;
 }
 
-function getToastVariant(type: Alert['type']): 'success' | 'error' | 'warning' | 'info' {
-    switch (type) {
-        case 'TARGET_REACHED':
-        case 'SIGNIFICANT_GAIN':
-        case 'SIGNAL_BUY':
-        case 'SIGNAL_STRONG_BUY':
-        case 'WHALE_BUY':
-        case 'TREND_BUY_5D':
-            return 'success';
-        case 'STOP_LOSS_HIT':
-        case 'SIGNIFICANT_LOSS':
-        case 'SIGNAL_SELL':
-        case 'SIGNAL_STRONG_SELL':
-        case 'WHALE_SELL':
-            return 'error';
-        case 'WARNING':
-        case 'BELOW_WACC':
-        case 'PORTFOLIO_DIVERSITY':
-            return 'warning';
-        case 'RSI_OVERSOLD':
-        case 'GOLDEN_CROSS':
-        case 'WHALE_ENTRY':
-        case 'VOLUME_SPIKE':
-            return 'success';
-        default:
-            return 'info';
-    }
+const CATEGORIES = {
+    portfolio: [
+        'STOP_LOSS_HIT', 'TARGET_REACHED', 'SIGNIFICANT_GAIN', 'SIGNIFICANT_LOSS', 
+        'BELOW_WACC', 'PORTFOLIO_DIVERSITY', 'TAKE_PROFIT'
+    ],
+    signals: [
+        'SIGNAL_BUY', 'SIGNAL_SELL', 'SIGNAL_STRONG_BUY', 'SIGNAL_STRONG_SELL'
+    ],
+    market: [
+        'WHALE_BUY', 'WHALE_SELL', 'TREND_BUY_5D', 'VOLUME_SPIKE', 'RSI_OVERSOLD', 
+        'RSI_OVERBOUGHT', 'GOLDEN_CROSS', 'DEATH_CROSS', 'WHALE_ENTRY', 
+        'SECTOR_PUMP', 'MARKET_BREADTH_SHIFT'
+    ]
+};
+
+function getToastVariant(type: string): 'success' | 'error' | 'warning' | 'info' {
+    if (['TARGET_REACHED', 'SIGNIFICANT_GAIN', 'SIGNAL_BUY', 'SIGNAL_STRONG_BUY', 'WHALE_BUY', 'TREND_BUY_5D', 'GOLDEN_CROSS', 'WHALE_ENTRY', 'VOLUME_SPIKE'].includes(type)) return 'success';
+    if (['STOP_LOSS_HIT', 'SIGNIFICANT_LOSS', 'SIGNAL_SELL', 'SIGNAL_STRONG_SELL', 'WHALE_SELL', 'DEATH_CROSS'].includes(type)) return 'error';
+    if (['WARNING', 'BELOW_WACC', 'PORTFOLIO_DIVERSITY'].includes(type)) return 'warning';
+    return 'info';
 }
 
 export function AlertsDropdown() {
     const [alerts, setAlerts] = React.useState<Alert[]>([]);
     const [loading, setLoading] = React.useState(true);
+    const [activeTab, setActiveTab] = React.useState('portfolio');
+    const [selectedAlert, setSelectedAlert] = React.useState<Alert | null>(null);
     const seenIds = React.useRef<Set<number>>(new Set());
     const isFirstFetch = React.useRef(true);
     const router = useRouter();
@@ -77,14 +72,12 @@ export function AlertsDropdown() {
             setAlerts(incoming);
             setLoading(false);
 
-            // On the very first fetch just seed seenIds — don't toast stale notifications
             if (isFirstFetch.current) {
                 incoming.forEach(a => seenIds.current.add(a.id));
                 isFirstFetch.current = false;
                 return;
             }
 
-            // Toast any unread notifications we haven't seen yet
             incoming
                 .filter(a => !a.read && !seenIds.current.has(a.id))
                 .forEach(a => {
@@ -107,7 +100,11 @@ export function AlertsDropdown() {
 
     const triggerCheck = async () => {
         try {
-            await api.post('/api/stocks/notifications/trigger_check/');
+            const response = await api.post('/api/stocks/notifications/trigger_check/');
+            if (response.data.status === 'skipped') {
+                // Throttle active, no toast needed for quiet skips
+                return;
+            }
             fetchNotifications();
         } catch (error) {
             console.error('Failed to trigger check:', error);
@@ -133,215 +130,205 @@ export function AlertsDropdown() {
     };
 
     const handleNotificationClick = (alert: Alert) => {
-        // Mark as read
-        if (!alert.read) {
-            markAsRead(alert.id);
-        }
+        if (!alert.read) markAsRead(alert.id);
+        setSelectedAlert(alert);
+    };
 
-        // Redirect if URL provided
+    const handleRedirect = (alert: Alert) => {
+        setSelectedAlert(null);
         if (alert.redirect_url) {
             router.push(alert.redirect_url);
-        } else if (alert.ticker) {
-            // Fallback: redirect to ticker page
+        } else if (alert.ticker && alert.ticker !== 'SUMMARY') {
             router.push(`/ticker/${alert.ticker}`);
         }
     };
 
-    const getNotificationIcon = (type: Alert['type']) => {
-        switch (type) {
-            case 'STOP_LOSS_HIT':
-                return <AlertCircle size={14} />;
-            case 'TARGET_REACHED':
-                return <Target size={14} />;
-            case 'SIGNIFICANT_GAIN':
-                return <TrendingUp size={14} />;
-            case 'SIGNIFICANT_LOSS':
-                return <TrendingDown size={14} />;
-            case 'WATCHLIST_ENTRY':
-                return <Eye size={14} />;
-            case 'WATCHLIST_BREAKOUT':
-                return <TrendingUp size={14} />;
-            case 'SIGNAL_BUY':
-            case 'SIGNAL_STRONG_BUY':
-                return <TrendingUp size={14} />;
-            case 'SIGNAL_SELL':
-            case 'SIGNAL_STRONG_SELL':
-                return <TrendingDown size={14} />;
-            case 'WHALE_BUY':
-            case 'WHALE_SELL':
-                return <Fish size={14} />;
-            case 'TREND_BUY_5D':
-                return <TrendingUp size={14} />;
-            case 'SUCCESS':
-                return <CheckCircle size={14} />;
-            case 'VOLUME_SPIKE':
-                return <RefreshCw size={14} />;
-            case 'RSI_OVERSOLD':
-                return <Target size={14} />;
-            case 'RSI_OVERBOUGHT':
-                return <AlertCircle size={14} />;
-            case 'GOLDEN_CROSS':
-                return <TrendingUp size={14} />;
-            case 'WHALE_ENTRY':
-                return <Fish size={14} />;
-            case 'SECTOR_PUMP':
-                return <TrendingUp size={14} />;
-            case 'PORTFOLIO_DIVERSITY':
-                return <Filter size={14} />;
-            case 'WARNING':
-            case 'PRICE_ALERT':
-                return <AlertCircle size={14} />;
-            default:
-                return <Info size={14} />;
-        }
+    const getNotificationIcon = (type: string) => {
+        if (type.includes('SELL') || type.includes('LOSS') || type.includes('BEARISH')) return <TrendingDown size={14} />;
+        if (type.includes('BUY') || type.includes('GAIN') || type.includes('BULLISH') || type === 'TARGET_REACHED') return <TrendingUp size={14} />;
+        if (type.includes('WHALE')) return <Fish size={14} />;
+        if (type === 'VOLUME_SPIKE') return <RefreshCw size={14} />;
+        if (type === 'PORTFOLIO_DIVERSITY') return <Filter size={14} />;
+        return <Info size={14} />;
     };
 
-    const getNotificationColor = (type: Alert['type']) => {
-        switch (type) {
-            case 'STOP_LOSS_HIT':
-                return 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400';
-            case 'TARGET_REACHED':
-                return 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400';
-            case 'SIGNIFICANT_GAIN':
-                return 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400';
-            case 'SIGNIFICANT_LOSS':
-                return 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400';
-            case 'WATCHLIST_ENTRY':
-                return 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400';
-            case 'WATCHLIST_BREAKOUT':
-                return 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400';
-            case 'SIGNAL_BUY':
-                return 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400';
-            case 'SIGNAL_STRONG_BUY':
-                return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
-            case 'SIGNAL_SELL':
-                return 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400';
-            case 'SIGNAL_STRONG_SELL':
-                return 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300';
-            case 'WHALE_BUY':
-                return 'bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300';
-            case 'WHALE_SELL':
-                return 'bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300';
-            case 'TREND_BUY_5D':
-                return 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400';
-            case 'VOLUME_SPIKE':
-                return 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400';
-            case 'GOLDEN_CROSS':
-                return 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400';
-            case 'RSI_OVERSOLD':
-                return 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400';
-            case 'SUCCESS':
-                return 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400';
-            case 'WARNING':
-            case 'PRICE_ALERT':
-            case 'PORTFOLIO_DIVERSITY':
-                return 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400';
-            default:
-                return 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
-        }
+    const getNotificationColor = (type: string) => {
+        const variant = getToastVariant(type);
+        if (variant === 'success') return 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400';
+        if (variant === 'error') return 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400';
+        if (variant === 'warning') return 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400';
+        return 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400';
     };
 
     React.useEffect(() => {
         fetchNotifications();
-        // Periodically refresh notifications
         const interval = setInterval(fetchNotifications, 60000);
         return () => clearInterval(interval);
     }, []);
 
     const unreadCount = alerts.filter(a => !a.read).length;
+    const filteredAlerts = (cat: string) => alerts.filter(a => CATEGORIES[cat as keyof typeof CATEGORIES].includes(a.type));
+    const unreadByCategory = (cat: string) => filteredAlerts(cat).filter(a => !a.read).length;
+
+    const renderAlertList = (cat: string) => {
+        const list = filteredAlerts(cat);
+        if (list.length === 0) {
+            return (
+                <div className="p-8 text-center text-slate-400">
+                    <p className="text-[10px] font-medium tracking-tight">No {cat} alerts</p>
+                </div>
+            );
+        }
+        return list.map((alert) => (
+            <div
+                key={alert.id}
+                onClick={() => handleNotificationClick(alert)}
+                className={`p-4 border-b border-gray-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer relative ${!alert.read ? 'bg-blue-50/10 dark:bg-blue-900/10' : ''}`}
+            >
+                {!alert.read && <div className="absolute top-4 left-1 w-1 h-8 bg-blue-500 rounded-full" />}
+                <div className="flex gap-3">
+                    <div className={`mt-0.5 p-1.5 rounded-lg h-fit ${getNotificationColor(alert.type)}`}>
+                        {getNotificationIcon(alert.type)}
+                    </div>
+                    <div className="space-y-1 flex-1">
+                        <div className="flex justify-between items-start">
+                            <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
+                                {alert.ticker === 'SUMMARY' && <span className="mr-1 text-blue-500">[Summary]</span>}
+                                {alert.title}
+                            </h4>
+                            <span className="text-[9px] font-medium text-slate-400 shrink-0">
+                                {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true })}
+                            </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                            {alert.message}
+                        </p>
+                        {alert.ticker && alert.ticker !== 'SUMMARY' && (
+                            <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400">
+                                {alert.ticker}
+                            </span>
+                        )}
+                        {alert.ticker === 'SUMMARY' && alert.metadata?.symbols && (
+                            <div className="flex flex-wrap gap-1 pt-1">
+                                {alert.metadata.symbols.slice(0, 5).map((s: string) => (
+                                    <span key={s} className="text-[8px] bg-slate-100 dark:bg-slate-800 px-1 rounded text-slate-500 font-bold">{s}</span>
+                                ))}
+                                {alert.metadata.symbols.length > 5 && <span className="text-[8px] text-slate-400">+{alert.metadata.symbols.length - 5} more</span>}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        ));
+    };
 
     return (
         <DropdownMenu onOpenChange={(open) => open && triggerCheck()}>
             <DropdownMenuTrigger asChild>
-                <button className="p-2 rounded-full hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-500 hover:text-amber-600 dark:text-amber-400 transition-colors relative outline-none focus:ring-2 focus:ring-amber-100">
+                <button className="p-2 rounded-full hover:bg-amber-50 dark:hover:bg-amber-900/20 text-blue-500 transition-colors relative outline-none">
                     <Bell size={20} />
-                    {unreadCount > 0 && (
-                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900" />
-                    )}
+                    {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900" />}
                 </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 p-0 border-none shadow-2xl overflow-hidden rounded-xl">
-                <div className="bg-slate-900 dark:bg-slate-800 px-4 py-3 flex justify-between items-center">
-                    <DropdownMenuLabel className="p-0 text-white font-bold text-xs flex items-center gap-2 tracking-tight">
-                        <Bell size={14} className="text-blue-400" /> Alerts
+            <DropdownMenuContent align="end" className="w-80 p-0 border-none shadow-2xl overflow-hidden rounded-xl bg-white dark:bg-slate-900">
+                <div className="bg-slate-900 px-4 py-3 flex justify-between items-center text-white">
+                    <DropdownMenuLabel className="p-0 font-bold text-xs flex items-center gap-2">
+                        <Bell size={14} className="text-blue-400" /> Notifications
                     </DropdownMenuLabel>
-                    <div className="flex items-center gap-2">
-                        <button 
-                            onClick={(e) => { e.stopPropagation(); triggerCheck(); }}
-                            className="p-1 hover:bg-slate-800 rounded-md text-slate-400 hover:text-white transition-colors"
-                            title="Refresh Alerts"
-                        >
-                            <RefreshCw size={12} />
-                        </button>
-                        {unreadCount > 0 && (
-                            <span className="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded font-bold tracking-tight">
-                                {unreadCount} NEW
-                            </span>
-                        )}
+                    <div className="flex items-center gap-3">
+                        <button onClick={(e) => { e.stopPropagation(); triggerCheck(); }} className="text-slate-400 hover:text-white transition-colors"><RefreshCw size={12} /></button>
+                        {unreadCount > 0 && <span className="text-[10px] bg-blue-500 px-1.5 py-0.5 rounded font-bold">{unreadCount}</span>}
                     </div>
                 </div>
 
-                <div className="max-h-[350px] overflow-y-auto">
-                    {alerts.length === 0 ? (
-                        <div className="p-8 text-center space-y-2">
-                            <div className="bg-slate-50 dark:bg-slate-800 w-10 h-10 rounded-full flex items-center justify-center mx-auto text-slate-300 dark:text-slate-600">
-                                <Bell size={20} />
-                            </div>
-                            <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 tracking-tight">No alerts</p>
-                        </div>
-                    ) : (
-                        alerts.map((alert) => (
-                            <div
-                                key={alert.id}
-                                onClick={() => handleNotificationClick(alert)}
-                                className={`p-4 border-b border-gray-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer relative ${!alert.read ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}`}
-                            >
-                                {!alert.read && <div className="absolute top-4 left-1 w-1 h-8 bg-blue-500 rounded-full" />}
-                                <div className="flex gap-3">
-                                    <div className={`mt-0.5 p-1.5 rounded-lg h-fit ${getNotificationColor(alert.type)}`}>
-                                        {getNotificationIcon(alert.type)}
-                                    </div>
-                                    <div className="space-y-1 flex-1">
-                                        <div className="flex justify-between items-start">
-                                            <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 tracking-tight">{alert.title}</h4>
-                                            <span className="text-[9px] font-medium text-slate-400 dark:text-slate-500 tracking-tight">
-                                                {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true })}
-                                            </span>
-                                        </div>
-                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
-                                            {alert.message}
-                                        </p>
-                                        {alert.ticker && (
-                                            <div className="pt-1">
-                                                <span className="text-[9px] font-semibold text-blue-600 dark:text-blue-400 tracking-tight">
-                                                    {alert.ticker}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
+                <Tabs defaultValue="portfolio" className="w-full">
+                    <TabsList className="w-full grid grid-cols-3 rounded-none bg-slate-50 dark:bg-slate-800/50 p-1 h-10">
+                        <TabsTrigger value="portfolio" className="text-[10px] font-bold relative h-8">
+                            Port. {unreadByCategory('portfolio') > 0 && <span className="ml-1 w-1 h-1 bg-red-500 rounded-full" />}
+                        </TabsTrigger>
+                        <TabsTrigger value="signals" className="text-[10px] font-bold relative h-8">
+                            Signals {unreadByCategory('signals') > 0 && <span className="ml-1 w-1 h-1 bg-red-500 rounded-full" />}
+                        </TabsTrigger>
+                        <TabsTrigger value="market" className="text-[10px] font-bold relative h-8">
+                            Market {unreadByCategory('market') > 0 && <span className="ml-1 w-1 h-1 bg-red-500 rounded-full" />}
+                        </TabsTrigger>
+                    </TabsList>
+                    
+                    <div className="max-h-[350px] overflow-y-auto">
+                        <TabsContent value="portfolio" className="m-0 focus-visible:ring-0">{renderAlertList('portfolio')}</TabsContent>
+                        <TabsContent value="signals" className="m-0 focus-visible:ring-0">{renderAlertList('signals')}</TabsContent>
+                        <TabsContent value="market" className="m-0 focus-visible:ring-0">{renderAlertList('market')}</TabsContent>
+                    </div>
+                </Tabs>
 
-                <div className="p-2 bg-gray-50 dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 flex gap-1">
-                    {unreadCount > 0 && (
-                        <button
-                            onClick={(e) => { e.stopPropagation(); markAllAsRead(); }}
-                            className="flex-1 py-2 rounded-lg text-[10px] font-semibold tracking-tight text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all font-medium"
-                        >
-                            Mark all read
-                        </button>
-                    )}
-                    <button
-                        onClick={(e) => { e.stopPropagation(); router.push('/notifications'); }}
-                        className="flex-1 py-2 rounded-lg text-[10px] font-semibold tracking-tight text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all flex items-center justify-center gap-1"
-                    >
-                        <ExternalLink size={10} /> View all
-                    </button>
+                <div className="p-2 bg-slate-50 dark:bg-slate-800 border-t flex gap-1">
+                    <button onClick={(e) => { e.stopPropagation(); markAllAsRead(); }} className="flex-1 py-2 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest">Mark All Read</button>
+                    <button onClick={(e) => { e.stopPropagation(); router.push('/notifications'); }} className="flex-1 py-2 text-[10px] font-bold text-blue-500 flex items-center justify-center gap-1 uppercase tracking-widest bg-blue-50 dark:bg-blue-900/20 rounded-md">View History</button>
                 </div>
             </DropdownMenuContent>
+
+            <Dialog open={!!selectedAlert} onOpenChange={() => setSelectedAlert(null)}>
+                <DialogContent className="sm:max-w-md border-none bg-white dark:bg-slate-900 shadow-2xl rounded-2xl p-0 overflow-hidden">
+                    {selectedAlert && (
+                        <>
+                            <div className={`p-6 ${getNotificationColor(selectedAlert.type)} bg-opacity-10 dark:bg-opacity-20 flex items-center gap-4 border-b border-white/10`}>
+                                <div className={`p-3 rounded-2xl ${getNotificationColor(selectedAlert.type)}`}>
+                                    {getNotificationIcon(selectedAlert.type)}
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
+                                        {selectedAlert.title}
+                                    </h3>
+                                    <p className="text-xs font-medium opacity-70">
+                                        {formatDistanceToNow(new Date(selectedAlert.created_at), { addSuffix: true })}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div className="p-6 space-y-4">
+                                <DialogDescription className="text-slate-600 dark:text-slate-400 text-sm font-medium leading-relaxed">
+                                    {selectedAlert.message}
+                                </DialogDescription>
+                                
+                                {selectedAlert.ticker && selectedAlert.ticker !== 'SUMMARY' && (
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Symbol</span>
+                                        <span className="text-sm font-black text-blue-600 dark:text-blue-400">{selectedAlert.ticker}</span>
+                                    </div>
+                                )}
+
+                                {selectedAlert.ticker === 'SUMMARY' && selectedAlert.metadata?.symbols && (
+                                    <div className="space-y-2">
+                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Impacted Symbols</span>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {selectedAlert.metadata.symbols.map((s: string) => (
+                                                <span key={s} className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded font-bold text-xs text-slate-600 dark:text-slate-300">
+                                                    {s}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <DialogFooter className="p-4 bg-slate-50 dark:bg-slate-800/50 flex gap-2">
+                                <button
+                                    onClick={() => setSelectedAlert(null)}
+                                    className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+                                >
+                                    Dismiss
+                                </button>
+                                <button
+                                    onClick={() => handleRedirect(selectedAlert)}
+                                    className="flex-[2] py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2"
+                                >
+                                    View Details <ExternalLink size={14} />
+                                </button>
+                            </DialogFooter>
+                        </>
+                    )}
+                </DialogContent>
+            </Dialog>
         </DropdownMenu>
     );
 }

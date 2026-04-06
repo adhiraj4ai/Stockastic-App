@@ -17,24 +17,42 @@ def create_notification(user, notification_type, title, message, ticker=None, re
                        portfolio_item_id=None, watchlist_item_id=None, metadata=None):
     """
     Helper function to create a notification.
-    Prevents duplicate notifications within the last hour for the same type/ticker/user.
+    If an unread notification of the same type and ticker already exists, 
+    updates it and moves it to the top (re-alert).
     """
     from django.utils import timezone
     from datetime import timedelta
     
-    # Check for duplicate notifications in the last hour
+    # Identify existing UNREAD notification of same type/ticker
+    existing_unread = Notification.objects.filter(
+        user=user,
+        type=notification_type,
+        ticker=ticker,
+        read=False
+    ).first()
+    
+    if existing_unread:
+        # Re-alert: move to top, update content
+        existing_unread.title = title
+        existing_unread.message = message
+        existing_unread.created_at = timezone.now()
+        if metadata:
+            existing_unread.metadata = metadata
+        existing_unread.save()
+        return existing_unread
+    
+    # Check for duplicate READ notifications in the last hour (prevents annoyance after reading)
     one_hour_ago = timezone.now() - timedelta(hours=1)
-    existing = Notification.objects.filter(
+    if Notification.objects.filter(
         user=user,
         type=notification_type,
         ticker=ticker,
         created_at__gte=one_hour_ago
-    ).exists()
-    
-    if existing:
+    ).exists():
         return None
     
-    notification = Notification.objects.create(
+    # Create new
+    return Notification.objects.create(
         user=user,
         type=notification_type,
         title=title,
@@ -45,8 +63,6 @@ def create_notification(user, notification_type, title, message, ticker=None, re
         watchlist_item_id=watchlist_item_id,
         metadata=metadata or {}
     )
-    
-    return notification
 
 
 def get_latest_price(ticker):
@@ -62,126 +78,106 @@ def get_latest_price(ticker):
 def check_portfolio_alerts(user):
     """
     Check all portfolio items for stop-loss hits, target achievements, and significant movements.
-    Returns the number of notifications created.
+    Aggregates multiple hits of the same type into a single summary notification.
     """
     notifications_created = 0
+    from ..models import Notification
+    
+    # { NotificationType: [item1, item2] }
+    hits = {
+        Notification.NotificationType.STOP_LOSS_HIT: [],
+        Notification.NotificationType.TARGET_REACHED: [],
+        Notification.NotificationType.BELOW_WACC: [],
+        Notification.NotificationType.SIGNIFICANT_GAIN: [],
+        Notification.NotificationType.SIGNIFICANT_LOSS: [],
+    }
     
     try:
         items = PortfolioItem.objects.filter(user=user)
         
         for item in items:
             current_price = get_latest_price(item.ticker)
-            if not current_price:
-                continue
+            if not current_price: continue
             
-            # Check stop-loss
-            if item.stop_loss_price and current_price <= float(item.stop_loss_price):
-                notification = create_notification(
-                    user=user,
-                    notification_type=Notification.NotificationType.STOP_LOSS_HIT,
-                    title=f'{item.ticker} Stop-Loss Hit',
-                    message=f'{item.ticker} hit your stop-loss at Rs. {current_price:.2f}. Consider reviewing your position.',
-                    ticker=item.ticker,
-                    redirect_url='/portfolio?tab=holdings',
-                    portfolio_item_id=item.id,
-                    metadata={
-                        'current_price': current_price,
-                        'stop_loss_price': float(item.stop_loss_price),
-                        'quantity': item.quantity
-                    }
-                )
-                if notification:
-                    notifications_created += 1
-            
-            # Check target prices
-            targets = []
-            if item.target_price and current_price >= float(item.target_price):
-                targets.append(('Target 1', float(item.target_price)))
-            if item.target_price_2 and current_price >= float(item.target_price_2):
-                targets.append(('Target 2', float(item.target_price_2)))
-            if item.target_price_3 and current_price >= float(item.target_price_3):
-                targets.append(('Target 3', float(item.target_price_3)))
-            
-            for target_name, target_price in targets:
-                notification = create_notification(
-                    user=user,
-                    notification_type=Notification.NotificationType.TARGET_REACHED,
-                    title=f'{item.ticker} {target_name} Reached',
-                    message=f'{item.ticker} reached {target_name} at Rs. {current_price:.2f}. Consider taking profits.',
-                    ticker=item.ticker,
-                    redirect_url='/portfolio?tab=holdings',
-                    portfolio_item_id=item.id,
-                    metadata={
-                        'current_price': current_price,
-                        'target_price': target_price,
-                        'target_name': target_name,
-                        'quantity': item.quantity
-                    }
-                )
-                if notification:
-                    notifications_created += 1
-
-            # Calculate metrics
             wacc = float(item.wacc) if item.wacc else float(item.buy_price)
             price_change_pct = ((current_price - wacc) / wacc) * 100 if wacc > 0 else 0
-
-            # Check if dropped below WACC (Cost price)
-            if current_price < wacc:
-                notification = create_notification(
-                    user=user,
-                    notification_type=Notification.NotificationType.BELOW_WACC,
-                    title=f'{item.ticker} Dropped Below Cost',
-                    message=f'{item.ticker} is now trading at Rs. {current_price:.2f}, which is below your average cost of Rs. {wacc:.2f}.',
-                    ticker=item.ticker,
-                    redirect_url='/portfolio?tab=holdings',
-                    portfolio_item_id=item.id,
-                    metadata={
-                        'current_price': current_price,
-                        'wacc': wacc,
-                        'quantity': item.quantity
-                    }
-                )
-                if notification:
-                    notifications_created += 1
             
-            # Check significant gain/loss (>10% from WACC, excluding simple break-below which has its own alert)
+            # 1. Check stop-loss
+            if item.stop_loss_price and current_price <= float(item.stop_loss_price):
+                hits[Notification.NotificationType.STOP_LOSS_HIT].append(item)
+            
+            # 2. Check target prices
+            hit_target = False
+            if item.target_price and current_price >= float(item.target_price): hit_target = True
+            elif item.target_price_2 and current_price >= float(item.target_price_2): hit_target = True
+            elif item.target_price_3 and current_price >= float(item.target_price_3): hit_target = True
+            
+            if hit_target:
+                hits[Notification.NotificationType.TARGET_REACHED].append(item)
+
+            # 3. Check below WACC (Cost price)
+            if current_price < wacc:
+                hits[Notification.NotificationType.BELOW_WACC].append(item)
+            
+            # 4. Check significant gain/loss (>10% from WACC)
             if price_change_pct >= 10.0:
-                notification = create_notification(
-                    user=user,
-                    notification_type=Notification.NotificationType.SIGNIFICANT_GAIN,
-                    title=f'{item.ticker} Up {price_change_pct:.1f}%',
-                    message=f'{item.ticker} is up {price_change_pct:.1f}% from your average cost of Rs. {wacc:.2f}.',
-                    ticker=item.ticker,
-                    redirect_url='/portfolio?tab=holdings',
-                    portfolio_item_id=item.id,
-                    metadata={
-                        'current_price': current_price,
-                        'wacc': wacc,
-                        'change_percent': price_change_pct,
-                        'quantity': item.quantity
-                    }
-                )
-                if notification:
-                    notifications_created += 1
+                hits[Notification.NotificationType.SIGNIFICANT_GAIN].append(item)
             elif price_change_pct <= -10.0:
+                hits[Notification.NotificationType.SIGNIFICANT_LOSS].append(item)
+        
+        # --- Dispatch Notifications ---
+        for n_type, impacted_items in hits.items():
+            if not impacted_items: continue
+            
+            if len(impacted_items) == 1:
+                # Single hit: stay specific
+                item = impacted_items[0]
+                price = get_latest_price(item.ticker)
+                wacc_curr = float(item.wacc) if item.wacc else float(item.buy_price)
+                
+                title, message = "", ""
+                if n_type == Notification.NotificationType.STOP_LOSS_HIT:
+                    title = f"{item.ticker} Stop-Loss Hit"
+                    message = f"{item.ticker} hit your stop-loss at Rs. {price:.2f}."
+                elif n_type == Notification.NotificationType.TARGET_REACHED:
+                    title = f"{item.ticker} Target Reached"
+                    message = f"{item.ticker} reached your profit target at Rs. {price:.2f}."
+                elif n_type == Notification.NotificationType.BELOW_WACC:
+                    title = f"{item.ticker} Below Cost"
+                    message = f"{item.ticker} dropped below your average cost of Rs. {wacc_curr:.2f}."
+                elif n_type == Notification.NotificationType.SIGNIFICANT_GAIN:
+                    title = f"{item.ticker} Up 10%+"
+                    message = f"{item.ticker} has gained over 10% from your cost price."
+                elif n_type == Notification.NotificationType.SIGNIFICANT_LOSS:
+                    title = f"{item.ticker} Down 10%+"
+                    message = f"{item.ticker} has dropped over 10% from your cost price."
+                
                 notification = create_notification(
                     user=user,
-                    notification_type=Notification.NotificationType.SIGNIFICANT_LOSS,
-                    title=f'{item.ticker} Down {abs(price_change_pct):.1f}%',
-                    message=f'{item.ticker} is down {abs(price_change_pct):.1f}% from your average cost of Rs. {wacc:.2f}.',
+                    notification_type=n_type,
+                    title=title,
+                    message=message,
                     ticker=item.ticker,
                     redirect_url='/portfolio?tab=holdings',
                     portfolio_item_id=item.id,
-                    metadata={
-                        'current_price': current_price,
-                        'wacc': wacc,
-                        'change_percent': price_change_pct,
-                        'quantity': item.quantity
-                    }
                 )
-                if notification:
-                    notifications_created += 1
-    
+                if notification: notifications_created += 1
+            else:
+                # Multiple hits: AGGREGATE
+                symbols = [i.ticker for i in impacted_items]
+                type_label = n_type.lower().replace('_', ' ').replace('hit', '').replace('reached', '').strip().title()
+                
+                notification = create_notification(
+                    user=user,
+                    notification_type=n_type,
+                    title=f"{len(impacted_items)} Assets: {type_label}",
+                    message=f"{len(impacted_items)} assets in your portfolio ({', '.join(symbols[:2])}{'...' if len(symbols) > 2 else ''}) have triggered a {type_label} alert.",
+                    ticker='SUMMARY',
+                    redirect_url='/portfolio?tab=holdings',
+                    metadata={'symbols': symbols, 'count': len(impacted_items)}
+                )
+                if notification: notifications_created += 1
+                
     except Exception as e:
         print(f"Error checking portfolio alerts for user {user.username}: {e}")
     
@@ -191,57 +187,164 @@ def check_portfolio_alerts(user):
 def check_watchlist_alerts(user):
     """
     Check watchlist items with alert_enabled=True for target price met and stop-loss hit.
-    Returns the number of notifications created.
+    Aggregates multiple hits into summary notifications.
     """
     notifications_created = 0
+    from ..models import Notification
+    
+    hits = {
+        Notification.NotificationType.TARGET_REACHED: [],
+        Notification.NotificationType.STOP_LOSS_HIT: [],
+    }
 
     try:
         items = WatchlistItem.objects.filter(user=user, alert_enabled=True)
 
         for item in items:
             current_price = get_latest_price(item.ticker)
-            if not current_price:
-                continue
+            if not current_price: continue
 
-            # Target price reached
+            # 1. Target price reached
             if item.target_price and current_price >= float(item.target_price):
-                notification = create_notification(
-                    user=user,
-                    notification_type=Notification.NotificationType.TARGET_REACHED,
-                    title=f'{item.ticker} Target Price Reached',
-                    message=f'{item.ticker} is at Rs. {current_price:.2f}, hitting your watchlist target of Rs. {float(item.target_price):.2f}. Consider acting.',
-                    ticker=item.ticker,
-                    redirect_url=f'/ticker/{item.ticker}',
-                    watchlist_item_id=item.id,
-                    metadata={
-                        'current_price': current_price,
-                        'target_price': float(item.target_price),
-                    }
-                )
-                if notification:
-                    notifications_created += 1
+                hits[Notification.NotificationType.TARGET_REACHED].append(item)
 
-            # Stop-loss / support level broken
+            # 2. Stop-loss / support level broken
             if item.stop_loss_price and current_price <= float(item.stop_loss_price):
+                hits[Notification.NotificationType.STOP_LOSS_HIT].append(item)
+
+        # --- Dispatch ---
+        for n_type, impacted_items in hits.items():
+            if not impacted_items: continue
+            
+            if len(impacted_items) == 1:
+                item = impacted_items[0]
+                price = get_latest_price(item.ticker)
+                
+                title = f"{item.ticker} Target Reached" if n_type == Notification.NotificationType.TARGET_REACHED else f"{item.ticker} Below Stop Price"
+                message = f"{item.ticker} is at Rs. {price:.2f}, hitting your watchlist alert."
+                
                 notification = create_notification(
                     user=user,
-                    notification_type=Notification.NotificationType.STOP_LOSS_HIT,
-                    title=f'{item.ticker} Below Stop Price',
-                    message=f'{item.ticker} is at Rs. {current_price:.2f}, below your watchlist stop of Rs. {float(item.stop_loss_price):.2f}.',
+                    notification_type=n_type,
+                    title=title,
+                    message=message,
                     ticker=item.ticker,
                     redirect_url=f'/ticker/{item.ticker}',
                     watchlist_item_id=item.id,
-                    metadata={
-                        'current_price': current_price,
-                        'stop_loss_price': float(item.stop_loss_price),
-                    }
                 )
-                if notification:
-                    notifications_created += 1
+                if notification: notifications_created += 1
+            else:
+                symbols = [i.ticker for i in impacted_items]
+                label = "Targets Reached" if n_type == Notification.NotificationType.TARGET_REACHED else "Stop Prices Hit"
+                
+                notification = create_notification(
+                    user=user,
+                    notification_type=n_type,
+                    title=f"{len(impacted_items)} Watchlist: {label}",
+                    message=f"{len(impacted_items)} watchlist items ({', '.join(symbols[:2])}{'...' if len(symbols) > 2 else ''}) have hit their alert levels.",
+                    ticker='SUMMARY',
+                    redirect_url='/watchlist',
+                    metadata={'symbols': symbols, 'count': len(impacted_items)}
+                )
+                if notification: notifications_created += 1
 
     except Exception as e:
         print(f"Error checking watchlist alerts for user {user.username}: {e}")
 
+    return notifications_created
+
+
+def check_active_signal_alerts(user):
+    """
+    Monitor all ACTIVE strategy signals from the Signal Intelligence hub.
+    Notify user if any hit their target (TP) or stop loss (SL).
+    Aggregates multiple hits into a single summary notification.
+    """
+    from datetime import date
+    from ..models import GeneratedSignal, Notification
+    
+    notifications_created = 0
+    today = date.today()
+    
+    # Group results for aggregation: { 'WON': [sig1, sig2], 'LOST': [sig3] }
+    hits = {'WON': [], 'LOST': []}
+    
+    # 1. Check ACTIVE signals and update status if hit
+    active_signals = GeneratedSignal.objects.filter(status='ACTIVE')
+    
+    for sig in active_signals:
+        price = get_latest_price(sig.symbol)
+        if not price: continue
+        
+        hit = False
+        hit_type = None
+        
+        if sig.signal == 'BUY':
+            if sig.target_price and price >= float(sig.target_price):
+                hit = True
+                hit_type = 'WON'
+            elif sig.stop_loss_price and price <= float(sig.stop_loss_price):
+                hit = True
+                hit_type = 'LOST'
+        elif sig.signal == 'SELL':
+            if sig.target_price and price <= float(sig.target_price):
+                hit = True
+                hit_type = 'WON'
+            elif sig.stop_loss_price and price >= float(sig.stop_loss_price):
+                hit = True
+                hit_type = 'LOST'
+                
+        if hit:
+            # First user to trigger this today updates the global state
+            sig.status = hit_type
+            sig.closed_date = today
+            sig.save()
+            hits[hit_type].append(sig)
+
+    # 2. Check signals closed TODAY for users who haven't been notified yet
+    closed_today = GeneratedSignal.objects.filter(closed_date=today, status__in=['WON', 'LOST'])
+    for sig in closed_today:
+        if sig not in hits[sig.status]: # Avoid double counting if already in hits from step 1
+            hits[sig.status].append(sig)
+            
+    # 3. Generate Notifications (Aggregated vs Single)
+    for hit_type, signals in hits.items():
+        if not signals: continue
+        
+        notif_type = Notification.NotificationType.TARGET_REACHED if hit_type == 'WON' else Notification.NotificationType.STOP_LOSS_HIT
+        status_text = "Target (TP) Reached" if hit_type == 'WON' else "Stop Loss (SL) Triggered"
+        
+        if len(signals) == 1:
+            # Single hit: stay specific
+            sig = signals[0]
+            notification = create_notification(
+                user=user,
+                notification_type=notif_type,
+                title=f"SIGNAL {hit_type}: {sig.symbol}",
+                message=f"Strategy Signal for {sig.symbol} ({sig.source}) was closed as {hit_type}. {status_text}.",
+                ticker=sig.symbol,
+                redirect_url='/recommendations',
+                metadata={'signal_id': sig.id, 'hit_type': hit_type, 'source': sig.source}
+            )
+            if notification: notifications_created += 1
+        else:
+            # Multiple hits: AGGREGATE
+            symbols = [s.symbol for s in signals]
+            notification = create_notification(
+                user=user,
+                notification_type=notif_type,
+                title=f"{len(signals)} Signals reached {hit_type}",
+                message=f"{len(signals)} Strategy Signals ({', '.join(symbols[:3])}{'...' if len(symbols) > 3 else ''}) reached their objective today as {hit_type} ({status_text}).",
+                ticker='SUMMARY',
+                redirect_url='/recommendations',
+                metadata={
+                    'symbols': symbols,
+                    'hit_type': hit_type,
+                    'count': len(signals)
+                }
+            )
+            if notification: notifications_created += 1
+            
     return notifications_created
 
 
@@ -256,13 +359,12 @@ WHALE_WATCH_STRATEGY_NAMES = [
 def check_whale_watch_alerts(user):
     """
     Notify for today's BUY/SELL signals generated by the three Whale Watch engines.
-    Fires for ALL tickers (not just user portfolio/watchlist) since whale watch is
-    a discovery tool. Uses 24-hour deduplication per ticker+signal.
-    Returns the number of notifications created.
+    Fires for ALL tickers. Now aggregates multiple tickers into a single summary 
+    notification to prevent overwhelming the user.
     """
     from datetime import date, timedelta
     from django.utils import timezone
-    from ..models import StrategySignal
+    from ..models import StrategySignal, Notification
 
     notifications_created = 0
 
@@ -274,62 +376,53 @@ def check_whale_watch_alerts(user):
             strategy__name__in=WHALE_WATCH_STRATEGY_NAMES,
         ).select_related('strategy')
 
-        groups = {}
+        # Group by signal type (BUY vs SELL)
+        summary_groups = {'BUY': [], 'SELL': []}
         for sig in signals:
             if not sig: continue
-            key = f"{sig.symbol}_{sig.signal}"
-            if key not in groups:
-                groups[key] = []
-            groups[key].append(sig)
+            summary_groups[sig.signal].append(sig)
 
-        one_day_ago = timezone.now() - timedelta(hours=24)
+        for signal_type, sig_list in summary_groups.items():
+            if not sig_list:
+                continue
 
-        for key, sig_list in groups.items():
-            symbol, signal_type = key.split('_', 1)
+            symbols = sorted(list({s.symbol for s in sig_list}))
             notif_type = (
                 Notification.NotificationType.WHALE_BUY
                 if signal_type == 'BUY'
                 else Notification.NotificationType.WHALE_SELL
             )
 
-            # 24-hour dedup
+            # 24-hour dedup for the summary itself
+            # We use a special ticker value 'SUMMARY' to identify this aggregated alert
+            one_day_ago = timezone.now() - timedelta(hours=24)
             if Notification.objects.filter(
-                user=user, type=notif_type, ticker=symbol,
+                user=user, type=notif_type, ticker='SUMMARY',
                 created_at__gte=one_day_ago
             ).exists():
                 continue
 
-            strategy_names = list({s.strategy.name for s in sig_list})
-            strengths = [
-                float(s.metadata.get('strength', 0))
-                for s in sig_list if s.metadata and 'strength' in s.metadata
-            ]
-            strength = round(max(strengths), 1) if strengths else 0
-
+            count = len(symbols)
+            symbol_str = ", ".join(symbols[:8]) + ("..." if count > 8 else "")
+            
             if signal_type == 'BUY':
-                title = f'Whale Watch: {symbol} BUY'
-                message = (
-                    f'Smart money accumulation detected for {symbol} '
-                    f'(strength: {strength}). {strategy_names[0]} signals BUY.'
-                )
+                title = f'Whale Watch: {count} Symbols Detect BUY'
+                message = f'Smart money accumulation detected for {count} tickers including {symbol_str}.'
             else:
-                title = f'Whale Watch: {symbol} SELL'
-                message = (
-                    f'Smart money distribution detected for {symbol} '
-                    f'(strength: {strength}). {strategy_names[0]} signals SELL.'
-                )
+                title = f'Whale Watch: {count} Symbols Detect SELL'
+                message = f'Distribution detected for {count} tickers including {symbol_str}.'
 
             Notification.objects.create(
                 user=user,
                 type=notif_type,
                 title=title,
                 message=message,
-                ticker=symbol,
+                ticker='SUMMARY',
                 redirect_url='/recommendations',
                 metadata={
                     'signal_type': signal_type,
-                    'strategies': strategy_names,
-                    'strength': strength,
+                    'count': count,
+                    'symbols': symbols,
                     'date': str(today),
                 }
             )
@@ -765,11 +858,12 @@ def check_portfolio_management_alerts(user):
         items = list(PortfolioItem.objects.filter(user=user, quantity__gt=0))
         if not items: return 0
         
-        total_value = sum(item.quantity * item.wac for item in items if item.wac)
+        total_value = sum(item.quantity * (float(item.wacc) if item.wacc else float(item.buy_price)) for item in items if (item.wacc or item.buy_price))
         if total_value == 0: return 0
         
         for item in items:
-            weight = (item.quantity * item.wac) / total_value
+            wacc_val = float(item.wacc) if item.wacc else float(item.buy_price)
+            weight = (item.quantity * wacc_val) / total_value
             if weight > 0.40: # 40% threshold
                 if not Notification.objects.filter(user=user, ticker=item.ticker, type=Notification.NotificationType.PORTFOLIO_DIVERSITY, created_at__gte=one_week_ago).exists():
                     Notification.objects.create(
@@ -784,7 +878,7 @@ def check_portfolio_management_alerts(user):
             # This would require fetching current price for each item
             curr_price = get_latest_price(item.ticker)
             if curr_price:
-                profit_percent = ((curr_price - float(item.wac)) / float(item.wac)) * 100
+                profit_percent = ((curr_price - wacc_val) / wacc_val) * 100
                 if profit_percent > 30:
                     if not Notification.objects.filter(user=user, ticker=item.ticker, type=Notification.NotificationType.TAKE_PROFIT, created_at__gte=one_week_ago).exists():
                         Notification.objects.create(
