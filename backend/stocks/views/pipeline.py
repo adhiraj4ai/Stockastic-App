@@ -114,7 +114,16 @@ class PipelineViewSet(viewsets.ViewSet):
                 
                 # Evaluation: Evaluation complete: 10 WON, 5 LOST
                 eval_match = re.search(r"Evaluation complete: (\d+) WON, (\d+) LOST", line_str)
-                if eval_match: records_found = int(eval_match.group(1)) + int(eval_match.group(2))
+                if eval_match: 
+                    # For history, we want to know total signals updated TO won/lost
+                    # But we'll also preserve the first 'records_found' if it was a total count
+                    records_found = int(eval_match.group(1)) + int(eval_match.group(2))
+                
+                # Progress: Processed 100/3000 signals...
+                prog_eval_match = re.search(r"Processed (\d+)/(\d+) signals", line_str)
+                if prog_eval_match:
+                    # Just for status feedback, don't necessarily update records_found yet if we want WON/LOST count
+                    pass
                 
                 # Indicators: Successfully updated technical indicators for 250 stocks.
                 ind_match = re.search(r"Successfully updated technical indicators for (\d+)", line_str)
