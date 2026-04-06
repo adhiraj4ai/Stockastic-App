@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import {
     Bell, TrendingUp, TrendingDown, AlertCircle, Target, Eye, Fish,
     CheckCircle, Info, RefreshCw, Trash2, CheckCheck, Filter, Loader2,
+    LayoutGrid, ExternalLink
 } from 'lucide-react';
 
 type NotificationType =
@@ -297,7 +298,7 @@ export default function AlertsPage() {
                         onClick={() => setIsDetailOpen(false)}
                     >
                         <div 
-                            className={`bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 transform transition-transform duration-300 ${isDetailOpen ? 'scale-100' : 'scale-95'}`}
+                            className={`bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 transform transition-transform duration-300 ${isDetailOpen ? 'scale-100' : 'scale-95'}`}
                             onClick={e => e.stopPropagation()}
                         >
                             <div className={`h-2 w-full ${getIconClass(selectedAlert.type)} opacity-50`} />
@@ -330,23 +331,78 @@ export default function AlertsPage() {
                                     </p>
                                 </div>
 
-                                {selectedAlert.ticker === 'SUMMARY' && selectedAlert.metadata?.symbols && (
-                                    <div className="space-y-3">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Impacted Assets</p>
-                                        <div className="flex flex-wrap gap-2">
-                                            {selectedAlert.metadata.symbols.map((sym: string) => (
-                                                <span 
-                                                    key={sym}
-                                                    onClick={() => {
-                                                        setIsDetailOpen(false);
-                                                        router.push(`/ticker/${sym}`);
-                                                    }}
-                                                    className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded-xl text-[10px] font-black cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors border border-blue-100/50 dark:border-blue-800/30"
-                                                >
-                                                    {sym}
-                                                </span>
-                                            ))}
+                                {selectedAlert.ticker === 'SUMMARY' && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 flex items-center gap-2">
+                                                <LayoutGrid size={12} /> Detailed Breakdown
+                                            </h4>
+                                            <span className="text-[10px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1 rounded-full border border-blue-100/50 dark:border-blue-800/30">
+                                                {selectedAlert.metadata?.count || selectedAlert.metadata?.items?.length || selectedAlert.metadata?.symbols?.length || 0} Assets Impacted
+                                            </span>
                                         </div>
+                                        
+                                        {(() => {
+                                            const metadata = selectedAlert.metadata || {};
+                                            const tableItems = metadata.items || (metadata.symbols || []).map((s: string) => ({
+                                                symbol: s,
+                                                detail: "Consolidated Alert",
+                                                price: null
+                                            }));
+
+                                            if (tableItems.length === 0) return null;
+
+                                            return (
+                                                <div className="relative border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm bg-white dark:bg-slate-900">
+                                                    <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                                                        <table className="w-full text-left border-collapse">
+                                                            <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800">
+                                                                <tr>
+                                                                    <th className="px-5 py-3 text-[9px] font-black uppercase tracking-widest text-slate-500">Symbol</th>
+                                                                    <th className="px-5 py-3 text-[9px] font-black uppercase tracking-widest text-slate-500">Event Detail</th>
+                                                                    <th className="px-5 py-3 text-[9px] font-black uppercase tracking-widest text-slate-500 text-right">Price</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                                                                {tableItems.map((item: any, idx: number) => (
+                                                                    <tr 
+                                                                        key={`${item.symbol}-${idx}`}
+                                                                        onClick={() => {
+                                                                            setIsDetailOpen(false);
+                                                                            router.push(`/ticker/${item.symbol}`);
+                                                                        }}
+                                                                        className="group hover:bg-blue-50/50 dark:hover:bg-blue-900/10 cursor-pointer transition-colors"
+                                                                    >
+                                                                        <td className="px-5 py-4">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="text-xs font-black text-slate-900 dark:text-white uppercase group-hover:text-blue-600 transition-colors">
+                                                                                    {item.symbol}
+                                                                                </span>
+                                                                                <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 text-blue-400 transition-all" />
+                                                                            </div>
+                                                                        </td>
+                                                                        <td className="px-5 py-4">
+                                                                            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                                                                                {item.detail}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td className="px-5 py-4 text-right">
+                                                                            {item.price ? (
+                                                                                <span className="text-xs font-black text-slate-900 dark:text-white tabular-nums">
+                                                                                    Rs. {item.price.toLocaleString()}
+                                                                                </span>
+                                                                            ) : (
+                                                                                <span className="text-xs text-slate-300 dark:text-slate-700">-</span>
+                                                                            )}
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 )}
 

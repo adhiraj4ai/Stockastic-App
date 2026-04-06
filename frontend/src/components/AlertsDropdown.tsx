@@ -297,16 +297,78 @@ export function AlertsDropdown() {
                                     </div>
                                 )}
 
-                                {selectedAlert.ticker === 'SUMMARY' && selectedAlert.metadata?.symbols && (
-                                    <div className="space-y-2">
-                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Impacted Symbols</span>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {selectedAlert.metadata.symbols.map((s: string) => (
-                                                <span key={s} className="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded font-bold text-xs text-slate-600 dark:text-slate-300">
-                                                    {s}
-                                                </span>
-                                            ))}
+                                {selectedAlert.ticker === 'SUMMARY' && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 flex items-center gap-2">
+                                                <LayoutGrid size={12} /> Detailed Breakdown
+                                            </h4>
+                                            <span className="text-[10px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">
+                                                {selectedAlert.metadata?.count || selectedAlert.metadata?.items?.length || selectedAlert.metadata?.symbols?.length || 0} Assets
+                                            </span>
                                         </div>
+                                        
+                                        {(() => {
+                                            const metadata = selectedAlert.metadata || {};
+                                            const tableItems = metadata.items || (metadata.symbols || []).map((s: string) => ({
+                                                symbol: s,
+                                                detail: "Consolidated Alert",
+                                                price: null
+                                            }));
+
+                                            if (tableItems.length === 0) return null;
+
+                                            return (
+                                                <div className="relative border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+                                                    <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                                                        <table className="w-full text-left border-collapse">
+                                                            <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-800">
+                                                                <tr>
+                                                                    <th className="px-4 py-2.5 text-[9px] font-black uppercase tracking-widest text-slate-500">Symbol</th>
+                                                                    <th className="px-4 py-2.5 text-[9px] font-black uppercase tracking-widest text-slate-500">Event Detail</th>
+                                                                    <th className="px-4 py-2.5 text-[9px] font-black uppercase tracking-widest text-slate-500 text-right">Price</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                                                                {tableItems.map((item: any, idx: number) => (
+                                                                    <tr 
+                                                                        key={`${item.symbol}-${idx}`}
+                                                                        onClick={() => {
+                                                                            setSelectedAlert(null);
+                                                                            router.push(`/ticker/${item.symbol}`);
+                                                                        }}
+                                                                        className="group hover:bg-blue-50/50 dark:hover:bg-blue-900/10 cursor-pointer transition-colors"
+                                                                    >
+                                                                        <td className="px-4 py-3">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="text-[11px] font-black text-slate-900 dark:text-white uppercase group-hover:text-blue-600 transition-colors">
+                                                                                    {item.symbol}
+                                                                                </span>
+                                                                                <ExternalLink size={8} className="opacity-0 group-hover:opacity-100 text-blue-400 transition-all" />
+                                                                            </div>
+                                                                        </td>
+                                                                        <td className="px-4 py-3">
+                                                                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                                                                                {item.detail}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td className="px-4 py-3 text-right">
+                                                                            {item.price ? (
+                                                                                <span className="text-[10px] font-black text-slate-900 dark:text-slate-100 tabular-nums">
+                                                                                    {item.price.toLocaleString()}
+                                                                                </span>
+                                                                            ) : (
+                                                                                <span className="text-[10px] text-slate-300 dark:text-slate-700">-</span>
+                                                                            )}
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 )}
                             </div>

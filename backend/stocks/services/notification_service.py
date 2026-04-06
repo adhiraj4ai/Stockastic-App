@@ -164,6 +164,22 @@ def check_portfolio_alerts(user):
                 if notification: notifications_created += 1
             else:
                 # Multiple hits: AGGREGATE
+                items_data = []
+                for item in impacted_items:
+                    price = get_latest_price(item.ticker)
+                    detail = ""
+                    if n_type == Notification.NotificationType.STOP_LOSS_HIT: detail = "Stop-Loss Hit"
+                    elif n_type == Notification.NotificationType.TARGET_REACHED: detail = "Target Reached"
+                    elif n_type == Notification.NotificationType.BELOW_WACC: detail = "Below Cost"
+                    elif n_type == Notification.NotificationType.SIGNIFICANT_GAIN: detail = "Up 10%+"
+                    elif n_type == Notification.NotificationType.SIGNIFICANT_LOSS: detail = "Down 10%+"
+                    
+                    items_data.append({
+                        'symbol': item.ticker,
+                        'detail': detail,
+                        'price': price
+                    })
+
                 symbols = [i.ticker for i in impacted_items]
                 type_label = n_type.lower().replace('_', ' ').replace('hit', '').replace('reached', '').strip().title()
                 
@@ -174,7 +190,11 @@ def check_portfolio_alerts(user):
                     message=f"{len(impacted_items)} assets in your portfolio ({', '.join(symbols[:2])}{'...' if len(symbols) > 2 else ''}) have triggered a {type_label} alert.",
                     ticker='SUMMARY',
                     redirect_url='/portfolio?tab=holdings',
-                    metadata={'symbols': symbols, 'count': len(impacted_items)}
+                    metadata={
+                        'symbols': symbols, 
+                        'count': len(impacted_items),
+                        'items': items_data
+                    }
                 )
                 if notification: notifications_created += 1
                 
@@ -234,6 +254,16 @@ def check_watchlist_alerts(user):
                 )
                 if notification: notifications_created += 1
             else:
+                items_data = []
+                for item in impacted_items:
+                    price = get_latest_price(item.ticker)
+                    detail = "Target Reached" if n_type == Notification.NotificationType.TARGET_REACHED else "Stop Price Hit"
+                    items_data.append({
+                        'symbol': item.ticker,
+                        'detail': detail,
+                        'price': price
+                    })
+
                 symbols = [i.ticker for i in impacted_items]
                 label = "Targets Reached" if n_type == Notification.NotificationType.TARGET_REACHED else "Stop Prices Hit"
                 
@@ -244,7 +274,11 @@ def check_watchlist_alerts(user):
                     message=f"{len(impacted_items)} watchlist items ({', '.join(symbols[:2])}{'...' if len(symbols) > 2 else ''}) have hit their alert levels.",
                     ticker='SUMMARY',
                     redirect_url='/watchlist',
-                    metadata={'symbols': symbols, 'count': len(impacted_items)}
+                    metadata={
+                        'symbols': symbols, 
+                        'count': len(impacted_items),
+                        'items': items_data
+                    }
                 )
                 if notification: notifications_created += 1
 
@@ -329,7 +363,18 @@ def check_active_signal_alerts(user):
             if notification: notifications_created += 1
         else:
             # Multiple hits: AGGREGATE
-            symbols = [s.symbol for s in signals]
+            items_data = []
+            seen_symbols = set()
+            for s in signals:
+                price = get_latest_price(s.symbol)
+                items_data.append({
+                    'symbol': s.symbol,
+                    'detail': f"{hit_type} ({s.source})",
+                    'price': price
+                })
+                seen_symbols.add(s.symbol)
+
+            symbols = list(seen_symbols)
             notification = create_notification(
                 user=user,
                 notification_type=notif_type,
@@ -340,7 +385,8 @@ def check_active_signal_alerts(user):
                 metadata={
                     'symbols': symbols,
                     'hit_type': hit_type,
-                    'count': len(signals)
+                    'count': len(signals),
+                    'items': items_data
                 }
             )
             if notification: notifications_created += 1
@@ -412,6 +458,15 @@ def check_whale_watch_alerts(user):
                 title = f'Whale Watch: {count} Symbols Detect SELL'
                 message = f'Distribution detected for {count} tickers including {symbol_str}.'
 
+            items_data = []
+            for s in sig_list:
+                price = get_latest_price(s.symbol)
+                items_data.append({
+                    'symbol': s.symbol,
+                    'detail': f"{signal_type} ({s.strategy.name})",
+                    'price': price
+                })
+
             Notification.objects.create(
                 user=user,
                 type=notif_type,
@@ -424,6 +479,7 @@ def check_whale_watch_alerts(user):
                     'count': count,
                     'symbols': symbols,
                     'date': str(today),
+                    'items': items_data
                 }
             )
             notifications_created += 1
