@@ -3,8 +3,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '@/lib/api';
 import {
-    Activity, Zap, CheckCircle2, XCircle, Search,
-    Shield, TrendingUp, TrendingDown, Layers, ArrowRight
+    Activity, CheckCircle2, Search, Target, Trophy,
+    Shield, TrendingUp, TrendingDown, ArrowRight,
+    AlertCircle, BarChart3, Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PageLoader } from '@/components/ui/StockLoader';
@@ -30,7 +31,7 @@ interface GeneratedSignal {
     signal: 'BUY' | 'SELL';
     signal_tier: string;
     strength: number;
-    ltp: string;
+    ltp: string; 
     target_price?: number;
     stop_loss_price?: number;
     status: 'ACTIVE' | 'WON' | 'LOST' | 'CLOSED_MANUAL';
@@ -63,120 +64,114 @@ const STATUS_LABELS: Record<string, string> = {
 
 function calcExitPrice(sig: GeneratedSignal): number | null {
     const entry = parseFloat(sig.ltp) || 0;
-    if (!entry || sig.pnl_percent == null) return null;
-    return entry * (1 + sig.pnl_percent / 100);
+    const pnl = sig.pnl_percent != null ? parseFloat(sig.pnl_percent as any) : null;
+    if (!entry || pnl == null) return null;
+    const multiplier = sig.signal === 'BUY' ? (1 + pnl / 100) : (1 - pnl / 100);
+    return entry * multiplier;
 }
 
 function fmt(n?: number | null): string {
-    if (n == null) return '—';
-    return 'रू' + n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    if (n == null || isNaN(n)) return '—';
+    return 'रू' + n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 });
 }
 
-function pctDiff(from: number, to: number): string {
-    const d = ((to - from) / from) * 100;
-    return (d > 0 ? '+' : '') + d.toFixed(1) + '%';
-}
-
-// Which TP level did the exit price clear?
 function resolveHitLevel(sig: GeneratedSignal, exitPrice: number): string | null {
     if (sig.status !== 'WON') return null;
-    const entry = parseFloat(sig.ltp) || 0;
     const isBuy = sig.signal === 'BUY';
-    const { tp1, tp2, tp3 } = sig.metadata || {};
-    const target = sig.target_price;
+    const metadata = sig.metadata || {};
+    const tp1 = metadata.tp1 ? parseFloat(metadata.tp1) : null;
+    const tp2 = metadata.tp2 ? parseFloat(metadata.tp2) : null;
+    const tp3 = metadata.tp3 ? parseFloat(metadata.tp3) : null;
+    const target = sig.target_price ? parseFloat(sig.target_price as any) : null;
 
     const cleared = (level: number) =>
         isBuy ? exitPrice >= level * 0.97 : exitPrice <= level * 1.03;
 
-    if (tp3 && cleared(tp3)) return 'TP3';
-    if (tp2 && cleared(tp2)) return 'TP2';
-    if (tp1 && cleared(tp1)) return 'TP1';
-    if (target && cleared(target)) return 'Target';
+    if (tp3 && cleared(tp3)) return isBuy ? 'TP3' : 'D3';
+    if (tp2 && cleared(tp2)) return isBuy ? 'TP2' : 'D2';
+    if (tp1 && cleared(tp1)) return isBuy ? 'TP1' : 'D1';
+    if (target && cleared(target)) return isBuy ? 'Target' : 'Demand';
     return 'Partial';
 }
 
-// ─── Price Ladder ─────────────────────────────────────────────────
+// ─── Price Ladder (Horizontal Execution Timeline) ───────────────
 
 function PriceLadder({ sig }: { sig: GeneratedSignal }) {
     const entry = parseFloat(sig.ltp) || 0;
     const exitPrice = calcExitPrice(sig);
-    const { tp1, tp2, tp3 } = sig.metadata || {};
-    const sl = sig.stop_loss_price ?? sig.metadata?.sl;
-    const target = sig.target_price;
+    const metadata = sig.metadata || {};
+    const tp1 = metadata.tp1 ? parseFloat(metadata.tp1) : null;
+    const tp2 = metadata.tp2 ? parseFloat(metadata.tp2) : null;
+    const tp3 = metadata.tp3 ? parseFloat(metadata.tp3) : null;
+    const sl = sig.stop_loss_price ? parseFloat(sig.stop_loss_price as any) : (metadata.sl ? parseFloat(metadata.sl) : null);
+    const target = sig.target_price ? parseFloat(sig.target_price as any) : null;
     const isBuy = sig.signal === 'BUY';
     const isLost = sig.status === 'LOST';
-    const hitLevel = exitPrice ? resolveHitLevel(sig, exitPrice) : null;
 
     const tpCleared = (level: number) => {
-        if (!exitPrice || sig.status !== 'WON') return false;
+        if (!exitPrice || sig.status !== 'WON' || isNaN(exitPrice)) return false;
         return isBuy ? exitPrice >= level * 0.97 : exitPrice <= level * 1.03;
     };
 
     const levels: { label: string; price: number; type: 'tp' | 'sl' | 'entry' }[] = [];
 
-    // Build levels top-to-bottom for BUY (highest first), reversed for SELL
-    if (isBuy) {
-        if (tp3) levels.push({ label: 'TP3', price: tp3, type: 'tp' });
-        if (tp2) levels.push({ label: 'TP2', price: tp2, type: 'tp' });
-        if (tp1) levels.push({ label: 'TP1', price: tp1, type: 'tp' });
-        if (!tp1 && !tp2 && !tp3 && target) levels.push({ label: 'Target', price: target, type: 'tp' });
-        levels.push({ label: 'Entry', price: entry, type: 'entry' });
-        if (sl) levels.push({ label: 'SL', price: sl, type: 'sl' });
-    } else {
-        if (sl) levels.push({ label: 'SL', price: sl, type: 'sl' });
-        levels.push({ label: 'Entry', price: entry, type: 'entry' });
-        if (!tp1 && !tp2 && !tp3 && target) levels.push({ label: 'Target', price: target, type: 'tp' });
-        if (tp1) levels.push({ label: 'TP1', price: tp1, type: 'tp' });
-        if (tp2) levels.push({ label: 'TP2', price: tp2, type: 'tp' });
-        if (tp3) levels.push({ label: 'TP3', price: tp3, type: 'tp' });
-    }
+    const getLabel = (base: string) => {
+        if (isBuy) return base;
+        if (base === 'SL') return 'STOP';
+        if (base === 'TP1') return 'D1';
+        if (base === 'TP2') return 'D2';
+        if (base === 'TP3') return 'D3';
+        if (base === 'Target') return 'Demand';
+        return base;
+    };
 
-    if (!levels.length) return <span className="text-[10px] text-slate-400">No levels set</span>;
+    if (sl) levels.push({ label: getLabel('SL'), price: sl, type: 'sl' });
+    levels.push({ label: isBuy ? 'Entry' : 'Sell @', price: entry, type: 'entry' });
+    
+    if (tp1) levels.push({ label: getLabel('TP1'), price: tp1, type: 'tp' });
+    if (tp2) levels.push({ label: getLabel('TP2'), price: tp2, type: 'tp' });
+    if (tp3) levels.push({ label: getLabel('TP3'), price: tp3, type: 'tp' });
+    if (!tp1 && !tp2 && !tp3 && target) levels.push({ label: getLabel('Target'), price: target, type: 'tp' });
+
+    if (levels.length < 2) return <span className="text-[10px] text-slate-400 font-semibold">Incomplete Levels</span>;
 
     return (
-        <div className="flex flex-col gap-px w-fit">
+        <div className="relative flex items-center gap-12 py-6 px-2 min-w-[300px]">
+            <div className="absolute left-[30px] right-[30px] top-[50%] h-[1px] bg-slate-200 dark:bg-slate-800 -translate-y-1/2" />
+            
             {levels.map(({ label, price, type }) => {
                 const isHitTp = type === 'tp' && tpCleared(price);
                 const isHitSl = type === 'sl' && isLost;
                 const isEntry = type === 'entry';
-
+                
                 return (
-                    <div
-                        key={label}
-                        className={cn(
-                            'flex items-center gap-2 px-1.5 py-[3px] rounded text-[10px] font-mono',
-                            isHitTp && 'bg-emerald-50 dark:bg-emerald-900/20',
-                            isHitSl && 'bg-rose-50 dark:bg-rose-900/20',
-                            isEntry && 'bg-slate-50 dark:bg-slate-800/50',
-                        )}
-                    >
+                    <div key={label} className="relative flex flex-col items-center flex-1">
+                        <div className={cn(
+                            "w-2.5 h-2.5 rounded-full border-2 bg-white dark:bg-slate-900 z-10 transition-all",
+                            isHitTp ? "border-emerald-500 bg-emerald-500 scale-125" :
+                            isHitSl ? "border-rose-500 bg-rose-500 scale-125" :
+                            isEntry ? "border-slate-400 bg-slate-400" :
+                            "border-slate-200 dark:border-slate-800"
+                        )} />
+                        
                         <span className={cn(
-                            'w-[34px] font-bold shrink-0',
-                            type === 'sl' ? 'text-rose-400' : isEntry ? 'text-slate-500' : 'text-slate-400',
+                            "absolute -top-5 text-[9px] font-bold uppercase tracking-wider whitespace-nowrap",
+                            type === 'sl' ? "text-rose-500" :
+                            isEntry ? "text-slate-500" :
+                            isHitTp ? "text-emerald-500" : "text-slate-400"
                         )}>
                             {label}
                         </span>
+
                         <span className={cn(
-                            'font-bold tabular-nums',
-                            isHitTp ? 'text-emerald-600 dark:text-emerald-400' :
-                            isHitSl ? 'text-rose-500 dark:text-rose-400' :
-                            isEntry ? 'text-slate-800 dark:text-slate-200' :
-                            'text-slate-600 dark:text-slate-400',
+                            "absolute -bottom-5 text-[10px] font-mono font-semibold tabular-nums whitespace-nowrap",
+                            isHitTp ? "text-emerald-600 dark:text-emerald-400" :
+                            isHitSl ? "text-rose-600 dark:text-rose-400" :
+                            isEntry ? "text-slate-900 dark:text-slate-100" :
+                            "text-slate-500 dark:text-slate-400"
                         )}>
                             {fmt(price)}
                         </span>
-                        {isHitTp && (
-                            <span className="ml-auto flex items-center gap-0.5 text-emerald-500 font-bold">
-                                <CheckCircle2 size={10} />
-                                <span className="text-[9px]">hit</span>
-                            </span>
-                        )}
-                        {isHitSl && (
-                            <span className="ml-auto flex items-center gap-0.5 text-rose-500 font-bold">
-                                <XCircle size={10} />
-                                <span className="text-[9px]">trig</span>
-                            </span>
-                        )}
                     </div>
                 );
             })}
@@ -190,40 +185,39 @@ function ResultCell({ sig }: { sig: GeneratedSignal }) {
     const entry = parseFloat(sig.ltp) || 0;
     const exitPrice = calcExitPrice(sig);
     const hitLevel = exitPrice ? resolveHitLevel(sig, exitPrice) : null;
-    const pnl = sig.pnl_percent;
-    const sl = sig.stop_loss_price ?? sig.metadata?.sl;
+    const metadata = sig.metadata || {};
+    const sl = sig.stop_loss_price ? parseFloat(sig.stop_loss_price as any) : (metadata.sl ? parseFloat(metadata.sl) : null);
+    const isBuy = sig.signal === 'BUY';
 
     if (sig.status === 'ACTIVE') {
         return (
-            <div className="flex items-center gap-1.5 text-xs font-medium text-blue-500">
-                <Activity size={12} />
-                <span>In progress</span>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20 w-fit">
+                <Activity size={12} className="animate-pulse" />
+                <span className="text-[10px] font-bold uppercase tracking-wider">In Progress</span>
             </div>
         );
     }
 
     if (sig.status === 'WON' && exitPrice) {
         return (
-            <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5">
-                    <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
-                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                        {hitLevel || 'Target'} cleared
+            <div className="space-y-3 flex flex-col items-center">
+                <div className={cn(
+                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-full border",
+                    isBuy ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                )}>
+                    {isBuy ? <Trophy size={11} /> : <AlertCircle size={11} />}
+                    <span className="text-[9px] font-bold uppercase tracking-wider">
+                        {hitLevel ? `${hitLevel} Hit` : (isBuy ? 'Target Cleared' : 'Demand Reached')}
                     </span>
                 </div>
-                <div className="text-[10px] text-slate-500 font-mono space-y-0.5">
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-slate-400">Buy</span>
-                        <span className="font-bold text-slate-700 dark:text-slate-300">{fmt(entry)}</span>
+                <div className="flex gap-4 text-[10px] font-mono whitespace-nowrap">
+                    <div>
+                        <span className="text-slate-400 uppercase text-[8px] mr-1">{isBuy ? 'BUY @:' : 'SELL @:'}</span>
+                        <span className="text-slate-900 dark:text-white font-semibold">{fmt(entry)}</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-slate-400">Sell</span>
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400">{fmt(exitPrice)}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <TrendingUp size={9} className="text-emerald-500" />
-                        <span className="font-bold text-emerald-500">{pctDiff(entry, exitPrice)}</span>
-                        <span className="text-slate-400 ml-1">profit</span>
+                    <div>
+                        <span className="text-slate-400 uppercase text-[8px] mr-1">{isBuy ? 'SELL @:' : 'BUYBACK @:'}</span>
+                        <span className={cn("font-semibold", isBuy ? "text-emerald-500" : "text-blue-500")}>{fmt(exitPrice)}</span>
                     </div>
                 </div>
             </div>
@@ -232,67 +226,33 @@ function ResultCell({ sig }: { sig: GeneratedSignal }) {
 
     if (sig.status === 'LOST' && entry) {
         const slPrice = sl || exitPrice;
-        const pnlValue = pnl != null ? parseFloat(pnl as any) : null;
         return (
-            <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5">
-                    <Shield size={12} className="text-rose-500 shrink-0" />
-                    <span className="text-xs font-bold text-rose-600 dark:text-rose-400">
-                        SL triggered
+            <div className="space-y-3 flex flex-col items-center">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                    <Shield size={11} />
+                    <span className="text-[9px] font-bold uppercase tracking-wider">
+                        {isBuy ? 'Stop Loss Hit' : 'Exit Buffer Hit'}
                     </span>
                 </div>
-                <div className="text-[10px] text-slate-500 font-mono space-y-0.5">
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-slate-400">Buy</span>
-                        <span className="font-bold text-slate-700 dark:text-slate-300">{fmt(entry)}</span>
+                <div className="flex gap-4 text-[10px] font-mono whitespace-nowrap">
+                    <div>
+                        <span className="text-slate-400 uppercase text-[8px] mr-1">{isBuy ? 'BUY @:' : 'SELL @:'}</span>
+                        <span className="text-slate-900 dark:text-white font-semibold">{fmt(entry)}</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-slate-400">Exit</span>
-                        <span className="font-bold text-rose-500 dark:text-rose-400">{fmt(slPrice)}</span>
+                    <div>
+                        <span className="text-slate-400 uppercase text-[8px] mr-1">EXIT @:</span>
+                        <span className="text-rose-500 font-semibold">{fmt(slPrice || entry)}</span>
                     </div>
-                    {pnlValue != null && (
-                        <div className="flex items-center gap-1">
-                            <TrendingDown size={9} className="text-rose-500" />
-                            <span className="font-bold text-rose-500">{pnlValue > 0 ? '+' : ''}{pnlValue.toFixed(1)}%</span>
-                            <span className="text-slate-400 ml-1">loss contained</span>
-                        </div>
-                    )}
                 </div>
             </div>
         );
     }
 
-    if (sig.status === 'CLOSED_MANUAL' && exitPrice) {
-        const pnlValue = pnl != null ? parseFloat(pnl as any) : null;
-        return (
-            <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold text-slate-500">Manual close</span>
-                </div>
-                <div className="text-[10px] text-slate-500 font-mono space-y-0.5">
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-slate-400">Buy</span>
-                        <span className="font-bold text-slate-700 dark:text-slate-300">{fmt(entry)}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-slate-400">Exit</span>
-                        <span className="font-bold text-slate-700 dark:text-slate-300">{fmt(exitPrice)}</span>
-                    </div>
-                    {pnlValue != null && (
-                        <div className={cn(
-                            'flex items-center gap-1',
-                            pnlValue >= 0 ? 'text-emerald-500' : 'text-rose-500'
-                        )}>
-                            {pnlValue >= 0 ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
-                            <span className="font-bold">{pnlValue > 0 ? '+' : ''}{pnlValue.toFixed(1)}%</span>
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
-    }
-
-    return <span className="text-[10px] text-slate-400">—</span>;
+    return (
+        <div className="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700 w-fit">
+            <span className="text-[9px] font-bold uppercase tracking-wider">Closed</span>
+        </div>
+    );
 }
 
 // ─── Filter pill ──────────────────────────────────────────────────
@@ -304,10 +264,10 @@ function FilterPill({ active, onClick, children }: {
         <button
             onClick={onClick}
             className={cn(
-                'px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all',
+                'px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 relative',
                 active
-                    ? 'bg-slate-900 dark:bg-white text-white dark:text-black'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg'
+                    : 'bg-white dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
             )}
         >
             {children}
@@ -315,27 +275,43 @@ function FilterPill({ active, onClick, children }: {
     );
 }
 
-// ─── Summary Stat ─────────────────────────────────────────────────
+// ─── Summary Stat (Bento Card) ───────────────────────────────────
 
-function StatCard({ label, value, sub, accent, tooltip }: {
-    label: string; value: string; sub?: string; accent?: 'green' | 'red' | 'blue' | 'default'; tooltip?: string;
+function StatCard({ label, value, sub, accent, icon: Icon, tooltip }: {
+    label: string; value: string; sub?: string; accent: 'green' | 'red' | 'blue' | 'purple'; icon: any; tooltip?: string;
 }) {
+    const colors = {
+        green: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
+        red: 'text-rose-500 bg-rose-500/10 border-rose-500/20',
+        blue: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
+        purple: 'text-purple-500 bg-purple-500/10 border-purple-500/20',
+    };
+
     return (
-        <div className="bg-white dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800/60 rounded-2xl p-4">
-            <div className="flex items-center mb-1">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+        <div className="group relative overflow-hidden flex flex-col justify-between h-32 bg-white dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 transition-all hover:border-primary/20">
+            <div className={cn(
+                "absolute -top-4 -right-4 w-16 h-16 rounded-full blur-2xl opacity-10 transition-all duration-500 group-hover:opacity-20",
+                accent === 'green' ? "bg-emerald-500" :
+                accent === 'red' ? "bg-rose-500" :
+                accent === 'blue' ? "bg-blue-500" : "bg-purple-500"
+            )} />
+            
+            <div className="flex items-center justify-between">
+                <div className={cn("p-2 rounded-xl border", colors[accent])}>
+                    <Icon size={18} />
+                </div>
                 {tooltip && <InfoTooltip content={tooltip} />}
             </div>
-            <div className={cn(
-                'text-2xl font-black tracking-tight',
-                accent === 'green' ? 'text-emerald-500' :
-                accent === 'red' ? 'text-rose-500' :
-                accent === 'blue' ? 'text-blue-500' :
-                'text-slate-900 dark:text-white'
-            )}>
-                {value}
+
+            <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{label}</p>
+                <div className="flex items-baseline gap-2">
+                    <span className={cn("text-2xl font-black tracking-tight", colors[accent].split(' ')[0])}>
+                        {value}
+                    </span>
+                    {sub && <span className="text-[10px] text-slate-400 font-semibold">{sub}</span>}
+                </div>
             </div>
-            {sub && <p className="text-[10px] text-slate-400 mt-0.5">{sub}</p>}
         </div>
     );
 }
@@ -347,7 +323,6 @@ export default function TrackRecordClient() {
     const [signals, setSignals] = useState<GeneratedSignal[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Filters
     const [search, setSearch] = useState('');
     const [sourceFilter, setSourceFilter] = useState<string>('ALL');
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -380,21 +355,21 @@ export default function TrackRecordClient() {
         return true;
     }), [signals, search, sourceFilter, statusFilter, dirFilter]);
 
-    // Aggregate effectiveness metrics
     const metrics = useMemo(() => {
         const resolved = signals.filter(s => s.status === 'WON' || s.status === 'LOST');
         const won = signals.filter(s => s.status === 'WON');
         const lost = signals.filter(s => s.status === 'LOST');
-
+        
         const avgWinPnl = won.length
             ? won.reduce((acc, s) => acc + parseFloat((s.pnl_percent as any) || 0), 0) / won.length
             : null;
+            
         const avgLossPnl = lost.length
             ? lost.reduce((acc, s) => acc + parseFloat((s.pnl_percent as any) || 0), 0) / lost.length
             : null;
+            
         const winRate = resolved.length ? Math.round((won.length / resolved.length) * 100) : null;
-
-        // Risk:reward = avg win / abs(avg loss)
+        
         const rr = avgWinPnl && avgLossPnl && avgLossPnl !== 0
             ? Math.abs(avgWinPnl / avgLossPnl).toFixed(1)
             : null;
@@ -405,222 +380,184 @@ export default function TrackRecordClient() {
     if (loading) return <PageLoader />;
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-
-            {/* Page header */}
-            <div>
-                <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Track Record</h1>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                    Signal performance — entry / exit prices, targets hit, stop loss effectiveness
-                </p>
-            </div>
-
-            {/* Effectiveness summary */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="space-y-8 max-w-[1600px] mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard
-                    label="Win rate"
+                    label="Signal Accuracy"
                     value={metrics.winRate != null ? `${metrics.winRate}%` : '—'}
-                    sub={`${metrics.won}W · ${metrics.lost}L of ${metrics.resolved} resolved`}
+                    sub={`${metrics.won} Hits / ${metrics.lost} Stops`}
                     accent={metrics.winRate != null && metrics.winRate >= 50 ? 'green' : 'red'}
-                    tooltip="Probability of a signal hitting at least TP1 before SL."
+                    icon={Target}
+                    tooltip="Probability of the signal reaching its primary Demand/Target zone before hitting the Stop."
                 />
                 <StatCard
-                    label="Avg profit on wins"
+                    label="Avg Capture"
                     value={metrics.avgWinPnl != null ? `+${metrics.avgWinPnl.toFixed(1)}%` : '—'}
-                    sub="Profit captured per winning signal"
+                    sub="Yield Alpha"
                     accent="green"
-                    tooltip="The average percentage return across all winning trades (from entry to target exit)."
+                    icon={TrendingUp}
+                    tooltip="Average potential percentage gain (or loss avoidance) captured per successful signal."
                 />
                 <StatCard
-                    label="Loss contained by SL"
+                    label="Avg Stop Hit"
                     value={metrics.avgLossPnl != null ? `${metrics.avgLossPnl.toFixed(1)}%` : '—'}
-                    sub="Avg loss limited by stop loss"
+                    sub="Impact per Stop"
                     accent="red"
-                    tooltip="The average percentage loss on trades that hit the stop-loss level."
+                    icon={TrendingDown}
+                    tooltip="Average impact on situations where the market moved against the signal."
                 />
                 <StatCard
-                    label="Risk : reward"
+                    label="Edge Ratio"
                     value={metrics.rr ? `1 : ${metrics.rr}` : '—'}
-                    sub={`${metrics.total} total signals tracked`}
+                    sub="Predictive Edge"
                     accent="blue"
-                    tooltip="The ratio of average profit per win vs average loss per SL hit. Higher is better."
+                    icon={BarChart3}
+                    tooltip="Reward-to-Risk ratio of the strategy. A ratio > 1.5 indicates a high-confidence mathematical edge."
                 />
             </div>
 
-            {/* Filters */}
-            <div className="space-y-2.5">
-                {/* Source filter */}
-                <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] font-bold text-slate-400 w-12 shrink-0">Engine</span>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                        <FilterPill active={sourceFilter === 'ALL'} onClick={() => setSourceFilter('ALL')}>All</FilterPill>
-                        {SOURCES.map(s => (
-                            <FilterPill key={s.key} active={sourceFilter === s.key} onClick={() => setSourceFilter(s.key)}>
-                                {s.label}
-                            </FilterPill>
-                        ))}
+            <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800 p-4 rounded-3xl space-y-4 shadow-sm">
+                <div className="flex flex-wrap items-center gap-3">
+                    <FilterPill active={sourceFilter === 'ALL'} onClick={() => setSourceFilter('ALL')}>All Engines</FilterPill>
+                    {SOURCES.map(s => (
+                        <FilterPill key={s.key} active={sourceFilter === s.key} onClick={() => setSourceFilter(s.key)}>
+                            {s.label}
+                        </FilterPill>
+                    ))}
+                    <div className="w-px h-6 bg-slate-200 dark:bg-slate-800 mx-2 hidden md:block" />
+                    <div className="relative group max-w-[250px] flex-1">
+                        <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                            value={search} onChange={e => setSearch(e.target.value)}
+                            placeholder="Find symbol..."
+                            className="w-full pl-11 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 dark:text-white transition-all shadow-inner"
+                        />
                     </div>
                 </div>
-
-                {/* Status + direction + search */}
-                <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] font-bold text-slate-400 w-12 shrink-0">Status</span>
-                    <div className="flex items-center gap-1.5 flex-wrap flex-1">
-                        <FilterPill active={statusFilter === 'ALL'} onClick={() => setStatusFilter('ALL')}>All</FilterPill>
+                
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-2">Quick Filter:</span>
                         {STATUSES.map(s => (
-                            <FilterPill key={s} active={statusFilter === s} onClick={() => setStatusFilter(s)}>
+                            <button
+                                key={s}
+                                onClick={() => setStatusFilter(statusFilter === s ? 'ALL' : s)}
+                                className={cn(
+                                    "px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-tight border transition-all",
+                                    statusFilter === s 
+                                        ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent shadow-md"
+                                        : "bg-transparent text-slate-400 border-slate-200 dark:border-slate-800 hover:border-slate-400"
+                                )}
+                            >
                                 {STATUS_LABELS[s]}
-                            </FilterPill>
+                            </button>
                         ))}
+                    </div>
 
-                        {/* Direction toggle */}
-                        <div className="flex p-0.5 bg-slate-100 dark:bg-slate-800/60 rounded-lg border border-slate-200/50 dark:border-slate-700/50 ml-2">
-                            {(['ALL', 'BUY', 'SELL'] as const).map(d => (
-                                <button key={d} onClick={() => setDirFilter(d)}
-                                    className={cn(
-                                        'px-3 py-1 rounded-md text-xs font-bold transition-all',
-                                        dirFilter === d
-                                            ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                                    )}>
-                                    {d === 'ALL' ? 'All' : d}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Search */}
-                        <div className="relative ml-auto">
-                            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input
-                                value={search} onChange={e => setSearch(e.target.value)}
-                                placeholder="Search symbol..."
-                                className="pl-9 pr-4 py-2 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl text-xs font-medium w-44 focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:text-white transition-all"
-                            />
-                        </div>
+                    <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800/60 rounded-2xl border border-slate-200/50 dark:border-slate-700/50">
+                        {(['ALL', 'BUY', 'SELL'] as const).map(d => (
+                            <button key={d} onClick={() => setDirFilter(d)}
+                                className={cn(
+                                    'px-4 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-tight transition-all',
+                                    dirFilter === d
+                                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                                )}>
+                                {d}
+                            </button>
+                        ))}
                     </div>
                 </div>
             </div>
 
-            {/* Signal table */}
-            <div className="bg-white dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden">
-                <div className="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                        {filtered.length} signal{filtered.length !== 1 ? 's' : ''}
-                    </span>
-                    {(sourceFilter !== 'ALL' || statusFilter !== 'ALL' || dirFilter !== 'ALL' || search) && (
-                        <button
-                            onClick={() => { setSourceFilter('ALL'); setStatusFilter('ALL'); setDirFilter('ALL'); setSearch(''); }}
-                            className="text-xs font-bold text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-                        >
-                            Clear filters
-                        </button>
-                    )}
-                </div>
-
+            <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/60 rounded-3xl overflow-hidden shadow-2xl shadow-slate-200/10">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-200/50 dark:border-slate-800/80">
-                            <tr>
-                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 whitespace-nowrap">Symbol</th>
-                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 whitespace-nowrap">Engine · Tier</th>
-                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 whitespace-nowrap">Dates</th>
-                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 whitespace-nowrap">
-                                    <div className="flex items-center">
-                                        Price levels
-                                        <InfoTooltip content="Key algorithmic levels including Entry, Targets (TP1-TP3), and Stop Loss." />
-                                    </div>
-                                </th>
-                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 whitespace-nowrap">
-                                    <div className="flex items-center">
-                                        Result
-                                        <InfoTooltip content="Visual summary of the trade outcome. Shows which targets were cleared or if the SL was hit." />
-                                    </div>
-                                </th>
-                                <th className="px-5 py-3 text-[10px] font-bold text-slate-400 whitespace-nowrap text-right">
-                                    <div className="flex items-center justify-end">
-                                        P&L
-                                        <InfoTooltip content="Percentage return achieved from entry to the point of exit/closure." />
-                                    </div>
-                                </th>
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr className="border-b border-slate-200/50 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/20">
+                                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-40">Symbol</th>
+                                <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-48">Engine Info</th>
+                                <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center w-28">Outcome Price</th>
+                                <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-44">Timeline</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Strategic Progression</th>
+                                <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center w-40">Outcome Detail</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right w-36">Efficiency</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
                             {filtered.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-5 py-16 text-center">
-                                        <Layers className="w-6 h-6 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
-                                        <p className="text-sm text-slate-400">No signals match the current filters</p>
+                                    <td colSpan={7} className="px-5 py-24 text-center">
+                                        <AlertCircle className="w-8 h-8 text-slate-200 mx-auto mb-4" />
+                                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">No signals matched</h3>
                                     </td>
                                 </tr>
                             ) : filtered.map((sig) => {
-                                const pnl = sig.pnl_percent;
+                                const exitPrice = calcExitPrice(sig);
                                 return (
-                                    <tr key={sig.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors align-top">
-
-                                        {/* Symbol */}
-                                        <td className="px-5 py-4 whitespace-nowrap">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <Link
-                                                    href={`/ticker/${sig.symbol}`}
-                                                    className="font-black text-slate-900 dark:text-white tracking-tight hover:underline"
-                                                >
+                                    <tr key={sig.id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-all duration-300 align-middle">
+                                        <td className="px-8 py-8">
+                                            <div className="flex items-center gap-3">
+                                                <Link href={`/ticker/${sig.symbol}`} className="font-bold text-xl text-slate-900 dark:text-white tracking-tight hover:text-primary transition-colors">
                                                     {sig.symbol}
                                                 </Link>
-                                                <span className={cn(
-                                                    'text-[10px] font-black px-1.5 py-0.5 rounded',
-                                                    sig.signal === 'BUY' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
+                                                <div className={cn(
+                                                    "px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest border",
+                                                    sig.signal === 'BUY' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-rose-500/10 text-rose-500 border-rose-500/20"
                                                 )}>
                                                     {sig.signal}
-                                                </span>
-                                            </div>
-                                        </td>
-
-                                        {/* Engine + tier */}
-                                        <td className="px-5 py-4 whitespace-nowrap">
-                                            <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                                                {SOURCE_LABELS[sig.source] || sig.source}
-                                            </div>
-                                            {sig.signal_tier && (
-                                                <div className="text-[10px] text-slate-400 mt-0.5">{sig.signal_tier}</div>
-                                            )}
-                                        </td>
-
-                                        {/* Dates */}
-                                        <td className="px-5 py-4 whitespace-nowrap">
-                                            <div className="text-[10px] font-medium text-slate-600 dark:text-slate-300">
-                                                {sig.generated_date}
-                                            </div>
-                                            {sig.closed_date && (
-                                                <div className="flex items-center gap-1 text-[10px] text-slate-400 mt-1">
-                                                    <ArrowRight size={9} />
-                                                    {sig.closed_date}
                                                 </div>
-                                            )}
+                                            </div>
                                         </td>
-
-                                        {/* Price ladder */}
-                                        <td className="px-5 py-4">
+                                        <td className="px-6 py-8">
+                                            <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{SOURCE_LABELS[sig.source] || sig.source}</p>
+                                            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-1">{sig.signal_tier || 'Standard'}</p>
+                                        </td>
+                                        <td className="px-6 py-8 text-center">
+                                            <span className={cn(
+                                                "font-mono text-sm font-bold px-3 py-1.5 rounded-lg border",
+                                                sig.status === 'WON' ? (sig.signal === 'BUY' ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" : "text-blue-500 bg-blue-500/10 border-blue-500/20") :
+                                                sig.status === 'LOST' ? "text-rose-500 bg-rose-500/10 border-rose-500/20" :
+                                                "text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 border-slate-200/50 dark:border-slate-700/50"
+                                            )}>
+                                                {fmt(exitPrice || parseFloat(sig.ltp))}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-8">
+                                            <div className="flex flex-col gap-2">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+                                                    <span className="text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-400">{sig.generated_date}</span>
+                                                </div>
+                                                {sig.closed_date && (
+                                                    <div className="flex items-center gap-2 text-primary">
+                                                        <ArrowRight size={10} />
+                                                        <span className="text-[11px] font-mono font-semibold">{sig.closed_date}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-8">
                                             <PriceLadder sig={sig} />
                                         </td>
-
-                                        {/* Result */}
-                                        <td className="px-5 py-4">
+                                        <td className="px-6 py-8 text-center">
                                             <ResultCell sig={sig} />
                                         </td>
-
-                                        {/* P&L badge */}
-                                        <td className="px-5 py-4 text-right whitespace-nowrap">
-                                            {pnl != null ? (
-                                                <span className={cn(
-                                                    'inline-flex font-mono font-black py-1 px-2.5 rounded-lg text-sm',
-                                                    pnl >= 0
-                                                        ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/20'
-                                                        : 'bg-rose-500 text-white shadow-sm shadow-rose-500/20'
-                                                )}>
-                                                    {pnl > 0 ? '+' : ''}{parseFloat(pnl as any).toFixed(2)}%
-                                                </span>
+                                        <td className="px-8 py-8 text-right">
+                                            {sig.pnl_percent != null ? (
+                                                <div className="inline-flex flex-col items-end">
+                                                    <span className={cn(
+                                                        "text-xl font-mono font-bold tabular-nums tracking-tighter",
+                                                        parseFloat(sig.pnl_percent as any) >= 0 ? "text-emerald-500" : "text-rose-500"
+                                                    )}>
+                                                        {parseFloat(sig.pnl_percent as any) > 0 ? '+' : ''}{parseFloat(sig.pnl_percent as any).toFixed(2)}%
+                                                    </span>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                                                        Captured Alpha
+                                                    </span>
+                                                </div>
                                             ) : (
-                                                <span className="text-slate-400 text-xs font-mono">—</span>
+                                                <span className="text-slate-300 dark:text-slate-700 font-mono text-sm">—</span>
                                             )}
                                         </td>
                                     </tr>
