@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
-    AlertTriangle, ArrowRight, TrendingUp, TrendingDown, Minus,
+    AlertTriangle, ArrowRight, TrendingUp, TrendingDown, Minus, Search, Layers, ArrowUpDown, ChevronUp, ChevronDown, Filter
 } from 'lucide-react';
 import { PageLoader } from '@/components/ui/StockLoader';
 import Link from 'next/link';
@@ -26,12 +26,28 @@ const TIME_RANGES = [
 
 const PAGE_SIZE = 50;
 
+type SortConfig = {
+    key: keyof BelowCostPosition | null;
+    direction: 'asc' | 'desc';
+};
+
 export default function BelowCostPage() {
-    const [range, setRange] = useState('1W');
+    const [range, setRange] = useState('ALL');
     const [data, setData] = useState<BelowCostPosition[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedSector, setSelectedSector] = useState('All');
+    const [sectors, setSectors] = useState<{name: string, count: number}[]>([]);
+    const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'roc', direction: 'asc' });
     const abortController = useRef<AbortController | null>(null);
+
+    useEffect(() => {
+        // Fetch Sectors
+        api.get('/api/stocks/companies/sectors/')
+            .then(res => setSectors(res.data))
+            .catch(err => console.error('Failed to fetch sectors', err));
+    }, []);
 
     useEffect(() => {
         abortController.current?.abort();
@@ -40,125 +56,214 @@ export default function BelowCostPage() {
 
         setLoading(true);
         setPage(1);
-        api.get(`/api/stocks/companies/below_cost/?range=${range}`, { signal })
+        api.get(`/api/stocks/companies/below_cost/?range=${range}&sector=${selectedSector}`, { signal })
             .then(res => setData(res.data))
             .catch(err => { if (err.name !== 'AbortError') console.error('Failed to fetch below cost', err); })
             .finally(() => setLoading(false));
 
         return () => abortController.current?.abort();
-    }, [range]);
+    }, [range, selectedSector]);
 
-    const pagedData = useMemo(() => data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [data, page]);
-    const totalPages = Math.ceil(data.length / PAGE_SIZE) || 1;
+    const handleSort = (key: keyof BelowCostPosition) => {
+        setSortConfig(prev => ({
+            key,
+            direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+        }));
+    };
+
+    const sortedAndFilteredData = useMemo(() => {
+        let processed = [...data];
+
+        // Search Filter
+        if (searchQuery) {
+            const up = searchQuery.toUpperCase();
+            processed = processed.filter(item => 
+                item.symbol.toUpperCase().includes(up) || 
+                item.name.toUpperCase().includes(up) ||
+                item.broker.includes(up)
+            );
+        }
+
+        // Sector filter (already handled by API, but local fallback for safety)
+        if (selectedSector !== 'All') {
+            processed = processed.filter(item => item.sector === selectedSector);
+        }
+
+        // Sorting
+        if (sortConfig.key) {
+            processed.sort((a, b) => {
+                const aVal = a[sortConfig.key!];
+                const bVal = b[sortConfig.key!];
+
+                if (aVal === bVal) return 0;
+                if (aVal === null || aVal === undefined) return 1;
+                if (bVal === null || bVal === undefined) return -1;
+
+                const modifier = sortConfig.direction === 'asc' ? 1 : -1;
+                return aVal < bVal ? -1 * modifier : 1 * modifier;
+            });
+        }
+
+        return processed;
+    }, [data, searchQuery, sortConfig, selectedSector]);
+
+    const pagedData = useMemo(() => 
+        sortedAndFilteredData.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), 
+    [sortedAndFilteredData, page]);
+
+    const totalPages = Math.ceil(sortedAndFilteredData.length / PAGE_SIZE) || 1;
+
+    const SortIcon = ({ column }: { column: keyof BelowCostPosition }) => {
+        if (sortConfig.key !== column) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-20 group-hover:opacity-100 transition-opacity" />;
+        return sortConfig.direction === 'asc' 
+            ? <ChevronUp className="w-3.5 h-3.5 ml-1 text-orange-500" /> 
+            : <ChevronDown className="w-3.5 h-3.5 ml-1 text-orange-500" />;
+    };
 
     return (
-        <div className="space-y-6 max-w-[1400px] mx-auto px-1">
+        <div className="space-y-6 max-w-full mx-auto px-4 pb-20">
             
-            {/* Header Controls */}
-            <div className="bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 shadow-lg px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <div className="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-xl border border-orange-200 dark:border-orange-800/30 text-orange-600 dark:text-orange-400">
-                        <AlertTriangle className="w-5 h-5" />
+            {/* Control Bar: Filters & Search */}
+            <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-xl rounded-3xl border border-slate-200/60 dark:border-white/5 shadow-2xl px-6 py-4 flex flex-col xl:flex-row items-center justify-between gap-6 overflow-hidden">
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto">
+                    {/* Search */}
+                    <div className="relative w-full sm:w-80 group">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
+                        <input 
+                            type="text" 
+                            placeholder="Search symbol or broker..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-11 pr-4 py-2.5 bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-white/5 rounded-2xl text-xs font-black tracking-tight focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/50 transition-all placeholder:text-slate-400 font-mono"
+                        />
                     </div>
-                    <div>
-                        <h1 className="text-lg font-black text-slate-900 dark:text-white tracking-tight leading-none mb-1">Below Cost Analysis</h1>
-                        <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">Tracking institutional positions trading under average cost</p>
+
+                    {/* Sector Filter */}
+                    <div className="relative w-full sm:w-64 group">
+                        <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-hover:text-orange-500 transition-colors" />
+                        <select 
+                            value={selectedSector}
+                            onChange={(e) => setSelectedSector(e.target.value)}
+                            className="w-full pl-11 pr-4 py-2.5 bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-white/5 rounded-2xl text-xs font-black tracking-tight focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all appearance-none cursor-pointer"
+                        >
+                            <option value="All">All Sectors</option>
+                            {sectors.map(s => (
+                                <option key={s.name} value={s.name}>{s.name} ({s.count})</option>
+                            ))}
+                        </select>
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                     </div>
                 </div>
 
-                <div className="bg-slate-50 dark:bg-slate-900/60 p-1 rounded-xl border border-slate-100 dark:border-white/5 flex overflow-x-auto no-scrollbar shrink-0">
-                    {TIME_RANGES.map(t => (
-                        <button key={t.value} onClick={() => setRange(t.value)}
-                            className={cn(
-                                'px-3 py-1.5 rounded-lg text-xs font-black transition-all duration-200 tracking-tight whitespace-nowrap',
-                                range === t.value
-                                    ? 'bg-orange-500 text-white shadow-md'
-                                    : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200',
-                            )}>
-                            {t.label}
-                        </button>
-                    ))}
+                <div className="flex items-center gap-4 w-full xl:w-auto overflow-x-auto no-scrollbar justify-center">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap hidden sm:block">Analysis Range:</span>
+                    <div className="bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-2xl border border-slate-200/50 dark:border-white/5 flex shrink-0">
+                        {TIME_RANGES.map(t => (
+                            <button key={t.value} onClick={() => setRange(t.value)}
+                                className={cn(
+                                    'px-4 py-2 rounded-xl text-xs font-black transition-all duration-300 tracking-tight whitespace-nowrap',
+                                    range === t.value
+                                        ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20 scale-105'
+                                        : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200',
+                                )}>
+                                {t.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
-            {/* Main Content */}
-            <div className="bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 shadow-2xl overflow-hidden min-h-[400px]">
-                {loading ? <PageLoader text="Scanning for below cost positions..." /> : (
+            {/* Terminal Table */}
+            <div className="bg-white/80 dark:bg-slate-900/40 backdrop-blur-xl rounded-[2rem] border border-slate-200/60 dark:border-white/5 shadow-2xl overflow-hidden min-h-[500px] flex flex-col">
+                {loading ? <PageLoader text="Scanning institutional footprints..." /> : (
                     <>
-                        <div className="overflow-x-auto">
+                        <div className="overflow-x-auto flex-1 custom-scrollbar">
                             <table className="w-full text-xs border-separate border-spacing-0">
-                                <thead className="sticky top-0 z-10">
-                                    <tr className="bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md">
+                                <thead className="sticky top-0 z-20">
+                                    <tr className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl group">
                                         {[
-                                            { label: 'Symbol',    accent: '' },
-                                            { label: 'Broker',    accent: '' },
-                                            { label: 'Total Pos.', accent: '' },
-                                            { label: 'WAC',       accent: 'orange' },
-                                            { label: 'LTP',       accent: '' },
-                                            { label: 'ROC',       accent: 'rose' },
-                                            { label: '5D',  accent: '' },
-                                            { label: '10D', accent: '' },
-                                            { label: '20D', accent: '' },
-                                            { label: '50D', accent: '' },
+                                            { label: 'Symbol',    key: 'symbol', align: 'left' },
+                                            { label: 'Broker',    key: 'broker', align: 'left' },
+                                            { label: 'Total Pos.', key: 'cumulative_net', align: 'left' },
+                                            { label: 'WAC',       key: 'wac', align: 'left', accent: 'bg-orange-50/50 dark:bg-orange-500/5' },
+                                            { label: 'LTP',       key: 'ltp', align: 'left' },
+                                            { label: 'Capt. Alpha', key: 'roc', align: 'left', accent: 'bg-rose-50/50 dark:bg-rose-500/5' },
+                                            { label: '5D',  key: 'change_5d', align: 'left' },
+                                            { label: '10D', key: 'change_10d', align: 'left' },
+                                            { label: '20D', key: 'change_20d', align: 'left' },
+                                            { label: '50D', key: 'change_50d', align: 'left' },
                                         ].map(h => (
-                                            <th key={h.label} className={cn(
-                                                'px-4 py-4 text-left font-black uppercase tracking-wider text-[10px] border-b border-slate-100 dark:border-slate-800/60',
-                                                h.accent === 'orange' ? 'text-orange-500 dark:text-orange-400'
-                                                    : h.accent === 'rose' ? 'text-rose-500 dark:text-rose-400'
-                                                    : 'text-slate-500 dark:text-slate-400',
-                                            )}>{h.label}</th>
+                                            <th 
+                                                key={h.label} 
+                                                onClick={() => h.key && handleSort(h.key as any)}
+                                                className={cn(
+                                                    'px-6 py-5 text-left font-black uppercase tracking-widest text-[10px] border-b border-slate-100 dark:border-white/5 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors group/th',
+                                                    h.accent
+                                                )}
+                                            >
+                                                <div className="flex items-center">
+                                                    <span className={cn(
+                                                        sortConfig.key === h.key ? 'text-orange-500 font-black' : 'text-slate-500 dark:text-slate-400 group-hover/th:text-slate-700 dark:group-hover/th:text-slate-200'
+                                                    )}>{h.label}</span>
+                                                    {h.key && <SortIcon column={h.key as any} />}
+                                                </div>
+                                            </th>
                                         ))}
-                                        <th className="w-10 border-b border-slate-100 dark:border-slate-800/60" />
+                                        <th className="w-16 border-b border-slate-100 dark:border-white/5 py-5" />
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                                <tbody className="divide-y divide-slate-50 dark:divide-white/[0.03]">
                                     {pagedData.length === 0 ? (
                                         <tr>
-                                            <td colSpan={11} className="p-20 text-center">
-                                                <div className="flex flex-col items-center gap-3">
-                                                    <div className="w-12 h-12 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center">
-                                                        <Minus className="text-slate-300" />
+                                            <td colSpan={11} className="p-32 text-center">
+                                                <div className="flex flex-col items-center gap-6">
+                                                    <div className="w-20 h-20 bg-slate-50/50 dark:bg-slate-800/30 rounded-full flex items-center justify-center border border-slate-100 dark:border-white/5 animate-pulse">
+                                                        <Layers className="text-slate-300 dark:text-slate-600 w-8 h-8" />
                                                     </div>
-                                                    <p className="text-slate-400 font-bold uppercase tracking-widest">No below-cost positions found</p>
+                                                    <div className="space-y-1">
+                                                        <p className="text-slate-900 dark:text-slate-100 font-black uppercase tracking-widest text-sm">Clear Horizons</p>
+                                                        <p className="text-slate-400 font-medium text-[10px] uppercase tracking-wider">No matching institutional entries found for this range</p>
+                                                    </div>
+                                                    <Button variant="outline" size="sm" onClick={() => {setSearchQuery(''); setSelectedSector('All');}} className="rounded-2xl border-orange-500/20 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-500/10">Clear all filters</Button>
                                                 </div>
                                             </td>
                                         </tr>
                                     ) : pagedData.map((item, idx) => (
-                                        <tr key={idx} className="group hover:bg-orange-50/20 dark:hover:bg-orange-900/5 transition-colors border-l-[3px] border-l-transparent hover:border-l-orange-400 animate-in fade-in duration-150">
-                                            <td className="px-4 py-3.5">
-                                                <Link href={`/ticker/${item.symbol}`}>
-                                                    <span className="font-black text-slate-900 dark:text-indigo-300 hover:text-indigo-600 dark:hover:text-white transition-colors">{item.symbol}</span>
+                                        <tr key={idx} className="group hover:bg-orange-50/20 dark:hover:bg-white/[0.02] transition-all duration-300 border-l-[4px] border-l-transparent hover:border-l-orange-500 animate-in slide-in-from-left-2 fade-in" style={{ animationDelay: `${idx * 15}ms` }}>
+                                            <td className="px-6 py-5">
+                                                <Link href={`/ticker/${item.symbol}`} className="block">
+                                                    <div className="font-black text-sm text-slate-900 dark:text-orange-50 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors tracking-tight">{item.symbol}</div>
+                                                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight mt-0.5 truncate max-w-[150px]">{item.name}</div>
                                                 </Link>
-                                                <div className="text-[9px] text-slate-400 font-medium truncate max-w-[120px] mt-0.5">{item.name}</div>
                                             </td>
-                                            <td className="px-4 py-3.5">
+                                            <td className="px-6 py-5">
                                                 <Link href={`/broker/${item.broker}`}>
-                                                    <span className="px-2 py-1 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg text-[10px] font-black border border-slate-100 dark:border-slate-700 hover:border-orange-300 dark:hover:border-orange-700 transition-colors shadow-sm">
+                                                    <span className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 rounded-xl text-[10px] font-black border border-slate-200/50 dark:border-white/5 hover:border-orange-500/50 hover:bg-white dark:hover:bg-slate-800 transition-all shadow-sm">
                                                         #{item.broker}
                                                     </span>
                                                 </Link>
                                             </td>
-                                            <td className="px-4 py-3.5 font-mono font-bold text-slate-600 dark:text-slate-400 tabular-nums">
+                                            <td className="px-6 py-5 font-mono font-bold text-slate-600 dark:text-slate-400 tabular-nums tracking-tighter">
                                                 {formatNepaliNumber(item.cumulative_net)}
                                             </td>
-                                            <td className="px-4 py-3.5 font-mono font-black text-orange-600 dark:text-orange-400 tabular-nums bg-orange-50/30 dark:bg-orange-900/10">
+                                            <td className="px-6 py-5 font-mono font-black text-orange-600 dark:text-orange-400 tabular-nums bg-orange-50/20 dark:bg-orange-500/[0.01]">
                                                 {formatRupees(item.wac, 1)}
                                             </td>
-                                            <td className="px-4 py-3.5 font-mono font-bold text-slate-800 dark:text-slate-200 tabular-nums">
+                                            <td className="px-6 py-5 font-mono font-bold text-slate-800 dark:text-slate-200 tabular-nums tracking-tighter border-x border-slate-50 dark:border-white/[0.02]">
                                                 {formatRupees(item.ltp, 1)}
                                             </td>
-                                            <td className="px-4 py-3.5 font-black text-rose-600 dark:text-rose-400 tabular-nums">
+                                            <td className="px-6 py-5 font-black text-rose-600 dark:text-rose-400 tabular-nums bg-rose-50/20 dark:bg-rose-500/[0.01]">
                                                 {item.roc?.toFixed(2)}%
                                             </td>
-                                            <td className="px-2 py-3.5"><TrendBadge trend={item.trend_5d}  change={item.change_5d} /></td>
-                                            <td className="px-2 py-3.5"><TrendBadge trend={item.trend_10d} change={item.change_10d} /></td>
-                                            <td className="px-2 py-3.5"><TrendBadge trend={item.trend_20d} change={item.change_20d} /></td>
-                                            <td className="px-2 py-3.5"><TrendBadge trend={item.trend_50d} change={item.change_50d} /></td>
-                                            <td className="px-4 py-3.5">
+                                            <td className="px-4 py-5"><TrendBadge trend={item.trend_5d}  change={item.change_5d}  compact /></td>
+                                            <td className="px-4 py-5"><TrendBadge trend={item.trend_10d} change={item.change_10d} compact /></td>
+                                            <td className="px-4 py-5"><TrendBadge trend={item.trend_20d} change={item.change_20d} compact /></td>
+                                            <td className="px-4 py-5"><TrendBadge trend={item.trend_50d} change={item.change_50d} compact /></td>
+                                            <td className="px-6 py-5 text-right">
                                                 <Link href={`/accumulation/history?symbol=${item.symbol}&broker=${item.broker}`}>
                                                     <Button variant="ghost" size="sm"
-                                                        className="h-8 w-8 p-0 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-orange-100 dark:hover:bg-orange-900/30">
-                                                        <ArrowRight className="w-4 h-4 text-orange-500" />
+                                                        className="h-10 w-10 p-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-all hover:bg-orange-500 dark:hover:bg-orange-500 hover:text-white group/btn shadow-xl shadow-orange-500/0 hover:shadow-orange-500/20">
+                                                        <ArrowRight className="w-5 h-5 group-hover/btn:translate-x-0.5 transition-transform" />
                                                     </Button>
                                                 </Link>
                                             </td>
@@ -168,20 +273,25 @@ export default function BelowCostPage() {
                             </table>
                         </div>
 
-                        {data.length > PAGE_SIZE && (
-                            <div className="px-5 py-4 border-t border-slate-100 dark:border-white/5 bg-slate-50/20 dark:bg-white/[0.01] flex flex-col sm:flex-row items-center justify-between gap-4">
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{data.length} total across current range</span>
-                                <div className="flex items-center gap-4">
-                                    <span className="text-[10px] font-black text-slate-400 dark:text-slate-500">Page {page} of {totalPages}</span>
-                                    <div className="flex gap-2">
-                                        <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                                            className="h-9 px-4 text-[10px] font-black rounded-xl border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-slate-800">PREV</Button>
-                                        <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
-                                            className="h-9 px-4 text-[10px] font-black rounded-xl border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-slate-800">NEXT</Button>
-                                    </div>
+                        {/* Pagination Footer */}
+                        <div className="px-8 py-6 border-t border-slate-100 dark:border-white/5 bg-slate-50/40 dark:bg-white/[0.01] flex flex-col sm:flex-row items-center justify-between gap-6 mt-auto">
+                            <div className="flex items-center gap-3">
+                                <div className="h-2 w-2 rounded-full bg-orange-500 pulse-glow" />
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{sortedAndFilteredData.length} strategic positions tracked</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-6">
+                                <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                    Terminal Node <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-mono text-slate-900 dark:text-slate-100">{page}</span> of <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-mono text-slate-900 dark:text-slate-100">{totalPages}</span>
+                                </span>
+                                <div className="flex gap-3">
+                                    <Button variant="outline" size="sm" onClick={() => {setPage(p => Math.max(1, p - 1)); window.scrollTo({top: 0, behavior: 'smooth'});}} disabled={page === 1}
+                                        className="h-11 px-6 text-[10px] font-black rounded-2xl border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-orange-500/50 tracking-widest transition-all">PREV NODE</Button>
+                                    <Button variant="outline" size="sm" onClick={() => {setPage(p => Math.min(totalPages, p + 1)); window.scrollTo({top: 0, behavior: 'smooth'});}} disabled={page >= totalPages}
+                                        className="h-11 px-6 text-[10px] font-black rounded-2xl border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-orange-500/50 tracking-widest transition-all">NEXT NODE</Button>
                                 </div>
                             </div>
-                        )}
+                        </div>
                     </>
                 )}
             </div>
@@ -189,6 +299,12 @@ export default function BelowCostPage() {
             <style jsx global>{`
                 .no-scrollbar::-webkit-scrollbar { display: none; }
                 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+                .pulse-glow { animation: pulse-glow 2s infinite; }
+                @keyframes pulse-glow {
+                    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
+                    70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(249, 115, 22, 0); }
+                    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+                }
             `}</style>
         </div>
     );

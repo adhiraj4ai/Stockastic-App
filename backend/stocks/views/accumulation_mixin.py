@@ -404,6 +404,7 @@ class AccumulationMixin(viewsets.ViewSet):
         Includes 5D/10D/15D/20D/50D trend data and ROC.
         """
         time_range = request.query_params.get('range', 'ALL')
+        sector = request.query_params.get('sector', 'All')
         range_map = {
             '1D': 1, '1W': 7, '2W': 14, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, 'ALL': 36500
         }
@@ -517,6 +518,7 @@ class AccumulationMixin(viewsets.ViewSet):
         AND c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
         AND c.status = 'A'
         AND c."sectorName" != 'Unknown' AND c."sectorName" IS NOT NULL
+        {"" if sector.lower() == 'all' else f"AND c.\"sectorName\" = '{sector}'"}
         ORDER BY roc ASC
         LIMIT 500;
         """
