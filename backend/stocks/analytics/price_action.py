@@ -155,13 +155,41 @@ class PriceActionAnalyzer:
                 })
                     
             # Interpret shape
-            shape_desc = ""
-            if row['lower_wick'] > row['body'] * 2:
-                shape_desc = "Strong buying rejection (Long lower wick)"
-            elif row['upper_wick'] > row['body'] * 2:
-                shape_desc = "Strong selling pressure (Long upper wick)"
+            shape_desc = "Normal candle"
+            
+            # 1. Use specific technical patterns as primary label if found
+            if active_pats:
+                # Use the first/most recent pattern name, properly formatted
+                main_pat = active_pats[0]
+                shape_desc = f"{main_pat['sentiment'].capitalize()} {main_pat['name']}"
+            
+            # 2. Heuristic-based shape detection for common labels
             else:
-                shape_desc = "Normal candle"
+                total_range = row['high'] - row['low']
+                body = row['body']
+                u_wick = row['upper_wick']
+                l_wick = row['lower_wick']
+                
+                if total_range > 0:
+                    body_pct = body / total_range
+                    u_wick_pct = u_wick / total_range
+                    l_wick_pct = l_wick / total_range
+                    
+                    # Doji (Body < 10% of range)
+                    if body_pct < 0.1:
+                        shape_desc = "Doji (Indecision)"
+                    # Marubozu (Body > 90% of range)
+                    elif body_pct > 0.9:
+                        shape_desc = "Marubozu (Full Body)"
+                    # Hammer / Pin Bar / Long lower wick
+                    elif l_wick > body * 1.5:
+                        shape_desc = "Hammer / Pin Bar (Bullish Rejection)"
+                    # Shooting Star / Inverted Hammer / Long upper wick
+                    elif u_wick > body * 1.5:
+                        shape_desc = "Shooting Star (Bearish Rejection)"
+                    # Spinning Top 
+                    elif body_pct < 0.4 and u_wick_pct > 0.2 and l_wick_pct > 0.2:
+                        shape_desc = "Spinning Top"
                 
             # Volume indication
             vol_desc = "Average"
