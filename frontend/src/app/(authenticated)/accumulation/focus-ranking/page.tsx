@@ -7,21 +7,26 @@ import { cn } from '@/lib/utils';
 import { PageLoader } from '@/components/ui/StockLoader';
 import { formatNepaliNumber } from '@/lib/formatters';
 import ReactECharts from 'echarts-for-react';
-import { Flame, ArrowUp, ArrowDown, Minus, Crown } from 'lucide-react';
+import { Flame, ArrowUp, ArrowDown, Minus, Crown, Zap, Activity, Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface DayRankEntry {
     symbol: string;
     rank: number;
-    volume: number;
+    volume: number; // This is Net Volume
+    ltp?: number | null;
+    buy_price?: number;
     top_brokers?: number[];
+    top_sellers?: number[];
 }
 
 interface SeriesEntry {
     symbol: string;
+    ltp?: number | null;
     ranks: (number | null)[];
-    volumes: (number | null)[];
+    volumes: (number | null)[]; // These are Net Volumes
     appearances: number;
     avg_rank: number;
 }
@@ -35,14 +40,14 @@ interface FocusRankingData {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const RANGES = ['1W', '1M'] as const;
+const RANGES = ['1W', '2W', '1M'] as const;
 type Range = typeof RANGES[number];
 
 const PALETTE = [
-    '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e',
-    '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6',
-    '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e',
-    '#ce1126', '#8b4513', '#ff8c00', '#2e8b57'
+    '#f97316', '#3b82f6', '#10b981', '#ef4444', '#f59e0b',
+    '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16', '#14b8a6',
+    '#6366f1', '#f43f5e', '#a855f7', '#0ea5e9', '#22c55e',
+    '#d946ef', '#fcd34d', '#4ade80', '#fb923c', '#818cf8'
 ];
 
 function fmtDate(iso: string): string {
@@ -87,15 +92,14 @@ export default function FocusRankingPage() {
     // ─── Derived ──────────────────────────────────────────────────────────────
 
     const latestDate = data?.dates?.[data.dates.length - 1] ?? null;
-    const prevDate   = data?.dates?.[data.dates.length - 2] ?? null;
+    const prevDate = data?.dates?.[data.dates.length - 2] ?? null;
 
     const latestRanking = latestDate ? (data?.daily_rankings[latestDate] ?? []) : [];
-    const prevRanking   = prevDate   ? (data?.daily_rankings[prevDate]   ?? []) : [];
+    const prevRanking = prevDate ? (data?.daily_rankings[prevDate] ?? []) : [];
 
-    // Rank change for each entry in today's top 5
     const latestWithTrend = latestRanking.map(entry => {
         const prev = prevRanking.find(p => p.symbol === entry.symbol);
-        const change = prev ? prev.rank - entry.rank : null; // positive = improved (moved up)
+        const change = prev ? prev.rank - entry.rank : null;
         return { ...entry, rankChange: change };
     });
 
@@ -107,9 +111,9 @@ export default function FocusRankingPage() {
         const xLabels = data.dates.map(fmtDate);
 
         const series = data.series.map((s, i) => {
-            const color = PALETTE[i % PALETTE.length];
+            const color = symbolColor(s.symbol);
             const firstIdx = s.ranks.findIndex(r => r !== null);
-            const lastIdx  = s.ranks.length - 1 - [...s.ranks].reverse().findIndex(r => r !== null);
+            const lastIdx = s.ranks.length - 1 - [...s.ranks].reverse().findIndex(r => r !== null);
 
             return {
                 name: s.symbol,
@@ -123,39 +127,43 @@ export default function FocusRankingPage() {
                             position: 'left',
                             color,
                             fontSize: 10,
-                            fontWeight: '600',
+                            fontWeight: '800',
                             distance: 8,
                         },
                     }
                 ),
-                smooth: 0.35,
+                smooth: 0.4,
                 connectNulls: false,
-                symbolSize: (val: number | null) => val === null ? 0 : 9,
+                symbolSize: (val: number | null) => val === null ? 0 : 8,
                 symbol: 'circle',
-                lineStyle: { width: 2.5, color },
-                itemStyle: { color, borderWidth: 2, borderColor: '#0f172a' },
+                lineStyle: { width: 3, color, shadowBlur: 10, shadowColor: color + '44' },
+                itemStyle: { color, borderWidth: 3, borderColor: '#0f172a' },
                 endLabel: {
                     show: true,
                     formatter: s.symbol,
                     color,
                     fontSize: 10,
-                    fontWeight: '600',
-                    distance: 8,
+                    fontWeight: '800',
+                    distance: 10,
                 },
-                emphasis: { scale: 1.4 },
+                emphasis: {
+                    scale: 1.5,
+                    lineStyle: { width: 5 },
+                    label: { show: true, fontSize: 12 }
+                },
             };
         });
 
         return {
             backgroundColor: 'transparent',
-            grid: { left: 20, right: 80, top: 16, bottom: 32, containLabel: true },
+            grid: { left: 40, right: 100, top: 40, bottom: 40, containLabel: true },
             xAxis: {
                 type: 'category',
                 data: xLabels,
                 boundaryGap: true,
-                axisLine: { lineStyle: { color: '#1e293b' } },
+                axisLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } },
                 axisTick: { show: false },
-                axisLabel: { color: '#64748b', fontSize: 10, interval: 0 },
+                axisLabel: { color: '#64748b', fontSize: 10, fontWeight: '700', margin: 20 },
             },
             yAxis: {
                 type: 'value',
@@ -165,17 +173,18 @@ export default function FocusRankingPage() {
                 interval: 1,
                 axisLabel: {
                     formatter: (v: number) => Number.isInteger(v) ? `#${v}` : '',
-                    color: '#64748b',
-                    fontSize: 11,
-                    fontWeight: '600',
+                    color: '#94a3b8',
+                    fontSize: 12,
+                    fontWeight: '800',
+                    fontFamily: 'JetBrains Mono, monospace'
                 },
-                splitLine: { lineStyle: { color: '#1e293b', type: 'dashed', opacity: 0.5 } },
+                splitLine: { lineStyle: { color: 'rgba(255,255,255,0.03)', type: 'solid' } },
                 axisLine: { show: false },
                 axisTick: { show: false },
             },
             tooltip: {
                 trigger: 'axis',
-                axisPointer: { type: 'line', lineStyle: { color: '#334155', type: 'dashed' } },
+                axisPointer: { type: 'line', lineStyle: { color: 'rgba(255,255,255,0.1)', type: 'dashed' } },
                 formatter: (params: any[]) => {
                     const date = params[0]?.axisValue ?? '';
                     const valid = params
@@ -183,177 +192,184 @@ export default function FocusRankingPage() {
                         .sort((a, b) => (a.value ?? 11) - (b.value ?? 11));
                     if (!valid.length) return '';
                     return `
-                        <div style="font-size:11px;font-weight:600;color:#94a3b8;margin-bottom:6px">${date}</div>
-                        ${valid.map(p => `
-                            <div style="display:flex;align-items:center;gap:8px;margin-top:4px;font-size:12px">
-                                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};flex-shrink:0"></span>
-                                <span style="color:#64748b;font-weight:700;min-width:22px">#${p.value}</span>
-                                <span style="color:#e2e8f0;font-weight:600">${p.seriesName}</span>
-                            </div>
-                        `).join('')}
+                        <div style="background:#0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.5)">
+                            <div style="font-size:10px;font-weight:900;color:#64748b;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">${date}</div>
+                            ${valid.map(p => `
+                                <div style="display:flex;align-items:center;gap:12px;margin-top:6px">
+                                    <div style="width:12px;height:12px;border-radius:4px;background:${p.color}"></div>
+                                    <span style="color:#ffffff;font-size:13px;font-weight:900;min-width:30px">#${p.value}</span>
+                                    <span style="color:#94a3b8;font-size:12px;font-weight:700">${p.seriesName}</span>
+                                </div>
+                            `).join('')}
+                        </div>
                     `;
                 },
-                backgroundColor: '#0f172a',
-                borderColor: '#1e293b',
-                textStyle: { color: '#e2e8f0' },
-                extraCssText: 'border-radius:10px;padding:12px 16px;box-shadow:0 8px 32px rgba(0,0,0,0.5)',
+                renderMode: 'html',
+                backgroundColor: 'transparent',
+                borderWidth: 0,
             },
             series,
         };
-    }, [data]);
+    }, [data, symbolColor]);
 
     // ─── Render ───────────────────────────────────────────────────────────────
 
     return (
-        <div className="space-y-6 max-w-[1200px] mx-auto px-1">
+        <div className="space-y-8 max-w-full mx-auto px-4 pb-20">
 
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-start gap-4 justify-between">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                        <Flame className="w-4 h-4 text-amber-500" />
-                        <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                            Broker Focus Ranking · {range} Window
-                        </span>
-                    </div>
-                    <p className="text-xs text-slate-400 max-w-lg">
-                        Each day's top-10 brokers by buy volume — and the 10 stocks they collectively focused on most.
-                        Lines connect the same stock across dates; rank 1 = highest broker attention.
-                    </p>
+            {loading ? <PageLoader text="Syncing institutional datasets..." /> : !data?.series?.length ? (
+                <div className="flex flex-col items-center justify-center p-32 space-y-4">
+                    <Activity className="w-12 h-12 text-slate-300 animate-pulse" />
+                    <p className="text-slate-500 font-black uppercase tracking-widest">No data matching range</p>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                    {RANGES.map(r => (
-                        <button key={r} onClick={() => setRange(r)}
-                            className={cn(
-                                'px-3 py-1.5 text-[11px] font-semibold rounded-lg border transition-all',
-                                range === r
-                                    ? 'bg-slate-800 dark:bg-slate-100 border-slate-800 dark:border-slate-100 text-white dark:text-slate-900 shadow-sm'
-                                    : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500',
-                            )}>
-                            {r}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {loading ? <PageLoader text="Computing broker focus rankings..." /> : !data?.series?.length ? (
-                <div className="p-16 text-center text-slate-400 text-sm">No data for this period</div>
             ) : (
-                <>
-                    {/* Bump Chart */}
-                    <div className="bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm overflow-hidden">
-                        <div className="px-5 py-4 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] flex items-center justify-between">
-                            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                                <Crown className="w-4 h-4 text-amber-500" />
-                                Stock Rank Movement
-                            </h2>
-                            <span className="text-[10px] text-slate-400 tabular-nums">
-                                {data.dates.length} trading days · {data.series.length} stocks tracked
-                            </span>
+                <div className="grid grid-cols-1 gap-8">
+
+                    {/* Bump Chart Terminal */}
+                    <div className="bg-white/80 dark:bg-slate-950/40 backdrop-blur-2xl rounded-[2.5rem] border border-slate-200/50 dark:border-white/5 shadow-2xl overflow-hidden flex flex-col">
+                        <div className="px-8 py-6 border-b border-slate-100 dark:border-white/5 bg-slate-50/20 dark:bg-white/[0.02] flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <Activity className="w-5 h-5 text-indigo-500" />
+                                <h2 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest">
+                                    Smart Money Net Accumulation History
+                                </h2>
+                            </div>
+                            <div className="flex items-center gap-6">
+                                <div className="flex p-1 bg-slate-100/50 dark:bg-slate-900/60 rounded-xl border border-slate-200/50 dark:border-white/5">
+                                    {RANGES.map(r => (
+                                        <button key={r} onClick={() => setRange(r)}
+                                            className={cn(
+                                                'px-4 py-1.5 text-[10px] font-black rounded-lg transition-all duration-300 tracking-widest uppercase',
+                                                range === r
+                                                    ? 'bg-white dark:bg-slate-800 text-orange-500 shadow-sm'
+                                                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200',
+                                            )}>
+                                            {r}
+                                        </button>
+                                    ))}
+                                </div>
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 dark:bg-white/5 px-3 py-1 rounded-lg">
+                                    {data.dates.length} SESSIONS
+                                </span>
+                            </div>
                         </div>
 
-                        <div className="px-4 pt-6 pb-4">
+                        <div className="p-4 sm:p-8">
                             <ReactECharts
                                 option={chartOption}
-                                style={{ height: '340px' }}
+                                style={{ height: '500px', width: '100%' }}
                                 opts={{ renderer: 'svg' }}
                             />
                         </div>
 
-                        {/* Color legend */}
-                        <div className="px-5 pb-5 flex flex-wrap gap-3">
+                        {/* Legend Grid */}
+                        <div className="px-8 pb-8 flex flex-wrap gap-4">
                             {data.series.map(s => (
-                                <div key={s.symbol} className="flex items-center gap-1.5">
-                                    <span
-                                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                                        style={{ backgroundColor: symbolColor(s.symbol) }}
-                                    />
-                                    <Link href={`/ticker/${s.symbol}`}>
-                                        <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 hover:underline">
-                                            {s.symbol}
-                                        </span>
-                                    </Link>
-                                    <span className="text-[10px] text-slate-400">
-                                        {s.appearances}d · avg #{s.avg_rank.toFixed(1)}
-                                    </span>
-                                </div>
+                                <Link href={`/ticker/${s.symbol}`} key={s.symbol}>
+                                    <div className="group flex items-center gap-3 px-4 py-2 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200/50 dark:border-white/5 rounded-2xl hover:bg-white dark:hover:bg-slate-800 transition-all hover:scale-105 cursor-pointer">
+                                        <span
+                                            className="w-3 h-3 rounded-full flex-shrink-0 animate-pulse"
+                                            style={{ backgroundColor: symbolColor(s.symbol) }}
+                                        />
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-black text-slate-900 dark:text-slate-200 group-hover:text-orange-500 transition-colors">
+                                                {s.symbol}
+                                            </span>
+                                            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
+                                                Avg #{s.avg_rank.toFixed(1)} · {s.appearances}d
+                                            </span>
+                                        </div>
+                                    </div>
+                                </Link>
                             ))}
                         </div>
                     </div>
 
-                    {/* Latest session spotlight */}
-                    {latestWithTrend.length > 0 && (
-                        <div className="bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm overflow-hidden">
-                            <div className="px-5 py-4 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02]">
-                                <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                                    Latest Session — {fmtDate(latestDate!)}
-                                </h2>
+                    <div className="grid grid-cols-1 gap-8">
+                        {/* Latest session spotlight (Full width) */}
+                        <div className="bg-white/80 dark:bg-slate-950/40 backdrop-blur-2xl rounded-[2.5rem] border border-slate-200/50 dark:border-white/5 shadow-2xl overflow-hidden">
+                            <div className="px-8 py-6 border-b border-slate-100 dark:border-white/5 bg-slate-50/20 dark:bg-white/[0.02] flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <Zap className="w-5 h-5 text-yellow-500" />
+                                    <h2 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest">
+                                        Latest Tactical Pulse — {fmtDate(latestDate!)}
+                                    </h2>
+                                </div>
                             </div>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-xs">
-                                    <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
-                                        <tr>
-                                            {['Rank', 'Symbol', 'Volume', 'Top Buyers', 'vs Prev Day'].map(h => (
-                                                <th key={h} className="px-5 py-3 text-left font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[10px]">{h}</th>
+                            <div className="overflow-x-auto custom-scrollbar">
+                                <table className="w-full text-xs border-separate border-spacing-0">
+                                    <thead>
+                                        <tr className="bg-slate-50/50 dark:bg-white/[0.01]">
+                                            {['Rank', 'Symbol', 'LTP', 'Buy Price', 'Net Vol', 'Top 5 Sellers', 'Momentum'].map(h => (
+                                                <th key={h} className="px-8 py-5 text-left font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[10px] border-b border-slate-100 dark:border-white/5">{h}</th>
                                             ))}
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800/60">
-                                        {latestWithTrend.map(entry => {
+                                    <tbody className="divide-y divide-slate-50 dark:divide-white/[0.02]">
+                                        {latestWithTrend.map((entry, idx) => {
                                             const color = symbolColor(entry.symbol);
                                             const { rankChange } = entry;
+                                            const isAccumulation = entry.volume > 0;
+
                                             return (
-                                                <tr key={entry.symbol} className="hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition-colors">
-                                                    <td className="px-5 py-3">
-                                                        <span
-                                                            className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold text-white"
-                                                            style={{ backgroundColor: color }}
+                                                <tr key={entry.symbol} className="group hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition-all duration-300">
+                                                    <td className="px-8 py-5">
+                                                        <div
+                                                            className="w-9 h-9 rounded-2xl flex items-center justify-center text-xs font-black text-white shadow-lg shadow-inner"
+                                                            style={{ backgroundColor: color, boxShadow: `0 8px 16px ${color}33` }}
                                                         >
                                                             {entry.rank}
-                                                        </span>
+                                                        </div>
                                                     </td>
-                                                    <td className="px-5 py-3">
+                                                    <td className="px-8 py-5">
                                                         <Link href={`/ticker/${entry.symbol}`}>
-                                                            <span className="font-semibold text-slate-700 dark:text-slate-200 hover:underline">
+                                                            <div className="font-black text-sm text-slate-900 dark:text-white group-hover:text-orange-500 transition-colors tracking-tight">
                                                                 {entry.symbol}
-                                                            </span>
+                                                            </div>
                                                         </Link>
                                                     </td>
-                                                    <td className="px-5 py-3 tabular-nums text-slate-600 dark:text-slate-300">
-                                                        {formatNepaliNumber(entry.volume)}
+                                                    <td className="px-8 py-5 font-black text-slate-900 dark:text-white">
+                                                        {entry.ltp ? `Rs. ${entry.ltp.toLocaleString()}` : <Minus className="w-3 h-3 text-slate-300" />}
                                                     </td>
-                                                    <td className="px-5 py-3">
-                                                        <div className="flex gap-1 flex-wrap">
-                                                            {entry.top_brokers?.map(b => (
-                                                                <span key={b} className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                                                    <td className="px-8 py-5 text-slate-500 dark:text-slate-400 font-bold">
+                                                        {entry.buy_price ? `Rs. ${entry.buy_price.toLocaleString()}` : <Minus className="w-3 h-3 text-slate-300" />}
+                                                    </td>
+                                                    <td className={cn(
+                                                        "px-8 py-5 font-mono font-black tabular-nums",
+                                                        isAccumulation ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                                                    )}>
+                                                        {isAccumulation ? '+' : ''}{formatNepaliNumber(entry.volume)}
+                                                    </td>
+                                                    <td className="px-8 py-5">
+                                                        <div className="flex gap-1.5 flex-wrap max-w-[200px]">
+                                                            {entry.top_sellers?.slice(0, 5).map(b => (
+                                                                <span key={b} className="px-2 py-1 rounded-lg text-[9px] font-black bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/50 hover:scale-110 transition-transform cursor-default">
                                                                     #{b}
                                                                 </span>
                                                             ))}
                                                         </div>
                                                     </td>
-                                                    <td className="px-5 py-3">
+                                                    <td className="px-8 py-5">
                                                         {rankChange === null ? (
-                                                            <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 font-medium">
-                                                                <span className="w-4 h-4 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                                                                    <Minus className="w-2.5 h-2.5" />
-                                                                </span>
-                                                                New entry
-                                                            </span>
+                                                            <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100/50 dark:bg-slate-800/50 px-3 py-1.5 rounded-full w-fit">
+                                                                <Zap className="w-3 h-3 text-orange-500" />
+                                                                New Focus
+                                                            </div>
                                                         ) : rankChange > 0 ? (
-                                                            <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                                                                <ArrowUp className="w-3.5 h-3.5" />
-                                                                +{rankChange} rank{rankChange > 1 ? 's' : ''}
-                                                            </span>
+                                                            <div className="flex items-center gap-2 text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1.5 rounded-full w-fit border border-emerald-100 dark:border-emerald-900/30">
+                                                                <ArrowUp className="w-3 h-3" />
+                                                                +{rankChange} Rank
+                                                            </div>
                                                         ) : rankChange < 0 ? (
-                                                            <span className="inline-flex items-center gap-1 text-[11px] text-rose-600 dark:text-rose-400 font-semibold">
-                                                                <ArrowDown className="w-3.5 h-3.5" />
-                                                                {rankChange} rank{Math.abs(rankChange) > 1 ? 's' : ''}
-                                                            </span>
+                                                            <div className="flex items-center gap-2 text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest bg-rose-50 dark:bg-rose-950/30 px-3 py-1.5 rounded-full w-fit border border-rose-100 dark:border-rose-900/30">
+                                                                <ArrowDown className="w-3 h-3" />
+                                                                {rankChange} Rank
+                                                            </div>
                                                         ) : (
-                                                            <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 font-medium">
+                                                            <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-full w-fit">
                                                                 <Minus className="w-3 h-3" />
-                                                                Unchanged
-                                                            </span>
+                                                                Stable
+                                                            </div>
                                                         )}
                                                     </td>
                                                 </tr>
@@ -363,71 +379,73 @@ export default function FocusRankingPage() {
                                 </table>
                             </div>
                         </div>
-                    )}
+                    </div>
 
-                    {/* Daily rankings grid */}
-                    <div className="bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm overflow-hidden">
-                        <div className="px-5 py-4 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02]">
-                            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Daily Breakdown</h2>
+                    {/* Daily Breakdown Grid */}
+                    <div className="bg-white/80 dark:bg-slate-950/40 backdrop-blur-2xl rounded-[2.5rem] border border-slate-100 dark:border-white/5 shadow-2xl overflow-hidden">
+                        <div className="px-8 py-6 border-b border-slate-100 dark:border-white/5 bg-slate-50/20 dark:bg-white/[0.02]">
+                            <h2 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest flex items-center gap-3">
+                                <Activity className="w-5 h-5 text-emerald-500" />
+                                Daily Displacement Matrix
+                            </h2>
                         </div>
-                        <div className="p-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                            {data.dates.map(date => {
+                        <div className="p-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                            {[...data.dates].reverse().map(date => {
                                 const entries = data.daily_rankings[date] ?? [];
                                 return (
-                                    <div key={date} className="space-y-4 p-3 rounded-xl border border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-slate-900/20">
-                                        <div>
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="text-[10px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                                                    {fmtDate(date)}
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-wrap gap-1 mb-3">
-                                                {data.daily_top_brokers?.[date]?.slice(0, 5).map(b => (
-                                                    <span key={b} className="px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 text-[9px] font-bold text-amber-700 dark:text-amber-400">
-                                                        #{b}
-                                                    </span>
-                                                ))}
-                                                {data.daily_top_brokers?.[date]?.length > 5 && (
-                                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-medium text-slate-400">
-                                                        +{data.daily_top_brokers[date].length - 5}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                {entries.map(entry => (
-                                                    <Link href={`/ticker/${entry.symbol}`} key={entry.symbol}>
-                                                        <div className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-white dark:hover:bg-white/5 shadow-sm border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all">
-                                                            <span
-                                                                className="w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0"
-                                                                style={{ backgroundColor: symbolColor(entry.symbol) }}
-                                                            >
-                                                                {entry.rank}
+                                    <div key={date} className="flex flex-col h-full rounded-3xl border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] p-5 hover:border-orange-500/30 transition-all duration-300">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="text-[11px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest">{fmtDate(date)}</span>
+                                            <span className="text-[9px] font-mono text-slate-400">10 ITEMS</span>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            {entries.map(entry => (
+                                                <Link href={`/ticker/${entry.symbol}`} key={entry.symbol}>
+                                                    <div className="group flex items-center gap-3 p-2 rounded-xl bg-white dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 hover:border-orange-500/50 transition-all cursor-pointer">
+                                                        <span
+                                                            className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black text-white shrink-0"
+                                                            style={{ backgroundColor: symbolColor(entry.symbol) }}
+                                                        >
+                                                            {entry.rank}
+                                                        </span>
+                                                        <div className="flex flex-col min-w-0 flex-1">
+                                                            <span className="text-[11px] font-black text-slate-900 dark:text-slate-200 truncate group-hover:text-orange-500 transition-colors">
+                                                                {entry.symbol}
                                                             </span>
-                                                            <div className="flex flex-col min-w-0">
-                                                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate">
-                                                                    {entry.symbol}
+                                                            <div className="flex items-center gap-1">
+                                                                <span className={cn(
+                                                                    "text-[8px] font-mono tabular-nums",
+                                                                    entry.volume > 0 ? "text-emerald-500" : "text-rose-500"
+                                                                )}>
+                                                                    {entry.volume > 0 ? '+' : ''}{formatNepaliNumber(entry.volume)}
                                                                 </span>
-                                                                <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                                                                    {entry.top_brokers?.slice(0, 5).map(b => (
-                                                                        <span key={b} className="text-[8px] font-medium text-slate-400">#{b}</span>
-                                                                    ))}
-                                                                </div>
                                                             </div>
-                                                            <span className="text-[9px] font-mono text-slate-500 m-auto mr-0 whitespace-nowrap">
-                                                                {formatNepaliNumber(entry.volume)}
-                                                            </span>
                                                         </div>
-                                                    </Link>
-                                                ))}
-                                            </div>
+                                                    </div>
+                                                </Link>
+                                            ))}
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
                     </div>
-                </>
+                </div>
             )}
+
+            <style jsx global>{`
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+                .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); }
+                .pulse-glow { animation: pulse-glow 2s infinite; }
+                @keyframes pulse-glow {
+                    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
+                    70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(249, 115, 22, 0); }
+                    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+                }
+            `}</style>
         </div>
     );
 }

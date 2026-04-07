@@ -410,99 +410,154 @@ class FloorsheetViewSet(viewsets.ViewSet):
     def broker_focus_ranking(self, request):
         """
         For each trading day in the range, find the top-10 brokers by buy volume,
-        then rank the top-5 stocks those brokers are collectively buying.
-        Returns a bump-chart-ready series with per-symbol rank timelines.
+        then rank the top-5 stocks those brokers are collectively buying (Net Volume).
+        Uses pre-aggregated DailyBuyerFloorsheet and DailySellerFloorsheet for performance.
+        Returns a bump-chart-ready series with per-symbol rank timelines, including LTP and Buy Price.
         """
-        from collections import defaultdict
-        from stocks.models.market import Company
+        import traceback
+        try:
+            from collections import defaultdict
+            from django.db.models import Max, Sum
+            from stocks.models.market import DailyBuyerFloorsheet, DailySellerFloorsheet, DailyStockPrice
 
-        range_param = request.query_params.get('range', '1W')
-        range_days = {'1W': 6, '1M': 29}
-        days = range_days.get(range_param, 6)
+            range_param = request.query_params.get('range', '1W')
+            range_days = {'1W': 6, '2W': 13, '1M': 29}
+            days = range_days.get(range_param, 6)
 
-        latest_price = DailyStockPrice.objects.order_by('-date').values_list('date', flat=True).first()
-        today = latest_price if latest_price else timezone.now().date()
-        start_date = today - timedelta(days=days)
-
-        allowed_symbols = set(Company.objects.values_list('symbol', flat=True))
-
-        # Single query: buy-side grouped by (date, broker, symbol)
-        raw = (
-            DailyFloorsheet.objects
-            .filter(transaction_date__gte=start_date, symbol__in=allowed_symbols)
-            .values('transaction_date', 'buyer_id', 'symbol')
-            .annotate(vol=Sum('transaction_quantity'), amount=Sum('transaction_amount'))
-        )
-
-        # Build: date → broker → { symbol → vol }
-        by_date = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
-        for row in raw:
-            by_date[row['transaction_date']][row['buyer_id']][row['symbol']] += (row['vol'] or 0)
-
-        dates = sorted(by_date.keys())
-        daily_rankings = {}
-        daily_top_brokers = {}
-
-        for date in dates:
-            # Top 10 brokers by total buy volume that day
-            broker_vols = {b: sum(stocks.values()) for b, stocks in by_date[date].items()}
-            top10 = sorted(broker_vols, key=lambda b: -broker_vols[b])[:10]
-
-            # Aggregate those brokers' stock buys → top 5
-            stock_agg = defaultdict(int)
-            stock_brokers = defaultdict(list)
-            for broker in top10:
-                for sym, vol in by_date[date][broker].items():
-                    stock_agg[sym] += vol
-                    stock_brokers[sym].append((broker, vol))
-
-            top10_stocks = sorted(stock_agg.items(), key=lambda x: -x[1])[:10]
+            # 1. Reference Day (Latest Trading Session)
+            latest_date_data = DailyBuyerFloorsheet.objects.aggregate(Max('transaction_date'))
+            latest_date = latest_date_data['transaction_date__max']
             
-            daily_top_brokers[str(date)] = top10
-            daily_rankings[str(date)] = [
-                {
-                    'symbol': sym, 
-                    'rank': idx + 1, 
-                    'volume': vol,
-                    'top_brokers': [b for b, v in sorted(stock_brokers[sym], key=lambda x: -x[1])[:10]]
+            if not latest_date:
+                latest_price_obj = DailyStockPrice.objects.order_by('-date').first()
+                latest_date = latest_price_obj.date if latest_price_obj else timezone.now().date()
+            
+            start_date = latest_date - timedelta(days=days)
+
+            # 2. Fetch Aggregated Data
+            raw_buys = DailyBuyerFloorsheet.objects.filter(transaction_date__gte=start_date).values(
+                'transaction_date', 'buyer_id', 'symbol', 'buy_volume', 'average_weighted_price'
+            )
+            raw_sells = DailySellerFloorsheet.objects.filter(transaction_date__gte=start_date).values(
+                'transaction_date', 'seller_id', 'symbol', 'sell_volume'
+            )
+
+            broker_data = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: {'buy_vol': 0, 'sell_vol': 0, 'buy_amount': 0})))
+            
+            for row in raw_buys:
+                d, b, s = row['transaction_date'], row['buyer_id'], row['symbol']
+                vol = float(row['buy_volume'] or 0)
+                avg_price = float(row['average_weighted_price'] or 0)
+                broker_data[d][b][s]['buy_vol'] += vol
+                broker_data[d][b][s]['buy_amount'] += (vol * avg_price)
+                
+            for row in raw_sells:
+                d, b, s = row['transaction_date'], row['seller_id'], row['symbol']
+                broker_data[d][b][s]['sell_vol'] += float(row['sell_volume'] or 0)
+
+            dates = sorted(broker_data.keys())
+            daily_rankings = {}
+            daily_top_brokers = {}
+
+            for date in dates:
+                # Rank brokers by total BUY volume that day
+                broker_buys = {b: sum(stats['buy_vol'] for stats in stocks.values()) for b, stocks in broker_data[date].items()}
+                top10_brokers = sorted(broker_buys, key=lambda b: -broker_buys[b])[:10]
+
+                # Aggregate Focus Group's activities
+                stock_net_agg = defaultdict(int)
+                stock_buy_agg = defaultdict(int)
+                stock_amount_agg = defaultdict(float)
+                stock_top_sellers = defaultdict(list)
+
+                for broker in top10_brokers:
+                    for sym, stats in broker_data[date][broker].items():
+                        stock_net_agg[sym] += (stats['buy_vol'] - stats['sell_vol'])
+                        stock_buy_agg[sym] += stats['buy_vol']
+                        stock_amount_agg[sym] += stats['buy_amount']
+
+                # Rank stocks by Focus Group's Net Volume
+                top10_net_stocks = sorted(stock_net_agg.items(), key=lambda x: -x[1])[:10]
+                
+                # Top 5 Distribution Agents (Market-wide top sellers)
+                for sym, _ in top10_net_stocks:
+                    sym_sellers = []
+                    for b, stocks in broker_data[date].items():
+                        if sym in stocks and stocks[sym]['sell_vol'] > 0:
+                            sym_sellers.append((b, stocks[sym]['sell_vol']))
+                    stock_top_sellers[sym] = [b for b, v in sorted(sym_sellers, key=lambda x: -x[1])[:5]]
+
+                daily_top_brokers[str(date)] = top10_brokers
+                daily_rankings[str(date)] = [
+                    {
+                        'symbol': sym, 
+                        'rank': idx + 1, 
+                        'volume': net_vol,
+                        'buy_price': round(stock_amount_agg[sym] / stock_buy_agg[sym], 2) if stock_buy_agg[sym] > 0 else 0,
+                        'top_sellers': stock_top_sellers[sym]
+                    }
+                    for idx, (sym, net_vol) in enumerate(top10_net_stocks)
+                ]
+
+            # 3. Final Enrichment
+            all_syms = {item['symbol'] for day in daily_rankings.values() for item in day}
+            
+            # LTP Retrieval
+            ltp_map = {}
+            if all_syms:
+                ltp_qs = DailyStockPrice.objects.filter(ticker__in=all_syms, date=latest_date).values('ticker', 'close')
+                for p in ltp_qs:
+                    ltp_map[p['ticker']] = float(p['close'])
+                
+                if len(ltp_map) < len(all_syms):
+                    missing = all_syms - set(ltp_map.keys())
+                    for sym in missing:
+                        last_p = DailyStockPrice.objects.filter(ticker=sym).order_by('-date').first()
+                        if last_p: ltp_map[sym] = float(last_p.close)
+
+            date_strs = [str(d) for d in dates]
+            series = []
+            for sym in all_syms:
+                ranks, net_volumes, appearances, rank_sum = [], [], 0, 0
+                for ds in date_strs:
+                    found = next((x for x in daily_rankings.get(ds, []) if x['symbol'] == sym), None)
+                    if found:
+                        found['ltp'] = ltp_map.get(sym)
+                        ranks.append(found['rank'])
+                        net_volumes.append(found['volume'])
+                        appearances += 1
+                        rank_sum += found['rank']
+                    else:
+                        ranks.append(None)
+                        net_volumes.append(None)
+                series.append({
+                    'symbol': sym,
+                    'ltp': ltp_map.get(sym),
+                    'ranks': ranks,
+                    'volumes': net_volumes,
+                    'appearances': appearances,
+                    'avg_rank': round(rank_sum / appearances, 2) if appearances else 10.0,
+                })
+
+            series.sort(key=lambda s: (-s['appearances'], s['avg_rank']))
+
+            return Response({
+                'dates': date_strs,
+                'daily_top_brokers': daily_top_brokers,
+                'daily_rankings': daily_rankings,
+                'series': series,
+                'debug_info': {
+                    'latest_date': str(latest_date),
+                    'raw_buys_count': len(raw_buys),
+                    'raw_sells_count': len(raw_sells)
                 }
-                for idx, (sym, vol) in enumerate(top10_stocks)
-            ]
-
-        # Build per-symbol rank timelines
-        all_syms = {item['symbol'] for day in daily_rankings.values() for item in day}
-        date_strs = [str(d) for d in dates]
-
-        series = []
-        for sym in all_syms:
-            ranks, volumes, appearances, rank_sum = [], [], 0, 0
-            for ds in date_strs:
-                found = next((x for x in daily_rankings.get(ds, []) if x['symbol'] == sym), None)
-                if found:
-                    ranks.append(found['rank'])
-                    volumes.append(found['volume'])
-                    appearances += 1
-                    rank_sum += found['rank']
-                else:
-                    ranks.append(None)
-                    volumes.append(None)
-            series.append({
-                'symbol': sym,
-                'ranks': ranks,
-                'volumes': volumes,
-                'appearances': appearances,
-                'avg_rank': round(rank_sum / appearances, 2) if appearances else 10.0,
             })
-
-        # Most consistently present first, then by best average rank
-        series.sort(key=lambda s: (-s['appearances'], s['avg_rank']))
-
-        return Response({
-            'dates': date_strs,
-            'daily_top_brokers': daily_top_brokers,
-            'daily_rankings': daily_rankings,
-            'series': series,
-        })
+        except Exception as e:
+            return Response({
+                'error': str(e),
+                'traceback': traceback.format_exc(),
+                'status': 'error'
+            }, status=500)
 
     @action(detail=False, methods=['get'])
     def symbol_smart_money(self, request):
@@ -612,6 +667,15 @@ class FloorsheetViewSet(viewsets.ViewSet):
             'net_smart_qty':      sum(a['net_qty'] for a in smart_activity),
         }
 
+        return Response({
+            'kpi':                kpi,
+            'top_buyers':         top_buyers,
+            'top_sellers':        top_sellers,
+            'net_accumulators':   net_accumulators,
+            'net_distributors':   net_distributors,
+            'smart_broker_activity': smart_activity,
+            'daily_flow':         daily_flow,
+        })
         return Response({
             'kpi':                kpi,
             'top_buyers':         top_buyers,

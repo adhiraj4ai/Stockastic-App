@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { useRouter, useParams } from 'next/navigation'; // Changed from 'next/router' for App Router
-import Editor from '@monaco-editor/react';
+import dynamic from 'next/dynamic';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Play, Save, ArrowLeft, Activity, Sun, Moon, AlertTriangle, XOctagon, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
+import { FullPageLoader } from '@/components/ui/StockLoader';
 import {
     Dialog,
     DialogContent,
@@ -18,6 +19,12 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog";
+
+// Dynamically import Monaco Editor to prevent hydration mismatches and loading hangs in Next.js 15
+const Editor = dynamic(() => import('@monaco-editor/react'), { 
+    ssr: false,
+    loading: () => <div className="flex items-center justify-center h-full bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 font-mono text-xs text-slate-400 animate-pulse">Initializing Terminal Editor...</div>
+});
 
 interface Strategy {
     id: number;
@@ -36,7 +43,7 @@ export default function EditStrategyPage() {
     // Editor State
     const [code, setCode] = useState<string>('# Write your strategy logic here\n\ndef next_move(tick):\n    if tick["close"] > tick["ma_50"]:\n        return "BUY"\n    return "HOLD"');
     const [optimizationConfig, setOptimizationConfig] = useState<string>('');
-    const [themeMode, setThemeMode] = useState<'default' | 'light' | 'dark'>('default');
+    const [themeMode, setThemeMode] = useState<'default' | 'light' | 'dark'>('dark'); // Default to dark for premium feel
 
     // Sidebar State
     const [strategy, setStrategy] = useState<Strategy | null>(null);
@@ -86,9 +93,10 @@ export default function EditStrategyPage() {
             setIsPublished(data.published_experiments && data.published_experiments.length > 0);
         } catch (error: any) {
             console.error('Failed to fetch strategy', error);
-            toast.error('Failed to load strategy');
+            toast.error('Failed to load strategy data');
         } finally {
-            setLoading(false);
+            // Add a small delay for smoother transition
+            setTimeout(() => setLoading(false), 500);
         }
     };
 
@@ -140,10 +148,9 @@ export default function EditStrategyPage() {
                 name: strategy.name || '',
                 description: strategy.description || ''
             });
-            toast.success('Strategy saved successfully');
+            toast.success('Strategy updated successfully');
         } catch (error: any) {
             console.error('Failed to save strategy', error);
-            // Extract the most descriptive error message
             const errorData = error.response?.data;
             const message = errorData?.detail ||
                 (errorData && typeof errorData === 'object' ? Object.values(errorData)[0] : null) ||
@@ -159,10 +166,9 @@ export default function EditStrategyPage() {
         setIsUnpublishing(true);
         try {
             await api.post(`/api/stocks/strategies/${strategyId}/unpublish/`);
-            toast.success('Strategy unpublished successfully. You can now edit the code.');
+            toast.success('Strategy unpublished. Logic editing enabled.');
             setIsPublished(false);
             setUnpublishModalOpen(false);
-            // Refresh strategy data to be sure
             fetchStrategy();
         } catch (error: any) {
             console.error('Failed to unpublish strategy', error);
@@ -177,21 +183,23 @@ export default function EditStrategyPage() {
     const [monacoRef, setMonacoRef] = useState<any>(null);
 
     const handleBeforeMount = (monaco: any) => {
-        // Define Ayu Light Theme
+        // Define Theme Tokens
+        const themeRules = [
+            { token: 'comment', foreground: '5C6773', fontStyle: 'italic' },
+            { token: 'keyword', foreground: 'FFB454' },
+            { token: 'string', foreground: 'ADDB67' },
+            { token: 'number', foreground: 'D484FF' },
+            { token: 'regexp', foreground: '5FB3B3' },
+            { token: 'type', foreground: '73D0FF' },
+            { token: 'function', foreground: 'FFB454' },
+            { token: 'variable', foreground: 'CCCAC2' },
+            { token: 'class', foreground: '73D0FF' },
+        ];
+
         monaco.editor.defineTheme('ayu-light', {
             base: 'vs',
             inherit: true,
-            rules: [
-                { token: 'comment', foreground: 'ABB0B6', fontStyle: 'italic' },
-                { token: 'keyword', foreground: 'FA8D3E' },
-                { token: 'string', foreground: '86B300' },
-                { token: 'number', foreground: 'A37ACC' },
-                { token: 'regexp', foreground: '4CBF99' },
-                { token: 'type', foreground: '399EE6' },
-                { token: 'function', foreground: 'F29718' },
-                { token: 'variable', foreground: '5C6773' },
-                { token: 'class', foreground: '399EE6' },
-            ],
+            rules: themeRules,
             colors: {
                 'editor.background': '#FAFAFA',
                 'editor.foreground': '#5C6773',
@@ -199,33 +207,20 @@ export default function EditStrategyPage() {
                 'editorCursor.foreground': '#FFCC66',
                 'editor.selectionBackground': '#F0EEE4',
                 'editorIndentGuide.background': '#EDEEF0',
-                'editorIndentGuide.activeBackground': '#ABB0B6',
             }
         });
 
-        // Define Ayu Dark Theme
         monaco.editor.defineTheme('ayu-dark', {
             base: 'vs-dark',
             inherit: true,
-            rules: [
-                { token: 'comment', foreground: '5C6773', fontStyle: 'italic' },
-                { token: 'keyword', foreground: 'FAEFA5' },
-                { token: 'string', foreground: 'ADDB67' },
-                { token: 'number', foreground: 'D484FF' },
-                { token: 'regexp', foreground: '5FB3B3' },
-                { token: 'type', foreground: '73D0FF' },
-                { token: 'function', foreground: 'FFB454' },
-                { token: 'variable', foreground: 'CCCAC2' },
-                { token: 'class', foreground: '73D0FF' },
-            ],
+            rules: themeRules,
             colors: {
-                'editor.background': '#0F1419',
-                'editor.foreground': '#CCCAC2',
-                'editor.lineHighlightBackground': '#151A1E',
-                'editorCursor.foreground': '#F29718',
-                'editor.selectionBackground': '#253340',
-                'editorIndentGuide.background': '#23282D',
-                'editorIndentGuide.activeBackground': '#5C6773',
+                'editor.background': '#020617', // Match Stockastic slate-950
+                'editor.foreground': '#E2E8F0',
+                'editor.lineHighlightBackground': '#0F172A',
+                'editorCursor.foreground': '#3B82F6',
+                'editor.selectionBackground': '#1E293B',
+                'editorIndentGuide.background': '#1E293B',
             }
         });
     };
@@ -236,11 +231,7 @@ export default function EditStrategyPage() {
     };
 
     if (loading) {
-        return (
-            <DashboardLayout>
-                <div className="flex items-center justify-center h-full">Loading editor...</div>
-            </DashboardLayout>
-        );
+        return <FullPageLoader />;
     }
 
     const handleRun = async () => {
@@ -251,7 +242,7 @@ export default function EditStrategyPage() {
     };
 
     const getEditorTheme = () => {
-        if (themeMode === 'default') return 'vs-light';
+        if (themeMode === 'default') return 'ayu-dark';
         return themeMode === 'light' ? 'ayu-light' : 'ayu-dark';
     };
 

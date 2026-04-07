@@ -2,11 +2,11 @@ import type { NextConfig } from "next";
 
 const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-eval' 'unsafe-inline';
-    style-src 'self' 'unsafe-inline';
+    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net;
+    style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
     img-src 'self' blob: data:;
     font-src 'self' data:;
-    connect-src 'self' http://localhost:8000 https://api.stockastic.market ws: wss:;
+    connect-src 'self' http://localhost:8000 https://api.stockastic.market https://cdn.jsdelivr.net ws: wss:;
     object-src 'none';
     base-uri 'self';
     form-action 'self';

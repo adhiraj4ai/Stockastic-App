@@ -324,7 +324,7 @@ function DashboardContent({
                                                                         item.name === 'Financials' ? 'text-cyan-500 dark:text-cyan-400' :
                                                                             item.name === 'Signals & Strategies' ? 'text-pink-500 dark:text-pink-400' :
                                                                                 item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
-                                                                                        'text-slate-900/40 dark:text-slate-500/60'
+                                                                                    'text-slate-900/40 dark:text-slate-500/60'
                                                 } />
                                             </div>
                                             {!isSidebarCollapsed && <span className="text-sm font-bold tracking-tight">{item.name}</span>}
@@ -351,7 +351,7 @@ function DashboardContent({
                                                                 item.name === 'Financials' ? 'text-cyan-500 dark:text-cyan-400' :
                                                                     item.name === 'Signals & Strategies' ? 'text-pink-500 dark:text-pink-400' :
                                                                         item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
-                                                                                'text-slate-900/40 dark:text-slate-500/60'
+                                                                            'text-slate-900/40 dark:text-slate-500/60'
                                             } />
                                         </div>
                                         {!isSidebarCollapsed && <span className="text-sm font-bold tracking-tight">{item.name}</span>}
