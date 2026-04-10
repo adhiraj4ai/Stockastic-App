@@ -71,6 +71,7 @@ export default function PipelinePage() {
     const [brokerStatus, setBrokerStatus] = useState<'idle' | 'running' | 'completed' | 'error'>('idle');
     const [brokerLogs, setBrokerLogs] = useState<LogEntry[]>([]);
     const [showBrokerLogs, setShowBrokerLogs] = useState(false);
+    const [brokerMode, setBrokerMode] = useState<'full' | 'delta'>('delta');
 
     // Intel Signal Generation State
     const [intelStatus, setIntelStatus] = useState<'idle' | 'running' | 'completed' | 'error'>('idle');
@@ -424,7 +425,7 @@ export default function PipelinePage() {
         setShowBrokerLogs(true);
 
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const url = `${apiUrl}/api/stocks/pipeline/update_broker_analysis_stream/`;
+        const url = `${apiUrl}/api/stocks/pipeline/update_broker_analysis_stream/?mode=${brokerMode}`;
         const token = localStorage.getItem('access_token');
 
         brokerAbortController.current = new AbortController();
@@ -875,7 +876,7 @@ export default function PipelinePage() {
                         {/* Step 3: Update Broker Data & Accumulation */}
                         <PipelineStep
                             title="3. Update Broker Data & Accumulation"
-                            description="Refresh buyer/seller statistics and recalculate full market accumulation history based on uploaded floorsheet."
+                            description="Refresh buyer/seller statistics and recalculate market accumulation history based on uploaded floorsheet."
                             status={brokerStatus}
                             icon={<Zap className="w-5 h-5" />}
                             onRun={handleRunBroker}
@@ -883,6 +884,31 @@ export default function PipelinePage() {
                             logs={brokerLogs}
                             showLogs={showBrokerLogs}
                             onToggleLogs={() => setShowBrokerLogs(!showBrokerLogs)}
+                            extraControls={
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-tighter">Mode:</span>
+                                    <Tabs
+                                        value={brokerMode}
+                                        onValueChange={(v) => setBrokerMode(v as 'full' | 'delta')}
+                                        className="w-auto"
+                                    >
+                                        <TabsList className="h-7 p-0.5 bg-gray-100 dark:bg-slate-800 rounded-lg">
+                                            <TabsTrigger
+                                                value="delta"
+                                                className="h-6 px-3 text-[10px] font-bold rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-indigo-400"
+                                            >
+                                                Partial
+                                            </TabsTrigger>
+                                            <TabsTrigger
+                                                value="full"
+                                                className="h-6 px-3 text-[10px] font-bold rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-indigo-400"
+                                            >
+                                                Full
+                                            </TabsTrigger>
+                                        </TabsList>
+                                    </Tabs>
+                                </div>
+                            }
                         />
 
                         {/* Step 4: Update Technical Indicators */}
@@ -980,7 +1006,7 @@ function DailyPriceUpload({ onSuccess }: { onSuccess?: () => void }) {
 
     const isTradingDay = (d: Date) => {
         const day = d.getDay();
-        return day !== 5 && day !== 6;
+        return day !== 0 && day !== 6;
     };
 
     const handleGithubFetch = async () => {
@@ -1022,7 +1048,7 @@ function DailyPriceUpload({ onSuccess }: { onSuccess?: () => void }) {
                                 mode="single"
                                 selected={date}
                                 onSelect={setDate}
-                                disabled={(d) => d > new Date() || d.getDay() === 5 || d.getDay() === 6}
+                                disabled={(d) => d > new Date() || d.getDay() === 0 || d.getDay() === 6}
                             />
                         </PopoverContent>
                     </Popover>

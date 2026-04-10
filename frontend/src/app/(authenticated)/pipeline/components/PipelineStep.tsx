@@ -21,6 +21,7 @@ interface PipelineStepProps {
     logs?: LogEntry[];
     showLogs?: boolean;
     onToggleLogs?: () => void;
+    extraControls?: React.ReactNode;
 }
 
 export function PipelineStep({
@@ -32,7 +33,8 @@ export function PipelineStep({
     onStop,
     logs = [],
     showLogs = false,
-    onToggleLogs
+    onToggleLogs,
+    extraControls
 }: PipelineStepProps) {
     const logsEndRef = React.useRef<HTMLDivElement>(null);
 
@@ -75,6 +77,12 @@ export function PipelineStep({
                     </div>
 
                     <div className="flex flex-col items-end gap-2">
+                        {extraControls && (
+                            <div className="mb-2">
+                                {extraControls}
+                            </div>
+                        )}
+
                         {status === 'idle' ? (
                             <Button
                                 onClick={onRun}

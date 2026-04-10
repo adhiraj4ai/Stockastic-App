@@ -173,8 +173,9 @@ class PipelineViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['get'])
     def update_broker_analysis_stream(self, request):
-        log_entry = DataUploadLog.objects.create(file_name='Broker Analysis', upload_type='BROKER_ANALYSIS', status='PENDING')
-        return self._run_manage_command_stream(['update_broker_analysis'], log_entry)
+        mode = request.query_params.get('mode', 'delta')
+        log_entry = DataUploadLog.objects.create(file_name=f'Broker Analysis ({mode})', upload_type='BROKER_ANALYSIS', status='PENDING')
+        return self._run_manage_command_stream(['update_broker_analysis', f'--mode={mode}'], log_entry)
 
     @action(detail=False, methods=['get'])
     def generate_all_signals_stream(self, request):
