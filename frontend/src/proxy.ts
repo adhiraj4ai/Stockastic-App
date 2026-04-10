@@ -30,21 +30,43 @@ export function proxy(request: NextRequest) {
     // Auth pages that should redirect away if already logged in
     const authRoutes = ['/login', '/signup', '/forgot-password', '/reset-password'];
 
+    let response: NextResponse;
+
     // 1. Redirect to /market if user is logged in and visits Root or auth pages
     if (token && (pathname === '/' || authRoutes.some(route => pathname.startsWith(route)))) {
-        return NextResponse.redirect(new URL('/market', request.url));
+        response = NextResponse.redirect(new URL('/market', request.url));
     }
-
     // 2. Redirect to /login if user is NOT logged in and visits protected routes or root
-    if (!token) {
-        if (pathname === '/' || protectedRoutes.some(route => pathname.startsWith(route))) {
-            const loginUrl = new URL('/login', request.url);
-            loginUrl.searchParams.set('redirect', pathname);
-            return NextResponse.redirect(loginUrl);
-        }
+    else if (!token && (pathname === '/' || protectedRoutes.some(route => pathname.startsWith(route)))) {
+        const loginUrl = new URL('/login', request.url);
+        loginUrl.searchParams.set('redirect', pathname);
+        response = NextResponse.redirect(loginUrl);
+    }
+    else {
+        response = NextResponse.next();
     }
 
-    return NextResponse.next();
+    // --- Inject Security Headers (CSP) ---
+    const cspHeader = `
+        default-src 'self';
+        script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net blob:;
+        worker-src 'self' blob:;
+        style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+        img-src 'self' blob: data:;
+        font-src 'self' data:;
+        connect-src 'self' http://localhost:8000 https://api.stockastic.market https://cdn.jsdelivr.net ws: wss:;
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+        frame-ancestors 'none';
+    `.replace(/\s{2,}/g, ' ').trim();
+
+    response.headers.set('Content-Security-Policy', cspHeader);
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('X-XSS-Protection', '1; mode=block');
+
+    return response;
 }
 
 export const config = {

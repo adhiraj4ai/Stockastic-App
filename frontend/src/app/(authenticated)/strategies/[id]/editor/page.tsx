@@ -41,7 +41,28 @@ export default function EditStrategyPage() {
     const strategyId = params.id;
 
     // Editor State
-    const [code, setCode] = useState<string>('# Write your strategy logic here\n\ndef next_move(tick):\n    if tick["close"] > tick["ma_50"]:\n        return "BUY"\n    return "HOLD"');
+    const [code, setCode] = useState<string>(`class MyStrategy(Strategy):
+    # Performance Parameters (Editable in UI)
+    fast_window = 20
+    slow_window = 50
+
+    def init(self):
+        # Using pandas_ta for robust technical calculation
+        # Indicators are declared once in init for performance
+        close = pd.Series(self.data.Close)
+        self.ma_fast = self.I(ta.sma, close, self.fast_window)
+        self.ma_slow = self.I(ta.sma, close, self.slow_window)
+
+    def next(self):
+        # Core execution logic
+        # Buy when fast MA crosses above slow MA
+        if crossover(self.ma_fast, self.ma_slow):
+            self.buy()
+        
+        # Sell when fast MA crosses below slow MA
+        elif crossover(self.ma_slow, self.ma_fast):
+            self.position.close()
+`);
     const [optimizationConfig, setOptimizationConfig] = useState<string>('');
     const [themeMode, setThemeMode] = useState<'default' | 'light' | 'dark'>('dark'); // Default to dark for premium feel
 

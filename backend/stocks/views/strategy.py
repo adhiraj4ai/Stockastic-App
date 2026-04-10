@@ -22,6 +22,7 @@ import pandas as pd
 import numpy as np
 from dateutil.relativedelta import relativedelta
 from backtesting import Backtest, Strategy as BTStrategy
+import traceback
 
 from ..models import (
     DailyStockPrice, Strategy, Company, StrategyExperiment, 
@@ -148,7 +149,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
         start_date = request.data.get('start_date', None)
         end_date = request.data.get('end_date', None)
         strategy_params = request.data.get('parameters', {})
-        initial_balance = float(request.data.get('cash', 1000000))
+        initial_balance = float(request.data.get('initial_balance', request.data.get('cash', 1000000)))
 
         if sector:
             # Sector-wide backtest
@@ -230,10 +231,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
             # Single stock backtest
             result, error, exp_data = self._run_single_backtest(code, symbol, start_date, end_date, params=strategy_params, cash=initial_balance)
             
-            if error:
-                return Response({'error': error}, status=400)
-                
-            # Log successful Single backtest
+            # Log backtest (Success or Failure)
             StrategyExperiment.objects.create(
                 strategy=strategy,
                 user=request.user if request.user.is_authenticated else None,
@@ -243,14 +241,28 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 start_date=start_date,
                 end_date=end_date,
                 parameters=strategy_params,
-                metrics=result,
-                plot_html=exp_data.get('plot_html'),
-                status=StrategyExperiment.Status.SUCCESS
+                metrics=result if not error else {},
+                plot_html=exp_data.get('plot_html') if not error else None,
+                status=StrategyExperiment.Status.SUCCESS if not error else StrategyExperiment.Status.FAILED,
+                error_log=error
             )
             
+            if error:
+                return Response({'error': error}, status=400)
+            
             return Response({
+                'id': strategy.id,
+                'symbol': symbol,
                 'stats': result,
-                'plot_html': exp_data.get('plot_html')
+                'plot_html': exp_data.get('plot_html'),
+                'metadata': {
+                    'scope_type': ScopeType.SYMBOL,
+                    'scope_value': symbol,
+                    'start_date': start_date,
+                    'end_date': end_date,
+                    'parameters': strategy_params,
+                    'metrics': result
+                }
             })
 
     @action(detail=True, methods=['post'])
@@ -627,10 +639,14 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     break
             
             if not strategy_class:
-                return {}, "No Strategy class found", {}
+                return {}, "No Strategy class found. Please ensure your code defines a class inheriting from 'Strategy'.", {}
 
             bt = Backtest(df, strategy_class, cash=cash, commission=.002, exclusive_orders=True)
-            stats = bt.run()
+            
+            # Inject parameters into bt.run()
+            # Only include parameters that are present in the strategy class
+            run_params = {k: v for k, v in (params or {}).items() if hasattr(strategy_class, k)}
+            stats = bt.run(**run_params)
             
             plot_html = None
             try:
@@ -640,7 +656,8 @@ class StrategyViewSet(viewsets.ModelViewSet):
             metrics, _ = self._extract_bt_stats(stats)
             return self._clean_for_json(metrics), None, {'plot_html': plot_html}
         except Exception as e:
-            return {}, str(e), {}
+            error_trace = traceback.format_exc()
+            return {}, error_trace, {}
 
     def _get_bt_local_scope(self, symbol, params=None):
         import pandas_ta as ta
@@ -652,55 +669,72 @@ class StrategyViewSet(viewsets.ModelViewSet):
             'resample_apply': resample_apply,
             'ta': ta,
             'np': np,
-            'pd': pd
+            'pd': pd,
+            'symbol': symbol
         }
         if params:
             scope.update(params)
         return scope
 
     def _extract_bt_stats(self, stats):
-        # Filter for JSON serializable metrics
+        """Extract and sanitize backtest stats for JSON serialization."""
         clean = {}
-        excluded = ['_strategy', '_equity', '_trades']
+        # Internal objects from backtesting.py that cannot be serialized
+        excluded = ['_strategy', '_equity', '_trades', '_bt']
+        
         for k, v in stats.items():
-            if k not in excluded:
-                clean[k] = v
+            if k in excluded:
+                continue
+            
+            # Clean the value using our robust helper
+            clean_val = self._clean_for_json(v)
+            
+            # If the value is still not a basic type, it might be a Bokeh object or similar
+            if not isinstance(clean_val, (str, int, float, bool, list, dict, type(None))):
+                continue
+                
+            clean[k] = clean_val
+            
         return clean, {}
 
     def _clean_for_json(self, data):
-        # Handle pandas null values FIRST (NaT, NaN, pd.NA, etc.)
+        """
+        Recursively clean data for JSON serialization.
+        Handles pandas types, timestamps, and nested structures.
+        """
+        # 1. Handle Pandas/NumPy Nulls
         try:
             if pd.isna(data):
                 return None
         except (TypeError, ValueError, AttributeError):
             pass
-        
-        # Handle pandas data structures
-        if isinstance(data, pd.DataFrame):
-            # Recursively clean the converted dict
-            return self._clean_for_json(data.to_dict('records'))
-        elif isinstance(data, pd.Series):
-            # Recursively clean the converted dict
-            return self._clean_for_json(data.to_dict())
-        elif isinstance(data, (pd.Timestamp, datetime)):
+
+        # 2. Handle Timestamps (Pandas/Datetime)
+        if hasattr(data, 'isoformat'):
             return data.isoformat()
-        elif isinstance(data, pd.Timedelta):
-            return data.total_seconds()
-        
-        # Handle collections recursively
-        elif isinstance(data, dict):
-            return {k: self._clean_for_json(v) for k, v in data.items()}
-        elif isinstance(data, list):
-            return [self._clean_for_json(i) for i in data]
-        
-        # Handle numeric types
-        elif isinstance(data, (float, np.float64, np.float32)):
-            if np.isnan(data) or np.isinf(data): return 0
-            return float(data)
-        elif isinstance(data, (int, np.int64, np.int32)):
-            return int(data)
-        
-        return data
+            
+        # 3. Handle Pandas DataFrames/Series/Arrays
+        if isinstance(data, pd.DataFrame):
+            return self._clean_for_json(data.to_dict('records'))
+        if isinstance(data, (pd.Series, pd.Index, np.ndarray)):
+            # Convert to list and clean items recursively
+            return [self._clean_for_json(x) for x in (data.tolist() if hasattr(data, 'tolist') else list(data))]
+            
+        # 4. Handle Dictionaries
+        if isinstance(data, dict):
+            return {str(k): self._clean_for_json(v) for k, v in data.items()}
+            
+        # 5. Handle Lists/Tuples
+        if isinstance(data, (list, tuple)):
+            return [self._clean_for_json(x) for x in data]
+
+        # 6. Basic Serializable Types
+        if isinstance(data, (str, int, float, bool, type(None))):
+            return data
+
+        # 7. Fallback for non-serializable objects (like Bokeh GridPlot)
+        # We return None to avoid crashing JsonResponse
+        return None
 
     def _extract_params_simple(self, code):
         params = {}
