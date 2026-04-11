@@ -53,12 +53,12 @@ export default function TickerAccumulation({ symbol }: TickerAccumulationProps) 
             try {
                 const [graphRes, accumRes, trendRes] = await Promise.all([
                     api.get('/api/stocks/companies/brokers_graph/', { params: { symbol, range } }),
-                    api.get('/api/stocks/companies/accumulation/', { params: { range } }),
+                    api.get('/api/stocks/companies/accumulation/', { params: { range, symbol } }),
                     api.get('/api/stocks/companies/broker_trends/', { params: { symbol } }),
                 ]);
                 setGraphData(graphRes.data);
-                const sym = (accumRes.data as any[]).find((s: any) => s.symbol === symbol) || null;
-                setAccumData(sym);
+                const accumList = accumRes.data as any[];
+                setAccumData(accumList.length > 0 ? accumList[0] : null);
                 setTrendData((trendRes.data as any[]).sort((a: any, b: any) => b.cumulative_net - a.cumulative_net));
             } catch (err) {
                 console.error('Accumulation fetch failed', err);

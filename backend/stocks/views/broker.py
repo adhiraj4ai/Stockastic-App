@@ -110,12 +110,13 @@ class BrokerViewSet(viewsets.ViewSet):
             ORDER BY symbol, transaction_date DESC
         ) dsp ON sa.symbol = dsp.symbol
         WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
-        {"" if sector.lower() == 'all' else f"AND c.\"sectorName\" = '{sector}'"}
+        {"AND c.\"sectorName\" = %s" if sector.lower() != 'all' else ""}
         ORDER BY net_qty DESC;
         """
 
+        params = [sector] if sector.lower() != 'all' else []
         with connections['default'].cursor() as cursor:
-            cursor.execute(query)
+            cursor.execute(query, params)
             columns = [col[0] for col in cursor.description]
             results = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
@@ -230,15 +231,16 @@ class BrokerViewSet(viewsets.ViewSet):
             INNER JOIN companies c ON ss.symbol = c.symbol
             INNER JOIN latest_avg_vol lav ON ss.symbol = lav.symbol
             WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
-            {"" if sector.lower() == 'all' else f"AND c.\\\"sectorName\\\" = '{sector}'"}
+            {"AND c.\"sectorName\" = %s" if sector.lower() != 'all' else ""}
         )
         SELECT * FROM intensity_cte
         WHERE ABS(intensity) > 5
         ORDER BY ABS(intensity) DESC;
         """
-        
+
+        params = [sector] if sector.lower() != 'all' else []
         with connections['default'].cursor() as cursor:
-            cursor.execute(query)
+            cursor.execute(query, params)
             columns = [col[0] for col in cursor.description]
             results = [dict(zip(columns, row)) for row in cursor.fetchall()]
             

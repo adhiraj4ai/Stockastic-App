@@ -160,11 +160,12 @@ export default function AccumulationDashboard() {
     const [aggressiveData, setAggressiveData] = useState<{ accumulators: AggressivePattern[]; distributors: AggressivePattern[] }>({ accumulators: [], distributors: [] });
     const [smartMoneyData, setSmartMoneyData] = useState<SmartMoneyData | null>(null);
 
-    // Loading
+    // Loading & Error
     const [loadingOverview,   setLoadingOverview]   = useState(true);
     const [loadingAggressive, setLoadingAggressive] = useState(true);
     const [loadingSmartMoney, setLoadingSmartMoney] = useState(true);
     const [loadingDetail,     setLoadingDetail]     = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     // Master-detail
     const [selectedSymbol, setSelectedSymbol] = useState<AccumulationData | null>(null);
@@ -195,6 +196,7 @@ export default function AccumulationDashboard() {
 
         setLoadingOverview(true);
         setLoadingAggressive(true);
+        setError(null);
 
         Promise.all([
             api.get(`/api/stocks/companies/accumulation/?range=${range}`, { signal }),
@@ -206,7 +208,7 @@ export default function AccumulationDashboard() {
                 setSectors(['All', ...Array.from(new Set(ovRes.data.map((d: AccumulationData) => d.sector))) as string[]]);
                 setPage(1);
             })
-            .catch(err => { if (err.name !== 'AbortError') console.error('Failed to fetch main data', err); })
+            .catch(err => { if (err.name !== 'AbortError') { console.error('Failed to fetch main data', err); setError('Failed to load accumulation data. Please try again.'); } })
             .finally(() => { setLoadingOverview(false); setLoadingAggressive(false); });
 
         return () => abortOverview.current?.abort();
@@ -358,6 +360,19 @@ export default function AccumulationDashboard() {
     }, [detailData]);
 
     // ─── Render ───────────────────────────────────────────────────────────────
+
+    if (error && !loadingOverview && overviewData.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-32 space-y-4">
+                <AlertTriangle className="w-10 h-10 text-amber-500" />
+                <p className="text-sm font-bold text-slate-600 dark:text-slate-400">{error}</p>
+                <Button variant="outline" onClick={() => setRange(range)} className="text-xs font-bold">
+                    Retry
+                </Button>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-5 min-h-screen">
 
