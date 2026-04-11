@@ -19,6 +19,7 @@ export default function TickerLandingPage() {
     const [search, setSearch] = useState('');
     const [companies, setCompanies] = useState<Company[]>([]);
     const [portfolioSymbols, setPortfolioSymbols] = useState<string[]>([]);
+    const [randomSymbols, setRandomSymbols] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [focused, setFocused] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -32,9 +33,29 @@ export default function TickerLandingPage() {
             .then(res => {
                 const data = Array.isArray(res.data) ? res.data : (res.data.results || []);
                 const symbols = Array.from(new Set(data.map((item: any) => item.ticker))) as string[];
-                setPortfolioSymbols(symbols.slice(0, 10)); // Limit to 10
+                
+                if (symbols.length > 0) {
+                    setPortfolioSymbols(symbols.slice(0, 10)); // Limit to 10
+                } else {
+                    // If no portfolio, fetch random companies
+                    api.get('/api/stocks/companies/')
+                        .then(compRes => {
+                            const all = Array.isArray(compRes.data) ? compRes.data : (compRes.data.results || []);
+                            // Simple shuffle
+                            const shuffled = [...all].sort(() => 0.5 - Math.random());
+                            setRandomSymbols(shuffled.slice(0, 8).map(c => c.symbol));
+                        });
+                }
             })
-            .catch(() => {});
+            .catch(() => {
+                // Fallback to random if portfolio fails/null
+                api.get('/api/stocks/companies/')
+                    .then(compRes => {
+                        const all = Array.isArray(compRes.data) ? compRes.data : (compRes.data.results || []);
+                        const shuffled = [...all].sort(() => 0.5 - Math.random());
+                        setRandomSymbols(shuffled.slice(0, 8).map(c => c.symbol));
+                    });
+            });
     }, []);
 
     useEffect(() => {
@@ -56,6 +77,9 @@ export default function TickerLandingPage() {
     const go = (symbol: string) => router.push(`/ticker/${symbol}`);
 
     const showDropdown = focused && (search.length > 0 || companies.length > 0);
+
+    const displaySymbols = portfolioSymbols.length > 0 ? portfolioSymbols : randomSymbols;
+    const displayLabel = portfolioSymbols.length > 0 ? 'Your Portfolio' : 'Discover';
 
     return (
         <DashboardLayout hideHeader>
@@ -127,13 +151,13 @@ export default function TickerLandingPage() {
                 </div>
 
                 {/* Quick picks / Portfolio */}
-                {!focused && !search && (portfolioSymbols.length > 0 || QUICK_PICKS.length > 0) && (
+                {!focused && !search && displaySymbols.length > 0 && (
                     <div className="mt-8 flex items-center gap-3 animate-in fade-in duration-500 delay-300">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            {portfolioSymbols.length > 0 ? 'Your Portfolio' : 'Quick'}
+                            {displayLabel}
                         </span>
                         <div className="flex flex-wrap gap-2">
-                            {(portfolioSymbols.length > 0 ? portfolioSymbols : QUICK_PICKS).map(s => (
+                            {displaySymbols.map(s => (
                                 <button
                                     key={s}
                                     onClick={() => go(s)}
