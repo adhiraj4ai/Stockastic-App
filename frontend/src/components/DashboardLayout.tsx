@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { LayoutDashboard, TrendingUp, TrendingDown, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Users, BarChart3, History, Star, Brain, Radar, Landmark, ScanLine, Zap, Share2, Crosshair, DollarSign, Layers, GitMerge } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, TrendingDown, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Users, BarChart3, History, Star, Brain, Radar, Landmark, ScanLine, Zap, Share2, Crosshair, DollarSign, Layers, GitMerge, Shield } from 'lucide-react';
 import { FullPageLoader } from '@/components/ui/StockLoader';
 import { SearchBar } from './SearchBar';
 import { ChatSidebar } from './ChatSidebar';
@@ -24,6 +24,7 @@ import Cookies from 'js-cookie';
 import { SettingsDialog } from './SettingsDialog';
 
 const navItems = [
+    { name: 'Home', href: '/ticker', icon: Home },
     {
         name: 'Market',
         icon: Landmark,
@@ -41,7 +42,6 @@ const navItems = [
         ]
     },
     // Chat moved to top nav
-    { name: 'Ticker', href: '/ticker', icon: ScanLine },
     {
         name: 'Finfolio',
         icon: Wallet,
@@ -70,7 +70,6 @@ const navItems = [
             { name: 'Below Cost Positions', href: '/accumulation/below-cost', icon: TrendingDown },
         ]
     },
-    { name: 'Financials', href: '/financials', icon: FileText },
     {
         name: 'Strategic Hub',
         icon: Layers,
@@ -80,8 +79,14 @@ const navItems = [
             { name: 'Track Record', href: '/signals/track-record', icon: History },
         ]
     },
-    // { name: 'Forecasts', href: '/forecasts', icon: Brain },
-    { name: 'Pipeline', href: '/pipeline', icon: Settings },
+    {
+        name: 'Administration',
+        icon: Shield,
+        subItems: [
+            { name: 'Financials', href: '/financials', icon: FileText },
+            { name: 'Pipeline', href: '/pipeline', icon: Settings },
+        ]
+    },
 ];
 
 const stocks = [
@@ -175,8 +180,16 @@ function DashboardContent({
     }, [pathname, router]);
 
     // Filter Navigation Items based on User
-    const filteredNavItems = navItems.filter(item => {
-        if (!currentUser) return true; // Show all while loading/default
+    const filteredNavItems = navItems.map(item => {
+        if (currentUser?.username === 'ashmi' && 'subItems' in item && item.subItems) {
+            return {
+                ...item,
+                subItems: item.subItems.filter(sub => sub.name !== 'Pipeline')
+            };
+        }
+        return item;
+    }).filter(item => {
+        if (!currentUser) return true;
         if (currentUser.username === 'ashmi') {
             return !['Chat', 'Pipeline'].includes(item.name);
         }
@@ -276,7 +289,7 @@ function DashboardContent({
                 <div className={`p-5 border-b border-gray-200/30 dark:border-white/5 flex items-center justify-between ${isSidebarCollapsed ? 'flex-col gap-4' : ''}`}>
                     {!isSidebarCollapsed && (
                         <div className="w-full flex justify-start pl-1">
-                            <Link href="/market" className="hover:opacity-80 transition-opacity duration-300 block">
+                            <Link href="/ticker" className="hover:opacity-80 transition-opacity duration-300 block">
                                 <Image
                                     src={logoSrc}
                                     alt="Stockastic Logo"
@@ -323,7 +336,7 @@ function DashboardContent({
                                                                     item.name === 'Accumulation' ? 'text-orange-500/70 dark:text-orange-400/70' :
                                                                         item.name === 'Financials' ? 'text-cyan-500/70 dark:text-cyan-400/70' :
                                                                             item.name === 'Strategic Hub' ? 'text-pink-500/70 dark:text-pink-400/70' :
-                                                                                item.name === 'Pipeline' ? 'text-teal-500/70 dark:text-teal-400/70' :
+                                                                                item.name === 'Administration' ? 'text-teal-500/70 dark:text-teal-400/70' :
                                                                                     'text-slate-400 dark:text-slate-500'
                                                 } />
                                             </div>
@@ -344,12 +357,12 @@ function DashboardContent({
                                     >
                                         <div className={`p-1.5 rounded-lg transition-all duration-300 ${isActive ? 'bg-emerald-500/10' : 'group-hover:scale-110'}`}>
                                             <item.icon size={18} className={
-                                                item.name === 'Market' ? 'text-blue-500' :
+                                                item.name === 'Home' ? 'text-blue-500' :
                                                     item.name === 'Chat' ? 'text-purple-500' :
                                                         item.name === 'Ticker' ? 'text-green-500' :
                                                             item.name === 'Financials' ? 'text-cyan-500' :
                                                                 item.name === 'Strategic Hub' ? 'text-pink-500' :
-                                                                    item.name === 'Pipeline' ? 'text-teal-500' :
+                                                                    item.name === 'Administration' ? 'text-teal-500' :
                                                                         isActive ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'
                                             } />
                                         </div>
