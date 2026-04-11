@@ -22,7 +22,14 @@ export default function TickerLandingPage() {
     const [randomSymbols, setRandomSymbols] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [focused, setFocused] = useState(false);
-    const [user, setUser] = useState<{ username: string } | null>(null);
+    const [user, setUser] = useState<{ 
+        username: string, 
+        profile?: { 
+            nickname?: string, 
+            first_name?: string, 
+            last_name?: string 
+        } 
+    } | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Auto-focus on mount
@@ -64,6 +71,14 @@ export default function TickerLandingPage() {
             });
     }, []);
 
+    const getDisplayName = () => {
+        if (!user) return '';
+        if (user.profile?.nickname) return user.profile.nickname;
+        const fullName = `${user.profile?.first_name || ''} ${user.profile?.last_name || ''}`.trim();
+        if (fullName) return fullName;
+        return user.username;
+    };
+
     const getGreeting = () => {
         const hour = new Date().getHours();
         if (hour < 12) return "Good Morning";
@@ -102,7 +117,7 @@ export default function TickerLandingPage() {
                     {user && (
                         <div className="mb-4 animate-in fade-in slide-in-from-bottom-2 duration-700">
                             <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em]">
-                                {getGreeting()}, {user.username}
+                                {getGreeting()}, {getDisplayName()}
                             </span>
                         </div>
                     )}
