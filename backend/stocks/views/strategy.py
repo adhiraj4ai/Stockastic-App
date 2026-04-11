@@ -922,8 +922,13 @@ class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=['get'])
     def track_record(self, request):
-        """Return historically closed signals (target hit or stop loss) paginated."""
-        qs = self.get_queryset().filter(status__in=['WON', 'LOST']).order_by('-generated_date')
+        """Return signals paginated. Optionally filter by status (comma-separated)."""
+        status_param = request.query_params.get('status', '')
+        if status_param:
+            statuses = [s.strip().upper() for s in status_param.split(',')]
+            qs = self.get_queryset().filter(status__in=statuses).order_by('-generated_date')
+        else:
+            qs = self.get_queryset().order_by('-generated_date')
         page = self.paginate_queryset(qs)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
@@ -961,6 +966,8 @@ class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
             won=Count('id', filter=Q(status='WON')),
             lost=Count('id', filter=Q(status='LOST')),
             active=Count('id', filter=Q(status='ACTIVE')),
+            avg_win_pnl=Avg('pnl_percent', filter=Q(status='WON')),
+            avg_loss_pnl=Avg('pnl_percent', filter=Q(status='LOST')),
             avg_pnl=Avg('pnl_percent', filter=Q(status__in=['WON', 'LOST'])),
         )
 
@@ -968,7 +975,7 @@ class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
         for s in stats:
             total_resolved = s['won'] + s['lost']
             win_rate = (s['won'] / total_resolved * 100) if total_resolved > 0 else 0
-            
+
             result.append({
                 'source': s['source'],
                 'total': s['total'],
@@ -976,9 +983,11 @@ class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
                 'lost': s['lost'],
                 'active': s['active'],
                 'win_rate': round(win_rate, 2),
-                'avg_pnl': round(s['avg_pnl'] or 0, 2)
+                'avg_pnl': round(s['avg_pnl'] or 0, 2),
+                'avg_win_pnl': round(s['avg_win_pnl'] or 0, 2),
+                'avg_loss_pnl': round(s['avg_loss_pnl'] or 0, 2),
             })
-            
+
         return Response(result)
 
     @action(detail=False, methods=['get'])

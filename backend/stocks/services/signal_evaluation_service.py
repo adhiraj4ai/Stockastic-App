@@ -13,7 +13,8 @@ class SignalEvaluationService:
     def evaluate_active_signals():
         """
         Loops through all 'ACTIVE' signals.
-        Checks if the daily price action has hit the target_price or stop_loss_price.
+        For each signal, checks ALL daily candles since the signal was generated
+        to find the first day the target or stop loss was hit.
         Updates status, pnl_percent, and closed_date accordingly.
         """
         active_signals = GeneratedSignal.objects.filter(status='ACTIVE')
@@ -21,7 +22,6 @@ class SignalEvaluationService:
             logger.info("No active signals to evaluate.")
             return 0
 
-        # Group by symbol to optimize price lookups
         signals_by_symbol = defaultdict(list)
         for sig in active_signals:
             if sig.target_price is None or sig.stop_loss_price is None or sig.ltp <= 0:
@@ -29,57 +29,61 @@ class SignalEvaluationService:
             signals_by_symbol[sig.symbol].append(sig)
 
         evaluated_count = 0
-        today = date.today()
 
         for symbol, signals in signals_by_symbol.items():
-            # Get the latest price for the symbol
-            latest_price_obj = DailyStockPrice.objects.filter(ticker=symbol).order_by('-date').first()
-            if not latest_price_obj:
+            # Find the earliest generation date among active signals for this symbol
+            earliest_date = min(sig.generated_date for sig in signals)
+
+            # Fetch all daily prices after the earliest generation date, in chronological order
+            daily_prices = list(
+                DailyStockPrice.objects
+                .filter(ticker=symbol, date__gt=earliest_date)
+                .order_by('date')
+                .values('date', 'high', 'low', 'close')
+            )
+
+            if not daily_prices:
                 continue
 
-            # In a real rigorous backtester, we'd check all days between 'generated_date' and 'today'. 
-            # Because this runs daily, checking just the latest day's high/low is usually sufficient.
-            latest_high = latest_price_obj.high
-            latest_low = latest_price_obj.low
-            latest_close = latest_price_obj.close
-            latest_date = latest_price_obj.date
-
             for sig in signals:
-                # Can't evaluate on the exact generation day realistically unless intraday data
-                if sig.generated_date >= latest_date:
-                    continue
+                # Walk through each day after signal generation in order
+                for day in daily_prices:
+                    if day['date'] <= sig.generated_date:
+                        continue
 
-                status_updated = False
-                
-                if sig.signal == 'BUY':
-                    # Hit Stop Loss first in the daily candle (conservative assumption)
-                    if latest_low <= sig.stop_loss_price:
-                        sig.status = 'LOST'
-                        sig.pnl_percent = ((sig.stop_loss_price - sig.ltp) / sig.ltp) * 100
-                        sig.closed_date = latest_date
-                        status_updated = True
-                    # Hit Target
-                    elif latest_high >= sig.target_price:
-                        sig.status = 'WON'
-                        sig.pnl_percent = ((sig.target_price - sig.ltp) / sig.ltp) * 100
-                        sig.closed_date = latest_date
-                        status_updated = True
+                    day_high = float(day['high'])
+                    day_low = float(day['low'])
+                    entry = float(sig.ltp)
+                    target = float(sig.target_price)
+                    stop_loss = float(sig.stop_loss_price)
 
-                elif sig.signal == 'SELL':
-                    # Hit Stop Loss first
-                    if latest_high >= sig.stop_loss_price:
-                        sig.status = 'LOST'
-                        sig.pnl_percent = ((sig.ltp - sig.stop_loss_price) / sig.ltp) * 100
-                        sig.closed_date = latest_date
-                        status_updated = True
-                    # Hit Target
-                    elif latest_low <= sig.target_price:
-                        sig.status = 'WON'
-                        sig.pnl_percent = ((sig.ltp - sig.target_price) / sig.ltp) * 100
-                        sig.closed_date = latest_date
-                        status_updated = True
+                    if sig.signal == 'BUY':
+                        # Check stop loss first (conservative: assume worst case hit first)
+                        if day_low <= stop_loss:
+                            sig.status = 'LOST'
+                            sig.pnl_percent = ((stop_loss - entry) / entry) * 100
+                            sig.closed_date = day['date']
+                            break
+                        elif day_high >= target:
+                            sig.status = 'WON'
+                            sig.pnl_percent = ((target - entry) / entry) * 100
+                            sig.closed_date = day['date']
+                            break
 
-                if status_updated:
+                    elif sig.signal == 'SELL':
+                        # For SELL: stop loss is above entry, target is below
+                        if day_high >= stop_loss:
+                            sig.status = 'LOST'
+                            sig.pnl_percent = ((entry - stop_loss) / entry) * 100
+                            sig.closed_date = day['date']
+                            break
+                        elif day_low <= target:
+                            sig.status = 'WON'
+                            sig.pnl_percent = ((entry - target) / entry) * 100
+                            sig.closed_date = day['date']
+                            break
+
+                if sig.status != 'ACTIVE':
                     sig.save(update_fields=['status', 'pnl_percent', 'closed_date'])
                     evaluated_count += 1
                     logger.info(f"Signal Evaluated: {sig.symbol} ({sig.signal}) -> {sig.status} at {sig.pnl_percent:.2f}%")

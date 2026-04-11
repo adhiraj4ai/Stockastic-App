@@ -22,6 +22,8 @@ interface EnginePerformance {
     active: number;
     win_rate: number;
     avg_pnl: number;
+    avg_win_pnl: number;
+    avg_loss_pnl: number;
 }
 
 interface GeneratedSignal {
@@ -31,7 +33,7 @@ interface GeneratedSignal {
     signal: 'BUY' | 'SELL';
     signal_tier: string;
     strength: number;
-    ltp: string; 
+    ltp: string;
     target_price?: number;
     stop_loss_price?: number;
     status: 'ACTIVE' | 'WON' | 'LOST' | 'CLOSED_MANUAL';
@@ -49,6 +51,11 @@ const SOURCE_LABELS: Record<string, string> = {
     BROKER_ACCUMULATION: 'Broker Accumulation',
     SMART_CROSSOVER: 'Smart Crossover',
     ICHIMOKU: 'Ichimoku',
+    PRICE_ACTION: 'Price Action',
+    MEAN_REVERSAL: 'Mean Reversal',
+    RSI_DIVERGENCE: 'RSI Divergence',
+    MACD_DIVERGENCE: 'MACD Divergence',
+    DOW_SIGNAL: 'Dow Signal',
 };
 
 const SOURCES = Object.entries(SOURCE_LABELS).map(([key, label]) => ({ key, label }));
@@ -127,7 +134,7 @@ function PriceLadder({ sig }: { sig: GeneratedSignal }) {
 
     if (sl) levels.push({ label: getLabel('SL'), price: sl, type: 'sl' });
     levels.push({ label: isBuy ? 'Entry' : 'Sell @', price: entry, type: 'entry' });
-    
+
     if (tp1) levels.push({ label: getLabel('TP1'), price: tp1, type: 'tp' });
     if (tp2) levels.push({ label: getLabel('TP2'), price: tp2, type: 'tp' });
     if (tp3) levels.push({ label: getLabel('TP3'), price: tp3, type: 'tp' });
@@ -135,15 +142,18 @@ function PriceLadder({ sig }: { sig: GeneratedSignal }) {
 
     if (levels.length < 2) return <span className="text-[10px] text-slate-400 font-semibold">Incomplete Levels</span>;
 
+    // Sort by price ascending so the ladder reads low → high visually
+    levels.sort((a, b) => a.price - b.price);
+
     return (
         <div className="relative flex items-center gap-12 py-6 px-2 min-w-[300px]">
             <div className="absolute left-[30px] right-[30px] top-[50%] h-[1px] bg-slate-200 dark:bg-slate-800 -translate-y-1/2" />
-            
+
             {levels.map(({ label, price, type }) => {
                 const isHitTp = type === 'tp' && tpCleared(price);
                 const isHitSl = type === 'sl' && isLost;
                 const isEntry = type === 'entry';
-                
+
                 return (
                     <div key={label} className="relative flex flex-col items-center flex-1">
                         <div className={cn(
@@ -153,7 +163,7 @@ function PriceLadder({ sig }: { sig: GeneratedSignal }) {
                             isEntry ? "border-slate-400 bg-slate-400" :
                             "border-slate-200 dark:border-slate-800"
                         )} />
-                        
+
                         <span className={cn(
                             "absolute -top-5 text-[9px] font-bold uppercase tracking-wider whitespace-nowrap",
                             type === 'sl' ? "text-rose-500" :
@@ -295,7 +305,7 @@ function StatCard({ label, value, sub, accent, icon: Icon, tooltip }: {
                 accent === 'red' ? "bg-rose-500" :
                 accent === 'blue' ? "bg-blue-500" : "bg-purple-500"
             )} />
-            
+
             <div className="flex items-center justify-between">
                 <div className={cn("p-2 rounded-xl border", colors[accent])}>
                     <Icon size={18} />
@@ -310,6 +320,58 @@ function StatCard({ label, value, sub, accent, icon: Icon, tooltip }: {
                         {value}
                     </span>
                     {sub && <span className="text-[10px] text-slate-400 font-semibold">{sub}</span>}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Engine Performance Row ──────────────────────────────────────
+
+function EngineRow({ stat }: { stat: EnginePerformance }) {
+    const resolved = stat.won + stat.lost;
+    const winRate = resolved > 0 ? Math.round((stat.won / resolved) * 100) : 0;
+    const barWidth = resolved > 0 ? (stat.won / resolved) * 100 : 0;
+
+    return (
+        <div className="flex items-center gap-4 py-3 px-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-all">
+            <div className="w-40 shrink-0">
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">
+                    {SOURCE_LABELS[stat.source] || stat.source}
+                </p>
+                <p className="text-[10px] text-slate-400 font-semibold">{stat.total} signals</p>
+            </div>
+
+            <div className="flex-1 min-w-0">
+                <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                    <div
+                        className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500"
+                        style={{ width: `${barWidth}%` }}
+                    />
+                </div>
+            </div>
+
+            <div className="flex items-center gap-6 shrink-0">
+                <div className="text-right w-14">
+                    <span className={cn(
+                        "text-sm font-black tabular-nums",
+                        winRate >= 50 ? "text-emerald-500" : "text-rose-500"
+                    )}>
+                        {winRate}%
+                    </span>
+                </div>
+                <div className="flex gap-3 text-[10px] font-bold tabular-nums">
+                    <span className="text-emerald-500">{stat.won}W</span>
+                    <span className="text-rose-500">{stat.lost}L</span>
+                    {stat.active > 0 && <span className="text-blue-500">{stat.active}A</span>}
+                </div>
+                <div className="text-right w-16">
+                    <span className={cn(
+                        "text-xs font-mono font-bold tabular-nums",
+                        stat.avg_win_pnl > 0 ? "text-emerald-500" : "text-slate-400"
+                    )}>
+                        {stat.avg_win_pnl > 0 ? `+${stat.avg_win_pnl.toFixed(1)}%` : '—'}
+                    </span>
                 </div>
             </div>
         </div>
@@ -355,26 +417,34 @@ export default function TrackRecordClient() {
         return true;
     }), [signals, search, sourceFilter, statusFilter, dirFilter]);
 
+    // Compute metrics from the currently filtered signals so cards react to filters
     const metrics = useMemo(() => {
-        const resolved = signals.filter(s => s.status === 'WON' || s.status === 'LOST');
-        const won = signals.filter(s => s.status === 'WON');
-        const lost = signals.filter(s => s.status === 'LOST');
-        
+        const pool = filtered;
+        const resolved = pool.filter(s => s.status === 'WON' || s.status === 'LOST');
+        const won = pool.filter(s => s.status === 'WON');
+        const lost = pool.filter(s => s.status === 'LOST');
+
         const avgWinPnl = won.length
             ? won.reduce((acc, s) => acc + parseFloat((s.pnl_percent as any) || 0), 0) / won.length
             : null;
-            
+
         const avgLossPnl = lost.length
             ? lost.reduce((acc, s) => acc + parseFloat((s.pnl_percent as any) || 0), 0) / lost.length
             : null;
-            
+
         const winRate = resolved.length ? Math.round((won.length / resolved.length) * 100) : null;
-        
+
         const rr = avgWinPnl && avgLossPnl && avgLossPnl !== 0
             ? Math.abs(avgWinPnl / avgLossPnl).toFixed(1)
             : null;
 
-        return { winRate, avgWinPnl, avgLossPnl, total: signals.length, resolved: resolved.length, won: won.length, lost: lost.length, rr };
+        return { winRate, avgWinPnl, avgLossPnl, total: pool.length, resolved: resolved.length, won: won.length, lost: lost.length, rr };
+    }, [filtered]);
+
+    // Only show engine filter pills for sources that actually have data
+    const activeSources = useMemo(() => {
+        const sourceSet = new Set(signals.map(s => s.source));
+        return SOURCES.filter(s => sourceSet.has(s.key));
     }, [signals]);
 
     if (loading) return <PageLoader />;
@@ -393,33 +463,49 @@ export default function TrackRecordClient() {
                 <StatCard
                     label="Avg Capture"
                     value={metrics.avgWinPnl != null ? `+${metrics.avgWinPnl.toFixed(1)}%` : '—'}
-                    sub="Yield Alpha"
+                    sub="per winning signal"
                     accent="green"
                     icon={TrendingUp}
-                    tooltip="Average potential percentage gain (or loss avoidance) captured per successful signal."
+                    tooltip="Average percentage gain captured per successful signal."
                 />
                 <StatCard
                     label="Avg Stop Hit"
                     value={metrics.avgLossPnl != null ? `${metrics.avgLossPnl.toFixed(1)}%` : '—'}
-                    sub="Impact per Stop"
+                    sub="per losing signal"
                     accent="red"
                     icon={TrendingDown}
-                    tooltip="Average impact on situations where the market moved against the signal."
+                    tooltip="Average percentage loss when the stop loss is hit."
                 />
                 <StatCard
                     label="Edge Ratio"
-                    value={metrics.rr ? `1 : ${metrics.rr}` : '—'}
-                    sub="Predictive Edge"
+                    value={metrics.rr ? `${metrics.rr}:1` : '—'}
+                    sub="reward per unit risk"
                     accent="blue"
                     icon={BarChart3}
-                    tooltip="Reward-to-Risk ratio of the strategy. A ratio > 1.5 indicates a high-confidence mathematical edge."
+                    tooltip="Reward-to-Risk ratio. A value above 1.5 indicates strong edge — average wins are significantly larger than average losses."
                 />
             </div>
+
+            {/* Per-Engine Breakdown */}
+            {stats.length > 0 && (
+                <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
+                    <div className="px-6 py-4 border-b border-slate-200/50 dark:border-slate-800/50">
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Engine Performance</h3>
+                    </div>
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800/50 px-2 py-1">
+                        {stats
+                            .filter(s => s.won + s.lost > 0)
+                            .sort((a, b) => b.win_rate - a.win_rate)
+                            .map(stat => <EngineRow key={stat.source} stat={stat} />)
+                        }
+                    </div>
+                </div>
+            )}
 
             <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800 p-4 rounded-3xl space-y-4 shadow-sm">
                 <div className="flex flex-wrap items-center gap-3">
                     <FilterPill active={sourceFilter === 'ALL'} onClick={() => setSourceFilter('ALL')}>All Engines</FilterPill>
-                    {SOURCES.map(s => (
+                    {activeSources.map(s => (
                         <FilterPill key={s.key} active={sourceFilter === s.key} onClick={() => setSourceFilter(s.key)}>
                             {s.label}
                         </FilterPill>
@@ -434,7 +520,7 @@ export default function TrackRecordClient() {
                         />
                     </div>
                 </div>
-                
+
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
                     <div className="flex items-center gap-2">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-2">Quick Filter:</span>
@@ -444,7 +530,7 @@ export default function TrackRecordClient() {
                                 onClick={() => setStatusFilter(statusFilter === s ? 'ALL' : s)}
                                 className={cn(
                                     "px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-tight border transition-all",
-                                    statusFilter === s 
+                                    statusFilter === s
                                         ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent shadow-md"
                                         : "bg-transparent text-slate-400 border-slate-200 dark:border-slate-800 hover:border-slate-400"
                                 )}
