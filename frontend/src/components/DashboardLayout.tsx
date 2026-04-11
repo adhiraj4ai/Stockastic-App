@@ -72,7 +72,7 @@ const navItems = [
     },
     { name: 'Financials', href: '/financials', icon: FileText },
     {
-        name: 'Signals & Strategies',
+        name: 'Strategic Hub',
         icon: Layers,
         subItems: [
             { name: 'Intel Hub', href: '/signals', icon: Radar },
@@ -322,7 +322,7 @@ function DashboardContent({
                                                                 item.name === 'Finfolio' ? 'text-emerald-500 dark:text-emerald-400' :
                                                                     item.name === 'Accumulation' ? 'text-orange-500 dark:text-orange-400' :
                                                                         item.name === 'Financials' ? 'text-cyan-500 dark:text-cyan-400' :
-                                                                            item.name === 'Signals & Strategies' ? 'text-pink-500 dark:text-pink-400' :
+                                                                            item.name === 'Strategic Hub' ? 'text-pink-500 dark:text-pink-400' :
                                                                                 item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
                                                                                     'text-slate-900/40 dark:text-slate-500/60'
                                                 } />
@@ -349,7 +349,7 @@ function DashboardContent({
                                                         item.name === 'Chat' ? 'text-purple-500 dark:text-purple-400' :
                                                             item.name === 'Ticker' ? 'text-green-500 dark:text-green-400' :
                                                                 item.name === 'Financials' ? 'text-cyan-500 dark:text-cyan-400' :
-                                                                    item.name === 'Signals & Strategies' ? 'text-pink-500 dark:text-pink-400' :
+                                                                    item.name === 'Strategic Hub' ? 'text-pink-500 dark:text-pink-400' :
                                                                         item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
                                                                             'text-slate-900/40 dark:text-slate-500/60'
                                             } />
@@ -429,7 +429,7 @@ function DashboardContent({
                                 {pathname === '/signals' ? (
                                     <div className="flex flex-col min-w-0">
                                         <h2 className="text-lg font-bold bg-gradient-to-r from-slate-900 to-black dark:from-white dark:to-slate-400 bg-clip-text text-transparent tracking-tight">
-                                            Signal Intelligence Hub
+                                            Strategic Hub
                                         </h2>
                                         <p className="text-[10px] text-slate-500 dark:text-slate-500 font-bold">Unified · Smart Money · Strategies · Whale Watch</p>
                                     </div>

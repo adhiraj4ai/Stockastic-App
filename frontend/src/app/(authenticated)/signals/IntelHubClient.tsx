@@ -1,22 +1,63 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import {
-    TrendingUp, TrendingDown, Zap, Radar, Layers,
-    Search, ArrowRight, Activity, Binary,
-    Briefcase,
+    Activity, Clock, TrendingUp, TrendingDown,
+    Map, List, ChevronRight, RefreshCw, BarChart,
+    Brain, Zap, ExternalLink, Info, CheckCircle2,
+    XCircle, AlertCircle, Search, ArrowRight, Binary,
+    Briefcase, Layers, Radar
 } from 'lucide-react';
+import { num, fixed } from '@/lib/numbers';
 import { cn } from '@/lib/utils';
 import { StockLoader, PageLoader } from '@/components/ui/StockLoader';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import Link from 'next/link';
 import { DailySignalStatus } from '@/components/signals/DailySignalStatus';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import {
     Dialog,
     DialogContent,
+    DialogTitle,
 } from '@/components/ui/dialog';
+
+// ─── Error Boundary ───────────────────────────────────────────────────────────
+class SignalDetailErrorBoundary extends React.Component<
+    { children: React.ReactNode; symbol?: string; onReset: () => void },
+    { hasError: boolean; error?: Error }
+> {
+    constructor(props: any) {
+        super(props);
+        this.state = { hasError: false };
+    }
+    static getDerivedStateFromError(error: Error) {
+        return { hasError: true, error };
+    }
+    componentDidCatch(error: Error) {
+        console.error('[SignalDetail] Render error:', error);
+    }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="flex flex-col items-center justify-center h-full bg-white dark:bg-slate-900 rounded-3xl gap-4 p-10 border border-slate-200 dark:border-slate-800 shadow-2xl">
+                    <div className="text-4xl">⚠️</div>
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white">Signal Detail Unavailable</h3>
+                    <p className="text-sm text-slate-500 text-center max-w-md">
+                        Could not load detailed intelligence for <strong>{this.props.symbol}</strong>. 
+                        This may be due to missing market data.
+                    </p>
+                    <button
+                        onClick={() => { this.setState({ hasError: false }); this.props.onReset(); }}
+                        className="px-4 py-2 text-sm font-bold rounded-lg bg-slate-900 dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity"
+                    >Close</button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
 
 // ─── Shared types ──────────────────────────────────────────────────────────────
 
@@ -65,9 +106,23 @@ const SOURCE_LABELS: Record<string, string> = {
     'BROKER_ACCUMULATION': 'Broker Accumulation',
     'SMART_CROSSOVER': 'Smart Crossover',
     'ICHIMOKU': 'Ichimoku',
+    'DISTRIBUTION_ALERT': 'Distribution Alert',
+    'BELOW_COST_REVERSAL': 'Below Cost Reversal',
+    'VOLUME_BREAKOUT': 'Volume Breakout',
+    'CONCENTRATION_SHIFT': 'Concentration Shift',
+    'ACC_MOMENTUM': 'Acc. Momentum',
+    'PRICE_ACTION': 'Price Action',
+    'MEAN_REVERSAL': 'Mean Reversal',
+    'RSI_DIVERGENCE': 'RSI Divergence',
+    'MACD_DIVERGENCE': 'MACD Divergence',
+    'DOW_SIGNAL': 'Dow Signal',
 };
 
-const WHALE_SOURCES = ['BROKER_ACCUMULATION', 'SMART_CROSSOVER', 'ICHIMOKU'] as const;
+const WHALE_SOURCES = [
+    'BROKER_ACCUMULATION', 'SMART_CROSSOVER', 'ICHIMOKU',
+    'DISTRIBUTION_ALERT', 'BELOW_COST_REVERSAL', 'VOLUME_BREAKOUT',
+    'CONCENTRATION_SHIFT', 'ACC_MOMENTUM',
+] as const;
 
 interface BatchIndicatorData {
     trends: { '5d': number; '10d': number; '1m': number };
@@ -140,8 +195,9 @@ function SignalBadge({ direction }: { direction: 'BUY' | 'SELL' }) {
 }
 
 function TrendPill({ label, val }: { label: string; val?: number }) {
-    const isPos = val !== undefined && val > 0;
-    const isNeg = val !== undefined && val < 0;
+    const nVal = num(val);
+    const isPos = nVal > 0;
+    const isNeg = nVal < 0;
     return (
         <div className="flex flex-col items-center">
             <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{label}</span>
@@ -149,7 +205,7 @@ function TrendPill({ label, val }: { label: string; val?: number }) {
                 'text-[11px] font-black font-mono',
                 isPos ? 'text-emerald-500' : isNeg ? 'text-rose-500' : 'text-slate-400'
             )}>
-                {val !== undefined ? `${val > 0 ? '+' : ''}${val.toFixed(0)}%` : '--'}
+                {val !== undefined ? `${isPos ? '+' : ''}${fixed(val, 0)}%` : '--'}
             </span>
         </div>
     );
@@ -319,14 +375,14 @@ function UnifiedSignalCard({
 
                     <div className="text-right shrink-0">
                         <div className="text-lg font-black font-mono text-slate-900 dark:text-slate-100 tracking-tight leading-none">
-                            Rs.{ltp.toLocaleString()}
+                            Rs.{num(ltp).toLocaleString()}
                         </div>
                         {change !== null && (
                             <div className={cn(
                                 'text-xs font-bold mt-0.5',
-                                change > 0 ? 'text-emerald-500' : change < 0 ? 'text-rose-500' : 'text-slate-400'
+                                num(change) > 0 ? 'text-emerald-500' : num(change) < 0 ? 'text-rose-500' : 'text-slate-400'
                             )}>
-                                {change > 0 ? '+' : ''}{change.toFixed(1)}%
+                                {num(change) > 0 ? '+' : ''}{fixed(change, 1)}%
                             </div>
                         )}
                     </div>
@@ -351,20 +407,20 @@ function UnifiedSignalCard({
                             <span className="text-[9px] text-slate-400 font-bold uppercase">RSI</span>
                             <span className={cn(
                                 'text-[12px] font-black font-mono',
-                                indicators?.rsi && indicators.rsi > 70 ? 'text-rose-500'
-                                    : indicators?.rsi && indicators.rsi < 30 ? 'text-emerald-500'
+                                num(indicators?.rsi) > 70 ? 'text-rose-500'
+                                    : num(indicators?.rsi) < 30 ? 'text-emerald-500'
                                     : 'text-slate-700 dark:text-slate-300'
                             )}>
-                                {indicators?.rsi?.toFixed(1) || '--'}
+                                {fixed(indicators?.rsi, 1, '--')}
                             </span>
                         </div>
                         <div className="flex flex-col">
                             <span className="text-[9px] text-slate-400 font-bold uppercase">MACD</span>
                             <span className={cn(
                                 'text-[12px] font-black font-mono',
-                                indicators?.macd_hist && indicators.macd_hist > 0 ? 'text-emerald-500' : 'text-rose-500'
+                                num(indicators?.macd_hist) > 0 ? 'text-emerald-500' : 'text-rose-500'
                             )}>
-                                {indicators?.macd?.toFixed(1) || '--'}
+                                {fixed(indicators?.macd, 1, '--')}
                             </span>
                         </div>
                         {indicators?.trends && (
@@ -826,7 +882,9 @@ function WhaleWatchView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
                             date={sig.generated_date} strength={sig.strength} reason={sig.rationale}
                             tagline={SOURCE_LABELS[sig.source]} targetPrice={sig.target_price}
                             stopLoss={sig.stop_loss_price} status={sig.status}
-                            indicators={batchIndicators[sig.symbol]} onSelect={onSelect} />
+                            tp1={sig.metadata?.tp1} tp2={sig.metadata?.tp2} tp3={sig.metadata?.tp3}
+                            indicators={batchIndicators[sig.symbol]} smartMoneyMetadata={sig.metadata}
+                            onSelect={onSelect} />
                     ))}
                 </div>
             )}
@@ -923,7 +981,7 @@ export default function IntelHubClient() {
                 {/* ── Page header ── */}
                 <div className="flex flex-col sm:flex-row sm:items-end gap-4">
                     <div>
-                        <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Signal Intelligence</h1>
+                        <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Strategic Hub</h1>
                         <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Real-time signals from multiple engines, ranked by conviction</p>
                     </div>
                     {/* Historical toggle */}
@@ -978,21 +1036,26 @@ export default function IntelHubClient() {
             {/* Detail modal */}
             <Dialog open={!!selectedSignal} onOpenChange={() => setSelectedSignal(null)}>
                 <DialogContent className="w-[90vw] h-[90vh] max-w-none sm:max-w-none p-0 overflow-hidden border-none bg-transparent shadow-none">
+                    <VisuallyHidden.Root>
+                        <DialogTitle>{selectedSignal?.symbol || 'Signal'} Intelligence</DialogTitle>
+                    </VisuallyHidden.Root>
                     {selectedSignal && (
-                        <DailySignalStatus
-                            symbol={selectedSignal.symbol}
-                            cmp={selectedSignal.currentPrice || selectedSignal.ltp}
-                            entryPrice={selectedSignal.ltp}
-                            strength={selectedSignal.strength}
-                            direction={selectedSignal.direction}
-                            targetPrice={selectedSignal.targetPrice}
-                            stopLoss={selectedSignal.stopLoss}
-                            tp1={selectedSignal.tp1}
-                            tp2={selectedSignal.tp2}
-                            tp3={selectedSignal.tp3}
-                            status={selectedSignal.status}
-                            className="shadow-2xl border-slate-200 dark:border-slate-800"
-                        />
+                        <SignalDetailErrorBoundary symbol={selectedSignal.symbol} onReset={() => setSelectedSignal(null)}>
+                            <DailySignalStatus
+                                symbol={selectedSignal.symbol}
+                                cmp={selectedSignal.currentPrice || selectedSignal.ltp || 0}
+                                entryPrice={selectedSignal.ltp || 0}
+                                strength={selectedSignal.strength || 50}
+                                direction={selectedSignal.direction}
+                                targetPrice={selectedSignal.targetPrice}
+                                stopLoss={selectedSignal.stopLoss}
+                                tp1={selectedSignal.tp1}
+                                tp2={selectedSignal.tp2}
+                                tp3={selectedSignal.tp3}
+                                status={selectedSignal.status}
+                                className="shadow-2xl border-slate-200 dark:border-slate-800"
+                            />
+                        </SignalDetailErrorBoundary>
                     )}
                 </DialogContent>
             </Dialog>

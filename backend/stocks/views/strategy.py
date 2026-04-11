@@ -991,6 +991,217 @@ class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(result)
 
     @action(detail=False, methods=['get'])
+    def performance_detailed(self, request):
+        """
+        Deep per-engine analytics: profit factor, expectancy, streaks,
+        monthly performance, PnL distribution, buy/sell splits, top symbols.
+        """
+        from django.db.models import Count, Q, Avg, Sum, Max, Min, F
+        from ..models import GeneratedSignal
+        from collections import defaultdict
+        from itertools import groupby
+
+        all_signals = list(
+            GeneratedSignal.objects.filter(
+                status__in=['WON', 'LOST', 'ACTIVE']
+            ).values(
+                'id', 'source', 'symbol', 'signal', 'status',
+                'pnl_percent', 'generated_date', 'closed_date',
+                'ltp', 'target_price', 'stop_loss_price',
+                'strength', 'signal_tier', 'rationale', 'metadata'
+            ).order_by('source', 'generated_date')
+        )
+
+        # ── Group by source ──────────────────────────────────────────
+        source_groups = defaultdict(list)
+        for sig in all_signals:
+            source_groups[sig['source']].append(sig)
+
+        engines = []
+        total_profit = 0
+        total_loss = 0
+        total_resolved = 0
+        total_won = 0
+        total_signals = len(all_signals)
+
+        for source, sigs in source_groups.items():
+            won = [s for s in sigs if s['status'] == 'WON']
+            lost = [s for s in sigs if s['status'] == 'LOST']
+            active = [s for s in sigs if s['status'] == 'ACTIVE']
+            resolved = won + lost
+
+            # ── Basic stats ──────────────────────────────────
+            n_won = len(won)
+            n_lost = len(lost)
+            n_resolved = n_won + n_lost
+            win_rate = (n_won / n_resolved * 100) if n_resolved > 0 else 0
+
+            won_pnls = [float(s['pnl_percent'] or 0) for s in won]
+            lost_pnls = [float(s['pnl_percent'] or 0) for s in lost]
+            all_pnls = won_pnls + lost_pnls
+
+            avg_win = sum(won_pnls) / len(won_pnls) if won_pnls else 0
+            avg_loss = sum(lost_pnls) / len(lost_pnls) if lost_pnls else 0
+
+            gross_profit = sum(p for p in all_pnls if p > 0)
+            gross_loss = abs(sum(p for p in all_pnls if p < 0))
+            profit_factor = round(gross_profit / gross_loss, 2) if gross_loss > 0 else (999.0 if gross_profit > 0 else 0)
+
+            # Expectancy = (WR * avg_win) + ((1-WR) * avg_loss)
+            wr_decimal = win_rate / 100
+            expectancy = round((wr_decimal * avg_win) + ((1 - wr_decimal) * avg_loss), 2) if n_resolved > 0 else 0
+
+            # ── Consecutive streaks ──────────────────────────
+            max_consec_wins = 0
+            max_consec_losses = 0
+            cur_wins = 0
+            cur_losses = 0
+            sorted_resolved = sorted(resolved, key=lambda x: x['generated_date'])
+            for s in sorted_resolved:
+                if s['status'] == 'WON':
+                    cur_wins += 1
+                    cur_losses = 0
+                    max_consec_wins = max(max_consec_wins, cur_wins)
+                else:
+                    cur_losses += 1
+                    cur_wins = 0
+                    max_consec_losses = max(max_consec_losses, cur_losses)
+
+            # ── Average days to close ────────────────────────
+            days_list = []
+            for s in resolved:
+                if s['generated_date'] and s['closed_date']:
+                    delta = (s['closed_date'] - s['generated_date']).days
+                    if delta >= 0:
+                        days_list.append(delta)
+            avg_days = round(sum(days_list) / len(days_list), 1) if days_list else 0
+
+            # ── Best / worst signal ──────────────────────────
+            best_pnl = max(all_pnls) if all_pnls else 0
+            worst_pnl = min(all_pnls) if all_pnls else 0
+
+            # ── Monthly performance (last 6 months) ──────────
+            monthly = defaultdict(lambda: {'won': 0, 'lost': 0, 'pnl': 0.0})
+            for s in resolved:
+                if s['generated_date']:
+                    month_key = s['generated_date'].strftime('%Y-%m')
+                    pnl = float(s['pnl_percent'] or 0)
+                    monthly[month_key]['pnl'] += pnl
+                    if s['status'] == 'WON':
+                        monthly[month_key]['won'] += 1
+                    else:
+                        monthly[month_key]['lost'] += 1
+
+            sorted_months = sorted(monthly.items(), key=lambda x: x[0], reverse=True)[:6]
+            monthly_perf = [
+                {'month': m, 'won': d['won'], 'lost': d['lost'], 'pnl': round(d['pnl'], 2)}
+                for m, d in reversed(sorted_months)
+            ]
+
+            # Consistency score: % of months that had positive net PnL
+            profitable_months = sum(1 for _, d in monthly.items() if d['pnl'] > 0)
+            total_months = len(monthly) or 1
+            consistency = round(profitable_months / total_months * 100)
+
+            # ── PnL distribution buckets ─────────────────────
+            buckets = {'< -5%': 0, '-5% to -2%': 0, '-2% to 0%': 0,
+                       '0% to 2%': 0, '2% to 5%': 0, '5% to 10%': 0, '> 10%': 0}
+            for p in all_pnls:
+                if p < -5:
+                    buckets['< -5%'] += 1
+                elif p < -2:
+                    buckets['-5% to -2%'] += 1
+                elif p < 0:
+                    buckets['-2% to 0%'] += 1
+                elif p < 2:
+                    buckets['0% to 2%'] += 1
+                elif p < 5:
+                    buckets['2% to 5%'] += 1
+                elif p < 10:
+                    buckets['5% to 10%'] += 1
+                else:
+                    buckets['> 10%'] += 1
+
+            # ── Buy vs Sell splits ───────────────────────────
+            def direction_stats(direction):
+                d_sigs = [s for s in sigs if s['signal'] == direction]
+                d_won = sum(1 for s in d_sigs if s['status'] == 'WON')
+                d_lost = sum(1 for s in d_sigs if s['status'] == 'LOST')
+                d_active = sum(1 for s in d_sigs if s['status'] == 'ACTIVE')
+                d_resolved = d_won + d_lost
+                return {
+                    'total': len(d_sigs), 'won': d_won, 'lost': d_lost,
+                    'active': d_active,
+                    'win_rate': round(d_won / d_resolved * 100, 1) if d_resolved > 0 else 0
+                }
+
+            buy_stats = direction_stats('BUY')
+            sell_stats = direction_stats('SELL')
+
+            # ── Top / worst symbols ──────────────────────────
+            sym_pnl = defaultdict(lambda: {'pnl': 0.0, 'count': 0})
+            for s in resolved:
+                pnl = float(s['pnl_percent'] or 0)
+                sym_pnl[s['symbol']]['pnl'] += pnl
+                sym_pnl[s['symbol']]['count'] += 1
+
+            sorted_syms = sorted(sym_pnl.items(), key=lambda x: x[1]['pnl'], reverse=True)
+            top_symbols = [s[0] for s in sorted_syms[:5] if s[1]['pnl'] > 0]
+            worst_symbols = [s[0] for s in sorted_syms[-5:] if s[1]['pnl'] < 0]
+
+            # ── Accumulate for overall ───────────────────────
+            total_profit += gross_profit
+            total_loss += gross_loss
+            total_resolved += n_resolved
+            total_won += n_won
+
+            engines.append({
+                'source': source,
+                'total': len(sigs),
+                'won': n_won,
+                'lost': n_lost,
+                'active': len(active),
+                'win_rate': round(win_rate, 1),
+                'avg_win_pnl': round(avg_win, 2),
+                'avg_loss_pnl': round(avg_loss, 2),
+                'profit_factor': profit_factor,
+                'expectancy': expectancy,
+                'max_consecutive_wins': max_consec_wins,
+                'max_consecutive_losses': max_consec_losses,
+                'avg_days_to_close': avg_days,
+                'best_signal_pnl': round(best_pnl, 2),
+                'worst_signal_pnl': round(worst_pnl, 2),
+                'consistency_score': consistency,
+                'monthly_performance': monthly_perf,
+                'pnl_distribution': buckets,
+                'buy_stats': buy_stats,
+                'sell_stats': sell_stats,
+                'top_symbols': top_symbols,
+                'worst_symbols': worst_symbols,
+            })
+
+        # Sort engines by profit_factor desc
+        engines.sort(key=lambda e: e['profit_factor'], reverse=True)
+
+        overall_wr = round(total_won / total_resolved * 100, 1) if total_resolved > 0 else 0
+        best_engine = engines[0]['source'] if engines else None
+        worst_engine = engines[-1]['source'] if engines else None
+
+        return Response({
+            'engines': engines,
+            'overall': {
+                'total_signals': total_signals,
+                'total_resolved': total_resolved,
+                'overall_win_rate': overall_wr,
+                'total_profit_pnl': round(total_profit, 2),
+                'total_loss_pnl': round(-total_loss, 2),
+                'net_pnl': round(total_profit - total_loss, 2),
+                'best_engine': best_engine,
+                'worst_engine': worst_engine,
+            }
+        })
+
+    @action(detail=False, methods=['get'])
     def summary(self, request):
         """Aggregated counts by source and signal type for the latest date."""
         from ..models import GeneratedSignal

@@ -5,9 +5,10 @@ import { cn } from '@/lib/utils';
 import {
     Zap, TrendingUp, TrendingDown,
     Activity, ArrowUpRight, ArrowDownRight,
-    Briefcase, ExternalLink, Clock
+    Briefcase, ExternalLink, Clock, Brain
 } from 'lucide-react';
 import api from '@/lib/api';
+import { num, fixed, formatPrice, calcPct } from '@/lib/numbers';
 import { StockLoader } from '@/components/ui/StockLoader';
 
 interface DailySignalStatusProps {
@@ -33,9 +34,12 @@ interface SignalHistory {
     last_close: string;
 }
 
+// ─── Numeric Helpers ──────────────────────────────────────────────────────────
+
 const getActionability = (entryPrice: number, cmp?: number, direction?: string) => {
-    if (!cmp || direction === 'HOLD' || direction === 'NEUTRAL') return null;
-    const ch = ((cmp - entryPrice) / entryPrice) * 100;
+    const safeCmp = num(cmp, 0);
+    if (safeCmp === 0 || direction === 'HOLD' || direction === 'NEUTRAL') return null;
+    const ch = ((safeCmp - entryPrice) / entryPrice) * 100;
     if (direction === 'BUY') {
         if (ch < -5) return { label: 'Invalidated', status: 'invalid' };
         if (ch > 3) return { label: 'Entry Missed', status: 'missed' };
@@ -51,14 +55,23 @@ const getActionability = (entryPrice: number, cmp?: number, direction?: string) 
 
 // ─── Compact Price Ladder ─────────────────────────────────────────────────────
 
-function PriceLadder({ sl, entry, cmp, tp1, tp2, tp3 }: {
+function PriceLadder({ sl: rawSl, entry: rawEntry, cmp: rawCmp, tp1: rawTp1, tp2: rawTp2, tp3: rawTp3 }: {
     sl: number; entry: number; cmp: number; tp1: number; tp2: number; tp3: number;
 }) {
-    const pts = [sl, entry, cmp, tp1, tp2, tp3];
+    // Defensive: ensure all values are valid finite numbers
+    const entry = num(rawEntry);
+    const cmp = num(rawCmp, entry);
+    const sl = num(rawSl) > 0 ? num(rawSl) : entry * 0.96;
+    const tp1 = num(rawTp1) > 0 ? num(rawTp1) : entry * 1.03;
+    const tp2 = num(rawTp2) > 0 ? num(rawTp2) : entry * 1.06;
+    const tp3 = num(rawTp3) > 0 ? num(rawTp3) : entry * 1.10;
+
+    const pts = [sl, entry, cmp, tp1, tp2, tp3].filter(n => num(n) !== 0);
+    if (pts.length === 0) return null;
     const min = Math.min(...pts);
     const max = Math.max(...pts);
     const range = max - min || 1;
-    const pct = (v: number) => ((v - min) / range) * 100;
+    const pct = (v: number) => ((num(v) - min) / range) * 100;
 
     const nodes: { price: number; label: string; variant: 'danger' | 'entry' | 'live' | 'tp' | 'tp-hi' }[] = [
         { price: sl, label: 'SL', variant: 'danger' },
@@ -106,7 +119,7 @@ function PriceLadder({ sl, entry, cmp, tp1, tp2, tp3 }: {
                                 </div>
                                 <div className="absolute top-7 left-1/2 -translate-x-1/2 text-center whitespace-nowrap">
                                     <div className="text-[10px] font-bold text-amber-500 tracking-tight">CMP</div>
-                                    <div className="text-[11px] font-bold text-slate-500 tabular-nums">{n.price.toFixed(0)}</div>
+                                    <div className="text-[11px] font-bold text-slate-500 tabular-nums">{num(n.price).toLocaleString(undefined, { maximumFractionDigits: 1 })}</div>
                                 </div>
                             </>
                         ) : (
@@ -121,7 +134,7 @@ function PriceLadder({ sl, entry, cmp, tp1, tp2, tp3 }: {
                                     n.variant === 'entry' || n.variant === 'danger' ? 'top-7' : '-top-5'
                                 )}>
                                     <div className={cn('text-[10px] font-bold tracking-tight', labelCls[n.variant])}>{n.label}</div>
-                                    <div className="text-[11px] font-bold text-slate-500 tabular-nums">{n.price.toFixed(0)}</div>
+                                    <div className="text-[11px] font-bold text-slate-500 tabular-nums">{num(n.price).toLocaleString(undefined, { maximumFractionDigits: 1 })}</div>
                                 </div>
                             </>
                         )}
@@ -188,21 +201,22 @@ export function DailySignalStatus({
     // SMAs + Pivot S&R from stored technical indicators
     const storedInds = pageData?.technical_indicators || [];
     const getStoredInd = (p: string) => storedInds.find((i: any) => i.name.toUpperCase().includes(p.toUpperCase()));
-    const sma50 = parseFloat(getStoredInd('50-DAY SMA')?.value || '0');
-    const sma200 = parseFloat(getStoredInd('200-DAY SMA')?.value || '0');
-    const atr = parseFloat(getStoredInd('ATR')?.value || '0');
-    const adx = parseFloat(getStoredInd('ADX')?.value || '0');
-    const bbp = parseFloat(getStoredInd('BOLLINGER')?.value || getStoredInd('BB%B')?.value || '0');
-    const stochK = parseFloat(getStoredInd('STOCHASTIC')?.value || getStoredInd('%K')?.value || '0');
+    const safeParse = (v: any) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
+    const sma50 = safeParse(getStoredInd('50-DAY SMA')?.raw_value ?? getStoredInd('50-DAY SMA')?.value);
+    const sma200 = safeParse(getStoredInd('200-DAY SMA')?.raw_value ?? getStoredInd('200-DAY SMA')?.value);
+    const atr = safeParse(getStoredInd('ATR')?.raw_value ?? getStoredInd('ATR')?.value);
+    const adx = safeParse(getStoredInd('ADX')?.raw_value ?? getStoredInd('ADX')?.value);
+    const bbp = safeParse(getStoredInd('BOLLINGER')?.raw_value ?? getStoredInd('BB%B')?.raw_value);
+    const stochK = safeParse(getStoredInd('STOCHASTIC')?.raw_value ?? getStoredInd('%K')?.raw_value);
 
     // Pivot points
-    const pivotP  = parseFloat(getStoredInd('PIVOT (P)')?.value  || getStoredInd('PIVOT')?.value  || '0');
-    const pivotR1 = parseFloat(getStoredInd('RESISTANCE 1')?.value || getStoredInd('R1')?.value || '0');
-    const pivotR2 = parseFloat(getStoredInd('RESISTANCE 2')?.value || getStoredInd('R2')?.value || '0');
-    const pivotR3 = parseFloat(getStoredInd('RESISTANCE 3')?.value || getStoredInd('R3')?.value || '0');
-    const pivotS1 = parseFloat(getStoredInd('SUPPORT 1')?.value  || getStoredInd('S1')?.value || '0');
-    const pivotS2 = parseFloat(getStoredInd('SUPPORT 2')?.value  || getStoredInd('S2')?.value || '0');
-    const pivotS3 = parseFloat(getStoredInd('SUPPORT 3')?.value  || getStoredInd('S3')?.value || '0');
+    const pivotP  = safeParse(getStoredInd('PIVOT (P)')?.raw_value  ?? getStoredInd('PIVOT')?.raw_value);
+    const pivotR1 = safeParse(getStoredInd('RESISTANCE 1')?.raw_value ?? getStoredInd('R1')?.raw_value);
+    const pivotR2 = safeParse(getStoredInd('RESISTANCE 2')?.raw_value ?? getStoredInd('R2')?.raw_value);
+    const pivotR3 = safeParse(getStoredInd('RESISTANCE 3')?.raw_value ?? getStoredInd('R3')?.raw_value);
+    const pivotS1 = safeParse(getStoredInd('SUPPORT 1')?.raw_value  ?? getStoredInd('S1')?.raw_value);
+    const pivotS2 = safeParse(getStoredInd('SUPPORT 2')?.raw_value  ?? getStoredInd('S2')?.raw_value);
+    const pivotS3 = safeParse(getStoredInd('SUPPORT 3')?.raw_value  ?? getStoredInd('S3')?.raw_value);
 
     const primaryTarget = targetPrice || (direction === 'BUY' ? entryPrice * 1.05 : entryPrice * 0.95);
     const primaryStop = stopLoss || (direction === 'BUY' ? cmp * 0.96 : cmp * 1.04);
@@ -303,13 +317,13 @@ export function DailySignalStatus({
                                 <div className="text-center">
                                     <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-tight mb-0.5">RSI</div>
                                     <div className={cn('text-sm font-bold tabular-nums',
-                                        rsi > 70 ? 'text-rose-500' : rsi < 30 ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-300'
-                                    )}>{rsi.toFixed(1)}</div>
+                                        num(rsi) > 70 ? 'text-rose-500' : num(rsi) < 30 ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-300'
+                                    )}>{fixed(rsi, 1)}</div>
                                 </div>
                                 <div className="text-center">
                                     <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-tight mb-0.5">MACD</div>
-                                    <div className={cn('text-sm font-bold tabular-nums', macdh > 0 ? 'text-emerald-500' : 'text-rose-500')}>
-                                        {macdh.toFixed(2)}
+                                    <div className={cn('text-sm font-bold tabular-nums', num(macdh) > 0 ? 'text-emerald-500' : 'text-rose-500')}>
+                                        {fixed(macdh, 2)}
                                     </div>
                                 </div>
                             </div>
@@ -317,12 +331,12 @@ export function DailySignalStatus({
                             <div className="text-right">
                                 <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-tight mb-0.5">Market price</div>
                                 <div className="text-xl font-bold tabular-nums text-slate-900 dark:text-slate-100">
-                                    Rs.{cmp.toLocaleString()}
+                                    Rs.{num(cmp).toLocaleString()}
                                 </div>
                                 <div className="flex items-center gap-1.5 justify-end mt-0.5">
-                                    <span className="text-[10px] font-bold text-slate-400 tracking-tight">Entry Rs.{entryPrice.toLocaleString()}</span>
-                                    <span className={cn('text-[10px] font-bold tabular-nums', change > 0 ? 'text-emerald-500' : 'text-rose-500')}>
-                                        {change > 0 ? '+' : ''}{change.toFixed(2)}%
+                                    <span className="text-[10px] font-bold text-slate-400 tracking-tight">Entry Rs.{num(entryPrice).toLocaleString()}</span>
+                                    <span className={cn('text-[10px] font-bold tabular-nums', num(change) > 0 ? 'text-emerald-500' : 'text-rose-500')}>
+                                        {num(change) > 0 ? '+' : ''}{fixed(change, 2)}%
                                     </span>
                                 </div>
                             </div>
@@ -372,32 +386,32 @@ export function DailySignalStatus({
                                 <div className="flex items-center justify-between mb-1.5">
                                     <span className="text-[10px] font-bold text-slate-400 tracking-tight">RSI (14)</span>
                                     <span className={cn('text-[11px] font-bold tabular-nums',
-                                        rsi > 70 ? 'text-rose-500' : rsi < 30 ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-300'
-                                    )}>{rsi.toFixed(1)}</span>
+                                        num(rsi) > 70 ? 'text-rose-500' : num(rsi) < 30 ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-300'
+                                    )}>{fixed(rsi, 1)}</span>
                                 </div>
                                 <div className="h-1 bg-gradient-to-r from-emerald-200 via-slate-200 to-rose-200 dark:from-emerald-900/40 dark:via-slate-700 dark:to-rose-900/40 rounded-full relative">
                                     <div
                                         className={cn('absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-white dark:border-slate-800 shadow',
-                                            rsi > 70 ? 'bg-rose-400' : rsi < 30 ? 'bg-emerald-400' : 'bg-slate-600 dark:bg-slate-300'
+                                            num(rsi) > 70 ? 'bg-rose-400' : num(rsi) < 30 ? 'bg-emerald-400' : 'bg-slate-600 dark:bg-slate-300'
                                         )}
-                                        style={{ left: `calc(${Math.min(rsi, 100)}% - 6px)` }}
+                                        style={{ left: `calc(${Math.min(num(rsi), 100)}% - 6px)` }}
                                     />
                                 </div>
                             </div>
                             <div className="p-3 bg-slate-50/30 dark:bg-slate-900/30 rounded-2xl">
                                 <div className="flex items-center justify-between mb-1.5">
                                     <span className="text-xs font-bold text-slate-400">MACD Hist.</span>
-                                    <span className={cn('text-xs font-bold tabular-nums', macdh > 0 ? 'text-emerald-500' : 'text-rose-500')}>
-                                        {macdh > 0 ? '+' : ''}{macdh.toFixed(2)}
+                                    <span className={cn('text-xs font-bold tabular-nums', num(macdh) > 0 ? 'text-emerald-500' : 'text-rose-500')}>
+                                        {num(macdh) > 0 ? '+' : ''}{fixed(macdh, 2)}
                                     </span>
                                 </div>
                                 <div className="h-5 bg-slate-50 dark:bg-slate-800/50 rounded flex items-center gap-0.5 px-1 overflow-hidden">
                                     {[...Array(14)].map((_, i) => {
-                                        const active = macdh > 0 ? i >= 7 : i < 7;
+                                        const active = num(macdh) > 0 ? i >= 7 : i < 7;
                                         return (
                                             <div key={i}
-                                                className={cn('flex-1 rounded-full', active ? (macdh > 0 ? 'bg-emerald-400' : 'bg-rose-400') : 'bg-slate-200 dark:bg-slate-700')}
-                                                style={{ height: active ? `${Math.min(90, Math.abs(macdh) * 15 + 20)}%` : '2px' }}
+                                                className={cn('flex-1 rounded-full', active ? (num(macdh) > 0 ? 'bg-emerald-400' : 'bg-rose-400') : 'bg-slate-200 dark:bg-slate-700')}
+                                                style={{ height: active ? `${Math.min(90, Math.abs(num(macdh)) * 15 + 20)}%` : '2px' }}
                                             />
                                         );
                                     })}
@@ -408,13 +422,13 @@ export function DailySignalStatus({
                                     <span className="text-xs font-semibold text-slate-400">{t.label}</span>
                                     <div className="flex items-center gap-1">
                                         <div className={cn('w-4 h-4 rounded flex items-center justify-center',
-                                            t.val > 0 ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500' : t.val < 0 ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-500' : 'bg-slate-100 text-slate-400'
+                                            num(t.val) > 0 ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500' : num(t.val) < 0 ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-500' : 'bg-slate-100 text-slate-400'
                                         )}>
-                                            {t.val > 0 ? <ArrowUpRight size={10} /> : t.val < 0 ? <ArrowDownRight size={10} /> : <Activity size={10} />}
+                                            {num(t.val) > 0 ? <ArrowUpRight size={10} /> : num(t.val) < 0 ? <ArrowDownRight size={10} /> : <Activity size={10} />}
                                         </div>
                                         <span className={cn('text-xs font-bold tabular-nums',
-                                            t.val > 0 ? 'text-emerald-600 dark:text-emerald-400' : t.val < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'
-                                        )}>{t.val > 0 ? '+' : ''}{t.val.toFixed(1)}%</span>
+                                            num(t.val) > 0 ? 'text-emerald-600 dark:text-emerald-400' : num(t.val) < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'
+                                        )}>{num(t.val) > 0 ? '+' : ''}{fixed(t.val, 1)}%</span>
                                     </div>
                                 </div>
                             ))}
@@ -425,8 +439,8 @@ export function DailySignalStatus({
                     <div className="p-3 bg-slate-50/30 dark:bg-slate-900/30 rounded-2xl">
                         <div className="text-xs font-bold text-slate-400 tracking-wider mb-2">Moving averages</div>
                         {[
-                            { label: '50-Day SMA', val: sma50, dot: 'bg-amber-400' },
-                            { label: '200-Day SMA', val: sma200, dot: 'bg-slate-400' },
+                            { label: '50-Day SMA', val: num(sma50), dot: 'bg-amber-400' },
+                            { label: '200-Day SMA', val: num(sma200), dot: 'bg-slate-400' },
                         ].map((s, i) => (
                             <div key={s.label} className={cn('flex items-center justify-between py-2', i > 0 && 'border-t border-slate-100 dark:border-slate-800')}>
                                 <div className="flex items-center gap-2">
@@ -434,9 +448,9 @@ export function DailySignalStatus({
                                     <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{s.label}</span>
                                 </div>
                                 <div className="text-right">
-                                    <span className="text-xs font-bold tabular-nums text-slate-800 dark:text-slate-200">Rs.{s.val.toLocaleString()}</span>
-                                    <span className={cn('ml-2 text-xs font-semibold', cmp > s.val ? 'text-emerald-500' : 'text-rose-500')}>
-                                        {cmp > s.val ? '▲' : '▼'}
+                                    <span className="text-xs font-bold tabular-nums text-slate-800 dark:text-slate-200">Rs.{num(s.val).toLocaleString()}</span>
+                                    <span className={cn('ml-2 text-xs font-semibold', num(cmp) > num(s.val) ? 'text-emerald-500' : 'text-rose-500')}>
+                                        {num(cmp) > num(s.val) ? '▲' : '▼'}
                                     </span>
                                 </div>
                             </div>
@@ -452,8 +466,10 @@ export function DailySignalStatus({
                             </div>
                             <div className="space-y-2">
                                 {[...brokers.slice(0, 1).map(b => ({ ...b, tag: '1M' })), ...allTimeBrokers.slice(0, 1).map(b => ({ ...b, tag: 'AT' }))].map(b => {
-                                    const spread = (((cmp - b.wac) / b.wac) * 100).toFixed(1);
-                                    const inProfit = cmp > b.wac;
+                                    const bWac = num(b.wac);
+                                    if (bWac === 0) return null;
+                                    const spread = fixed(((num(cmp) - bWac) / bWac) * 100, 1);
+                                    const inProfit = num(cmp) > bWac;
                                     return (
                                         <div key={`${b.broker}-${b.tag}`} className="p-3 flex items-center justify-between border-b border-slate-100 last:border-0 dark:border-slate-800">
                                             <div className="flex items-center gap-2.5">
@@ -462,7 +478,7 @@ export function DailySignalStatus({
                                                 </div>
                                                 <div>
                                                     <div className="text-xs font-semibold text-slate-700 dark:text-slate-300">Broker {b.broker}</div>
-                                                    <div className="text-xs text-slate-400">{b.tag === '1M' ? '1-month' : 'All-time'} · WAC Rs.{b.wac}</div>
+                                                    <div className="text-xs text-slate-400">{b.tag === '1M' ? '1-month' : 'All-time'} · WAC Rs.{bWac}</div>
                                                 </div>
                                             </div>
                                             <div className={cn('text-xs font-bold tabular-nums', inProfit ? 'text-emerald-500' : 'text-rose-500')}>
@@ -478,18 +494,68 @@ export function DailySignalStatus({
                     {/* Advisory */}
                     <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 p-4 flex items-start gap-3 mt-auto">
                         <div className="p-1.5 rounded-xl bg-amber-100 dark:bg-amber-900/30 shrink-0">
-                            <Zap size={12} className="text-amber-500" />
+                            < Zap size={12} className="text-amber-500" />
                         </div>
                         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                            Signal gravity is {strength > 60 ? 'high' : 'stabilising'}.
-                            Rs.{primaryStop.toFixed(0)} is the primary invalidation level.
+                            Signal gravity is {num(strength) > 60 ? 'high' : 'stabilising'}.
+                            Rs.{fixed(primaryStop, 0)} is the primary invalidation level.
                             {isBuy ? ' Trail stop up as each target is reached.' : ' Trail stop down as each target is reached.'}
                         </p>
                     </div>
                 </div>
 
                 {/* ── MIDDLE: Strategy signal sequence ── */}
-                <div className="p-6 flex flex-col gap-4 overflow-y-auto no-scrollbar">
+                <div className="p-6 flex flex-col gap-5 overflow-y-auto no-scrollbar">
+
+                    {/* Analytical Justification Engine */}
+                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 shadow-inner border border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Brain size={14} className="text-indigo-500" />
+                            <span className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Analytical Justification</span>
+                        </div>
+                        <div className="space-y-4">
+                            {/* Key Factors */}
+                            <div className="flex flex-wrap gap-2">
+                                {num(strength) > 75 && (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800">High Conviction</span>
+                                )}
+                                {num(accumData?.accumulation_ratio) > 60 && (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">Strong Accumulation</span>
+                                )}
+                                {num(rsi) < 35 && direction === 'BUY' && (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-100 dark:border-amber-800">Technically Oversold</span>
+                                )}
+                                {num(rsi) > 65 && direction === 'SELL' && (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-100 dark:border-rose-800">Technically Overbought</span>
+                                )}
+                                {num(cmp) > num(sma200) && direction === 'BUY' && (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-100 dark:border-blue-800">Long-term Uptrend</span>
+                                )}
+                            </div>
+
+                            {/* Reasoning */}
+                            <div className="relative pl-3 before:absolute before:left-0 before:top-1 before:bottom-1 before:w-0.5 before:bg-indigo-200 dark:before:bg-indigo-900">
+                                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                                    {direction === 'BUY' ? (
+                                        <>
+                                            This {history[0]?.strategy_name || 'strategy'} buy signal is triggered by {num(accumData?.accumulation_ratio) > 55 ? 'elevated institutional interest' : 'technical price recovery'}. 
+                                            The {num(rsi) < 40 ? 'low RSI indicates a low-risk entry point' : 'momentum is building as RSI stabilizes'}. 
+                                            {num(macdh) > 0 ? ' MACD histogram shows positive expansion, confirming the breakout.' : ' MACD is lagging but starting to curl up.'}
+                                            {num(cmp) > num(sma50) && ' Price holding above 50-SMA provides dynamic structural support.'}
+                                        </>
+                                    ) : direction === 'SELL' ? (
+                                        <>
+                                            A sell signal has materialized due to {num(rsi) > 60 ? 'waning momentum at overbought levels' : 'structural breakdown in price action'}. 
+                                            {num(accumData?.accumulation_ratio) < 45 ? ' Net distribution by larger entities suggests profit taking.' : ' Distribution pressure is currently neutral.'}
+                                            {num(macdh) < 0 ? ' Bearish MACD crossover increases the probability of a correction.' : ' MACD remains positive but is losing height.'}
+                                        </>
+                                    ) : (
+                                        'Scanning market conditions for high-probability setups. Current monitoring shows neutral bias with no immediate entry trigger.'
+                                    )}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
 
                     {/* Accumulation Pressure */}
                     {accumData && (
@@ -498,23 +564,23 @@ export function DailySignalStatus({
                                 <span className="text-xs font-bold text-slate-400 tracking-wider">Accumulation (1w)</span>
                                 <span className={cn(
                                     'text-xs font-bold px-2 py-0.5 rounded-lg',
-                                    accumData.net_qty > 0
+                                    num(accumData.net_qty) > 0
                                         ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
                                         : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'
                                 )}>
-                                    {accumData.net_qty > 0 ? 'Accumulating' : 'Distributing'}
+                                    {num(accumData.net_qty) > 0 ? 'Accumulating' : 'Distributing'}
                                 </span>
                             </div>
                             <div className="h-2 rounded-full overflow-hidden bg-rose-100 dark:bg-rose-900/30 mb-2">
                                 <div
                                     className="h-full rounded-full bg-emerald-400 dark:bg-emerald-500 transition-all duration-700"
-                                    style={{ width: `${Math.min(Math.max(accumData.accumulation_ratio ?? 50, 0), 100)}%` }}
+                                    style={{ width: `${Math.min(Math.max(num(accumData.accumulation_ratio, 50), 0), 100)}%` }}
                                 />
                             </div>
                             <div className="flex justify-between text-xs text-slate-400 tabular-nums">
-                                <span>Buy {(accumData.accumulation_ratio ?? 50).toFixed(1)}%</span>
-                                <span className={cn('font-semibold', accumData.net_qty > 0 ? 'text-emerald-500' : 'text-rose-500')}>
-                                    Net {accumData.net_qty > 0 ? '+' : ''}{accumData.net_qty?.toLocaleString()} qty
+                                <span>Buy {fixed(accumData.accumulation_ratio, 1, '50')}%</span>
+                                <span className={cn('font-semibold', num(accumData.net_qty) > 0 ? 'text-emerald-500' : 'text-rose-500')}>
+                                    Net {num(accumData.net_qty) > 0 ? '+' : ''}{num(accumData.net_qty).toLocaleString()} qty
                                 </span>
                             </div>
                         </div>
@@ -528,21 +594,21 @@ export function DailySignalStatus({
                         </div>
                         <div className="rounded-xl border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/30 overflow-hidden">
                             {[
-                                { label: 'TP1', price: finalTp1, color: 'text-emerald-500', dot: 'bg-emerald-400' },
-                                { label: 'TP2', price: finalTp2, color: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500' },
-                                { label: 'TP3', price: finalTp3, color: 'text-sky-500', dot: 'bg-sky-400' },
+                                { label: 'TP1', price: num(finalTp1), color: 'text-emerald-500', dot: 'bg-emerald-400' },
+                                { label: 'TP2', price: num(finalTp2), color: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500' },
+                                { label: 'TP3', price: num(finalTp3), color: 'text-sky-500', dot: 'bg-sky-400' },
                             ].map((tp, i) => {
-                                const risk = Math.max(0.01, Math.abs(entryPrice - primaryStop));
-                                const reward = Math.abs(tp.price - entryPrice);
-                                const rr = (reward / risk).toFixed(2);
+                                const rr = calcPct(tp.price, entryPrice, '0'); // Wait, calcPct is for change. RR is reward / risk.
+                                const risk = Math.max(0.01, Math.abs(num(entryPrice) - num(primaryStop)));
+                                const reward = Math.abs(num(tp.price) - num(entryPrice));
+                                const actualRR = fixed(reward / risk, 2);
                                 
-                                // Calculate actual return percentage (positive for successful shorts)
                                 const returnPct = isBuy 
-                                    ? ((tp.price - entryPrice) / entryPrice) * 100 
-                                    : ((entryPrice - tp.price) / entryPrice) * 100;
+                                    ? ((num(tp.price) - num(entryPrice)) / num(entryPrice)) * 100 
+                                    : ((num(entryPrice) - num(tp.price)) / num(entryPrice)) * 100;
                                     
                                 const isProfit = returnPct > 0;
-                                const formattedPct = returnPct.toFixed(1);
+                                const formattedPct = fixed(returnPct, 1);
 
                                 return (
                                     <div key={tp.label} className={cn(
@@ -552,14 +618,14 @@ export function DailySignalStatus({
                                         <div className="flex items-center gap-2">
                                             <div className={cn('w-2 h-2 rounded-full', tp.dot)} />
                                             <span className={cn('text-xs font-bold', tp.color)}>{tp.label}</span>
-                                            <span className="text-xs tabular-nums text-slate-400">Rs.{tp.price.toLocaleString()}</span>
+                                            <span className="text-xs tabular-nums text-slate-400">{formatPrice(tp.price)}</span>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <span className={cn('text-xs tabular-nums font-semibold', isProfit ? 'text-emerald-500' : 'text-rose-500')}>
                                                 {isProfit ? '+' : ''}{formattedPct}%
                                             </span>
                                             <span className="text-xs font-bold tabular-nums text-slate-700 dark:text-slate-200">
-                                                {rr}:1
+                                                {actualRR}:1
                                             </span>
                                         </div>
                                     </div>
@@ -596,7 +662,7 @@ export function DailySignalStatus({
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="min-w-0">
                                                 <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 leading-snug">{h.strategy_name}</div>
-                                                <div className="text-xs text-slate-400 tabular-nums mt-0.5">Entry Rs.{parseFloat(h.last_close).toLocaleString()}</div>
+                                                <div className="text-xs text-slate-400 tabular-nums mt-0.5">Entry Rs.{num(h.last_close).toLocaleString()}</div>
                                             </div>
                                             <div className="shrink-0 flex flex-col items-end gap-1">
                                                 <span className={cn(
@@ -630,27 +696,32 @@ export function DailySignalStatus({
                                             ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
                                             : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'
                                     )}>{fibData.trend}</span>
-                                    {fibData.current_zone != null && Number.isFinite(Number(fibData.current_zone)) && (
-                                        <span className="text-xs text-slate-400 font-medium">Zone {(fibData.current_zone * 100).toFixed(1)}%</span>
+                                    {fibData.current_zone && (
+                                        <span className="text-xs text-slate-400 font-medium">
+                                            {typeof fibData.current_zone === 'object' 
+                                                ? (fibData.current_zone.label || `Zone ${fibData.current_zone.lower || ''}`)
+                                                : `Zone ${fixed(num(fibData.current_zone) * 100, 1)}%`
+                                            }
+                                        </span>
                                     )}
                                 </div>
                             </div>
 
                             {/* Nearest S&R from fib */}
                             <div className="grid grid-cols-2 gap-2 mb-3">
-                                {fibData.nearest_support && Number.isFinite(parseFloat(fibData.nearest_support)) && (
+                                {num(fibData.nearest_support) > 0 && (
                                     <div className="rounded-xl bg-rose-50/30 dark:bg-rose-950/10 p-2.5">
                                         <div className="text-xs text-rose-400 font-semibold mb-0.5">Nearest Support</div>
                                         <div className="text-xs font-bold tabular-nums text-rose-600 dark:text-rose-400">
-                                            Rs.{parseFloat(fibData.nearest_support).toLocaleString()}
+                                            Rs.{num(fibData.nearest_support).toLocaleString()}
                                         </div>
                                     </div>
                                 )}
-                                {fibData.nearest_resistance && Number.isFinite(parseFloat(fibData.nearest_resistance)) && (
+                                {num(fibData.nearest_resistance) > 0 && (
                                     <div className="rounded-xl bg-emerald-50/30 dark:bg-emerald-950/10 p-2.5">
                                         <div className="text-xs text-emerald-500 font-semibold mb-0.5">Nearest Resistance</div>
                                         <div className="text-xs font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-                                            Rs.{parseFloat(fibData.nearest_resistance).toLocaleString()}
+                                            Rs.{num(fibData.nearest_resistance).toLocaleString()}
                                         </div>
                                     </div>
                                 )}
@@ -659,9 +730,9 @@ export function DailySignalStatus({
                             {/* Fib level rows */}
                             <div className="bg-transparent overflow-hidden border border-slate-100 dark:border-slate-800 rounded-2xl">
                                 {(fibData.levels as any[] || []).map((lv: any, i: number) => {
-                                    const pct = lv.ratio != null ? lv.ratio * 100 : null;
+                                    const pctVal = lv.ratio != null ? num(lv.ratio) * 100 : null;
                                     const isAbove = lv.is_above;
-                                    const dist = lv.distance_pct != null ? parseFloat(lv.distance_pct) : null;
+                                    const dist = lv.distance_pct != null ? num(lv.distance_pct) : null;
                                     return (
                                         <div key={i} className={cn(
                                             'flex items-center justify-between px-3 py-1.5 text-xs',
@@ -671,15 +742,15 @@ export function DailySignalStatus({
                                             <div className="flex items-center gap-2">
                                                 <div className={cn('w-1.5 h-1.5 rounded-full', isAbove ? 'bg-emerald-400' : 'bg-rose-400')} />
                                                 <span className="text-slate-400 font-medium">
-                                                    {pct != null ? `${pct.toFixed(1)}%` : '—'}
+                                                    {pctVal != null ? `${fixed(pctVal, 1)}%` : '—'}
                                                 </span>
                                             </div>
                                             <span className="font-bold tabular-nums text-slate-700 dark:text-slate-200">
-                                                Rs.{parseFloat(lv.price).toLocaleString()}
+                                                Rs.{num(lv.price).toLocaleString()}
                                             </span>
                                             {dist != null && (
                                                 <span className={cn('tabular-nums font-semibold', isAbove ? 'text-emerald-500' : 'text-rose-500')}>
-                                                    {isAbove ? '+' : ''}{dist.toFixed(1)}%
+                                                    {isAbove ? '+' : ''}{fixed(dist, 1)}%
                                                 </span>
                                             )}
                                         </div>
@@ -699,30 +770,30 @@ export function DailySignalStatus({
                             <div className="text-xs font-bold text-slate-400 tracking-wider mb-2">Pivot points</div>
                             <div className="rounded-xl border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/30 overflow-hidden">
                                 {[
-                                    { label: 'R3', val: pivotR3, color: 'text-emerald-600 dark:text-emerald-400' },
-                                    { label: 'R2', val: pivotR2, color: 'text-emerald-600 dark:text-emerald-400' },
-                                    { label: 'R1', val: pivotR1, color: 'text-emerald-500' },
-                                    { label: 'P',  val: pivotP,  color: 'text-amber-500', bg: 'bg-amber-50/50 dark:bg-amber-950/10' },
-                                    { label: 'S1', val: pivotS1, color: 'text-rose-500' },
-                                    { label: 'S2', val: pivotS2, color: 'text-rose-600 dark:text-rose-400' },
-                                    { label: 'S3', val: pivotS3, color: 'text-rose-600 dark:text-rose-400' },
+                                    { label: 'R3', val: num(pivotR3), color: 'text-emerald-600 dark:text-emerald-400' },
+                                    { label: 'R2', val: num(pivotR2), color: 'text-emerald-600 dark:text-emerald-400' },
+                                    { label: 'R1', val: num(pivotR1), color: 'text-emerald-500' },
+                                    { label: 'P',  val: num(pivotP),  color: 'text-amber-500', bg: 'bg-amber-50/50 dark:bg-amber-950/10' },
+                                    { label: 'S1', val: num(pivotS1), color: 'text-rose-500' },
+                                    { label: 'S2', val: num(pivotS2), color: 'text-rose-600 dark:text-rose-400' },
+                                    { label: 'S3', val: num(pivotS3), color: 'text-rose-600 dark:text-rose-400' },
                                 ].filter(r => r.val > 0).map((row, i) => {
-                                    const distPct = ((row.val - cmp) / cmp) * 100;
+                                    const distPct = ((row.val - num(cmp)) / num(cmp)) * 100;
                                     return (
                                         <div key={row.label} className={cn(
                                             'flex items-center justify-between px-3 py-1.5',
                                             i > 0 && 'border-t border-slate-100 dark:border-slate-800',
                                             (row as any).bg ?? '',
-                                            cmp > row.val && row.label !== 'P' && row.label.startsWith('S') && 'opacity-50'
+                                            num(cmp) > row.val && row.label !== 'P' && row.label.startsWith('S') && 'opacity-50'
                                         )}>
                                             <span className={cn('text-xs font-bold w-5', row.color)}>{row.label}</span>
                                             <span className="text-xs font-bold tabular-nums text-slate-700 dark:text-slate-200">
-                                                Rs.{row.val.toLocaleString()}
+                                                Rs.{num(row.val).toLocaleString()}
                                             </span>
                                             <span className={cn('text-xs tabular-nums font-semibold w-14 text-right',
                                                 distPct > 0 ? 'text-emerald-500' : distPct < 0 ? 'text-rose-500' : 'text-slate-400'
                                             )}>
-                                                {distPct > 0 ? '+' : ''}{distPct.toFixed(1)}%
+                                                {distPct > 0 ? '+' : ''}{fixed(distPct, 1)}%
                                             </span>
                                         </div>
                                     );
@@ -736,52 +807,52 @@ export function DailySignalStatus({
                         <div>
                             <div className="text-xs font-bold text-slate-400 tracking-wider mb-2">Volatility & strength</div>
                             <div className="grid grid-cols-2 gap-2">
-                                {atr > 0 && (
+                                {num(atr) > 0 && (
                                     <div className="p-3 bg-slate-50/30 dark:bg-slate-900/30 rounded-2xl">
                                         <div className="text-xs font-bold text-slate-400 mb-1">ATR (14)</div>
-                                        <div className="text-sm font-bold tabular-nums text-slate-800 dark:text-slate-100">{atr.toFixed(2)}</div>
-                                        <div className="text-xs text-slate-400 mt-0.5">{((atr / cmp) * 100).toFixed(1)}% of price</div>
+                                        <div className="text-sm font-bold tabular-nums text-slate-800 dark:text-slate-100">{fixed(atr, 2)}</div>
+                                        <div className="text-xs text-slate-400 mt-0.5">{fixed((num(atr) / num(cmp)) * 100, 1)}% of price</div>
                                     </div>
                                 )}
-                                {adx > 0 && (
+                                {num(adx) > 0 && (
                                     <div className="p-3 bg-slate-50/30 dark:bg-slate-900/30 rounded-2xl">
                                         <div className="flex items-center justify-between mb-1">
                                             <span className="text-xs font-bold text-slate-400">ADX (14)</span>
                                             <span className={cn('text-xs font-bold',
-                                                adx > 40 ? 'text-emerald-500' : adx > 25 ? 'text-amber-500' : 'text-slate-400'
-                                            )}>{adx > 40 ? 'Strong' : adx > 25 ? 'Trending' : 'Weak'}</span>
+                                                num(adx) > 40 ? 'text-emerald-500' : num(adx) > 25 ? 'text-amber-500' : 'text-slate-400'
+                                            )}>{num(adx) > 40 ? 'Strong' : num(adx) > 25 ? 'Trending' : 'Weak'}</span>
                                         </div>
                                         <div className="h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                            <div className={cn('h-full rounded-full', adx > 40 ? 'bg-emerald-400' : adx > 25 ? 'bg-amber-400' : 'bg-slate-300')}
-                                                style={{ width: `${Math.min(adx, 100)}%` }} />
+                                            <div className={cn('h-full rounded-full', num(adx) > 40 ? 'bg-emerald-400' : num(adx) > 25 ? 'bg-amber-400' : 'bg-slate-300')}
+                                                style={{ width: `${Math.min(num(adx), 100)}%` }} />
                                         </div>
-                                        <div className="text-xs tabular-nums text-slate-500 mt-1 font-semibold">{adx.toFixed(1)}</div>
+                                        <div className="text-xs tabular-nums text-slate-500 mt-1 font-semibold">{fixed(adx, 1)}</div>
                                     </div>
                                 )}
-                                {bbp > 0 && (
+                                {num(bbp) > 0 && (
                                     <div className="p-3 bg-slate-50/30 dark:bg-slate-900/30 rounded-2xl">
                                         <div className="text-xs font-bold text-slate-400 mb-1">Bollinger %B</div>
                                         <div className="h-1 bg-gradient-to-r from-rose-200 via-slate-200 to-emerald-200 dark:from-rose-900/40 dark:via-slate-700 dark:to-emerald-900/40 rounded-full relative mb-1.5">
                                             <div className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-slate-600 dark:bg-slate-300 rounded-full border-2 border-white dark:border-slate-800 shadow"
-                                                style={{ left: `calc(${Math.min(Math.max(bbp * 100, 2), 97)}% - 5px)` }} />
+                                                style={{ left: `calc(${Math.min(Math.max(num(bbp) * 100, 2), 97)}% - 5px)` }} />
                                         </div>
-                                        <div className="text-xs tabular-nums text-slate-500 font-semibold">{(bbp * 100).toFixed(1)}%</div>
+                                        <div className="text-xs tabular-nums text-slate-500 font-semibold">{fixed(num(bbp) * 100, 1)}%</div>
                                     </div>
                                 )}
-                                {stochK > 0 && (
+                                {num(stochK) > 0 && (
                                     <div className="p-3 bg-slate-50/30 dark:bg-slate-900/30 rounded-2xl">
                                         <div className="flex items-center justify-between mb-1">
                                             <span className="text-xs font-bold text-slate-400">Stoch %K</span>
                                             <span className={cn('text-xs font-bold',
-                                                stochK > 80 ? 'text-rose-500' : stochK < 20 ? 'text-emerald-500' : 'text-slate-400'
-                                            )}>{stochK > 80 ? 'OB' : stochK < 20 ? 'OS' : '—'}</span>
+                                                num(stochK) > 80 ? 'text-rose-500' : num(stochK) < 20 ? 'text-emerald-500' : 'text-slate-400'
+                                            )}>{num(stochK) > 80 ? 'OB' : num(stochK) < 20 ? 'OS' : '—'}</span>
                                         </div>
                                         <div className="h-1 bg-gradient-to-r from-emerald-200 via-slate-200 to-rose-200 dark:from-emerald-900/40 dark:via-slate-700 dark:to-rose-900/40 rounded-full relative mb-1.5">
                                             <div className={cn('absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-800 shadow',
-                                                stochK > 80 ? 'bg-rose-400' : stochK < 20 ? 'bg-emerald-400' : 'bg-slate-400'
-                                            )} style={{ left: `calc(${Math.min(stochK, 100)}% - 5px)` }} />
+                                                num(stochK) > 80 ? 'bg-rose-400' : num(stochK) < 20 ? 'bg-emerald-400' : 'bg-slate-400'
+                                            )} style={{ left: `calc(${Math.min(num(stochK), 100)}% - 5px)` }} />
                                         </div>
-                                        <div className="text-xs tabular-nums text-slate-500 font-semibold">{stochK.toFixed(1)}</div>
+                                        <div className="text-xs tabular-nums text-slate-500 font-semibold">{fixed(stochK, 1)}</div>
                                     </div>
                                 )}
                             </div>

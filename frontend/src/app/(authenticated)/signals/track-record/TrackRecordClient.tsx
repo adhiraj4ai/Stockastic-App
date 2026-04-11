@@ -5,9 +5,11 @@ import api from '@/lib/api';
 import {
     Activity, CheckCircle2, Search, Target, Trophy,
     Shield, TrendingUp, TrendingDown, ArrowRight,
-    AlertCircle, BarChart3, Clock
+    AlertCircle, BarChart3, Clock, ChevronDown, ChevronUp,
+    X, Flame, Zap, Award, Eye
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { num, fixed, formatPrice } from '@/lib/numbers';
 import { PageLoader } from '@/components/ui/StockLoader';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import Link from 'next/link';
@@ -24,6 +26,26 @@ interface EnginePerformance {
     avg_pnl: number;
     avg_win_pnl: number;
     avg_loss_pnl: number;
+}
+
+interface DetailedEngine {
+    source: string; total: number; won: number; lost: number; active: number;
+    win_rate: number; avg_win_pnl: number; avg_loss_pnl: number;
+    profit_factor: number; expectancy: number;
+    max_consecutive_wins: number; max_consecutive_losses: number;
+    avg_days_to_close: number; best_signal_pnl: number; worst_signal_pnl: number;
+    consistency_score: number;
+    monthly_performance: { month: string; won: number; lost: number; pnl: number }[];
+    pnl_distribution: Record<string, number>;
+    buy_stats: { total: number; won: number; lost: number; active: number; win_rate: number };
+    sell_stats: { total: number; won: number; lost: number; active: number; win_rate: number };
+    top_symbols: string[]; worst_symbols: string[];
+}
+
+interface OverallStats {
+    total_signals: number; total_resolved: number; overall_win_rate: number;
+    total_profit_pnl: number; total_loss_pnl: number; net_pnl: number;
+    best_engine: string | null; worst_engine: string | null;
 }
 
 interface GeneratedSignal {
@@ -382,7 +404,7 @@ function EngineRow({ stat }: { stat: EnginePerformance }) {
                         "text-xs font-mono font-bold tabular-nums",
                         stat.avg_win_pnl > 0 ? "text-emerald-500" : "text-slate-400"
                     )}>
-                        {stat.avg_win_pnl > 0 ? `+${stat.avg_win_pnl.toFixed(1)}%` : '—'}
+                        {num(stat.avg_win_pnl) > 0 ? `+${fixed(stat.avg_win_pnl, 1)}%` : '—'}
                     </span>
                 </div>
             </div>
@@ -397,6 +419,11 @@ export default function TrackRecordClient() {
     const [signals, setSignals] = useState<GeneratedSignal[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const [detailedEngines, setDetailedEngines] = useState<DetailedEngine[]>([]);
+    const [overallStats, setOverallStats] = useState<OverallStats | null>(null);
+    const [selectedSignal, setSelectedSignal] = useState<GeneratedSignal | null>(null);
+    const [expandedEngine, setExpandedEngine] = useState<string | null>(null);
+
     const [search, setSearch] = useState('');
     const [sourceFilter, setSourceFilter] = useState<string>('ALL');
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -406,12 +433,15 @@ export default function TrackRecordClient() {
         const fetchAll = async () => {
             setLoading(true);
             try {
-                const [statsRes, signalsRes] = await Promise.all([
+                const [statsRes, signalsRes, detailedRes] = await Promise.all([
                     api.get('/api/stocks/generated-signals/performance/'),
-                    api.get('/api/stocks/generated-signals/track_record/?page_size=500')
+                    api.get('/api/stocks/generated-signals/track_record/?page_size=500'),
+                    api.get('/api/stocks/generated-signals/performance_detailed/'),
                 ]);
                 setStats(statsRes.data || []);
                 setSignals(signalsRes.data?.results || []);
+                setDetailedEngines(detailedRes.data?.engines || []);
+                setOverallStats(detailedRes.data?.overall || null);
             } catch (err) {
                 console.error('Failed to load track record', err);
             } finally {
@@ -447,7 +477,7 @@ export default function TrackRecordClient() {
         const winRate = resolved.length ? Math.round((won.length / resolved.length) * 100) : null;
 
         const rr = avgWinPnl && avgLossPnl && avgLossPnl !== 0
-            ? Math.abs(avgWinPnl / avgLossPnl).toFixed(1)
+            ? fixed(Math.abs(avgWinPnl / avgLossPnl), 1)
             : null;
 
         return { winRate, avgWinPnl, avgLossPnl, total: pool.length, resolved: resolved.length, won: won.length, lost: lost.length, rr };
@@ -463,56 +493,129 @@ export default function TrackRecordClient() {
 
     return (
         <div className="space-y-8 max-w-[1600px] mx-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
-                    label="Signal Accuracy"
-                    value={metrics.winRate != null ? `${metrics.winRate}%` : '—'}
-                    sub={`${metrics.won} Hits / ${metrics.lost} Stops`}
-                    accent={metrics.winRate != null && metrics.winRate >= 50 ? 'green' : 'red'}
-                    icon={Target}
-                    tooltip="Probability of the signal reaching its primary Demand/Target zone before hitting the Stop."
-                />
-                <StatCard
-                    label="Avg Capture"
-                    value={metrics.avgWinPnl != null ? `+${metrics.avgWinPnl.toFixed(1)}%` : '—'}
-                    sub="per winning signal"
-                    accent="green"
-                    icon={TrendingUp}
-                    tooltip="Average percentage gain captured per successful signal."
-                />
-                <StatCard
-                    label="Avg Stop Hit"
-                    value={metrics.avgLossPnl != null ? `${metrics.avgLossPnl.toFixed(1)}%` : '—'}
-                    sub="per losing signal"
-                    accent="red"
-                    icon={TrendingDown}
-                    tooltip="Average percentage loss when the stop loss is hit."
-                />
-                <StatCard
-                    label="Edge Ratio"
-                    value={metrics.rr ? `${metrics.rr}:1` : '—'}
-                    sub="reward per unit risk"
-                    accent="blue"
-                    icon={BarChart3}
-                    tooltip="Reward-to-Risk ratio. A value above 1.5 indicates strong edge — average wins are significantly larger than average losses."
-                />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                <StatCard label="Signal Accuracy" value={metrics.winRate != null ? `${metrics.winRate}%` : '—'} sub={`${metrics.won}W / ${metrics.lost}L`} accent={metrics.winRate != null && metrics.winRate >= 50 ? 'green' : 'red'} icon={Target} tooltip="Probability of reaching target before stop loss." />
+                <StatCard label="Avg Capture" value={metrics.avgWinPnl != null ? `+${fixed(metrics.avgWinPnl, 1)}%` : '—'} sub="per win" accent="green" icon={TrendingUp} tooltip="Average percentage gain per successful signal." />
+                <StatCard label="Avg Stop Hit" value={metrics.avgLossPnl != null ? `${fixed(metrics.avgLossPnl, 1)}%` : '—'} sub="per loss" accent="red" icon={TrendingDown} tooltip="Average percentage loss when stop loss is hit." />
+                <StatCard label="Edge Ratio" value={metrics.rr ? `${metrics.rr}:1` : '—'} sub="reward/risk" accent="blue" icon={BarChart3} tooltip="Reward-to-Risk ratio. Above 1.5 = strong edge." />
+                <StatCard label="Profit Factor" value={overallStats ? (num(overallStats.total_profit_pnl) > 0 && num(overallStats.total_loss_pnl) < 0 ? fixed(overallStats.total_profit_pnl / Math.abs(overallStats.total_loss_pnl), 1) + 'x' : '—') : '—'} sub="gross profit ÷ loss" accent="purple" icon={Flame} tooltip="Ratio of total gains to total losses. Above 1.5x is profitable." />
+                <StatCard label="Expectancy" value={overallStats && num(overallStats.total_resolved) > 0 ? `${num(overallStats.net_pnl) > 0 ? '+' : ''}${fixed(overallStats.net_pnl / overallStats.total_resolved, 2)}%` : '—'} sub="per signal" accent={overallStats && num(overallStats.net_pnl) > 0 ? 'green' : 'red'} icon={Zap} tooltip="Expected return per signal fired. Positive = system has edge." />
             </div>
 
-            {/* Per-Engine Breakdown */}
-            {stats.length > 0 && (
+            {/* ── Engine Leaderboard ──────────────────────────────────────── */}
+            {detailedEngines.length > 0 && (
                 <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
-                    <div className="px-6 py-4 border-b border-slate-200/50 dark:border-slate-800/50">
-                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Engine Performance</h3>
+                    <div className="px-6 py-4 border-b border-slate-200/50 dark:border-slate-800/50 flex items-center justify-between">
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Engine Leaderboard</h3>
+                        <span className="text-[10px] text-slate-400 font-semibold">Ranked by Profit Factor</span>
                     </div>
-                    <div className="divide-y divide-slate-100 dark:divide-slate-800/50 px-2 py-1">
-                        {stats
-                            .filter(s => s.won + s.lost > 0)
-                            .sort((a, b) => b.win_rate - a.win_rate)
-                            .map(stat => <EngineRow key={stat.source} stat={stat} />)
-                        }
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                        {detailedEngines.map((eng, idx) => {
+                            const resolved = eng.won + eng.lost;
+                            const isExpanded = expandedEngine === eng.source;
+                            const verdict = eng.profit_factor >= 1.5 ? 'profitable' : eng.profit_factor >= 1.0 ? 'marginal' : 'avoid';
+                            const verdictColors = { profitable: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20', marginal: 'bg-amber-500/10 text-amber-600 border-amber-500/20', avoid: 'bg-rose-500/10 text-rose-600 border-rose-500/20' };
+                            const verdictLabels = { profitable: '✅ Profitable', marginal: '⚠️ Marginal', avoid: '❌ Avoid' };
+                            return (
+                                <div key={eng.source}>
+                                    <button onClick={() => setExpandedEngine(isExpanded ? null : eng.source)} className="w-full flex items-center gap-4 py-4 px-6 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-all text-left">
+                                        <span className="text-xs font-mono font-bold text-slate-300 w-6">#{idx + 1}</span>
+                                        <div className="w-40 shrink-0">
+                                            <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">{SOURCE_LABELS[eng.source] || eng.source}</p>
+                                            <p className="text-[10px] text-slate-400 font-semibold">{eng.total} signals</p>
+                                        </div>
+                                        <div className={cn("px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider border", verdictColors[verdict])}>{verdictLabels[verdict]}</div>
+                                        <div className="flex-1 min-w-0"><div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden"><div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500" style={{ width: `${resolved > 0 ? (eng.won / resolved) * 100 : 0}%` }} /></div></div>
+                                        <div className="flex items-center gap-5 shrink-0 text-[10px] font-bold tabular-nums">
+                                            <span className={cn("text-sm font-black", eng.win_rate >= 50 ? "text-emerald-500" : "text-rose-500")}>{eng.win_rate}%</span>
+                                            <span className="text-slate-400">PF: <span className={cn(eng.profit_factor >= 1.5 ? "text-emerald-500" : eng.profit_factor >= 1 ? "text-amber-500" : "text-rose-500")}>{eng.profit_factor >= 999 ? '∞' : eng.profit_factor}</span></span>
+                                            <span className="text-slate-400">Exp: <span className={cn(eng.expectancy > 0 ? "text-emerald-500" : "text-rose-500")}>{eng.expectancy > 0 ? '+' : ''}{eng.expectancy}%</span></span>
+                                            <span className="text-emerald-500">{eng.won}W</span><span className="text-rose-500">{eng.lost}L</span>
+                                        </div>
+                                        {isExpanded ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+                                    </button>
+                                    {isExpanded && (
+                                        <div className="px-8 pb-6 pt-2 bg-slate-50/50 dark:bg-slate-800/20 space-y-5 border-t border-slate-100 dark:border-slate-800/50">
+                                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                                                {[
+                                                    { l: 'Consistency', v: `${eng.consistency_score}%`, c: eng.consistency_score >= 60 ? 'text-emerald-500' : 'text-rose-500' },
+                                                    { l: 'Avg Days', v: `${eng.avg_days_to_close}d`, c: 'text-blue-500' },
+                                                    { l: 'Best Signal', v: `+${eng.best_signal_pnl}%`, c: 'text-emerald-500' },
+                                                    { l: 'Worst Signal', v: `${eng.worst_signal_pnl}%`, c: 'text-rose-500' },
+                                                    { l: 'Max Win Streak', v: `${eng.max_consecutive_wins}`, c: 'text-emerald-500' },
+                                                    { l: 'Max Loss Streak', v: `${eng.max_consecutive_losses}`, c: 'text-rose-500' },
+                                                ].map(({ l, v, c }) => (
+                                                    <div key={l} className="bg-white dark:bg-slate-900/60 rounded-2xl p-3 border border-slate-200/50 dark:border-slate-700/50">
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">{l}</p>
+                                                        <p className={cn("text-lg font-black tabular-nums", c)}>{v}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            {/* Monthly Performance */}
+                                            {eng.monthly_performance.length > 0 && (
+                                                <div>
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Monthly Performance</p>
+                                                    <div className="flex items-end gap-2 h-20">
+                                                        {eng.monthly_performance.map(m => {
+                                                            const maxPnl = Math.max(...eng.monthly_performance.map(x => Math.abs(x.pnl)), 1);
+                                                            const h = Math.max(8, (Math.abs(m.pnl) / maxPnl) * 100);
+                                                            return (
+                                                                <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
+                                                                    <span className={cn("text-[9px] font-bold tabular-nums", num(m.pnl) >= 0 ? "text-emerald-500" : "text-rose-500")}>{num(m.pnl) > 0 ? '+' : ''}{fixed(m.pnl, 1)}%</span>
+                                                                    <div className={cn("w-full rounded-t-lg transition-all", m.pnl >= 0 ? "bg-emerald-500/30" : "bg-rose-500/30")} style={{ height: `${h}%` }} />
+                                                                    <span className="text-[8px] text-slate-400 font-semibold">{m.month.slice(5)}</span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {/* Buy vs Sell + Symbols */}
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-4 border border-slate-200/50 dark:border-slate-700/50">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Buy Signals</p>
+                                                    <p className="text-lg font-black text-emerald-500">{eng.buy_stats.win_rate}% <span className="text-xs text-slate-400 font-semibold">win rate</span></p>
+                                                    <p className="text-[10px] text-slate-400 font-semibold mt-1">{eng.buy_stats.won}W / {eng.buy_stats.lost}L / {eng.buy_stats.active}A</p>
+                                                </div>
+                                                <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-4 border border-slate-200/50 dark:border-slate-700/50">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Sell Signals</p>
+                                                    <p className="text-lg font-black text-blue-500">{eng.sell_stats.win_rate}% <span className="text-xs text-slate-400 font-semibold">win rate</span></p>
+                                                    <p className="text-[10px] text-slate-400 font-semibold mt-1">{eng.sell_stats.won}W / {eng.sell_stats.lost}L / {eng.sell_stats.active}A</p>
+                                                </div>
+                                                <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-4 border border-slate-200/50 dark:border-slate-700/50">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Top Symbols</p>
+                                                    <div className="flex flex-wrap gap-1">{eng.top_symbols.map(s => <span key={s} className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">{s}</span>)}</div>
+                                                    {eng.worst_symbols.length > 0 && <><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-3 mb-1">Weak Symbols</p><div className="flex flex-wrap gap-1">{eng.worst_symbols.map(s => <span key={s} className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-600 border border-rose-500/20">{s}</span>)}</div></>}
+                                                </div>
+                                            </div>
+                                            {/* PnL Distribution */}
+                                            <div>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">PnL Distribution</p>
+                                                <div className="flex items-end gap-1 h-16">
+                                                    {Object.entries(eng.pnl_distribution).map(([bucket, count]) => {
+                                                        const maxCount = Math.max(...Object.values(eng.pnl_distribution), 1);
+                                                        const h = Math.max(8, (count / maxCount) * 100);
+                                                        const isNeg = bucket.includes('-') || bucket.startsWith('<');
+                                                        return (
+                                                            <div key={bucket} className="flex-1 flex flex-col items-center gap-1">
+                                                                <span className="text-[9px] font-bold tabular-nums text-slate-500">{count}</span>
+                                                                <div className={cn("w-full rounded-t transition-all", isNeg ? "bg-rose-400/40" : "bg-emerald-400/40")} style={{ height: `${h}%` }} />
+                                                                <span className="text-[7px] text-slate-400 font-semibold text-center leading-tight">{bucket}</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}
+
+
 
             <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800 p-4 rounded-3xl space-y-4 shadow-sm">
                 <div className="flex flex-wrap items-center gap-3">
@@ -593,7 +696,7 @@ export default function TrackRecordClient() {
                             ) : filtered.map((sig) => {
                                 const exitPrice = calcExitPrice(sig);
                                 return (
-                                    <tr key={sig.id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-all duration-300 align-middle">
+                                    <tr key={sig.id} onClick={() => setSelectedSignal(sig)} className="group hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-all duration-300 align-middle cursor-pointer">
                                         <td className="px-8 py-8">
                                             <div className="flex items-center gap-3">
                                                 <Link href={`/ticker/${sig.symbol}`} className="font-bold text-xl text-slate-900 dark:text-white tracking-tight hover:text-primary transition-colors">
@@ -647,7 +750,7 @@ export default function TrackRecordClient() {
                                                         "text-xl font-mono font-bold tabular-nums tracking-tighter",
                                                         parseFloat(sig.pnl_percent as any) >= 0 ? "text-emerald-500" : "text-rose-500"
                                                     )}>
-                                                        {parseFloat(sig.pnl_percent as any) > 0 ? '+' : ''}{parseFloat(sig.pnl_percent as any).toFixed(2)}%
+                                                        {num(sig.pnl_percent) > 0 ? '+' : ''}{fixed(sig.pnl_percent, 2)}%
                                                     </span>
                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
                                                         Captured Alpha
@@ -664,6 +767,135 @@ export default function TrackRecordClient() {
                     </table>
                 </div>
             </div>
+
+            {/* ── Signal Detail Dialog ────────────────────────────────── */}
+            {selectedSignal && (() => {
+                const sig = selectedSignal;
+                const entry = parseFloat(sig.ltp) || 0;
+                const exitPrice = calcExitPrice(sig);
+                const meta = sig.metadata || {};
+                const tp1 = meta.tp1 ? parseFloat(meta.tp1) : null;
+                const tp2 = meta.tp2 ? parseFloat(meta.tp2) : null;
+                const tp3 = meta.tp3 ? parseFloat(meta.tp3) : null;
+                const sl = sig.stop_loss_price ? parseFloat(sig.stop_loss_price as any) : (meta.sl ? parseFloat(meta.sl) : null);
+                const target = sig.target_price ? parseFloat(sig.target_price as any) : null;
+                const isBuy = sig.signal === 'BUY';
+                const risk = entry && sl ? Math.abs(entry - sl) : 0;
+                const reward = entry && target ? Math.abs(target - entry) : 0;
+                const rrRatio = num(risk) > 0 ? fixed(reward / risk, 1) : '—';
+                const engStats = detailedEngines.find(e => e.source === sig.source);
+                const engRank = detailedEngines.findIndex(e => e.source === sig.source) + 1;
+
+                // Metadata keys to display nicely
+                const metaEntries = Object.entries(meta).filter(([k]) => !['tp1','tp2','tp3','sl','name'].includes(k));
+
+                return (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setSelectedSignal(null)}>
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4" onClick={e => e.stopPropagation()}>
+                            {/* Header */}
+                            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/50 dark:border-slate-800/50">
+                                <div className="flex items-center gap-3">
+                                    <Link href={`/ticker/${sig.symbol}`} className="text-2xl font-black text-slate-900 dark:text-white hover:text-primary">{sig.symbol}</Link>
+                                    <div className={cn("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border", isBuy ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-rose-500/10 text-rose-600 border-rose-500/20")}>{sig.signal}</div>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">{SOURCE_LABELS[sig.source] || sig.source}</span>
+                                    {sig.signal_tier && <span className="text-[10px] text-slate-400 font-semibold">• {sig.signal_tier}</span>}
+                                </div>
+                                <button onClick={() => setSelectedSignal(null)} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"><X size={16} className="text-slate-400" /></button>
+                            </div>
+
+                            <div className="p-6 space-y-5">
+                                {/* Rationale */}
+                                {sig.rationale && (
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200/50 dark:border-slate-700/50">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Rationale</p>
+                                        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{sig.rationale}</p>
+                                    </div>
+                                )}
+
+                                {/* Trade Plan */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-3 border border-slate-200/50 dark:border-slate-700/50">
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase">Entry</p>
+                                        <p className="text-lg font-black text-slate-900 dark:text-white tabular-nums">{fmt(entry)}</p>
+                                    </div>
+                                    {sl && <div className="bg-rose-50 dark:bg-rose-900/20 rounded-2xl p-3 border border-rose-200/50 dark:border-rose-700/50">
+                                        <p className="text-[9px] font-bold text-rose-400 uppercase">Stop Loss</p>
+                                        <p className="text-lg font-black text-rose-600 tabular-nums">{fmt(sl)}</p>
+                                    </div>}
+                                    {target && <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-3 border border-emerald-200/50 dark:border-emerald-700/50">
+                                        <p className="text-[9px] font-bold text-emerald-400 uppercase">Target</p>
+                                        <p className="text-lg font-black text-emerald-600 tabular-nums">{fmt(target)}</p>
+                                    </div>}
+                                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-3 border border-blue-200/50 dark:border-blue-700/50">
+                                        <p className="text-[9px] font-bold text-blue-400 uppercase">R:R Ratio</p>
+                                        <p className="text-lg font-black text-blue-600 tabular-nums">{rrRatio}</p>
+                                    </div>
+                                </div>
+
+                                {/* TP Levels */}
+                                {(tp1 || tp2 || tp3) && (
+                                    <div className="flex gap-3">
+                                        {[{l: isBuy ? 'TP1' : 'D1', v: tp1}, {l: isBuy ? 'TP2' : 'D2', v: tp2}, {l: isBuy ? 'TP3' : 'D3', v: tp3}].filter(x => x.v).map(({l, v}) => (
+                                            <div key={l} className="flex-1 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 border border-slate-200/50 dark:border-slate-700/50 text-center">
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase">{l}</p>
+                                                <p className="text-sm font-black text-slate-700 dark:text-slate-200 tabular-nums">{fmt(v)}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Engine Context */}
+                                {engStats && (
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200/50 dark:border-slate-700/50">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Engine Context — #{engRank} Ranked</p>
+                                        <div className="grid grid-cols-4 gap-3 text-center">
+                                            <div><p className="text-[9px] text-slate-400 font-bold uppercase">Win Rate</p><p className={cn("text-sm font-black", engStats.win_rate >= 50 ? 'text-emerald-500' : 'text-rose-500')}>{engStats.win_rate}%</p></div>
+                                            <div><p className="text-[9px] text-slate-400 font-bold uppercase">Profit Factor</p><p className="text-sm font-black text-slate-700 dark:text-white">{engStats.profit_factor >= 999 ? '∞' : engStats.profit_factor}</p></div>
+                                            <div><p className="text-[9px] text-slate-400 font-bold uppercase">Consistency</p><p className="text-sm font-black text-slate-700 dark:text-white">{engStats.consistency_score}%</p></div>
+                                            <div><p className="text-[9px] text-slate-400 font-bold uppercase">Avg Days</p><p className="text-sm font-black text-slate-700 dark:text-white">{engStats.avg_days_to_close}d</p></div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Metadata Intel */}
+                                {metaEntries.length > 0 && (
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Signal Metadata</p>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                            {metaEntries.map(([k, v]) => (
+                                                <div key={k} className="bg-white dark:bg-slate-900/60 rounded-xl px-3 py-2 border border-slate-200/50 dark:border-slate-700/50">
+                                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{k.replace(/_/g, ' ')}</p>
+                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200 tabular-nums truncate">{fixed(v, 2)}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Outcome */}
+                                {sig.status !== 'ACTIVE' && (
+                                    <div className={cn("rounded-2xl p-4 border", sig.status === 'WON' ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200/50 dark:border-emerald-700/50" : "bg-rose-50 dark:bg-rose-900/20 border-rose-200/50 dark:border-rose-700/50")}>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: sig.status === 'WON' ? '#10b981' : '#f43f5e' }}>Outcome: {sig.status}</p>
+                                        <div className="flex gap-6 text-sm">
+                                            {exitPrice && <div><span className="text-[9px] text-slate-400 font-bold uppercase">Exit Price: </span><span className="font-black tabular-nums">{fmt(exitPrice)}</span></div>}
+                                            {sig.pnl_percent != null && <div><span className="text-[9px] text-slate-400 font-bold uppercase">PnL: </span><span className={cn("font-black tabular-nums", num(sig.pnl_percent) >= 0 ? 'text-emerald-600' : 'text-rose-600')}>{num(sig.pnl_percent) > 0 ? '+' : ''}{fixed(sig.pnl_percent, 2)}%</span></div>}
+                                            {sig.closed_date && <div><span className="text-[9px] text-slate-400 font-bold uppercase">Closed: </span><span className="font-bold text-slate-600 dark:text-slate-300">{sig.closed_date}</span></div>}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Timeline */}
+                                <div className="flex items-center gap-3 text-[10px] text-slate-400 font-semibold">
+                                    <Clock size={12} />
+                                    <span>Generated: {sig.generated_date}</span>
+                                    {sig.closed_date && <><ArrowRight size={10} /><span>Closed: {sig.closed_date}</span></>}
+                                    <span className="ml-auto">Strength: {sig.strength}/100</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 }

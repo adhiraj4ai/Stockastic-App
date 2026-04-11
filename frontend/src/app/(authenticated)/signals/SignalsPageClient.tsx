@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { num, fixed } from '@/lib/numbers';
 
 interface StrategySignal {
     id: number;
@@ -276,9 +277,15 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
     );
 }
 
-// Strategy Card Component with Info Dialog
+// Strategy Card Component with Enriched Info Dialog
 function StrategyCard({ signal }: { signal: StrategySignal }) {
     const [open, setOpen] = useState(false);
+    const meta = signal.metadata || {};
+    const params = meta.optimized_params;
+    const hasParams = params && typeof params === 'object' && Object.keys(params).length > 0;
+    const isBuy = signal.signal === 'BUY';
+    const isSell = signal.signal === 'SELL';
+    const price = parseFloat(signal.last_close) || 0;
 
     const getSignalColor = (sig: string) => {
         if (sig === 'BUY') return 'border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-800 hover:shadow-sm hover:border-emerald-400 dark:hover:border-emerald-600';
@@ -287,10 +294,7 @@ function StrategyCard({ signal }: { signal: StrategySignal }) {
     };
 
     return (
-        <div className={cn(
-            "p-2 border rounded-md transition-all group max-w-[180px]",
-            getSignalColor(signal.signal)
-        )}>
+        <div className={cn("p-2 border rounded-md transition-all group max-w-[180px]", getSignalColor(signal.signal))}>
             <div className="flex items-center justify-between gap-1">
                 <h4 className="font-medium text-slate-800 dark:text-slate-100 text-xs flex-1 truncate">
                     {signal.strategy_name}
@@ -301,52 +305,84 @@ function StrategyCard({ signal }: { signal: StrategySignal }) {
                             <Info className="w-3 h-3 text-slate-600 dark:text-slate-400" />
                         </button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                                {signal.strategy_name}
-                            </DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-600 dark:text-slate-400 mb-2">Description</h4>
-                                <p className="text-slate-700 dark:text-slate-300">{signal.strategy_description}</p>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <h4 className="text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">Symbol</h4>
-                                    <p className="text-lg font-bold text-slate-800 dark:text-slate-100">{signal.symbol}</p>
-                                </div>
-                                <div>
-                                    <h4 className="text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">Signal</h4>
-                                    <Badge className={cn(
-                                        'font-bold',
-                                        signal.signal === 'BUY' && 'bg-emerald-600',
-                                        signal.signal === 'SELL' && 'bg-rose-600',
-                                        signal.signal.startsWith('HOLD') && 'bg-amber-600'
-                                    )}>
+                    <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto p-0">
+                        {/* Header */}
+                        <div className={cn("px-6 py-4 border-b", isBuy ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200/50 dark:border-emerald-800/50" : isSell ? "bg-rose-50/50 dark:bg-rose-950/20 border-rose-200/50 dark:border-rose-800/50" : "bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/50 dark:border-amber-800/50")}>
+                            <DialogHeader>
+                                <div className="flex items-center gap-3">
+                                    <DialogTitle className="text-lg font-black text-slate-900 dark:text-white">
+                                        {signal.symbol}
+                                    </DialogTitle>
+                                    <Badge className={cn('font-bold text-white text-xs px-3', isBuy && 'bg-emerald-600', isSell && 'bg-rose-600', !isBuy && !isSell && 'bg-amber-600')}>
                                         {signal.signal}
                                     </Badge>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-auto">{signal.date}</span>
                                 </div>
-                                <div>
-                                    <h4 className="text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">Last Close</h4>
-                                    <p className="text-slate-800 dark:text-slate-200">Rs. {signal.last_close}</p>
+                            </DialogHeader>
+                        </div>
+
+                        <div className="p-6 space-y-5">
+                            {/* Strategy Info */}
+                            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200/50 dark:border-slate-700/50">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{signal.strategy_name}</p>
+                                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{signal.strategy_description}</p>
+                            </div>
+
+                            {/* Quick Stats Grid */}
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-3 border border-slate-200/50 dark:border-slate-700/50 text-center">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase">Price</p>
+                                    <p className="text-lg font-black text-slate-900 dark:text-white tabular-nums">Rs. {price.toLocaleString()}</p>
                                 </div>
-                                <div>
-                                    <h4 className="text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">Date</h4>
-                                    <p className="text-slate-800 dark:text-slate-200">{signal.date}</p>
+                                <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-3 border border-slate-200/50 dark:border-slate-700/50 text-center">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase">Orders Fired</p>
+                                    <p className="text-lg font-black text-blue-500 tabular-nums">{meta.orders ?? 0}</p>
+                                </div>
+                                <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-3 border border-slate-200/50 dark:border-slate-700/50 text-center">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase">Position</p>
+                                    <p className={cn("text-lg font-black tabular-nums", (meta.position_size || 0) > 0 ? "text-emerald-500" : (meta.position_size || 0) < 0 ? "text-rose-500" : "text-slate-400")}>
+                                        {(meta.position_size || 0) > 0 ? 'Long' : (meta.position_size || 0) < 0 ? 'Short' : 'Flat'}
+                                    </p>
                                 </div>
                             </div>
-                            {signal.metadata && (
+
+                            {/* Signal Justification */}
+                            <div className={cn("rounded-2xl p-4 border", isBuy ? "bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-200/50 dark:border-emerald-700/50" : isSell ? "bg-rose-50/50 dark:bg-rose-900/10 border-rose-200/50 dark:border-rose-700/50" : "bg-amber-50/50 dark:bg-amber-900/10 border-amber-200/50 dark:border-amber-700/50")}>
+                                <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: isBuy ? '#10b981' : isSell ? '#f43f5e' : '#f59e0b' }}>
+                                    Why {signal.signal}?
+                                </p>
+                                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                                    {isBuy && `The ${signal.strategy_name} strategy detected a buy condition on ${signal.symbol} at Rs. ${price.toLocaleString()}. The algorithm placed ${meta.orders ?? 0} order(s) based on ${hasParams ? 'optimized' : 'default'} parameters${meta.optimization_scope && meta.optimization_scope !== 'DEFAULT' ? ` (${meta.optimization_scope}-level tuning)` : ''}.`}
+                                    {isSell && `The ${signal.strategy_name} strategy triggered a sell signal for ${signal.symbol} at Rs. ${price.toLocaleString()}. This suggests the strategy's exit conditions were met with ${meta.orders ?? 0} order(s) placed to close or short the position.`}
+                                    {!isBuy && !isSell && `The ${signal.strategy_name} strategy recommends holding the current position in ${signal.symbol}. The strategy is maintaining its stance with a ${(meta.position_size || 0) > 0 ? 'long' : 'short'} position.`}
+                                </p>
+                            </div>
+
+                            {/* Optimized Parameters */}
+                            {hasParams && (
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-600 dark:text-slate-400 mb-2">Metadata</h4>
-                                    <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border dark:border-slate-800">
-                                        <pre className="text-xs text-slate-700 dark:text-slate-300">
-                                            {JSON.stringify(signal.metadata, null, 2)}
-                                        </pre>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Optimized Parameters</p>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                        {Object.entries(params).map(([k, v]: [string, any]) => (
+                                            <div key={k} className="bg-white dark:bg-slate-900/60 rounded-xl px-3 py-2 border border-slate-200/50 dark:border-slate-700/50">
+                                                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{k.replace(/_/g, ' ')}</p>
+                                                <p className="text-sm font-black text-slate-700 dark:text-slate-200 tabular-nums">
+                                                    {fixed(v, 4)}
+                                                </p>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             )}
+
+                            {/* Optimization Context */}
+                            <div className="flex items-center gap-3 text-[10px] text-slate-400 font-semibold bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 border border-slate-200/50 dark:border-slate-700/50">
+                                <Zap className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                                <span>
+                                    Optimization: <span className="text-slate-600 dark:text-slate-300 font-bold">{meta.optimization_scope === 'SYMBOL' ? `Symbol-level (${signal.symbol})` : meta.optimization_scope === 'SECTOR' ? 'Sector-level' : meta.optimization_scope === 'ALL' ? 'Market-wide' : 'Default parameters'}</span>
+                                </span>
+                                {meta.experiment_id && <span className="ml-auto text-slate-400">Exp #{meta.experiment_id}</span>}
+                            </div>
                         </div>
                     </DialogContent>
                 </Dialog>
@@ -354,6 +390,7 @@ function StrategyCard({ signal }: { signal: StrategySignal }) {
         </div>
     );
 }
+
 
 export default function SignalsPage() {
     const [signals, setSignals] = useState<StrategySignal[]>([]);
@@ -613,7 +650,7 @@ export default function SignalsPage() {
                                             <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-0.5">Buy signals</p>
                                             <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">{buyCount}</p>
                                             <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-0.5">
-                                                {total > 0 ? ((buyCount / total) * 100).toFixed(1) : 0}% of total
+                                                {total > 0 ? fixed((buyCount / total) * 100, 1) : 0}% of total
                                             </p>
                                         </div>
                                         <div className="p-2 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg">
@@ -630,7 +667,7 @@ export default function SignalsPage() {
                                             <p className="text-sm font-medium text-rose-600 dark:text-rose-400 mb-0.5">Sell signals</p>
                                             <p className="text-3xl font-bold text-rose-700 dark:text-rose-300">{sellCount}</p>
                                             <p className="text-xs text-rose-600 dark:text-rose-500 mt-0.5">
-                                                {total > 0 ? ((sellCount / total) * 100).toFixed(1) : 0}% of total
+                                                {total > 0 ? fixed((sellCount / total) * 100, 1) : 0}% of total
                                             </p>
                                         </div>
                                         <div className="p-2 bg-rose-100 dark:bg-rose-900/50 rounded-lg">
@@ -647,7 +684,7 @@ export default function SignalsPage() {
                                             <p className="text-sm font-medium text-amber-600 dark:text-amber-400 mb-0.5">Hold signals</p>
                                             <p className="text-3xl font-bold text-amber-700 dark:text-amber-300">{holdCount}</p>
                                             <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">
-                                                {total > 0 ? ((holdCount / total) * 100).toFixed(1) : 0}% of total
+                                                {total > 0 ? fixed((holdCount / total) * 100, 1) : 0}% of total
                                             </p>
                                         </div>
                                         <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-lg">
@@ -852,7 +889,7 @@ export default function SignalsPage() {
                                                     )}>Avg Return</p>
                                                     <p className={cn("text-3xl font-black",
                                                         (trackingData.summary?.avg_return ?? 0) >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"
-                                                    )}>{trackingData.summary?.avg_return?.toFixed(2) ?? '0.00'}%</p>
+                                                    )}>{fixed(trackingData.summary?.avg_return, 2, '0.00')}%</p>
                                                     <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase">Per trade</p>
                                                 </div>
                                                 <div className={cn("p-3 rounded-2xl border",
@@ -871,7 +908,7 @@ export default function SignalsPage() {
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <p className="text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">Avg Holding Period</p>
-                                                    <p className="text-3xl font-black text-slate-800 dark:text-slate-100">{trackingData.summary?.avg_holding_period?.toFixed(1) ?? '0.0'}</p>
+                                                    <p className="text-3xl font-black text-slate-800 dark:text-slate-100">{fixed(trackingData.summary?.avg_holding_period, 1, '0.0')}</p>
                                                     <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase">Days</p>
                                                 </div>
                                                 <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700">
@@ -916,7 +953,7 @@ export default function SignalsPage() {
                                                                             ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50"
                                                                             : "bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-400 hover:bg-rose-200 dark:hover:bg-rose-900/50"
                                                                     )}>
-                                                                        {pos.return_pct >= 0 ? "+" : ""}{pos.return_pct.toFixed(2)}%
+                                                                        {num(pos.return_pct) >= 0 ? "+" : ""}{fixed(pos.return_pct, 2)}%
                                                                     </Badge>
                                                                 ) : (
                                                                     <span className="text-slate-400">---</span>
@@ -974,7 +1011,7 @@ export default function SignalsPage() {
                                                                         ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50"
                                                                         : "bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-400 hover:bg-rose-200 dark:hover:bg-rose-900/50"
                                                                 )}>
-                                                                    {pos.return_pct >= 0 ? "+" : ""}{pos.return_pct.toFixed(2)}%
+                                                                    {num(pos.return_pct) >= 0 ? "+" : ""}{fixed(pos.return_pct, 2)}%
                                                                 </Badge>
                                                             </td>
                                                             <td className="px-4 py-3 text-xs">{new Date(pos.buy_date).toLocaleDateString()}</td>
