@@ -337,26 +337,25 @@ function DashboardContent({
                                     <Link
                                         href={('href' in item ? item.href : '#') as string}
                                         className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300 group relative ${isActive
-                                            ? 'bg-slate-900 dark:bg-white text-white dark:text-black shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgb(255,255,255,0.08)]'
+                                            ? 'bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
                                             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-black dark:hover:text-white'
-                                            } ${isSidebarCollapsed ? 'justify-center' : ''}`}
+                                            } ${isSidebarCollapsed ? 'justify-center px-2' : ''}`}
                                         title={isSidebarCollapsed ? item.name : ''}
                                     >
-                                        <div className={`p-1.5 rounded-lg transition-all duration-300 ${isActive ? 'bg-white/20 dark:bg-black/10' : 'group-hover:scale-110'}`}>
+                                        <div className={`p-1.5 rounded-lg transition-all duration-300 ${isActive ? 'bg-emerald-500/10' : 'group-hover:scale-110'}`}>
                                             <item.icon size={18} className={
-                                                isActive ? (resolvedTheme === 'dark' ? 'text-black' : 'text-white') :
-                                                    item.name === 'Market' ? 'text-blue-500/70 dark:text-blue-400/70' :
-                                                        item.name === 'Chat' ? 'text-purple-500/70 dark:text-purple-400/70' :
-                                                            item.name === 'Ticker' ? 'text-green-500/70 dark:text-green-400/70' :
-                                                                item.name === 'Financials' ? 'text-cyan-500/70 dark:text-cyan-400/70' :
-                                                                    item.name === 'Strategic Hub' ? 'text-pink-500/70 dark:text-pink-400/70' :
-                                                                        item.name === 'Pipeline' ? 'text-teal-500/70 dark:text-teal-400/70' :
-                                                                            'text-slate-400 dark:text-slate-500'
+                                                item.name === 'Market' ? 'text-blue-500' :
+                                                    item.name === 'Chat' ? 'text-purple-500' :
+                                                        item.name === 'Ticker' ? 'text-green-500' :
+                                                            item.name === 'Financials' ? 'text-cyan-500' :
+                                                                item.name === 'Strategic Hub' ? 'text-pink-500' :
+                                                                    item.name === 'Pipeline' ? 'text-teal-500' :
+                                                                        isActive ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'
                                             } />
                                         </div>
-                                        {!isSidebarCollapsed && <span className="text-sm font-semibold tracking-tight">{item.name}</span>}
+                                        {!isSidebarCollapsed && <span className={`text-sm tracking-tight ${isActive ? 'font-bold text-emerald-600 dark:text-emerald-400' : 'font-semibold'}`}>{item.name}</span>}
                                         {isActive && !isSidebarCollapsed && (
-                                            <div className="absolute right-0 w-1 h-5 bg-white dark:bg-black rounded-l-full" />
+                                            <div className="absolute right-2 w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
                                         )}
                                     </Link>
                                 )}
@@ -375,7 +374,7 @@ function DashboardContent({
                                             const subIconColor = isActiveLink
                                                 ? (item.name === 'Accumulation' ? 'text-orange-500 dark:text-orange-400' :
                                                     item.name === 'Finfolio' ? 'text-emerald-500 dark:text-emerald-400' :
-                                                        'text-slate-950 dark:text-white font-bold')
+                                                        'text-white')
                                                 : (item.name === 'Accumulation' ? 'text-orange-500/60 dark:text-orange-400/60' :
                                                     item.name === 'Finfolio' ? 'text-emerald-500/60 dark:text-emerald-400/60' :
                                                         'text-slate-500/60 dark:text-slate-400/60');
@@ -385,7 +384,7 @@ function DashboardContent({
                                                     key={subItem.name}
                                                     href={subItem.href}
                                                     className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[11px] font-medium tracking-tight transition-all duration-300 group ${isActiveLink
-                                                        ? 'bg-slate-900/5 dark:bg-white/10 text-slate-950 dark:text-white'
+                                                        ? 'bg-white/10 text-white shadow-sm'
                                                         : 'text-slate-500 dark:text-slate-400/60 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-black dark:hover:text-white'
                                                         }`}
                                                 >
