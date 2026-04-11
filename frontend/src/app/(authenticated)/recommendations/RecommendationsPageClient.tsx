@@ -208,7 +208,7 @@ export default function RecommendationsPage() {
                     url = `/api/stocks/ichimoku-accumulation-history/?symbol=${symbol}`;
                 }
 
-                // Fetch both History and Stock Details concurrently
+                // Fetch both History and Stock Intelligence concurrently
                 const [historyRes, detailsRes] = await Promise.all([
                     api.get(url, { params: { symbol } }),
                     api.get(`/api/stocks/details/${symbol}/`).catch(err => ({ data: null })) // Fail gracefully for details

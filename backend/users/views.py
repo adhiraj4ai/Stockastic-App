@@ -1,9 +1,11 @@
+from rest_framework import viewsets, permissions
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
-from .serializers import UserSerializer
+from .serializers import UserSerializer, AdminUserSerializer
 from django.contrib.auth.models import User
+from django.db import models
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -565,3 +567,27 @@ class MicrosoftLogin(SocialLoginView):
     adapter_class = MicrosoftGraphOAuth2Adapter
     client_class = OAuth2Client
     callback_url = "http://localhost:3000/auth/callback/microsoft"
+class AdminUserViewSet(viewsets.ModelViewSet):
+    """
+    Administrative ViewSet for managing users and their roles.
+    Restricted to superusers.
+    """
+    queryset = User.objects.all().select_related('profile').order_by('-date_joined')
+    serializer_class = AdminUserSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        role = self.request.query_params.get('role')
+        search = self.request.query_params.get('search')
+        
+        if role:
+            queryset = queryset.filter(profile__role=role)
+        if search:
+            queryset = queryset.filter(
+                models.Q(username__icontains=search) | 
+                models.Q(email__icontains=search) |
+                models.Q(profile__first_name__icontains=search) |
+                models.Q(profile__last_name__icontains=search)
+            )
+        return queryset

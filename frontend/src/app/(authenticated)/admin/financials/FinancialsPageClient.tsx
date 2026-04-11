@@ -134,7 +134,7 @@ export default function AdminPage() {
     }, [groupedCompanies]);
 
     return (
-        <DashboardLayout title="Financials">
+        <DashboardLayout title="Financials" hideHeader={true}>
             <div className="w-full mx-auto space-y-6 animate-in fade-in duration-500 px-2 lg:px-4">
 
                 {/* Filters & Controls */}
@@ -253,7 +253,7 @@ export default function AdminPage() {
                                                 {sectorCompanies.map((company) => (
                                                     <div
                                                         key={company.symbol}
-                                                        onClick={() => router.push(`/financials/${company.symbol}`)}
+                                                        onClick={() => router.push(`/admin/financials/${company.symbol}`)}
                                                         className="bg-white dark:bg-slate-900 p-3 rounded-lg border dark:border-slate-800 shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-900 transition-all cursor-pointer group relative overflow-hidden"
                                                     >
                                                         <div className="flex justify-between items-start mb-2">
@@ -305,7 +305,7 @@ export default function AdminPage() {
                                                             <TableRow
                                                                 key={company.symbol}
                                                                 className="hover:bg-blue-50/50 dark:hover:bg-blue-900/10 cursor-pointer group transition-colors border-b dark:border-slate-800 last:border-0"
-                                                                onClick={() => router.push(`/financials/${company.symbol}`)}
+                                                                onClick={() => router.push(`/admin/financials/${company.symbol}`)}
                                                             >
                                                                 <TableCell className="font-bold text-gray-900 dark:text-slate-100">{company.symbol}</TableCell>
                                                                 <TableCell className="font-medium text-gray-600 dark:text-slate-400">{company.name}</TableCell>

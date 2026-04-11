@@ -10,6 +10,7 @@ import { FullPageLoader } from '@/components/ui/StockLoader';
 import { SearchBar } from './SearchBar';
 import { ChatSidebar } from './ChatSidebar';
 import { AlertsDropdown } from './AlertsDropdown';
+import SystemOffline from './SystemOffline';
 import { SymbolSelector } from './SymbolSelector';
 import { cn } from '@/lib/utils';
 import {
@@ -79,14 +80,6 @@ const navItems = [
             { name: 'Track Record', href: '/signals/track-record', icon: History },
         ]
     },
-    {
-        name: 'Administration',
-        icon: Shield,
-        subItems: [
-            { name: 'Financials', href: '/financials', icon: FileText },
-            { name: 'Pipeline', href: '/pipeline', icon: Settings },
-        ]
-    },
 ];
 
 const stocks = [
@@ -128,7 +121,17 @@ function DashboardContent({
     const [isChatPinned, setIsChatPinned] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
-    const [currentUser, setCurrentUser] = useState<{ id: number; username: string; email: string } | null>(null);
+    const [currentUser, setCurrentUser] = useState<{
+        id: number;
+        username: string;
+        email: string;
+        nickname?: string;
+        first_name?: string;
+        last_name?: string;
+        profile_picture?: string;
+        role?: string;
+    } | null>(null);
+    const [isOffline, setIsOffline] = useState(false);
     const { resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
 
@@ -166,7 +169,9 @@ function DashboardContent({
                     }
                 });
         });
+    }, [pathname, router]);
 
+    useEffect(() => {
         // Periodic check for token existence - simple safeguard
         const checkAuth = () => {
             const token = Cookies.get('access_token');
@@ -179,22 +184,14 @@ function DashboardContent({
         return () => clearInterval(interval);
     }, [pathname, router]);
 
+    useEffect(() => {
+        const handleOffline = () => setIsOffline(true);
+        window.addEventListener('terminal-offline', handleOffline);
+        return () => window.removeEventListener('terminal-offline', handleOffline);
+    }, []);
+
     // Filter Navigation Items based on User
-    const filteredNavItems = navItems.map(item => {
-        if (currentUser?.username === 'ashmi' && 'subItems' in item && item.subItems) {
-            return {
-                ...item,
-                subItems: item.subItems.filter(sub => sub.name !== 'Pipeline')
-            };
-        }
-        return item;
-    }).filter(item => {
-        if (!currentUser) return true;
-        if (currentUser.username === 'ashmi') {
-            return !['Chat', 'Pipeline'].includes(item.name);
-        }
-        return true;
-    });
+    const filteredNavItems = navItems;
 
     useEffect(() => {
         setIsSidebarCollapsed(isChatPinned || isChatPage);
@@ -316,7 +313,7 @@ function DashboardContent({
                         const isActive = 'href' in item && item.href ? (pathname.startsWith(item.href) && item.href !== '/market' || pathname === item.href) : false;
 
                         return (
-                                <div
+                            <div
                                 key={item.name}
                                 className={`space-y-0.5 transition-all duration-300 ${hasSubItems ? 'border border-gray-200/20 dark:border-white/5 rounded-2xl overflow-hidden bg-slate-50/30 dark:bg-white/[0.02]' : ''}`}
                             >
@@ -336,8 +333,7 @@ function DashboardContent({
                                                                     item.name === 'Accumulation' ? 'text-orange-500/70 dark:text-orange-400/70' :
                                                                         item.name === 'Financials' ? 'text-cyan-500/70 dark:text-cyan-400/70' :
                                                                             item.name === 'Strategic Hub' ? 'text-pink-500/70 dark:text-pink-400/70' :
-                                                                                item.name === 'Administration' ? 'text-teal-500/70 dark:text-teal-400/70' :
-                                                                                    'text-slate-400 dark:text-slate-500'
+                                                                                'text-slate-400 dark:text-slate-500'
                                                 } />
                                             </div>
                                             {!isSidebarCollapsed && <span className="text-sm font-semibold tracking-tight">{item.name}</span>}
@@ -362,8 +358,7 @@ function DashboardContent({
                                                         item.name === 'Ticker' ? 'text-green-500' :
                                                             item.name === 'Financials' ? 'text-cyan-500' :
                                                                 item.name === 'Strategic Hub' ? 'text-pink-500' :
-                                                                    item.name === 'Administration' ? 'text-teal-500' :
-                                                                        isActive ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'
+                                                                    isActive ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'
                                             } />
                                         </div>
                                         {!isSidebarCollapsed && <span className={`text-sm tracking-tight ${isActive ? 'font-bold text-emerald-600 dark:text-emerald-400' : 'font-semibold'}`}>{item.name}</span>}
@@ -413,8 +408,103 @@ function DashboardContent({
                     })}
                 </nav>
                 <div className="p-4 border-t border-gray-200/50 dark:border-white/5 relative z-10 bg-white/50 dark:bg-transparent">
-                    <div className={`flex flex-col gap-1 ${isSidebarCollapsed ? 'items-center' : ''}`}>
-                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button className={cn(
+                                "w-full flex items-center gap-3 p-2 rounded-2xl bg-white dark:bg-white/5 border border-slate-200/50 dark:border-white/5 hover:border-black dark:hover:border-white/50 hover:bg-white dark:hover:bg-white/10 transition-all duration-500 group outline-none",
+                                isSidebarCollapsed ? "justify-center p-1" : "pr-4"
+                            )}>
+                                <div className="h-10 w-10 min-w-[40px] rounded-xl bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-bold shadow-lg shadow-slate-900/20 group-hover:scale-105 transition-all duration-300 uppercase overflow-hidden border border-slate-200/50 dark:border-white/10">
+                                    {currentUser?.profile_picture ? (
+                                        <img
+                                            src={currentUser.profile_picture}
+                                            alt={currentUser.username}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <span>{currentUser?.nickname?.[0] || currentUser?.first_name?.[0] || currentUser?.username?.[0] || 'U'}</span>
+                                    )}
+                                </div>
+                                {!isSidebarCollapsed && (
+                                    <div className="flex flex-col items-start min-w-0 flex-1">
+                                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight truncate w-full text-left">
+                                            {(currentUser as any)?.nickname ||
+                                                (((currentUser as any)?.first_name || (currentUser as any)?.last_name)
+                                                    ? `${(currentUser as any)?.first_name || ''} ${(currentUser as any)?.last_name || ''}`.trim()
+                                                    : currentUser?.username) || 'User'}
+                                        </span>
+                                        <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                                            <span className="w-1 h-1 bg-emerald-500 rounded-full" />
+                                            Active Now
+                                        </span>
+                                    </div>
+                                )}
+                                {!isSidebarCollapsed && (
+                                    <ChevronDown size={14} className="text-slate-950/40 dark:text-slate-400/60 group-hover:text-black dark:group-hover:text-white transition-transform active:rotate-180" />
+                                )}
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                            side={isSidebarCollapsed ? "right" : "top"}
+                            align={isSidebarCollapsed ? "end" : "center"}
+                            sideOffset={12}
+                            className="w-64 p-2 rounded-2xl border-gray-200 dark:border-white/5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl z-[60]"
+                        >
+                            <DropdownMenuLabel className="font-bold text-[10px] text-slate-900/60 dark:text-slate-400/60 px-3 py-2">Terminal Account</DropdownMenuLabel>
+
+                            <DropdownMenuSeparator className="mx-2 bg-slate-100 dark:bg-white/5" />
+
+                            {/* Administration Group */}
+                            <div className="px-2 py-1 flex flex-col gap-1">
+                                <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1 py-1">Administration</span>
+                                <DropdownMenuItem asChild className="cursor-pointer gap-2 p-2 rounded-xl focus:bg-teal-500/10 focus:text-teal-600 dark:focus:text-teal-400 transition-all">
+                                    <Link href="/admin/financials" className="flex items-center gap-2 w-full">
+                                        <FileText size={14} className="text-teal-500/70" />
+                                        <span className="text-xs font-bold">Financials</span>
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild className="cursor-pointer gap-2 p-2 rounded-xl focus:bg-teal-500/10 focus:text-teal-600 dark:focus:text-teal-400 transition-all">
+                                    <Link href="/admin/pipeline" className="flex items-center gap-2 w-full">
+                                        <Settings size={14} className="text-teal-500/70" />
+                                        <span className="text-xs font-bold">Pipeline</span>
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild className="cursor-pointer gap-2 p-2 rounded-xl focus:bg-teal-500/10 focus:text-teal-600 dark:focus:text-teal-400 transition-all">
+                                    <Link href="/admin/users" className="flex items-center gap-2 w-full">
+                                        <Users size={14} className="text-teal-500/70" />
+                                        <span className="text-xs font-bold">Users Management</span>
+                                    </Link>
+                                </DropdownMenuItem>
+                            </div>
+
+                            <DropdownMenuSeparator className="mx-2 bg-slate-100 dark:bg-white/5" />
+
+                            <DropdownMenuItem className="cursor-pointer gap-3 p-3 rounded-xl focus:bg-blue-50 dark:focus:bg-blue-500/10 focus:text-blue-600 dark:focus:text-blue-400 transition-all group" onClick={() => setIsSettingsOpen(true)}>
+                                <div className="p-2 rounded-lg bg-slate-100 dark:bg-white/5 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 transition-colors">
+                                    <Settings size={16} />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-bold">Preferences</span>
+                                    <span className="text-[10px] opacity-60">Control interface</span>
+                                </div>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuSeparator className="mx-2 bg-slate-100 dark:bg-white/5" />
+
+                            <DropdownMenuItem
+                                onClick={handleLogout}
+                                className="cursor-pointer gap-3 p-3 rounded-xl text-rose-600 dark:text-rose-400 focus:bg-rose-50 dark:focus:bg-rose-500/10 focus:text-rose-700 dark:focus:text-rose-300 transition-all group"
+                            >
+                                <div className="p-2 rounded-lg bg-rose-50 dark:bg-rose-500/10 group-hover:bg-rose-100 dark:group-hover:bg-rose-500/20 transition-colors">
+                                    <LogOut size={16} />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-bold">Sign Out</span>
+                                    <span className="text-[10px] opacity-60">End session</span>
+                                </div>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </aside>
 
@@ -451,7 +541,7 @@ function DashboardContent({
                                 ) : (
                                     <div className="flex flex-col min-w-0">
                                         <h2 className={`text-2xl font-bold text-gray-900 dark:text-slate-100 truncate ${!title ? 'capitalize' : ''}`}>
-                                            {title || (pathname.includes('/ticker/') ? 'Stock Details' : pathname.split('/').pop())}
+                                            {title || (pathname.includes('/ticker/') ? 'Stock Intelligence' : pathname.split('/').pop())}
                                         </h2>
                                         {subtitle && (
                                             <p className="text-sm text-slate-900/60 dark:text-slate-400/60 truncate pr-4 mt-0.5">{subtitle}</p>
@@ -531,53 +621,6 @@ function DashboardContent({
                                     </button>
                                 </Link>
                             )}
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button className="flex items-center gap-3 p-1.5 pr-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 hover:border-black dark:hover:border-white/50 hover:bg-white dark:hover:bg-white/10 transition-all duration-500 group outline-none">
-                                        <div className="h-9 w-9 rounded-xl bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-bold shadow-lg shadow-slate-900/20 group-hover:scale-105 transition-transform">
-                                            {(currentUser?.username === 'admin' ? 'J' : currentUser?.username === 'ashmi' ? 'A' : 'G')}
-                                        </div>
-                                        <div className="flex flex-col items-start mr-1">
-                                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight">
-                                                {currentUser ? (currentUser.username === 'admin' ? 'Jugal Raj' : currentUser.username === 'ashmi' ? 'Ashmi' : currentUser.username) : 'User'}
-                                            </span>
-                                            {currentUser && (
-                                                <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5 bg-emerald-500/10 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full mt-0.5 border border-emerald-500/20">
-                                                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                                                    Active
-                                                </span>
-                                            )}
-                                        </div>
-                                        <ChevronDown size={14} className="text-slate-900/40 dark:text-slate-400/60 group-hover:text-black dark:group-hover:text-white transition-transform active:rotate-180" />
-                                    </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-64 p-2 rounded-2xl border-white/5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-2xl">
-                                    <DropdownMenuLabel className="font-bold text-[10px] text-slate-900/60 dark:text-slate-400/60">Terminal access</DropdownMenuLabel>
-                                    <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/5" />
-                                    <DropdownMenuItem className="cursor-pointer gap-3 p-3 rounded-xl focus:bg-blue-50 dark:focus:bg-white/5 focus:text-blue-600 dark:focus:text-blue-400 transition-all group" onClick={() => setIsSettingsOpen(true)}>
-                                        <div className="p-2 rounded-lg bg-slate-100 dark:bg-white/5 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 transition-colors">
-                                            <Settings size={16} />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-bold">Preferences</span>
-                                            <span className="text-[10px] opacity-60">Control terminal interface</span>
-                                        </div>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/5" />
-                                    <DropdownMenuItem
-                                        onClick={handleLogout}
-                                        className="cursor-pointer gap-3 p-3 rounded-xl text-rose-600 dark:text-rose-400 focus:bg-rose-50 dark:focus:bg-rose-500/10 focus:text-rose-700 dark:focus:text-rose-300 transition-all group"
-                                    >
-                                        <div className="p-2 rounded-lg bg-rose-50 dark:bg-rose-500/10 group-hover:bg-rose-100 dark:group-hover:bg-rose-500/20 transition-colors">
-                                            <LogOut size={16} />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-bold">Sign Out</span>
-                                            <span className="text-[10px] opacity-60">End terminal session</span>
-                                        </div>
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
                         </div>
                     </header>
                 )}
@@ -589,6 +632,7 @@ function DashboardContent({
             {!isChatPage && <ChatSidebar isPinned={isChatPinned} onPinToggle={() => setIsChatPinned(!isChatPinned)} hideFloatingButton={true} />}
 
             <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
+            {isOffline && <SystemOffline />}
         </div >
     );
 }

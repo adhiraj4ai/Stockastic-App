@@ -97,10 +97,12 @@ api.interceptors.response.use(
             }
         }
 
-        // Check for specific invalid token error messages if status isn't 401 or as a fallback
-        if (detail && detail.includes('token not valid')) {
-            console.error('Session expired or invalid token. Logging out...');
-            logoutAndRedirect();
+        // Handle network/connection errors (backend down)
+        if (error.code === 'ERR_NETWORK' || !error.response) {
+            console.error('Terminal backend is unreachable. System might be offline.');
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('terminal-offline'));
+            }
         }
 
         return Promise.reject(error);

@@ -5,6 +5,11 @@ from rest_framework_simplejwt.views import (
 )
 from . import views
 
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
+router.register(r'admin/management', views.AdminUserViewSet, basename='admin-user-management')
+
 urlpatterns = [
     path("auth/google/", views.GoogleLogin.as_view(), name="google_login"),
     path("auth/apple/", views.AppleLogin.as_view(), name="apple_login"),
@@ -25,5 +30,6 @@ urlpatterns = [
     path("sessions/", views.list_sessions, name="list_sessions"),
     path("sessions/<int:session_id>/revoke/", views.revoke_session, name="revoke_session"),
     path("sessions/revoke-all/", views.revoke_all_sessions, name="revoke_all_sessions"),
+    path("", include(router.urls)),
 ]
 

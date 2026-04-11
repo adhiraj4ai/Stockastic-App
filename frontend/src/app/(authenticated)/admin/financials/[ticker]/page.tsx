@@ -85,7 +85,7 @@ export default function AdminTickerPage({ params }: { params: Promise<{ ticker: 
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => router.push('/financials')}
+                        onClick={() => router.push('/admin/financials')}
                         className="rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 h-10 w-10 p-0 text-gray-400 dark:text-slate-500"
                     >
                         <ArrowLeft className="w-5 h-5" />

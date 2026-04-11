@@ -6,10 +6,19 @@ from .encryption import EncryptedField
 from django.utils import timezone
 
 class Profile(models.Model):
+    ROLE_CHOICES = [
+        ('ADMIN', 'Admin'),
+        ('MANAGER', 'Manager'),
+        ('SILVER', 'Silver Subscriber'),
+        ('GOLD', 'Gold Subscriber'),
+        ('PLATINUM', 'Platinum Subscriber'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     nickname = models.CharField(max_length=50, blank=True)
     first_name = models.CharField(max_length=50, blank=True)
     last_name = models.CharField(max_length=50, blank=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='SILVER')
     # Encrypted fields
     phone_number = EncryptedField(blank=True, null=True)
     encrypted_email = EncryptedField(blank=True, null=True)
