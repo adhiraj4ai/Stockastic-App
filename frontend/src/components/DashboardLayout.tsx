@@ -426,12 +426,12 @@ function DashboardContent({
                                         <ArrowLeft size={18} />
                                     </button>
                                 )}
-                                {pathname === '/signals' ? (
+                                {pathname.startsWith('/signals') ? (
                                     <div className="flex flex-col min-w-0">
                                         <h2 className="text-lg font-bold bg-gradient-to-r from-slate-900 to-black dark:from-white dark:to-slate-400 bg-clip-text text-transparent tracking-tight">
                                             Strategic Hub
                                         </h2>
-                                        <p className="text-[10px] text-slate-500 dark:text-slate-500 font-bold">Unified · Smart Money · Strategies · Whale Watch</p>
+                                        <p className="text-[10px] text-slate-500 dark:text-slate-500 font-bold">Real-time signals from multiple engines, ranked by conviction</p>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col min-w-0">

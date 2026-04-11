@@ -138,10 +138,17 @@ def get_fibonacci_levels(request, ticker):
     if swing_range == 0:
         return Response({'error': 'No price range found (flat market).'}, status=400)
 
-    # --- Fibonacci levels (always: 0% = swing_low, 100% = swing_high) ---
+    # --- Fibonacci levels ---
+    # Standard: 0% is the anchor at the MOVE EXTREME (destination), 100% is the origin.
+    if trend == 'UPTREND':
+        anchor_0, anchor_100 = swing_high_val, swing_low_val
+    else:
+        anchor_0, anchor_100 = swing_low_val, swing_high_val
+
     levels = []
     for ratio, label in zip(FIBONACCI_RATIOS, FIBONACCI_LABELS):
-        price_at_level = swing_low_val + (ratio * swing_range)
+        # price = anchor_0 + ratio * (anchor_100 - anchor_0)
+        price_at_level = anchor_0 + (ratio * (anchor_100 - anchor_0))
         distance_pct   = ((price_at_level - current_price) / current_price) * 100
         levels.append({
             'ratio': ratio,

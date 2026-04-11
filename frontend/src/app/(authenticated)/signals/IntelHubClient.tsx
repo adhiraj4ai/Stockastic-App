@@ -978,12 +978,6 @@ export default function IntelHubClient() {
         <DashboardLayout>
             <div className="pb-20 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-                {/* ── Page header ── */}
-                <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-                    <div>
-                        <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Strategic Hub</h1>
-                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Real-time signals from multiple engines, ranked by conviction</p>
-                    </div>
                     {/* Historical toggle */}
                     <div className="flex items-center gap-2 sm:ml-auto">
                         <span className="text-xs font-medium text-slate-400 dark:text-slate-500">Show historical</span>
@@ -1001,7 +995,6 @@ export default function IntelHubClient() {
                             )} />
                         </button>
                     </div>
-                </div>
 
                 {/* ── Tab navigation ── */}
                 <div className="flex p-0.5 bg-slate-100 dark:bg-slate-900/60 rounded-xl border border-slate-200/60 dark:border-slate-800/50 w-fit">

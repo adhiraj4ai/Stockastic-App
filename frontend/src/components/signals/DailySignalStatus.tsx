@@ -219,7 +219,7 @@ export function DailySignalStatus({
     const pivotS3 = safeParse(getStoredInd('SUPPORT 3')?.raw_value  ?? getStoredInd('S3')?.raw_value);
 
     const primaryTarget = targetPrice || (direction === 'BUY' ? entryPrice * 1.05 : entryPrice * 0.95);
-    const primaryStop = stopLoss || (direction === 'BUY' ? cmp * 0.96 : cmp * 1.04);
+    const primaryStop = stopLoss || (direction === 'BUY' ? entryPrice * 0.96 : entryPrice * 1.04);
     const finalTp1 = tp1 || primaryTarget;
     const finalTp2 = tp2 || primaryTarget * (direction === 'BUY' ? 1.05 : 0.95);
     const finalTp3 = tp3 || primaryTarget * (direction === 'BUY' ? 1.10 : 0.90);
@@ -598,10 +598,9 @@ export function DailySignalStatus({
                                 { label: 'TP2', price: num(finalTp2), color: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500' },
                                 { label: 'TP3', price: num(finalTp3), color: 'text-sky-500', dot: 'bg-sky-400' },
                             ].map((tp, i) => {
-                                const rr = calcPct(tp.price, entryPrice, '0'); // Wait, calcPct is for change. RR is reward / risk.
-                                const risk = Math.max(0.01, Math.abs(num(entryPrice) - num(primaryStop)));
+                                const risk = Math.max(0.1, Math.abs(num(entryPrice) - num(primaryStop)));
                                 const reward = Math.abs(num(tp.price) - num(entryPrice));
-                                const actualRR = fixed(reward / risk, 2);
+                                const actualRR = fixed(reward / risk, 1);
                                 
                                 const returnPct = isBuy 
                                     ? ((num(tp.price) - num(entryPrice)) / num(entryPrice)) * 100 
@@ -699,7 +698,7 @@ export function DailySignalStatus({
                                     {fibData.current_zone && (
                                         <span className="text-xs text-slate-400 font-medium">
                                             {typeof fibData.current_zone === 'object' 
-                                                ? (fibData.current_zone.label || `Zone ${fibData.current_zone.lower || ''}`)
+                                                ? `Zone ${fibData.current_zone.lower} - ${fibData.current_zone.upper}`
                                                 : `Zone ${fixed(num(fibData.current_zone) * 100, 1)}%`
                                             }
                                         </span>
