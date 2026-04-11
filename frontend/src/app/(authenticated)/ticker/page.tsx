@@ -22,11 +22,17 @@ export default function TickerLandingPage() {
     const [randomSymbols, setRandomSymbols] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [focused, setFocused] = useState(false);
+    const [user, setUser] = useState<{ username: string } | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Auto-focus on mount
     useEffect(() => {
         inputRef.current?.focus();
+
+        // Fetch user
+        api.get('/api/users/me/')
+            .then(res => setUser(res.data))
+            .catch(() => {});
         
         // Fetch portfolio symbols
         api.get('/api/stocks/portfolio/')
@@ -58,6 +64,13 @@ export default function TickerLandingPage() {
             });
     }, []);
 
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return "Good Morning";
+        if (hour < 17) return "Good Afternoon";
+        return "Good Evening";
+    };
+
     useEffect(() => {
         const id = setTimeout(async () => {
             if (!search && !focused) return;
@@ -84,8 +97,15 @@ export default function TickerLandingPage() {
     return (
         <DashboardLayout hideHeader>
             <div className="min-h-screen flex flex-col items-center justify-center px-4">
-                {/* Wordmark */}
+                {/* Wordmark & Greeting */}
                 <div className="mb-14 text-center">
+                    {user && (
+                        <div className="mb-4 animate-in fade-in slide-in-from-bottom-2 duration-700">
+                            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em]">
+                                {getGreeting()}, {user.username}
+                            </span>
+                        </div>
+                    )}
                     <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white">
                         Ticker <span className="text-emerald-500">Search</span>
                     </h1>
