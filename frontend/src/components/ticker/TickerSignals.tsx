@@ -28,6 +28,14 @@ interface StrategySignal {
     metadata: any;
 }
 
+interface Strategy {
+    id: number;
+    name: string;
+    description: string;
+    icon: string;
+    icon_color: string;
+}
+
 interface GeneratedSignal {
     id: number;
     source: string;
@@ -139,11 +147,12 @@ function SignalBadge({ signal, size = 'sm' }: { signal: string; size?: 'sm' | 'l
             isBuy && 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700',
             isSell && 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-700',
             isHold && 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700',
-            !isBuy && !isSell && !isHold && 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700',
+            !isBuy && !isSell && !isHold && 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 border-slate-100 dark:border-slate-800',
         )}>
             {isBuy && <ArrowUpRight size={size === 'lg' ? 14 : 10} />}
             {isSell && <ArrowDownRight size={size === 'lg' ? 14 : 10} />}
-            {signal}
+            {!isBuy && !isSell && !isHold && <Activity size={size === 'lg' ? 14 : 10} />}
+            {signal || 'NEUTRAL'}
         </span>
     );
 }
@@ -299,6 +308,7 @@ function ConsensusHero({ consensus, buyPct, sellPct, total, intelCount }: { cons
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function TickerSignals({ symbol, currentPrice, intelligence, fundamental }: { symbol: string; currentPrice?: number; intelligence?: any; fundamental?: any }) {
+    const [allStrategies, setAllStrategies] = useState<Strategy[]>([]);
     const [strategySignals, setStrategySignals] = useState<StrategySignal[]>([]);
     const [intelSignals, setIntelSignals] = useState<GeneratedSignal[]>([]);
     const [loading, setLoading] = useState(true);
@@ -309,12 +319,14 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
         const fetchAll = async () => {
             setLoading(true);
             try {
-                const [stratRes, intelRes] = await Promise.all([
+                const [stratRes, signalRes, intelRes] = await Promise.all([
+                    api.get('/api/stocks/strategies/').catch(() => null),
                     api.get('/api/stocks/signals/', { params: { symbol, page_size: 100 } }).catch(() => null),
                     api.get('/api/stocks/generated-signals/', { params: { symbol, page_size: 100 } }).catch(() => null),
                 ]);
 
-                const sData = stratRes?.data;
+                setAllStrategies(stratRes?.data?.results || stratRes?.data || []);
+                const sData = signalRes?.data;
                 const iData = intelRes?.data;
 
                 setStrategySignals(Array.isArray(sData) ? sData : sData?.results ?? []);
@@ -325,18 +337,66 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
         fetchAll();
     }, [symbol]);
 
-    // Derived visibility for strategy list (Technical Signals)
-    const visibleStrats = useMemo(() => {
-        if (showHistoricalStrats) return strategySignals;
-        return strategySignals.filter(s => {
-            const freshness = getFreshness(s.date);
-            const action = getActionability(parseFloat(s.last_close), currentPrice, s.signal, intelligence);
-            // Relaxed: Show if NOT expired
-            return freshness.status !== 'expired';
+    // Map strategies to their latest signal for this ticker
+    const strategyToLatestSignal = useMemo(() => {
+        const map = new Map<number, StrategySignal>();
+        strategySignals.forEach(sig => {
+            const existing = map.get(sig.strategy);
+            // Sort by date descending
+            if (!existing || new Date(sig.date) > new Date(existing.date)) {
+                map.set(sig.strategy, sig);
+            }
         });
-    }, [strategySignals, currentPrice, showHistoricalStrats, intelligence]);
-    
-    const hiddenStratsCount = strategySignals.length - visibleStrats.length;
+        return map;
+    }, [strategySignals]);
+
+    // Derived full list including strategies without active signals
+    const fullStrategyList = useMemo(() => {
+        // Start with all strategies
+        let list = allStrategies.map(strat => {
+            const latest = strategyToLatestSignal.get(strat.id);
+            return {
+                id: strat.id,
+                strategy_name: strat.name,
+                strategy_description: strat.description,
+                icon: strat.icon,
+                icon_color: strat.icon_color,
+                signal: latest?.signal || 'NEUTRAL',
+                last_event_date: latest?.date || 'Steady',
+                last_close: latest?.last_close || String(currentPrice || 0),
+                is_active: latest ? getFreshness(latest.date).status !== 'expired' : false
+            };
+        });
+
+        // Add any signals that don't have a matching strategy object (unlikely but safe)
+        strategySignals.forEach(sig => {
+            if (!allStrategies.find(s => s.id === sig.strategy)) {
+                // Check if already in map by strategy_name to avoid duplicates if ID missing
+                if (!list.find(l => l.strategy_name === sig.strategy_name)) {
+                   list.push({
+                       id: sig.strategy,
+                       strategy_name: sig.strategy_name,
+                       strategy_description: sig.strategy_description,
+                       icon: 'Activity',
+                       icon_color: '#64748b',
+                       signal: sig.signal,
+                       last_event_date: sig.date,
+                       last_close: sig.last_close,
+                       is_active: getFreshness(sig.date).status !== 'expired'
+                   });
+                }
+            }
+        });
+
+        // Filter based on "Show legacy"
+        if (!showHistoricalStrats) {
+            // ONLY show BUY/SELL and NOT expired
+            return list.filter(item => item.is_active && (item.signal === 'BUY' || item.signal === 'SELL'));
+        }
+        return list;
+    }, [allStrategies, strategyToLatestSignal, strategySignals, currentPrice, showHistoricalStrats]);
+
+    const hiddenStratsCount = Math.max(0, (allStrategies.length + strategySignals.length) - fullStrategyList.length);
 
     // Categorization for Intelligence signals
     const { buySellSignals, accumulationSignals, institutionalAlerts } = useMemo(() => {
@@ -466,34 +526,54 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                    {visibleStrats.length === 0 && (
+                                    {fullStrategyList.length === 0 && (
                                         <tr>
                                             <td colSpan={5} className="py-8 text-center text-slate-400 italic">
                                                 {hiddenStratsCount > 0 ? `No active signals found. Click "Show legacy" to view ${hiddenStratsCount} historical records.` : "No technical strategy signals discovered."}
                                             </td>
                                         </tr>
                                     )}
-                                    {visibleStrats.map(sig => {
-                                        const freshness = getFreshness(sig.date);
+                                    {fullStrategyList.sort((a,b) => {
+                                        // Sort: Buy/Sell first, then Neutral
+                                        if (a.signal !== 'NEUTRAL' && b.signal === 'NEUTRAL') return -1;
+                                        if (a.signal === 'NEUTRAL' && b.signal !== 'NEUTRAL') return 1;
+                                        return 0;
+                                    }).map(sig => {
+                                        const freshness = sig.last_event_date !== 'Steady' ? getFreshness(sig.last_event_date) : null;
                                         return (
-                                            <tr key={sig.id} className={cn("transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/50", freshness.status === 'historical' && "opacity-40")}>
+                                            <tr key={sig.id + sig.strategy_name} className={cn("transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/50", freshness?.status === 'historical' && "opacity-40")}>
                                                 <td className="px-4 py-3">
-                                                    <div className="font-semibold text-slate-700 dark:text-slate-200 tracking-tight">{sig.strategy_name}</div>
-                                                    <div className="text-[10px] text-slate-400 truncate max-w-[150px] tracking-tight">{sig.strategy_description}</div>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: sig.icon_color || '#cbd5e1' }} />
+                                                        <div className="font-semibold text-slate-700 dark:text-slate-200 tracking-tight">{sig.strategy_name}</div>
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-400 truncate max-w-[200px] tracking-tight ml-4">{sig.strategy_description}</div>
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
-                                                    <div className={cn("inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border tracking-tight", freshness.color)}>
-                                                        <freshness.icon size={8} />
-                                                        {freshness.label}
-                                                    </div>
+                                                    {freshness ? (
+                                                        <div className={cn("inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border tracking-tight", freshness.color)}>
+                                                            <freshness.icon size={8} />
+                                                            {freshness.label}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border border-slate-100 dark:border-slate-800 text-slate-400 tracking-tight">
+                                                            Steady
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 <td className="px-4 py-3 text-center"><SignalBadge signal={sig.signal} /></td>
                                                 <td className="px-4 py-3 text-center">
-                                                    <PerformanceBadge signalPrice={parseFloat(sig.last_close)} currentPrice={currentPrice} signal={sig.signal} intelligence={intelligence} />
+                                                    {sig.signal !== 'NEUTRAL' && sig.signal !== 'HOLD' ? (
+                                                        <PerformanceBadge signalPrice={parseFloat(sig.last_close)} currentPrice={currentPrice} signal={sig.signal} intelligence={intelligence} />
+                                                    ) : (
+                                                        <span className="text-[10px] text-slate-300">—</span>
+                                                    )}
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
-                                                    <div className="font-semibold text-slate-700 dark:text-slate-300 tracking-tight">{formatRupees(parseFloat(sig.last_close))}</div>
-                                                    <div className="text-[9px] text-slate-400">{sig.date}</div>
+                                                    <div className="font-semibold text-slate-700 dark:text-slate-300 tracking-tight">
+                                                        {sig.last_event_date !== 'Steady' ? formatRupees(parseFloat(sig.last_close)) : formatRupees(currentPrice || 0)}
+                                                    </div>
+                                                    <div className="text-[9px] text-slate-400">{sig.last_event_date}</div>
                                                 </td>
                                             </tr>
                                         );
@@ -639,30 +719,100 @@ function IntelCard({ source, signals, currentPrice, intelligence }: { source: st
     const colors = SOURCE_COLORS[source] || SOURCE_COLORS['SMART_MONEY'];
     const latestSignal = [...signals].sort((a, b) => b.generated_date.localeCompare(a.generated_date))[0];
     const freshness = getFreshness(latestSignal.generated_date);
+    
+    // Tier Logic
+    const isPlatinum = latestSignal.signal_tier === 'Platinum Buy';
+    const isGold = latestSignal.signal_tier === 'Gold Signal';
+    const conviction = isPlatinum ? 3 : isGold ? 2 : 1;
 
     return (
-        <div className={cn("rounded-xl border p-4 transition-all duration-300 bg-white dark:bg-slate-900/50", colors.border, freshness.status === 'historical' && "opacity-60")}>
+        <div className={cn(
+            "rounded-xl border p-4 transition-all duration-300 bg-white dark:bg-slate-900/50 relative overflow-hidden group hover:shadow-md",
+            isPlatinum ? "border-slate-800 dark:border-white ring-1 ring-slate-900/5" : colors.border,
+            freshness.status === 'historical' && "opacity-60"
+        )}>
+            {/* Tier Accent */}
+            {isPlatinum && <div className="absolute top-0 left-0 right-0 h-1 bg-slate-900 dark:bg-white" />}
+            {isGold && <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500" />}
+
             <div className="space-y-4">
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                        <div className={cn("p-2 rounded-lg border", colors.bg, colors.border)}><SourceIcon size={16} className={colors.text} /></div>
+                        <div className={cn("p-2 rounded-lg border transition-transform group-hover:scale-110", colors.bg, colors.border)}><SourceIcon size={16} className={colors.text} /></div>
                         <div>
-                        <div className="flex items-center gap-1">
-                             <h4 className="font-semibold text-sm text-slate-800 dark:text-slate-100 leading-tight tracking-tight">{SOURCE_LABELS[source] || source}</h4>
-                             <InfoTooltip content={source === 'SMART_MONEY' ? 'Institutional markup tracking.' : 'Volume-weighted accumulation detection.'} />
-                        </div>
+                            <div className="flex items-center gap-1.5">
+                                <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-tight tracking-tight">{SOURCE_LABELS[source] || source}</h4>
+                                {isPlatinum && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 dark:bg-white text-white dark:text-black tracking-widest border border-slate-700 dark:border-slate-200">Platinum</span>}
+                                {isGold && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500 text-white tracking-widest border border-amber-600">Gold</span>}
+                            </div>
                             <div className={cn("inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border tracking-tight", freshness.color)}>
                                 <freshness.icon size={8} />{freshness.label}
                             </div>
                         </div>
                     </div>
                     <div className="flex flex-col items-end gap-1.5">
+                        <div className="flex gap-0.5">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className={cn(
+                                    "w-1 h-1 rounded-full",
+                                    i <= conviction 
+                                        ? (isPlatinum ? "bg-slate-900 dark:bg-white" : isGold ? "bg-amber-500" : "bg-emerald-500") 
+                                        : "bg-slate-200 dark:bg-slate-800"
+                                )} />
+                            ))}
+                        </div>
                         <SignalBadge signal={latestSignal.signal} size="sm" />
+                    </div>
+                </div>
+
+                {/* Metrics Row */}
+                <div className="grid grid-cols-3 gap-2 py-2 border-y border-slate-100 dark:border-slate-800/60">
+                    <div className="text-center">
+                        <div className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">Strength</div>
+                        <div className={cn("text-xs font-black tabular-nums tracking-tight", latestSignal.strength > 80 ? "text-emerald-500" : latestSignal.strength > 50 ? "text-amber-500" : "text-rose-500")}>
+                            {latestSignal.strength}%
+                        </div>
+                    </div>
+                    <div className="text-center border-x border-slate-100 dark:border-slate-800/60 leading-none flex flex-col justify-center">
+                        <div className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">At Signal</div>
+                        <div className="text-[10px] font-bold text-slate-700 dark:text-slate-300 tabular-nums tracking-tight">
+                            Rs.{parseFloat(latestSignal.ltp).toLocaleString()}
+                        </div>
+                    </div>
+                    <div className="text-center flex flex-col justify-center">
+                        <div className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">Distance</div>
                         <PerformanceBadge signalPrice={parseFloat(latestSignal.ltp)} currentPrice={currentPrice} signal={latestSignal.signal} intelligence={intelligence} />
                     </div>
                 </div>
-                <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800">
-                     <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-normal line-clamp-2 tracking-tight">{latestSignal.rationale || 'Quantitative intelligence signal.'}</p>
+
+                <div className="space-y-3">
+                    <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800">
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-normal line-clamp-2 tracking-tight italic">&ldquo;{latestSignal.rationale || 'Quantitative intelligence signal.'}&rdquo;</p>
+                    </div>
+                    
+                    {/* Inline indicators like unified card */}
+                    <div className="flex items-center justify-between px-1">
+                        <div className="flex items-center gap-3">
+                            <div className="flex flex-col">
+                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">RSI</span>
+                                <span className={cn("text-[10px] font-black font-mono", (intelligence?.rsi || 50) > 70 ? "text-rose-500" : (intelligence?.rsi || 50) < 30 ? "text-emerald-500" : "text-slate-600 dark:text-slate-400")}>
+                                    {intelligence?.rsi?.toFixed(1) || '--'}
+                                </span>
+                            </div>
+                            <div className="w-px h-5 bg-slate-200 dark:bg-slate-800" />
+                            <div className="flex flex-col">
+                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">MACD</span>
+                                <span className={cn("text-[10px] font-black font-mono", (intelligence?.macdScore || 0) > 50 ? "text-emerald-500" : "text-rose-500")}>
+                                    {intelligence?.macd || 'NEUTRAL'}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="h-6 w-12 flex items-end gap-0.5">
+                             {[40, 60, 30, 80, 50].map((h, i) => (
+                                 <div key={i} className={cn("flex-1 rounded-t-[1px]", latestSignal.signal === 'BUY' ? "bg-emerald-500/30" : "bg-rose-500/30")} style={{ height: `${h}%` }} />
+                             ))}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

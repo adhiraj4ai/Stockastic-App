@@ -270,19 +270,19 @@ function DashboardContent({
 
             {/* Sidebar */}
             <aside
-                className={`bg-white/90 dark:bg-slate-900/60 backdrop-blur-xl border-r border-gray-200/50 dark:border-white/5 flex flex-col fixed h-full z-30 transition-all duration-500 ${isSidebarCollapsed ? 'w-20' : 'w-64'
+                className={`bg-white/95 dark:bg-slate-950/40 backdrop-blur-2xl border-r border-gray-200/30 dark:border-white/5 flex flex-col fixed h-full z-30 transition-all duration-500 ease-in-out ${isSidebarCollapsed ? 'w-20' : 'w-64'
                     }`}
             >
-                <div className={`p-4 border-b border-gray-200/50 dark:border-white/5 flex items-center justify-between ${isSidebarCollapsed ? 'flex-col gap-4' : ''}`}>
+                <div className={`p-5 border-b border-gray-200/30 dark:border-white/5 flex items-center justify-between ${isSidebarCollapsed ? 'flex-col gap-4' : ''}`}>
                     {!isSidebarCollapsed && (
-                        <div className="w-full flex justify-center py-0">
-                            <Link href="/market" className="hover:scale-105 transition-transform duration-300">
+                        <div className="w-full flex justify-start pl-1">
+                            <Link href="/market" className="hover:opacity-80 transition-opacity duration-300 block">
                                 <Image
                                     src={logoSrc}
                                     alt="Stockastic Logo"
-                                    width={144}
-                                    height={108}
-                                    className="object-contain transition-all duration-300"
+                                    width={120}
+                                    height={90}
+                                    className="object-contain"
                                     priority
                                 />
                             </Link>
@@ -290,10 +290,10 @@ function DashboardContent({
                     )}
                     <button
                         onClick={toggleSidebar}
-                        className={`p-2 rounded-xl bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-900/60 dark:text-slate-400/60 hover:text-black dark:hover:text-white transition-all duration-300 ${isSidebarCollapsed ? '' : ''}`}
+                        className={`p-2 rounded-xl bg-slate-50/50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-950/40 dark:text-slate-400/40 hover:text-black dark:hover:text-white transition-all duration-300 ring-1 ring-inset ring-transparent hover:ring-slate-200 dark:hover:ring-white/10 ${isSidebarCollapsed ? '' : ''}`}
                         title={isSidebarCollapsed ? "Expand" : "Collapse"}
                     >
-                        {isSidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+                        {isSidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
                     </button>
                 </div>
                 <nav className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar relative z-10">
@@ -303,64 +303,67 @@ function DashboardContent({
                         const isActive = 'href' in item && item.href ? (pathname.startsWith(item.href) && item.href !== '/market' || pathname === item.href) : false;
 
                         return (
-                            <div
+                                <div
                                 key={item.name}
-                                className={`space-y-1 transition-all duration-300 ${hasSubItems ? 'border border-slate-200/50 dark:border-white/5 shadow-sm rounded-xl overflow-hidden bg-white/40 dark:bg-white/5' : ''}`}
+                                className={`space-y-0.5 transition-all duration-300 ${hasSubItems ? 'border border-gray-200/20 dark:border-white/5 rounded-2xl overflow-hidden bg-slate-50/30 dark:bg-white/[0.02]' : ''}`}
                             >
                                 {hasSubItems ? (
                                     <button
                                         onClick={() => toggleMenu(item.name)}
-                                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 text-slate-900/80 dark:text-slate-300/70 hover:bg-slate-100 dark:hover:bg-slate-700/60 hover:text-black dark:hover:text-white group ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}
+                                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-black dark:hover:text-white group ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}
                                         title={isSidebarCollapsed ? item.name : ''}
                                     >
                                         <div className="flex items-center gap-3">
-                                            <div className={`p-1.5 rounded-lg transition-all duration-300 ${isExpanded ? 'bg-slate-100 dark:bg-white/10' : 'bg-transparent'}`}>
+                                            <div className={`p-1.5 rounded-lg transition-all duration-300 ${isExpanded ? 'bg-slate-100 dark:bg-white/10' : 'group-hover:scale-110'}`}>
                                                 <item.icon size={18} className={
-                                                    item.name === 'Home' ? 'text-blue-500 dark:text-blue-400' :
-                                                        item.name === 'Chat' ? 'text-purple-500 dark:text-purple-400' :
-                                                            item.name === 'Stocks' ? 'text-green-500 dark:text-green-400' :
-                                                                item.name === 'Finfolio' ? 'text-emerald-500 dark:text-emerald-400' :
-                                                                    item.name === 'Accumulation' ? 'text-orange-500 dark:text-orange-400' :
-                                                                        item.name === 'Financials' ? 'text-cyan-500 dark:text-cyan-400' :
-                                                                            item.name === 'Strategic Hub' ? 'text-pink-500 dark:text-pink-400' :
-                                                                                item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
-                                                                                    'text-slate-900/40 dark:text-slate-500/60'
+                                                    item.name === 'Home' ? 'text-blue-500/70 dark:text-blue-400/70' :
+                                                        item.name === 'Chat' ? 'text-purple-500/70 dark:text-purple-400/70' :
+                                                            item.name === 'Stocks' ? 'text-green-500/70 dark:text-green-400/70' :
+                                                                item.name === 'Finfolio' ? 'text-emerald-500/70 dark:text-emerald-400/70' :
+                                                                    item.name === 'Accumulation' ? 'text-orange-500/70 dark:text-orange-400/70' :
+                                                                        item.name === 'Financials' ? 'text-cyan-500/70 dark:text-cyan-400/70' :
+                                                                            item.name === 'Strategic Hub' ? 'text-pink-500/70 dark:text-pink-400/70' :
+                                                                                item.name === 'Pipeline' ? 'text-teal-500/70 dark:text-teal-400/70' :
+                                                                                    'text-slate-400 dark:text-slate-500'
                                                 } />
                                             </div>
-                                            {!isSidebarCollapsed && <span className="text-sm font-bold tracking-tight">{item.name}</span>}
+                                            {!isSidebarCollapsed && <span className="text-sm font-semibold tracking-tight">{item.name}</span>}
                                         </div>
                                         {!isSidebarCollapsed && (
-                                            <ChevronDown size={14} className={`text-slate-900/50 dark:text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                                            <ChevronDown size={14} className={`text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
                                         )}
                                     </button>
                                 ) : (
                                     <Link
                                         href={('href' in item ? item.href : '#') as string}
-                                        className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 group shadow-sm border ${isActive
-                                            ? 'bg-black dark:bg-white text-white dark:text-black shadow-lg shadow-slate-900/20 border-transparent'
-                                            : 'text-slate-900 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-black dark:hover:text-white border-slate-200/50 dark:border-white/5'
-                                            } ${isSidebarCollapsed ? 'justify-center px-2' : ''}`}
+                                        className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300 group relative ${isActive
+                                            ? 'bg-slate-900 dark:bg-white text-white dark:text-black shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgb(255,255,255,0.08)]'
+                                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-black dark:hover:text-white'
+                                            } ${isSidebarCollapsed ? 'justify-center' : ''}`}
                                         title={isSidebarCollapsed ? item.name : ''}
                                     >
-                                        <div className={`p-1.5 rounded-lg transition-all duration-300 ${isActive ? 'bg-white/10' : ''}`}>
+                                        <div className={`p-1.5 rounded-lg transition-all duration-300 ${isActive ? 'bg-white/20 dark:bg-black/10' : 'group-hover:scale-110'}`}>
                                             <item.icon size={18} className={
-                                                isActive ? 'text-white' :
-                                                    item.name === 'Market' ? 'text-blue-500 dark:text-blue-400' :
-                                                        item.name === 'Chat' ? 'text-purple-500 dark:text-purple-400' :
-                                                            item.name === 'Ticker' ? 'text-green-500 dark:text-green-400' :
-                                                                item.name === 'Financials' ? 'text-cyan-500 dark:text-cyan-400' :
-                                                                    item.name === 'Strategic Hub' ? 'text-pink-500 dark:text-pink-400' :
-                                                                        item.name === 'Pipeline' ? 'text-teal-500 dark:text-teal-400' :
-                                                                            'text-slate-900/40 dark:text-slate-500/60'
+                                                isActive ? (resolvedTheme === 'dark' ? 'text-black' : 'text-white') :
+                                                    item.name === 'Market' ? 'text-blue-500/70 dark:text-blue-400/70' :
+                                                        item.name === 'Chat' ? 'text-purple-500/70 dark:text-purple-400/70' :
+                                                            item.name === 'Ticker' ? 'text-green-500/70 dark:text-green-400/70' :
+                                                                item.name === 'Financials' ? 'text-cyan-500/70 dark:text-cyan-400/70' :
+                                                                    item.name === 'Strategic Hub' ? 'text-pink-500/70 dark:text-pink-400/70' :
+                                                                        item.name === 'Pipeline' ? 'text-teal-500/70 dark:text-teal-400/70' :
+                                                                            'text-slate-400 dark:text-slate-500'
                                             } />
                                         </div>
-                                        {!isSidebarCollapsed && <span className="text-sm font-bold tracking-tight">{item.name}</span>}
+                                        {!isSidebarCollapsed && <span className="text-sm font-semibold tracking-tight">{item.name}</span>}
+                                        {isActive && !isSidebarCollapsed && (
+                                            <div className="absolute right-0 w-1 h-5 bg-white dark:bg-black rounded-l-full" />
+                                        )}
                                     </Link>
                                 )}
 
                                 {/* Render Sub-items */}
                                 {hasSubItems && isExpanded && !isSidebarCollapsed && (
-                                    <div className="ml-9 mt-1 mb-2 space-y-1 animate-in slide-in-from-top-2 duration-300 border-l border-slate-200 dark:border-white/10 pl-2 relative">
+                                    <div className="ml-8 mt-0.5 mb-2 space-y-0.5 animate-in slide-in-from-top-1 fade-in duration-300 border-l border-slate-200/50 dark:border-white/10 pl-2 relative">
                                         {(item as any).subItems.map((subItem: any) => {
                                             const subPath = subItem.href.split('?')[0];
                                             const subTab = new URLSearchParams(subItem.href.split('?')[1]).get('tab');
@@ -370,23 +373,23 @@ function DashboardContent({
                                             const isActiveLink = pathname === subPath && (subTab ? currentTab === subTab : true);
 
                                             const subIconColor = isActiveLink
-                                                ? (item.name === 'Accumulation' ? 'text-orange-600 dark:text-orange-400' :
-                                                    item.name === 'Finfolio' ? 'text-emerald-600 dark:text-emerald-400' :
-                                                        'text-black dark:text-white')
-                                                : (item.name === 'Accumulation' ? 'text-orange-500/70 dark:text-orange-400/70' :
-                                                    item.name === 'Finfolio' ? 'text-emerald-500/70 dark:text-emerald-400/70' :
-                                                        'text-slate-900/40 dark:text-slate-400/60');
+                                                ? (item.name === 'Accumulation' ? 'text-orange-500 dark:text-orange-400' :
+                                                    item.name === 'Finfolio' ? 'text-emerald-500 dark:text-emerald-400' :
+                                                        'text-slate-950 dark:text-white font-bold')
+                                                : (item.name === 'Accumulation' ? 'text-orange-500/60 dark:text-orange-400/60' :
+                                                    item.name === 'Finfolio' ? 'text-emerald-500/60 dark:text-emerald-400/60' :
+                                                        'text-slate-500/60 dark:text-slate-400/60');
 
                                             return (
                                                 <Link
                                                     key={subItem.name}
                                                     href={subItem.href}
-                                                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[11px] font-bold tracking-tight transition-all duration-300 ${isActiveLink
-                                                        ? 'bg-black/5 dark:bg-white/10 text-black dark:text-white shadow-sm'
-                                                        : 'text-slate-900/60 dark:text-slate-400/60 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-black dark:hover:text-white'
+                                                    className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[11px] font-medium tracking-tight transition-all duration-300 group ${isActiveLink
+                                                        ? 'bg-slate-900/5 dark:bg-white/10 text-slate-950 dark:text-white'
+                                                        : 'text-slate-500 dark:text-slate-400/60 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-black dark:hover:text-white'
                                                         }`}
                                                 >
-                                                    {subItem.icon && <subItem.icon size={14} className={subIconColor} />}
+                                                    {subItem.icon && <subItem.icon size={13} className={`${subIconColor} group-hover:scale-110 transition-transform`} />}
                                                     {subItem.name}
                                                 </Link>
                                             );
