@@ -140,7 +140,19 @@ function PriceLadder({ sig }: { sig: GeneratedSignal }) {
     if (tp3) levels.push({ label: getLabel('TP3'), price: tp3, type: 'tp' });
     if (!tp1 && !tp2 && !tp3 && target) levels.push({ label: getLabel('Target'), price: target, type: 'tp' });
 
-    if (levels.length < 2) return <span className="text-[10px] text-slate-400 font-semibold">Incomplete Levels</span>;
+    if (levels.length < 2) {
+        return (
+            <div className="flex items-center gap-3 py-2">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <AlertCircle size={11} className="text-amber-500" />
+                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">Awaiting Levels</span>
+                </div>
+                {entry > 0 && (
+                    <span className="text-[10px] font-mono text-slate-500 font-semibold">Entry: {fmt(entry)}</span>
+                )}
+            </div>
+        );
+    }
 
     // Sort by price ascending so the ladder reads low → high visually
     levels.sort((a, b) => a.price - b.price);
@@ -563,7 +575,7 @@ export default function TrackRecordClient() {
                             <tr className="border-b border-slate-200/50 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/20">
                                 <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-40">Symbol</th>
                                 <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-48">Engine Info</th>
-                                <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center w-28">Outcome Price</th>
+                                <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center w-28">Entry Price</th>
                                 <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-44">Timeline</th>
                                 <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Strategic Progression</th>
                                 <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center w-40">Outcome Detail</th>
@@ -600,14 +612,13 @@ export default function TrackRecordClient() {
                                             <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-1">{sig.signal_tier || 'Standard'}</p>
                                         </td>
                                         <td className="px-6 py-8 text-center">
-                                            <span className={cn(
-                                                "font-mono text-sm font-bold px-3 py-1.5 rounded-lg border",
-                                                sig.status === 'WON' ? (sig.signal === 'BUY' ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" : "text-blue-500 bg-blue-500/10 border-blue-500/20") :
-                                                sig.status === 'LOST' ? "text-rose-500 bg-rose-500/10 border-rose-500/20" :
-                                                "text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 border-slate-200/50 dark:border-slate-700/50"
-                                            )}>
-                                                {fmt(exitPrice || parseFloat(sig.ltp))}
-                                            </span>
+                                            {parseFloat(sig.ltp) > 0 ? (
+                                                <span className="font-mono text-sm font-bold px-3 py-1.5 rounded-lg border text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 border-slate-200/50 dark:border-slate-700/50">
+                                                    {fmt(parseFloat(sig.ltp))}
+                                                </span>
+                                            ) : (
+                                                <span className="text-[10px] text-slate-400 font-semibold">—</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-8">
                                             <div className="flex flex-col gap-2">

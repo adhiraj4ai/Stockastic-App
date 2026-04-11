@@ -1,10 +1,14 @@
 import logging
-from datetime import date
+from datetime import date, timedelta
 from collections import defaultdict
 from ..models import GeneratedSignal
 from ..models.market import DailyStockPrice
 
 logger = logging.getLogger(__name__)
+
+# Signals without TP/SL older than this many days are auto-closed
+ORPHAN_EXPIRY_DAYS = 30
+
 
 class SignalEvaluationService:
     """Evaluates the mathematical success/failure of generated signals."""
@@ -13,28 +17,38 @@ class SignalEvaluationService:
     def evaluate_active_signals():
         """
         Loops through all 'ACTIVE' signals.
-        For each signal, checks ALL daily candles since the signal was generated
-        to find the first day the target or stop loss was hit.
-        Updates status, pnl_percent, and closed_date accordingly.
+        1. Signals with valid TP/SL: checks ALL daily candles since generation
+           to find the first day the target or stop loss was hit.
+        2. Orphaned signals (missing TP/SL or LTP): attempts to backfill levels
+           from current price data, or auto-closes if too old.
         """
-        active_signals = GeneratedSignal.objects.filter(status='ACTIVE')
-        if not active_signals.exists():
+        active_signals = list(GeneratedSignal.objects.filter(status='ACTIVE'))
+        if not active_signals:
             logger.info("No active signals to evaluate.")
             return 0
 
-        signals_by_symbol = defaultdict(list)
+        evaluated_count = 0
+        today = date.today()
+
+        # Separate valid signals from orphaned ones
+        valid_signals = defaultdict(list)
+        orphaned_signals = []
+
         for sig in active_signals:
             if sig.target_price is None or sig.stop_loss_price is None or sig.ltp <= 0:
-                continue
-            signals_by_symbol[sig.symbol].append(sig)
+                orphaned_signals.append(sig)
+            else:
+                valid_signals[sig.symbol].append(sig)
 
-        evaluated_count = 0
+        # --- Handle orphaned signals (missing TP/SL) ---
+        evaluated_count += SignalEvaluationService._handle_orphaned_signals(
+            orphaned_signals, today
+        )
 
-        for symbol, signals in signals_by_symbol.items():
-            # Find the earliest generation date among active signals for this symbol
+        # --- Evaluate valid signals ---
+        for symbol, signals in valid_signals.items():
             earliest_date = min(sig.generated_date for sig in signals)
 
-            # Fetch all daily prices after the earliest generation date, in chronological order
             daily_prices = list(
                 DailyStockPrice.objects
                 .filter(ticker=symbol, date__gt=earliest_date)
@@ -46,7 +60,6 @@ class SignalEvaluationService:
                 continue
 
             for sig in signals:
-                # Walk through each day after signal generation in order
                 for day in daily_prices:
                     if day['date'] <= sig.generated_date:
                         continue
@@ -58,7 +71,6 @@ class SignalEvaluationService:
                     stop_loss = float(sig.stop_loss_price)
 
                     if sig.signal == 'BUY':
-                        # Check stop loss first (conservative: assume worst case hit first)
                         if day_low <= stop_loss:
                             sig.status = 'LOST'
                             sig.pnl_percent = ((stop_loss - entry) / entry) * 100
@@ -71,7 +83,6 @@ class SignalEvaluationService:
                             break
 
                     elif sig.signal == 'SELL':
-                        # For SELL: stop loss is above entry, target is below
                         if day_high >= stop_loss:
                             sig.status = 'LOST'
                             sig.pnl_percent = ((entry - stop_loss) / entry) * 100
@@ -89,3 +100,62 @@ class SignalEvaluationService:
                     logger.info(f"Signal Evaluated: {sig.symbol} ({sig.signal}) -> {sig.status} at {sig.pnl_percent:.2f}%")
 
         return evaluated_count
+
+    @staticmethod
+    def _handle_orphaned_signals(orphaned_signals, today):
+        """
+        Handle signals missing target_price, stop_loss_price, or ltp.
+        1. Try to backfill levels using the LTP at generation time.
+        2. If too old (> ORPHAN_EXPIRY_DAYS), auto-close with realized PnL.
+        """
+        count = 0
+        expiry_cutoff = today - timedelta(days=ORPHAN_EXPIRY_DAYS)
+
+        for sig in orphaned_signals:
+            # Try to backfill LTP from the day's close if missing
+            if sig.ltp <= 0:
+                price_on_date = (
+                    DailyStockPrice.objects
+                    .filter(ticker=sig.symbol, date=sig.generated_date)
+                    .values_list('close', flat=True)
+                    .first()
+                )
+                if price_on_date and float(price_on_date) > 0:
+                    sig.ltp = float(price_on_date)
+                    logger.info(f"Backfilled LTP for {sig.symbol}: {sig.ltp}")
+                else:
+                    # Can't determine entry — auto-close if old
+                    if sig.generated_date <= expiry_cutoff:
+                        sig.status = 'CLOSED_MANUAL'
+                        sig.closed_date = today
+                        sig.save(update_fields=['status', 'closed_date'])
+                        count += 1
+                        logger.info(f"Auto-closed orphaned signal {sig.symbol} (no LTP, expired)")
+                    continue
+
+            ltp = float(sig.ltp)
+
+            # Backfill TP/SL using the standard generation formula
+            if sig.target_price is None or sig.stop_loss_price is None:
+                metadata = sig.metadata or {}
+                if sig.signal == 'BUY':
+                    tp1 = round(ltp * 1.05, 2)
+                    tp2 = round(ltp * 1.10, 2)
+                    tp3 = round(ltp * 1.15, 2)
+                    wac = metadata.get('top_broker_wac', 0)
+                    sl = round(wac * 0.98, 2) if (wac > 0 and wac < ltp) else round(ltp * 0.95, 2)
+                else:
+                    tp1 = round(ltp * 0.95, 2)
+                    tp2 = round(ltp * 0.90, 2)
+                    tp3 = round(ltp * 0.85, 2)
+                    sl = round(ltp * 1.05, 2)
+
+                sig.target_price = tp2
+                sig.stop_loss_price = sl
+                metadata.update({'tp1': tp1, 'tp2': tp2, 'tp3': tp3, 'sl': sl})
+                sig.metadata = metadata
+                sig.save(update_fields=['ltp', 'target_price', 'stop_loss_price', 'metadata'])
+                count += 1
+                logger.info(f"Backfilled TP/SL for {sig.symbol}: TP={tp2}, SL={sl}")
+
+        return count
