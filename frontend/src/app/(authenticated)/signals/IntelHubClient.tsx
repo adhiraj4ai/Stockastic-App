@@ -5,15 +5,12 @@ import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import {
     Activity, Clock, TrendingUp, TrendingDown,
-    Map, List, ChevronRight, RefreshCw, BarChart,
-    Brain, Zap, ExternalLink, Info, CheckCircle2,
-    XCircle, AlertCircle, Search, ArrowRight, Binary,
+    Zap, Search, ArrowRight, Binary,
     Briefcase, Layers, Radar
 } from 'lucide-react';
 import { num, fixed } from '@/lib/numbers';
 import { cn } from '@/lib/utils';
-import { StockLoader, PageLoader } from '@/components/ui/StockLoader';
-import { InfoTooltip } from '@/components/ui/InfoTooltip';
+import { StockLoader } from '@/components/ui/StockLoader';
 import Link from 'next/link';
 import { DailySignalStatus } from '@/components/signals/DailySignalStatus';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
@@ -21,6 +18,7 @@ import {
     Dialog,
     DialogContent,
     DialogTitle,
+    DialogDescription,
 } from '@/components/ui/dialog';
 
 // ─── Error Boundary ───────────────────────────────────────────────────────────
@@ -133,16 +131,6 @@ interface BatchIndicatorData {
     roc: number | null;
 }
 
-interface EnginePerformance {
-    source: string;
-    total: number;
-    won: number;
-    lost: number;
-    active: number;
-    win_rate: number;
-    avg_pnl: number;
-}
-
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
 const getFreshness = (dateString?: string) => {
@@ -251,38 +239,6 @@ function SectorFilter({ sectors, value, onChange }: {
     );
 }
 
-// ─── Performance Stats Bar ────────────────────────────────────────────────────
-
-function SignalPerformanceStats({ stats }: { stats: EnginePerformance[] }) {
-    if (!stats?.length) return null;
-    return (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-            {stats.map((s) => (
-                <div key={s.source} className="rounded-xl border border-slate-200/60 dark:border-slate-800/50 bg-white dark:bg-slate-900/40 p-4 flex items-center gap-4">
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-center mb-0.5">
-                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate">{SOURCE_LABELS[s.source] || s.source}</p>
-                            <InfoTooltip content={`Historical performance of the ${SOURCE_LABELS[s.source] || s.source} engine based on completed signals.`} />
-                        </div>
-                        <div className="flex items-baseline gap-1.5">
-                            <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter">{s.win_rate}%</span>
-                            <span className="text-[10px] text-slate-400">win</span>
-                        </div>
-                        <div className="mt-2 h-1 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${s.win_rate}%` }} />
-                        </div>
-                    </div>
-                    <div className={cn(
-                        'text-xs font-black px-2 py-1 rounded-lg whitespace-nowrap',
-                        s.avg_pnl >= 0 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-rose-50 text-rose-500 dark:bg-rose-900/20 dark:text-rose-400'
-                    )}>
-                        {s.avg_pnl > 0 ? '+' : ''}{s.avg_pnl}%
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
-}
 
 // ─── Signal Card ─────────────────────────────────────────────────────────────
 
@@ -329,17 +285,46 @@ function UnifiedSignalCard({
             <div className="p-4">
                 {/* ── Header ── */}
                 <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="min-w-0">
-                        <div className="flex items-center gap-2 mb-1.5">
-                            <Link
-                                href={`/ticker/${symbol}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="text-lg font-black tracking-tight text-slate-900 dark:text-slate-100 hover:underline"
-                            >
-                                {symbol}
-                            </Link>
-                            <SignalBadge direction={direction} />
+                    <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-3 mb-2">
+                            <div className="flex items-center gap-2">
+                                <Link
+                                    href={`/ticker/${symbol}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-lg font-black tracking-tight text-slate-900 dark:text-slate-100 hover:underline"
+                                >
+                                    {symbol}
+                                </Link>
+                                <SignalBadge direction={direction} />
+                            </div>
+
+                            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/50 px-2 py-0.5 rounded-md border border-slate-100 dark:border-slate-800">
+                                <span className="text-sm font-black font-mono text-slate-900 dark:text-slate-100 tracking-tight">
+                                    Rs.{num(ltp).toLocaleString()}
+                                </span>
+                                {change !== null && (
+                                    <span className={cn(
+                                        'text-[10px] font-bold',
+                                        num(change) > 0 ? 'text-emerald-500' : num(change) < 0 ? 'text-rose-500' : 'text-slate-400'
+                                    )}>
+                                        {num(change) > 0 ? '+' : ''}{fixed(change, 1)}%
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="flex items-center gap-2.5">
+                                <div className="flex items-center gap-1">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">RSI</span>
+                                    <span className={cn('text-xs font-black font-mono', num(indicators?.rsi) > 70 ? 'text-rose-500' : num(indicators?.rsi) < 30 ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-300')}>{fixed(indicators?.rsi, 1, '--')}</span>
+                                </div>
+                                <div className="w-px h-3 bg-slate-200 dark:bg-slate-700"></div>
+                                <div className="flex items-center gap-1">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">MACD</span>
+                                    <span className={cn('text-xs font-black font-mono', num(indicators?.macd_hist) > 0 ? 'text-emerald-500' : 'text-rose-500')}>{fixed(indicators?.macd, 1, '--')}</span>
+                                </div>
+                            </div>
                         </div>
+                        
                         <div className="flex flex-wrap items-center gap-1.5">
                             {date && (
                                 <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-md', freshness.color)}>
@@ -361,7 +346,6 @@ function UnifiedSignalCard({
                                     )}>
                                         {conviction >= 3 ? 'Triple conviction' : 'Dual confirmation'}
                                     </span>
-                                    <InfoTooltip content="Proprietary confidence score. Triple conviction indicates agreement across 3+ distinct algorithmic models (Smart Money, Volume, Momentum)." />
                                 </div>
                             )}
                             {smartMoneyMetadata?.cluster_count > 0 && (
@@ -371,20 +355,6 @@ function UnifiedSignalCard({
                                 </span>
                             )}
                         </div>
-                    </div>
-
-                    <div className="text-right shrink-0">
-                        <div className="text-lg font-black font-mono text-slate-900 dark:text-slate-100 tracking-tight leading-none">
-                            Rs.{num(ltp).toLocaleString()}
-                        </div>
-                        {change !== null && (
-                            <div className={cn(
-                                'text-xs font-bold mt-0.5',
-                                num(change) > 0 ? 'text-emerald-500' : num(change) < 0 ? 'text-rose-500' : 'text-slate-400'
-                            )}>
-                                {num(change) > 0 ? '+' : ''}{fixed(change, 1)}%
-                            </div>
-                        )}
                     </div>
                 </div>
 
@@ -399,32 +369,8 @@ function UnifiedSignalCard({
                 <div className="flex items-center gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/60">
                     {/* Indicators */}
                     <div className="flex items-center gap-3 flex-1">
-                        <div className="flex items-center group/confirm">
-                            <Activity size={13} className="text-slate-400" />
-                            <InfoTooltip content="Real-time technical indicators (RSI & MACD) used to confirm the momentum behind the signal." />
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-[9px] text-slate-400 font-bold uppercase">RSI</span>
-                            <span className={cn(
-                                'text-[12px] font-black font-mono',
-                                num(indicators?.rsi) > 70 ? 'text-rose-500'
-                                    : num(indicators?.rsi) < 30 ? 'text-emerald-500'
-                                    : 'text-slate-700 dark:text-slate-300'
-                            )}>
-                                {fixed(indicators?.rsi, 1, '--')}
-                            </span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-[9px] text-slate-400 font-bold uppercase">MACD</span>
-                            <span className={cn(
-                                'text-[12px] font-black font-mono',
-                                num(indicators?.macd_hist) > 0 ? 'text-emerald-500' : 'text-rose-500'
-                            )}>
-                                {fixed(indicators?.macd, 1, '--')}
-                            </span>
-                        </div>
                         {indicators?.trends && (
-                            <div className="hidden sm:flex items-center gap-3 pl-3 border-l border-slate-100 dark:border-slate-800">
+                            <div className="hidden sm:flex items-center gap-3">
                                 <TrendPill label="5d" val={indicators.trends['5d']} />
                                 <TrendPill label="10d" val={indicators.trends['10d']} />
                                 <TrendPill label="1m" val={indicators.trends['1m']} />
@@ -564,62 +510,111 @@ function AllSourcesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
     if (loading) return <Loader />;
 
     return (
-        <div className="space-y-5">
-            {/* Summary chips */}
-            <div className="flex flex-wrap gap-2">
-                {[
-                    { label: 'Buys', value: buys, color: 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/40' },
-                    { label: 'Sells', value: sells, color: 'bg-rose-50 text-rose-500 border-rose-200 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-800/40' },
-                    { label: 'Multi-source', value: multiSource, color: 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/40' },
-                    { label: 'Total', value: unified.length, color: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
-                ].map(m => (
-                    <div key={m.label} className={cn('flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold', m.color)}>
-                        <span className="text-base font-black">{m.value}</span>
-                        {m.label}
+        <div className="space-y-6">
+            {/* ── Market Pulse Hero ── */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 p-6 sm:p-8 flex items-center justify-between shadow-2xl">
+                <div className="absolute top-[-20px] right-[-20px] p-8 opacity-5 pointer-events-none transition-transform hover:scale-110 duration-1000">
+                    <Activity size={200} strokeWidth={1} />
+                </div>
+                
+                <div className="relative z-10 w-full">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
+                                <Activity className="text-indigo-400" size={24} />
+                                Market Pulse
+                            </h2>
+                            <p className="text-slate-400 text-sm font-medium mt-1">
+                                Consolidated intelligence from all specialized engines.
+                            </p>
+                        </div>
+                        {generatedDate && (
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 backdrop-blur-md rounded-full border border-white/10 text-xs font-semibold text-slate-300">
+                                <Clock size={12} className="text-indigo-400" />
+                                {new Date(generatedDate).toLocaleDateString()}
+                            </div>
+                        )}
                     </div>
-                ))}
-                {generatedDate && (
-                    <div className="flex items-center ml-auto text-[10px] font-semibold text-slate-400">
-                        Data from {new Date(generatedDate).toLocaleDateString()}
+                    
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        {[
+                            { label: 'Actionable Buys', value: buys, icon: <TrendingUp className="text-emerald-400" size={16} /> },
+                            { label: 'Actionable Sells', value: sells, icon: <TrendingDown className="text-rose-400" size={16} /> },
+                            { label: 'High Conviction', value: multiSource, icon: <Zap className="text-amber-400" size={16} /> },
+                            { label: 'Total Tracked', value: unified.length, icon: <Radar className="text-indigo-400" size={16} /> },
+                        ].map(m => (
+                            <div key={m.label} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 flex flex-col justify-between group hover:bg-white/10 transition-colors">
+                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                    {m.icon}
+                                    {m.label}
+                                </div>
+                                <div className="text-3xl font-black text-white">{m.value}</div>
+                            </div>
+                        ))}
                     </div>
-                )}
+                </div>
             </div>
 
-            {/* Sector filter */}
-            <SectorFilter sectors={availableSectors} value={sectorFilter} onChange={setSectorFilter} />
+            {/* ── Advanced Filter Dock ── */}
+            <div className="flex flex-col lg:flex-row gap-4 items-center justify-between p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                    {/* Sector */}
+                    <div className="flex-1 lg:flex-none">
+                        <SectorFilter sectors={availableSectors} value={sectorFilter} onChange={setSectorFilter} />
+                    </div>
+                    
+                    <div className="w-px h-8 bg-slate-200 dark:bg-slate-800 hidden lg:block mx-1" />
 
-            {/* Filter bar */}
-            <div className="flex flex-wrap gap-3 items-center">
-                <div className="flex p-0.5 bg-slate-100 dark:bg-slate-800/60 rounded-lg border border-slate-200/50 dark:border-slate-700/50">
-                    {(['ALL', 'BUY', 'SELL'] as const).map(d => (
-                        <button key={d} onClick={() => setDirFilter(d)}
-                            className={cn('px-3 py-1.5 rounded-md text-xs font-bold transition-all',
-                                dirFilter === d
-                                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200')}>
-                            {d === 'ALL' ? 'All' : d}
-                        </button>
-                    ))}
+                    {/* Direction */}
+                    <div className="flex p-1 bg-slate-100 dark:bg-slate-950/50 rounded-lg">
+                        {(['ALL', 'BUY', 'SELL'] as const).map(d => (
+                            <button key={d} onClick={() => setDirFilter(d)}
+                                className={cn('px-4 py-1.5 rounded-md text-[11px] font-bold transition-all uppercase tracking-wider',
+                                    dirFilter === d
+                                        ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-700/50'
+                                        : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200')}>
+                                {d === 'ALL' ? 'All' : d}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="w-px h-8 bg-slate-200 dark:bg-slate-800 hidden lg:block mx-1" />
+
+                    {/* Conviction */}
+                    <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-950/50 rounded-lg">
+                        <span className="text-[10px] font-bold text-slate-400 pl-2 pr-1 uppercase tracking-wider hidden sm:block">Sources</span>
+                        {[1, 2, 3].map(n => (
+                            <button key={n} onClick={() => setMinConviction(n)}
+                                className={cn('w-8 h-7 rounded-md text-xs font-black transition-all flex items-center justify-center',
+                                    minConviction === n
+                                        ? 'bg-slate-900 dark:bg-slate-700 text-white shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200')}>
+                                {n}+
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-1 p-0.5 bg-slate-100 dark:bg-slate-800/60 rounded-lg border border-slate-200/50 dark:border-slate-700/50">
-                    <span className="text-[10px] font-bold text-slate-400 pl-2">Sources</span>
-                    {[1, 2, 3].map(n => (
-                        <button key={n} onClick={() => setMinConviction(n)}
-                            className={cn('w-7 h-7 rounded-md text-xs font-black transition-all',
-                                minConviction === n
-                                    ? 'bg-slate-900 dark:bg-white text-white dark:text-black shadow-sm'
-                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white')}>
-                            {n}+
-                        </button>
-                    ))}
+                <div className="relative w-full lg:w-64 px-2 lg:px-0 lg:pr-2 pb-2 lg:pb-0">
+                    <Search size={14} className="absolute left-5 lg:left-3 top-[calc(50%-4px)] lg:top-1/2 -translate-y-1/2 text-slate-400" strokeWidth={2.5} />
+                    <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by symbol…"
+                        className="w-full pl-9 pr-4 py-2 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-slate-400" />
                 </div>
+            </div>
 
-                <div className="relative ml-auto">
-                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" strokeWidth={2.5} />
-                    <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search symbol…"
-                        className="pl-8 pr-4 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-slate-900/20 dark:focus:ring-white/10 w-48 transition-all" />
-                </div>
+            {/* ── Section Header ── */}
+            <div className="flex items-center justify-between pt-2 px-1">
+                <h3 className="text-lg font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-2">
+                    {dirFilter === 'BUY' ? 'Actionable Buys' : dirFilter === 'SELL' ? 'Actionable Sells' : 'Active Intelligence'}
+                    {minConviction > 1 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50 text-[10px] font-bold uppercase tracking-wider shadow-sm">
+                            {minConviction}+ Sources
+                        </span>
+                    )}
+                </h3>
+                <span className="text-xs font-bold text-slate-400 bg-slate-100 dark:bg-slate-800/50 px-2.5 py-1 rounded-full">
+                    {filtered.length} {filtered.length === 1 ? 'Signal' : 'Signals'}
+                </span>
             </div>
 
             {/* Cards */}
@@ -661,6 +656,7 @@ function SmartMoneyView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
     const [loading, setLoading] = useState(true);
     const [activeSection, setActiveSection] = useState('platinum');
     const [sectorFilter, setSectorFilter] = useState('ALL');
+    const [search, setSearch] = useState('');
 
     useEffect(() => {
         api.get('/api/stocks/generated-signals/latest/', { params: { source: 'SMART_MONEY' } })
@@ -677,6 +673,7 @@ function SmartMoneyView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
 
     const filterFn = (s: GeneratedSignal, tier: string) => {
         if (s.signal_tier !== tier) return false;
+        if (search && !s.symbol.toLowerCase().includes(search.toLowerCase())) return false;
         if (!showHistorical && !isSignalActionable(parseFloat(s.ltp) || 0, liveMarketMap[s.symbol], s.signal, s.generated_date)) return false;
         if (sectorFilter !== 'ALL' && sectorMap[s.symbol] !== sectorFilter) return false;
         return true;
@@ -692,29 +689,46 @@ function SmartMoneyView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
     if (loading) return <Loader />;
 
     const current = sections.find(s => s.id === activeSection) || sections[0];
+    const buys = current.items.filter(s => s.signal === 'BUY').length;
+    const sells = current.items.filter(s => s.signal === 'SELL').length;
 
     return (
         <div className="space-y-5">
             <SectorFilter sectors={availableSectors} value={sectorFilter} onChange={setSectorFilter} />
-            <div className="flex flex-wrap gap-1 p-0.5 bg-slate-100 dark:bg-slate-800/60 rounded-lg border border-slate-200/50 dark:border-slate-700/50 w-fit">
-                {sections.map(s => (
-                    <button key={s.id} onClick={() => setActiveSection(s.id)}
-                        className={cn(
-                            'flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all',
-                            activeSection === s.id
-                                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                        )}>
-                        <span className={cn('w-1.5 h-1.5 rounded-full', s.dot)} />
-                        {s.label}
-                        <span className="text-[10px] opacity-50 font-semibold">{s.items.length}</span>
-                    </button>
-                ))}
+            <div className="flex flex-wrap gap-3 items-center">
+                <div className="flex p-0.5 bg-slate-100 dark:bg-slate-800/60 rounded-lg border border-slate-200/50 dark:border-slate-700/50">
+                    {sections.map(s => (
+                        <button key={s.id} onClick={() => setActiveSection(s.id)}
+                            className={cn(
+                                'flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all',
+                                activeSection === s.id
+                                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                            )}>
+                            <span className={cn('w-1.5 h-1.5 rounded-full', s.dot)} />
+                            {s.label}
+                            <span className="text-[10px] opacity-50 font-semibold">{s.items.length}</span>
+                        </button>
+                    ))}
+                </div>
+                <div className="flex gap-2 text-[10px] font-bold">
+                    <span className="px-2 py-1 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/40">
+                        {buys} buys
+                    </span>
+                    <span className="px-2 py-1 rounded-md bg-rose-50 text-rose-500 border border-rose-200 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-800/40">
+                        {sells} sells
+                    </span>
+                </div>
+                <div className="relative ml-auto">
+                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" strokeWidth={2.5} />
+                    <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search symbol…"
+                        className="pl-8 pr-4 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-slate-900/20 dark:focus:ring-white/10 w-48" />
+                </div>
             </div>
 
             {current.items.length === 0
                 ? <Empty label={`No ${current.label} signals right now`} />
-                : <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                : <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-3">
                     {current.items.map(sig => (
                         <UnifiedSignalCard key={sig.symbol} symbol={sig.symbol} direction={sig.signal}
                             ltp={parseFloat(sig.ltp) || 0} currentPrice={liveMarketMap[sig.symbol]}
@@ -742,7 +756,12 @@ function StrategiesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
 
     useEffect(() => {
         api.get('/api/stocks/signals/', { params: { page_size: 500 } })
-            .then(r => setSignals(r.data?.results ?? []))
+            .then(r => {
+                const results: StrategySignal[] = r.data?.results ?? [];
+                setSignals(results);
+                const symbols = [...new Set(results.map((s: StrategySignal) => s.symbol))];
+                if (symbols.length) fetchBatchIndicators(symbols);
+            })
             .catch(() => { })
             .finally(() => setLoading(false));
     }, []);
@@ -760,10 +779,14 @@ function StrategiesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
             if (search && !s.symbol.toLowerCase().includes(search.toLowerCase())) continue;
             if (sectorFilter !== 'ALL' && sectorMap[s.symbol] !== sectorFilter) continue;
             if (!showHistorical && !isSignalActionable(parseFloat(s.last_close) || 0, liveMarketMap[s.symbol], s.signal as 'BUY' | 'SELL', s.date)) continue;
-            (map.get(s.symbol) ?? map.set(s.symbol, []).get(s.symbol)!).push(s);
+            const existing = map.get(s.symbol);
+            if (existing) { existing.push(s); } else { map.set(s.symbol, [s]); }
         }
         return [...map.entries()].sort((a, b) => b[1].length - a[1].length);
     }, [signals, filter, search, sectorFilter, showHistorical, liveMarketMap, sectorMap]);
+
+    const buyCount = groups.reduce((acc, [, sigs]) => acc + sigs.filter((s: StrategySignal) => s.signal === 'BUY').length, 0);
+    const sellCount = groups.reduce((acc, [, sigs]) => acc + sigs.filter((s: StrategySignal) => s.signal === 'SELL').length, 0);
 
     if (loading) return <Loader />;
 
@@ -782,6 +805,14 @@ function StrategiesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
                         </button>
                     ))}
                 </div>
+                <div className="flex gap-2 text-[10px] font-bold">
+                    <span className="px-2 py-1 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/40">
+                        {buyCount} buys
+                    </span>
+                    <span className="px-2 py-1 rounded-md bg-rose-50 text-rose-500 border border-rose-200 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-800/40">
+                        {sellCount} sells
+                    </span>
+                </div>
                 <div className="relative ml-auto">
                     <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" strokeWidth={2.5} />
                     <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search symbol…"
@@ -791,8 +822,8 @@ function StrategiesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
             {groups.length === 0 ? <Empty label="No strategy signals match filters" /> : (
                 <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-3">
                     {groups.map(([symbol, sigs]) => {
-                        const buySigs = sigs.filter(s => s.signal === 'BUY');
-                        const sellSigs = sigs.filter(s => s.signal === 'SELL');
+                        const buySigs = sigs.filter((s: StrategySignal) => s.signal === 'BUY');
+                        const sellSigs = sigs.filter((s: StrategySignal) => s.signal === 'SELL');
                         const dominant = buySigs.length >= sellSigs.length ? 'BUY' : 'SELL';
                         return (
                             <UnifiedSignalCard key={symbol} symbol={symbol}
@@ -800,7 +831,7 @@ function StrategiesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
                                 ltp={parseFloat(sigs[0]?.last_close ?? '0')}
                                 currentPrice={liveMarketMap[symbol]}
                                 date={sigs[0]?.date} strength={70}
-                                reason={sigs[0]?.strategy_description || sigs.map(s => s.strategy_name).join(' · ')}
+                                reason={sigs[0]?.strategy_description || sigs.map((s: StrategySignal) => s.strategy_name).join(' · ')}
                                 tagline={`${sigs.length} Strategy Signals`}
                                 indicators={batchIndicators[symbol]}
                                 onSelect={onSelect} />
@@ -930,7 +961,6 @@ export default function IntelHubClient() {
     const [liveMarketMap, setLiveMarketMap] = useState<Record<string, number>>({});
     const [batchIndicators, setBatchIndicators] = useState<Record<string, BatchIndicatorData>>({});
     const [showHistorical, setShowHistorical] = useState(false);
-    const [performance, setPerformance] = useState<EnginePerformance[]>([]);
     const [sectorMap, setSectorMap] = useState<Record<string, string>>({});
 
     const fetchBatchIndicators = async (symbols: string[]) => {
@@ -950,10 +980,6 @@ export default function IntelHubClient() {
             });
             setLiveMarketMap(map);
         }).catch(() => { });
-        api.get('/api/stocks/generated-signals/performance/')
-            .then(res => setPerformance(res.data || []))
-            .catch(() => { });
-
         api.get('/api/stocks/companies/')
             .then(res => {
                 const map: Record<string, string> = {};
@@ -978,8 +1004,9 @@ export default function IntelHubClient() {
         <DashboardLayout>
             <div className="pb-20 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-                    {/* Historical toggle */}
-                    <div className="flex items-center gap-2 sm:ml-auto">
+                {/* ── Controls bar ── */}
+                <div className="flex flex-wrap items-center gap-4 justify-between">
+                    <div className="flex items-center gap-2">
                         <span className="text-xs font-medium text-slate-400 dark:text-slate-500">Show historical</span>
                         <button
                             onClick={() => setShowHistorical(!showHistorical)}
@@ -995,6 +1022,15 @@ export default function IntelHubClient() {
                             )} />
                         </button>
                     </div>
+                    <Link
+                        href="/signals/track-record"
+                        className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                    >
+                        <Activity size={12} />
+                        Track Record
+                        <ArrowRight size={11} />
+                    </Link>
+                </div>
 
                 {/* ── Tab navigation ── */}
                 <div className="flex p-0.5 bg-slate-100 dark:bg-slate-900/60 rounded-xl border border-slate-200/60 dark:border-slate-800/50 w-fit">
@@ -1014,9 +1050,6 @@ export default function IntelHubClient() {
                     ))}
                 </div>
 
-                {/* ── Performance stats ── */}
-                <SignalPerformanceStats stats={performance} />
-
                 {/* ── Main content ── */}
                 <div className="animate-in fade-in slide-in-from-bottom-1 duration-300">
                     {tab === 'all'        && <AllSourcesView {...sharedProps} />}
@@ -1031,6 +1064,9 @@ export default function IntelHubClient() {
                 <DialogContent className="w-[90vw] h-[90vh] max-w-none sm:max-w-none p-0 overflow-hidden border-none bg-transparent shadow-none">
                     <VisuallyHidden.Root>
                         <DialogTitle>{selectedSignal?.symbol || 'Signal'} Intelligence</DialogTitle>
+                        <DialogDescription>
+                            Comprehensive technical and fundamental analysis for {selectedSignal?.symbol}.
+                        </DialogDescription>
                     </VisuallyHidden.Root>
                     {selectedSignal && (
                         <SignalDetailErrorBoundary symbol={selectedSignal.symbol} onReset={() => setSelectedSignal(null)}>

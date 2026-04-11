@@ -365,15 +365,18 @@ class SignalGenerationService:
     # ─── NEW ACCUMULATION-BASED STRATEGIES ──────────────────────────────────
 
     @staticmethod
-    def _generate_distribution_alert_signals():
+    def _generate_distribution_alert_signals(target_date=None):
         """
         SELL signals when top holders are aggressively offloading.
         Detects institutional profit-taking: price near/above WAC + negative net accumulation.
         """
-        query = """
+        where_val = "WHERE transaction_date <= %s" if target_date else ""
+        
+        query = f"""
         WITH accumulation_ref AS (
             SELECT transaction_date as latest_acc_date
             FROM daily_cumulative_accumulation
+            {where_val}
             GROUP BY transaction_date HAVING COUNT(*) > 100
             ORDER BY transaction_date DESC LIMIT 1
         ),
@@ -415,6 +418,7 @@ class SignalGenerationService:
             SELECT DISTINCT ON (symbol) symbol, close,
                    LAG(close, 5) OVER (PARTITION BY symbol ORDER BY transaction_date) as close_5d
             FROM daily_stock_price
+            {where_val}
             ORDER BY symbol, transaction_date DESC
         )
         SELECT
@@ -433,12 +437,13 @@ class SignalGenerationService:
 
         signals = []
         try:
+            params = [target_date, target_date] if target_date else []
             with connections['default'].cursor() as cursor:
-                cursor.execute(query)
+                cursor.execute(query, params)
                 columns = [col[0] for col in cursor.description]
                 raw = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-            today = date.today()
+            today = target_date or date.today()
             for row in raw:
                 ltp = float(row['ltp'] or 0)
                 wac = float(row['top_broker_wac'] or 0)
@@ -488,15 +493,18 @@ class SignalGenerationService:
         return signals
 
     @staticmethod
-    def _generate_below_cost_reversal_signals():
+    def _generate_below_cost_reversal_signals(target_date=None):
         """
         BUY signals when price is below institutional WAC but brokers are still accumulating.
         Institutions averaging down = high conviction in the stock.
         """
-        query = """
+        where_val = "WHERE transaction_date <= %s" if target_date else ""
+        
+        query = f"""
         WITH accumulation_ref AS (
             SELECT transaction_date as latest_acc_date
             FROM daily_cumulative_accumulation
+            {where_val}
             GROUP BY transaction_date HAVING COUNT(*) > 100
             ORDER BY transaction_date DESC LIMIT 1
         ),
@@ -536,7 +544,9 @@ class SignalGenerationService:
         ),
         latest_price AS (
             SELECT DISTINCT ON (symbol) symbol, close
-            FROM daily_stock_price ORDER BY symbol, transaction_date DESC
+            FROM daily_stock_price
+            {where_val}
+            ORDER BY symbol, transaction_date DESC
         )
         SELECT
             bca.symbol, c."companyName" as name, c."sectorName" as sector,
@@ -556,12 +566,13 @@ class SignalGenerationService:
 
         signals = []
         try:
+            params = [target_date, target_date] if target_date else []
             with connections['default'].cursor() as cursor:
-                cursor.execute(query)
+                cursor.execute(query, params)
                 columns = [col[0] for col in cursor.description]
                 raw = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-            today = date.today()
+            today = target_date or date.today()
             for row in raw:
                 ltp = float(row['ltp'] or 0)
                 wac = float(row['avg_wac'] or 0)
@@ -609,21 +620,25 @@ class SignalGenerationService:
         return signals
 
     @staticmethod
-    def _generate_volume_breakout_signals():
+    def _generate_volume_breakout_signals(target_date=None):
         """
         BUY/SELL when institutional volume exceeds 2x its 20-day average
         AND the accumulation direction aligns with price movement.
         """
-        query = """
+        where_val = "WHERE transaction_date <= %s" if target_date else ""
+        
+        query = f"""
         WITH accumulation_ref AS (
             SELECT transaction_date as latest_acc_date
             FROM daily_cumulative_accumulation
+            {where_val}
             GROUP BY transaction_date HAVING COUNT(*) > 100
             ORDER BY transaction_date DESC LIMIT 1
         ),
         floorsheet_ref AS (
             SELECT transaction_date as latest_fs_date
             FROM daily_floorsheet
+            {where_val}
             GROUP BY transaction_date HAVING COUNT(*) > 100
             ORDER BY transaction_date DESC LIMIT 1
         ),
@@ -643,10 +658,10 @@ class SignalGenerationService:
                 SUM(CASE WHEN sm_b.broker IS NOT NULL THEN df.transaction_quantity ELSE 0 END) as inst_buy_vol,
                 SUM(CASE WHEN sm_s.broker IS NOT NULL THEN df.transaction_quantity ELSE 0 END) as inst_sell_vol,
                 SUM(df.transaction_quantity) as total_vol
-            FROM daily_floorsheet df, floorsheet_ref
+            FROM daily_floorsheet df
+            INNER JOIN floorsheet_ref fr ON df.transaction_date = fr.latest_fs_date
             LEFT JOIN smart_money sm_b ON df.symbol = sm_b.symbol AND df.buyer_id::text = sm_b.broker
             LEFT JOIN smart_money sm_s ON df.symbol = sm_s.symbol AND df.seller_id::text = sm_s.broker
-            WHERE df.transaction_date = floorsheet_ref.latest_fs_date
             GROUP BY df.symbol
         ),
         -- 20-day average total volume
@@ -656,13 +671,16 @@ class SignalGenerationService:
                 SELECT symbol, volume,
                        ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY transaction_date DESC) as rn
                 FROM daily_stock_price
+                {where_val}
             ) sub WHERE rn <= 20
             GROUP BY symbol
         ),
         latest_price AS (
             SELECT DISTINCT ON (symbol) symbol, close,
                    LAG(close, 1) OVER (PARTITION BY symbol ORDER BY transaction_date) as prev_close
-            FROM daily_stock_price ORDER BY symbol, transaction_date DESC
+            FROM daily_stock_price
+            {where_val}
+            ORDER BY symbol, transaction_date DESC
         )
         SELECT
             tiv.symbol, c."companyName" as name, c."sectorName" as sector,
@@ -683,12 +701,13 @@ class SignalGenerationService:
 
         signals = []
         try:
+            params = [target_date] * 4 if target_date else []
             with connections['default'].cursor() as cursor:
-                cursor.execute(query)
+                cursor.execute(query, params)
                 columns = [col[0] for col in cursor.description]
                 raw = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-            today = date.today()
+            today = target_date or date.today()
             for row in raw:
                 ltp = float(row['ltp'] or 0)
                 prev_close = float(row['prev_close'] or ltp)
@@ -738,15 +757,18 @@ class SignalGenerationService:
         return signals
 
     @staticmethod
-    def _generate_concentration_shift_signals():
+    def _generate_concentration_shift_signals(target_date=None):
         """
         BUY/SELL when the number of smart-money brokers holding a stock changes significantly.
         New brokers entering (broadening) = bullish. Brokers exiting (narrowing) = bearish.
         """
-        query = """
+        where_val = "WHERE transaction_date <= %s" if target_date else ""
+        
+        query = f"""
         WITH accumulation_ref AS (
             SELECT transaction_date as latest_acc_date
             FROM daily_cumulative_accumulation
+            {where_val}
             GROUP BY transaction_date HAVING COUNT(*) > 100
             ORDER BY transaction_date DESC LIMIT 1
         ),
@@ -761,6 +783,7 @@ class SignalGenerationService:
         past_ref AS (
             SELECT transaction_date as past_date
             FROM daily_cumulative_accumulation
+            {where_val}
             GROUP BY transaction_date HAVING COUNT(*) > 100
             ORDER BY transaction_date DESC LIMIT 1 OFFSET 10
         ),
@@ -783,7 +806,9 @@ class SignalGenerationService:
         ),
         latest_price AS (
             SELECT DISTINCT ON (symbol) symbol, close
-            FROM daily_stock_price ORDER BY symbol, transaction_date DESC
+            FROM daily_stock_price
+            {where_val}
+            ORDER BY symbol, transaction_date DESC
         )
         SELECT
             hc.symbol, co."companyName" as name, co."sectorName" as sector,
@@ -801,12 +826,13 @@ class SignalGenerationService:
 
         signals = []
         try:
+            params = [target_date] * 3 if target_date else []
             with connections['default'].cursor() as cursor:
-                cursor.execute(query)
+                cursor.execute(query, params)
                 columns = [col[0] for col in cursor.description]
                 raw = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-            today = date.today()
+            today = target_date or date.today()
             for row in raw:
                 ltp = float(row['ltp'] or 0)
                 shift = row['shift']

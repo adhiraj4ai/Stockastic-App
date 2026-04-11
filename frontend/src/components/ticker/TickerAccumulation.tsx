@@ -10,9 +10,10 @@ import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
 
 interface TickerAccumulationProps {
     symbol: string;
+    initialRange?: string;
 }
 
-const RANGES = ['1D', '1W', '1M', '1Y'] as const;
+const RANGES = ['1D', '1W', '1M', '1Y', 'AT'] as const;
 
 type SortKey = 'broker' | 'cumulative_net' | 'wac' | 'ltp' | 'pnl' | 'change_5d' | 'change_10d' | 'change_20d' | 'change_50d';
 type SortDir = 'asc' | 'desc';
@@ -39,8 +40,8 @@ function TrendBadge({ trend, change }: { trend: string; change: number }) {
     );
 }
 
-export default function TickerAccumulation({ symbol }: TickerAccumulationProps) {
-    const [range, setRange] = useState<string>('1W');
+export default function TickerAccumulation({ symbol, initialRange }: TickerAccumulationProps) {
+    const [range, setRange] = useState<string>(initialRange || '1W');
     const [graphData, setGraphData] = useState<{ data: any[]; brokers: number[]; buy_leaders: any[]; sell_leaders: any[] } | null>(null);
     const [accumData, setAccumData] = useState<any | null>(null);
     const [trendData, setTrendData] = useState<any[]>([]);
