@@ -18,6 +18,7 @@ export default function TickerLandingPage() {
     const router = useRouter();
     const [search, setSearch] = useState('');
     const [companies, setCompanies] = useState<Company[]>([]);
+    const [portfolioSymbols, setPortfolioSymbols] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [focused, setFocused] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -25,6 +26,15 @@ export default function TickerLandingPage() {
     // Auto-focus on mount
     useEffect(() => {
         inputRef.current?.focus();
+        
+        // Fetch portfolio symbols
+        api.get('/api/stocks/portfolio/')
+            .then(res => {
+                const data = Array.isArray(res.data) ? res.data : (res.data.results || []);
+                const symbols = Array.from(new Set(data.map((item: any) => item.ticker))) as string[];
+                setPortfolioSymbols(symbols.slice(0, 10)); // Limit to 10
+            })
+            .catch(() => {});
     }, []);
 
     useEffect(() => {
@@ -116,12 +126,14 @@ export default function TickerLandingPage() {
                     )}
                 </div>
 
-                {/* Quick picks */}
-                {!focused && !search && (
+                {/* Quick picks / Portfolio */}
+                {!focused && !search && (portfolioSymbols.length > 0 || QUICK_PICKS.length > 0) && (
                     <div className="mt-8 flex items-center gap-3 animate-in fade-in duration-500 delay-300">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Quick</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            {portfolioSymbols.length > 0 ? 'Your Portfolio' : 'Quick'}
+                        </span>
                         <div className="flex flex-wrap gap-2">
-                            {QUICK_PICKS.map(s => (
+                            {(portfolioSymbols.length > 0 ? portfolioSymbols : QUICK_PICKS).map(s => (
                                 <button
                                     key={s}
                                     onClick={() => go(s)}
