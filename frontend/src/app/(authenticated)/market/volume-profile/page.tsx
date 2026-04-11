@@ -66,7 +66,7 @@ export default function VolumeProfilePage() {
         setLoading(true);
         setError(null);
         try {
-            const res = await api.get(`/api/stocks/market/volume-profile/profile/?symbol=${sym}&range=${rng}`);
+            const res = await api.get(`/api/stocks/market/volume-profile/?symbol=${sym}&range=${rng}`);
             setData(res.data);
         } catch (err: any) {
             console.error("Error fetching volume profile:", err);

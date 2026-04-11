@@ -41,7 +41,7 @@ const navItems = [
         ]
     },
     // Chat moved to top nav
-    { name: 'Ticker', href: '/ticker/NABIL', icon: ScanLine },
+    { name: 'Ticker', href: '/ticker', icon: ScanLine },
     {
         name: 'Finfolio',
         icon: Wallet,

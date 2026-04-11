@@ -6,7 +6,8 @@ import api from '@/lib/api';
 import { cn } from '@/lib/utils';
 import {
     Activity, CandlestickChart, TrendingUp, TrendingDown,
-    Clock, Zap, ShieldAlert, Triangle, Layers, ArrowUpRight, ArrowDownRight
+    Clock, Zap, ShieldAlert, Triangle, Layers, ArrowUpRight, ArrowDownRight, Target,
+    Maximize2, Minimize2
 } from 'lucide-react';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import ReactECharts from 'echarts-for-react';
@@ -56,30 +57,7 @@ interface PriceActionData {
 
 interface PriceActionTerminalProps {
     symbol: string;
-}
-
-// ─── Grouping toggle ─────────────────────────────────────────────
-
-function GroupingBar({ value, onChange }: { value: number; onChange: (n: number) => void }) {
-    const opts = [{ label: '1D', val: 1 }, { label: '2D', val: 2 }, { label: '3D', val: 3 }, { label: '1W', val: 5 }];
-    return (
-        <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
-            {opts.map(o => (
-                <button
-                    key={o.val}
-                    onClick={() => onChange(o.val)}
-                    className={cn(
-                        'px-3 h-7 text-xs font-bold rounded-md transition-all',
-                        value === o.val
-                            ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-400'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                    )}
-                >
-                    {o.label}
-                </button>
-            ))}
-        </div>
-    );
+    grouping?: number;
 }
 
 // ─── OHLC header row ─────────────────────────────────────────────
@@ -290,13 +268,21 @@ function TrendBias({ history }: { history: PriceActionDay[] }) {
 
 // ─── Root ────────────────────────────────────────────────────────
 
-export function PriceActionTerminal({ symbol }: PriceActionTerminalProps) {
+export function PriceActionTerminal({ symbol, grouping = 1 }: PriceActionTerminalProps) {
     const { theme } = useTheme();
     const isDark = theme === 'dark';
     const [data, setData] = useState<PriceActionData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [grouping, setGrouping] = useState(1);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+
+    useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setIsFullscreen(false);
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, []);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -313,6 +299,81 @@ export function PriceActionTerminal({ symbol }: PriceActionTerminalProps) {
         };
         if (symbol) fetchData();
     }, [symbol, grouping]);
+
+    // ── Structural Liquidity Levels (PDH/PDL, PWH/PWL, PMH/PML) ──
+    const structuralLiquidity = useMemo(() => {
+        if (!data || data.history.length < 25) return null;
+        const h = data.history; // latest-first
+        const pdh = h[1]?.high || 0;
+        const pdl = h[1]?.low || 0;
+        const prevWeek = h.slice(1, 6);
+        const pwh = Math.max(...prevWeek.map(d => d.high));
+        const pwl = Math.min(...prevWeek.map(d => d.low));
+        const prevMonth = h.slice(1, 23);
+        const pmh = Math.max(...prevMonth.map(d => d.high));
+        const pml = Math.min(...prevMonth.map(d => d.low));
+        return [
+            { name: 'PMH', price: pmh, type: 'BSL', color: '#ef4444' },
+            { name: 'PWH', price: pwh, type: 'BSL', color: '#ef4444' },
+            { name: 'PDH', price: pdh, type: 'BSL', color: '#ef4444' },
+            { name: 'PML', price: pml, type: 'SSL', color: '#10b981' },
+            { name: 'PWL', price: pwl, type: 'SSL', color: '#10b981' },
+            { name: 'PDL', price: pdl, type: 'SSL', color: '#10b981' },
+        ].filter(item => item.price > 0 && item.price !== Infinity);
+    }, [data]);
+
+    // ── Order Blocks (last opposing candle before impulsive move) ──
+    const orderBlocks = useMemo(() => {
+        if (!data || data.history.length < 20) return [];
+        const sorted = [...data.history].reverse(); // oldest first
+        const lookback = sorted.slice(-60);
+
+        let atrSum = 0;
+        const atrLen = Math.min(14, lookback.length - 1);
+        for (let i = 1; i <= atrLen; i++) {
+            const h = lookback[i].high, l = lookback[i].low, pc = lookback[i - 1].close;
+            atrSum += Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc));
+        }
+        const atr = atrLen > 0 ? atrSum / atrLen : 1;
+
+        const blocks: Array<{ type: 'bullish' | 'bearish'; date: string; high: number; low: number; mitigated: boolean; impulseIdx: number }> = [];
+        for (let i = 1; i < lookback.length; i++) {
+            const cO = lookback[i].open, cC = lookback[i].close, cBody = Math.abs(cC - cO);
+            const pO = lookback[i - 1].open, pC = lookback[i - 1].close;
+            const pH = lookback[i - 1].high, pL = lookback[i - 1].low;
+            const globalIdx = sorted.length - lookback.length + i;
+            if (cC > cO && cBody > 1.5 * atr && pC < pO)
+                blocks.push({ type: 'bullish', date: lookback[i - 1].date, high: pH, low: pL, mitigated: false, impulseIdx: globalIdx });
+            if (cC < cO && cBody > 1.5 * atr && pC > pO)
+                blocks.push({ type: 'bearish', date: lookback[i - 1].date, high: pH, low: pL, mitigated: false, impulseIdx: globalIdx });
+        }
+        blocks.forEach(ob => {
+            for (let j = ob.impulseIdx + 1; j < sorted.length; j++) {
+                const c = sorted[j].close;
+                if (ob.type === 'bullish' && c <= ob.high) { ob.mitigated = true; break; }
+                if (ob.type === 'bearish' && c >= ob.low) { ob.mitigated = true; break; }
+            }
+        });
+        return blocks.filter(ob => !ob.mitigated).slice(-5).reverse();
+    }, [data]);
+
+    // ── Liquidity Sweeps (wick through structural level, close back) ──
+    const liquiditySweeps = useMemo(() => {
+        if (!data || data.history.length < 5 || !structuralLiquidity || structuralLiquidity.length === 0) return [];
+        const recent = data.history.slice(0, 10);
+        const sweeps: Array<{ level: string; price: number; date: string; type: 'BSL_SWEEP' | 'SSL_SWEEP' }> = [];
+        for (const candle of recent) {
+            for (const level of structuralLiquidity) {
+                if (level.type === 'BSL' && candle.high > level.price && Math.max(candle.close, candle.open) < level.price)
+                    sweeps.push({ level: level.name, price: level.price, date: candle.date, type: 'BSL_SWEEP' });
+                if (level.type === 'SSL' && candle.low < level.price && Math.min(candle.close, candle.open) > level.price)
+                    sweeps.push({ level: level.name, price: level.price, date: candle.date, type: 'SSL_SWEEP' });
+            }
+        }
+        return sweeps;
+    }, [data, structuralLiquidity]);
+
+    const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
     const chartOptions = useMemo(() => {
         if (!data || data.history.length === 0) return {};
@@ -346,8 +407,58 @@ export function PriceActionTerminal({ symbol }: PriceActionTerminalProps) {
             });
         });
 
+        // Overlay: Sweep markers on the chart
+        liquiditySweeps.forEach(sweep => {
+            const idx = historyCopy.findIndex(d => d.date === sweep.date);
+            if (idx >= 0) {
+                const d = historyCopy[idx];
+                markPoints.push({
+                    coord: [idx, sweep.type === 'BSL_SWEEP' ? d.high * 1.003 : d.low * 0.997],
+                    symbol: 'circle',
+                    symbolSize: 11,
+                    itemStyle: { color: '#f59e0b', borderColor: '#fde68a', borderWidth: 2, shadowBlur: 6, shadowColor: '#f59e0b' },
+                    label: { show: false }
+                });
+            }
+        });
+
+        // Overlay: OB zones as markArea (from OB date to right edge)
+        const obAreas: any[] = orderBlocks.map(ob => {
+            const obIdx = historyCopy.findIndex(d => d.date === ob.date);
+            const isBull = ob.type === 'bullish';
+            return [
+                {
+                    name: isBull ? 'Bull OB' : 'Bear OB',
+                    yAxis: ob.low,
+                    ...(obIdx >= 0 ? { xAxis: categoryData[obIdx] } : {}),
+                    itemStyle: {
+                        color: isBull ? 'rgba(16,185,129,0.07)' : 'rgba(239,68,68,0.07)',
+                        borderColor: isBull ? 'rgba(16,185,129,0.35)' : 'rgba(239,68,68,0.35)',
+                        borderWidth: 1,
+                        borderType: 'dashed'
+                    }
+                },
+                {
+                    yAxis: ob.high,
+                    ...(obIdx >= 0 ? { xAxis: categoryData[categoryData.length - 1] } : {})
+                }
+            ];
+        });
+
+        // Overlay: Structural liquidity levels as markLine
+        const structLines = structuralLiquidity ? structuralLiquidity.map(level => ({
+            yAxis: level.price,
+            name: level.name,
+            label: { formatter: level.name, show: true, position: 'insideEndTop', color: level.color, fontSize: 9, fontWeight: 700, padding: [2, 4] },
+            lineStyle: { color: level.color, type: 'dotted', width: 1, opacity: 0.5 }
+        })) : [];
+
         const upColor = isDark ? '#10b981' : '#059669';
         const downColor = isDark ? '#f43f5e' : '#e11d48';
+
+        const totalBars = historyCopy.length;
+        const targetBars = 22; // approx 1 month of trading days
+        const initialZoomStart = totalBars > targetBars ? ((totalBars - targetBars) / totalBars) * 100 : 0;
 
         return {
             animation: false,
@@ -389,8 +500,11 @@ export function PriceActionTerminal({ symbol }: PriceActionTerminalProps) {
                 }
             ],
             dataZoom: [
-                { type: 'inside', xAxisIndex: [0, 1], start: 55, end: 100 },
-                { show: true, type: 'slider', xAxisIndex: [0, 1], top: '93%', start: 55, end: 100, height: 20, borderColor: isDark ? '#334155' : '#e2e8f0', fillerColor: isDark ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.06)', handleStyle: { color: '#6366f1' } }
+                { type: 'inside', xAxisIndex: [0, 1], start: initialZoomStart, end: 100 },
+                { show: true, type: 'slider', xAxisIndex: [0, 1], top: '93%', start: initialZoomStart, end: 100, height: 20, borderColor: isDark ? '#334155' : '#e2e8f0', fillerColor: isDark ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.06)', handleStyle: { color: '#6366f1' } },
+                // Y-Axis Zooming/Scaling
+                { type: 'inside', yAxisIndex: [0], start: 0, end: 100, zoomOnMouseWheel: 'alt', moveOnMouseMove: 'alt', moveOnMouseWheel: 'alt' },
+                { show: isFullscreen, type: 'slider', yAxisIndex: [0], right: 10, start: 0, end: 100, width: 20, borderColor: isDark ? '#334155' : '#e2e8f0', fillerColor: isDark ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.06)', handleStyle: { color: '#6366f1' } }
             ],
             series: [
                 {
@@ -402,10 +516,20 @@ export function PriceActionTerminal({ symbol }: PriceActionTerminalProps) {
                     markArea: {
                         itemStyle: { opacity: 0.1 },
                         label: { show: true, position: 'insideTopRight', fontSize: 10, fontWeight: 700, opacity: 0.7, color: isDark ? '#f8fafc' : '#0f172a' },
-                        data: data.zones ? data.zones.map(z => [
-                            { name: z.type, yAxis: z.yAxis0, itemStyle: { color: z.type === 'Supply' ? '#ef4444' : '#22c55e' } },
-                            { yAxis: z.yAxis1 }
-                        ]) : []
+                        data: [
+                            ...(data.zones ? data.zones.map(z => [
+                                { name: z.type, yAxis: z.yAxis0, itemStyle: { color: z.type === 'Supply' ? '#ef4444' : '#22c55e' } },
+                                { yAxis: z.yAxis1 }
+                            ]) : []),
+                            ...obAreas
+                        ]
+                    },
+                    markLine: {
+                        symbol: ['none', 'none'],
+                        label: { show: true, position: 'insideEndTop', fontSize: 9, fontWeight: 700 },
+                        lineStyle: { type: 'dotted', width: 1 },
+                        data: structLines,
+                        animation: false
                     }
                 },
                 {
@@ -421,7 +545,7 @@ export function PriceActionTerminal({ symbol }: PriceActionTerminalProps) {
                 }
             ]
         };
-    }, [data, isDark]);
+    }, [data, isDark, structuralLiquidity, orderBlocks, liquiditySweeps]);
 
     // ── Loading ──
     if (loading) {
@@ -472,49 +596,166 @@ export function PriceActionTerminal({ symbol }: PriceActionTerminalProps) {
                         </p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <TrendBias history={data.history} />
-                    <GroupingBar value={grouping} onChange={setGrouping} />
-                </div>
+                <TrendBias history={data.history} />
             </div>
 
             {/* ── Session strip ── */}
             <OHLCStrip day={latest} />
 
             {/* ── Chart ── */}
-            <div className="bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div className={cn(
+                "bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-all duration-300",
+                isFullscreen ? "fixed inset-0 z-[100] rounded-none bg-white dark:bg-slate-950 p-6" : "relative"
+            )}>
                 <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-2">
                         <Activity size={13} className="text-slate-400" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Structural Map</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            Structural Map {isFullscreen && "— Full Intel View"}
+                        </span>
                     </div>
                     <div className="flex items-center gap-4">
-                        <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400">
-                            <span className="w-2 h-2 rounded-sm bg-violet-500" /> FVG
-                        </span>
-                        <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400">
-                            <span className="w-2 h-2 rounded-sm bg-emerald-500" /> BoS
-                        </span>
-                        <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400">
-                            <span className="w-2 h-2 rounded-sm bg-amber-500" /> Sniper
-                        </span>
-                        <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400">
-                            <span className="w-3 h-2 rounded-sm bg-rose-500/20 border border-rose-400/40" /> Supply
-                        </span>
-                        <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400">
-                            <span className="w-3 h-2 rounded-sm bg-emerald-500/20 border border-emerald-400/40" /> Demand
-                        </span>
+                        <div className="hidden md:flex items-center gap-3">
+                            <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400">
+                                <span className="w-2 h-2 rounded-sm bg-violet-500" /> FVG
+                            </span>
+                            <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400">
+                                <span className="w-2 h-2 rounded-sm bg-emerald-500" /> BoS
+                            </span>
+                            <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400">
+                                <span className="w-2 h-2 rounded-sm bg-amber-500" /> Sniper
+                            </span>
+                            <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400">
+                                <span className="w-3 h-2 rounded-sm bg-rose-500/10 border border-rose-400/40" /> Supply
+                            </span>
+                            <span className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400">
+                                <span className="w-3 h-2 rounded-sm bg-emerald-500/10 border border-emerald-400/40" /> Demand
+                            </span>
+                        </div>
+                        
+                        <div className="h-4 w-[1px] bg-slate-100 dark:bg-slate-800 hidden md:block" />
+
+                        <button
+                            onClick={() => setIsFullscreen(!isFullscreen)}
+                            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-indigo-500 transition-colors"
+                            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                        >
+                            {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                        </button>
                     </div>
                 </div>
-                <div className="h-[580px] w-full px-2 py-3">
+                <div className={cn(
+                    "w-full px-2 py-3 transition-all duration-300",
+                    isFullscreen ? "h-[calc(100%-60px)]" : "h-[580px]"
+                )}>
                     <ReactECharts
                         option={chartOptions}
                         style={{ height: '100%', width: '100%' }}
                         theme={isDark ? 'dark' : 'light'}
                         opts={{ renderer: 'canvas' }}
+                        notMerge={true}
                     />
                 </div>
+                {isFullscreen && (
+                    <div className="absolute top-20 right-8 z-[110] flex flex-col gap-2 pointer-events-none opacity-60">
+                        <p className="text-[10px] font-bold text-slate-400 bg-slate-900/80 px-2 py-1 rounded">
+                            Drag Chart to Zoom X · Use Alt + Scroll to Zoom Y
+                        </p>
+                    </div>
+                )}
             </div>
+
+            {/* ── Smart Money Structure ── */}
+            {(orderBlocks.length > 0 || liquiditySweeps.length > 0) && (
+                <div className="bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div className="px-5 pt-4 pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Target size={13} className="text-indigo-500" />
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Smart Money Structure</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {orderBlocks.length > 0 && (
+                                <span className="text-[10px] font-bold bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full">{orderBlocks.length} OB</span>
+                            )}
+                            {liquiditySweeps.length > 0 && (
+                                <span className="text-[10px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full">{liquiditySweeps.length} Sweep</span>
+                            )}
+                        </div>
+                    </div>
+                    <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
+                        {/* Order Blocks */}
+                        {orderBlocks.length > 0 && (
+                            <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2.5">Active Order Blocks</p>
+                                <div className="space-y-2">
+                                    {orderBlocks.map((ob, i) => {
+                                        const midZone = (ob.high + ob.low) / 2;
+                                        const latestClose = data.history[0]?.close || 0;
+                                        const distPct = latestClose > 0 ? ((latestClose - midZone) / midZone * 100) : 0;
+                                        const isNear = Math.abs(distPct) < 3;
+                                        return (
+                                            <div key={i} className={cn(
+                                                "p-3 rounded-xl border text-xs",
+                                                ob.type === 'bullish'
+                                                    ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200/80 dark:border-emerald-800/40"
+                                                    : "bg-red-50/50 dark:bg-red-950/20 border-red-200/80 dark:border-red-800/40"
+                                            )}>
+                                                <div className="flex items-center justify-between mb-1.5">
+                                                    <span className={cn("font-bold flex items-center gap-1.5", ob.type === 'bullish' ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400")}>
+                                                        {ob.type === 'bullish' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                                                        {ob.type === 'bullish' ? 'Bullish OB' : 'Bearish OB'}
+                                                    </span>
+                                                    <span className="text-slate-400 font-medium">{fmtDate(ob.date)}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="font-mono font-bold text-slate-700 dark:text-slate-200">
+                                                        Rs. {ob.low.toLocaleString()} — {ob.high.toLocaleString()}
+                                                    </span>
+                                                    <span className={cn(
+                                                        "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                                                        isNear ? "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                                                    )}>
+                                                        {isNear ? 'Near zone' : `${distPct > 0 ? '+' : ''}${distPct.toFixed(1)}%`}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Liquidity Sweeps */}
+                        {liquiditySweeps.length > 0 && (
+                            <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2.5">Liquidity Sweeps</p>
+                                <div className="space-y-2">
+                                    {liquiditySweeps.map((sweep, i) => (
+                                        <div key={i} className={cn(
+                                            "p-3 rounded-xl border text-xs",
+                                            sweep.type === 'SSL_SWEEP'
+                                                ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200/80 dark:border-emerald-800/40"
+                                                : "bg-red-50/50 dark:bg-red-950/20 border-red-200/80 dark:border-red-800/40"
+                                        )}>
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <span className={cn("font-bold flex items-center gap-1.5", sweep.type === 'SSL_SWEEP' ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400")}>
+                                                    <Zap size={11} />
+                                                    {sweep.type === 'BSL_SWEEP' ? 'Buy-Side Sweep' : 'Sell-Side Sweep'}
+                                                </span>
+                                                <span className="text-slate-400 font-medium">{fmtDate(sweep.date)}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-slate-500">Swept: <span className="font-bold text-slate-700 dark:text-slate-200">{sweep.level}</span></span>
+                                                <span className="font-mono font-bold text-slate-700 dark:text-slate-200">Rs. {sweep.price.toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* ── Signals + Zones ── */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

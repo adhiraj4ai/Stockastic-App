@@ -1,5 +1,4 @@
 from rest_framework import viewsets
-from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db import connections
 from django.utils import timezone
@@ -12,8 +11,7 @@ class VolumeProfileView(viewsets.ViewSet):
     View for calculating and returning the Volume Profile (Volume at Price) for a symbol.
     """
 
-    @action(detail=False, methods=['get'])
-    def profile(self, request):
+    def list(self, request):
         symbol = request.query_params.get('symbol', '').upper()
         time_range = request.query_params.get('range', '1M')
         
@@ -87,7 +85,9 @@ class VolumeProfileView(viewsets.ViewSet):
         profile_data_sorted = profile_data.sort_values('dist_to_poc')
         
         profile_data_sorted['cum_vol'] = profile_data_sorted['volume'].cumsum()
-        value_area_rows = profile_data_sorted[profile_data_sorted['cum_vol'] <= va_target]
+        # Include the bar that crosses the 70% threshold
+        prev_cum = profile_data_sorted['cum_vol'].shift(1, fill_value=0)
+        value_area_rows = profile_data_sorted[prev_cum < va_target]
         
         if value_area_rows.empty:
              val = min_price

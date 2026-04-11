@@ -134,6 +134,7 @@ def check_portfolio_alerts(user):
                 item = impacted_items[0]
                 price = get_latest_price(item.ticker)
                 wacc_curr = float(item.wacc) if item.wacc else float(item.buy_price)
+                price_change_pct = ((price - wacc_curr) / wacc_curr) * 100 if wacc_curr > 0 else 0
                 
                 title, message = "", ""
                 if n_type == Notification.NotificationType.STOP_LOSS_HIT:
@@ -160,6 +161,12 @@ def check_portfolio_alerts(user):
                     ticker=item.ticker,
                     redirect_url='/portfolio?tab=holdings',
                     portfolio_item_id=item.id,
+                    metadata={
+                        'price': price,
+                        'wacc': wacc_curr,
+                        'change_pct': price_change_pct,
+                        'symbol': item.ticker
+                    }
                 )
                 if notification: notifications_created += 1
             else:
@@ -167,6 +174,9 @@ def check_portfolio_alerts(user):
                 items_data = []
                 for item in impacted_items:
                     price = get_latest_price(item.ticker)
+                    wacc_curr = float(item.wacc) if item.wacc else float(item.buy_price)
+                    change_pct = ((price - wacc_curr) / wacc_curr) * 100 if wacc_curr > 0 else 0
+                    
                     detail = ""
                     if n_type == Notification.NotificationType.STOP_LOSS_HIT: detail = "Stop-Loss Hit"
                     elif n_type == Notification.NotificationType.TARGET_REACHED: detail = "Target Reached"
@@ -177,7 +187,9 @@ def check_portfolio_alerts(user):
                     items_data.append({
                         'symbol': item.ticker,
                         'detail': detail,
-                        'price': price
+                        'price': price,
+                        'change_pct': change_pct,
+                        'wacc': wacc_curr
                     })
 
                 symbols = [i.ticker for i in impacted_items]
@@ -251,6 +263,12 @@ def check_watchlist_alerts(user):
                     ticker=item.ticker,
                     redirect_url=f'/ticker/{item.ticker}',
                     watchlist_item_id=item.id,
+                    metadata={
+                        'price': price,
+                        'symbol': item.ticker,
+                        'target': float(item.target_price) if item.target_price else None,
+                        'stop': float(item.stop_loss_price) if item.stop_loss_price else None
+                    }
                 )
                 if notification: notifications_created += 1
             else:
@@ -261,7 +279,9 @@ def check_watchlist_alerts(user):
                     items_data.append({
                         'symbol': item.ticker,
                         'detail': detail,
-                        'price': price
+                        'price': price,
+                        'target': float(item.target_price) if item.target_price else None,
+                        'stop': float(item.stop_loss_price) if item.stop_loss_price else None
                     })
 
                 symbols = [i.ticker for i in impacted_items]
@@ -358,7 +378,15 @@ def check_active_signal_alerts(user):
                 message=f"Strategy Signal for {sig.symbol} ({sig.source}) was closed as {hit_type}. {status_text}.",
                 ticker=sig.symbol,
                 redirect_url='/recommendations',
-                metadata={'signal_id': sig.id, 'hit_type': hit_type, 'source': sig.source}
+                metadata={
+                    'signal_id': sig.id, 
+                    'hit_type': hit_type, 
+                    'source': sig.source,
+                    'price': price,
+                    'symbol': sig.symbol,
+                    'target': float(sig.target_price) if sig.target_price else None,
+                    'stop': float(sig.stop_loss_price) if sig.stop_loss_price else None
+                }
             )
             if notification: notifications_created += 1
         else:
@@ -370,7 +398,9 @@ def check_active_signal_alerts(user):
                 items_data.append({
                     'symbol': s.symbol,
                     'detail': f"{hit_type} ({s.source})",
-                    'price': price
+                    'price': price,
+                    'target': float(s.target_price) if s.target_price else None,
+                    'stop': float(s.stop_loss_price) if s.stop_loss_price else None
                 })
                 seen_symbols.add(s.symbol)
 
@@ -467,9 +497,9 @@ def check_whale_watch_alerts(user):
                     'price': price
                 })
 
-            Notification.objects.create(
+            create_notification(
                 user=user,
-                type=notif_type,
+                notification_type=notif_type,
                 title=title,
                 message=message,
                 ticker='SUMMARY',
@@ -558,9 +588,9 @@ def check_signal_alerts(user):
             if existing:
                 continue
             
-            notification = Notification.objects.create(
+            notification = create_notification(
                 user=user,
-                type=notif_type,
+                notification_type=notif_type,
                 title=title,
                 message=message,
                 ticker=symbol,
@@ -569,7 +599,9 @@ def check_signal_alerts(user):
                     'signal_count': count,
                     'signal_type': signal_type,
                     'strategies': strategy_names,
-                    'date': str(today)
+                    'date': str(today),
+                    'price': get_latest_price(symbol),
+                    'symbol': symbol
                 }
             )
             
@@ -705,9 +737,9 @@ def check_accumulation_trend_alerts(user):
                 except (TypeError, ValueError):
                     net_5d_val = 0.0
 
-            Notification.objects.create(
+            create_notification(
                 user=user,
-                type=Notification.NotificationType.TREND_BUY_5D,
+                notification_type=Notification.NotificationType.TREND_BUY_5D,
                 title=title,
                 message=message,
                 ticker=symbol,
@@ -715,7 +747,9 @@ def check_accumulation_trend_alerts(user):
                 metadata={
                     'brokers': [b['broker'] for b in brokers],
                     'top_broker': top_broker['broker'] if top_broker else "Unknown",
-                    'net_5d': net_5d_val
+                    'net_5d': net_5d_val,
+                    'price': row.get('ltp'),
+                    'symbol': symbol
                 }
             )
             notifications_created += 1
@@ -802,33 +836,36 @@ def check_technical_alerts(user):
             # --- VOLUME SPIKE ---
             if latest_vol > (latest_avg_vol * 3) and latest_avg_vol > 0:
                 if not Notification.objects.filter(user=user, ticker=symbol, type=Notification.NotificationType.VOLUME_SPIKE, created_at__gte=one_day_ago).exists():
-                    Notification.objects.create(
-                        user=user, ticker=symbol, type=Notification.NotificationType.VOLUME_SPIKE,
+                    create_notification(
+                        user=user, ticker=symbol, notification_type=Notification.NotificationType.VOLUME_SPIKE,
                         title=f"{symbol} - Volume Spike",
                         message=f"Unusual volume detected: {latest_vol:,} which is {latest_vol/latest_avg_vol:.1f}x the 20-day average.",
-                        redirect_url=f"/ticker/{symbol}"
+                        redirect_url=f"/ticker/{symbol}",
+                        metadata={'price': latest_close, 'vol_multiplier': latest_vol/latest_avg_vol, 'symbol': symbol}
                     )
                     notifications_created += 1
 
             # --- RSI OVERSOLD ---
             if latest_rsi < 30:
                 if not Notification.objects.filter(user=user, ticker=symbol, type=Notification.NotificationType.RSI_OVERSOLD, created_at__gte=one_day_ago).exists():
-                    Notification.objects.create(
-                        user=user, ticker=symbol, type=Notification.NotificationType.RSI_OVERSOLD,
+                    create_notification(
+                        user=user, ticker=symbol, notification_type=Notification.NotificationType.RSI_OVERSOLD,
                         title=f"{symbol} - RSI Oversold",
                         message=f"{symbol} is currently oversold with an RSI of {latest_rsi:.1f}. Potential reversal area.",
-                        redirect_url=f"/ticker/{symbol}"
+                        redirect_url=f"/ticker/{symbol}",
+                        metadata={'price': latest_close, 'rsi': latest_rsi, 'symbol': symbol}
                     )
                     notifications_created += 1
 
             # --- RSI OVERBOUGHT ---
             if latest_rsi > 70:
                 if not Notification.objects.filter(user=user, ticker=symbol, type=Notification.NotificationType.RSI_OVERBOUGHT, created_at__gte=one_day_ago).exists():
-                    Notification.objects.create(
-                        user=user, ticker=symbol, type=Notification.NotificationType.RSI_OVERBOUGHT,
+                    create_notification(
+                        user=user, ticker=symbol, notification_type=Notification.NotificationType.RSI_OVERBOUGHT,
                         title=f"{symbol} - RSI Overbought",
                         message=f"{symbol} is currently overbought with an RSI of {latest_rsi:.1f}. Caution recommended.",
-                        redirect_url=f"/ticker/{symbol}"
+                        redirect_url=f"/ticker/{symbol}",
+                        metadata={'price': latest_close, 'rsi': latest_rsi, 'symbol': symbol}
                     )
                     notifications_created += 1
 
@@ -841,11 +878,12 @@ def check_technical_alerts(user):
                 
                 if prev_sma50 <= prev_sma200 and curr_sma50 > curr_sma200:
                     if not Notification.objects.filter(user=user, ticker=symbol, type=Notification.NotificationType.GOLDEN_CROSS, created_at__gte=one_day_ago).exists():
-                        Notification.objects.create(
-                            user=user, ticker=symbol, type=Notification.NotificationType.GOLDEN_CROSS,
+                        create_notification(
+                            user=user, ticker=symbol, notification_type=Notification.NotificationType.GOLDEN_CROSS,
                             title=f"{symbol} - Golden Cross",
                             message=f"Bullish 50-day SMA crossed above 200-day SMA for {symbol}.",
-                            redirect_url=f"/ticker/{symbol}"
+                            redirect_url=f"/ticker/{symbol}",
+                            metadata={'price': latest_close, 'symbol': symbol}
                         )
                         notifications_created += 1
 
@@ -889,11 +927,12 @@ def check_broker_discovery_alerts(user):
             if not prev_exists:
                 # Fresh big entry!
                 if not Notification.objects.filter(user=user, ticker=acc.symbol, type=Notification.NotificationType.WHALE_ENTRY, created_at__gte=one_day_ago).exists():
-                    Notification.objects.create(
-                        user=user, ticker=acc.symbol, type=Notification.NotificationType.WHALE_ENTRY,
+                    create_notification(
+                        user=user, ticker=acc.symbol, notification_type=Notification.NotificationType.WHALE_ENTRY,
                         title=f"Whale Entry: {acc.symbol}",
                         message=f"Broker {acc.entity_id} has entered a fresh position in {acc.symbol} with {acc.cumulative_net:,} units.",
-                        redirect_url=f"/accumulation/trends?search={acc.symbol}"
+                        redirect_url=f"/accumulation/trends?search={acc.symbol}",
+                        metadata={'price': get_latest_price(acc.symbol), 'broker': acc.entity_id, 'units': acc.cumulative_net, 'symbol': acc.symbol}
                     )
                     notifications_created += 1
 
@@ -922,11 +961,12 @@ def check_portfolio_management_alerts(user):
             weight = (item.quantity * wacc_val) / total_value
             if weight > 0.40: # 40% threshold
                 if not Notification.objects.filter(user=user, ticker=item.ticker, type=Notification.NotificationType.PORTFOLIO_DIVERSITY, created_at__gte=one_week_ago).exists():
-                    Notification.objects.create(
-                        user=user, ticker=item.ticker, type=Notification.NotificationType.PORTFOLIO_DIVERSITY,
+                    create_notification(
+                        user=user, ticker=item.ticker, notification_type=Notification.NotificationType.PORTFOLIO_DIVERSITY,
                         title="Concentration Warning",
                         message=f"{item.ticker} now makes up {weight*100:.1f}% of your portfolio. Consider diversifying.",
-                        redirect_url="/portfolio"
+                        redirect_url="/portfolio",
+                        metadata={'weight': weight, 'symbol': item.ticker, 'price': curr_price}
                     )
                     notifications_created += 1
             
@@ -937,11 +977,12 @@ def check_portfolio_management_alerts(user):
                 profit_percent = ((curr_price - wacc_val) / wacc_val) * 100
                 if profit_percent > 30:
                     if not Notification.objects.filter(user=user, ticker=item.ticker, type=Notification.NotificationType.TAKE_PROFIT, created_at__gte=one_week_ago).exists():
-                        Notification.objects.create(
-                            user=user, ticker=item.ticker, type=Notification.NotificationType.TAKE_PROFIT,
+                        create_notification(
+                            user=user, ticker=item.ticker, notification_type=Notification.NotificationType.TAKE_PROFIT,
                             title=f"Profit Rocket: {item.ticker}",
                             message=f"You are up {profit_percent:.1f}% on {item.ticker}. Consider locking in some profits!",
-                            redirect_url="/portfolio"
+                            redirect_url="/portfolio",
+                            metadata={'profit_percent': profit_percent, 'symbol': item.ticker, 'price': curr_price}
                         )
                         notifications_created += 1
 
