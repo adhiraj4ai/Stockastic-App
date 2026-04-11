@@ -124,9 +124,6 @@ export default function TickerLandingPage() {
                     <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white">
                         Ticker <span className="text-emerald-500">Search</span>
                     </h1>
-                    <p className="mt-2 text-sm text-slate-400 dark:text-slate-500">
-                        Enter a symbol to load the full intelligence view
-                    </p>
                 </div>
 
                 {/* Search */}
