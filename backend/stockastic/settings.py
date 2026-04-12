@@ -221,6 +221,7 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
         "rest_framework.authentication.TokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
@@ -238,8 +239,8 @@ REST_FRAMEWORK = {
 # REST Auth & Allauth
 REST_AUTH = {
     "USE_JWT": True,
-    "JWT_AUTH_COOKIE": "jwt-auth",
-    "JWT_AUTH_REFRESH_COOKIE": "jwt-refresh-token",
+    "JWT_AUTH_COOKIE": "access_token",
+    "JWT_AUTH_REFRESH_COOKIE": "refresh_token",
     "JWT_AUTH_HTTPONLY": False, # Set to True for production
     "USER_DETAILS_SERIALIZER": "users.serializers.UserSerializer",
 }

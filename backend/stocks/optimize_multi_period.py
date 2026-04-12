@@ -9,7 +9,7 @@ from backtesting.test import SMA
 import pandas as pd
 import numpy as np
 import inspect
-import pandas_ta as ta
+import talib
 
 
 # Default Risk values for optimization
@@ -44,15 +44,46 @@ class SafeIndicator:
 
 
 class SafeTa:
-    """Wrapper for pandas_ta to make indicators return SafeIndicator objects"""
+    """
+    Wrapper for talib to provide compatibility with pandas-ta naming conventions.
+    Maps 'length' -> 'timeperiod', 'fast' -> 'fastperiod', etc.
+    """
     def __init__(self, real_ta):
         self._ta = real_ta
-        
+        self._param_map = {
+            'length': 'timeperiod',
+            'fast': 'fastperiod',
+            'slow': 'slowperiod',
+            'signal': 'signalperiod',
+            'n': 'timeperiod',
+            'upper': 'nbdevup',
+            'lower': 'nbdevdn'
+        }
+
     def __getattr__(self, name):
-        attr = getattr(self._ta, name)
+        talib_name = name.upper()
+        try:
+            attr = getattr(self._ta, talib_name)
+        except AttributeError:
+            attr = getattr(self._ta, name)
+
         if callable(attr):
             def wrapper(*args, **kwargs):
-                res = attr(*args, **kwargs)
+                mapped_kwargs = {}
+                for k, v in kwargs.items():
+                    if k in self._param_map:
+                        mapped_kwargs[self._param_map[k]] = v
+                    else:
+                        mapped_kwargs[k] = v
+                
+                mapped_args = []
+                for a in args:
+                    if isinstance(a, (pd.Series, pd.DataFrame)):
+                        mapped_args.append(a.values.astype(float))
+                    else:
+                        mapped_args.append(a)
+                
+                res = attr(*mapped_args, **mapped_kwargs)
                 return SafeIndicator(res)
             return wrapper
         return attr
@@ -227,7 +258,7 @@ class CrossValidationObjective:
         
         local_scope = {
             'Backtest': Backtest, 'Strategy': Strategy, 'crossover': crossover,
-            'SMA': SMA, 'pd': pd, 'np': np, 'ta': SafeTa(ta),
+            'SMA': SMA, 'pd': pd, 'np': np, 'ta': SafeTa(talib),
         }
         
         try:
@@ -385,7 +416,7 @@ def run_final_backtest(data_map, code_template, params):
         'SMA': SMA,
         'pd': pd,
         'np': np,
-        'ta': SafeTa(ta),
+        'ta': SafeTa(talib),
     }
     
     try:

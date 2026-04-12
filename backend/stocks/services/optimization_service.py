@@ -6,7 +6,7 @@ import optuna
 from backtesting import Backtest, Strategy
 from backtesting.lib import crossover
 from backtesting.test import SMA
-import pandas_ta as ta
+import talib
 from datetime import datetime, timedelta
 from django.db.models import Min, Q
 from ..models.market import Company, DailyStockPrice
@@ -17,7 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
 
-# --- Wrappers for Robustness ---
+# --- Wrappers for Robustness and Library Migration ---
 
 class SafeIndicator:
     def __init__(self, obj):
@@ -33,13 +33,51 @@ class SafeIndicator:
         return self.obj[key]
 
 class SafeTa:
+    """
+    Wrapper for talib to provide compatibility with pandas-ta naming conventions.
+    Maps 'length' -> 'timeperiod', 'fast' -> 'fastperiod', etc.
+    """
     def __init__(self, real_ta):
         self._ta = real_ta
+        self._param_map = {
+            'length': 'timeperiod',
+            'fast': 'fastperiod',
+            'slow': 'slowperiod',
+            'signal': 'signalperiod',
+            'n': 'timeperiod',
+            'upper': 'nbdevup',
+            'lower': 'nbdevdn'
+        }
+
     def __getattr__(self, name):
-        attr = getattr(self._ta, name)
+        # talib functions are usually UPPERCASE in the library itself (e.g. talib.RSI)
+        # but we allow lowercase for pandas-ta parity (e.g. ta.rsi)
+        talib_name = name.upper()
+        try:
+            attr = getattr(self._ta, talib_name)
+        except AttributeError:
+            # Fallback to direct attribute access for non-indicator functions
+            attr = getattr(self._ta, name)
+
         if callable(attr):
             def wrapper(*args, **kwargs):
-                res = attr(*args, **kwargs)
+                # Translate pandas-ta kwargs to talib kwargs
+                mapped_kwargs = {}
+                for k, v in kwargs.items():
+                    if k in self._param_map:
+                        mapped_kwargs[self._param_map[k]] = v
+                    else:
+                        mapped_kwargs[k] = v
+                
+                # Check for dataframe/Series inputs and convert to values
+                mapped_args = []
+                for a in args:
+                    if isinstance(a, (pd.Series, pd.DataFrame)):
+                        mapped_args.append(a.values.astype(float))
+                    else:
+                        mapped_args.append(a)
+                
+                res = attr(*mapped_args, **mapped_kwargs)
                 return SafeIndicator(res)
             return wrapper
         return attr

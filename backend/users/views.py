@@ -576,6 +576,106 @@ class AdminUserViewSet(viewsets.ModelViewSet):
     serializer_class = AdminUserSerializer
     permission_classes = [permissions.IsAdminUser]
 
+    def _is_protected(self, user):
+        """Check if account is protected from deactivation/deletion."""
+        is_admin_role = hasattr(user, 'profile') and user.profile.role == 'ADMIN'
+        return user.is_superuser or user.is_staff or is_admin_role
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        
+        # 1. Protect Admins
+        if self._is_protected(instance):
+            return Response(
+                {"error": "Security Restriction: Administrative accounts cannot be deleted. Downgrade the role first if removal is necessary."},
+                status=403
+            )
+
+        # 2. Account MUST be deactivated first
+        if instance.is_active:
+            return Response(
+                {"error": "Security Restriction: Account must be deactivated before it can be deleted."},
+                status=400
+            )
+
+        # 3. Must wait 90 days since deactivation
+        deactivated_at = getattr(instance, 'profile', None).deactivated_at if hasattr(instance, 'profile') else None
+        if not deactivated_at:
+            return Response(
+                {"error": "Security Restriction: Account deactivation timestamp missing. Please re-activate and deactivate to start the 90-day timer."},
+                status=400
+            )
+        
+        from django.utils import timezone
+        days_deactivated = (timezone.now() - deactivated_at).days
+        if days_deactivated < 90:
+            return Response(
+                {"error": f"Security Restriction: Account must be deactivated for at least 90 days before permanent deletion. Current hold time: {days_deactivated} days."},
+                status=400
+            )
+
+        return super().destroy(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        is_active = request.data.get('is_active')
+        
+        # Prevent deactivation of protected accounts
+        if is_active is False or str(is_active).lower() == 'false':
+            if self._is_protected(instance):
+                return Response(
+                    {"error": "Security Restriction: Administrative/Staff accounts cannot be deactivated via this interface."},
+                    status=403
+                )
+            
+            # Record deactivation time if it's a new deactivation
+            if instance.is_active:
+                from django.utils import timezone
+                instance.profile.deactivated_at = timezone.now()
+                instance.profile.save()
+        
+        # Reset deactivation time if reactivated
+        elif (is_active is True or str(is_active).lower() == 'true') and not instance.is_active:
+            instance.profile.deactivated_at = None
+            instance.profile.save()
+        
+        # Update instance status explicitly to ensure persistence
+        if is_active is not None:
+            instance.is_active = (str(is_active).lower() == 'true') if isinstance(is_active, str) else bool(is_active)
+            instance.save()
+            
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        is_active = request.data.get('is_active')
+
+        # Prevent deactivation of protected accounts
+        if is_active is False or str(is_active).lower() == 'false':
+            if self._is_protected(instance):
+                return Response(
+                    {"error": "Security Restriction: Administrative/Staff accounts cannot be deactivated via this interface."},
+                    status=403
+                )
+
+            # Record deactivation time if it's a new deactivation
+            if instance.is_active:
+                from django.utils import timezone
+                instance.profile.deactivated_at = timezone.now()
+                instance.profile.save()
+
+        # Reset deactivation time if reactivated
+        elif (is_active is True or str(is_active).lower() == 'true') and not instance.is_active:
+            instance.profile.deactivated_at = None
+            instance.profile.save()
+        
+        # Update instance status explicitly to ensure persistence
+        if is_active is not None:
+            instance.is_active = (str(is_active).lower() == 'true') if isinstance(is_active, str) else bool(is_active)
+            instance.save()
+        
+        return super().partial_update(request, *args, **kwargs)
+
     def get_queryset(self):
         queryset = super().get_queryset()
         role = self.request.query_params.get('role')

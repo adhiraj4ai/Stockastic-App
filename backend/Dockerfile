@@ -24,8 +24,10 @@ RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz && \
     ./configure --prefix=/usr && \
     make && \
     make install && \
+    ldconfig && \
     cd .. && \
     rm -rf ta-lib ta-lib-0.4.0-src.tar.gz
+
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
@@ -46,6 +48,9 @@ RUN uv pip install --system --no-cache \
     django-filter \
     redis \
     celery[redis]
+
+# Verify TA-Lib installation (ensuring Python wrapper can find C library)
+RUN python3 -c "import talib; print('TA-Lib installed successfully, version:', talib.get_functions()[0])"
 
 # Copy application code
 COPY . .

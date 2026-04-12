@@ -131,14 +131,14 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: oklch(var(--border) / 0.3);
+    background: color-mix(in oklch, var(--border), transparent 70%);
     border-radius: 100px;
     border: 2px solid transparent;
     background-clip: content-box;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: oklch(var(--primary) / 0.5);
+    background: color-mix(in oklch, var(--primary), transparent 50%);
     background-clip: content-box;
   }
 }

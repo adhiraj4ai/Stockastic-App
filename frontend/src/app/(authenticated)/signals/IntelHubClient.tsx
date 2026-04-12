@@ -327,7 +327,7 @@ function UnifiedSignalCard({
                         
                         <div className="flex flex-wrap items-center gap-1.5">
                             {date && (
-                                <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-md', freshness.color)}>
+                                <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-md', freshness?.color || 'bg-slate-500/10 text-slate-500')}>
                                     {freshness.label}
                                 </span>
                             )}
@@ -381,7 +381,7 @@ function UnifiedSignalCard({
                     {/* Right side: status + arrow */}
                     <div className="flex items-center gap-2 shrink-0">
                         {resolvedAction && (
-                            <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-md border', resolvedAction.color)}>
+                            <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-md border', resolvedAction?.color || 'bg-slate-500/10 text-slate-500')}>
                                 {resolvedAction.label}
                             </span>
                         )}

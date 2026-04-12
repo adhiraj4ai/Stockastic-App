@@ -1,5 +1,5 @@
 import pandas as pd
-import pandas_ta as ta
+import talib
 import numpy as np
 import logging
 from ..technical import _get_prices_df
@@ -9,8 +9,7 @@ logger = logging.getLogger(__name__)
 
 class MarketSignalScanner:
     """
-    Scans the market for 10 specific Institutional Signal types.
-    Price Action, Mean Reversal, RSI Divergence, MACD Divergence, Dow Signals.
+    Scans the market for 10 specific Institutional Signal types using talib.
     """
     def __init__(self, tickers):
         self.tickers = tickers
@@ -34,7 +33,7 @@ class MarketSignalScanner:
                 # 1. Price Action (using PA Analyzer)
                 analyzer = PriceActionAnalyzer(ticker)
                 pa_data = analyzer.get_analysis(lookback=2)
-                if "error" not in pa_data and len(pa_data["history"]) > 0:
+                if pa_data and "error" not in pa_data and len(pa_data["history"]) > 0:
                     latest = pa_data["history"][0]
                     # SMC + Patterns
                     has_bullish_pa = any(e['sentiment'] == 'BULLISH' for e in latest.get('smc_events', [])) or \
@@ -45,11 +44,12 @@ class MarketSignalScanner:
                     if has_bullish_pa: results["pa_buy"].append(ticker)
                     if has_bearish_pa: results["pa_sell"].append(ticker)
 
-                # 2. Indicators for Mean Reversal and Divergence
-                df['rsi'] = df.ta.rsi(length=14)
-                df['sma_20'] = df.ta.sma(length=20)
-                macd = df.ta.macd()
-                df['macd'] = macd['MACD_12_26_9'] if macd is not None else None
+                # 2. Indicators using talib
+                close = df['close'].values.astype(float)
+                df['rsi'] = talib.RSI(close, timeperiod=14)
+                df['sma_20'] = talib.SMA(close, timeperiod=20)
+                macd, macdsignal, macdhist = talib.MACD(close, fastperiod=12, slowperiod=26, signalperiod=9)
+                df['macd'] = macd
                 
                 latest_price = float(df['close'].iloc[-1])
                 latest_rsi = float(df['rsi'].iloc[-1]) if not pd.isna(df['rsi'].iloc[-1]) else 50
@@ -61,18 +61,15 @@ class MarketSignalScanner:
                 elif latest_rsi > 70 and latest_price > (sma20 * 1.02):
                     results["mr_sell"].append(ticker)
 
-                # 3. Divergence (Simplified Peak/Trough Comparison)
-                # Bullish Divergence: Lower Low in Price, Higher Low in Indicator
-                # Bearish Divergence: Higher High in Price, Lower High in Indicator
+                # 3. Divergence
                 lookback = 30
                 if len(df) >= lookback:
                     hist = df.tail(lookback)
-                    
                     # Find local price trough
                     price_min_idx = hist['low'].idxmin()
                     price_min_val = hist['low'].min()
-                    # Find previous trough before this one
-                    prev_hist = df.loc[:price_min_idx].tail(30).iloc[:-5] # roughly look back
+                    # Find previous trough
+                    prev_hist = df.loc[:price_min_idx].tail(30).iloc[:-5] 
                     if not prev_hist.empty:
                         prev_min_val = prev_hist['low'].min()
                         if price_min_val < prev_min_val: # Price lower low
@@ -81,12 +78,12 @@ class MarketSignalScanner:
                             if rsi_at_current > rsi_at_prev: # RSI higher low
                                 results["rsi_bull_div"].append(ticker)
                             
-                            macd_at_current = hist.loc[price_min_idx, 'macd'] if 'macd' in hist else 0
-                            macd_at_prev = prev_hist['macd'].min() if 'macd' in prev_hist else 0
+                            macd_at_current = hist.loc[price_min_idx, 'macd'] if 'macd' in hist.columns else 0
+                            macd_at_prev = prev_hist['macd'].min() if 'macd' in prev_hist.columns else 0
                             if macd_at_current > macd_at_prev:
                                 results["macd_bull_div"].append(ticker)
 
-                        # Higher High check for Bearish Divergence
+                        # Higher High check
                         price_max_idx = hist['high'].idxmax()
                         price_max_val = hist['high'].max()
                         prev_max_val = prev_hist['high'].max()
@@ -96,14 +93,12 @@ class MarketSignalScanner:
                             if rsi_at_current < rsi_at_prev: # RSI lower high
                                 results["rsi_bear_div"].append(ticker)
                                 
-                            macd_at_current = hist.loc[price_max_idx, 'macd'] if 'macd' in hist else 0
-                            macd_at_prev = prev_hist['macd'].max() if 'macd' in prev_hist else 0
+                            macd_at_current = hist.loc[price_max_idx, 'macd'] if 'macd' in hist.columns else 0
+                            macd_at_prev = prev_hist['macd'].max() if 'macd' in prev_hist.columns else 0
                             if macd_at_current < macd_at_prev:
                                 results["macd_bear_div"].append(ticker)
 
-                # 4. Dow Signal (Break of Recent Range)
-                # Buy if current close > 20-day high
-                # Sell if current close < 20-day low
+                # 4. Dow Signal
                 range_high = df['high'].shift(1).rolling(20).max().iloc[-1]
                 range_low = df['low'].shift(1).rolling(20).min().iloc[-1]
                 

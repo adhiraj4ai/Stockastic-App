@@ -12,6 +12,9 @@ from ..serializers import (
 from ..technical import get_technical_indicators
 from .accumulation_mixin import AccumulationMixin
 import datetime
+import talib
+import numpy as np
+import pandas as pd
 from django.db.models import Subquery, OuterRef
 
 @api_view(['GET'])
@@ -281,13 +284,7 @@ def stock_summary(request):
         date__lte=curr_date
     ).values('ticker', 'date', 'close').order_by('date')
     
-    import pandas as pd
-    try:
-        import pandas_ta as ta
-    except ImportError:
-        ta = None
-
-    if ta and tech_qs.exists():
+    if tech_qs.exists():
         df_tech = pd.DataFrame(list(tech_qs))
         if not df_tech.empty:
             # Group by ticker
@@ -297,39 +294,32 @@ def stock_summary(request):
                 if t_df.empty or len(t_df) < 30: continue
                 
                 t_df.set_index('date', inplace=True)
-                t_df['close'] = pd.to_numeric(t_df['close'])
+                close_vals = pd.to_numeric(t_df['close']).values.astype(float)
                 
-                # Calculate Indicators
+                # Calculate Indicators using talib
                 try:
                     # ROC (14) - Rate of Change
-                    roc = t_df.ta.roc(length=14)
-                    roc_val = roc.iloc[-1] if roc is not None and not roc.empty else None
+                    roc = talib.ROC(close_vals, timeperiod=14)
+                    roc_val = roc[-1] if roc is not None and not np.isnan(roc[-1]) else None
                     
                     # RSI (14)
-                    rsi = t_df.ta.rsi(length=14)
-                    rsi_val = rsi.iloc[-1] if rsi is not None and not rsi.empty else None
+                    rsi = talib.RSI(close_vals, timeperiod=14)
+                    rsi_val = rsi[-1] if rsi is not None and not np.isnan(rsi[-1]) else None
                     
                     # MACD (12, 26, 9)
-                    macd = t_df.ta.macd(fast=12, slow=26, signal=9)
-                    # Returns columns: MACD_12_26_9, MACDh_12_26_9, MACDs_12_26_9
-                    macd_val = None
-                    macd_signal = None
-                    if macd is not None and not macd.empty:
-                         macd_val = macd['MACD_12_26_9'].iloc[-1]
-                         macd_signal = macd['MACDs_12_26_9'].iloc[-1]
-
+                    macd, macdsignal, macdhist = talib.MACD(close_vals, fastperiod=12, slowperiod=26, signalperiod=9)
+                    
                     # Update the stock dict in summary_list
-                    # Find the stock object reference
                     for s in summary_list:
                         if s['ticker'] == t:
-                            s['roc'] = round(roc_val, 2) if roc_val is not None else None
-                            s['rsi'] = round(rsi_val, 2) if rsi_val is not None else None
-                            s['macd'] = f"{macd_val:.2f}" if macd_val is not None else None
-                            s['macd_signal'] = f"{macd_signal:.2f}" if macd_signal is not None else None
+                            s['roc'] = round(float(roc_val), 2) if roc_val is not None else None
+                            s['rsi'] = round(float(rsi_val), 2) if rsi_val is not None else None
+                            s['macd'] = f"{macd[-1]:.2f}" if macd is not None and not np.isnan(macd[-1]) else None
+                            s['macd_signal'] = f"{macdsignal[-1]:.2f}" if macdsignal is not None and not np.isnan(macdsignal[-1]) else None
                             break
                             
                 except Exception as e:
-                    print(f"Error calculating tech for {t}: {e}")
+                    logger.warning(f"Error calculating tech for {t}: {e}")
 
     # 8. Whale Watch: Top 5 Brokers by Total Buy Volume -> Top 3 Stocks for each
     # Step A: Find top 5 brokers by total volume
@@ -618,10 +608,6 @@ def batch_indicators(request):
     ).values('ticker', 'date', 'close', 'prev_close', 'open').order_by('date')
 
     import pandas as pd
-    try:
-        import pandas_ta as ta
-    except ImportError:
-        ta = None
 
     results = {}
     if not prices_qs.exists():
@@ -656,33 +642,34 @@ def batch_indicators(request):
         p1m = float(t_df.iloc[-20]['close']) if len(t_df) >= 20 else float(t_df.iloc[0]['close'])
         trend1m = ((close - p1m) / p1m * 100) if p1m > 0 else 0
 
-        # Technicals (using pandas_ta if available)
+        # Technicals using talib
         rsi_val = None
         macd_val = None
         macd_signal = None
         macd_hist = None
         roc14_val = None
 
-        if ta and len(t_df) >= 30:
+        if len(t_df) >= 30:
             try:
+                close_vals = t_df['close'].values.astype(float)
                 # RSI (14)
-                rsi = t_df.ta.rsi(length=14)
-                if rsi is not None and not rsi.empty:
-                    rsi_val = round(rsi.iloc[-1], 2)
+                rsi = talib.RSI(close_vals, timeperiod=14)
+                if rsi is not None and len(rsi) > 0:
+                    rsi_val = round(float(rsi[-1]), 2) if not np.isnan(rsi[-1]) else None
                 
                 # MACD (12, 26, 9)
-                macd = t_df.ta.macd(fast=12, slow=26, signal=9)
-                if macd is not None and not macd.empty:
-                    macd_val = round(macd.iloc[-1, 0], 2) # MACD
-                    macd_hist = round(macd.iloc[-1, 1], 2) # Histogram
-                    macd_signal = round(macd.iloc[-1, 2], 2) # Signal
+                macd, macdsignal, macdhist = talib.MACD(close_vals, fastperiod=12, slowperiod=26, signalperiod=9)
+                if macd is not None and len(macd) > 0:
+                    macd_val = round(float(macd[-1]), 2) if not np.isnan(macd[-1]) else None
+                    macd_hist = round(float(macdhist[-1]), 2) if not np.isnan(macdhist[-1]) else None
+                    macd_signal = round(float(macdsignal[-1]), 2) if not np.isnan(macdsignal[-1]) else None
                 
                 # ROC (14)
-                roc = t_df.ta.roc(length=14)
-                if roc is not None and not roc.empty:
-                    roc14_val = round(roc.iloc[-1], 2)
-            except:
-                pass
+                roc = talib.ROC(close_vals, timeperiod=14)
+                if roc is not None and len(roc) > 0:
+                    roc14_val = round(float(roc[-1]), 2) if not np.isnan(roc[-1]) else None
+            except Exception as e:
+                logger.warning(f"Error calculating batch indicators for {ticker}: {e}")
 
         results[ticker] = {
             'trends': {

@@ -1,5 +1,5 @@
 import pandas as pd
-import pandas_ta as ta
+import talib
 import numpy as np
 import logging
 from ..technical import _get_prices_df
@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class PriceActionAnalyzer:
     """
-    Analyzes candlestick patterns, volume anomalies, and structural PA.
+    Analyzes candlestick patterns, volume anomalies, and structural PA using talib.
     """
     def __init__(self, ticker):
         self.ticker = ticker
@@ -22,10 +22,6 @@ class PriceActionAnalyzer:
         
         if grouping > 1:
             try:
-                # Group consecutively by N days. Instead of 'xD' which aligns to calendar days,
-                # we can group by row blocks to ignore weekends if needed, or just use calendar 'D'.
-                # Let's use calendar days, or a simple trick: rolling/groupby
-                # We can group every N rows
                 df['group'] = np.arange(len(df)) // grouping
                 df = df.groupby('group').agg({
                     'open': 'first',
@@ -34,8 +30,6 @@ class PriceActionAnalyzer:
                     'close': 'last',
                     'volume': 'sum'
                 })
-                # The index is now 'group', let's use the date of the last candle in the group
-                # Wait, we need to preserve dates.
                 dates = self.df.copy()
                 dates['group'] = np.arange(len(dates)) // grouping
                 date_map = dates.groupby('group').apply(lambda x: x.index[-1])
@@ -44,19 +38,23 @@ class PriceActionAnalyzer:
                 logger.error(f"Grouping error: {e}")
                 pass
         
-        
         try:
-            # Generate ALL 60+ pandas_ta candlestick patterns
-            # The result is a DataFrame with columns like 'CDL_DOJI_10_0.1', 'CDL_ENGULFING', etc.
-            cdl_df = df.ta.cdl_pattern(name="all")
-            if cdl_df is not None:
-                # Merge the pattern columns into our main df
-                df = pd.concat([df, cdl_df], axis=1)
+            # Generate ALL talib candlestick patterns
+            open_p = df['open'].values.astype(float)
+            high_p = df['high'].values.astype(float)
+            low_p = df['low'].values.astype(float)
+            close_p = df['close'].values.astype(float)
+            
+            all_cdl_funcs = [f for f in talib.get_functions() if f.startswith('CDL')]
+            for func_name in all_cdl_funcs:
+                func = getattr(talib, func_name)
+                # Some patterns might take 1D or logic inputs, but CDL usually take OHLC
+                df[func_name] = func(open_p, high_p, low_p, close_p)
         except Exception as e:
-            logger.error(f"Error calculating ALL patterns for {self.ticker}: {e}")
+            logger.error(f"Error calculating talib patterns for {self.ticker}: {e}")
 
         # Extract whatever CDL columns were generated
-        cdl_columns = [col for col in df.columns if col.startswith('CDL_')]
+        cdl_columns = [col for col in df.columns if col.startswith('CDL')]
 
         # Compute basics
         df['body'] = abs(df['close'] - df['open'])
@@ -70,21 +68,17 @@ class PriceActionAnalyzer:
         df['dry_volume'] = df['volume'] < (df['vol_sma_20'] * 0.5)
 
         # Smart Money Concepts (SMC) - FVG (Fair Value Gaps)
-        # Bullish FVG: Low of candle 3 is strictly higher than High of candle 1
         df['fvg_bullish'] = df['low'] > df['high'].shift(2)
-        # Bearish FVG: High of candle 3 is strictly lower than Low of candle 1
         df['fvg_bearish'] = df['high'] < df['low'].shift(2)
 
         # Smart Money Concepts (SMC) - BoS (Break of Structure - Proxy)
-        # A Break of Structure is confirmed when price closes above a recent significant swing high
-        # We will use a 10-period rolling high as our local structural swing point
         df['swing_high_10'] = df['high'].shift(1).rolling(10, min_periods=5).max()
         df['swing_low_10'] = df['low'].shift(1).rolling(10, min_periods=5).min()
         
         df['bos_bullish'] = df['close'] > df['swing_high_10']
         df['bos_bearish'] = df['close'] < df['swing_low_10']
 
-        # Determine Global Structural Supply and Demand Zones for UI overlapping
+        # Determine Global Structural Supply and Demand Zones
         try:
             res_val = df['high'].rolling(40, min_periods=10).max().dropna().iloc[-1]
             sup_val = df['low'].rolling(40, min_periods=10).min().dropna().iloc[-1]
@@ -99,7 +93,6 @@ class PriceActionAnalyzer:
 
         # Build response
         history = []
-        # Get the last `lookback` rows
         recent_df = df.tail(lookback)
         
         for index, row in recent_df.iterrows():
@@ -111,10 +104,8 @@ class PriceActionAnalyzer:
                 val = row[col]
                 if pd.notna(val) and val != 0:
                     trend = 'BULLISH' if val > 0 else 'BEARISH'
-                    parts = col.split('_')
-                    name = parts[1].capitalize() if len(parts) > 1 else col
+                    name = col.replace('CDL', '').replace('_', ' ').capitalize()
                     
-                    # Mocking historical win-rate stats for educational flavor
                     win_rate = "62% (5D)" if trend == 'BULLISH' else "58% (5D)"
                     long_desc = f"Historically, {name} signifies a strong {trend.lower()} psychological shift. Backtest stats show a {win_rate} success rate of continuation."
                     
@@ -125,7 +116,7 @@ class PriceActionAnalyzer:
             if getattr(row, 'fvg_bullish', False):
                 smc_events.append({
                     'type': 'FVG', 'sentiment': 'BULLISH', 'tag': 'Bullish FVG',
-                    'desc': 'Violent upward expansion created a void in the chart (Fair Value Gap). Algos often return to this imbalance before pumping.'
+                    'desc': 'Violent upward expansion created a void in the chart (Fair Value Gap).'
                 })
             elif getattr(row, 'fvg_bearish', False):
                 smc_events.append({
@@ -136,34 +127,26 @@ class PriceActionAnalyzer:
             if getattr(row, 'bos_bullish', False):
                 smc_events.append({
                     'type': 'BOS', 'sentiment': 'BULLISH', 'tag': 'Break of Structure (High)',
-                    'desc': 'Price powerfully closed above a critical 10-period swing high, confirming a shift into an uptrend.'
+                    'desc': 'Price powerfully closed above a critical 10-period swing high.'
                 })
             elif getattr(row, 'bos_bearish', False):
                 smc_events.append({
                     'type': 'BOS', 'sentiment': 'BEARISH', 'tag': 'Break of Structure (Low)',
-                    'desc': 'Price fell below a major swing low structural point, indicating bears are currently in absolute control.'
+                    'desc': 'Price fell below a major swing low structural point.'
                 })
                 
-            # Sniper Confluence Detection
-            # A sniper is triggered if a Bullish PA Event (Pattern or FVG) triggers inside the global Demand zone!
             is_in_demand = row['low'] <= (sup_val * 1.015)
             has_bullish_pa = any(p['sentiment'] == 'BULLISH' for p in active_pats) or getattr(row, 'fvg_bullish', False)
             if is_in_demand and has_bullish_pa:
                 smc_events.append({
                     'type': 'SNIPER', 'sentiment': 'BULLISH', 'tag': 'Sniper Setup!',
-                    'desc': 'CONFLUENCE ALERT: A bullish price action structure was triggered squarely inside the Institutional Demand zone. This is a high-probability asymmetric setup.'
+                    'desc': 'CONFLUENCE ALERT: Bullish price action inside the Institutional Demand zone.'
                 })
                     
-            # Interpret shape
             shape_desc = "Normal candle"
-            
-            # 1. Use specific technical patterns as primary label if found
             if active_pats:
-                # Use the first/most recent pattern name, properly formatted
                 main_pat = active_pats[0]
                 shape_desc = f"{main_pat['sentiment'].capitalize()} {main_pat['name']}"
-            
-            # 2. Heuristic-based shape detection for common labels
             else:
                 total_range = row['high'] - row['low']
                 body = row['body']
@@ -175,47 +158,27 @@ class PriceActionAnalyzer:
                     u_wick_pct = u_wick / total_range
                     l_wick_pct = l_wick / total_range
                     
-                    # Doji (Body < 10% of range)
-                    if body_pct < 0.1:
-                        shape_desc = "Doji (Indecision)"
-                    # Marubozu (Body > 90% of range)
-                    elif body_pct > 0.9:
-                        shape_desc = "Marubozu (Full Body)"
-                    # Hammer / Pin Bar / Long lower wick
-                    elif l_wick > body * 1.5:
-                        shape_desc = "Hammer / Pin Bar (Bullish Rejection)"
-                    # Shooting Star / Inverted Hammer / Long upper wick
-                    elif u_wick > body * 1.5:
-                        shape_desc = "Shooting Star (Bearish Rejection)"
-                    # Spinning Top 
-                    elif body_pct < 0.4 and u_wick_pct > 0.2 and l_wick_pct > 0.2:
-                        shape_desc = "Spinning Top"
+                    if body_pct < 0.1: shape_desc = "Doji (Indecision)"
+                    elif body_pct > 0.9: shape_desc = "Marubozu (Full Body)"
+                    elif l_wick > body * 1.5: shape_desc = "Hammer / Pin Bar (Bullish Rejection)"
+                    elif u_wick > body * 1.5: shape_desc = "Shooting Star (Bearish Rejection)"
+                    elif body_pct < 0.4 and u_wick_pct > 0.2 and l_wick_pct > 0.2: shape_desc = "Spinning Top"
                 
-            # Volume indication
             vol_desc = "Average"
-            if row['ultra_volume']:
-                vol_desc = "Ultra High Volume (Climax or Breakout?)"
-            elif row['high_volume']:
-                vol_desc = "High Volume"
-            elif row['dry_volume']:
-                vol_desc = "Dry Volume (Lack of interest)"
+            if row['ultra_volume']: vol_desc = "Ultra High Volume"
+            elif row['high_volume']: vol_desc = "High Volume"
+            elif row['dry_volume']: vol_desc = "Dry Volume"
                 
             history.append({
                 "date": date_str,
-                "open": float(row['open']),
-                "high": float(row['high']),
-                "low": float(row['low']),
-                "close": float(row['close']),
-                "volume": float(row['volume']),
-                "body_size": float(row['body']),
-                "shape_desc": shape_desc,
-                "volume_desc": vol_desc,
-                "patterns": active_pats,
-                "smc_events": smc_events,
+                "open": float(row['open']), "high": float(row['high']), "low": float(row['low']), "close": float(row['close']),
+                "volume": float(row['volume']), "body_size": float(row['body']),
+                "shape_desc": shape_desc, "volume_desc": vol_desc,
+                "patterns": active_pats, "smc_events": smc_events,
                 "sentiment": "BULLISH" if row['close'] > row['open'] else "BEARISH"
             })
             
-        history.reverse() # Newest first
+        history.reverse() 
             
         return {
             "ticker": self.ticker,

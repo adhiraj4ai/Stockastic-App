@@ -23,6 +23,8 @@ import numpy as np
 from dateutil.relativedelta import relativedelta
 from backtesting import Backtest, Strategy as BTStrategy
 import traceback
+import talib
+from ..services.optimization_service import SafeTa
 
 from ..models import (
     DailyStockPrice, Strategy, Company, StrategyExperiment, 
@@ -659,15 +661,11 @@ class StrategyViewSet(viewsets.ModelViewSet):
             error_trace = traceback.format_exc()
             return {}, error_trace, {}
 
-    def _get_bt_local_scope(self, symbol, params=None):
-        import pandas_ta as ta
-        from backtesting.lib import crossover, resample_apply
-        
         scope = {
             'Strategy': BTStrategy,
             'crossover': crossover,
             'resample_apply': resample_apply,
-            'ta': ta,
+            'ta': SafeTa(talib),
             'np': np,
             'pd': pd,
             'symbol': symbol

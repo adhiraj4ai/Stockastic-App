@@ -551,8 +551,8 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
                                                     {freshness ? (
-                                                        <div className={cn("inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border tracking-tight", freshness.color)}>
-                                                            <freshness.icon size={8} />
+                                                        <div className={cn("inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border tracking-tight", freshness?.color || 'text-slate-400 border-slate-100')}>
+                                                            {freshness && <freshness.icon size={8} />}
                                                             {freshness.label}
                                                         </div>
                                                     ) : (
@@ -745,8 +745,8 @@ function IntelCard({ source, signals, currentPrice, intelligence }: { source: st
                                 {isPlatinum && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 dark:bg-white text-white dark:text-black tracking-widest border border-slate-700 dark:border-slate-200">Platinum</span>}
                                 {isGold && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500 text-white tracking-widest border border-amber-600">Gold</span>}
                             </div>
-                            <div className={cn("inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border tracking-tight", freshness.color)}>
-                                <freshness.icon size={8} />{freshness.label}
+                            <div className={cn("inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border tracking-tight", freshness?.color || 'text-slate-400 border-slate-100')}>
+                                <freshness.icon size={8} />{freshness?.label || 'Steady'}
                             </div>
                         </div>
                     </div>

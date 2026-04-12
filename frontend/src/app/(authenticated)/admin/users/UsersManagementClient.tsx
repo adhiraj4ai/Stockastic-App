@@ -22,7 +22,8 @@ import {
     ExternalLink,
     Crown,
     Star,
-    Award
+    Award,
+    CircleHelp
 } from 'lucide-react';
 import {
     Table,
@@ -72,18 +73,26 @@ interface TerminalUser {
     nickname: string;
     first_name: string;
     last_name: string;
-    role: 'ADMIN' | 'MANAGER' | 'SILVER' | 'GOLD' | 'PLATINUM';
+    role: 'ADMIN' | 'MANAGER' | 'SUBSCRIBER';
+    subscription_tier: 'SILVER' | 'GOLD' | 'PLATINUM' | 'NONE';
     date_joined: string;
     last_login: string | null;
     profile_picture: string | null;
+    is_active: boolean;
+    deactivated_at: string | null;
 }
 
 const ROLE_CONFIG = {
     ADMIN: { label: 'Admin', color: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20', icon: ShieldCheck },
     MANAGER: { label: 'Manager', color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20', icon: Shield },
+    SUBSCRIBER: { label: 'Subscriber', color: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20', icon: Users },
+};
+
+const TIER_CONFIG = {
     SILVER: { label: 'Silver', color: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20', icon: UserCircle },
     GOLD: { label: 'Gold', color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20', icon: Star },
     PLATINUM: { label: 'Platinum', color: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20', icon: Crown },
+    NONE: { label: 'No Tier', color: 'bg-slate-500/5 text-slate-400 border-slate-500/10', icon: UserCircle },
 };
 
 export default function UsersManagementClient() {
@@ -101,7 +110,8 @@ export default function UsersManagementClient() {
         email: '',
         first_name: '',
         last_name: '',
-        role: 'SILVER',
+        role: 'SUBSCRIBER',
+        subscription_tier: 'SILVER',
         password: ''
     });
 
@@ -153,15 +163,46 @@ export default function UsersManagementClient() {
         });
     }, [users, searchTerm, roleFilter]);
 
-    const handleRoleUpdate = async (userId: number, newRole: string) => {
+    const handleRoleUpdate = async (userId: number, field: 'role' | 'subscription_tier', value: string) => {
         setUpdatingUserId(userId);
         try {
-            await api.patch(`/api/users/admin/management/${userId}/`, { role: newRole });
-            toast.success(`Role updated to ${newRole}`);
-            // Optimistic update
-            setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole as any } : u));
+            await api.patch(`/api/users/admin/management/${userId}/`, { [field]: value });
+            toast.success(`${field === 'role' ? 'Role' : 'Tier'} updated correctly`);
+            setUsers(prev => prev.map(u => u.id === userId ? { ...u, [field]: value as any } : u));
         } catch (error) {
-            toast.error('Failed to update role');
+            toast.error('Failed to update field');
+        } finally {
+            setUpdatingUserId(null);
+        }
+    };
+
+    const handleDeactivateUser = async (userId: number, currentStatus: boolean) => {
+        setUpdatingUserId(userId);
+        try {
+            await api.patch(`/api/users/admin/management/${userId}/`, { is_active: !currentStatus });
+            toast.success(`Account ${currentStatus ? 'deactivated' : 'activated'} successfully`);
+            setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_active: !currentStatus } : u));
+        } catch (error: any) {
+            const msg = error.response?.data?.error || 'Failed to update account status';
+            toast.error(msg);
+        } finally {
+            setUpdatingUserId(null);
+        }
+    };
+
+    const handleDeleteUser = async (user: TerminalUser) => {
+        if (!window.confirm(`Are you sure you want to PERMANENTLY delete user "${user.username}"? This action cannot be undone.`)) {
+            return;
+        }
+
+        setUpdatingUserId(user.id);
+        try {
+            await api.delete(`/api/users/admin/management/${user.id}/`);
+            toast.success('User deleted successfully');
+            setUsers(prev => prev.filter(u => u.id !== user.id));
+        } catch (error: any) {
+            const msg = error.response?.data?.error || 'Failed to delete user';
+            toast.error(msg);
         } finally {
             setUpdatingUserId(null);
         }
@@ -180,7 +221,8 @@ export default function UsersManagementClient() {
                 email: '',
                 first_name: '',
                 last_name: '',
-                role: 'SILVER',
+                role: 'SUBSCRIBER',
+                subscription_tier: 'SILVER',
                 password: ''
             });
         } catch (error: any) {
@@ -219,7 +261,7 @@ export default function UsersManagementClient() {
                             <div>
                                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Premium Tiers</p>
                                 <p className="text-2xl font-bold">
-                                    {users.filter(u => ['GOLD', 'PLATINUM'].includes(u.role)).length}
+                                    {users.filter(u => ['GOLD', 'PLATINUM'].includes(u.subscription_tier)).length}
                                 </p>
                             </div>
                         </CardContent>
@@ -272,7 +314,7 @@ export default function UsersManagementClient() {
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="outline" className="gap-2 border-slate-200 dark:border-white/10">
                                             <Filter size={14} />
-                                            {roleFilter === 'ALL' ? 'All Roles' : ROLE_CONFIG[roleFilter as keyof typeof ROLE_CONFIG].label}
+                                            {roleFilter === 'ALL' ? 'All Roles' : ROLE_CONFIG[roleFilter as keyof typeof ROLE_CONFIG]?.label || 'Select Role'}
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="w-48">
@@ -349,17 +391,40 @@ export default function UsersManagementClient() {
                                                     </div>
                                                 </div>
                                                 <div className="grid grid-cols-4 items-center gap-4">
-                                                    <Label htmlFor="role" className="text-right">Tier</Label>
+                                                    <Label htmlFor="role" className="text-right">Role</Label>
                                                     <div className="col-span-3">
                                                         <Select 
                                                             value={newUser.role} 
-                                                            onValueChange={(val) => setNewUser({...newUser, role: val})}
+                                                            onValueChange={(val) => setNewUser({...newUser, role: val as any})}
+                                                        >
+                                                            <SelectTrigger className="bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10">
+                                                                <SelectValue placeholder="Select Role" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {Object.entries(ROLE_CONFIG).map(([key, config]) => (
+                                                                    <SelectItem key={key} value={key}>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <config.icon size={14} className="text-slate-500" />
+                                                                            <span>{config.label}</span>
+                                                                        </div>
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-4 items-center gap-4 animate-in slide-in-from-top-2 duration-300">
+                                                    <Label htmlFor="tier" className="text-right">Tier</Label>
+                                                    <div className="col-span-3">
+                                                        <Select 
+                                                            value={newUser.subscription_tier} 
+                                                            onValueChange={(val) => setNewUser({...newUser, subscription_tier: val as any})}
                                                         >
                                                             <SelectTrigger className="bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10">
                                                                 <SelectValue placeholder="Select Tier" />
                                                             </SelectTrigger>
                                                             <SelectContent>
-                                                                {Object.entries(ROLE_CONFIG).map(([key, config]) => (
+                                                                {Object.entries(TIER_CONFIG).map(([key, config]) => (
                                                                     <SelectItem key={key} value={key}>
                                                                         <div className="flex items-center gap-2">
                                                                             <config.icon size={14} className="text-slate-500" />
@@ -418,8 +483,11 @@ export default function UsersManagementClient() {
                                     <TableRow>
                                         <TableHead className="font-bold">User</TableHead>
                                         <TableHead className="font-bold">Contact</TableHead>
-                                        <TableHead className="font-bold text-center">Current Role</TableHead>
+                                        <TableHead className="font-bold text-center">Status</TableHead>
+                                        <TableHead className="font-bold text-center">Role</TableHead>
+                                        <TableHead className="font-bold text-center">Subscription</TableHead>
                                         <TableHead className="font-bold">Joined</TableHead>
+                                        <TableHead className="font-bold">Last Activity</TableHead>
                                         <TableHead className="font-bold text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -427,14 +495,17 @@ export default function UsersManagementClient() {
                                     {loading ? (
                                         Array.from({ length: 5 }).map((_, i) => (
                                             <TableRow key={i}>
-                                                <TableCell colSpan={5} className="h-16 text-center">
+                                                <TableCell colSpan={8} className="h-16 text-center">
                                                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-300" />
                                                 </TableCell>
                                             </TableRow>
                                         ))
                                     ) : filteredUsers.length > 0 ? (
                                         filteredUsers.map((user) => {
-                                            const role = ROLE_CONFIG[user.role] || ROLE_CONFIG.SILVER;
+                                            const roleCfg = ROLE_CONFIG[user.role as keyof typeof ROLE_CONFIG] || ROLE_CONFIG.SUBSCRIBER;
+                                            const tierCfg = TIER_CONFIG[user.subscription_tier as keyof typeof TIER_CONFIG] || TIER_CONFIG.NONE;
+                                            const RoleIcon = roleCfg.icon;
+                                            const TierIcon = tierCfg.icon;
                                             return (
                                                 <TableRow key={user.id} className="hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors">
                                                     <TableCell>
@@ -453,6 +524,16 @@ export default function UsersManagementClient() {
                                                             <div className="flex flex-col">
                                                                 <span className="font-bold text-sm tracking-tight">{user.username}</span>
                                                                 <span className="text-[10px] text-slate-500 font-medium">ID: #{user.id}</span>
+                                                                {!user.is_active && (
+                                                                    <div className="flex flex-col gap-1 mt-1">
+                                                                        <Badge variant="destructive" className="text-[8px] px-1 py-0 h-4 w-fit uppercase">Inactive</Badge>
+                                                                        {user.deactivated_at && (
+                                                                            <span className="text-[8px] text-rose-500 font-bold uppercase tracking-tighter">
+                                                                                Grace Period: {90 - Math.floor((new Date().getTime() - new Date(user.deactivated_at).getTime()) / (1000 * 60 * 60 * 24))}d left
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </TableCell>
@@ -466,15 +547,55 @@ export default function UsersManagementClient() {
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="text-center">
-                                                        <Badge variant="outline" className={cn("px-2 py-0.5 rounded-lg border flex items-center justify-center gap-1.5 w-fit mx-auto", role.color)}>
-                                                            <role.icon size={12} />
-                                                            {role.label}
+                                                        <Badge 
+                                                            variant="outline" 
+                                                            className={cn(
+                                                                "px-2 py-0.5 rounded-lg border",
+                                                                user.is_active 
+                                                                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" 
+                                                                    : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                                                            )}
+                                                        >
+                                                            <div className={cn("w-1.5 h-1.5 rounded-full mr-2 animate-pulse", user.is_active ? "bg-emerald-500" : "bg-rose-500")} />
+                                                            {user.is_active ? 'Active' : 'Inactive'}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        <Badge 
+                                                            variant="outline" 
+                                                            className={cn(
+                                                                "px-2 py-0.5 rounded-lg border flex items-center justify-center gap-1.5 w-fit mx-auto", 
+                                                                roleCfg.color
+                                                            )}
+                                                        >
+                                                            <RoleIcon size={12} />
+                                                            {roleCfg.label}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        <Badge 
+                                                            variant="outline" 
+                                                            className={cn(
+                                                                "px-2 py-0.5 rounded-lg border flex items-center justify-center gap-1.5 w-fit mx-auto", 
+                                                                tierCfg.color
+                                                            )}
+                                                        >
+                                                            <TierIcon size={12} />
+                                                            {tierCfg.label}
                                                         </Badge>
                                                     </TableCell>
                                                     <TableCell>
                                                         <div className="flex flex-col">
                                                             <span className="text-xs font-semibold">{user.date_joined ? format(new Date(user.date_joined), 'MMM dd, yyyy') : 'N/A'}</span>
                                                             <span className="text-[9px] text-slate-500 uppercase tracking-tighter">Joined At</span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-xs font-semibold">
+                                                                {user.last_login ? format(new Date(user.last_login), 'MMM dd, HH:mm') : 'Never'}
+                                                            </span>
+                                                            <span className="text-[9px] text-slate-500 uppercase tracking-tighter">Last Login</span>
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="text-right">
@@ -489,29 +610,87 @@ export default function UsersManagementClient() {
                                                                 </Button>
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl">
-                                                                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-slate-400">Assignment</DropdownMenuLabel>
+                                                                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-slate-400">Governance</DropdownMenuLabel>
                                                                 <DropdownMenuSeparator />
                                                                 <div className="grid gap-1 mt-1">
-                                                                    {Object.entries(ROLE_CONFIG).map(([key, config]) => (
+                                                                    <p className="text-[10px] px-2 font-bold text-slate-500 uppercase">System Role</p>
+                                                                    {Object.entries(ROLE_CONFIG).map(([key, config]) => {
+                                                                        const Icon = config.icon;
+                                                                        return (
+                                                                            <DropdownMenuItem 
+                                                                                key={key} 
+                                                                                disabled={user.role === key}
+                                                                                onClick={() => handleRoleUpdate(user.id, 'role', key)}
+                                                                                className="flex items-center justify-between gap-2 cursor-pointer p-2 rounded-lg"
+                                                                            >
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <Icon size={14} className={cn(key === user.role ? "text-blue-500" : "text-slate-400")} />
+                                                                                    <span className={cn("text-sm", key === user.role && "font-bold text-blue-500")}>{config.label}</span>
+                                                                                </div>
+                                                                                {key === user.role && <Check size={14} className="text-blue-500" />}
+                                                                            </DropdownMenuItem>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                                <div className="grid gap-1 mt-2">
+                                                                    <DropdownMenuSeparator />
+                                                                    <p className="text-[10px] px-2 font-bold text-slate-500 uppercase mt-1">Subscription Model</p>
+                                                                    {Object.entries(TIER_CONFIG).map(([key, config]) => (
                                                                         <DropdownMenuItem 
                                                                             key={key} 
-                                                                            disabled={user.role === key}
-                                                                            onClick={() => handleRoleUpdate(user.id, key)}
+                                                                            disabled={user.subscription_tier === key}
+                                                                            onClick={() => handleRoleUpdate(user.id, 'subscription_tier', key)}
                                                                             className="flex items-center justify-between gap-2 cursor-pointer p-2 rounded-lg"
                                                                         >
                                                                             <div className="flex items-center gap-2">
-                                                                                <config.icon size={14} className={cn(key === user.role ? "text-blue-500" : "text-slate-400")} />
-                                                                                <span className={cn("text-sm", key === user.role && "font-bold text-blue-500")}>{config.label}</span>
+                                                                                <config.icon size={14} className={cn(key === user.subscription_tier ? "text-amber-500" : "text-slate-400")} />
+                                                                                <span className={cn("text-sm", key === user.subscription_tier && "font-bold text-amber-500")}>{config.label}</span>
                                                                             </div>
-                                                                            {key === user.role && <Check size={14} className="text-blue-500" />}
+                                                                            {key === user.subscription_tier && <Check size={14} className="text-amber-500" />}
                                                                         </DropdownMenuItem>
                                                                     ))}
                                                                 </div>
-                                                                <DropdownMenuSeparator />
-                                                                <DropdownMenuItem className="text-rose-500 focus:text-rose-600 focus:bg-rose-500/10 cursor-pointer p-2 rounded-lg">
-                                                                    <UserMinus size={14} className="mr-2" />
-                                                                    Deactivate Account
-                                                                </DropdownMenuItem>
+                                                                {user.role !== 'ADMIN' && (
+                                                                    <>
+                                                                        <DropdownMenuSeparator />
+                                                                        <DropdownMenuItem 
+                                                                            onClick={() => handleDeactivateUser(user.id, user.is_active)}
+                                                                            className={cn(
+                                                                                "cursor-pointer p-2 rounded-lg",
+                                                                                user.is_active ? "text-amber-500 focus:text-amber-600 focus:bg-amber-500/10" : "text-emerald-500 focus:text-emerald-600 focus:bg-emerald-500/10"
+                                                                            )}
+                                                                        >
+                                                                            {user.is_active ? (
+                                                                                <>
+                                                                                    <UserMinus size={14} className="mr-2" />
+                                                                                    Deactivate Account
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <UserPlus size={14} className="mr-2" />
+                                                                                    Activate Account
+                                                                                </>
+                                                                            )}
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem 
+                                                                            disabled={user.is_active || (user.deactivated_at ? Math.floor((new Date().getTime() - new Date(user.deactivated_at).getTime()) / (1000 * 60 * 60 * 24)) < 90 : true)}
+                                                                            onClick={() => handleDeleteUser(user)}
+                                                                            className="text-rose-500 focus:text-rose-600 focus:bg-rose-500/10 cursor-pointer p-2 rounded-lg"
+                                                                        >
+                                                                            <div className="flex flex-col items-start gap-0.5">
+                                                                                <div className="flex items-center">
+                                                                                    <UserMinus size={14} className="mr-2" />
+                                                                                    <span>Delete Account</span>
+                                                                                </div>
+                                                                                {user.is_active ? (
+                                                                                    <span className="text-[8px] text-slate-400 font-medium ml-6">Must deactivate first</span>
+                                                                                ) : user.deactivated_at && Math.floor((new Date().getTime() - new Date(user.deactivated_at).getTime()) / (1000 * 60 * 60 * 24)) < 90 ? (
+                                                                                    <span className="text-[8px] text-amber-500 font-medium ml-6">Wait 90 days from deactivation</span>
+                                                                                ) : null}
+                                                                            </div>
+                                                                        </DropdownMenuItem>
+                                                                    </>
+                                                                )}
                                                             </DropdownMenuContent>
                                                         </DropdownMenu>
                                                     </TableCell>
@@ -520,7 +699,7 @@ export default function UsersManagementClient() {
                                         })
                                     ) : (
                                         <TableRow>
-                                            <TableCell colSpan={5} className="h-32 text-center">
+                                            <TableCell colSpan={8} className="h-32 text-center">
                                                 <div className="flex flex-col items-center gap-2 text-slate-400">
                                                     <Users size={32} strokeWidth={1} />
                                                     <p className="text-sm font-medium">No users match your filters</p>
