@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { LayoutDashboard, TrendingUp, TrendingDown, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Users, BarChart3, History, Star, Brain, Radar, Landmark, ScanLine, Zap, Share2, Crosshair, DollarSign, Layers, GitMerge, Shield } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, TrendingDown, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Users, BarChart3, History, Star, Brain, Radar, Building2, ScanLine, Zap, Share2, Crosshair, DollarSign, Layers, GitMerge, Shield } from 'lucide-react';
 import { FullPageLoader } from '@/components/ui/StockLoader';
 import { SearchBar } from './SearchBar';
 import { ChatSidebar } from './ChatSidebar';
@@ -25,21 +25,21 @@ import Cookies from 'js-cookie';
 import { SettingsDialog } from './SettingsDialog';
 
 const navItems = [
-    { name: 'Home', href: '/ticker', icon: Home },
+    { name: 'Home', href: '/ticker', icon: Home, permission: 'home' },
     {
         name: 'Market',
-        icon: Landmark,
+        icon: Building2,
         subItems: [
-            { name: 'Overview', href: '/market', icon: LayoutDashboard },
-            { name: 'Movers & Shakers', href: '/market/movers', icon: Zap },
-            { name: 'Deep Dive', href: '/market/activity', icon: Activity },
-            { name: 'Sector Rotation', href: '/market/rotation', icon: BarChart3 },
-            { name: 'Floorsheet', href: '/floorsheet', icon: FileText },
-            { name: 'Bulk Transactions', href: '/market/bulk', icon: Layers },
-            { name: 'Matching Transactions', href: '/market/matching', icon: GitMerge },
-            { name: 'Social Highlights', href: '/social', icon: Share2 },
-            { name: 'Global PA Screener', href: '/market/pa-screener', icon: Target },
-            { name: 'Volume Profile', href: '/market/volume-profile', icon: BarChart3 },
+            { name: 'Overview', href: '/market', icon: LayoutDashboard, permission: 'market_overview' },
+            { name: 'Movers & Shakers', href: '/market/movers', icon: Zap, permission: 'market_movers' },
+            { name: 'Deep Dive', href: '/market/activity', icon: Activity, permission: 'market_activity' },
+            { name: 'Sector Rotation', href: '/market/rotation', icon: BarChart3, permission: 'market_rotation' },
+            { name: 'Floorsheet', href: '/floorsheet', icon: FileText, permission: 'market_floorsheet' },
+            { name: 'Bulk Transactions', href: '/market/bulk', icon: Layers, permission: 'market_bulk' },
+            { name: 'Matching Transactions', href: '/market/matching', icon: GitMerge, permission: 'market_matching' },
+            { name: 'Social Highlights', href: '/social', icon: Share2, permission: 'market_social' },
+            { name: 'Global PA Screener', href: '/market/pa-screener', icon: Target, permission: 'market_pa_screener' },
+            { name: 'Volume Profile', href: '/market/volume-profile', icon: BarChart3, permission: 'market_volume' },
         ]
     },
     // Chat moved to top nav
@@ -47,37 +47,46 @@ const navItems = [
         name: 'Finfolio',
         icon: Wallet,
         subItems: [
-            { name: 'My Portfolio', href: '/portfolio', icon: Briefcase },
-            { name: 'Performance', href: '/portfolio/performance', icon: TrendingUp },
-            { name: 'Income', href: '/portfolio/income', icon: DollarSign },
-            { name: 'Transactions', href: '/portfolio/transactions', icon: History },
-            { name: 'Watchlist', href: '/portfolio/watchlist', icon: Eye },
-            { name: 'Paper Trading', href: '/paper-trading', icon: LayoutDashboard },
+            { name: 'My Portfolio', href: '/portfolio', icon: Briefcase, permission: 'portfolio_main' },
+            { name: 'Performance', href: '/portfolio/performance', icon: TrendingUp, permission: 'portfolio_performance' },
+            { name: 'Income', href: '/portfolio/income', icon: DollarSign, permission: 'portfolio_income' },
+            { name: 'Transactions', href: '/portfolio/transactions', icon: History, permission: 'portfolio_transactions' },
+            { name: 'Watchlist', href: '/portfolio/watchlist', icon: Eye, permission: 'portfolio_watchlist' },
+            { name: 'Paper Trading', href: '/paper-trading', icon: LayoutDashboard, permission: 'paper_trading' },
         ]
     },
     {
         name: 'Accumulation',
         icon: Activity,
         subItems: [
-            { name: 'Command Center', href: '/accumulation/dashboard', icon: Layers },
-            { name: 'Smart Money', href: '/accumulation/smart-money', icon: Brain },
-            { name: 'Broker Trends', href: '/accumulation/trends', icon: BarChart3 },
-            { name: 'Focus Ranking', href: '/accumulation/focus-ranking', icon: Target },
-            { name: 'Accumulation History', href: '/accumulation/history', icon: History },
-            { name: 'Price Study', href: '/accumulation/price-study', icon: TrendingUp },
-            { name: 'Broker Favorites', href: '/accumulation/favorites', icon: Star },
-            { name: 'Share Transfer', href: '/accumulation/share-transfer', icon: Share2 },
-            { name: 'Accumulators Navigator', href: '/accumulation/navigator', icon: Users },
-            { name: 'Below Cost Positions', href: '/accumulation/below-cost', icon: TrendingDown },
+            { name: 'Command Center', href: '/accumulation/dashboard', icon: Layers, permission: 'accumulation_dash' },
+            { name: 'Smart Money', href: '/accumulation/smart-money', icon: Brain, permission: 'smart_money' },
+            { name: 'Broker Trends', href: '/accumulation/trends', icon: BarChart3, permission: 'broker_trends' },
+            { name: 'Focus Ranking', href: '/accumulation/focus-ranking', icon: Target, permission: 'focus_ranking' },
+            { name: 'Accumulation History', href: '/accumulation/history', icon: History, permission: 'accumulation_history' },
+            { name: 'Price Study', href: '/accumulation/price-study', icon: TrendingUp, permission: 'price_study' },
+            { name: 'Broker Favorites', href: '/accumulation/favorites', icon: Star, permission: 'broker_favorites' },
+            { name: 'Share Transfer', href: '/accumulation/share-transfer', icon: Share2, permission: 'share_transfer' },
+            { name: 'Accumulators Navigator', href: '/accumulation/navigator', icon: Users, permission: 'navigator' },
+            { name: 'Below Cost Positions', href: '/accumulation/below-cost', icon: TrendingDown, permission: 'below_cost' },
         ]
     },
     {
         name: 'Strategic Hub',
         icon: Layers,
         subItems: [
-            { name: 'Intel Hub', href: '/signals', icon: Radar },
-            { name: 'Strategies', href: '/strategies', icon: Lightbulb },
-            { name: 'Track Record', href: '/signals/track-record', icon: History },
+            { name: 'Intel Hub', href: '/signals', icon: Radar, permission: 'intel_hub' },
+            { name: 'Strategies', href: '/strategies', icon: Lightbulb, permission: 'strategies' },
+            { name: 'Track Record', href: '/signals/track-record', icon: History, permission: 'track_record' },
+        ]
+    },
+    {
+        name: 'Administration',
+        icon: Shield,
+        subItems: [
+            { name: 'User Management', href: '/admin/users', icon: Users, permission: 'admin_user_mgmt' },
+            { name: 'Financials', href: '/admin/financials', icon: FileText, permission: 'admin_financials' },
+            { name: 'Pipeline', href: '/admin/pipeline', icon: GitMerge, permission: 'admin_pipeline' },
         ]
     },
 ];
@@ -130,6 +139,10 @@ function DashboardContent({
         last_name?: string;
         profile_picture?: string;
         role?: string;
+        is_staff?: boolean;
+        is_superuser?: boolean;
+        subscription_tier?: 'BASIC' | 'PRO' | 'ULTRA' | 'NONE';
+        permissions?: any;
     } | null>(null);
     const [isOffline, setIsOffline] = useState(false);
     const { resolvedTheme } = useTheme();
@@ -186,12 +199,111 @@ function DashboardContent({
 
     useEffect(() => {
         const handleOffline = () => setIsOffline(true);
-        window.addEventListener('terminal-offline', handleOffline);
-        return () => window.removeEventListener('terminal-offline', handleOffline);
-    }, []);
+        const handleOnline = () => setIsOffline(false);
 
-    // Filter Navigation Items based on User
-    const filteredNavItems = navItems;
+        window.addEventListener('terminal-offline', handleOffline);
+        window.addEventListener('terminal-online', handleOnline);
+
+        // Automatic Recovery Polling
+        let recoveryInterval: any;
+        if (isOffline) {
+            recoveryInterval = setInterval(async () => {
+                try {
+                    const healthUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000') + '/api/stocks/health-check/';
+                    const res = await axios.get(healthUrl, { timeout: 3000 });
+                    if (res.data.status === 'online') {
+                        console.log('System recovered. Restoring connection.');
+                        setIsOffline(false);
+                        window.location.reload(); // Optional: Reload to ensure all components refresh their data
+                    }
+                } catch (err) {
+                    console.log('System still offline...');
+                }
+            }, 10000); // Check every 10 seconds
+        }
+
+        return () => {
+            window.removeEventListener('terminal-offline', handleOffline);
+            window.removeEventListener('terminal-online', handleOnline);
+            if (recoveryInterval) clearInterval(recoveryInterval);
+        };
+    }, [isOffline]);
+
+    // Filter Navigation Items based on Granular Dynamic Permissions
+    const filteredNavItems = navItems.map(item => {
+        // While loading, default to most restrictive (Basic)
+        if (!currentUser) {
+            const basic = ['Home', 'Market', 'Finfolio'];
+            if (!basic.includes(item.name)) return null;
+            return item;
+        }
+        
+        const perms = currentUser.permissions;
+        if (perms === 'all') return item;
+        if (!perms) return null;
+
+        // Hierarchical filtering
+        if (item.subItems) {
+            const filteredSubItems = item.subItems.filter(sub => {
+                if (!sub.permission) return true;
+                return perms[sub.permission] === true;
+            });
+            
+            // If the parent has its own permission key, check it
+            if (item.permission && perms[item.permission] === false) return null;
+            
+            // Hide parent if all sub-items are restricted
+            if (filteredSubItems.length === 0) return null;
+            
+            return { ...item, subItems: filteredSubItems };
+        }
+        
+        // Parent only check
+        if (item.permission && perms[item.permission] === false) return null;
+        
+        return item;
+    }).filter(Boolean) as any[];
+
+    // Handle Granular Dynamic Route Guard
+    useEffect(() => {
+        if (!currentUser) return;
+        
+        const perms = currentUser.permissions;
+        if (perms === 'all') return;
+        if (!perms) return;
+
+        // Check if current path is allowed based on navItems registry
+        const checkPathAllowed = (path: string) => {
+            // Hard block /admin for non-admins
+            if (path.startsWith('/admin') && perms !== 'all') return false;
+
+            // Find in parents
+            const parent = navItems.find(i => i.href === path);
+            if (parent && parent.permission && !perms[parent.permission]) return false;
+            
+            // Find in subItems
+            for (const item of navItems) {
+                if (item.subItems) {
+                    const sub = item.subItems.find(s => s.href === path);
+                    if (sub && sub.permission && !perms[sub.permission]) return false;
+                }
+            }
+            return true;
+        };
+
+        if (!checkPathAllowed(pathname)) {
+            // Special cases for Chat and partial paths
+            if (pathname === '/chat' && !perms['chat']) {
+                router.push('/ticker');
+                return;
+            }
+            
+            // For general restricted paths, push to home or market
+            if (pathname !== '/ticker' && pathname !== '/market') {
+                router.push('/ticker');
+            }
+        }
+    }, [pathname, currentUser, router]);
 
     useEffect(() => {
         setIsSidebarCollapsed(isChatPinned || isChatPage);
@@ -454,30 +566,6 @@ function DashboardContent({
 
                             <DropdownMenuSeparator className="mx-2 bg-slate-100 dark:bg-white/5" />
 
-                            {/* Administration Group */}
-                            <div className="px-2 py-1 flex flex-col gap-1">
-                                <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1 py-1">Administration</span>
-                                <DropdownMenuItem asChild className="cursor-pointer gap-2 p-2 rounded-xl focus:bg-teal-500/10 focus:text-teal-600 dark:focus:text-teal-400 transition-all">
-                                    <Link href="/admin/financials" className="flex items-center gap-2 w-full">
-                                        <FileText size={14} className="text-teal-500/70" />
-                                        <span className="text-xs font-bold">Financials</span>
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild className="cursor-pointer gap-2 p-2 rounded-xl focus:bg-teal-500/10 focus:text-teal-600 dark:focus:text-teal-400 transition-all">
-                                    <Link href="/admin/pipeline" className="flex items-center gap-2 w-full">
-                                        <Settings size={14} className="text-teal-500/70" />
-                                        <span className="text-xs font-bold">Pipeline</span>
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild className="cursor-pointer gap-2 p-2 rounded-xl focus:bg-teal-500/10 focus:text-teal-600 dark:focus:text-teal-400 transition-all">
-                                    <Link href="/admin/users" className="flex items-center gap-2 w-full">
-                                        <Users size={14} className="text-teal-500/70" />
-                                        <span className="text-xs font-bold">Users Management</span>
-                                    </Link>
-                                </DropdownMenuItem>
-                            </div>
-
-                            <DropdownMenuSeparator className="mx-2 bg-slate-100 dark:bg-white/5" />
 
                             <DropdownMenuItem className="cursor-pointer gap-3 p-3 rounded-xl focus:bg-blue-50 dark:focus:bg-blue-500/10 focus:text-blue-600 dark:focus:text-blue-400 transition-all group" onClick={() => setIsSettingsOpen(true)}>
                                 <div className="p-2 rounded-lg bg-slate-100 dark:bg-white/5 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 transition-colors">
@@ -610,7 +698,8 @@ function DashboardContent({
                             )}
                             <AlertsDropdown />
 
-                            {(!currentUser || currentUser.username !== 'ashmi') && (
+                            {(!currentUser || currentUser.username !== 'ashmi') && 
+                             (currentUser?.permissions === 'all' || currentUser?.permissions?.['chat']) && (
                                 <Link href="/chat">
                                     <button
                                         className="p-2.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 transition-all duration-300 relative group group-hover:scale-105"

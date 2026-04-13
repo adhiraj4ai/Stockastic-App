@@ -99,9 +99,24 @@ api.interceptors.response.use(
 
         // Handle network/connection errors (backend down)
         if (error.code === 'ERR_NETWORK' || !error.response) {
-            console.error('Terminal backend is unreachable. System might be offline.');
+            console.error('Terminal backend connection error. Verifying system status...');
+            
             if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('terminal-offline'));
+                try {
+                    // Perform a secondary lightweight health check to verify if backend is truly unreachable
+                    // or if this was just a transient/blocked request
+                    const healthUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000') + '/api/stocks/health-check/';
+                    const healthCheck = await axios.get(healthUrl, { timeout: 2000 });
+                    
+                    if (healthCheck.data.status === 'online') {
+                        console.log('Backend is reachable. Treating previous error as transient.');
+                    } else {
+                        window.dispatchEvent(new CustomEvent('terminal-offline'));
+                    }
+                } catch (healthErr) {
+                    console.error('Health check failed. Signaling system offline.');
+                    window.dispatchEvent(new CustomEvent('terminal-offline'));
+                }
             }
         }
 

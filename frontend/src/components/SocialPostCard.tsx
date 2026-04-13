@@ -14,7 +14,6 @@ import {
     BarChart3,
     Activity,
     ChevronRight,
-    Landmark,
     Zap
 } from 'lucide-react';
 import { motion } from 'framer-motion';

@@ -52,7 +52,7 @@ export function proxy(request: NextRequest) {
         script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net blob:;
         worker-src 'self' blob:;
         style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
-        img-src 'self' blob: data:;
+        img-src 'self' blob: data: https://grainy-gradients.vercel.app;
         font-src 'self' data:;
         connect-src 'self' http://localhost:8000 https://api.stockastic.market https://cdn.jsdelivr.net ws: wss:;
         object-src 'none';

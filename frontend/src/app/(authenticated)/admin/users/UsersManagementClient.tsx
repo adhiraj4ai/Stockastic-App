@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import {
@@ -23,7 +23,33 @@ import {
     Crown,
     Star,
     Award,
-    CircleHelp
+    CircleHelp,
+    Building2,
+    LayoutDashboard,
+    Zap,
+    Activity,
+    BarChart3,
+    FileText,
+    Layers,
+    GitMerge,
+    Share2,
+    Target,
+    Briefcase,
+    TrendingUp,
+    TrendingDown,
+    DollarSign,
+    History,
+    Eye,
+    Brain,
+    Radar,
+    Lightbulb,
+    LineChart,
+    MessageSquare,
+    Lock,
+    Unlock,
+    Settings2,
+    Gamepad2,
+    Wallet
 } from 'lucide-react';
 import {
     Table,
@@ -62,6 +88,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from "@/components/ui/tabs";
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -74,7 +106,7 @@ interface TerminalUser {
     first_name: string;
     last_name: string;
     role: 'ADMIN' | 'MANAGER' | 'SUBSCRIBER';
-    subscription_tier: 'SILVER' | 'GOLD' | 'PLATINUM' | 'NONE';
+    subscription_tier: 'BASIC' | 'PRO' | 'ULTRA' | 'NONE';
     date_joined: string;
     last_login: string | null;
     profile_picture: string | null;
@@ -89,9 +121,9 @@ const ROLE_CONFIG = {
 };
 
 const TIER_CONFIG = {
-    SILVER: { label: 'Silver', color: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20', icon: UserCircle },
-    GOLD: { label: 'Gold', color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20', icon: Star },
-    PLATINUM: { label: 'Platinum', color: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20', icon: Crown },
+    BASIC: { label: 'Basic', color: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20', icon: UserCircle },
+    PRO: { label: 'Pro', color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20', icon: Star },
+    ULTRA: { label: 'Ultra', color: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20', icon: Crown },
     NONE: { label: 'No Tier', color: 'bg-slate-500/5 text-slate-400 border-slate-500/10', icon: UserCircle },
 };
 
@@ -111,7 +143,7 @@ export default function UsersManagementClient() {
         first_name: '',
         last_name: '',
         role: 'SUBSCRIBER',
-        subscription_tier: 'SILVER',
+        subscription_tier: 'BASIC',
         password: ''
     });
 
@@ -141,7 +173,120 @@ export default function UsersManagementClient() {
 
     useEffect(() => {
         fetchUsers();
+        fetchPermissions();
     }, []);
+
+    const [allPermissions, setAllPermissions] = useState<any[]>([]);
+    const [permissionsLoading, setPermissionsLoading] = useState(false);
+
+    const fetchPermissions = async () => {
+        setPermissionsLoading(true);
+        try {
+            const res = await api.get('/api/users/admin/permissions/');
+            setAllPermissions(res.data);
+        } catch (error) {
+            console.error('Failed to fetch permissions', error);
+        } finally {
+            setPermissionsLoading(false);
+        }
+    };
+
+    const handleTogglePermission = async (id: number, currentStatus: boolean) => {
+        try {
+            await api.patch(`/api/users/admin/permissions/${id}/`, { is_enabled: !currentStatus });
+            setAllPermissions(prev => prev.map(p => p.id === id ? { ...p, is_enabled: !currentStatus } : p));
+            toast.success('Permission updated');
+        } catch (error) {
+            toast.error('Failed to update permission');
+        }
+    };
+
+    const moduleIcons: Record<string, any> = {
+        home: LayoutDashboard,
+        market_overview: Building2,
+        market_movers: Zap,
+        market_activity: Activity,
+        market_rotation: BarChart3,
+        market_floorsheet: FileText,
+        market_bulk: Layers,
+        market_matching: GitMerge,
+        market_social: Share2,
+        market_pa_screener: Target,
+        market_volume: BarChart3,
+        portfolio_main: Briefcase,
+        portfolio_performance: TrendingUp,
+        portfolio_income: DollarSign,
+        portfolio_transactions: History,
+        portfolio_watchlist: Eye,
+        paper_trading: LayoutDashboard,
+        accumulation_dash: Layers,
+        smart_money: Brain,
+        broker_trends: BarChart3,
+        focus_ranking: Target,
+        accumulation_history: History,
+        price_study: TrendingUp,
+        broker_favorites: Star,
+        share_transfer: Share2,
+        navigator: Users,
+        below_cost: TrendingDown,
+        intel_hub: Radar,
+        strategies: Lightbulb,
+        track_record: History,
+        ticker_pa: LineChart,
+        ticker_signals: Zap,
+        ticker_accumulation: Target,
+        ticker_tech: Activity,
+        ticker_funds: Building2,
+        chat: MessageSquare
+    };
+
+    const moduleLabels: Record<string, string> = {
+        home: 'Home Dashboard',
+        market_overview: 'Market Overview',
+        market_movers: 'Movers & Shakers',
+        market_activity: 'Market Activity',
+        market_rotation: 'Sector Rotation',
+        market_floorsheet: 'Floorsheet',
+        market_bulk: 'Bulk Transactions',
+        market_matching: 'Matching Transactions',
+        market_social: 'Social Highlights',
+        market_pa_screener: 'Global PA Screener',
+        market_volume: 'Volume Profile',
+        portfolio_main: 'My Portfolio',
+        portfolio_performance: 'Performance Analysis',
+        portfolio_income: 'Income Tracker',
+        portfolio_transactions: 'Transaction History',
+        portfolio_watchlist: 'Watchlist',
+        paper_trading: 'Paper Trading',
+        accumulation_dash: 'Command Center',
+        smart_money: 'Smart Money (Whale)',
+        broker_trends: 'Broker Trends',
+        focus_ranking: 'Focus Ranking',
+        accumulation_history: 'Accumulation Hist',
+        price_study: 'Price Study',
+        broker_favorites: 'Broker Favorites',
+        share_transfer: 'Share Transfer',
+        navigator: 'Accumulator Navigator',
+        below_cost: 'Below Cost Positions',
+        intel_hub: 'Intelligence Hub',
+        strategies: 'Strategies Hub',
+        track_record: 'Track Record',
+        ticker_pa: 'Ticker: Price Action',
+        ticker_signals: 'Ticker: Signals',
+        ticker_accumulation: 'Ticker: Accumulation',
+        ticker_tech: 'Ticker: Technical',
+        ticker_funds: 'Ticker: Fundamentals',
+        chat: 'Community Chat'
+    };
+
+    const permissionGroups = [
+        { name: 'Market Intelligence', keys: ['market_overview', 'market_movers', 'market_activity', 'market_rotation', 'market_floorsheet', 'market_bulk', 'market_matching', 'market_social', 'market_pa_screener', 'market_volume'] },
+        { name: 'Portfolio Engine', keys: ['portfolio_main', 'portfolio_performance', 'portfolio_income', 'portfolio_transactions', 'portfolio_watchlist', 'paper_trading'] },
+        { name: 'Accumulation Hub', keys: ['accumulation_dash', 'smart_money', 'broker_trends', 'focus_ranking', 'accumulation_history', 'price_study', 'broker_favorites', 'share_transfer', 'navigator', 'below_cost'] },
+        { name: 'Strategic Intelligence', keys: ['intel_hub', 'strategies', 'track_record'] },
+        { name: 'Ticker Detail Components', keys: ['ticker_pa', 'ticker_signals', 'ticker_accumulation', 'ticker_tech', 'ticker_funds'] },
+        { name: 'Global Features', keys: ['home', 'chat'] }
+    ];
 
     const greeting = useMemo(() => {
         if (!currentUser) return "Terminal Account Governance";
@@ -222,7 +367,7 @@ export default function UsersManagementClient() {
                 first_name: '',
                 last_name: '',
                 role: 'SUBSCRIBER',
-                subscription_tier: 'SILVER',
+                subscription_tier: 'BASIC',
                 password: ''
             });
         } catch (error: any) {
@@ -239,7 +384,34 @@ export default function UsersManagementClient() {
             subtitle={`${greeting} • Subscription Tier Oversight`}
             hideHeader={true}
         >
-            <div className="space-y-6 animate-in fade-in duration-500">
+            <Tabs defaultValue="directory" className="space-y-6 animate-in fade-in duration-500">
+                <div className="flex items-center justify-between">
+                    <TabsList className="bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 p-1 rounded-xl h-11">
+                        <TabsTrigger 
+                            value="directory" 
+                            className="rounded-lg px-6 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all h-9"
+                        >
+                            <Users size={14} className="mr-2" />
+                            User Directory
+                        </TabsTrigger>
+                        <TabsTrigger 
+                            value="permissions" 
+                            className="rounded-lg px-6 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-amber-600 dark:data-[state=active]:text-amber-400 data-[state=active]:shadow-sm transition-all h-9"
+                        >
+                            <Shield size={14} className="mr-2" />
+                            Permissions & Tiers
+                        </TabsTrigger>
+                        <TabsTrigger 
+                            value="roles" 
+                            className="rounded-lg px-6 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all h-9"
+                        >
+                            <Settings2 size={14} className="mr-2" />
+                            Role Management
+                        </TabsTrigger>
+                    </TabsList>
+                </div>
+
+                <TabsContent value="directory" className="space-y-6 mt-0">
                 {/* Stats Header */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <Card className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border-slate-200/50 dark:border-white/5">
@@ -261,7 +433,7 @@ export default function UsersManagementClient() {
                             <div>
                                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Premium Tiers</p>
                                 <p className="text-2xl font-bold">
-                                    {users.filter(u => ['GOLD', 'PLATINUM'].includes(u.subscription_tier)).length}
+                                    {users.filter(u => ['PRO', 'ULTRA'].includes(u.subscription_tier)).length}
                                 </p>
                             </div>
                         </CardContent>
@@ -713,7 +885,107 @@ export default function UsersManagementClient() {
                         </div>
                     </CardContent>
                 </Card>
-            </div>
+                </TabsContent>
+
+                <TabsContent value="permissions" className="mt-0">
+                    <div className="grid grid-cols-1 gap-6">
+                        <Card className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border-slate-200/50 dark:border-white/5 shadow-xl">
+                            <CardHeader>
+                                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                                    <Lock size={20} className="text-amber-500" />
+                                    Subscription Tier Access Matrix
+                                </CardTitle>
+                                <CardDescription>Define which modules are accessible for each subscription level</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="rounded-xl border border-slate-200 dark:border-white/5 overflow-hidden">
+                                    <Table>
+                                        <TableHeader className="bg-slate-50/50 dark:bg-white/5">
+                                            <TableRow>
+                                                <TableHead className="w-[300px] font-bold">Terminal Module</TableHead>
+                                                {Object.keys(TIER_CONFIG).filter(t => t !== 'NONE').map(tier => (
+                                                    <TableHead key={tier} className="text-center font-bold">
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            {tier}
+                                                        </div>
+                                                    </TableHead>
+                                                ))}
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {permissionGroups.map(group => (
+                                                <React.Fragment key={group.name}>
+                                                    <TableRow className="bg-slate-100/30 dark:bg-white/[0.02]">
+                                                        <TableCell colSpan={Object.keys(TIER_CONFIG).length} className="py-2 px-4 uppercase text-[10px] font-black tracking-widest text-slate-500">
+                                                            {group.name}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                    {group.keys.map(moduleKey => (
+                                                        <TableRow key={moduleKey} className="hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors group">
+                                                            <TableCell className="font-medium">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="p-2 rounded-lg bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 group-hover:bg-slate-200 dark:group-hover:bg-white/10 transition-colors">
+                                                                        {(() => {
+                                                                            const Icon = moduleIcons[moduleKey] || CircleHelp;
+                                                                            return <Icon size={16} />;
+                                                                        })()}
+                                                                    </div>
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-sm font-bold">{moduleLabels[moduleKey]}</span>
+                                                                        <span className="text-[9px] text-slate-500 font-mono opacity-0 group-hover:opacity-100 transition-opacity">KEY: {moduleKey}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </TableCell>
+                                                            {Object.keys(TIER_CONFIG).filter(t => t !== 'NONE').map(tier => {
+                                                                const perm = allPermissions.find(p => p.tier === tier && p.module_key === moduleKey);
+                                                                return (
+                                                                    <TableCell key={`${tier}-${moduleKey}`} className="text-center">
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            onClick={() => perm && handleTogglePermission(perm.id, perm.is_enabled)}
+                                                                            disabled={permissionsLoading}
+                                                                            className={cn(
+                                                                                "w-10 h-10 rounded-xl transition-all",
+                                                                                perm?.is_enabled 
+                                                                                    ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 shadow-sm" 
+                                                                                    : "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 shadow-sm"
+                                                                            )}
+                                                                        >
+                                                                            {perm?.is_enabled ? <Unlock size={18} /> : <Lock size={18} />}
+                                                                        </Button>
+                                                                    </TableCell>
+                                                                );
+                                                            })}
+                                                        </TableRow>
+                                                    ))}
+                                                </React.Fragment>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="roles" className="mt-0">
+                    <Card className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border-slate-200/50 dark:border-white/5 p-12 text-center shadow-xl">
+                        <div className="flex flex-col items-center gap-4 max-w-md mx-auto">
+                            <div className="p-4 rounded-full bg-indigo-500/10 text-indigo-500">
+                                <Settings2 size={32} />
+                            </div>
+                            <h3 className="text-xl font-bold">Role Capabilities</h3>
+                            <p className="text-slate-500 text-sm">
+                                Management of explicit role-based permissions (Admin, Manager, Subscriber) is currently harmonized with global system policies.
+                            </p>
+                            <Badge variant="outline" className="mt-4 bg-indigo-500/5 border-indigo-500/20 text-indigo-500 uppercase tracking-widest text-[10px] py-1">
+                                System Governed
+                            </Badge>
+                        </div>
+                    </Card>
+                </TabsContent>
+            </Tabs>
         </DashboardLayout>
     );
 }

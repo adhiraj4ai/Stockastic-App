@@ -9,6 +9,7 @@ from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
 router.register(r'users/admin/management', views.AdminUserViewSet, basename='admin-user-management')
+router.register(r'users/admin/permissions', views.TierPermissionViewSet, basename='admin-tier-permissions')
 
 urlpatterns = [
     path("auth/google/", views.GoogleLogin.as_view(), name="google_login"),

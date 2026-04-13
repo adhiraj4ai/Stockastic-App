@@ -108,6 +108,7 @@ export default function SmartMoneyPage() {
     const [activeTab, setActiveTab]     = useState<'signals' | 'flow'>('signals');
     const [sort, setSort]               = useState<{ key: SignalSortKey; dir: SortDir }>({ key: 'amount', dir: 'desc' });
     const [selectedId, setSelectedId]   = useState<number | null>(null);
+    const [currentUser, setCurrentUser] = useState<any>(null);
     const abortRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
@@ -120,6 +121,17 @@ export default function SmartMoneyPage() {
             .then(res => setData(res.data))
             .catch(err => { if (err.name !== 'AbortError') console.error('Smart money fetch failed', err); })
             .finally(() => setLoading(false));
+
+        // Fetch user for access control and set default tab
+        api.get('/api/users/me/')
+            .then(res => {
+                setCurrentUser(res.data);
+                const perms = res.data.permissions;
+                if (perms !== 'all' && !perms?.['smart_money'] && activeTab === 'signals') {
+                    setActiveTab('flow');
+                }
+            })
+            .catch(err => console.error("Failed to load user profile", err));
 
         return () => abortRef.current?.abort();
     }, [range]);
@@ -597,9 +609,13 @@ export default function SmartMoneyPage() {
                             {/* Tab bar */}
                             <div className="border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] px-5 flex items-center gap-1">
                                 {([
-                                    { key: 'signals' as const, label: 'Whale Signals', icon: <Zap className="w-3.5 h-3.5" /> },
-                                    { key: 'flow' as const,    label: 'Symbol Intelligence', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+                                    { key: 'signals' as const, label: 'Whale Signals', icon: <Zap className="w-3.5 h-3.5" />, restricted: true },
+                                    { key: 'flow' as const,    label: 'Symbol Intelligence', icon: <BarChart3 className="w-3.5 h-3.5" />, restricted: false },
                                 ]).map(tab => {
+                                    if (tab.restricted) {
+                                        const perms = currentUser?.permissions;
+                                        if (perms !== 'all' && !perms?.['smart_money']) return null;
+                                    }
                                     const isActive = activeTab === tab.key;
                                     const themeColor = selectedBroker ? TIER_STYLES[selectedBroker.rank].barColor : '#f59e0b';
                                     return (

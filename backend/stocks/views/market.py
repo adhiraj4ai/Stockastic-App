@@ -33,6 +33,12 @@ def search_stocks(request):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
+def health_check(request):
+    """Simple health check endpoint for frontend and container health monitoring."""
+    return Response({'status': 'online', 'timestamp': datetime.datetime.now()})
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
 def stock_history(request, ticker):
     data = DailyStockPrice.objects.filter(ticker=ticker).order_by('date')
     serializer = DailyStockPriceSerializer(data, many=True)

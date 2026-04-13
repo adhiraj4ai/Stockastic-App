@@ -1,6 +1,11 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Profile
+from .models import Profile, TierPermission
+
+class TierPermissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TierPermission
+        fields = ['id', 'tier', 'module_key', 'is_enabled']
 
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -9,10 +14,20 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer()
+    permissions = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'profile']
+        fields = ['id', 'username', 'email', 'profile', 'is_staff', 'is_superuser', 'permissions']
+
+    def get_permissions(self, obj):
+        # Admin bypass
+        if obj.is_staff or obj.is_superuser or (hasattr(obj, 'profile') and obj.profile.role == 'ADMIN'):
+            return "all"
+            
+        tier = obj.profile.subscription_tier if hasattr(obj, 'profile') else 'NONE'
+        perms = TierPermission.objects.filter(tier=tier, is_enabled=True)
+        return {p.module_key: True for p in perms}
 
     def update(self, instance, validated_data):
         profile_data = validated_data.pop('profile', {})
@@ -79,8 +94,8 @@ class AdminUserSerializer(serializers.ModelSerializer):
         # Extract flattened fields from initial_data as they are MethodFields
         initial = self.initial_data
         role = initial.get('role', 'SUBSCRIBER')
-        # Allow subscription tier for any role, default to PLATINUM for ADMIN
-        default_tier = 'PLATINUM' if role == 'ADMIN' else 'SILVER'
+        # Allow subscription tier for any role, default to ULTRA for ADMIN
+        default_tier = 'ULTRA' if role == 'ADMIN' else 'BASIC'
         subscription_tier = initial.get('subscription_tier', default_tier)
         nickname = initial.get('nickname', '')
         first_name = initial.get('first_name', '')

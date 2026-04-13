@@ -3,7 +3,8 @@ from rest_framework.decorators import api_view, permission_classes, throttle_cla
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
-from .serializers import UserSerializer, AdminUserSerializer
+from .serializers import UserSerializer, AdminUserSerializer, TierPermissionSerializer
+from .models import UserSession, LoginActivity, PasswordHistory, TierPermission
 from django.contrib.auth.models import User
 from django.db import models
 from django.contrib.auth import authenticate, login
@@ -28,7 +29,6 @@ import re
 import threading
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import UserSession, LoginActivity, PasswordHistory
 from django.contrib.auth.hashers import check_password as auth_check_password
 
 logger = logging.getLogger(__name__)
@@ -89,6 +89,28 @@ def _parse_user_agent(ua_string):
         device = 'Desktop'
     
     return browser, os_name, device
+# --- Custom Permissions ---
+
+class IsPlatformAdmin(permissions.BasePermission):
+    """
+    Custom permission to allow access to users with ADMIN role in profile,
+    staff status, or superuser status.
+    """
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        
+        # Admin bypass based on staff/superuser status
+        if user.is_staff or user.is_superuser:
+            return True
+            
+        # Admin bypass based on profile role
+        if hasattr(user, 'profile') and user.profile.role == 'ADMIN':
+            return True
+            
+        return False
+    
 
 def _create_session(user, request, refresh_token):
     """Record a new session after successful login."""
@@ -574,7 +596,7 @@ class AdminUserViewSet(viewsets.ModelViewSet):
     """
     queryset = User.objects.all().select_related('profile').order_by('-date_joined')
     serializer_class = AdminUserSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsPlatformAdmin]
 
     def _is_protected(self, user):
         """Check if account is protected from deactivation/deletion."""
@@ -691,3 +713,16 @@ class AdminUserViewSet(viewsets.ModelViewSet):
                 models.Q(profile__last_name__icontains=search)
             )
         return queryset
+
+
+class TierPermissionViewSet(viewsets.ModelViewSet):
+    """ViewSet to manage tier-based permissions."""
+    queryset = TierPermission.objects.all()
+    serializer_class = TierPermissionSerializer
+    permission_classes = [IsPlatformAdmin]
+
+    def get_queryset(self):
+        tier = self.request.query_params.get('tier')
+        if tier:
+            return self.queryset.filter(tier=tier)
+        return self.queryset.order_by('tier', 'module_key')

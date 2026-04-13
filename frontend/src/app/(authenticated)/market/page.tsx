@@ -9,8 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     TrendingUp, TrendingDown, Activity, DollarSign, Zap, BarChart3, Globe, ShieldAlert,
-    HeartPulse, Activity as ActivityIcon, LineChart, LayoutDashboard, Search, Clock,
-    Command as CommandIcon, Wallet, Lightbulb, MessageSquare, Landmark, Building2,
+    HeartPulse, LineChart, LayoutDashboard, Search, Clock,
+    Command, Wallet, Lightbulb, MessageSquare, Building2,
     Droplets, Boxes, Factory, ShoppingBag, Hotel, Plane, Phone, HardHat, ShieldCheck,
     Coins, PieChart, Flame
 } from 'lucide-react';
@@ -342,7 +342,7 @@ export default function DashboardPage() {
     const isPositive = market_summary.points_change >= 0;
 
     const sectorConfig: Record<string, { icon: React.ReactNode, gradient: string }> = {
-        'Commercial Banks': { icon: <Landmark />, gradient: 'from-blue-600/20 to-indigo-600/20' },
+        'Commercial Banks': { icon: <Building2 />, gradient: 'from-blue-600/20 to-indigo-600/20' },
         'Development Banks': { icon: <Building2 />, gradient: 'from-indigo-400/20 to-blue-500/20' },
         'Finance': { icon: <DollarSign />, gradient: 'from-cyan-400/20 to-blue-500/20' },
         'Hotels And Tourism': { icon: <Hotel />, gradient: 'from-orange-400/20 to-amber-500/20' },
@@ -490,7 +490,7 @@ export default function DashboardPage() {
                             <div className="absolute -left-8 -top-8 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent blur-2xl opacity-50" />
                             <CardHeader className="p-4 pb-1 border-b border-slate-50 dark:border-slate-800">
                                 <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight flex items-center">
-                                    <ActivityIcon size={14} className="text-blue-600 mr-2" /> 
+                                    <Activity size={14} className="text-blue-600 mr-2" /> 
                                     Snapshot
                                     <InfoTooltip content="Daily liquidity metrics including total volume (qty) and turnover (value) traded." />
                                 </CardTitle>
@@ -655,7 +655,7 @@ export default function DashboardPage() {
                                 <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full">
                                     <CardHeader className="p-3 pb-1">
                                         <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center">
-                                            <ActivityIcon size={14} className="text-blue-500 mr-2" /> 
+                                            <Activity size={14} className="text-blue-500 mr-2" /> 
                                             Rally Quality Matrix
                                             <InfoTooltip content="A proprietary assessment of the market trend's sustainability based on Volume, Turnover, Breadth, and Participation." />
                                         </CardTitle>
@@ -708,7 +708,7 @@ export default function DashboardPage() {
                                 <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full">
                                     <CardHeader className="p-3 pb-1">
                                         <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center">
-                                            <ActivityIcon size={14} className="text-indigo-500 mr-2" /> 
+                                            <Activity size={14} className="text-indigo-500 mr-2" /> 
                                             Rotation & Convergence
                                             <InfoTooltip content="Visualizes the lifecycle of sectors as they rotate from leading to lagging phases." />
                                         </CardTitle>

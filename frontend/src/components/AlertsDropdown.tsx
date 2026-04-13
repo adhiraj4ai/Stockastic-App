@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Bell, Info, TrendingUp, TrendingDown, AlertCircle, Target, Eye, Fish, ExternalLink, RefreshCw, Filter, LayoutGrid, ChevronRight, Zap, Target as TargetIcon, ShieldAlert } from 'lucide-react';
+import { Bell, Info, TrendingUp, TrendingDown, AlertCircle, Target, Eye, Fish, ExternalLink, RefreshCw, Filter, LayoutGrid, ChevronRight, Zap, ShieldAlert } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -150,7 +150,7 @@ export function AlertsDropdown() {
         if (type === 'VOLUME_SPIKE') return <Zap size={14} className="stroke-[2.5]" />;
         if (type === 'PORTFOLIO_DIVERSITY') return <Filter size={14} className="stroke-[2.5]" />;
         if (type === 'STOP_LOSS_HIT') return <ShieldAlert size={14} className="stroke-[2.5]" />;
-        if (type === 'TARGET_REACHED') return <TargetIcon size={14} className="stroke-[2.5]" />;
+        if (type === 'TARGET_REACHED') return <Target size={14} className="stroke-[2.5]" />;
         return <Info size={14} className="stroke-[2.5]" />;
     };
 

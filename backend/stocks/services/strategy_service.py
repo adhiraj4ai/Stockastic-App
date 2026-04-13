@@ -61,10 +61,10 @@ class StrategyService:
             return 0, 0
 
         df = pd.DataFrame(ticks)
-        df.rename(columns={'open':'Open','high':'High','low':'Low','close':'Close','volume':'Volume'}, inplace=True)
+        df = df.rename(columns={'open':'Open','high':'High','low':'Low','close':'Close','volume':'Volume'})
         df[['Open','High','Low','Close','Volume']] = df[['Open','High','Low','Close','Volume']].astype(float)
         df['date'] = pd.to_datetime(df['date'])
-        df.set_index('date', inplace=True)
+        df = df.set_index('date')
         
         last_date = df.index[-1].date()
         last_close = df.iloc[-1]['Close']
