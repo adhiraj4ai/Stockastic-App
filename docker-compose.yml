@@ -11,8 +11,8 @@ services:
       POSTGRES_DB: stockastic
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+#    ports:
+#      - "5432:5432"
     networks:
       - stockastic-network
     healthcheck:
@@ -28,8 +28,8 @@ services:
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
-    ports:
-      - "6379:6379"
+#    ports:
+#      - "6379:6379"
     networks:
       - stockastic-network
     healthcheck:

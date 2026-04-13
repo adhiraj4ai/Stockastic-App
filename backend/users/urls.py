@@ -23,8 +23,9 @@ urlpatterns = [
     path("account/2fa/disable/", views.disable_2fa, name="disable_2fa"),
     path("account/2fa/recovery-codes/", views.recovery_codes, name="recovery_codes"),
     path("account/activity/", views.login_activity, name="login_activity"),
-    path("token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    # The following are now handled by dj-rest-auth or the custom login_view with secure cookies
+    # path("token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    # path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("dashboard/", views.dashboard, name="dashboard"),
     path("users/me/", views.get_current_user, name="user_me"),
     path("users/change_password/", views.change_password, name="change_password"),

@@ -408,15 +408,39 @@ def login_view(request):
     )
     
     logger.info(f"Successful login for user: {user.username} from {session.ip_address}")
-    return Response({
-        'refresh': str(refresh),
-        'access': str(refresh.access_token),
+
+    response = Response({
         'session_id': session.id,
         'user': {
             'username': user.username,
             'email': user.email
         }
     })
+
+    # Set JWT cookies manually for this custom login view
+    from django.conf import settings
+    
+    cookie_config = settings.REST_AUTH
+    access_token = str(refresh.access_token)
+    refresh_token = str(refresh)
+
+    response.set_cookie(
+        key=cookie_config['JWT_AUTH_COOKIE'],
+        value=access_token,
+        httponly=cookie_config['JWT_AUTH_HTTPONLY'],
+        secure=cookie_config['JWT_AUTH_SECURE'],
+        samesite=cookie_config['JWT_AUTH_SAMESITE'],
+    )
+    
+    response.set_cookie(
+        key=cookie_config['JWT_AUTH_REFRESH_COOKIE'],
+        value=refresh_token,
+        httponly=cookie_config['JWT_AUTH_HTTPONLY'],
+        secure=cookie_config['JWT_AUTH_SECURE'],
+        samesite=cookie_config['JWT_AUTH_SAMESITE'],
+    )
+
+    return response
 
 
 # --- Session Management Views ---

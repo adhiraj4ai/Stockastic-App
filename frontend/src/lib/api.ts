@@ -18,10 +18,13 @@ export const mlApi = axios.create({
 
 // Helper to clear session
 const logoutAndRedirect = () => {
+    // Note: LocalStorage items are removed just in case of stale cache,
+    // but the primary tokens are now in HttpOnly cookies which JS cannot clear manually.
+    // The backend /api/auth/logout/ should be used to clear them properly.
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
 
-    // Clear cookies
+    // Attempt to clear non-httpOnly cookies if any were set by mistake
     document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 
@@ -29,16 +32,11 @@ const logoutAndRedirect = () => {
     window.location.href = '/login';
 };
 
-// Request interceptor to add JWT token to both clients
+// Request interceptor: The browser now handles the access_token cookie automatically 
+// via withCredentials: true. No manual Authorization header injection is needed.
 const addAuthInterceptor = (client: typeof api) => {
     client.interceptors.request.use(
-        (config) => {
-            const token = Cookies.get('access_token') || localStorage.getItem('access_token');
-            if (token) {
-                config.headers.Authorization = `Bearer ${token}`;
-            }
-            return config;
-        },
+        (config) => config,
         (error) => Promise.reject(error)
     );
 };
@@ -53,46 +51,21 @@ api.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
         const status = error.response ? error.response.status : null;
-        const detail = error.response?.data?.detail;
 
-        // If 401 and not already retrying
+        // If 401 (Unauthorized) and not already retrying
         if (status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
 
-            const refreshToken = Cookies.get('refresh_token') || localStorage.getItem('refresh_token');
+            try {
+                console.log('Attempting to refresh access token via HttpOnly cookies...');
+                // Note: dj-rest-auth refresh endpoint automatically reads/writes 
+                // httpOnly cookies if configured.
+                await axios.post(`${API_BASE_URL}/api/auth/token/refresh/`, {}, { withCredentials: true });
 
-            if (refreshToken) {
-                try {
-                    console.log('Attempting to refresh access token...');
-                    const response = await axios.post(`${API_BASE_URL}/api/token/refresh/`, {
-                        refresh: refreshToken
-                    });
-
-                    const { access, refresh: newRefresh } = response.data;
-
-                    // Cookie expiry matches login behaviour (1 day) so the 5-second
-                    // cookie-presence check in DashboardLayout doesn't evict the user
-                    // between activity bursts. The JWT itself is still only valid for
-                    // 15 min server-side; expiry is enforced there.
-                    Cookies.set('access_token', access, { expires: 1, sameSite: 'lax' });
-                    localStorage.setItem('access_token', access);
-
-                    // Persist rotated refresh token (ROTATE_REFRESH_TOKENS=True means the
-                    // old one is blacklisted after use — must store the new one or the
-                    // next refresh attempt will fail and force a logout).
-                    if (newRefresh) {
-                        Cookies.set('refresh_token', newRefresh, { expires: 7, sameSite: 'lax' });
-                        localStorage.setItem('refresh_token', newRefresh);
-                    }
-
-                    // Update header and retry
-                    originalRequest.headers.Authorization = `Bearer ${access}`;
-                    return api(originalRequest);
-                } catch (refreshError) {
-                    console.error('Refresh token expired or invalid. Logging out...');
-                    logoutAndRedirect();
-                }
-            } else {
+                // If successful, retry the original request which will now include the new cookie
+                return api(originalRequest);
+            } catch (refreshError) {
+                console.error('Session expired or refresh failed. Logging out...');
                 logoutAndRedirect();
             }
         }

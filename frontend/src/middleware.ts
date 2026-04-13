@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
     // Get token from cookies
     const token = request.cookies.get('access_token')?.value;
 
@@ -45,26 +45,6 @@ export function proxy(request: NextRequest) {
     else {
         response = NextResponse.next();
     }
-
-    // --- Inject Security Headers (CSP) ---
-    const cspHeader = `
-        default-src 'self';
-        script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net blob:;
-        worker-src 'self' blob:;
-        style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
-        img-src 'self' blob: data: https://grainy-gradients.vercel.app;
-        font-src 'self' data:;
-        connect-src 'self' http://localhost:8000 https://api.stockastic.market https://cdn.jsdelivr.net ws: wss:;
-        object-src 'none';
-        base-uri 'self';
-        form-action 'self';
-        frame-ancestors 'none';
-    `.replace(/\s{2,}/g, ' ').trim();
-
-    response.headers.set('Content-Security-Policy', cspHeader);
-    response.headers.set('X-Content-Type-Options', 'nosniff');
-    response.headers.set('X-Frame-Options', 'DENY');
-    response.headers.set('X-XSS-Protection', '1; mode=block');
 
     return response;
 }
