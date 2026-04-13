@@ -170,7 +170,7 @@ function DashboardContent({
     }, []);
 
     useEffect(() => {
-        // Fetch current user
+        // Fetch current user - this triggers a 401 and redirect if session is invalid
         import('@/lib/api').then(({ default: api }) => {
             api.get('/api/users/me/')
                 .then(res => setCurrentUser(res.data))
@@ -182,19 +182,6 @@ function DashboardContent({
                     }
                 });
         });
-    }, [pathname, router]);
-
-    useEffect(() => {
-        // Periodic check for token existence - simple safeguard
-        const checkAuth = () => {
-            const token = Cookies.get('access_token');
-            if (!token && pathname !== '/login') {
-                router.push('/login');
-            }
-        };
-
-        const interval = setInterval(checkAuth, 5000);
-        return () => clearInterval(interval);
     }, [pathname, router]);
 
     useEffect(() => {
