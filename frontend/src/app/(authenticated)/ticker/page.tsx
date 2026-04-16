@@ -113,27 +113,6 @@ export default function TickerLandingPage() {
             <div className="min-h-screen flex flex-col items-center justify-center px-4">
                 {/* Wordmark & Greeting */}
                 <div className="mb-14 text-center">
-                    {user && (
-                        <div className="mb-8 inline-flex items-center gap-4 px-4 py-2 rounded-full bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/20 dark:border-white/5 shadow-2xl shadow-slate-900/5 animate-in fade-in slide-in-from-top-4 duration-1000">
-                            <div className="h-10 w-10 rounded-full border-2 border-white/50 dark:border-white/10 overflow-hidden shadow-inner flex-shrink-0">
-                                {user.profile_picture ? (
-                                    <img src={user.profile_picture} alt={user.username} className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className="w-full h-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-white text-sm font-black">
-                                        {user.nickname?.[0] || user.first_name?.[0] || user.username?.[0] || 'U'}
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex flex-col items-start pr-2">
-                                <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em] leading-none mb-1">
-                                    {getGreeting()}
-                                </span>
-                                <span className="text-sm font-bold text-slate-900 dark:text-white leading-none">
-                                    {getDisplayName()}
-                                </span>
-                            </div>
-                        </div>
-                    )}
                     <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white">
                         Ticker <span className="text-emerald-500">Search</span>
                     </h1>

@@ -8,12 +8,18 @@ const ML_SERVICE_URL = process.env.NEXT_PUBLIC_ML_SERVICE_URL || 'http://localho
 const api = axios.create({
     baseURL: API_BASE_URL,
     withCredentials: true,
+    xsrfCookieName: 'csrftoken',
+    xsrfHeaderName: 'X-CSRFToken',
+    withXSRFToken: true,
 });
 
 // ML service API client
 export const mlApi = axios.create({
     baseURL: ML_SERVICE_URL,
     withCredentials: true,
+    xsrfCookieName: 'csrftoken',
+    xsrfHeaderName: 'X-CSRFToken',
+    withXSRFToken: true,
 });
 
 // Helper to clear session
@@ -125,10 +131,10 @@ export const chatApi = {
 
         const response = await fetch(`${baseURL}/api/chat/sessions/${sessionId}/stream_message/`, {
             method: 'POST',
-            credentials: 'include', // Important for CORS with HttpOnly cookies
+            credentials: 'include', 
             headers: {
                 'Content-Type': 'application/json',
-                // No Authorization header needed; backend reads from HttpOnly cookie
+                'X-CSRFToken': Cookies.get('csrftoken') || '',
             },
             body: JSON.stringify({ role, content })
         });

@@ -89,6 +89,23 @@ def _parse_user_agent(ua_string):
         device = 'Desktop'
     
     return browser, os_name, device
+
+def _verify_admin_password(request):
+    """
+    Verify the provided admin_password against the current authenticated user's password.
+    Raises a PermissionDenied exception if verification fails or password is missing.
+    """
+    from rest_framework.exceptions import PermissionDenied, ValidationError
+    admin_password = request.data.get('admin_password')
+    
+    if not admin_password:
+        raise ValidationError({"admin_password": "Password confirmation is required for this sensitive operation."})
+        
+    if not request.user.check_password(admin_password):
+        raise PermissionDenied("Authentication failed. Incorrect administrative password.")
+    
+    return True
+
 # --- Custom Permissions ---
 
 class IsPlatformAdmin(permissions.BasePermission):
@@ -630,6 +647,9 @@ class AdminUserViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         
+        # REQUIRES PASSWORD
+        _verify_admin_password(request)
+
         # 1. Protect Admins
         if self._is_protected(instance):
             return Response(
@@ -687,6 +707,11 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         
         # Update instance status explicitly to ensure persistence
         if is_active is not None:
+            # SENSITIVE: Role, Tier, or Deactivation change
+            sensitive_fields = ['role', 'subscription_tier', 'is_active']
+            if any(field in request.data for field in sensitive_fields):
+                _verify_admin_password(request)
+
             instance.is_active = (str(is_active).lower() == 'true') if isinstance(is_active, str) else bool(is_active)
             instance.save()
             
@@ -717,6 +742,11 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         
         # Update instance status explicitly to ensure persistence
         if is_active is not None:
+             # SENSITIVE: Role, Tier, or Deactivation change
+            sensitive_fields = ['role', 'subscription_tier', 'is_active']
+            if any(field in request.data for field in sensitive_fields):
+                _verify_admin_password(request)
+
             instance.is_active = (str(is_active).lower() == 'true') if isinstance(is_active, str) else bool(is_active)
             instance.save()
         
@@ -750,3 +780,19 @@ class TierPermissionViewSet(viewsets.ModelViewSet):
         if tier:
             return self.queryset.filter(tier=tier)
         return self.queryset.order_by('tier', 'module_key')
+
+    def create(self, request, *args, **kwargs):
+        _verify_admin_password(request)
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        _verify_admin_password(request)
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        _verify_admin_password(request)
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        _verify_admin_password(request)
+        return super().destroy(request, *args, **kwargs)

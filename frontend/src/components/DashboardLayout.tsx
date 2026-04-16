@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { LayoutDashboard, TrendingUp, TrendingDown, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Users, BarChart3, History, Star, Brain, Radar, Building2, ScanLine, Zap, Share2, Crosshair, DollarSign, Layers, GitMerge, Shield } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, TrendingDown, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Users, BarChart3, History, Star, Brain, Radar, Building2, ScanLine, Zap, Share2, Crosshair, DollarSign, Layers, GitMerge, Shield, Search } from 'lucide-react';
 import { FullPageLoader } from '@/components/ui/StockLoader';
 import { SearchBar } from './SearchBar';
 import { ChatSidebar } from './ChatSidebar';
@@ -25,7 +25,8 @@ import Cookies from 'js-cookie';
 import { SettingsDialog } from './SettingsDialog';
 
 const navItems = [
-    { name: 'Home', href: '/ticker', icon: Home, permission: 'home' },
+    { name: 'Home', href: '/', icon: Home, permission: 'home' },
+    { name: 'Ticker Intelligence', href: '/ticker', icon: Search, permission: 'home' },
     {
         name: 'Market',
         icon: Building2,
@@ -34,12 +35,20 @@ const navItems = [
             { name: 'Movers & Shakers', href: '/market/movers', icon: Zap, permission: 'market_movers' },
             { name: 'Deep Dive', href: '/market/activity', icon: Activity, permission: 'market_activity' },
             { name: 'Sector Rotation', href: '/market/rotation', icon: BarChart3, permission: 'market_rotation' },
+            { name: 'Social Highlights', href: '/social', icon: Share2, permission: 'market_social' },
+            { name: 'Global PA Screener', href: '/market/pa-screener', icon: Target, permission: 'market_pa_screener' },
+        ]
+    },
+    {
+        name: 'Floorsheet',
+        icon: FileText,
+        subItems: [
             { name: 'Floorsheet', href: '/floorsheet', icon: FileText, permission: 'market_floorsheet' },
             { name: 'Bulk Transactions', href: '/market/bulk', icon: Layers, permission: 'market_bulk' },
             { name: 'Matching Transactions', href: '/market/matching', icon: GitMerge, permission: 'market_matching' },
-            { name: 'Social Highlights', href: '/social', icon: Share2, permission: 'market_social' },
-            { name: 'Global PA Screener', href: '/market/pa-screener', icon: Target, permission: 'market_pa_screener' },
             { name: 'Volume Profile', href: '/market/volume-profile', icon: BarChart3, permission: 'market_volume' },
+            { name: 'Accumulation History', href: '/accumulation/history', icon: History, permission: 'accumulation_history' },
+            { name: 'Share Transfer', href: '/accumulation/share-transfer', icon: Share2, permission: 'share_transfer' },
         ]
     },
     // Chat moved to top nav
@@ -63,10 +72,8 @@ const navItems = [
             { name: 'Smart Money', href: '/accumulation/smart-money', icon: Brain, permission: 'smart_money' },
             { name: 'Broker Trends', href: '/accumulation/trends', icon: BarChart3, permission: 'broker_trends' },
             { name: 'Focus Ranking', href: '/accumulation/focus-ranking', icon: Target, permission: 'focus_ranking' },
-            { name: 'Accumulation History', href: '/accumulation/history', icon: History, permission: 'accumulation_history' },
             { name: 'Price Study', href: '/accumulation/price-study', icon: TrendingUp, permission: 'price_study' },
             { name: 'Broker Favorites', href: '/accumulation/favorites', icon: Star, permission: 'broker_favorites' },
-            { name: 'Share Transfer', href: '/accumulation/share-transfer', icon: Share2, permission: 'share_transfer' },
             { name: 'Accumulators Navigator', href: '/accumulation/navigator', icon: Users, permission: 'navigator' },
             { name: 'Below Cost Positions', href: '/accumulation/below-cost', icon: TrendingDown, permission: 'below_cost' },
         ]
@@ -216,6 +223,13 @@ function DashboardContent({
         };
     }, [isOffline]);
 
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return "Good Morning";
+        if (hour < 17) return "Good Afternoon";
+        return "Good Evening";
+    };
+
     // Filter Navigation Items based on Granular Dynamic Permissions
     const filteredNavItems = navItems.map(item => {
         // While loading, default to most restrictive (Basic)
@@ -224,7 +238,7 @@ function DashboardContent({
             if (!basic.includes(item.name)) return null;
             return item;
         }
-        
+
         const perms = currentUser.permissions;
         if (perms === 'all') return item;
         if (!perms) return null;
@@ -235,26 +249,26 @@ function DashboardContent({
                 if (!sub.permission) return true;
                 return perms[sub.permission] === true;
             });
-            
+
             // If the parent has its own permission key, check it
             if (item.permission && perms[item.permission] === false) return null;
-            
+
             // Hide parent if all sub-items are restricted
             if (filteredSubItems.length === 0) return null;
-            
+
             return { ...item, subItems: filteredSubItems };
         }
-        
+
         // Parent only check
         if (item.permission && perms[item.permission] === false) return null;
-        
+
         return item;
     }).filter(Boolean) as any[];
 
     // Handle Granular Dynamic Route Guard
     useEffect(() => {
         if (!currentUser) return;
-        
+
         const perms = currentUser.permissions;
         if (perms === 'all') return;
         if (!perms) return;
@@ -267,7 +281,7 @@ function DashboardContent({
             // Find in parents
             const parent = navItems.find(i => i.href === path);
             if (parent && parent.permission && !perms[parent.permission]) return false;
-            
+
             // Find in subItems
             for (const item of navItems) {
                 if (item.subItems) {
@@ -284,7 +298,7 @@ function DashboardContent({
                 router.push('/ticker');
                 return;
             }
-            
+
             // For general restricted paths, push to home or market
             if (pathname !== '/ticker' && pathname !== '/market') {
                 router.push('/ticker');
@@ -354,17 +368,24 @@ function DashboardContent({
         }
     };
 
-    const handleLogout = () => {
-        // Clear LocalStorage
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
+    const handleLogout = async () => {
+        try {
+            const { default: api } = await import('@/lib/api');
+            await api.post('/api/auth/logout/');
+        } catch (err) {
+            console.error("Logout request failed", err);
+        } finally {
+            // Clear LocalStorage
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
 
-        // Clear Cookies
-        Cookies.remove('access_token');
-        Cookies.remove('refresh_token');
+            // Clear Cookies (Note: HttpOnly cookies can only be cleared by the backend)
+            Cookies.remove('access_token');
+            Cookies.remove('refresh_token');
 
-        // Redirect
-        router.push('/login');
+            // Redirect
+            router.push('/login');
+        }
     };
 
 
@@ -427,12 +448,13 @@ function DashboardContent({
                                                 <item.icon size={18} className={
                                                     item.name === 'Home' ? 'text-blue-500/70 dark:text-blue-400/70' :
                                                         item.name === 'Chat' ? 'text-purple-500/70 dark:text-purple-400/70' :
-                                                            item.name === 'Stocks' ? 'text-green-500/70 dark:text-green-400/70' :
-                                                                item.name === 'Finfolio' ? 'text-emerald-500/70 dark:text-emerald-400/70' :
-                                                                    item.name === 'Accumulation' ? 'text-orange-500/70 dark:text-orange-400/70' :
-                                                                        item.name === 'Financials' ? 'text-cyan-500/70 dark:text-cyan-400/70' :
-                                                                            item.name === 'Strategic Hub' ? 'text-pink-500/70 dark:text-pink-400/70' :
-                                                                                'text-slate-400 dark:text-slate-500'
+                                                            item.name === 'Floorsheet' ? 'text-indigo-500/70 dark:text-indigo-400/70' :
+                                                                item.name === 'Stocks' ? 'text-green-500/70 dark:text-green-400/70' :
+                                                                    item.name === 'Finfolio' ? 'text-emerald-500/70 dark:text-emerald-400/70' :
+                                                                        item.name === 'Accumulation' ? 'text-orange-500/70 dark:text-orange-400/70' :
+                                                                            item.name === 'Financials' ? 'text-cyan-500/70 dark:text-cyan-400/70' :
+                                                                                item.name === 'Strategic Hub' ? 'text-pink-500/70 dark:text-pink-400/70' :
+                                                                                    'text-slate-400 dark:text-slate-500'
                                                 } />
                                             </div>
                                             {!isSidebarCollapsed && <span className="text-sm font-semibold tracking-tight">{item.name}</span>}
@@ -479,9 +501,10 @@ function DashboardContent({
                                             const isActiveLink = pathname === subPath && (subTab ? currentTab === subTab : true);
 
                                             const subIconColor = isActiveLink
-                                                ? (item.name === 'Accumulation' ? 'text-orange-500 dark:text-orange-400' :
-                                                    item.name === 'Finfolio' ? 'text-emerald-500 dark:text-emerald-400' :
-                                                        'text-white')
+                                                ? (item.name === 'Floorsheet' ? 'text-indigo-500 dark:text-indigo-400' :
+                                                    item.name === 'Accumulation' ? 'text-orange-500 dark:text-orange-400' :
+                                                        item.name === 'Finfolio' ? 'text-emerald-500 dark:text-emerald-400' :
+                                                            'text-white')
                                                 : (item.name === 'Accumulation' ? 'text-orange-500/60 dark:text-orange-400/60' :
                                                     item.name === 'Finfolio' ? 'text-emerald-500/60 dark:text-emerald-400/60' :
                                                         'text-slate-500/60 dark:text-slate-400/60');
@@ -526,15 +549,14 @@ function DashboardContent({
                                 </div>
                                 {!isSidebarCollapsed && (
                                     <div className="flex flex-col items-start min-w-0 flex-1">
-                                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight truncate w-full text-left">
+                                        <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-widest leading-none mb-1">
+                                            {getGreeting()}
+                                        </span>
+                                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-tight truncate w-full text-left leading-none">
                                             {(currentUser as any)?.nickname ||
                                                 (((currentUser as any)?.first_name || (currentUser as any)?.last_name)
                                                     ? `${(currentUser as any)?.first_name || ''} ${(currentUser as any)?.last_name || ''}`.trim()
                                                     : currentUser?.username) || 'User'}
-                                        </span>
-                                        <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                                            <span className="w-1 h-1 bg-emerald-500 rounded-full" />
-                                            Active Now
                                         </span>
                                     </div>
                                 )}
@@ -685,18 +707,18 @@ function DashboardContent({
                             )}
                             <AlertsDropdown />
 
-                            {(!currentUser || currentUser.username !== 'ashmi') && 
-                             (currentUser?.permissions === 'all' || currentUser?.permissions?.['chat']) && (
-                                <Link href="/chat">
-                                    <button
-                                        className="p-2.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 transition-all duration-300 relative group group-hover:scale-105"
-                                        title="Chat"
-                                    >
-                                        <MessageSquare size={18} className="group-hover:rotate-6 transition-transform" />
-                                        <span className="absolute top-2 right-2 w-2 h-2 bg-purple-500 rounded-full" />
-                                    </button>
-                                </Link>
-                            )}
+                            {(!currentUser || currentUser.username !== 'ashmi') &&
+                                (currentUser?.permissions === 'all' || currentUser?.permissions?.['chat']) && (
+                                    <Link href="/chat">
+                                        <button
+                                            className="p-2.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 transition-all duration-300 relative group group-hover:scale-105"
+                                            title="Chat"
+                                        >
+                                            <MessageSquare size={18} className="group-hover:rotate-6 transition-transform" />
+                                            <span className="absolute top-2 right-2 w-2 h-2 bg-purple-500 rounded-full" />
+                                        </button>
+                                    </Link>
+                                )}
                         </div>
                     </header>
                 )}

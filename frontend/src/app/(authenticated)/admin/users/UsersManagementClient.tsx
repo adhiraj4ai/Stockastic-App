@@ -97,6 +97,7 @@ import {
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { ConfirmPasswordDialog } from '@/components/admin/ConfirmPasswordDialog';
 
 interface TerminalUser {
     id: number;
@@ -134,6 +135,16 @@ export default function UsersManagementClient() {
     const [roleFilter, setRoleFilter] = useState<string>('ALL');
     const [updatingUserId, setUpdatingUserId] = useState<number | null>(null);
 
+    // Password Confirmation State
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [passwordLoading, setPasswordLoading] = useState(false);
+    const [pendingAction, setPendingAction] = useState<{
+        type: 'ROLE' | 'PERMISSION' | 'DEACTIVATE' | 'DELETE';
+        id: number;
+        data: any;
+        label?: string;
+    } | null>(null);
+
     // Create User State
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [createLoading, setCreateLoading] = useState(false);
@@ -154,18 +165,29 @@ export default function UsersManagementClient() {
         try {
             // Fetch users list
             const usersRes = await api.get('/api/users/admin/management/');
-            setUsers(usersRes.data.results || usersRes.data);
+            
+            // Defensively handle response structure
+            const userData = usersRes.data?.results || usersRes.data;
+            if (Array.isArray(userData)) {
+                setUsers(userData);
+            } else {
+                console.warn('User directory API returned non-array data:', userData);
+                setUsers([]);
+            }
             
             // Try fetching current user profile separately for the greeting
             try {
                 const meRes = await api.get('/api/users/me/');
-                setCurrentUser(meRes.data);
+                if (meRes.data) {
+                    setCurrentUser(meRes.data);
+                }
             } catch (meError) {
                 console.warn('Failed to fetch current user profile', meError);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to fetch user directory', error);
-            toast.error('Failed to load user directory');
+            const errorMsg = error.response?.data?.error || error.response?.data?.detail || 'Failed to load user directory';
+            toast.error(errorMsg);
         } finally {
             setLoading(false);
         }
@@ -191,13 +213,28 @@ export default function UsersManagementClient() {
         }
     };
 
-    const handleTogglePermission = async (id: number, currentStatus: boolean) => {
+    const handleTogglePermission = (id: number, currentStatus: boolean, moduleKey: string) => {
+        setPendingAction({
+            type: 'PERMISSION',
+            id: id,
+            data: { is_enabled: !currentStatus },
+            label: `Toggle Permission: ${moduleLabels[moduleKey] || moduleKey}`
+        });
+        setIsPasswordModalOpen(true);
+    };
+
+    const executeTogglePermission = async (id: number, data: any, admin_password: string) => {
+        setPasswordLoading(true);
         try {
-            await api.patch(`/api/users/admin/permissions/${id}/`, { is_enabled: !currentStatus });
-            setAllPermissions(prev => prev.map(p => p.id === id ? { ...p, is_enabled: !currentStatus } : p));
+            await api.patch(`/api/users/admin/permissions/${id}/`, { ...data, admin_password });
+            setAllPermissions(prev => prev.map(p => p.id === id ? { ...p, is_enabled: data.is_enabled } : p));
             toast.success('Permission updated');
-        } catch (error) {
-            toast.error('Failed to update permission');
+            setIsPasswordModalOpen(false);
+        } catch (error: any) {
+            const msg = error.response?.data?.error || error.response?.data?.admin_password || 'Failed to update permission';
+            toast.error(msg);
+        } finally {
+            setPasswordLoading(false);
         }
     };
 
@@ -219,6 +256,7 @@ export default function UsersManagementClient() {
         portfolio_transactions: History,
         portfolio_watchlist: Eye,
         paper_trading: LayoutDashboard,
+        portfolio_optimization: LineChart,
         accumulation_dash: Layers,
         smart_money: Brain,
         broker_trends: BarChart3,
@@ -258,6 +296,7 @@ export default function UsersManagementClient() {
         portfolio_transactions: 'Transaction History',
         portfolio_watchlist: 'Watchlist',
         paper_trading: 'Paper Trading',
+        portfolio_optimization: 'Portfolio Optimizer',
         accumulation_dash: 'Command Center',
         smart_money: 'Smart Money (Whale)',
         broker_trends: 'Broker Trends',
@@ -280,12 +319,13 @@ export default function UsersManagementClient() {
     };
 
     const permissionGroups = [
-        { name: 'Market Intelligence', keys: ['market_overview', 'market_movers', 'market_activity', 'market_rotation', 'market_floorsheet', 'market_bulk', 'market_matching', 'market_social', 'market_pa_screener', 'market_volume'] },
-        { name: 'Portfolio Engine', keys: ['portfolio_main', 'portfolio_performance', 'portfolio_income', 'portfolio_transactions', 'portfolio_watchlist', 'paper_trading'] },
-        { name: 'Accumulation Hub', keys: ['accumulation_dash', 'smart_money', 'broker_trends', 'focus_ranking', 'accumulation_history', 'price_study', 'broker_favorites', 'share_transfer', 'navigator', 'below_cost'] },
-        { name: 'Strategic Intelligence', keys: ['intel_hub', 'strategies', 'track_record'] },
-        { name: 'Ticker Detail Components', keys: ['ticker_pa', 'ticker_signals', 'ticker_accumulation', 'ticker_tech', 'ticker_funds'] },
-        { name: 'Global Features', keys: ['home', 'chat'] }
+        { name: 'Global', keys: ['home', 'chat'] },
+        { name: 'Market Suite', keys: ['market_overview', 'market_movers', 'market_activity', 'market_rotation', 'market_pa_screener', 'market_social'] },
+        { name: 'Floorsheet Suite', keys: ['market_floorsheet', 'market_bulk', 'market_matching', 'market_volume', 'accumulation_history', 'share_transfer'] },
+        { name: 'Finfolio Suite', keys: ['portfolio_main', 'portfolio_performance', 'portfolio_income', 'portfolio_transactions', 'portfolio_watchlist', 'paper_trading', 'portfolio_optimization'] },
+        { name: 'Accumulation Suite', keys: ['accumulation_dash', 'smart_money', 'broker_trends', 'focus_ranking', 'price_study', 'broker_favorites', 'navigator', 'below_cost'] },
+        { name: 'Strategic Hub', keys: ['intel_hub', 'strategies', 'track_record'] },
+        { name: 'Ticker Intelligence', keys: ['ticker_pa', 'ticker_signals', 'ticker_accumulation', 'ticker_tech', 'ticker_funds'] }
     ];
 
     const greeting = useMemo(() => {
@@ -308,48 +348,110 @@ export default function UsersManagementClient() {
         });
     }, [users, searchTerm, roleFilter]);
 
-    const handleRoleUpdate = async (userId: number, field: 'role' | 'subscription_tier', value: string) => {
-        setUpdatingUserId(userId);
-        try {
-            await api.patch(`/api/users/admin/management/${userId}/`, { [field]: value });
-            toast.success(`${field === 'role' ? 'Role' : 'Tier'} updated correctly`);
-            setUsers(prev => prev.map(u => u.id === userId ? { ...u, [field]: value as any } : u));
-        } catch (error) {
-            toast.error('Failed to update field');
-        } finally {
-            setUpdatingUserId(null);
-        }
+    const handleRoleUpdate = (userId: number, field: 'role' | 'subscription_tier', value: string) => {
+        setPendingAction({
+            type: 'ROLE',
+            id: userId,
+            data: { [field]: value },
+            label: `Change ${field === 'role' ? 'Role' : 'Tier'} to ${value}`
+        });
+        setIsPasswordModalOpen(true);
     };
 
-    const handleDeactivateUser = async (userId: number, currentStatus: boolean) => {
+    const executeRoleUpdate = async (userId: number, data: any, admin_password: string) => {
         setUpdatingUserId(userId);
+        setPasswordLoading(true);
         try {
-            await api.patch(`/api/users/admin/management/${userId}/`, { is_active: !currentStatus });
-            toast.success(`Account ${currentStatus ? 'deactivated' : 'activated'} successfully`);
-            setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_active: !currentStatus } : u));
+            await api.patch(`/api/users/admin/management/${userId}/`, { ...data, admin_password });
+            toast.success(`${Object.keys(data)[0] === 'role' ? 'Role' : 'Tier'} updated correctly`);
+            setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...data } : u));
+            setIsPasswordModalOpen(false);
         } catch (error: any) {
-            const msg = error.response?.data?.error || 'Failed to update account status';
+            const msg = error.response?.data?.error || error.response?.data?.admin_password || 'Failed to update field';
             toast.error(msg);
         } finally {
             setUpdatingUserId(null);
+            setPasswordLoading(false);
         }
     };
 
-    const handleDeleteUser = async (user: TerminalUser) => {
+    const handleDeactivateUser = (userId: number, currentStatus: boolean) => {
+        setPendingAction({
+            type: 'DEACTIVATE',
+            id: userId,
+            data: { is_active: !currentStatus },
+            label: `${currentStatus ? 'Deactivate' : 'Activate'} Account`
+        });
+        setIsPasswordModalOpen(true);
+    };
+
+    const executeDeactivateUser = async (userId: number, data: any, admin_password: string) => {
+        setUpdatingUserId(userId);
+        setPasswordLoading(true);
+        try {
+            await api.patch(`/api/users/admin/management/${userId}/`, { ...data, admin_password });
+            toast.success(`Account ${data.is_active ? 'activated' : 'deactivated'} successfully`);
+            setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_active: data.is_active } : u));
+            setIsPasswordModalOpen(false);
+        } catch (error: any) {
+            const msg = error.response?.data?.error || error.response?.data?.admin_password || 'Failed to update account status';
+            toast.error(msg);
+        } finally {
+            setUpdatingUserId(null);
+            setPasswordLoading(false);
+        }
+    };
+
+    const handleDeleteUser = (user: TerminalUser) => {
         if (!window.confirm(`Are you sure you want to PERMANENTLY delete user "${user.username}"? This action cannot be undone.`)) {
             return;
         }
+        setPendingAction({
+            type: 'DELETE',
+            id: user.id,
+            data: {},
+            label: `PERMANENTLY Delete User: ${user.username}`
+        });
+        setIsPasswordModalOpen(true);
+    };
 
-        setUpdatingUserId(user.id);
+    const executeDeleteUser = async (userId: number, admin_password: string) => {
+        setUpdatingUserId(userId);
+        setPasswordLoading(true);
         try {
-            await api.delete(`/api/users/admin/management/${user.id}/`);
+            // Delete usually uses data for password in body if allowed, or we can use headers. 
+            // In DRF, DELETE body is sometimes ignored. Let's send in body as DRF allows it.
+            await api.delete(`/api/users/admin/management/${userId}/`, { data: { admin_password } });
             toast.success('User deleted successfully');
-            setUsers(prev => prev.filter(u => u.id !== user.id));
+            setUsers(prev => prev.filter(u => u.id !== userId));
+            setIsPasswordModalOpen(false);
         } catch (error: any) {
-            const msg = error.response?.data?.error || 'Failed to delete user';
+            const msg = error.response?.data?.error || error.response?.data?.admin_password || 'Failed to delete user';
             toast.error(msg);
         } finally {
             setUpdatingUserId(null);
+            setPasswordLoading(false);
+        }
+    };
+
+    const handleConfirmPassword = async (password: string) => {
+        if (!pendingAction) return;
+        
+        const { type, id, data } = pendingAction;
+        
+        switch (type) {
+            case 'ROLE':
+                await executeRoleUpdate(id, data, password);
+                break;
+            case 'PERMISSION':
+                await executeTogglePermission(id, data, password);
+                break;
+            case 'DEACTIVATE':
+                await executeDeactivateUser(id, data, password);
+                break;
+            case 'DELETE':
+                await executeDeleteUser(id, password);
+                break;
         }
     };
 
@@ -915,23 +1017,39 @@ export default function UsersManagementClient() {
                                         <TableBody>
                                             {permissionGroups.map(group => (
                                                 <React.Fragment key={group.name}>
-                                                    <TableRow className="bg-slate-100/30 dark:bg-white/[0.02]">
-                                                        <TableCell colSpan={Object.keys(TIER_CONFIG).length} className="py-2 px-4 uppercase text-[10px] font-black tracking-widest text-slate-500">
+                                                    <TableRow className="bg-slate-200/50 dark:bg-white/[0.05]">
+                                                        <TableCell colSpan={Object.keys(TIER_CONFIG).length} className="py-2.5 px-4 text-xs font-bold text-slate-700 dark:text-slate-300">
                                                             {group.name}
                                                         </TableCell>
                                                     </TableRow>
                                                     {group.keys.map(moduleKey => (
                                                         <TableRow key={moduleKey} className="hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors group">
-                                                            <TableCell className="font-medium">
+                                                            <TableCell className="font-normal">
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className="p-2 rounded-lg bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 group-hover:bg-slate-200 dark:group-hover:bg-white/10 transition-colors">
+                                                                    <div className={cn(
+                                                                        "p-2 rounded-lg transition-colors group-hover:bg-white/10 shadow-sm",
+                                                                        group.name === 'Global' ? "bg-blue-500/10 dark:bg-blue-500/5 text-blue-500" :
+                                                                        group.name === 'Market Suite' ? "bg-slate-500/10 dark:bg-slate-500/5 text-slate-500" :
+                                                                        group.name === 'Floorsheet Suite' ? "bg-indigo-500/10 dark:bg-indigo-500/5 text-indigo-500" :
+                                                                        group.name === 'Finfolio Suite' ? "bg-emerald-500/10 dark:bg-emerald-500/5 text-emerald-500" :
+                                                                        group.name === 'Accumulation Suite' ? "bg-orange-500/10 dark:bg-orange-500/5 text-orange-500" :
+                                                                        group.name === 'Strategic Hub' ? "bg-pink-500/10 dark:bg-pink-500/5 text-pink-500" :
+                                                                        group.name === 'Ticker Intelligence' ? "bg-blue-500/10 dark:bg-blue-500/5 text-blue-500" :
+                                                                        "bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400"
+                                                                    )}>
                                                                         {(() => {
                                                                             const Icon = moduleIcons[moduleKey] || CircleHelp;
-                                                                            return <Icon size={16} />;
+                                                                            // Override specific Global icons if needed
+                                                                            let iconColor = "";
+                                                                            if (group.name === 'Global') {
+                                                                                if (moduleKey === 'chat') iconColor = "text-purple-500";
+                                                                                if (moduleKey === 'home') iconColor = "text-blue-500";
+                                                                            }
+                                                                            return <Icon size={16} className={iconColor} />;
                                                                         })()}
                                                                     </div>
                                                                     <div className="flex flex-col">
-                                                                        <span className="text-sm font-bold">{moduleLabels[moduleKey]}</span>
+                                                                        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">{moduleLabels[moduleKey]}</span>
                                                                         <span className="text-[9px] text-slate-500 font-mono opacity-0 group-hover:opacity-100 transition-opacity">KEY: {moduleKey}</span>
                                                                     </div>
                                                                 </div>
@@ -943,7 +1061,7 @@ export default function UsersManagementClient() {
                                                                         <Button
                                                                             variant="ghost"
                                                                             size="icon"
-                                                                            onClick={() => perm && handleTogglePermission(perm.id, perm.is_enabled)}
+                                                                            onClick={() => perm && handleTogglePermission(perm.id, perm.is_enabled, moduleKey)}
                                                                             disabled={permissionsLoading}
                                                                             className={cn(
                                                                                 "w-10 h-10 rounded-xl transition-all",
@@ -986,6 +1104,14 @@ export default function UsersManagementClient() {
                     </Card>
                 </TabsContent>
             </Tabs>
+
+            <ConfirmPasswordDialog 
+                isOpen={isPasswordModalOpen}
+                onClose={() => setIsPasswordModalOpen(false)}
+                onConfirm={handleConfirmPassword}
+                isLoading={passwordLoading}
+                title={pendingAction?.label || "Confirm Administrative Action"}
+            />
         </DashboardLayout>
     );
 }

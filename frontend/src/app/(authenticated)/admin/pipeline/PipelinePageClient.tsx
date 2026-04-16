@@ -133,16 +133,13 @@ export default function PipelinePage() {
 
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
         const url = `${apiUrl}/api/stocks/pipeline/trigger_indicators_stream/`;
-        const token = localStorage.getItem('access_token');
 
         // Create abort controller
         indicatorAbortController.current = new AbortController();
 
         try {
             const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
+                credentials: 'include',
                 signal: indicatorAbortController.current.signal,
             });
 
@@ -234,16 +231,13 @@ export default function PipelinePage() {
 
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
         const url = `${apiUrl}/api/stocks/pipeline/generate_signals_stream/`;
-        const token = localStorage.getItem('access_token');
 
         // Create abort controller
         signalAbortController.current = new AbortController();
 
         try {
             const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
+                credentials: 'include',
                 signal: signalAbortController.current.signal,
             });
 
@@ -338,16 +332,13 @@ export default function PipelinePage() {
 
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
         const url = `${apiUrl}/api/stocks/pipeline/optimize_strategies_stream/?all_symbols=true`;
-        const token = localStorage.getItem('access_token');
 
         // Create abort controller
         optimizationAbortController.current = new AbortController();
 
         try {
             const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
+                credentials: 'include',
                 signal: optimizationAbortController.current.signal,
             });
 
@@ -426,15 +417,12 @@ export default function PipelinePage() {
 
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
         const url = `${apiUrl}/api/stocks/pipeline/update_broker_analysis_stream/?mode=${brokerMode}`;
-        const token = localStorage.getItem('access_token');
 
         brokerAbortController.current = new AbortController();
 
         try {
             const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
+                credentials: 'include',
                 signal: brokerAbortController.current.signal,
             });
 
@@ -510,15 +498,12 @@ export default function PipelinePage() {
 
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
         const url = `${apiUrl}/api/stocks/pipeline/generate_all_signals_stream/`;
-        const token = localStorage.getItem('access_token');
 
         intelAbortController.current = new AbortController();
 
         try {
             const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
+                credentials: 'include',
                 signal: intelAbortController.current.signal,
             });
 
@@ -594,15 +579,12 @@ export default function PipelinePage() {
 
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
         const url = `${apiUrl}/api/stocks/pipeline/trigger_evaluation_stream/`;
-        const token = localStorage.getItem('access_token');
 
         evaluationAbortController.current = new AbortController();
 
         try {
             const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
+                credentials: 'include',
                 signal: evaluationAbortController.current.signal,
             });
 
