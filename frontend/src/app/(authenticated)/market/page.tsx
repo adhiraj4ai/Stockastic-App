@@ -1,16 +1,16 @@
 'use client';
 
 import DashboardLayout from '@/components/DashboardLayout';
-import { MarketSummary } from '@/components/MarketSummary';
+import { MarketTerminal } from '@/components/MarketTerminal';
 
 export default function DashboardPage() {
     return (
         <DashboardLayout
             noPadding
             title={<>Market <span className="text-blue-600 dark:text-blue-400">Terminal</span></>}
-            subtitle="Real-time analytics and predictive insights for your strategic operations."
+            subtitle="Deep analytical insights and portfolio-correlated market mapping."
         >
-            <MarketSummary />
+            <MarketTerminal />
         </DashboardLayout>
     );
 }

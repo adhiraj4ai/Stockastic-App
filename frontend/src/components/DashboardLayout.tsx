@@ -31,7 +31,7 @@ const navItems = [
         name: 'Market',
         icon: Building2,
         subItems: [
-            { name: 'Overview', href: '/market', icon: LayoutDashboard, permission: 'market_overview' },
+            { name: 'Terminal', href: '/market', icon: LayoutDashboard, permission: 'market_overview' },
             { name: 'Movers & Shakers', href: '/market/movers', icon: Zap, permission: 'market_movers' },
             { name: 'Deep Dive', href: '/market/activity', icon: Activity, permission: 'market_activity' },
             { name: 'Sector Rotation', href: '/market/rotation', icon: BarChart3, permission: 'market_rotation' },
@@ -649,41 +649,62 @@ function DashboardContent({
                         )}
 
 
-                        <div className="w-1/3 flex justify-center items-center gap-4">
-                            {pathname.startsWith('/ticker/') && (() => {
-                                const currentTicker = pathname.split('/ticker/')[1]?.split('/')[0];
+                        {/* Center Section: Navigation Links & Ticker Pulse */}
+                        <div className="flex-1 flex justify-center items-center gap-2">
+                            {[
+                                { name: 'Home', href: '/', icon: Home },
+                                { name: 'Dashboard', href: '/market', icon: LayoutDashboard },
+                                { name: 'Portfolio', href: '/portfolio', icon: Briefcase }
+                            ].map((link) => {
+                                const isActive = pathname === link.href || (link.href === '/market' && pathname.startsWith('/market'));
                                 return (
-                                    <div className="flex items-center bg-white dark:bg-slate-950/40 border border-slate-200/60 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm transition-all hover:shadow-md group">
-                                        <SymbolSelector
-                                            value={currentTicker}
-                                            onChange={(symbol) => router.push(`/ticker/${symbol}`)}
-                                            className="border-none shadow-none hover:shadow-none bg-transparent dark:bg-transparent rounded-r-none h-11 px-5"
-                                        />
-                                        {tickerPrice !== undefined && (
-                                            <>
-                                                <div className="w-[1px] h-6 bg-slate-200 dark:bg-slate-800/80" />
-                                                <div className="flex flex-col items-start px-5 py-1 justify-center min-w-[100px]">
-                                                    <div className="flex items-center gap-1.5 leading-none">
-                                                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">LTP</span>
-                                                        <span className="text-sm font-bold text-slate-900 dark:text-slate-100 tabular-nums">
-                                                            रू {tickerPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                                        </span>
-                                                    </div>
-                                                    {priceChange !== undefined && (
-                                                        <div className={cn(
-                                                            "text-[10px] font-bold flex items-center gap-0.5 mt-0.5",
-                                                            priceChange >= 0 ? "text-emerald-500" : "text-rose-500"
-                                                        )}>
-                                                            {priceChange >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-                                                            {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}%
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </>
+                                    <Link 
+                                        key={link.href} 
+                                        href={link.href}
+                                        className={cn(
+                                            "px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex items-center gap-2",
+                                            isActive 
+                                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
+                                                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white"
                                         )}
-                                    </div>
+                                    >
+                                        <link.icon size={14} className={isActive ? "text-emerald-500" : "opacity-60"} />
+                                        <span className="hidden lg:inline">{link.name}</span>
+                                    </Link>
                                 );
-                            })()}
+                            })}
+                        
+                            {pathname.startsWith('/ticker/') && (
+                                <div className="flex items-center bg-white dark:bg-slate-950/40 border border-slate-200/60 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm transition-all hover:shadow-md group ml-4">
+                                    <SymbolSelector
+                                        value={pathname.split('/ticker/')[1]?.split('/')[0]}
+                                        onChange={(symbol) => router.push(`/ticker/${symbol}`)}
+                                        className="border-none shadow-none hover:shadow-none bg-transparent dark:bg-transparent rounded-r-none h-11 px-5"
+                                    />
+                                    {tickerPrice !== undefined && (
+                                        <>
+                                            <div className="w-[1px] h-6 bg-slate-200 dark:bg-slate-800/80" />
+                                            <div className="flex flex-col items-start px-5 py-1 justify-center min-w-[100px]">
+                                                <div className="flex items-center gap-1.5 leading-none">
+                                                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">LTP</span>
+                                                    <span className="text-sm font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+                                                        रू {tickerPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                    </span>
+                                                </div>
+                                                {priceChange !== undefined && (
+                                                    <div className={cn(
+                                                        "text-[10px] font-bold flex items-center gap-0.5 mt-0.5",
+                                                        priceChange >= 0 ? "text-emerald-500" : "text-rose-500"
+                                                    )}>
+                                                        {priceChange >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                                                        {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}%
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <div className="w-1/3 flex justify-end gap-5 items-center">

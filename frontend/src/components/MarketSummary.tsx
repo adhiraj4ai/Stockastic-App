@@ -42,6 +42,8 @@ import { Variants } from 'framer-motion';
 import { PortfolioSummary } from '@/components/PortfolioSummary';
 import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
+import { LiveMarketPulseTable } from './LiveMarketPulseTable';
+import { LiveBulkTransactions } from './LiveBulkTransactions';
 
 const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -413,31 +415,38 @@ export function MarketSummary() {
                                 </div>
                             </CardContent>
                         </Card>
+
+                        <LiveBulkTransactions />
                     </motion.div>
 
                     {/* MIDDLE COLUMN: Bubble Map and Lists */}
                     <motion.div variants={itemVariants} className="xl:col-span-3 grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                        {/* Broker Flow / Whale Watch (Moved to Main Grid - Full Width) */}
-                        <Card className="lg:col-span-3 bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
-                            <CardHeader className="p-5 pb-2 border-b border-slate-50 dark:border-white/5">
-                                <div className="space-y-1">
-                                    <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center">
-                                        <Wallet size={14} className="text-blue-500 mr-2" />
-                                        Smart Money Flow
-                                        <InfoTooltip content="Visualizes high-impact net-buying by the top institutional brokers." />
-                                    </CardTitle>
-                                    <p className="text-[10px] text-indigo-600/70 dark:text-indigo-400/60 font-medium tracking-tight">Tracking the biggest net buyers and their targeted stocks.</p>
+
+                        {/* Live Market Monitor Table (Replacing Smart Money Flow) */}
+                        <Card className="lg:col-span-3 bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden backdrop-blur-xl">
+                            <CardHeader className="p-5 pb-2 border-b border-slate-50 dark:border-white/5 bg-slate-50/30 dark:bg-white/[0.02]">
+                                <div className="flex justify-between items-center">
+                                    <div className="space-y-1">
+                                        <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center">
+                                            <Activity size={14} className="text-blue-600 mr-2 animate-pulse" />
+                                            Live Market Monitor
+                                        </CardTitle>
+                                        <p className="text-[10px] text-indigo-600/70 dark:text-indigo-400/60 font-medium tracking-tight">Real-time pulses flashing upon system update • Summary snapshot</p>
+                                    </div>
+                                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-none font-bold px-3 py-1 flex items-center gap-1.5">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                        Live Pulse
+                                    </Badge>
                                 </div>
                             </CardHeader>
-                            <CardContent className="p-6">
-                                {/* Using any type for data because WhaleWatchData interface isn't exported yet contextually */}
-                                <BrokerFlowChart data={(data as any).whale_watch || []} height={350} />
+                            <CardContent className="p-0">
+                                <LiveMarketPulseTable stocks={allStocks} />
                             </CardContent>
                         </Card>
 
                         {/* Market Heatmap */}
-                        <Card className="lg:col-span-2 bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden group hover:shadow-2xl transition-all duration-300 backdrop-blur-xl relative">
+                        <Card className="lg:col-span-3 bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden group hover:shadow-2xl transition-all duration-300 backdrop-blur-xl relative">
                             <div className="absolute -right-12 -bottom-12 w-48 h-48 bg-gradient-to-tl from-blue-500/10 to-transparent blur-3xl opacity-50" />
                             <CardHeader className="p-5 border-b border-slate-50 dark:border-white/5 flex flex-row items-center justify-between relative z-10">
                                 <div className="space-y-1">

@@ -32,12 +32,12 @@ export function middleware(request: NextRequest) {
 
     let response: NextResponse;
 
-    // 1. Redirect to /market if user is logged in and visits Root or auth pages
-    if (token && (pathname === '/' || authRoutes.some(route => pathname.startsWith(route)))) {
+    // 1. Redirect to /market if user is logged in and visits auth pages
+    if (token && authRoutes.some(route => pathname.startsWith(route))) {
         response = NextResponse.redirect(new URL('/market', request.url));
     }
-    // 2. Redirect to /login if user is NOT logged in and visits protected routes or root
-    else if (!token && (pathname === '/' || protectedRoutes.some(route => pathname.startsWith(route)))) {
+    // 2. Redirect to /login if user is NOT logged in and visits protected routes
+    else if (!token && protectedRoutes.some(route => pathname.startsWith(route))) {
         const loginUrl = new URL('/login', request.url);
         loginUrl.searchParams.set('redirect', pathname);
         response = NextResponse.redirect(loginUrl);

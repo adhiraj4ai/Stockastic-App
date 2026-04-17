@@ -1,34 +1,26 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
+import { cookies } from 'next/headers';
 import { MarketSummary } from '@/components/MarketSummary';
 import PublicLayout from '@/components/PublicLayout';
-import { FullPageLoader } from '@/components/ui/StockLoader';
+import { MarketPulse } from '@/components/MarketPulse';
 
-export default function Home() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const router = useRouter();
-
-  useEffect(() => {
-    const token = Cookies.get('access_token');
-    if (token) {
-      setIsAuthenticated(true);
-      router.replace('/market');
-    } else {
-      setIsAuthenticated(false);
-    }
-  }, [router]);
-
-  if (isAuthenticated === null) {
-    return <FullPageLoader />;
-  }
+/**
+ * Root Home Page - Server Component
+ * Detects authentication state via HttpOnly cookies and renders 
+ * the appropriate dashboard view.
+ */
+export default async function Home() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('access_token')?.value;
+  const isAuthenticated = !!token;
 
   if (isAuthenticated) {
-    return <FullPageLoader />;
+    // MarketPulse includes its own DashboardLayout internally
+    return (
+      <MarketPulse />
+    );
   }
 
+  // Guest landing view
   return (
     <PublicLayout>
       <MarketSummary />
