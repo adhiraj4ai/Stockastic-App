@@ -6,9 +6,9 @@ import { useMarketData } from '@/hooks/useMarketData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableRow, TableHead, TableHeader } from '@/components/ui/table';
 import { 
-    TrendingUp, TrendingDown, Activity, HeartPulse, 
+    TrendingUp, TrendingDown, Activity, HeartPulse,
     Zap, Share2, ArrowUpRight, ArrowDownRight,
-    LineChart, BarChart3, Globe, LogOut
+    LineChart, BarChart3, Globe
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SentimentGauge } from '@/components/SentimentGauge';
@@ -21,8 +21,6 @@ import { LiveMarketPulseTable } from './LiveMarketPulseTable';
 import { LiveBulkTransactions } from './LiveBulkTransactions';
 import DashboardLayout from './DashboardLayout';
 import { Badge } from '@/components/ui/badge';
-import Cookies from 'js-cookie';
-
 const containerVariants = {
     hidden: { opacity: 0 },
     show: {
@@ -50,19 +48,6 @@ export function MarketPulse() {
         marketHealth 
     } = useMarketData(10000); // 10s refresh for live pulse
     const router = useRouter();
-
-    const handleLogout = async () => {
-        try {
-            const { default: api } = await import('@/lib/api');
-            await api.post('/api/auth/logout/');
-        } catch (err) {
-            console.error("Logout failed", err);
-        } finally {
-            Cookies.remove('access_token');
-            Cookies.remove('refresh_token');
-            router.push('/login');
-        }
-    };
 
     if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><PageLoader text="Syncing live market pulse..." /></div>;
     if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
@@ -121,13 +106,6 @@ export function MarketPulse() {
                                         </div>
                                     </div>
 
-                                    <button 
-                                        onClick={handleLogout}
-                                        className="px-6 py-3 rounded-2xl bg-white/5 hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 border border-white/5 hover:border-rose-500/20 transition-all duration-300 flex items-center gap-2 font-bold text-xs uppercase tracking-widest"
-                                    >
-                                        <LogOut size={14} />
-                                        Sign Out
-                                    </button>
                                 </div>
                             </div>
                         </div>

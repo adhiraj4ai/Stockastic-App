@@ -1,88 +1,31 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import api from '@/lib/api';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-    TrendingUp, TrendingDown, Activity, DollarSign, Zap, BarChart3, Globe, ShieldAlert,
-    HeartPulse, LineChart, LayoutDashboard, Search, Clock,
-    Command, Wallet, Lightbulb, MessageSquare, Building2,
-    Droplets, Boxes, Factory, ShoppingBag, Hotel, Plane, Phone, HardHat, ShieldCheck,
-    Coins, PieChart, Flame
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-    CommandDialog,
-    CommandInput,
-    CommandList,
-    CommandEmpty,
-    CommandGroup,
-    CommandItem
-} from '@/components/ui/command';
-import { PageLoader } from '@/components/ui/StockLoader';
-import { SectorGraph } from '@/components/SectorGraph';
-import { Sparkline } from '@/components/Sparkline';
-import { MarketBubbleMap } from '@/components/MarketBubbleMap';
-import { MarketHeatmap } from '@/components/MarketHeatmap';
-import { SentimentGauge } from '@/components/SentimentGauge';
-import { SectorTreemap } from '@/components/SectorTreemap';
-import { BrokerFlowChart } from '@/components/BrokerFlowChart';
-import { MarketHealthRadar } from '@/components/MarketHealthRadar';
-import { VolumeShockers } from '@/components/VolumeShockers';
-import { MiniSectorCard } from '@/components/MiniSectorCard';
-import { BreakoutWatchlist } from '@/components/BreakoutWatchlist';
-import { MarketBreadthTrend } from '@/components/MarketBreadthTrend';
-import { InstitutionalInterest } from '@/components/InstitutionalInterest';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Variants } from 'framer-motion';
-import { PortfolioSummary } from '@/components/PortfolioSummary';
+import {
+    TrendingUp, TrendingDown, Activity, BarChart3,
+    LineChart, Zap, Shield, Search, Briefcase,
+    ArrowRight, Globe, ArrowUpRight, ArrowDownRight
+} from 'lucide-react';
+import { motion } from 'framer-motion';
 import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
-import { InfoTooltip } from '@/components/ui/InfoTooltip';
-import { LiveMarketPulseTable } from './LiveMarketPulseTable';
-import { LiveBulkTransactions } from './LiveBulkTransactions';
-
-const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    show: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.1
-        }
-    }
-};
-
-const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 20 },
-    show: {
-        opacity: 1,
-        y: 0,
-        transition: {
-            type: 'spring',
-            stiffness: 100,
-            damping: 15
-        }
-    }
-};
 
 interface StockData {
     ticker: string;
     close: number;
-    open: number;
-    high: number;
-    low: number;
-    volume: number;
-    turnover: number;
     change: number;
     percent_change: number;
     sector: string;
-    roc?: number;
+    volume: number;
+    turnover: number;
 }
 
-interface MarketSummaryData {
+interface MarketData {
     market_summary: {
         date: string;
         total_turnover: number;
@@ -92,442 +35,436 @@ interface MarketSummaryData {
         percent_change: number;
         advancers: number;
         decliners: number;
-        advancers_percent: number;
-        decliners_percent: number;
     };
+    top_gainers: StockData[];
+    top_losers: StockData[];
     top_volume: StockData[];
     top_turnover: StockData[];
-    top_gainers: StockData[];
-    bottom_volume: StockData[];
-    bottom_turnover: StockData[];
-    top_losers: StockData[];
-    sector_summary?: {
-        name: string;
-        change: number;
-        turnover: number;
-        volume: number;
-        count: number;
-    }[];
-    top_3_comparison?: {
-        today: any;
-        last: any;
-    };
 }
 
-export function MarketSummary() {
-    const [data, setData] = useState<MarketSummaryData | null>(null);
-    const [allStocks, setAllStocks] = useState<StockData[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [mounted, setMounted] = useState(false);
-    const [indexHistory, setIndexHistory] = useState<{ date: string, value: number, volume: number, turnover: number }[]>([]);
+const features = [
+    {
+        icon: Activity,
+        title: 'Live Market Pulse',
+        desc: 'Real-time NEPSE price monitoring with 10-second refresh intervals',
+        iconBg: 'bg-blue-500/10',
+        iconColor: 'text-blue-500',
+    },
+    {
+        icon: Search,
+        title: 'Smart Money Tracking',
+        desc: 'Track institutional & bulk transactions to follow the big players',
+        iconBg: 'bg-violet-500/10',
+        iconColor: 'text-violet-500',
+    },
+    {
+        icon: BarChart3,
+        title: 'Sector Deep Dive',
+        desc: 'Sector rotation analytics and performance benchmarking',
+        iconBg: 'bg-emerald-500/10',
+        iconColor: 'text-emerald-500',
+    },
+    {
+        icon: Briefcase,
+        title: 'Portfolio Manager',
+        desc: 'Track your investments, analyze returns, and paper trade risk-free',
+        iconBg: 'bg-amber-500/10',
+        iconColor: 'text-amber-500',
+    },
+    {
+        icon: LineChart,
+        title: 'Technical Signals',
+        desc: 'Breakout detection, momentum scoring, and ROC analysis',
+        iconBg: 'bg-rose-500/10',
+        iconColor: 'text-rose-500',
+    },
+    {
+        icon: Shield,
+        title: 'Accumulation Intel',
+        desc: 'Detect smart money accumulation patterns before price moves',
+        iconBg: 'bg-cyan-500/10',
+        iconColor: 'text-cyan-500',
+    },
+];
 
+const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+        opacity: 1,
+        transition: { staggerChildren: 0.08 },
+    },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: {
+        opacity: 1,
+        y: 0,
+        transition: { type: 'spring', stiffness: 100, damping: 15 },
+    },
+};
+
+export function MarketSummary() {
+    const [data, setData] = useState<MarketData | null>(null);
+    const [loading, setLoading] = useState(true);
     const router = useRouter();
 
     useEffect(() => {
-        setMounted(true);
-
         const fetchData = async () => {
             try {
-                // Fetch Market Summary
-                const summaryResponse = await api.get('/api/stocks/summary/');
-                setData(summaryResponse.data);
-
-                // Fetch Index History (NEPSE Proxy)
-                try {
-                    const historyResponse = await api.get('/api/stocks/sector-history/NEPSE/');
-                    setIndexHistory(historyResponse.data);
-                } catch (hErr) {
-                    console.error("Failed to fetch index history", hErr);
-                }
-
-                // Flatten all stocks for heatmap from all top lists to get a better sample
-                const uniqueStocks = new Map<string, StockData>();
-                const sourceLists = [
-                    summaryResponse.data.top_gainers,
-                    summaryResponse.data.top_losers,
-                    summaryResponse.data.top_turnover,
-                    summaryResponse.data.top_volume
-                ];
-
-                sourceLists.flat().filter(Boolean).forEach(s => {
-                    uniqueStocks.set(s.ticker, {
-                        ...s,
-                        sector: s.sector || 'Others'
-                    });
-                });
-                setAllStocks(Array.from(uniqueStocks.values()));
-
-            } catch (err: any) {
-                console.error('Failed to fetch dashboard data', err);
-                const msg = err.response?.data?.detail || err.message;
-                setError(`Failed to load data: ${msg}`);
+                const res = await api.get('/api/stocks/summary/');
+                setData(res.data);
+            } catch {
+                // Silently fail — market data is optional for the landing page
             } finally {
                 setLoading(false);
             }
         };
-
         fetchData();
-    }, [router]);
+    }, []);
 
-    // Trend Sparkline Data (Real or Fallback)
-    const indexSparkData = useMemo(() => {
-        if (indexHistory.length > 0) {
-            // Take last 20 points for sparkline
-            return indexHistory.slice(-20).map(d => d.value);
-        }
-
-        if (!data || !data.market_summary) return [];
-        // Fallback simulation if real data fails
-        const points = 10;
-        const current = data.market_summary.total_points;
-        const change = data.market_summary.points_change;
-        const start = current - change;
-        const trend = Array.from({ length: points }, (_, i) => {
-            const progress = i / (points - 1);
-            const noise = (Math.random() - 0.5) * (Math.abs(change) * 0.2);
-            return start + (change * progress) + noise;
-        });
-        return trend;
-    }, [data, indexHistory]);
-
-    // Calculate Market Sentiment (0 to 100)
-    const marketSentiment = useMemo(() => {
-        if (!data || !data.market_summary) return 50;
-        const { advancers, decliners, points_change } = data.market_summary;
-        const total = advancers + decliners;
-        if (total === 0) return 50;
-        const breadthRatio = (advancers / total) * 100;
-        const momentumBonus = points_change > 0 ? 10 : -10;
-        return Math.max(0, Math.min(100, breadthRatio + momentumBonus));
-    }, [data]);
-
-    // Real Market Health Data
-    const marketHealth = useMemo(() => {
-        if (!data || !data.market_summary || indexHistory.length < 30) {
-            // Fallback if not enough history
-            return {
-                scores: { volume: 50, turnover: 50, breadth: 50, volatility: 50, participation: 50 },
-                raw: null
-            };
-        }
-
-        // Calculate 30-day averages
-        const last30 = indexHistory.slice(-30);
-        const avgVol = last30.reduce((sum, d) => sum + (d.volume || 0), 0) / last30.length;
-        const avgTurn = last30.reduce((sum, d) => sum + (d.turnover || 0), 0) / last30.length;
-
-        const todayVol = data.market_summary.total_volume;
-        const todayTurn = data.market_summary.total_turnover;
-
-        // Relative Score (50 = Average, 100 = 2x Average)
-        // Cap at 100
-        const volScore = Math.min(100, (todayVol / (avgVol || 1)) * 50);
-        const turnScore = Math.min(100, (todayTurn / (avgTurn || 1)) * 50);
-
-        const breadthScore = data.market_summary.advancers_percent;
-
-        // Volatility Score (Stability): Lower daily range % is better? 
-        // Or actually, consistent uptrend is "Healthy". 
-        // Let's use simple Breadth Ratio for now as "Stability/Participation" proxy
-        const participationScore = (data.market_summary.advancers / (data.market_summary.advancers + data.market_summary.decliners || 1)) * 100;
-
-        return {
-            scores: {
-                volume: volScore,
-                turnover: turnScore,
-                breadth: breadthScore,
-                volatility: 75, // Placeholder until IV data
-                participation: participationScore
-            },
-            raw: {
-                volume: todayVol,
-                avgVolume: avgVol,
-                turnover: todayTurn,
-                avgTurnover: avgTurn
-            }
-        };
-    }, [data, indexHistory]);
-
-    if (!mounted) return null;
-
-    if (error) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8">
-                <ShieldAlert className="h-12 w-12 text-red-500 mb-4" />
-                <div className="text-red-500 dark:text-red-400 text-xl font-bold mb-2">Error Loading Dashboard</div>
-                <div className="text-gray-600 dark:text-gray-400 mb-6">{error}</div>
-                <button
-                    onClick={() => window.location.reload()}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-lg shadow-blue-200"
-                >
-                    Retry Connection
-                </button>
-            </div>
-        );
-    }
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-[50vh]">
-                <PageLoader text="Initializing data stream..." />
-            </div>
-        );
-    }
-
-    if (!data || !data.market_summary) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8">
-                <span className="text-gray-500 dark:text-gray-400">No market data available yet. Please run data ingestion.</span>
-            </div>
-        );
-    }
-
-    const { market_summary, top_volume, top_turnover, top_gainers, top_losers, sector_summary } = data;
-
-    const StockRow = ({ stock }: { stock: StockData }) => {
-        const isStockPositive = stock.change >= 0;
-        return (
-            <TableRow
-                key={stock.ticker}
-                className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent transition-colors group"
-                onClick={() => router.push(`/ticker/${stock.ticker}`)}
-            >
-                <TableCell className="py-2.5">
-                    <div className="flex flex-col">
-                        <span className="font-semibold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{stock.ticker}</span>
-                        <span className="text-[10px] text-indigo-600/60 dark:text-indigo-400/60 font-medium">{stock.sector || 'Listed Equity'}</span>
-                    </div>
-                </TableCell>
-                <TableCell className="text-right py-2.5 font-mono font-medium text-slate-700 dark:text-slate-300">
-                    {formatNepaliNumber(stock.close)}
-                </TableCell>
-                <TableCell className={`text-right py-2.5 font-bold ${isStockPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    <div className="flex flex-col items-end">
-                        <div className="flex items-center justify-end gap-1">
-                            {isStockPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                            {Number(stock.percent_change).toFixed(2)}%
-                        </div>
-                    </div>
-                </TableCell>
-            </TableRow>
-        );
-    };
+    const ms = data?.market_summary;
+    const isPositive = ms ? ms.points_change >= 0 : true;
 
     return (
-        <>
-            {/* 1. Market Pulse Ticker */}
-            <div className="bg-slate-900 dark:bg-black/80 overflow-hidden py-1.5 border-b border-slate-800 dark:border-slate-900 transition-colors duration-500">
-                <div className="flex animate-infinite-scroll whitespace-nowrap items-center gap-12 px-4">
-                    {top_gainers.concat(top_losers).slice(0, 10).map((stock, i) => (
-                        <div key={i} className="flex items-center gap-2 cursor-pointer opacity-80 hover:opacity-100 transition-opacity" onClick={() => router.push(`/ticker/${stock.ticker}`)}>
-                            <span className="font-bold text-xs text-indigo-100 tracking-wider">{stock.ticker}</span>
-                            <span className="font-mono text-xs text-indigo-400/80">{formatNepaliNumber(stock.close)}</span>
-                            <span className={`text-[10px] font-bold px-1.5 rounded-sm ${stock.change >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
-                                {stock.change >= 0 ? '+' : ''}{stock.percent_change.toFixed(1)}%
-                            </span>
-                        </div>
-                    ))}
-                    {/* Duplicate for seamless scroll */}
-                    {top_gainers.concat(top_losers).slice(0, 10).map((stock, i) => (
-                        <div key={`d-${i}`} className="flex items-center gap-2 cursor-pointer opacity-80 hover:opacity-100 transition-opacity" onClick={() => router.push(`/ticker/${stock.ticker}`)}>
-                            <span className="font-bold text-xs text-indigo-100 tracking-wider">{stock.ticker}</span>
-                            <span className="font-mono text-xs text-indigo-400/80">{formatNepaliNumber(stock.close)}</span>
-                            <span className={`text-[10px] font-bold px-1.5 rounded-sm ${stock.change >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
-                                {stock.change >= 0 ? '+' : ''}{stock.percent_change.toFixed(1)}%
-                            </span>
-                        </div>
-                    ))}
+        <div className="min-h-screen">
+            {/* ═══ HERO SECTION ═══ */}
+            <section className="relative overflow-hidden pt-16 pb-24 px-6 lg:px-12">
+                {/* Background decorations */}
+                <div className="absolute inset-0 -z-10">
+                    <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px]" />
+                    <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px]" />
                 </div>
-            </div>
 
-            <div className="px-6 lg:px-12 py-8 space-y-8 bg-transparent relative min-h-screen transition-colors duration-500">
-                {/* 3. Main Operational Grid */}
                 <motion.div
                     variants={containerVariants}
                     initial="hidden"
                     animate="show"
-                    className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start"
+                    className="max-w-5xl mx-auto text-center"
                 >
-                    {/* LEFT COLUMN: Deep Analysis & Watchlists */}
-                    <motion.div variants={itemVariants} className="xl:col-span-1 space-y-6 sticky top-24 self-start">
-                        {/* Market Sentiment Gauge */}
-                        <Card className="bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none hover:shadow-2xl transition-all duration-500 cursor-default group backdrop-blur-xl relative overflow-hidden">
-                            <div className="absolute -right-8 -top-8 w-32 h-32 bg-gradient-to-br from-rose-500/10 to-transparent blur-2xl opacity-50" />
-                            <CardHeader className="p-3 pb-1">
-                                <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center">
-                                    <HeartPulse size={14} className="text-rose-500 mr-2" />
-                                    Market Sentiment
-                                    <InfoTooltip content="Aggregated market bias (0-100) based on Advancers vs Decliners and price momentum." />
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-6 pt-0">
-                                <SentimentGauge value={marketSentiment} height={240} />
-                                <div className="mt-2 space-y-4">
-                                    <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full flex overflow-hidden">
-                                        <div className="h-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" style={{ width: `${market_summary.advancers_percent}%` }}></div>
-                                        <div className="h-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.3)]" style={{ width: `${market_summary.decliners_percent}%` }}></div>
-                                    </div>
-                                    <div className="flex justify-between text-[10px] font-black tracking-widest">
-                                        <div className="flex flex-col items-start gap-1">
-                                            <span className="text-emerald-700 dark:text-emerald-400 italic">Advancers</span>
-                                            <span className="text-xl text-black dark:text-slate-100">{market_summary.advancers}</span>
-                                        </div>
-                                        <div className="flex flex-col items-end gap-1 text-right">
-                                            <span className="text-rose-700 dark:text-rose-400 italic">Decliners</span>
-                                            <span className="text-xl text-black dark:text-slate-100">{market_summary.decliners}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Market Snapshot Recap */}
-                        <Card className="bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden relative backdrop-blur-xl">
-                            <div className="absolute -left-8 -top-8 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent blur-2xl opacity-50" />
-                            <CardHeader className="p-4 pb-1 border-b border-slate-50 dark:border-slate-800">
-                                <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight flex items-center">
-                                    <Activity size={14} className="text-blue-600 mr-2" />
-                                    Snapshot
-                                    <InfoTooltip content="Daily liquidity metrics including total volume (qty) and turnover (value) traded." />
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-4 space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <span className="text-[9px] font-bold text-indigo-400 dark:text-indigo-400/60">Volume</span>
-                                        <div className="font-mono font-bold text-slate-900 dark:text-slate-100">{(market_summary.total_volume / 1000000).toFixed(1)}M</div>
-                                    </div>
-                                    <div className="space-y-1 text-right">
-                                        <span className="text-[9px] font-bold text-indigo-400 dark:text-indigo-400/60">Turnover</span>
-                                        <div className="font-mono font-bold text-slate-900 dark:text-slate-100">{formatRupees(market_summary.total_turnover / 1000000)}M</div>
-                                    </div>
-                                </div>
-
-                                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between group/breadth hover:border-indigo-500/30 transition-colors">
-                                    <div className="flex flex-col">
-                                        <span className="text-[9px] font-bold text-indigo-600/70 dark:text-indigo-400/60">Breadth ratio</span>
-                                        <span className="text-lg font-bold text-slate-900 dark:text-slate-100 italic">{(market_summary.advancers / (market_summary.advancers + market_summary.decliners || 1)).toFixed(2)}</span>
-                                    </div>
-                                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center transition-transform group-hover/breadth:scale-110 ${marketSentiment > 50 ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'}`}>
-                                        <Activity size={18} />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <LiveBulkTransactions />
+                    <motion.div variants={itemVariants}>
+                        <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 font-bold px-4 py-1.5 text-xs tracking-wide">
+                            <Zap size={12} className="mr-1.5" />
+                            Nepal&apos;s Premier Stock Analytics Platform
+                        </Badge>
                     </motion.div>
 
-                    {/* MIDDLE COLUMN: Bubble Map and Lists */}
-                    <motion.div variants={itemVariants} className="xl:col-span-3 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <motion.h1
+                        variants={itemVariants}
+                        className="text-5xl lg:text-7xl font-black tracking-tight mt-8 text-slate-900 dark:text-white"
+                    >
+                        Master the{' '}
+                        <span className="bg-gradient-to-r from-blue-600 to-emerald-500 bg-clip-text text-transparent">
+                            NEPSE
+                        </span>{' '}
+                        Market
+                    </motion.h1>
 
+                    <motion.p
+                        variants={itemVariants}
+                        className="text-lg lg:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mt-6 leading-relaxed"
+                    >
+                        Real-time market intelligence, smart money tracking, and advanced
+                        portfolio analytics purpose-built for Nepal Stock Exchange investors.
+                    </motion.p>
 
-                        {/* Live Market Monitor Table (Replacing Smart Money Flow) */}
-                        <Card className="lg:col-span-3 bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden backdrop-blur-xl">
-                            <CardHeader className="p-5 pb-2 border-b border-slate-50 dark:border-white/5 bg-slate-50/30 dark:bg-white/[0.02]">
-                                <div className="flex justify-between items-center">
-                                    <div className="space-y-1">
-                                        <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center">
-                                            <Activity size={14} className="text-blue-600 mr-2 animate-pulse" />
-                                            Live Market Monitor
-                                        </CardTitle>
-                                        <p className="text-[10px] text-indigo-600/70 dark:text-indigo-400/60 font-medium tracking-tight">Real-time pulses flashing upon system update • Summary snapshot</p>
-                                    </div>
-                                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-none font-bold px-3 py-1 flex items-center gap-1.5">
-                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                        Live Pulse
-                                    </Badge>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="p-0">
-                                <LiveMarketPulseTable stocks={allStocks} />
-                            </CardContent>
-                        </Card>
-
-                        {/* Market Heatmap */}
-                        <Card className="lg:col-span-3 bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden group hover:shadow-2xl transition-all duration-300 backdrop-blur-xl relative">
-                            <div className="absolute -right-12 -bottom-12 w-48 h-48 bg-gradient-to-tl from-blue-500/10 to-transparent blur-3xl opacity-50" />
-                            <CardHeader className="p-5 border-b border-slate-50 dark:border-white/5 flex flex-row items-center justify-between relative z-10">
-                                <div className="space-y-1">
-                                    <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center">
-                                        <Globe size={14} className="text-blue-600 mr-2 group-hover:rotate-12 transition-transform" />
-                                        Market Liquidity Map
-                                        <InfoTooltip content="Bubble chart where size represents turnover and color represents daily percentage change." />
-                                    </CardTitle>
-                                    <p className="text-[10px] text-indigo-600/70 dark:text-indigo-400/60 font-medium tracking-tight">Size represents turnover, color represents performance</p>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="p-0 relative z-10">
-                                <MarketBubbleMap stocks={allStocks} height={480} />
-                            </CardContent>
-                        </Card>
-
-                        {/* Actionable Stock Lists (Tabbed) */}
-                        <Card className="xl:col-span-1 bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full flex flex-col backdrop-blur-xl relative overflow-hidden hidden xl:flex">
-                            <div className="absolute -left-8 -bottom-8 w-32 h-32 bg-gradient-to-tr from-indigo-500/10 to-transparent blur-2xl opacity-50" />
-                            <CardHeader className="p-3 pb-1 relative z-10">
-                                <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                    <Zap size={14} className="text-blue-500" /> High Alpha Signals
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-6 pt-0 flex-1 overflow-hidden flex flex-col">
-                                <Tabs defaultValue="gainers" className="w-full h-full flex flex-col">
-                                    <TabsList className="grid w-full grid-cols-3 mb-4 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl h-10 border border-slate-200/50 dark:border-slate-800">
-                                        <TabsTrigger value="gainers" className="rounded-lg font-bold text-[10px] data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Top Gainers</TabsTrigger>
-                                        <TabsTrigger value="losers" className="rounded-lg font-bold text-[10px] data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Top Losers</TabsTrigger>
-                                        <TabsTrigger value="roc" className="rounded-lg font-bold text-[10px] data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">ROC Watch</TabsTrigger>
-                                    </TabsList>
-                                    <div className="flex-1 overflow-auto -mx-2 px-2 scrollbar-hide">
-                                        <TabsContent value="gainers" className="m-0 focus-visible:outline-none">
-                                            <Table>
-                                                <TableBody>
-                                                    {top_gainers.slice(0, 8).map((stock) => <StockRow key={stock.ticker} stock={stock} />)}
-                                                </TableBody>
-                                            </Table>
-                                        </TabsContent>
-                                        <TabsContent value="losers" className="m-0 focus-visible:outline-none">
-                                            <Table>
-                                                <TableBody>
-                                                    {top_losers.slice(0, 8).map((stock) => <StockRow key={stock.ticker} stock={stock} />)}
-                                                </TableBody>
-                                            </Table>
-                                        </TabsContent>
-                                        <TabsContent value="roc" className="m-0 focus-visible:outline-none">
-                                            <Table>
-                                                <TableBody>
-                                                    {[...top_gainers, ...top_losers]
-                                                        .filter(s => s.roc !== undefined && s.roc !== null)
-                                                        .sort((a, b) => (b.roc || 0) - (a.roc || 0))
-                                                        .slice(0, 8)
-                                                        .map((stock) => <StockRow key={stock.ticker} stock={stock} />)
-                                                    }
-                                                </TableBody>
-                                            </Table>
-                                        </TabsContent>
-                                    </div>
-                                </Tabs>
-                            </CardContent>
-                        </Card>
+                    <motion.div
+                        variants={itemVariants}
+                        className="flex flex-col sm:flex-row gap-4 justify-center mt-10"
+                    >
+                        <Link href="/login?mode=signup">
+                            <Button
+                                size="lg"
+                                className="rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 px-8 h-12 text-base"
+                            >
+                                Get Started Free
+                                <ArrowRight size={18} className="ml-2" />
+                            </Button>
+                        </Link>
+                        <Link href="/login">
+                            <Button
+                                variant="outline"
+                                size="lg"
+                                className="rounded-xl font-bold border-slate-300 dark:border-slate-700 px-8 h-12 text-base"
+                            >
+                                Sign In
+                            </Button>
+                        </Link>
                     </motion.div>
+
+                    {/* Live NEPSE index badge */}
+                    {ms && (
+                        <motion.div
+                            variants={itemVariants}
+                            className="mt-12 inline-flex items-center gap-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl px-6 py-4 shadow-xl border border-slate-200/50 dark:border-slate-700/50"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Globe size={16} className="text-blue-500" />
+                                <span className="text-xs font-black text-slate-500 uppercase tracking-widest">
+                                    NEPSE
+                                </span>
+                            </div>
+                            <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">
+                                {formatNepaliNumber(ms.total_points)}
+                            </span>
+                            <div
+                                className={`flex items-center gap-1 font-bold text-sm ${
+                                    isPositive ? 'text-emerald-600' : 'text-rose-600'
+                                }`}
+                            >
+                                {isPositive ? (
+                                    <ArrowUpRight size={16} />
+                                ) : (
+                                    <ArrowDownRight size={16} />
+                                )}
+                                {Math.abs(ms.points_change).toFixed(2)} (
+                                {ms.percent_change.toFixed(2)}%)
+                            </div>
+                        </motion.div>
+                    )}
                 </motion.div>
-            </div>
-            <style jsx global>{`
-                @keyframes infinite-scroll {
-                    from { transform: translateX(0); }
-                    to { transform: translateX(-50%); }
-                }
-                .animate-infinite-scroll {
-                    animation: infinite-scroll 40s linear infinite;
-                }
-                .scrollbar-hide::-webkit-scrollbar {
-                    display: none;
-                }
-                .scrollbar-hide {
-                    -ms-overflow-style: none;
-                    scrollbar-width: none;
-                }
-            `}</style>
-        </>
+            </section>
+
+            {/* ═══ FEATURES GRID ═══ */}
+            <section className="px-6 lg:px-12 py-16 bg-slate-50/50 dark:bg-slate-900/30">
+                <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    whileInView="show"
+                    viewport={{ once: true, amount: 0.2 }}
+                    className="max-w-6xl mx-auto"
+                >
+                    <motion.div variants={itemVariants} className="text-center mb-12">
+                        <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                            Everything you need to trade smarter
+                        </h2>
+                        <p className="text-slate-500 dark:text-slate-400 mt-3 max-w-xl mx-auto">
+                            Professional-grade tools designed for Nepal&apos;s stock market,
+                            from beginners to seasoned traders.
+                        </p>
+                    </motion.div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {features.map((f, i) => (
+                            <motion.div key={i} variants={itemVariants}>
+                                <Card className="bg-white dark:bg-slate-900/60 border-slate-200/50 dark:border-slate-800/50 hover:border-blue-500/30 dark:hover:border-blue-500/20 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/5 group h-full">
+                                    <CardContent className="p-6">
+                                        <div
+                                            className={`h-10 w-10 rounded-xl ${f.iconBg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}
+                                        >
+                                            <f.icon size={20} className={f.iconColor} />
+                                        </div>
+                                        <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                                            {f.title}
+                                        </h3>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                                            {f.desc}
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        ))}
+                    </div>
+                </motion.div>
+            </section>
+
+            {/* ═══ MARKET SNAPSHOT ═══ */}
+            {loading && (
+                <div className="flex items-center justify-center py-16">
+                    <div className="flex items-center gap-3 text-slate-400">
+                        <Activity size={16} className="animate-pulse" />
+                        <span className="text-sm font-medium">Loading market data...</span>
+                    </div>
+                </div>
+            )}
+
+            {ms && data && (
+                <section className="px-6 lg:px-12 py-16">
+                    <motion.div
+                        variants={containerVariants}
+                        initial="hidden"
+                        whileInView="show"
+                        viewport={{ once: true, amount: 0.2 }}
+                        className="max-w-6xl mx-auto"
+                    >
+                        <motion.div variants={itemVariants} className="text-center mb-10">
+                            <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                                Market at a Glance
+                            </h2>
+                            <p className="text-slate-500 mt-2">
+                                Session: {ms.date} &bull; {ms.advancers} advancers &bull;{' '}
+                                {ms.decliners} decliners
+                            </p>
+                        </motion.div>
+
+                        {/* Index stat cards */}
+                        <motion.div
+                            variants={itemVariants}
+                            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+                        >
+                            <Card className="bg-white dark:bg-slate-900/60 border-none shadow-lg">
+                                <CardContent className="p-5 text-center">
+                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                                        NEPSE Index
+                                    </div>
+                                    <div className="text-2xl font-black text-slate-900 dark:text-white font-mono">
+                                        {formatNepaliNumber(ms.total_points)}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="bg-white dark:bg-slate-900/60 border-none shadow-lg">
+                                <CardContent className="p-5 text-center">
+                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                                        Change
+                                    </div>
+                                    <div
+                                        className={`text-2xl font-black font-mono ${
+                                            isPositive ? 'text-emerald-600' : 'text-rose-600'
+                                        }`}
+                                    >
+                                        {isPositive ? '+' : ''}
+                                        {ms.points_change.toFixed(2)}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="bg-white dark:bg-slate-900/60 border-none shadow-lg">
+                                <CardContent className="p-5 text-center">
+                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                                        Turnover
+                                    </div>
+                                    <div className="text-2xl font-black text-slate-900 dark:text-white font-mono">
+                                        {formatRupees(ms.total_turnover / 1000000)}M
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="bg-white dark:bg-slate-900/60 border-none shadow-lg">
+                                <CardContent className="p-5 text-center">
+                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                                        Volume
+                                    </div>
+                                    <div className="text-2xl font-black text-slate-900 dark:text-white font-mono">
+                                        {(ms.total_volume / 1000000).toFixed(1)}M
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+
+                        {/* Top Gainers & Losers */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <motion.div variants={itemVariants}>
+                                <Card className="bg-white dark:bg-slate-900/60 border-none shadow-lg overflow-hidden">
+                                    <div className="p-5 pb-3 border-b border-slate-100 dark:border-slate-800">
+                                        <h3 className="font-bold text-sm flex items-center gap-2 text-emerald-600">
+                                            <TrendingUp size={16} /> Top Gainers
+                                        </h3>
+                                    </div>
+                                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                                        {data.top_gainers.slice(0, 5).map((stock) => (
+                                            <div
+                                                key={stock.ticker}
+                                                className="flex items-center justify-between px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+                                                onClick={() =>
+                                                    router.push(`/ticker/${stock.ticker}`)
+                                                }
+                                            >
+                                                <div>
+                                                    <span className="font-bold text-sm text-slate-900 dark:text-white">
+                                                        {stock.ticker}
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400 ml-2">
+                                                        {stock.sector}
+                                                    </span>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="font-mono font-bold text-sm text-slate-700 dark:text-slate-300 mr-3">
+                                                        {formatNepaliNumber(stock.close)}
+                                                    </span>
+                                                    <span className="text-emerald-600 font-bold text-sm">
+                                                        +{stock.percent_change.toFixed(2)}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </Card>
+                            </motion.div>
+
+                            <motion.div variants={itemVariants}>
+                                <Card className="bg-white dark:bg-slate-900/60 border-none shadow-lg overflow-hidden">
+                                    <div className="p-5 pb-3 border-b border-slate-100 dark:border-slate-800">
+                                        <h3 className="font-bold text-sm flex items-center gap-2 text-rose-600">
+                                            <TrendingDown size={16} /> Top Losers
+                                        </h3>
+                                    </div>
+                                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                                        {data.top_losers.slice(0, 5).map((stock) => (
+                                            <div
+                                                key={stock.ticker}
+                                                className="flex items-center justify-between px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+                                                onClick={() =>
+                                                    router.push(`/ticker/${stock.ticker}`)
+                                                }
+                                            >
+                                                <div>
+                                                    <span className="font-bold text-sm text-slate-900 dark:text-white">
+                                                        {stock.ticker}
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400 ml-2">
+                                                        {stock.sector}
+                                                    </span>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="font-mono font-bold text-sm text-slate-700 dark:text-slate-300 mr-3">
+                                                        {formatNepaliNumber(stock.close)}
+                                                    </span>
+                                                    <span className="text-rose-600 font-bold text-sm">
+                                                        {stock.percent_change.toFixed(2)}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </Card>
+                            </motion.div>
+                        </div>
+
+                        <motion.div variants={itemVariants} className="text-center mt-8">
+                            <Link href="/login?mode=signup">
+                                <Button
+                                    variant="outline"
+                                    className="rounded-xl font-bold px-6"
+                                >
+                                    Sign up to view full dashboard
+                                    <ArrowRight size={16} className="ml-2" />
+                                </Button>
+                            </Link>
+                        </motion.div>
+                    </motion.div>
+                </section>
+            )}
+
+            {/* ═══ FINAL CTA ═══ */}
+            <section className="px-6 lg:px-12 py-20 border-t border-slate-100 dark:border-slate-800/50">
+                <div className="max-w-3xl mx-auto text-center">
+                    <h2 className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+                        Ready to make smarter trades?
+                    </h2>
+                    <p className="text-slate-500 dark:text-slate-400 mt-4 text-lg">
+                        Join NEPSE investors using Stockastic to gain an edge in the market.
+                    </p>
+                    <div className="mt-8">
+                        <Link href="/login?mode=signup">
+                            <Button
+                                size="lg"
+                                className="rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 px-10 h-12 text-base"
+                            >
+                                Start Analyzing Now
+                                <ArrowRight size={18} className="ml-2" />
+                            </Button>
+                        </Link>
+                    </div>
+                </div>
+            </section>
+        </div>
     );
 }

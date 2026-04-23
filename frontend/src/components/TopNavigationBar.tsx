@@ -37,11 +37,13 @@ export function TopNavigationBar() {
 
     const logoSrc = mounted && resolvedTheme === 'dark' ? '/stockastic-logo-dark.png' : '/stockastic-logo-v3.png';
 
-    const navLinks = [
-        { name: 'Home', href: '/', icon: Home },
-        { name: 'Dashboard', href: '/market', icon: LayoutDashboard },
-        ...(isAuthenticated ? [{ name: 'Portfolio', href: '/portfolio', icon: Briefcase }] : []),
-    ];
+    const navLinks = isAuthenticated
+        ? [{ name: 'Home', href: '/', icon: Home }]
+        : [
+            { name: 'Home', href: '/', icon: Home },
+            { name: 'Dashboard', href: '/market', icon: LayoutDashboard },
+            { name: 'Portfolio', href: '/portfolio', icon: Briefcase },
+        ];
 
     const handleLogout = async () => {
         try {
