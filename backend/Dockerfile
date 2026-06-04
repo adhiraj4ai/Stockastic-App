@@ -12,7 +12,12 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     wget \
     autotools-dev \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
+
+# Verify Node is available (required by claude-agent-sdk to run the bundled Claude CLI)
+RUN node --version && npm --version
 
 # Install TA-Lib C library (Required for Python TA-Lib)
 # We update config.guess and config.sub to support modern architectures like aarch64

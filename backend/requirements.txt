@@ -26,10 +26,6 @@ sqlparse==0.5.4
 typing_extensions==4.15.0
 tzdata==2025.3
 urllib3==2.6.2
-langchain==0.3.17
-langchain-groq==0.2.4
-langchain-google-genai==2.0.9
-langchain-core==0.3.33
 backtesting
 django-filter>=23.5
 skfolio
@@ -37,9 +33,9 @@ optuna
 joblib
 scikit-learn>=1.5
 django-cryptography==1.1
-langchain-ollama==0.2.3
-langchain-community==0.3.16
-langgraph==0.2.70
+# Chat agent — Claude Agent SDK (replaces the LangChain/LangGraph/Groq/Ollama stack)
+claude-agent-sdk>=0.1.0
+anthropic>=0.45.0
 pytest==8.0.0
 pytest-django==4.8.0
 dj-rest-auth==7.1.1

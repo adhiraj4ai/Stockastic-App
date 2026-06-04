@@ -1,161 +1,347 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, RefreshCw, Sparkles } from 'lucide-react';
-import { MessageBubble } from './MessageBubble';
-import { SuggestionGrid } from './SuggestionGrid';
+'use client';
 
-interface Message {
-    role: 'user' | 'assistant' | 'system';
-    content: string;
-    tool_calls?: any[];
-    tool_results?: any[];
-}
+import { useEffect, useRef, useState } from 'react';
+import { Send, StopCircle, Loader2 } from 'lucide-react';
+import api from '@/lib/api';
+import { openChatStream } from '@/lib/chat-sse';
+import { cn } from '@/lib/utils';
+import { MessageBubble } from './MessageBubble';
+import type { ChatBlock, ChatMessage } from './types';
 
 interface ChatInterfaceProps {
-    messages: Message[];
-    onSendMessage: (message: string) => void;
-    isLoading: boolean;
-    className?: string;
-    hideHeader?: boolean;
-    onClearMessages?: () => void;
+    sessionId: string;
+    onTitleChange?: () => void;
 }
 
-export default function ChatInterface({
-    messages,
-    onSendMessage,
-    isLoading,
-    className = '',
-    hideHeader = false,
-    onClearMessages
-}: ChatInterfaceProps) {
-    const [input, setInput] = useState('');
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-    // Scroll to bottom when messages change
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages, isLoading]);
+export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) {
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [prompt, setPrompt] = useState('');
+    const [streaming, setStreaming] = useState(false);
+    const [loadingHistory, setLoadingHistory] = useState(true);
+    const abortRef = useRef<AbortController | null>(null);
+    const scrollerRef = useRef<HTMLDivElement | null>(null);
 
-    // Focus input on mount
+    // Load persisted history when the session changes.
     useEffect(() => {
-        if (!isLoading) {
-            inputRef.current?.focus();
+        let cancelled = false;
+        setLoadingHistory(true);
+        api.get(`/api/chat/sessions/${sessionId}/messages/`)
+            .then((res) => {
+                if (cancelled) return;
+                setMessages(res.data || []);
+            })
+            .catch(() => {
+                if (!cancelled) setMessages([]);
+            })
+            .finally(() => {
+                if (!cancelled) setLoadingHistory(false);
+            });
+        return () => {
+            cancelled = true;
+            abortRef.current?.abort();
+        };
+    }, [sessionId]);
+
+    // Auto-scroll on new content.
+    useEffect(() => {
+        scrollerRef.current?.scrollTo({
+            top: scrollerRef.current.scrollHeight,
+            behavior: 'smooth',
+        });
+    }, [messages]);
+
+    const handleStop = () => {
+        abortRef.current?.abort();
+        abortRef.current = null;
+        setStreaming(false);
+    };
+
+    const handleSend = async () => {
+        const text = prompt.trim();
+        if (!text || streaming) return;
+
+        const userMsg: ChatMessage = {
+            id: `temp-user-${Date.now()}`,
+            role: 'user',
+            text,
+            blocks: [],
+            created_at: new Date().toISOString(),
+        };
+        const assistantMsg: ChatMessage = {
+            id: `temp-asst-${Date.now()}`,
+            role: 'assistant',
+            text: '',
+            blocks: [],
+            created_at: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, userMsg, assistantMsg]);
+        setPrompt('');
+        setStreaming(true);
+
+        const ac = new AbortController();
+        abortRef.current = ac;
+
+        try {
+            for await (const frame of openChatStream({
+                sessionId,
+                prompt: text,
+                apiUrl: API_BASE_URL,
+                signal: ac.signal,
+            })) {
+                applyFrame(assistantMsg.id, frame.event, frame.data);
+            }
+        } catch (err: any) {
+            if (ac.signal.aborted) {
+                appendBlock(assistantMsg.id, {
+                    kind: 'text',
+                    text: '\n\n[stopped]',
+                });
+            } else {
+                appendBlock(assistantMsg.id, {
+                    kind: 'text',
+                    text: `\n\nError: ${err?.message || 'stream failed'}`,
+                });
+            }
+        } finally {
+            abortRef.current = null;
+            setStreaming(false);
+            onTitleChange?.();
         }
-    }, [isLoading]);
+    };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!input.trim() || isLoading) return;
+    const appendBlock = (msgId: string, block: ChatBlock) => {
+        setMessages((prev) =>
+            prev.map((m) => (m.id === msgId ? { ...m, blocks: [...m.blocks, block] } : m)),
+        );
+    };
 
-        onSendMessage(input.trim());
-        setInput('');
+    const applyFrame = (assistantId: string, event: string, data: any) => {
+        setMessages((prev) =>
+            prev.map((m) => {
+                if (m.id !== assistantId) return m;
+                const blocks = [...m.blocks];
+                switch (event) {
+                    case 'assistant_start':
+                        return m;
+                    case 'text': {
+                        const last = blocks[blocks.length - 1];
+                        if (
+                            last &&
+                            last.kind === 'text' &&
+                            last.subagent === data.subagent
+                        ) {
+                            blocks[blocks.length - 1] = {
+                                ...last,
+                                text: last.text + data.text,
+                            };
+                        } else {
+                            blocks.push({
+                                kind: 'text',
+                                subagent: data.subagent,
+                                text: data.text,
+                            });
+                        }
+                        return { ...m, blocks, text: m.text + data.text };
+                    }
+                    case 'thinking': {
+                        const last = blocks[blocks.length - 1];
+                        if (
+                            last &&
+                            last.kind === 'thinking' &&
+                            last.subagent === data.subagent
+                        ) {
+                            blocks[blocks.length - 1] = {
+                                ...last,
+                                text: last.text + data.text,
+                            };
+                        } else {
+                            blocks.push({
+                                kind: 'thinking',
+                                subagent: data.subagent,
+                                text: data.text,
+                            });
+                        }
+                        return { ...m, blocks };
+                    }
+                    case 'subagent_start':
+                        blocks.push({
+                            kind: 'subagent_start',
+                            subagent: data.subagent,
+                            parent: data.parent,
+                            model: data.model,
+                        });
+                        return { ...m, blocks };
+                    case 'tool_use':
+                        blocks.push({
+                            kind: 'tool_use',
+                            subagent: data.subagent,
+                            tool: data.tool,
+                            input: data.input || {},
+                            id: data.id,
+                        });
+                        return { ...m, blocks };
+                    case 'tool_result':
+                        blocks.push({
+                            kind: 'tool_result',
+                            subagent: data.subagent,
+                            id: data.id,
+                            is_error: !!data.is_error,
+                            text: data.text || '',
+                        });
+                        return { ...m, blocks };
+                    case 'card':
+                        blocks.push({
+                            kind: 'card',
+                            type: data.type,
+                            data: data.data,
+                            tool: data.tool,
+                        });
+                        return { ...m, blocks };
+                    case 'usage':
+                        return {
+                            ...m,
+                            input_tokens: data.input_tokens,
+                            output_tokens: data.output_tokens,
+                            cache_read_tokens: data.cache_read_input_tokens,
+                            cache_creation_tokens: data.cache_creation_input_tokens,
+                        };
+                    case 'error':
+                        blocks.push({ kind: 'text', text: `\n\nError: ${data.message}` });
+                        return { ...m, blocks };
+                    case 'done':
+                    case 'assistant_end':
+                    default:
+                        return m;
+                }
+            }),
+        );
     };
 
     return (
-        <div className={`flex flex-col h-full bg-white/20 dark:bg-black/20 rounded-xl border border-white/20 dark:border-border overflow-hidden ${className}`}>
-            {/* Header */}
-            {!hideHeader && (
-                <header className="flex items-center justify-between p-4 border-b border-white/20 dark:border-border bg-white/40 dark:bg-black/40 z-20">
-                    <div className="flex items-center gap-3">
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-emerald-500/20 blur-lg rounded-full animate-pulse" />
-                            <Bot className="text-emerald-600 dark:text-emerald-400 relative z-10" size={24} />
+        <div className="flex flex-col h-full">
+            <div ref={scrollerRef} className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar">
+                <div className="max-w-3xl mx-auto space-y-4">
+                    {loadingHistory ? (
+                        <div className="text-sm text-muted-foreground flex items-center gap-2">
+                            <Loader2 size={14} className="animate-spin" /> Loading history…
                         </div>
-                        <div>
-                            <h1 className="font-bold text-lg text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
-                                Stockastic
-                                <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-mono tracking-tight opacity-70">
-                                    Beta
-                                </span>
-                            </h1>
-                            <p className="text-xs text-gray-500 font-medium tracking-tight">Powered by phi-3.5 & langGraph</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => onClearMessages?.()}
-                        className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-all"
-                        title="New Chat"
-                    >
-                        <RefreshCw size={18} />
-                    </button>
-                </header>
-            )}
-
-            {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto px-4 py-6 scroll-smooth custom-scrollbar">
-                <div className="max-w-7xl mx-auto space-y-6">
-                    {messages.length === 0 ? (
-                        <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-8 animate-in fade-in duration-700">
-                            <div className="text-center space-y-4 max-w-md mx-auto px-4">
-                                <div className="w-16 h-16 bg-gradient-to-tr from-emerald-500/20 to-blue-500/20 rounded-2xl flex items-center justify-center mx-auto border border-white/20 dark:border-border shadow-sm shadow-emerald-500/10 ring-1 ring-white/10">
-                                    <Sparkles size={32} className="text-emerald-500 dark:text-emerald-400" />
-                                </div>
-                                <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-gray-900 to-gray-500 dark:from-white dark:to-gray-500 tracking-tight">
-                                    How can I help you?
-                                </h2>
-                                <p className="text-gray-500 text-sm leading-relaxed">
-                                    I can analyze stocks, track your portfolio, and provide market insights using real-time data.
-                                </p>
-                            </div>
-
-                            <SuggestionGrid onSelect={onSendMessage} />
-                        </div>
+                    ) : messages.length === 0 ? (
+                        <Suggestions onPick={(s) => setPrompt(s)} />
                     ) : (
-                        <>
-                            {messages.map((msg, idx) => (
-                                <MessageBubble
-                                    key={idx}
-                                    role={msg.role}
-                                    content={msg.content}
-                                    isStreaming={isLoading && idx === messages.length - 1}
-                                />
-                            ))}
-                        </>
+                        messages.map((m) => <MessageBubble key={m.id} message={m} />)
                     )}
-
-                    <div ref={messagesEndRef} className="h-4" />
                 </div>
             </div>
+            <Composer
+                prompt={prompt}
+                onChange={setPrompt}
+                onSend={handleSend}
+                onStop={handleStop}
+                streaming={streaming}
+            />
+        </div>
+    );
+}
 
-            {/* Input Area */}
-            <div className="px-4 pb-4 pt-2 bg-gradient-to-t from-white/50 dark:from-black/50 to-transparent">
-                <div className="max-w-7xl mx-auto">
-                    <form
-                        onSubmit={handleSubmit}
-                        className={`
-                            relative transition-all duration-300 rounded-2xl
-                            bg-white/80 dark:bg-gray-900/80 border ring-1 ring-black/5 dark:ring-white/5 shadow-sm shadow-black/5 dark:shadow-black/20
-                            ${isLoading ? 'border-gray-200 dark:border-gray-800 opacity-80' : 'border-gray-300 dark:border-gray-700 hover:border-emerald-500/50 dark:hover:border-gray-600 focus-within:border-emerald-500/50 focus-within:ring-emerald-500/20'}
-                        `}
+function Composer({
+    prompt,
+    onChange,
+    onSend,
+    onStop,
+    streaming,
+}: {
+    prompt: string;
+    onChange: (v: string) => void;
+    onSend: () => void;
+    onStop: () => void;
+    streaming: boolean;
+}) {
+    const taRef = useRef<HTMLTextAreaElement | null>(null);
+    // Auto-grow.
+    useEffect(() => {
+        const ta = taRef.current;
+        if (!ta) return;
+        ta.style.height = 'auto';
+        ta.style.height = Math.min(200, ta.scrollHeight) + 'px';
+    }, [prompt]);
+
+    return (
+        <div className="border-t border-border bg-background p-4">
+            <div className="max-w-3xl mx-auto flex items-end gap-2">
+                <textarea
+                    ref={taRef}
+                    value={prompt}
+                    onChange={(e) => onChange(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            onSend();
+                        }
+                    }}
+                    placeholder="Ask about a ticker, the market, or your portfolio. Shift+Enter for newline."
+                    rows={1}
+                    disabled={streaming}
+                    className={cn(
+                        'flex-1 resize-none rounded-md border border-border bg-card px-3 py-2 text-sm',
+                        'placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring',
+                        'disabled:opacity-60',
+                    )}
+                />
+                {streaming ? (
+                    <button
+                        onClick={onStop}
+                        className="px-3 py-2 rounded-md border border-border text-sm font-medium text-foreground hover:bg-accent transition-colors flex items-center gap-1.5"
                     >
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            placeholder={isLoading ? "AI is thinking..." : "Ask a question..."}
-                            className="w-full bg-transparent text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 text-sm px-5 py-4 pr-14 focus:outline-none disabled:cursor-not-allowed"
-                            disabled={isLoading}
-                        />
-                        <button
-                            type="submit"
-                            disabled={!input.trim() || isLoading}
-                            className={`
-                                absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-xl transition-all duration-200
-                                ${!input.trim() || isLoading
-                                    ? 'text-gray-400 bg-gray-100 dark:text-gray-600 dark:bg-gray-800'
-                                    : 'text-white bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-900/20'}
-                            `}
-                        >
-                            <Send size={18} />
-                        </button>
-                    </form>
-                    <div className="text-center mt-3">
-                        <p className="text-[10px] text-gray-500 dark:text-gray-600 font-medium tracking-tight">
-                            Stockastic ai (beta) • Market data may be delayed
-                        </p>
-                    </div>
+                        <StopCircle size={14} />
+                        Stop
+                    </button>
+                ) : (
+                    <button
+                        onClick={onSend}
+                        disabled={!prompt.trim()}
+                        className={cn(
+                            'px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1.5 transition-opacity',
+                            prompt.trim()
+                                ? 'bg-foreground text-background hover:opacity-90'
+                                : 'bg-muted text-muted-foreground cursor-not-allowed',
+                        )}
+                    >
+                        <Send size={14} />
+                        Send
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function Suggestions({ onPick }: { onPick: (s: string) => void }) {
+    const items = [
+        "What's NEPSE doing today?",
+        'Give me technicals on NABIL',
+        'How is my portfolio performing?',
+        'Should I add NICA at current levels?',
+    ];
+    return (
+        <div className="flex flex-col items-center text-center py-12 gap-4">
+            <div>
+                <div className="text-lg font-semibold text-foreground tracking-tight">Where would you like to start?</div>
+                <div className="text-sm text-muted-foreground mt-1">
+                    Pick a starter or ask anything about Nepal&apos;s equity market.
                 </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 w-full max-w-xl">
+                {items.map((q) => (
+                    <button
+                        key={q}
+                        onClick={() => onPick(q)}
+                        className="text-left text-sm px-3 py-2 rounded-md border border-border bg-card hover:bg-accent transition-colors text-foreground"
+                    >
+                        {q}
+                    </button>
+                ))}
             </div>
         </div>
     );

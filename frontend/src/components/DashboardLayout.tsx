@@ -8,7 +8,6 @@ import { useTheme } from 'next-themes';
 import { LayoutDashboard, TrendingUp, TrendingDown, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Users, BarChart3, History, Star, Brain, Radar, Building2, ScanLine, Zap, Share2, Crosshair, DollarSign, Layers, GitMerge, Shield, Search } from 'lucide-react';
 import { FullPageLoader } from '@/components/ui/StockLoader';
 import { SearchBar } from './SearchBar';
-import { ChatSidebar } from './ChatSidebar';
 import { AlertsDropdown } from './AlertsDropdown';
 import SystemOffline from './SystemOffline';
 import { SymbolSelector } from './SymbolSelector';
@@ -691,7 +690,6 @@ function DashboardContent({
                     {children}
                 </div>
             </main >
-            {!isChatPage && <ChatSidebar isPinned={isChatPinned} onPinToggle={() => setIsChatPinned(!isChatPinned)} hideFloatingButton={true} />}
 
             <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
             {isOffline && <SystemOffline />}
