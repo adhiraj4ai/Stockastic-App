@@ -488,7 +488,7 @@ export default function UsersManagementClient() {
         >
             <Tabs defaultValue="directory" className="space-y-6 animate-in fade-in duration-500">
                 <div className="flex items-center justify-between">
-                    <TabsList className="bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 p-1 rounded-xl h-11">
+                    <TabsList className="bg-slate-100/50 dark:bg-muted border border-border dark:border-border p-1 rounded-xl h-11">
                         <TabsTrigger 
                             value="directory" 
                             className="rounded-lg px-6 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all h-9"
@@ -516,50 +516,50 @@ export default function UsersManagementClient() {
                 <TabsContent value="directory" className="space-y-6 mt-0">
                 {/* Stats Header */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <Card className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border-slate-200/50 dark:border-white/5">
+                    <Card className="bg-white/50 dark:bg-card border-border dark:border-border">
                         <CardContent className="p-4 flex items-center gap-4">
                             <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500">
                                 <Users size={20} />
                             </div>
                             <div>
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total Users</p>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Users</p>
                                 <p className="text-2xl font-bold">{users.length}</p>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border-slate-200/50 dark:border-white/5">
+                    <Card className="bg-white/50 dark:bg-card border-border dark:border-border">
                         <CardContent className="p-4 flex items-center gap-4">
                             <div className="p-3 rounded-xl bg-violet-500/10 text-violet-500">
                                 <Crown size={20} />
                             </div>
                             <div>
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Premium Tiers</p>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Premium Tiers</p>
                                 <p className="text-2xl font-bold">
                                     {users.filter(u => ['PRO', 'ULTRA'].includes(u.subscription_tier)).length}
                                 </p>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border-slate-200/50 dark:border-white/5">
+                    <Card className="bg-white/50 dark:bg-card border-border dark:border-border">
                         <CardContent className="p-4 flex items-center gap-4">
                             <div className="p-3 rounded-xl bg-rose-500/10 text-rose-500">
                                 <ShieldCheck size={20} />
                             </div>
                             <div>
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Admins</p>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Admins</p>
                                 <p className="text-2xl font-bold">
                                     {users.filter(u => u.role === 'ADMIN').length}
                                 </p>
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border-slate-200/50 dark:border-white/5">
+                    <Card className="bg-white/50 dark:bg-card border-border dark:border-border">
                         <CardContent className="p-4 flex items-center gap-4">
                             <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500">
                                 <RefreshCw size={20} />
                             </div>
                             <div>
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Recent Activity</p>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Recent Activity</p>
                                 <p className="text-2xl font-bold">Live</p>
                             </div>
                         </CardContent>
@@ -567,7 +567,7 @@ export default function UsersManagementClient() {
                 </div>
 
                 {/* Filters & Table */}
-                <Card className="bg-white dark:bg-slate-950/40 backdrop-blur-2xl border-slate-200/50 dark:border-white/5 shadow-xl">
+                <Card className="bg-white dark:bg-card border-border dark:border-border shadow-xl">
                     <CardHeader className="pb-4">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div className="space-y-1">
@@ -579,14 +579,14 @@ export default function UsersManagementClient() {
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                     <Input 
                                         placeholder="Search terminal users..." 
-                                        className="pl-9 bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10"
+                                        className="pl-9 bg-slate-50 dark:bg-muted border-slate-200 dark:border-border"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                     />
                                 </div>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" className="gap-2 border-slate-200 dark:border-white/10">
+                                        <Button variant="outline" className="gap-2 border-slate-200 dark:border-border">
                                             <Filter size={14} />
                                             {roleFilter === 'ALL' ? 'All Roles' : ROLE_CONFIG[roleFilter as keyof typeof ROLE_CONFIG]?.label || 'Select Role'}
                                         </Button>
@@ -610,7 +610,7 @@ export default function UsersManagementClient() {
                                             Add User
                                         </Button>
                                     </DialogTrigger>
-                                    <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-950 border-slate-200 dark:border-white/10">
+                                    <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-950 border-slate-200 dark:border-border">
                                         <form onSubmit={handleCreateUser}>
                                             <DialogHeader>
                                                 <DialogTitle>Create Terminal Account</DialogTitle>
@@ -625,7 +625,7 @@ export default function UsersManagementClient() {
                                                         id="username"
                                                         value={newUser.username}
                                                         onChange={(e) => setNewUser({...newUser, username: e.target.value})}
-                                                        className="col-span-3 bg-slate-50 dark:bg-white/5"
+                                                        className="col-span-3 bg-slate-50 dark:bg-muted"
                                                         placeholder="janesmith"
                                                         required
                                                     />
@@ -637,7 +637,7 @@ export default function UsersManagementClient() {
                                                         type="email"
                                                         value={newUser.email}
                                                         onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                                                        className="col-span-3 bg-slate-50 dark:bg-white/5"
+                                                        className="col-span-3 bg-slate-50 dark:bg-muted"
                                                         placeholder="jane@example.com"
                                                         required
                                                     />
@@ -649,7 +649,7 @@ export default function UsersManagementClient() {
                                                             id="first_name"
                                                             value={newUser.first_name}
                                                             onChange={(e) => setNewUser({...newUser, first_name: e.target.value})}
-                                                            className="bg-slate-50 dark:bg-white/5"
+                                                            className="bg-slate-50 dark:bg-muted"
                                                             placeholder="Jane"
                                                         />
                                                     </div>
@@ -659,7 +659,7 @@ export default function UsersManagementClient() {
                                                             id="last_name"
                                                             value={newUser.last_name}
                                                             onChange={(e) => setNewUser({...newUser, last_name: e.target.value})}
-                                                            className="bg-slate-50 dark:bg-white/5"
+                                                            className="bg-slate-50 dark:bg-muted"
                                                             placeholder="Smith"
                                                         />
                                                     </div>
@@ -671,7 +671,7 @@ export default function UsersManagementClient() {
                                                             value={newUser.role} 
                                                             onValueChange={(val) => setNewUser({...newUser, role: val as any})}
                                                         >
-                                                            <SelectTrigger className="bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10">
+                                                            <SelectTrigger className="bg-slate-50 dark:bg-muted border-slate-200 dark:border-border">
                                                                 <SelectValue placeholder="Select Role" />
                                                             </SelectTrigger>
                                                             <SelectContent>
@@ -694,7 +694,7 @@ export default function UsersManagementClient() {
                                                             value={newUser.subscription_tier} 
                                                             onValueChange={(val) => setNewUser({...newUser, subscription_tier: val as any})}
                                                         >
-                                                            <SelectTrigger className="bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10">
+                                                            <SelectTrigger className="bg-slate-50 dark:bg-muted border-slate-200 dark:border-border">
                                                                 <SelectValue placeholder="Select Tier" />
                                                             </SelectTrigger>
                                                             <SelectContent>
@@ -717,7 +717,7 @@ export default function UsersManagementClient() {
                                                         type="password"
                                                         value={newUser.password}
                                                         onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                                                        className="col-span-3 bg-slate-50 dark:bg-white/5"
+                                                        className="col-span-3 bg-slate-50 dark:bg-muted"
                                                         placeholder="••••••••"
                                                         required
                                                     />
@@ -751,9 +751,9 @@ export default function UsersManagementClient() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="rounded-xl border border-slate-200 dark:border-white/5 overflow-hidden">
+                        <div className="rounded-xl border border-slate-200 dark:border-border overflow-hidden">
                             <Table>
-                                <TableHeader className="bg-slate-50/50 dark:bg-white/5">
+                                <TableHeader className="bg-slate-50/50 dark:bg-muted">
                                     <TableRow>
                                         <TableHead className="font-bold">User</TableHead>
                                         <TableHead className="font-bold">Contact</TableHead>
@@ -884,7 +884,7 @@ export default function UsersManagementClient() {
                                                                 </Button>
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end" className="w-56 p-2 rounded-xl">
-                                                                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-slate-400">Governance</DropdownMenuLabel>
+                                                                <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-slate-400">Governance</DropdownMenuLabel>
                                                                 <DropdownMenuSeparator />
                                                                 <div className="grid gap-1 mt-1">
                                                                     <p className="text-[10px] px-2 font-bold text-slate-500 uppercase">System Role</p>
@@ -991,7 +991,7 @@ export default function UsersManagementClient() {
 
                 <TabsContent value="permissions" className="mt-0">
                     <div className="grid grid-cols-1 gap-6">
-                        <Card className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border-slate-200/50 dark:border-white/5 shadow-xl">
+                        <Card className="bg-white/50 dark:bg-card border-border dark:border-border shadow-xl">
                             <CardHeader>
                                 <CardTitle className="text-xl font-bold flex items-center gap-2">
                                     <Lock size={20} className="text-amber-500" />
@@ -1000,9 +1000,9 @@ export default function UsersManagementClient() {
                                 <CardDescription>Define which modules are accessible for each subscription level</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="rounded-xl border border-slate-200 dark:border-white/5 overflow-hidden">
+                                <div className="rounded-xl border border-slate-200 dark:border-border overflow-hidden">
                                     <Table>
-                                        <TableHeader className="bg-slate-50/50 dark:bg-white/5">
+                                        <TableHeader className="bg-slate-50/50 dark:bg-muted">
                                             <TableRow>
                                                 <TableHead className="w-[300px] font-bold">Terminal Module</TableHead>
                                                 {Object.keys(TIER_CONFIG).filter(t => t !== 'NONE').map(tier => (
@@ -1035,7 +1035,7 @@ export default function UsersManagementClient() {
                                                                         group.name === 'Accumulation Suite' ? "bg-orange-500/10 dark:bg-orange-500/5 text-orange-500" :
                                                                         group.name === 'Strategic Hub' ? "bg-pink-500/10 dark:bg-pink-500/5 text-pink-500" :
                                                                         group.name === 'Ticker Intelligence' ? "bg-blue-500/10 dark:bg-blue-500/5 text-blue-500" :
-                                                                        "bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400"
+                                                                        "bg-slate-100 dark:bg-muted text-slate-500 dark:text-slate-400"
                                                                     )}>
                                                                         {(() => {
                                                                             const Icon = moduleIcons[moduleKey] || CircleHelp;
@@ -1088,7 +1088,7 @@ export default function UsersManagementClient() {
                 </TabsContent>
 
                 <TabsContent value="roles" className="mt-0">
-                    <Card className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border-slate-200/50 dark:border-white/5 p-12 text-center shadow-xl">
+                    <Card className="bg-white/50 dark:bg-card border-border dark:border-border p-12 text-center shadow-xl">
                         <div className="flex flex-col items-center gap-4 max-w-md mx-auto">
                             <div className="p-4 rounded-full bg-indigo-500/10 text-indigo-500">
                                 <Settings2 size={32} />
@@ -1097,7 +1097,7 @@ export default function UsersManagementClient() {
                             <p className="text-slate-500 text-sm">
                                 Management of explicit role-based permissions (Admin, Manager, Subscriber) is currently harmonized with global system policies.
                             </p>
-                            <Badge variant="outline" className="mt-4 bg-indigo-500/5 border-indigo-500/20 text-indigo-500 uppercase tracking-widest text-[10px] py-1">
+                            <Badge variant="outline" className="mt-4 bg-indigo-500/5 border-indigo-500/20 text-indigo-500 uppercase tracking-wider text-[10px] py-1">
                                 System Governed
                             </Badge>
                         </div>

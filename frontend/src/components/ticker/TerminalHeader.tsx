@@ -35,7 +35,7 @@ export function TerminalHeader({
 
     return (
         <div className={cn(
-            "sticky top-0 z-50 border-b glass-card-light dark:bg-slate-900/95 rounded-none backdrop-blur-md border-slate-200/50 dark:border-slate-800/50 py-3",
+            "sticky top-0 z-50 border-b glass-card-light dark:bg-card/95 rounded-none border-border dark:border-slate-800/50 py-3",
         )}>
             <div className="max-w-[1700px] mx-auto px-8 flex items-center justify-center gap-6">
                 {/* Unified Identity & Price Area */}
@@ -69,7 +69,7 @@ export function TerminalHeader({
 
                     {/* Centered LTP Section */}
                     <div className={cn(
-                        "flex items-center justify-center rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50 shadow-inner px-6 py-1.5 gap-6",
+                        "flex items-center justify-center rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 border border-border dark:border-slate-700/50 shadow-inner px-6 py-1.5 gap-6",
                     )}>
                         <div className="font-bold text-slate-900 dark:text-slate-100 tabular-nums tracking-tighter text-3xl">
                             {formatRupees(price)}

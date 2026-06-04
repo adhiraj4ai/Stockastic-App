@@ -175,27 +175,27 @@ export default function VolumeProfilePage() {
             <div className="space-y-6">
                 
                 {/* Controls Card */}
-                <Card className="p-4 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm overflow-visible">
+                <Card className="p-4 bg-white dark:bg-card border-slate-200 dark:border-slate-800 shadow-sm overflow-visible">
                     <div className="flex flex-col md:flex-row items-center gap-4">
                         <div className="w-full md:w-80">
-                            <label className="text-[10px] font-black uppercase text-slate-400 mb-1.5 block">Search Symbol</label>
+                            <label className="text-[10px] font-semibold uppercase text-slate-400 mb-1.5 block">Search Symbol</label>
                             <CompanySelect 
                                 onChange={(val) => setSymbol(val)} 
                                 className="w-full h-11"
                             />
                         </div>
                         
-                        <div className="h-10 w-px bg-slate-100 dark:bg-white/5 hidden md:block mx-2" />
+                        <div className="h-10 w-px bg-slate-100 dark:bg-muted hidden md:block mx-2" />
                         
                         <div className="w-full md:w-auto">
-                            <label className="text-[10px] font-black uppercase text-slate-400 mb-1.5 block">Time Horizon</label>
-                            <div className="bg-slate-50 dark:bg-slate-800/50 p-1 rounded-xl border border-slate-100 dark:border-white/5 flex gap-1">
+                            <label className="text-[10px] font-semibold uppercase text-slate-400 mb-1.5 block">Time Horizon</label>
+                            <div className="bg-slate-50 dark:bg-slate-800/50 p-1 rounded-xl border border-border dark:border-border flex gap-1">
                                 {RANGES.map(r => (
                                     <button
                                         key={r.value}
                                         onClick={() => setRange(r.value)}
                                         className={cn(
-                                            "px-4 py-1.5 rounded-lg text-xs font-black transition-all",
+                                            "px-4 py-1.5 rounded-lg text-xs font-semibold transition-all",
                                             range === r.value 
                                                 ? "bg-slate-900 dark:bg-indigo-600 text-white shadow-sm" 
                                                 : "text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-white/5"
@@ -214,20 +214,20 @@ export default function VolumeProfilePage() {
                         <div className="mx-auto w-20 h-20 bg-slate-50 dark:bg-slate-800/50 rounded-full flex items-center justify-center text-slate-300 dark:text-slate-600 mb-6 border border-dashed border-slate-200 dark:border-slate-700">
                             <Search size={32} />
                         </div>
-                        <h3 className="text-xl font-black text-slate-800 dark:text-slate-100">Select a Ticker</h3>
+                        <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Select a Ticker</h3>
                         <p className="text-slate-500 max-w-sm mx-auto mt-2 text-sm font-medium">Search for any active stock to begin analyzing its horizontal volume distribution.</p>
                     </div>
                 ) : loading ? (
                     <div className="py-24 text-center">
                         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500 mx-auto mb-6"></div>
-                        <h3 className="text-xl font-black text-slate-800 dark:text-slate-100">Aggregating Floorsheet Data...</h3>
+                        <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Aggregating Floorsheet Data...</h3>
                         <p className="text-slate-500 mt-2 text-sm font-medium">Crunching transaction quantities across all price levels for {symbol}.</p>
                     </div>
                 ) : error ? (
-                    <div className="py-16 text-center border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-3xl">
+                    <div className="py-16 text-center border-2 border-dashed border-border dark:border-slate-800 rounded-xl">
                         <AlertCircle className="mx-auto h-12 w-12 text-rose-500 mb-4" />
-                        <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">{error}</h3>
-                        <Button onClick={() => setSymbol('')} variant="link" className="mt-2 font-black text-indigo-500">Try another symbol</Button>
+                        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{error}</h3>
+                        <Button onClick={() => setSymbol('')} variant="link" className="mt-2 font-semibold text-indigo-500">Try another symbol</Button>
                     </div>
                 ) : data && (
                     <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -236,56 +236,56 @@ export default function VolumeProfilePage() {
                         <div className="xl:col-span-3 space-y-4">
                             <Card className={cn(
                                 "p-6 border-none shadow-xl flex flex-col gap-4 relative overflow-hidden",
-                                "bg-gradient-to-br from-indigo-600 to-indigo-900 text-white"
+                                "bg-primary text-primary-foreground hover:opacity-90 text-white"
                             )}>
                                 <div className="absolute -right-4 -top-4 opacity-10">
                                     <Target size={120} />
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Badge className="bg-white/20 text-white border-none font-black text-[10px] tracking-widest px-2 py-0.5">POI</Badge>
-                                    <span className="text-xs font-black uppercase tracking-widest opacity-70">Point of Control</span>
+                                    <Badge className="bg-white/20 text-white border-none font-semibold text-[10px] tracking-wider px-2 py-0.5">POI</Badge>
+                                    <span className="text-xs font-semibold uppercase tracking-wider opacity-70">Point of Control</span>
                                 </div>
                                 <div>
-                                    <h2 className="text-4xl font-black tracking-tight">Rs {data.poc.toLocaleString()}</h2>
+                                    <h2 className="text-4xl font-semibold tracking-tight">Rs {data.poc.toLocaleString()}</h2>
                                     <p className="text-xs font-medium opacity-70 mt-1">Price level with maximum volume.</p>
                                 </div>
                                 <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-[10px] font-black uppercase opacity-60">Value Area</span>
-                                        <span className="text-xs font-black">Rs {data.val} - Rs {data.vah}</span>
+                                        <span className="text-[10px] font-semibold uppercase opacity-60">Value Area</span>
+                                        <span className="text-xs font-semibold">Rs {data.val} - Rs {data.vah}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-[10px] font-black uppercase opacity-60">Total Trades</span>
-                                        <span className="text-xs font-black">{data.stats.trade_count.toLocaleString()}</span>
+                                        <span className="text-[10px] font-semibold uppercase opacity-60">Total Trades</span>
+                                        <span className="text-xs font-semibold">{data.stats.trade_count.toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-[10px] font-black uppercase opacity-60">Total volume</span>
-                                        <span className="text-xs font-black">{(data.total_volume / 1000000).toFixed(2)}M units</span>
+                                        <span className="text-[10px] font-semibold uppercase opacity-60">Total volume</span>
+                                        <span className="text-xs font-semibold">{(data.total_volume / 1000000).toFixed(2)}M units</span>
                                     </div>
                                 </div>
                             </Card>
 
-                            <Card className="p-5 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
+                            <Card className="p-5 bg-white dark:bg-card border-slate-200 dark:border-slate-800 shadow-sm">
                                 <div className="flex items-center gap-2 mb-4">
                                     <Layers className="w-4 h-4 text-indigo-500" />
-                                    <h4 className="text-sm font-black text-slate-800 dark:text-slate-100">Trade Distribution</h4>
+                                    <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Trade Distribution</h4>
                                 </div>
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                                         <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase">Avg Execution</p>
-                                            <p className="text-sm font-black text-slate-800 dark:text-slate-100">Rs {data.stats.avg_price.toFixed(2)}</p>
+                                            <p className="text-[10px] font-semibold text-slate-400 uppercase">Avg Execution</p>
+                                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Rs {data.stats.avg_price.toFixed(2)}</p>
                                         </div>
-                                        <div className="h-8 w-8 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center text-indigo-500 shadow-sm border border-slate-100 dark:border-white/5">
+                                        <div className="h-8 w-8 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center text-indigo-500 shadow-sm border border-border dark:border-border">
                                             <Activity size={16} />
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                                         <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase">Range High/Low</p>
-                                            <p className="text-sm font-black text-slate-800 dark:text-slate-100">Rs {data.stats.max_price} / {data.stats.min_price}</p>
+                                            <p className="text-[10px] font-semibold text-slate-400 uppercase">Range High/Low</p>
+                                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Rs {data.stats.max_price} / {data.stats.min_price}</p>
                                         </div>
-                                        <div className="h-8 w-8 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center text-teal-500 shadow-sm border border-slate-100 dark:border-white/5">
+                                        <div className="h-8 w-8 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center text-teal-500 shadow-sm border border-border dark:border-border">
                                             <BarChart3 size={16} />
                                         </div>
                                     </div>
@@ -305,15 +305,15 @@ export default function VolumeProfilePage() {
 
                         {/* Main Profile Chart */}
                         <div className="xl:col-span-9">
-                            <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col h-full min-h-[700px]">
+                            <Card className="p-6 bg-white dark:bg-card border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col h-full min-h-[700px]">
                                 <div className="flex items-center justify-between mb-8">
                                     <div className="flex items-center gap-3">
                                         <div className="h-10 w-10 rounded-xl bg-slate-900 dark:bg-white flex items-center justify-center text-white dark:text-slate-900">
                                             <BarChart3 size={20} />
                                         </div>
                                         <div>
-                                            <h3 className="text-lg font-black text-slate-900 dark:text-white leading-tight">{symbol} Volume Profile</h3>
-                                            <div className="flex items-center gap-2 text-xs text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                                            <h3 className="text-lg font-semibold text-slate-900 dark:text-white leading-tight">{symbol} Volume Profile</h3>
+                                            <div className="flex items-center gap-2 text-xs text-slate-400 font-bold uppercase tracking-wider mt-0.5">
                                                 <Calendar size={12} />
                                                 <span>Aggregate trades since {range}</span>
                                             </div>
@@ -323,11 +323,11 @@ export default function VolumeProfilePage() {
                                     <div className="flex items-center gap-4">
                                         <div className="hidden sm:flex items-center gap-2">
                                             <div className="w-3 h-3 rounded-sm bg-indigo-500" />
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">POC</span>
+                                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-tighter">POC</span>
                                         </div>
                                         <div className="hidden sm:flex items-center gap-2">
                                              <div className="w-3 h-3 rounded-sm bg-teal-400" />
-                                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Value Area</span>
+                                             <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-tighter">Value Area</span>
                                         </div>
                                     </div>
                                 </div>

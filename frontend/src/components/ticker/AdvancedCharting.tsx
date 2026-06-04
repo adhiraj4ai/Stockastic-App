@@ -181,8 +181,8 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
     };
 
     return (
-        <Card className="glass-card-light rounded-3xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-row items-center justify-between bg-white/50 dark:bg-slate-900/50">
+        <Card className="glass-card-light rounded-xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-border dark:border-slate-800 flex flex-row items-center justify-between bg-white/50 dark:bg-card">
                 <div className="space-y-1">
                     <CardTitle className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2">
                         <BarChart3 size={14} className="text-blue-500" />
@@ -195,8 +195,8 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
                                 variant="outline"
                                 onClick={() => setTimeframe(t)}
                                 className={cn(
-                                    "text-[9px] font-bold px-2 py-0 border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors",
-                                    t === timeframe ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100" : "text-slate-400 dark:text-slate-500 bg-transparent"
+                                    "text-[9px] font-bold px-2 py-0 border-border dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors",
+                                    t === timeframe ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-border" : "text-slate-400 dark:text-slate-500 bg-transparent"
                                 )}
                             >
                                 {t}
@@ -205,10 +205,10 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-lg border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer transition-colors">
+                    <div className="p-2 rounded-lg border border-border dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer transition-colors">
                         <Settings2 size={16} />
                     </div>
-                    <div className="p-2 rounded-lg border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer transition-colors">
+                    <div className="p-2 rounded-lg border border-border dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer transition-colors">
                         <Maximize2 size={16} />
                     </div>
                 </div>
@@ -219,7 +219,7 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
                 </div>
                 {/* Integrated Stats Grid */}
                 {fundamental && (
-                    <div className="px-6 py-6 border-t border-slate-100 dark:border-slate-800 bg-white/30 dark:bg-slate-900/10">
+                    <div className="px-6 py-6 border-t border-border dark:border-slate-800 bg-white/30 dark:bg-card/10">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-x-12 gap-y-6">
                             {stats.map((item, idx) => (
                                 <div key={idx} className="space-y-1">

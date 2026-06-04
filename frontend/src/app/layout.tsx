@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Onest, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -17,8 +17,8 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#020617" },
+    { media: "(prefers-color-scheme: light)", color: "#fdfdfb" },
+    { media: "(prefers-color-scheme: dark)", color: "#1c1c1b" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -42,7 +42,7 @@ export default function RootLayout({
     <html lang="en" className={`${onest.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className="font-sans bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen"
+        className="font-sans bg-background text-foreground min-h-screen"
       >
         <ThemeProvider
           attribute="class"

@@ -122,16 +122,16 @@ export default function TrendsPage() {
 
     return (
         <div className="space-y-6 lg:space-y-8 min-h-screen">
-            <div className="bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 shadow-2xl">
-                <div className="p-4 md:p-6 border-b border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] flex flex-col xl:flex-row justify-between items-stretch xl:items-center gap-6">
+            <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border shadow-sm">
+                <div className="p-4 md:p-6 border-b border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted flex flex-col xl:flex-row justify-between items-stretch xl:items-center gap-6">
                     <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
-                        <div className="bg-white dark:bg-slate-900/60 p-1 rounded-xl border border-slate-200 dark:border-white/5 shadow-inner flex overflow-x-auto no-scrollbar">
+                        <div className="bg-white dark:bg-card p-1 rounded-xl border border-slate-200 dark:border-border shadow-inner flex overflow-x-auto no-scrollbar">
                             {timeRanges.map((t) => (
                                 <button
                                     key={t.value}
                                     onClick={() => setRange(t.value)}
                                     className={cn(
-                                        "px-4 py-1.5 rounded-lg text-xs font-black transition-all duration-300 tracking-tighter whitespace-nowrap",
+                                        "px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 tracking-tighter whitespace-nowrap",
                                         range === t.value
                                             ? "bg-slate-900 dark:bg-indigo-600 text-white shadow-lg"
                                             : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
@@ -141,11 +141,11 @@ export default function TrendsPage() {
                                 </button>
                             ))}
                         </div>
-                        <div className="bg-white dark:bg-slate-900/60 p-1 rounded-xl border border-slate-200 dark:border-white/5 shadow-inner flex overflow-x-auto no-scrollbar max-w-[200px] md:max-w-xs lg:max-w-md">
+                        <div className="bg-white dark:bg-card p-1 rounded-xl border border-slate-200 dark:border-border shadow-inner flex overflow-x-auto no-scrollbar max-w-[200px] md:max-w-xs lg:max-w-md">
                             <button
                                 onClick={() => setSelectedSector('All')}
                                 className={cn(
-                                    "px-4 py-1.5 rounded-lg text-[10px] font-black transition-all duration-300 tracking-tighter whitespace-nowrap",
+                                    "px-4 py-1.5 rounded-lg text-[10px] font-semibold transition-all duration-300 tracking-tighter whitespace-nowrap",
                                     selectedSector === 'All'
                                         ? "bg-slate-900 dark:bg-indigo-600 text-white shadow-lg"
                                         : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
@@ -158,7 +158,7 @@ export default function TrendsPage() {
                                     key={s.name}
                                     onClick={() => setSelectedSector(s.name)}
                                     className={cn(
-                                        "px-4 py-1.5 rounded-lg text-[10px] font-black transition-all duration-300 tracking-tighter whitespace-nowrap",
+                                        "px-4 py-1.5 rounded-lg text-[10px] font-semibold transition-all duration-300 tracking-tighter whitespace-nowrap",
                                         selectedSector === s.name
                                             ? "bg-slate-900 dark:bg-indigo-600 text-white shadow-lg"
                                             : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
@@ -176,7 +176,7 @@ export default function TrendsPage() {
                             placeholder="Filter symbols or brokers..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="pl-11 pr-4 h-11 w-full rounded-xl bg-white dark:bg-slate-900/60 border-slate-200 dark:border-white/5 shadow-none focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-indigo-500/20 transition-all font-bold text-sm"
+                            className="pl-11 pr-4 h-11 w-full rounded-xl bg-white dark:bg-card border-slate-200 dark:border-border shadow-none focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-indigo-500/20 transition-all font-bold text-sm"
                         />
                     </div>
                 </div>
@@ -207,23 +207,23 @@ export default function TrendsPage() {
                                     <TableHead className="text-right px-6 cursor-pointer font-bold text-gray-900 dark:text-slate-100" onClick={() => handleSort('ltp')}>
                                         <div className="flex items-center justify-end gap-2 text-[11px] uppercase tracking-wider">LTP <SortIcon column="ltp" /></div>
                                     </TableHead>
-                                    <TableHead className="text-right px-6 cursor-pointer font-bold text-orange-500 dark:text-orange-400 font-black tracking-widest text-[10px]" onClick={() => handleSort('wac')}>
+                                    <TableHead className="text-right px-6 cursor-pointer font-bold text-orange-500 dark:text-orange-400 font-semibold tracking-wider text-[10px]" onClick={() => handleSort('wac')}>
                                         <div className="flex items-center justify-end gap-2">
                                             WAC 
                                             <InfoTooltip content="Weighted Average Cost: The estimated average price at which this broker accumulated their current position." />
                                             <SortIcon column="wac" />
                                         </div>
                                     </TableHead>
-                                    <TableHead className="text-center px-4 cursor-pointer font-bold text-gray-900 dark:text-slate-100 text-[10px] tracking-widest" onClick={() => handleSort('change_5d')}>
+                                    <TableHead className="text-center px-4 cursor-pointer font-bold text-gray-900 dark:text-slate-100 text-[10px] tracking-wider" onClick={() => handleSort('change_5d')}>
                                         <div className="flex items-center justify-center gap-2">5D <SortIcon column="change_5d" /></div>
                                     </TableHead>
-                                    <TableHead className="text-center px-4 cursor-pointer font-bold text-gray-900 dark:text-slate-100 text-[10px] tracking-widest" onClick={() => handleSort('change_10d')}>
+                                    <TableHead className="text-center px-4 cursor-pointer font-bold text-gray-900 dark:text-slate-100 text-[10px] tracking-wider" onClick={() => handleSort('change_10d')}>
                                         <div className="flex items-center justify-center gap-2">10D <SortIcon column="change_10d" /></div>
                                     </TableHead>
-                                    <TableHead className="hidden lg:table-cell text-center px-4 cursor-pointer font-bold text-gray-900 dark:text-slate-100 text-[10px] tracking-widest" onClick={() => handleSort('change_20d')}>
+                                    <TableHead className="hidden lg:table-cell text-center px-4 cursor-pointer font-bold text-gray-900 dark:text-slate-100 text-[10px] tracking-wider" onClick={() => handleSort('change_20d')}>
                                         <div className="flex items-center justify-center gap-2">20D <SortIcon column="change_20d" /></div>
                                     </TableHead>
-                                    <TableHead className="hidden lg:table-cell text-center px-4 cursor-pointer font-bold text-gray-900 dark:text-slate-100 text-[10px] tracking-widest" onClick={() => handleSort('change_50d')}>
+                                    <TableHead className="hidden lg:table-cell text-center px-4 cursor-pointer font-bold text-gray-900 dark:text-slate-100 text-[10px] tracking-wider" onClick={() => handleSort('change_50d')}>
                                         <div className="flex items-center justify-center gap-2">50D <SortIcon column="change_50d" /></div>
                                     </TableHead>
                                     <TableHead className="w-[80px] px-6"></TableHead>
@@ -262,21 +262,21 @@ export default function TrendsPage() {
                                                 </TableCell>
                                                 <TableCell className="px-6">
                                                     <Link href={`/broker/${row.broker}`}>
-                                                        <span className="px-3 py-1 bg-slate-100 dark:bg-white/[0.05] rounded-lg text-[10px] font-black border border-slate-200 dark:border-white/10 hover:bg-blue-600 hover:text-white dark:hover:bg-indigo-600 transition-all cursor-pointer uppercase tracking-widest shadow-sm">
+                                                        <span className="px-3 py-1 bg-slate-100 dark:bg-white/[0.05] rounded-lg text-[10px] font-semibold border border-slate-200 dark:border-border hover:bg-blue-600 hover:text-white dark:hover:bg-indigo-600 transition-all cursor-pointer uppercase tracking-wider shadow-sm">
                                                             Broker {row.broker}
                                                         </span>
                                                     </Link>
                                                 </TableCell>
                                                 <TableCell className="text-right px-6">
                                                     <span className={cn(
-                                                        "text-sm font-black tracking-tight",
+                                                        "text-sm font-semibold tracking-tight",
                                                         (row.range_net ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
                                                     )}>
                                                         {(row.range_net ?? 0) >= 0 ? '+' : ''}{formatNepaliNumber(row.range_net ?? 0)}
                                                     </span>
                                                 </TableCell>
                                                 <TableCell className="text-right px-6">
-                                                    <span className="text-sm font-black text-slate-500 dark:text-slate-400 tracking-tight">
+                                                    <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 tracking-tight">
                                                         {formatNepaliNumber(row.cumulative_net)}
                                                     </span>
                                                 </TableCell>
@@ -318,28 +318,28 @@ export default function TrendsPage() {
 
                         {/* Pagination Controls */}
                         {!loading && sortedTrends.length > 0 && (
-                            <div className="p-4 md:p-6 border-t border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01] flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div className="p-4 md:p-6 border-t border-slate-200 dark:border-border bg-slate-50/50 dark:bg-white/[0.01] flex flex-col sm:flex-row items-center justify-between gap-4">
                                 <div className="flex items-center gap-3">
-                                    <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest px-2">Rows per page</span>
+                                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 tracking-wider px-2">Rows per page</span>
                                     <select
                                         value={pageSize}
                                         onChange={(e) => {
                                             setPageSize(Number(e.target.value));
                                             setPage(1);
                                         }}
-                                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-lg px-2 py-1 text-xs font-black text-slate-700 dark:text-slate-300 outline-none"
+                                        className="bg-white dark:bg-card border border-slate-200 dark:border-border rounded-lg px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 outline-none"
                                     >
                                         {[10, 20, 50, 100].map(s => (
                                             <option key={s} value={s}>{s}</option>
                                         ))}
                                     </select>
-                                    <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest hidden sm:inline ml-2">
+                                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 tracking-wider hidden sm:inline ml-2">
                                         Total {sortedTrends.length} records
                                     </span>
                                 </div>
 
                                 <div className="flex items-center gap-6">
-                                    <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest">
+                                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 tracking-wider">
                                         Page <span className="text-slate-900 dark:text-white px-1">{page}</span> of <span className="text-slate-900 dark:text-white px-1">{totalPages}</span>
                                     </span>
                                     <div className="flex gap-2">
@@ -348,7 +348,7 @@ export default function TrendsPage() {
                                             size="sm"
                                             onClick={() => setPage(p => Math.max(1, p - 1))}
                                             disabled={page === 1}
-                                            className="h-9 px-4 rounded-xl font-black text-[10px] tracking-widest border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-white/5 transition-all"
+                                            className="h-9 px-4 rounded-xl font-semibold text-[10px] tracking-wider border-slate-200 dark:border-border hover:bg-slate-100 dark:hover:bg-white/5 transition-all"
                                         >
                                             Previous
                                         </Button>
@@ -357,7 +357,7 @@ export default function TrendsPage() {
                                             size="sm"
                                             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                                             disabled={page >= totalPages}
-                                            className="h-9 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-white/5 transition-all"
+                                            className="h-9 px-4 rounded-xl font-semibold text-[10px] uppercase tracking-wider border-slate-200 dark:border-border hover:bg-slate-100 dark:hover:bg-white/5 transition-all"
                                         >
                                             Next
                                         </Button>

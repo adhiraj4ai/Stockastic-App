@@ -8,7 +8,7 @@ interface TechnicalDivergenceProps {
 
 export const TechnicalDivergence: React.FC<TechnicalDivergenceProps> = ({ technicalIndicators }) => {
     return (
-        <div className="glass-card-light rounded-3xl p-8">
+        <div className="glass-card-light rounded-xl p-8">
             <div className="flex items-center gap-3 mb-10">
                 <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
                     <TrendingUp size={18} />
@@ -38,16 +38,16 @@ export const TechnicalDivergence: React.FC<TechnicalDivergenceProps> = ({ techni
 
                         return (
                             <TabsContent key={category} value={category} className="mt-0 focus-visible:outline-none ring-offset-background">
-                                <div className="overflow-hidden overflow-y-auto max-h-[500px] rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm relative no-scrollbar">
+                                <div className="overflow-hidden overflow-y-auto max-h-[500px] rounded-2xl border border-border dark:border-slate-800 shadow-sm relative no-scrollbar">
                                     <table className="w-full text-sm">
-                                        <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-800 backdrop-blur-sm sticky top-0 z-10">
+                                        <thead className="bg-slate-50 dark:bg-slate-800 border-b border-border dark:border-slate-800 sticky top-0 z-10">
                                             <tr>
                                                 <th className="px-6 py-4 text-left font-semibold text-slate-400 tracking-tight text-[9px]">Indicator</th>
                                                 <th className="px-6 py-4 text-center font-semibold text-slate-400 tracking-tight text-[9px]">Value</th>
                                                 <th className="px-6 py-4 text-left font-semibold text-slate-400 tracking-tight text-[9px]">Sector range (low - high)</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/50 dark:bg-slate-900/50">
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/50 dark:bg-card">
                                             {indicators.length > 0 ? (
                                                 indicators.map((indicator: any, i: number) => (
                                                     <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">

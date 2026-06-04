@@ -12,7 +12,7 @@ import {
     LineChart, Zap, Shield, Search, Briefcase,
     ArrowRight, Globe, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
 
 interface StockData {
@@ -47,47 +47,35 @@ const features = [
         icon: Activity,
         title: 'Live Market Pulse',
         desc: 'Real-time NEPSE price monitoring with 10-second refresh intervals',
-        iconBg: 'bg-blue-500/10',
-        iconColor: 'text-blue-500',
     },
     {
         icon: Search,
         title: 'Smart Money Tracking',
         desc: 'Track institutional & bulk transactions to follow the big players',
-        iconBg: 'bg-violet-500/10',
-        iconColor: 'text-violet-500',
     },
     {
         icon: BarChart3,
         title: 'Sector Deep Dive',
         desc: 'Sector rotation analytics and performance benchmarking',
-        iconBg: 'bg-emerald-500/10',
-        iconColor: 'text-emerald-500',
     },
     {
         icon: Briefcase,
         title: 'Portfolio Manager',
         desc: 'Track your investments, analyze returns, and paper trade risk-free',
-        iconBg: 'bg-amber-500/10',
-        iconColor: 'text-amber-500',
     },
     {
         icon: LineChart,
         title: 'Technical Signals',
         desc: 'Breakout detection, momentum scoring, and ROC analysis',
-        iconBg: 'bg-rose-500/10',
-        iconColor: 'text-rose-500',
     },
     {
         icon: Shield,
         title: 'Accumulation Intel',
         desc: 'Detect smart money accumulation patterns before price moves',
-        iconBg: 'bg-cyan-500/10',
-        iconColor: 'text-cyan-500',
     },
 ];
 
-const containerVariants = {
+const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: {
         opacity: 1,
@@ -95,12 +83,12 @@ const containerVariants = {
     },
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     show: {
         opacity: 1,
         y: 0,
-        transition: { type: 'spring', stiffness: 100, damping: 15 },
+        transition: { type: 'spring' as const, stiffness: 100, damping: 15 },
     },
 };
 
@@ -129,40 +117,30 @@ export function MarketSummary() {
     return (
         <div className="min-h-screen">
             {/* ═══ HERO SECTION ═══ */}
-            <section className="relative overflow-hidden pt-16 pb-24 px-6 lg:px-12">
-                {/* Background decorations */}
-                <div className="absolute inset-0 -z-10">
-                    <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px]" />
-                    <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px]" />
-                </div>
-
+            <section className="pt-16 pb-20 px-6 lg:px-12">
                 <motion.div
                     variants={containerVariants}
                     initial="hidden"
                     animate="show"
-                    className="max-w-5xl mx-auto text-center"
+                    className="max-w-4xl mx-auto text-center"
                 >
                     <motion.div variants={itemVariants}>
-                        <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 font-bold px-4 py-1.5 text-xs tracking-wide">
-                            <Zap size={12} className="mr-1.5" />
+                        <Badge variant="outline" className="font-normal px-3 py-1 text-xs gap-1.5">
+                            <Zap size={12} />
                             Nepal&apos;s Premier Stock Analytics Platform
                         </Badge>
                     </motion.div>
 
                     <motion.h1
                         variants={itemVariants}
-                        className="text-5xl lg:text-7xl font-black tracking-tight mt-8 text-slate-900 dark:text-white"
+                        className="text-4xl lg:text-6xl font-semibold tracking-tight mt-6 text-foreground"
                     >
-                        Master the{' '}
-                        <span className="bg-gradient-to-r from-blue-600 to-emerald-500 bg-clip-text text-transparent">
-                            NEPSE
-                        </span>{' '}
-                        Market
+                        Master the NEPSE Market
                     </motion.h1>
 
                     <motion.p
                         variants={itemVariants}
-                        className="text-lg lg:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mt-6 leading-relaxed"
+                        className="text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto mt-5 leading-relaxed"
                     >
                         Real-time market intelligence, smart money tracking, and advanced
                         portfolio analytics purpose-built for Nepal Stock Exchange investors.
@@ -170,24 +148,17 @@ export function MarketSummary() {
 
                     <motion.div
                         variants={itemVariants}
-                        className="flex flex-col sm:flex-row gap-4 justify-center mt-10"
+                        className="flex flex-col sm:flex-row gap-3 justify-center mt-8"
                     >
                         <Link href="/login?mode=signup">
-                            <Button
-                                size="lg"
-                                className="rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 px-8 h-12 text-base"
-                            >
-                                Get Started Free
-                                <ArrowRight size={18} className="ml-2" />
+                            <Button size="lg" className="font-medium px-6">
+                                Get started
+                                <ArrowRight size={16} className="ml-2" />
                             </Button>
                         </Link>
                         <Link href="/login">
-                            <Button
-                                variant="outline"
-                                size="lg"
-                                className="rounded-xl font-bold border-slate-300 dark:border-slate-700 px-8 h-12 text-base"
-                            >
-                                Sign In
+                            <Button variant="outline" size="lg" className="font-medium px-6">
+                                Sign in
                             </Button>
                         </Link>
                     </motion.div>
@@ -196,29 +167,18 @@ export function MarketSummary() {
                     {ms && (
                         <motion.div
                             variants={itemVariants}
-                            className="mt-12 inline-flex items-center gap-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl px-6 py-4 shadow-xl border border-slate-200/50 dark:border-slate-700/50"
+                            className="mt-10 inline-flex items-center gap-4 surface px-5 py-3"
                         >
                             <div className="flex items-center gap-2">
-                                <Globe size={16} className="text-blue-500" />
-                                <span className="text-xs font-black text-slate-500 uppercase tracking-widest">
-                                    NEPSE
-                                </span>
+                                <Globe size={14} className="text-muted-foreground" />
+                                <span className="text-[11px] text-muted-foreground uppercase tracking-wider">NEPSE</span>
                             </div>
-                            <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">
+                            <span className="text-xl font-semibold text-foreground font-mono tabular-nums">
                                 {formatNepaliNumber(ms.total_points)}
                             </span>
-                            <div
-                                className={`flex items-center gap-1 font-bold text-sm ${
-                                    isPositive ? 'text-emerald-600' : 'text-rose-600'
-                                }`}
-                            >
-                                {isPositive ? (
-                                    <ArrowUpRight size={16} />
-                                ) : (
-                                    <ArrowDownRight size={16} />
-                                )}
-                                {Math.abs(ms.points_change).toFixed(2)} (
-                                {ms.percent_change.toFixed(2)}%)
+                            <div className={`flex items-center gap-1 font-medium text-sm tabular-nums ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                {isPositive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                                {Math.abs(ms.points_change).toFixed(2)} ({ms.percent_change.toFixed(2)}%)
                             </div>
                         </motion.div>
                     )}
@@ -226,7 +186,7 @@ export function MarketSummary() {
             </section>
 
             {/* ═══ FEATURES GRID ═══ */}
-            <section className="px-6 lg:px-12 py-16 bg-slate-50/50 dark:bg-slate-900/30">
+            <section className="px-6 lg:px-12 py-16 bg-muted/40 border-y border-border">
                 <motion.div
                     variants={containerVariants}
                     initial="hidden"
@@ -234,30 +194,28 @@ export function MarketSummary() {
                     viewport={{ once: true, amount: 0.2 }}
                     className="max-w-6xl mx-auto"
                 >
-                    <motion.div variants={itemVariants} className="text-center mb-12">
-                        <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                    <motion.div variants={itemVariants} className="text-center mb-10">
+                        <h2 className="text-2xl lg:text-3xl font-semibold text-foreground tracking-tight">
                             Everything you need to trade smarter
                         </h2>
-                        <p className="text-slate-500 dark:text-slate-400 mt-3 max-w-xl mx-auto">
+                        <p className="text-muted-foreground mt-3 max-w-xl mx-auto">
                             Professional-grade tools designed for Nepal&apos;s stock market,
                             from beginners to seasoned traders.
                         </p>
                     </motion.div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {features.map((f, i) => (
                             <motion.div key={i} variants={itemVariants}>
-                                <Card className="bg-white dark:bg-slate-900/60 border-slate-200/50 dark:border-slate-800/50 hover:border-blue-500/30 dark:hover:border-blue-500/20 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/5 group h-full">
-                                    <CardContent className="p-6">
-                                        <div
-                                            className={`h-10 w-10 rounded-xl ${f.iconBg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}
-                                        >
-                                            <f.icon size={20} className={f.iconColor} />
+                                <Card className="h-full hover:border-foreground/20 transition-colors">
+                                    <CardContent className="p-5">
+                                        <div className="h-9 w-9 rounded-md border border-border flex items-center justify-center mb-4">
+                                            <f.icon size={16} className="text-muted-foreground" />
                                         </div>
-                                        <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                                        <h3 className="font-semibold text-foreground text-sm">
                                             {f.title}
                                         </h3>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                                        <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
                                             {f.desc}
                                         </p>
                                     </CardContent>
@@ -288,7 +246,7 @@ export function MarketSummary() {
                         className="max-w-6xl mx-auto"
                     >
                         <motion.div variants={itemVariants} className="text-center mb-10">
-                            <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                            <h2 className="text-3xl font-semibold text-slate-900 dark:text-white tracking-tight">
                                 Market at a Glance
                             </h2>
                             <p className="text-slate-500 mt-2">
@@ -300,49 +258,36 @@ export function MarketSummary() {
                         {/* Index stat cards */}
                         <motion.div
                             variants={itemVariants}
-                            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+                            className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8"
                         >
-                            <Card className="bg-white dark:bg-slate-900/60 border-none shadow-lg">
-                                <CardContent className="p-5 text-center">
-                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                                        NEPSE Index
-                                    </div>
-                                    <div className="text-2xl font-black text-slate-900 dark:text-white font-mono">
+                            <Card>
+                                <CardContent className="p-4 text-center">
+                                    <div className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">NEPSE Index</div>
+                                    <div className="text-xl font-semibold text-foreground font-mono tabular-nums">
                                         {formatNepaliNumber(ms.total_points)}
                                     </div>
                                 </CardContent>
                             </Card>
-                            <Card className="bg-white dark:bg-slate-900/60 border-none shadow-lg">
-                                <CardContent className="p-5 text-center">
-                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                                        Change
-                                    </div>
-                                    <div
-                                        className={`text-2xl font-black font-mono ${
-                                            isPositive ? 'text-emerald-600' : 'text-rose-600'
-                                        }`}
-                                    >
-                                        {isPositive ? '+' : ''}
-                                        {ms.points_change.toFixed(2)}
+                            <Card>
+                                <CardContent className="p-4 text-center">
+                                    <div className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Change</div>
+                                    <div className={`text-xl font-semibold font-mono tabular-nums ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                        {isPositive ? '+' : ''}{ms.points_change.toFixed(2)}
                                     </div>
                                 </CardContent>
                             </Card>
-                            <Card className="bg-white dark:bg-slate-900/60 border-none shadow-lg">
-                                <CardContent className="p-5 text-center">
-                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                                        Turnover
-                                    </div>
-                                    <div className="text-2xl font-black text-slate-900 dark:text-white font-mono">
+                            <Card>
+                                <CardContent className="p-4 text-center">
+                                    <div className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Turnover</div>
+                                    <div className="text-xl font-semibold text-foreground font-mono tabular-nums">
                                         {formatRupees(ms.total_turnover / 1000000)}M
                                     </div>
                                 </CardContent>
                             </Card>
-                            <Card className="bg-white dark:bg-slate-900/60 border-none shadow-lg">
-                                <CardContent className="p-5 text-center">
-                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                                        Volume
-                                    </div>
-                                    <div className="text-2xl font-black text-slate-900 dark:text-white font-mono">
+                            <Card>
+                                <CardContent className="p-4 text-center">
+                                    <div className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Volume</div>
+                                    <div className="text-xl font-semibold text-foreground font-mono tabular-nums">
                                         {(ms.total_volume / 1000000).toFixed(1)}M
                                     </div>
                                 </CardContent>
@@ -350,36 +295,30 @@ export function MarketSummary() {
                         </motion.div>
 
                         {/* Top Gainers & Losers */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <motion.div variants={itemVariants}>
-                                <Card className="bg-white dark:bg-slate-900/60 border-none shadow-lg overflow-hidden">
-                                    <div className="p-5 pb-3 border-b border-slate-100 dark:border-slate-800">
-                                        <h3 className="font-bold text-sm flex items-center gap-2 text-emerald-600">
-                                            <TrendingUp size={16} /> Top Gainers
+                                <Card className="overflow-hidden">
+                                    <div className="px-5 py-3 border-b border-border">
+                                        <h3 className="font-semibold text-sm flex items-center gap-2 text-foreground">
+                                            <TrendingUp size={14} className="text-emerald-600 dark:text-emerald-400" /> Top gainers
                                         </h3>
                                     </div>
-                                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                                    <div className="divide-y divide-border">
                                         {data.top_gainers.slice(0, 5).map((stock) => (
                                             <div
                                                 key={stock.ticker}
-                                                className="flex items-center justify-between px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
-                                                onClick={() =>
-                                                    router.push(`/ticker/${stock.ticker}`)
-                                                }
+                                                className="flex items-center justify-between px-5 py-2.5 hover:bg-accent transition-colors cursor-pointer"
+                                                onClick={() => router.push(`/ticker/${stock.ticker}`)}
                                             >
-                                                <div>
-                                                    <span className="font-bold text-sm text-slate-900 dark:text-white">
-                                                        {stock.ticker}
-                                                    </span>
-                                                    <span className="text-[10px] text-slate-400 ml-2">
-                                                        {stock.sector}
-                                                    </span>
+                                                <div className="flex flex-col leading-tight">
+                                                    <span className="font-medium text-sm text-foreground">{stock.ticker}</span>
+                                                    <span className="text-[11px] text-muted-foreground">{stock.sector}</span>
                                                 </div>
-                                                <div className="text-right">
-                                                    <span className="font-mono font-bold text-sm text-slate-700 dark:text-slate-300 mr-3">
+                                                <div className="text-right flex items-center gap-3">
+                                                    <span className="font-mono text-sm text-foreground tabular-nums">
                                                         {formatNepaliNumber(stock.close)}
                                                     </span>
-                                                    <span className="text-emerald-600 font-bold text-sm">
+                                                    <span className="text-emerald-600 dark:text-emerald-400 font-medium text-sm tabular-nums">
                                                         +{stock.percent_change.toFixed(2)}%
                                                     </span>
                                                 </div>
@@ -390,34 +329,28 @@ export function MarketSummary() {
                             </motion.div>
 
                             <motion.div variants={itemVariants}>
-                                <Card className="bg-white dark:bg-slate-900/60 border-none shadow-lg overflow-hidden">
-                                    <div className="p-5 pb-3 border-b border-slate-100 dark:border-slate-800">
-                                        <h3 className="font-bold text-sm flex items-center gap-2 text-rose-600">
-                                            <TrendingDown size={16} /> Top Losers
+                                <Card className="overflow-hidden">
+                                    <div className="px-5 py-3 border-b border-border">
+                                        <h3 className="font-semibold text-sm flex items-center gap-2 text-foreground">
+                                            <TrendingDown size={14} className="text-rose-600 dark:text-rose-400" /> Top losers
                                         </h3>
                                     </div>
-                                    <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                                    <div className="divide-y divide-border">
                                         {data.top_losers.slice(0, 5).map((stock) => (
                                             <div
                                                 key={stock.ticker}
-                                                className="flex items-center justify-between px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
-                                                onClick={() =>
-                                                    router.push(`/ticker/${stock.ticker}`)
-                                                }
+                                                className="flex items-center justify-between px-5 py-2.5 hover:bg-accent transition-colors cursor-pointer"
+                                                onClick={() => router.push(`/ticker/${stock.ticker}`)}
                                             >
-                                                <div>
-                                                    <span className="font-bold text-sm text-slate-900 dark:text-white">
-                                                        {stock.ticker}
-                                                    </span>
-                                                    <span className="text-[10px] text-slate-400 ml-2">
-                                                        {stock.sector}
-                                                    </span>
+                                                <div className="flex flex-col leading-tight">
+                                                    <span className="font-medium text-sm text-foreground">{stock.ticker}</span>
+                                                    <span className="text-[11px] text-muted-foreground">{stock.sector}</span>
                                                 </div>
-                                                <div className="text-right">
-                                                    <span className="font-mono font-bold text-sm text-slate-700 dark:text-slate-300 mr-3">
+                                                <div className="text-right flex items-center gap-3">
+                                                    <span className="font-mono text-sm text-foreground tabular-nums">
                                                         {formatNepaliNumber(stock.close)}
                                                     </span>
-                                                    <span className="text-rose-600 font-bold text-sm">
+                                                    <span className="text-rose-600 dark:text-rose-400 font-medium text-sm tabular-nums">
                                                         {stock.percent_change.toFixed(2)}%
                                                     </span>
                                                 </div>
@@ -430,12 +363,9 @@ export function MarketSummary() {
 
                         <motion.div variants={itemVariants} className="text-center mt-8">
                             <Link href="/login?mode=signup">
-                                <Button
-                                    variant="outline"
-                                    className="rounded-xl font-bold px-6"
-                                >
+                                <Button variant="outline" className="font-medium">
                                     Sign up to view full dashboard
-                                    <ArrowRight size={16} className="ml-2" />
+                                    <ArrowRight size={14} className="ml-2" />
                                 </Button>
                             </Link>
                         </motion.div>
@@ -444,22 +374,19 @@ export function MarketSummary() {
             )}
 
             {/* ═══ FINAL CTA ═══ */}
-            <section className="px-6 lg:px-12 py-20 border-t border-slate-100 dark:border-slate-800/50">
+            <section className="px-6 lg:px-12 py-20 border-t border-border">
                 <div className="max-w-3xl mx-auto text-center">
-                    <h2 className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+                    <h2 className="text-2xl lg:text-3xl font-semibold text-foreground tracking-tight">
                         Ready to make smarter trades?
                     </h2>
-                    <p className="text-slate-500 dark:text-slate-400 mt-4 text-lg">
+                    <p className="text-muted-foreground mt-3 text-base">
                         Join NEPSE investors using Stockastic to gain an edge in the market.
                     </p>
-                    <div className="mt-8">
+                    <div className="mt-7">
                         <Link href="/login?mode=signup">
-                            <Button
-                                size="lg"
-                                className="rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 px-10 h-12 text-base"
-                            >
-                                Start Analyzing Now
-                                <ArrowRight size={18} className="ml-2" />
+                            <Button size="lg" className="font-medium px-6">
+                                Start analyzing now
+                                <ArrowRight size={16} className="ml-2" />
                             </Button>
                         </Link>
                     </div>

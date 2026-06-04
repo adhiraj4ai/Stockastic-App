@@ -9,7 +9,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { formatNepaliNumber } from '@/lib/formatters';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Minus, Activity } from 'lucide-react';
 
 interface StockData {
     ticker: string;
@@ -64,15 +64,15 @@ export function LiveMarketPulseTable({ stocks }: LiveMarketPulseTableProps) {
     }, [stocks]);
 
     return (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-lg">
+        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-card overflow-hidden shadow-lg">
             <Table>
                 <TableHeader>
-                    <TableRow className="bg-slate-50/50 dark:bg-slate-800/50 hover:bg-transparent border-slate-100 dark:border-slate-800">
-                        <TableHead className="w-[80px] text-[10px] font-black uppercase tracking-widest py-2.5 px-4 text-slate-500">Symbol</TableHead>
-                        <TableHead className="text-right text-[10px] font-black uppercase tracking-widest py-2.5 px-4 text-slate-500">Open</TableHead>
-                        <TableHead className="text-right text-[10px] font-black uppercase tracking-widest py-2.5 px-4 text-slate-500">LTP (Close)</TableHead>
-                        <TableHead className="text-right text-[10px] font-black uppercase tracking-widest py-2.5 px-4 text-slate-500">Change</TableHead>
-                        <TableHead className="text-right text-[10px] font-black uppercase tracking-widest py-2.5 px-4 text-slate-500">Change %</TableHead>
+                    <TableRow className="bg-slate-50/50 dark:bg-slate-800/50 hover:bg-transparent border-border dark:border-slate-800">
+                        <TableHead className="w-[80px] text-[10px] font-semibold uppercase tracking-wider py-2.5 px-4 text-slate-500">Symbol</TableHead>
+                        <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider py-2.5 px-4 text-slate-500">Open</TableHead>
+                        <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider py-2.5 px-4 text-slate-500">LTP (Close)</TableHead>
+                        <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider py-2.5 px-4 text-slate-500">Change</TableHead>
+                        <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider py-2.5 px-4 text-slate-500">Change %</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -89,7 +89,7 @@ export function LiveMarketPulseTable({ stocks }: LiveMarketPulseTableProps) {
                             >
                                 <TableCell className="py-1.5 px-4">
                                     <div className="flex flex-col">
-                                        <span className="font-black text-[13px] text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-none">
+                                        <span className="font-semibold text-[13px] text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-none">
                                             {stock.ticker}
                                         </span>
                                         <span className="text-[9px] text-slate-400 font-bold truncate max-w-[70px] mt-0.5 uppercase tracking-tighter">
@@ -130,7 +130,7 @@ export function LiveMarketPulseTable({ stocks }: LiveMarketPulseTableProps) {
                                 <TableCell className="text-right py-1.5 px-4">
                                     <Badge 
                                         variant="outline"
-                                        className={`font-black text-[10px] px-1.5 py-0 border-none tabular-nums ${
+                                        className={`font-semibold text-[10px] px-1.5 py-0 border-none tabular-nums ${
                                             isPositive ? 'bg-emerald-500/10 text-emerald-500' : 
                                             isNegative ? 'bg-rose-500/10 text-rose-500' : 
                                             'bg-slate-100 dark:bg-slate-800 text-slate-500'
@@ -145,7 +145,7 @@ export function LiveMarketPulseTable({ stocks }: LiveMarketPulseTableProps) {
                 </TableBody>
             </Table>
             {stocks.length === 0 && (
-                <div className="p-20 text-center bg-slate-50/50 dark:bg-white/[0.02]">
+                <div className="p-20 text-center bg-slate-50/50 dark:bg-muted">
                     <div className="flex flex-col items-center justify-center space-y-3">
                         <div className="h-12 w-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                             <Activity className="h-6 w-6 text-slate-400" />

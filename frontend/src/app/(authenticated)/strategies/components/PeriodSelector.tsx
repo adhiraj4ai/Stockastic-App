@@ -75,7 +75,7 @@ export function PeriodSelector({ startDate, endDate, setStartDate, setEndDate, r
                                 <Button
                                     variant="outline"
                                     className={cn(
-                                        "w-full h-9 justify-start text-left font-medium text-xs bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 rounded-xl",
+                                        "w-full h-9 justify-start text-left font-medium text-xs bg-white dark:bg-card border-gray-200 dark:border-slate-800 rounded-xl",
                                         !fromDate && "text-muted-foreground"
                                     )}
                                 >
@@ -83,7 +83,7 @@ export function PeriodSelector({ startDate, endDate, setStartDate, setEndDate, r
                                     {fromDate ? format(fromDate, "MMM dd, y") : "Select..."}
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0 rounded-2xl overflow-hidden shadow-2xl dark:border-slate-800" align="start">
+                            <PopoverContent className="w-auto p-0 rounded-2xl overflow-hidden shadow-sm dark:border-slate-800" align="start">
                                 <Calendar
                                     mode="single"
                                     selected={fromDate}
@@ -102,7 +102,7 @@ export function PeriodSelector({ startDate, endDate, setStartDate, setEndDate, r
                                 <Button
                                     variant="outline"
                                     className={cn(
-                                        "w-full h-9 justify-start text-left font-medium text-xs bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800 rounded-xl",
+                                        "w-full h-9 justify-start text-left font-medium text-xs bg-white dark:bg-card border-gray-200 dark:border-slate-800 rounded-xl",
                                         !toDate && "text-muted-foreground"
                                     )}
                                 >
@@ -110,7 +110,7 @@ export function PeriodSelector({ startDate, endDate, setStartDate, setEndDate, r
                                     {toDate ? format(toDate, "MMM dd, y") : "Select..."}
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0 rounded-2xl overflow-hidden shadow-2xl dark:border-slate-800" align="end">
+                            <PopoverContent className="w-auto p-0 rounded-2xl overflow-hidden shadow-sm dark:border-slate-800" align="end">
                                 <Calendar
                                     mode="single"
                                     selected={toDate}

@@ -6,7 +6,7 @@ import {
     Zap, TrendingUp, TrendingDown,
     Activity, ArrowUpRight, ArrowDownRight,
     Briefcase, ExternalLink, Clock, Brain, Layers,
-    Target, Shield, BarChart3, Building2, Gauge
+    Target, Shield, BarChart3, Building2, Gauge, Sparkles
 } from 'lucide-react';
 import api from '@/lib/api';
 import { num, fixed, formatPrice, calcPct } from '@/lib/numbers';
@@ -251,13 +251,13 @@ export function DailySignalStatus({
     const bbp = safeParse(getStoredInd('BOLLINGER')?.raw_value ?? getStoredInd('BB%B')?.raw_value);
 
     // Pivot points
-    const pivotP  = safeParse(getStoredInd('PIVOT (P)')?.raw_value  ?? getStoredInd('PIVOT')?.raw_value);
+    const pivotP = safeParse(getStoredInd('PIVOT (P)')?.raw_value ?? getStoredInd('PIVOT')?.raw_value);
     const pivotR1 = safeParse(getStoredInd('RESISTANCE 1')?.raw_value ?? getStoredInd('R1')?.raw_value);
     const pivotR2 = safeParse(getStoredInd('RESISTANCE 2')?.raw_value ?? getStoredInd('R2')?.raw_value);
     const pivotR3 = safeParse(getStoredInd('RESISTANCE 3')?.raw_value ?? getStoredInd('R3')?.raw_value);
-    const pivotS1 = safeParse(getStoredInd('SUPPORT 1')?.raw_value  ?? getStoredInd('S1')?.raw_value);
-    const pivotS2 = safeParse(getStoredInd('SUPPORT 2')?.raw_value  ?? getStoredInd('S2')?.raw_value);
-    const pivotS3 = safeParse(getStoredInd('SUPPORT 3')?.raw_value  ?? getStoredInd('S3')?.raw_value);
+    const pivotS1 = safeParse(getStoredInd('SUPPORT 1')?.raw_value ?? getStoredInd('S1')?.raw_value);
+    const pivotS2 = safeParse(getStoredInd('SUPPORT 2')?.raw_value ?? getStoredInd('S2')?.raw_value);
+    const pivotS3 = safeParse(getStoredInd('SUPPORT 3')?.raw_value ?? getStoredInd('S3')?.raw_value);
 
     const primaryTarget = targetPrice || (direction === 'BUY' ? entryPrice * 1.05 : entryPrice * 0.95);
     const primaryStop = stopLoss || (direction === 'BUY' ? entryPrice * 0.96 : entryPrice * 1.04);
@@ -313,7 +313,7 @@ export function DailySignalStatus({
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center h-full bg-white dark:bg-slate-900 rounded-3xl gap-3 border border-slate-200 dark:border-slate-800 shadow-2xl">
+            <div className="flex flex-col items-center justify-center h-full bg-white dark:bg-card rounded-xl gap-3 border border-slate-200 dark:border-slate-800 shadow-sm">
                 <StockLoader size="md" />
                 <p className="text-xs text-slate-400 font-medium">Loading intelligence...</p>
             </div>
@@ -322,15 +322,15 @@ export function DailySignalStatus({
 
     return (
         <div className={cn(
-            'flex flex-col h-full bg-white dark:bg-slate-900 overflow-hidden',
-            !hideHeader && 'rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl',
+            'flex flex-col h-full bg-white dark:bg-card overflow-hidden',
+            !hideHeader && 'rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm',
             className
         )}>
 
             {/* ── Header ── */}
             {!hideHeader && (
                 <div className={cn(
-                    'shrink-0 px-7 pt-5 pb-4 border-b border-slate-100 dark:border-slate-800',
+                    'shrink-0 px-7 pt-5 pb-4 border-b border-border dark:border-slate-800',
                     isBuy
                         ? 'bg-gradient-to-r from-emerald-50/60 to-white dark:from-emerald-950/20 dark:to-slate-900'
                         : 'bg-gradient-to-r from-rose-50/60 to-white dark:from-rose-950/20 dark:to-slate-900'
@@ -375,7 +375,7 @@ export function DailySignalStatus({
                         </div>
 
                         {/* Indicators & price moved near symbol */}
-                        <div className="flex items-center gap-8 border-l border-slate-100 dark:border-slate-800 pl-8">
+                        <div className="flex items-center gap-8 border-l border-border dark:border-slate-800 pl-8">
                             {/* RSI / MACD */}
                             <div className="hidden sm:flex items-center gap-5">
                                 <div className="text-center">
@@ -390,13 +390,13 @@ export function DailySignalStatus({
                                     <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-tight mb-0.5 uppercase flex items-center justify-center gap-1">
                                         MACD<InfoTooltip content="Moving Average Convergence Divergence Histogram. Measures momentum direction and strength." />
                                     </div>
-                                    <div className={cn('text-sm font-black tabular-nums', num(macdh) > 0 ? 'text-emerald-500' : 'text-rose-500')}>
+                                    <div className={cn('text-sm font-semibold tabular-nums', num(macdh) > 0 ? 'text-emerald-500' : 'text-rose-500')}>
                                         {num(macdh) > 0 ? '+' : ''}{fixed(macdh, 2)}
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="border-l border-slate-100 dark:border-slate-800 pl-8">
+                            <div className="border-l border-border dark:border-slate-800 pl-8">
                                 <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-tight mb-0.5 uppercase flex items-center gap-1">
                                     Market price<InfoTooltip content="Current Market Price (CMP) and percentage change from the signal entry price." />
                                 </div>
@@ -418,7 +418,7 @@ export function DailySignalStatus({
             )}
 
             {/* ── Price Ladder ── */}
-            <div className="shrink-0 bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800">
+            <div className="shrink-0 bg-slate-50/50 dark:bg-card border-b border-border dark:border-slate-800">
                 <PriceLadder
                     sl={primaryStop} entry={entryPrice} cmp={liveCmp}
                     tp1={finalTp1} tp2={finalTp2} tp3={finalTp3}
@@ -427,7 +427,7 @@ export function DailySignalStatus({
             </div>
 
             {/* ── Tabs ── */}
-            <div className="shrink-0 flex items-center gap-1 px-6 pt-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-x-auto no-scrollbar">
+            <div className="shrink-0 flex items-center gap-1 px-6 pt-2 border-b border-border dark:border-slate-800 bg-white dark:bg-card overflow-x-auto no-scrollbar">
                 {[
                     { key: 'overview', label: 'Signal Engine', icon: <Activity className="w-3.5 h-3.5" /> },
                     { key: 'technicals', label: 'Technicals', icon: <Gauge className="w-3.5 h-3.5" /> },
@@ -454,8 +454,8 @@ export function DailySignalStatus({
                 <div className="p-6 flex flex-col gap-4 overflow-y-auto no-scrollbar">
 
                     {/* Unified Market Context: Day & 52W Ranges */}
-                    <div className="p-4 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800/50">
-                        <div className="flex items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Price Context</div>
+                    <div className="p-4 bg-slate-50/50 dark:bg-card rounded-2xl border border-border dark:border-slate-800/50">
+                        <div className="flex items-center text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Price Context</div>
                         <div className="space-y-4">
                             {/* Day Range */}
                             {dayHigh && dayLow && (
@@ -505,14 +505,14 @@ export function DailySignalStatus({
 
                     {/* Integrated Stats: Volume & Trends */}
                     <div className="grid grid-cols-2 gap-2">
-                        <div className="p-3 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800/50 flex flex-col justify-between">
+                        <div className="p-3 bg-slate-50/50 dark:bg-card rounded-2xl border border-border dark:border-slate-800/50 flex flex-col justify-between">
                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Volume</div>
-                            <div className="text-sm font-black tabular-nums text-slate-800 dark:text-slate-100">
+                            <div className="text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-100">
                                 {volume >= 1000 ? `${fixed(volume / 1000, 1)}K` : volume.toLocaleString()}
                             </div>
                             <div className="text-[9px] text-slate-400 font-bold truncate">Rs.{turnover >= 10000000 ? `${fixed(turnover / 10000000, 1)}Cr` : turnover >= 100000 ? `${fixed(turnover / 100000, 1)}L` : turnover.toLocaleString()}</div>
                         </div>
-                        <div className="p-3 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800/50 flex flex-col justify-between">
+                        <div className="p-3 bg-slate-50/50 dark:bg-card rounded-2xl border border-border dark:border-slate-800/50 flex flex-col justify-between">
                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Trends</div>
                             <div className="flex items-center gap-1.5 overflow-hidden">
                                 {trends.slice(0, 2).map((t, idx) => (
@@ -527,19 +527,19 @@ export function DailySignalStatus({
 
                     {/* Momentum: RSI + MACD Grid */}
                     <div className="grid grid-cols-2 gap-2">
-                        <div className="p-3 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800/50">
+                        <div className="p-3 bg-slate-50/50 dark:bg-card rounded-2xl border border-border dark:border-slate-800/50">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">RSI</span>
-                                <span className={cn('text-xs font-black tabular-nums', num(rsi) > 70 ? 'text-rose-500' : num(rsi) < 30 ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-300')}>{fixed(rsi, 0)}</span>
+                                <span className={cn('text-xs font-semibold tabular-nums', num(rsi) > 70 ? 'text-rose-500' : num(rsi) < 30 ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-300')}>{fixed(rsi, 0)}</span>
                             </div>
                             <div className="h-1 bg-slate-100 dark:bg-slate-800 rounded-full relative">
                                 <div className={cn('absolute h-full rounded-full', num(rsi) > 70 ? 'bg-rose-400' : num(rsi) < 30 ? 'bg-emerald-400' : 'bg-indigo-400')} style={{ width: `${num(rsi)}%` }} />
                             </div>
                         </div>
-                        <div className="p-3 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800/50">
+                        <div className="p-3 bg-slate-50/50 dark:bg-card rounded-2xl border border-border dark:border-slate-800/50">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">MACD</span>
-                                <span className={cn('text-xs font-black tabular-nums', num(macdh) > 0 ? 'text-emerald-500' : 'text-rose-500')}>{fixed(macdh, 2)}</span>
+                                <span className={cn('text-xs font-semibold tabular-nums', num(macdh) > 0 ? 'text-emerald-500' : 'text-rose-500')}>{fixed(macdh, 2)}</span>
                             </div>
                             <div className="flex gap-0.5 h-1 items-end">
                                 {[...Array(8)].map((_, i) => (
@@ -554,11 +554,11 @@ export function DailySignalStatus({
                         <div className="p-4 bg-indigo-50/30 dark:bg-indigo-950/10 rounded-2xl border border-indigo-100 dark:border-indigo-900/40">
                             <div className="flex items-center gap-1.5 mb-2.5">
                                 <Briefcase size={10} className="text-indigo-500" />
-                                <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Broker Context</span>
+                                <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Broker Context</span>
                             </div>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2.5">
-                                    <div className="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-[10px] font-black text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/50">
+                                    <div className="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/50">
                                         #{brokers[0].broker}
                                     </div>
                                     <div>
@@ -566,7 +566,7 @@ export function DailySignalStatus({
                                         <div className="text-[10px] text-slate-400 font-medium">Cost Rs.{num(brokers[0].wac).toLocaleString()}</div>
                                     </div>
                                 </div>
-                                <div className={cn('text-[11px] font-black px-2 py-0.5 rounded-lg', num(cmp) > num(brokers[0].wac) ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'text-rose-500 bg-rose-50 dark:bg-rose-900/20')}>
+                                <div className={cn('text-[11px] font-semibold px-2 py-0.5 rounded-lg', num(cmp) > num(brokers[0].wac) ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'text-rose-500 bg-rose-50 dark:bg-rose-900/20')}>
                                     {num(cmp) > num(brokers[0].wac) ? '+' : ''}{fixed(((num(cmp) - num(brokers[0].wac)) / num(brokers[0].wac)) * 100, 1)}%
                                 </div>
                             </div>
@@ -579,7 +579,7 @@ export function DailySignalStatus({
                             <div className="w-5 h-5 rounded-lg bg-amber-400 flex items-center justify-center text-slate-950">
                                 <Zap size={10} strokeWidth={3} />
                             </div>
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-white/60">Logic Engine</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-white/60">Logic Engine</span>
                         </div>
                         <p className="text-[11px] font-medium leading-relaxed text-slate-300">
                             Signal gravity is {num(strength) > 60 ? 'strong' : 'neutral'}. 
@@ -594,7 +594,7 @@ export function DailySignalStatus({
 
                     {/* Signal Confluence */}
                     {generatedSignals.length > 0 && (
-                        <div className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50">
+                        <div className="p-4 rounded-2xl border border-border dark:border-slate-800 bg-white dark:bg-card">
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
                                     <Target size={14} className="text-indigo-500" />
@@ -617,7 +617,7 @@ export function DailySignalStatus({
                                             'flex items-center justify-between px-3 py-2 rounded-xl transition-all',
                                             agrees
                                                 ? 'bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/30'
-                                                : 'bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800/50'
+                                                : 'bg-slate-50/50 dark:bg-slate-800/30 border border-border dark:border-slate-800/50'
                                         )}>
                                             <div className="flex items-center gap-2 min-w-0">
                                                 <div className={cn(
@@ -655,12 +655,12 @@ export function DailySignalStatus({
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-2">
                                 <Brain size={14} className="text-indigo-500" />
-                                <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Logic Engine</span>
+                                <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Logic Engine</span>
                             </div>
                             <div className="flex -space-x-1.5 overflow-hidden">
                                 {generatedSignals.slice(0, 4).map((sig, i) => (
                                     <div key={i} className={cn(
-                                        'w-5 h-5 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center text-[8px] font-black',
+                                        'w-5 h-5 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center text-[8px] font-semibold',
                                         sig.signal === direction ? 'bg-emerald-400 text-white' : 'bg-slate-200 text-slate-500'
                                     )}>
                                         {sig.source[0]}
@@ -673,13 +673,13 @@ export function DailySignalStatus({
                             {/* Key Intelligence Tags */}
                             <div className="flex flex-wrap gap-1.5">
                                 {num(strength) > 75 && (
-                                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-indigo-500 text-white">HI-CONVICTION</span>
+                                    <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-indigo-500 text-white">HI-CONVICTION</span>
                                 )}
                                 {num(accumData?.accumulation_ratio) > 60 && (
-                                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-500 text-white">INSTITUTIONAL-BUY</span>
+                                    <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-emerald-500 text-white">INSTITUTIONAL-BUY</span>
                                 )}
                                 {num(rsi) < 35 && direction === 'BUY' && (
-                                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-50 text-white">OVERSOLD</span>
+                                    <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-amber-50 text-white">OVERSOLD</span>
                                 )}
                             </div>
 
@@ -694,10 +694,10 @@ export function DailySignalStatus({
 
                     {/* Accumulation Pressure: Compact */}
                     {accumData && (
-                        <div className="p-4 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800/50">
+                        <div className="p-4 bg-slate-50/50 dark:bg-card rounded-2xl border border-border dark:border-slate-800/50">
                             <div className="flex items-center justify-between mb-2">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Institutional Flow</span>
-                                <span className={cn('text-[10px] font-black tabular-nums', num(accumData.net_qty) > 0 ? 'text-emerald-500' : 'text-rose-500')}>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Institutional Flow</span>
+                                <span className={cn('text-[10px] font-semibold tabular-nums', num(accumData.net_qty) > 0 ? 'text-emerald-500' : 'text-rose-500')}>
                                     {num(accumData.net_qty) > 0 ? 'ACCUMULATING' : 'DISTRIBUTING'}
                                 </span>
                             </div>
@@ -715,10 +715,10 @@ export function DailySignalStatus({
                     )}
 
                     {/* Targets: Horizontal UX */}
-                    <div className="p-4 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800/50">
+                    <div className="p-4 bg-slate-50/50 dark:bg-card rounded-2xl border border-border dark:border-slate-800/50">
                         <div className="flex items-center gap-1.5 mb-3">
                             <Target size={12} className="text-slate-400" />
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Trade Targets</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Trade Targets</span>
                         </div>
                         <div className="grid grid-cols-3 gap-2">
                             {[
@@ -732,9 +732,9 @@ export function DailySignalStatus({
                                     <div key={i} className="flex flex-col gap-1">
                                         <div className="flex items-center gap-1.5">
                                             <div className={cn('w-1.5 h-1.5 rounded-full', tp.cls)} />
-                                            <span className="text-[10px] font-black text-slate-400 opacity-60">{tp.label}</span>
+                                            <span className="text-[10px] font-semibold text-slate-400 opacity-60">{tp.label}</span>
                                         </div>
-                                        <div className="text-[11px] font-black text-slate-800 dark:text-slate-100 tabular-nums">Rs.{tp.price.toLocaleString()}</div>
+                                        <div className="text-[11px] font-semibold text-slate-800 dark:text-slate-100 tabular-nums">Rs.{tp.price.toLocaleString()}</div>
                                         <div className={cn('text-[9px] font-bold', tp.tcls)}>+{fixed(ret, 1)}%</div>
                                     </div>
                                 );
@@ -748,8 +748,8 @@ export function DailySignalStatus({
 
                     {/* Fibonacci: Compact */}
                     {fibData ? (
-                        <div className="p-4 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800/50">
-                            <div className="flex items-center justify-between mb-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        <div className="p-4 bg-slate-50/50 dark:bg-card rounded-2xl border border-border dark:border-slate-800/50">
+                            <div className="flex items-center justify-between mb-3 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                                 <span>Fibonacci Levels</span>
                                 <span className={cn('px-1.5 py-0.5 rounded', fibData.trend === 'UPTREND' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600')}>
                                     {fibData.trend}
@@ -759,18 +759,18 @@ export function DailySignalStatus({
                                 {num(fibData.nearest_support) > 0 && (
                                     <div className="p-2 bg-rose-50/30 dark:bg-rose-950/10 rounded-xl">
                                         <div className="text-[9px] text-rose-400 font-bold uppercase">Support</div>
-                                        <div className="text-[11px] font-black tabular-nums text-rose-600 dark:text-rose-400">Rs.{num(fibData.nearest_support).toLocaleString()}</div>
+                                        <div className="text-[11px] font-semibold tabular-nums text-rose-600 dark:text-rose-400">Rs.{num(fibData.nearest_support).toLocaleString()}</div>
                                     </div>
                                 )}
                                 {num(fibData.nearest_resistance) > 0 && (
                                     <div className="p-2 bg-emerald-50/30 dark:bg-emerald-950/10 rounded-xl">
                                         <div className="text-[9px] text-emerald-500 font-bold uppercase">Resistance</div>
-                                        <div className="text-[11px] font-black tabular-nums text-emerald-600 dark:text-emerald-400">Rs.{num(fibData.nearest_resistance).toLocaleString()}</div>
+                                        <div className="text-[11px] font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">Rs.{num(fibData.nearest_resistance).toLocaleString()}</div>
                                     </div>
                                 )}
                             </div>
                         {/* Fib level rows */}
-                        <div className="bg-transparent overflow-hidden border border-slate-100 dark:border-slate-800 rounded-2xl">
+                        <div className="bg-transparent overflow-hidden border border-border dark:border-slate-800 rounded-2xl">
                             {(fibData.levels as any[] || []).map((lv: any, i: number) => {
                                 const pctVal = lv.ratio != null ? num(lv.ratio) * 100 : null;
                                 const isAbove = lv.is_above;
@@ -778,7 +778,7 @@ export function DailySignalStatus({
                                 return (
                                     <div key={i} className={cn(
                                         'flex items-center justify-between px-3 py-1.5 text-xs',
-                                        i > 0 && 'border-t border-slate-100 dark:border-slate-800',
+                                        i > 0 && 'border-t border-border dark:border-slate-800',
                                         !isAbove && 'bg-rose-50/30 dark:bg-rose-950/10'
                                     )}>
                                         <div className="flex items-center gap-2">
@@ -801,24 +801,24 @@ export function DailySignalStatus({
                         </div>
                     </div>
                 ) : (
-                    <div className="p-4 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800/50 text-center">
+                    <div className="p-4 bg-slate-50/50 dark:bg-card rounded-2xl border border-border dark:border-slate-800/50 text-center">
                         <span className="text-xs text-slate-400 font-bold uppercase opacity-50">Fibonacci data unavailable</span>
                     </div>
                 )}
 
                     {/* Pivot Points: Compact Row */}
                     {pivotP > 0 && (
-                        <div className="p-4 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800/50">
-                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Pivot Cluster</div>
+                        <div className="p-4 bg-slate-50/50 dark:bg-card rounded-2xl border border-border dark:border-slate-800/50">
+                            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Pivot Cluster</div>
                             <div className="flex gap-1">
                                 {[
                                     { label: 'S1', val: num(pivotS1), color: 'bg-rose-400' },
                                     { label: 'P', val: num(pivotP), color: 'bg-amber-400' },
                                     { label: 'R1', val: num(pivotR1), color: 'bg-emerald-400' },
                                 ].map(p => (
-                                    <div key={p.label} className="flex-1 text-center p-1.5 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/40">
-                                        <div className={cn('text-[8px] font-black mb-0.5 uppercase opacity-60')}>{p.label}</div>
-                                        <div className="text-[10px] font-black text-slate-700 dark:text-slate-200 tabular-nums">{num(p.val).toLocaleString()}</div>
+                                    <div key={p.label} className="flex-1 text-center p-1.5 rounded-xl bg-white dark:bg-card border border-border dark:border-slate-800/40">
+                                        <div className={cn('text-[8px] font-semibold mb-0.5 uppercase opacity-60')}>{p.label}</div>
+                                        <div className="text-[10px] font-semibold text-slate-700 dark:text-slate-200 tabular-nums">{num(p.val).toLocaleString()}</div>
                                     </div>
                                 ))}
                             </div>
@@ -827,13 +827,13 @@ export function DailySignalStatus({
 
                     {/* Volatility Grid */}
                     <div className="grid grid-cols-2 gap-2">
-                        <div className="p-3 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800/50">
-                            <div className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1">ATR (14)</div>
-                            <div className="text-sm font-black text-slate-800 dark:text-slate-200 tabular-nums">{fixed(atr, 1)}</div>
+                        <div className="p-3 bg-slate-50/50 dark:bg-card rounded-2xl border border-border dark:border-slate-800/50">
+                            <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-tighter mb-1">ATR (14)</div>
+                            <div className="text-sm font-semibold text-slate-800 dark:text-slate-200 tabular-nums">{fixed(atr, 1)}</div>
                         </div>
-                        <div className="p-3 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800/50">
-                            <div className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1">Trend Strength</div>
-                            <div className={cn('text-xs font-black uppercase', num(adx) > 30 ? 'text-emerald-500' : 'text-slate-400')}>{num(adx) > 30 ? 'Strong' : 'Ranging'}</div>
+                        <div className="p-3 bg-slate-50/50 dark:bg-card rounded-2xl border border-border dark:border-slate-800/50">
+                            <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-tighter mb-1">Trend Strength</div>
+                            <div className={cn('text-xs font-semibold uppercase', num(adx) > 30 ? 'text-emerald-500' : 'text-slate-400')}>{num(adx) > 30 ? 'Strong' : 'Ranging'}</div>
                         </div>
                     </div>
 
@@ -841,11 +841,11 @@ export function DailySignalStatus({
                     <div className="flex-1 overflow-hidden flex flex-col pt-2">
                         <div className="flex items-center gap-1.5 mb-3 px-1">
                             <Clock size={11} className="text-slate-400" />
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Signal History</span>
+                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Signal History</span>
                         </div>
                         <div className="flex-1 overflow-y-auto no-scrollbar space-y-2 pr-1">
                             {history.filter(h => h.signal === 'BUY' || h.signal === 'SELL').slice(0, 5).map((h, i) => (
-                                <div key={i} className="p-3 bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-100 dark:border-slate-800/50 flex items-center justify-between transition-colors hover:bg-slate-50/50">
+                                <div key={i} className="p-3 bg-white dark:bg-card rounded-2xl border border-border dark:border-slate-800/50 flex items-center justify-between transition-colors hover:bg-slate-50/50">
                                     <div className="flex items-center gap-2.5">
                                         <div className={cn('w-6 h-6 rounded-lg flex items-center justify-center shrink-0', h.signal === 'BUY' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-500')}>
                                             {h.signal === 'BUY' ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
@@ -855,7 +855,7 @@ export function DailySignalStatus({
                                             <div className="text-[9px] text-slate-400 font-medium tabular-nums">{h.date}</div>
                                         </div>
                                     </div>
-                                    <div className="text-[10px] font-black tabular-nums text-slate-800 dark:text-slate-100">Rs.{num(h.last_close).toLocaleString()}</div>
+                                    <div className="text-[10px] font-semibold tabular-nums text-slate-800 dark:text-slate-100">Rs.{num(h.last_close).toLocaleString()}</div>
                                 </div>
                             ))}
                             {history.filter(h => h.signal === 'BUY' || h.signal === 'SELL').length === 0 && (
@@ -923,10 +923,10 @@ export function DailySignalStatus({
                     const isOS = invert ? value > overbought : value < oversold;
                     const isOB = invert ? value < oversold : value > overbought;
                     return (
-                        <div className="p-3 bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-100 dark:border-slate-800/60">
+                        <div className="p-3 bg-white dark:bg-card rounded-2xl border border-border dark:border-slate-800/60">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="flex items-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">{label}{tooltip && <InfoTooltip content={tooltip} />}</span>
-                                <span className={cn('text-xs font-black tabular-nums',
+                                <span className={cn('text-xs font-semibold tabular-nums',
                                     isOS ? 'text-emerald-500' : isOB ? 'text-rose-500' : 'text-slate-700 dark:text-slate-200'
                                 )}>{typeof value === 'number' ? fixed(value, 1) : value}</span>
                             </div>
@@ -953,10 +953,10 @@ export function DailySignalStatus({
                             {/* Row 1: Rating Hero + Momentum Cluster */}
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                                 {/* Hero: Technical Rating (4 cols) */}
-                                <div className="lg:col-span-4 bg-white dark:bg-slate-900/60 rounded-3xl border border-slate-100 dark:border-slate-800/60 p-5 flex flex-col justify-between">
+                                <div className="lg:col-span-4 bg-white dark:bg-card rounded-xl border border-border dark:border-slate-800/60 p-5 flex flex-col justify-between">
                                     <div className="mb-4">
-                                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Technical Bias</div>
-                                        <div className={cn('text-3xl font-black tracking-tighter', ratingColor)}>{overallRating}</div>
+                                        <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Technical Bias</div>
+                                        <div className={cn('text-3xl font-semibold tracking-tighter', ratingColor)}>{overallRating}</div>
                                         <div className="text-[11px] font-bold text-slate-400 mt-1 opacity-70">Aggregate of {totalRated} Indicators</div>
                                     </div>
                                     <div className="space-y-3">
@@ -968,30 +968,30 @@ export function DailySignalStatus({
                                         <div className="flex justify-between items-end">
                                             <div className="flex items-center gap-3">
                                                 <div className="text-center">
-                                                    <div className="text-[14px] font-black text-emerald-500">{bullCount}</div>
-                                                    <div className="text-[8px] font-black text-slate-400 uppercase">Buy</div>
+                                                    <div className="text-[14px] font-semibold text-emerald-500">{bullCount}</div>
+                                                    <div className="text-[8px] font-semibold text-slate-400 uppercase">Buy</div>
                                                 </div>
                                                 <div className="text-center">
-                                                    <div className="text-[14px] font-black text-slate-400">{totalRated - bullCount - bearCount}</div>
-                                                    <div className="text-[8px] font-black text-slate-400 uppercase">Neu</div>
+                                                    <div className="text-[14px] font-semibold text-slate-400">{totalRated - bullCount - bearCount}</div>
+                                                    <div className="text-[8px] font-semibold text-slate-400 uppercase">Neu</div>
                                                 </div>
                                                 <div className="text-center">
-                                                    <div className="text-[14px] font-black text-rose-500">{bearCount}</div>
-                                                    <div className="text-[8px] font-black text-slate-400 uppercase">Sell</div>
+                                                    <div className="text-[14px] font-semibold text-rose-500">{bearCount}</div>
+                                                    <div className="text-[8px] font-semibold text-slate-400 uppercase">Sell</div>
                                                 </div>
                                             </div>
-                                            <div className={cn('px-2 py-1 rounded-xl text-[10px] font-black border uppercase',
+                                            <div className={cn('px-2 py-1 rounded-xl text-[10px] font-semibold border uppercase',
                                                 overallRating.includes('Buy') ? 'bg-emerald-50/50 text-emerald-600 border-emerald-100' : 
                                                 overallRating.includes('Sell') ? 'bg-rose-50/50 text-rose-500 border-rose-100' : 
-                                                'bg-slate-50 text-slate-400 border-slate-100'
+                                                'bg-slate-50 text-slate-400 border-border'
                                             )}>{overallRating.includes('Strong') ? 'High Conviction' : 'Avg Conviction'}</div>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Momentum: Oscillators Grid (8 cols) */}
-                                <div className="lg:col-span-8 bg-white dark:bg-slate-900/60 rounded-3xl border border-slate-100 dark:border-slate-800/60 p-5">
-                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Momentum Oscillators</div>
+                                <div className="lg:col-span-8 bg-white dark:bg-card rounded-xl border border-border dark:border-slate-800/60 p-5">
+                                    <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-4">Momentum Oscillators</div>
                                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                         <OscGauge label="RSI" value={num(rsiVal)} min={0} max={100} oversold={30} overbought={70} />
                                         <OscGauge label="Stoch %K" value={stK.val} min={0} max={100} oversold={20} overbought={80} />
@@ -999,13 +999,13 @@ export function DailySignalStatus({
                                         <OscGauge label="MFI" value={mfi.val} min={0} max={100} oversold={20} overbought={80} />
                                         <OscGauge label="Williams %R" value={willR.val} min={-100} max={0} oversold={-80} overbought={-20} invert />
                                         {ultimateOsc.val > 0 && <OscGauge label="Ultimate" value={ultimateOsc.val} min={0} max={100} oversold={30} overbought={70} />}
-                                        <div className="p-3 bg-slate-50/50 dark:bg-slate-800/40 rounded-2xl flex flex-col justify-center border border-slate-100 dark:border-slate-800/50">
-                                            <div className="text-[9px] font-black text-slate-400 uppercase mb-1">ROC (14)</div>
-                                            <div className={cn('text-sm font-black tabular-nums', num(rocVal) > 0 ? 'text-emerald-500' : 'text-rose-500')}>{num(rocVal) > 0 ? '+' : ''}{fixed(rocVal, 1)}%</div>
+                                        <div className="p-3 bg-slate-50/50 dark:bg-slate-800/40 rounded-2xl flex flex-col justify-center border border-border dark:border-slate-800/50">
+                                            <div className="text-[9px] font-semibold text-slate-400 uppercase mb-1">ROC (14)</div>
+                                            <div className={cn('text-sm font-semibold tabular-nums', num(rocVal) > 0 ? 'text-emerald-500' : 'text-rose-500')}>{num(rocVal) > 0 ? '+' : ''}{fixed(rocVal, 1)}%</div>
                                         </div>
-                                        <div className="p-3 bg-slate-50/50 dark:bg-slate-800/40 rounded-2xl flex flex-col justify-center border border-slate-100 dark:border-slate-800/50">
-                                            <div className="text-[9px] font-black text-slate-400 uppercase mb-1">Stoch %D</div>
-                                            <div className="text-sm font-black tabular-nums text-slate-700 dark:text-slate-200">{fixed(stD.val, 1)}</div>
+                                        <div className="p-3 bg-slate-50/50 dark:bg-slate-800/40 rounded-2xl flex flex-col justify-center border border-border dark:border-slate-800/50">
+                                            <div className="text-[9px] font-semibold text-slate-400 uppercase mb-1">Stoch %D</div>
+                                            <div className="text-sm font-semibold tabular-nums text-slate-700 dark:text-slate-200">{fixed(stD.val, 1)}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -1014,28 +1014,28 @@ export function DailySignalStatus({
                             {/* Row 2: Trend Engine + Volume Flow + Volatility */}
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                                 {/* Trend Intelligence */}
-                                <div className="bg-white dark:bg-slate-900/60 rounded-3xl border border-slate-100 dark:border-slate-800/60 p-5">
+                                <div className="bg-white dark:bg-card rounded-xl border border-border dark:border-slate-800/60 p-5">
                                     <div className="flex items-center justify-between mb-4">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Trend Intelligence</span>
-                                        <div className={cn('text-[9px] font-black px-1.5 py-0.5 rounded-lg border uppercase',
+                                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Trend Intelligence</span>
+                                        <div className={cn('text-[9px] font-semibold px-1.5 py-0.5 rounded-lg border uppercase',
                                             macdCrossover === 'bullish' ? 'bg-emerald-50/50 text-emerald-600 border-emerald-100' : 'bg-rose-50/50 text-rose-500 border-rose-100'
                                         )}>MACD: {macdCrossover}</div>
                                     </div>
                                     <div className="space-y-3">
                                         {/* MACD High Density */}
-                                        <div className="p-3 bg-slate-50/50 dark:bg-slate-800/40 rounded-2xl border border-slate-100 dark:border-slate-800/50">
+                                        <div className="p-3 bg-slate-50/50 dark:bg-slate-800/40 rounded-2xl border border-border dark:border-slate-800/50">
                                             <div className="grid grid-cols-3 divide-x divide-slate-200 dark:divide-slate-700">
                                                 <div className="px-2">
-                                                    <div className="text-[8px] font-black text-slate-400 uppercase mb-1">MACD</div>
-                                                    <div className={cn('text-[11px] font-black tabular-nums', macdVal > 0 ? 'text-emerald-500' : 'text-rose-500')}>{fixed(macdVal, 2)}</div>
+                                                    <div className="text-[8px] font-semibold text-slate-400 uppercase mb-1">MACD</div>
+                                                    <div className={cn('text-[11px] font-semibold tabular-nums', macdVal > 0 ? 'text-emerald-500' : 'text-rose-500')}>{fixed(macdVal, 2)}</div>
                                                 </div>
                                                 <div className="px-2">
-                                                    <div className="text-[8px] font-black text-slate-400 uppercase mb-1">Signal</div>
-                                                    <div className="text-[11px] font-black tabular-nums text-slate-700 dark:text-slate-200">{fixed(macdSig, 2)}</div>
+                                                    <div className="text-[8px] font-semibold text-slate-400 uppercase mb-1">Signal</div>
+                                                    <div className="text-[11px] font-semibold tabular-nums text-slate-700 dark:text-slate-200">{fixed(macdSig, 2)}</div>
                                                 </div>
                                                 <div className="px-2">
-                                                    <div className="text-[8px] font-black text-slate-400 uppercase mb-1">Hist</div>
-                                                    <div className={cn('text-[11px] font-black tabular-nums', num(macdh) > 0 ? 'text-emerald-500' : 'text-rose-500')}>{fixed(macdh, 2)}</div>
+                                                    <div className="text-[8px] font-semibold text-slate-400 uppercase mb-1">Hist</div>
+                                                    <div className={cn('text-[11px] font-semibold tabular-nums', num(macdh) > 0 ? 'text-emerald-500' : 'text-rose-500')}>{fixed(macdh, 2)}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1043,22 +1043,22 @@ export function DailySignalStatus({
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between px-1">
                                                 <span className="text-[10px] font-bold text-slate-500">ADX Strength</span>
-                                                <span className={cn('text-[10px] font-black tabular-nums', num(adx) > 25 ? 'text-emerald-500' : 'text-slate-400')}>{fixed(adx, 1)} ({num(adx) > 25 ? 'Strong' : 'Weak'})</span>
+                                                <span className={cn('text-[10px] font-semibold tabular-nums', num(adx) > 25 ? 'text-emerald-500' : 'text-slate-400')}>{fixed(adx, 1)} ({num(adx) > 25 ? 'Strong' : 'Weak'})</span>
                                             </div>
                                             <div className="flex items-center justify-between px-1">
                                                 <span className="text-[10px] font-bold text-slate-500">SMA Structure</span>
-                                                <span className={cn('text-[10px] font-black uppercase', num(sma50) > num(sma200) ? 'text-emerald-500' : 'text-rose-500')}>{num(sma50) > num(sma200) ? 'Golden Cross' : 'Death Cross'}</span>
+                                                <span className={cn('text-[10px] font-semibold uppercase', num(sma50) > num(sma200) ? 'text-emerald-500' : 'text-rose-500')}>{num(sma50) > num(sma200) ? 'Golden Cross' : 'Death Cross'}</span>
                                             </div>
                                             {psar.val > 0 && (
                                                 <div className="flex items-center justify-between px-1">
                                                     <span className="text-[10px] font-bold text-slate-500">Parabolic SAR</span>
-                                                    <span className={cn('text-[10px] font-black uppercase', num(cmp) > psar.val ? 'text-emerald-500' : 'text-rose-500')}>{num(cmp) > psar.val ? 'Bullish' : 'Bearish'}</span>
+                                                    <span className={cn('text-[10px] font-semibold uppercase', num(cmp) > psar.val ? 'text-emerald-500' : 'text-rose-500')}>{num(cmp) > psar.val ? 'Bullish' : 'Bearish'}</span>
                                                 </div>
                                             )}
                                             {aroonUp.val > 0 && (
                                                 <div className="flex items-center justify-between px-1">
                                                     <span className="text-[10px] font-bold text-slate-500">Aroon Bias</span>
-                                                    <span className={cn('text-[10px] font-black uppercase', aroonUp.val > aroonDown.val ? 'text-emerald-500' : 'text-rose-500')}>{aroonUp.val > aroonDown.val ? 'Bullish' : 'Bearish'}</span>
+                                                    <span className={cn('text-[10px] font-semibold uppercase', aroonUp.val > aroonDown.val ? 'text-emerald-500' : 'text-rose-500')}>{aroonUp.val > aroonDown.val ? 'Bullish' : 'Bearish'}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -1066,26 +1066,26 @@ export function DailySignalStatus({
                                 </div>
 
                                 {/* Volume Pressure */}
-                                <div className="bg-white dark:bg-slate-900/60 rounded-3xl border border-slate-100 dark:border-slate-800/60 p-5">
-                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Volume Pressure</div>
+                                <div className="bg-white dark:bg-card rounded-xl border border-border dark:border-slate-800/60 p-5">
+                                    <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-4">Volume Pressure</div>
                                     <div className="space-y-4">
-                                        <div className="p-4 bg-slate-50/50 dark:bg-slate-800/40 rounded-2xl border border-slate-100 dark:border-slate-800/50">
-                                            <div className="text-[9px] font-black text-slate-400 uppercase mb-2">Chaikin Money Flow (CMF)</div>
-                                            <div className={cn('text-2xl font-black tabular-nums', cmf.val > 0 ? 'text-emerald-500' : 'text-rose-500')}>{cmf.val > 0 ? '+' : ''}{fixed(cmf.val, 3)}</div>
+                                        <div className="p-4 bg-slate-50/50 dark:bg-slate-800/40 rounded-2xl border border-border dark:border-slate-800/50">
+                                            <div className="text-[9px] font-semibold text-slate-400 uppercase mb-2">Chaikin Money Flow (CMF)</div>
+                                            <div className={cn('text-2xl font-semibold tabular-nums', cmf.val > 0 ? 'text-emerald-500' : 'text-rose-500')}>{cmf.val > 0 ? '+' : ''}{fixed(cmf.val, 3)}</div>
                                             <div className="h-1.5 mt-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                                                 <div className={cn('h-full transition-all', cmf.val > 0 ? 'bg-emerald-500' : 'bg-rose-500')} style={{ width: `${Math.min(Math.abs(cmf.val) * 200, 100)}%` }} />
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-3">
-                                            <div className="p-3 bg-slate-50/50 dark:bg-slate-800/40 rounded-2xl border border-slate-100 dark:border-slate-800/50">
-                                                <div className="text-[9px] font-black text-slate-400 uppercase mb-1 text-center">OBV Dir</div>
-                                                <div className="text-xs font-black text-slate-700 dark:text-slate-200 text-center uppercase tabular-nums">
+                                            <div className="p-3 bg-slate-50/50 dark:bg-slate-800/40 rounded-2xl border border-border dark:border-slate-800/50">
+                                                <div className="text-[9px] font-semibold text-slate-400 uppercase mb-1 text-center">OBV Dir</div>
+                                                <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 text-center uppercase tabular-nums">
                                                     {obv.val >= 1000000 ? `${fixed(obv.val/1000000, 1)}M` : `${fixed(obv.val/1000, 0)}K`}
                                                 </div>
                                             </div>
-                                            <div className="p-3 bg-slate-50/50 dark:bg-slate-800/40 rounded-2xl border border-slate-100 dark:border-slate-800/50">
-                                                <div className="text-[9px] font-black text-slate-400 uppercase mb-1 text-center">VWAP Dist</div>
-                                                <div className={cn('text-xs font-black text-center tabular-nums', num(cmp) > num(vwapVal) ? 'text-emerald-500' : 'text-rose-500')}>
+                                            <div className="p-3 bg-slate-50/50 dark:bg-slate-800/40 rounded-2xl border border-border dark:border-slate-800/50">
+                                                <div className="text-[9px] font-semibold text-slate-400 uppercase mb-1 text-center">VWAP Dist</div>
+                                                <div className={cn('text-xs font-semibold text-center tabular-nums', num(cmp) > num(vwapVal) ? 'text-emerald-500' : 'text-rose-500')}>
                                                     {num(cmp) > num(vwapVal) ? '+' : ''}{fixed(num(vwapVal) > 0 ? ((num(cmp)-num(vwapVal))/num(vwapVal))*100 : 0, 2)}%
                                                 </div>
                                             </div>
@@ -1094,21 +1094,21 @@ export function DailySignalStatus({
                                 </div>
 
                                 {/* Volatility & Channels */}
-                                <div className="bg-white dark:bg-slate-900/60 rounded-3xl border border-slate-100 dark:border-slate-800/60 p-5">
-                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Volatility & Channels</div>
+                                <div className="bg-white dark:bg-card rounded-xl border border-border dark:border-slate-800/60 p-5">
+                                    <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-4">Volatility & Channels</div>
                                     <div className="space-y-3">
-                                        <div className="p-4 bg-slate-50/50 dark:bg-slate-800/40 rounded-2xl border border-slate-100 dark:border-slate-800/50">
-                                            <div className="text-[9px] font-black text-slate-400 uppercase mb-1 text-center">ATR (14) Volatility</div>
-                                            <div className="text-2xl font-black text-slate-800 dark:text-slate-100 text-center tabular-nums">Rs.{fixed(atr, 1)}</div>
+                                        <div className="p-4 bg-slate-50/50 dark:bg-slate-800/40 rounded-2xl border border-border dark:border-slate-800/50">
+                                            <div className="text-[9px] font-semibold text-slate-400 uppercase mb-1 text-center">ATR (14) Volatility</div>
+                                            <div className="text-2xl font-semibold text-slate-800 dark:text-slate-100 text-center tabular-nums">Rs.{fixed(atr, 1)}</div>
                                             <div className="text-[10px] text-center font-bold text-slate-400 mt-0.5">{fixed((num(atr)/num(cmp))*100, 1)}% Daily Range</div>
                                         </div>
-                                        <div className="p-3 bg-slate-50/50 dark:bg-slate-800/40 rounded-2xl border border-slate-100 dark:border-slate-800/50">
-                                            <div className="text-[9px] font-black text-slate-400 uppercase mb-2">Bollinger Position (%B)</div>
+                                        <div className="p-3 bg-slate-50/50 dark:bg-slate-800/40 rounded-2xl border border-border dark:border-slate-800/50">
+                                            <div className="text-[9px] font-semibold text-slate-400 uppercase mb-2">Bollinger Position (%B)</div>
                                             <div className="relative h-2 bg-gradient-to-r from-rose-200 via-slate-100 to-emerald-200 dark:from-rose-900/40 dark:via-slate-700 dark:to-rose-900/40 rounded-full overflow-visible">
                                                 <div className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white dark:bg-slate-200 rounded-full border-2 border-indigo-500 shadow-lg"
                                                     style={{ left: `calc(${Math.min(Math.max(num(bbp) * 100, 2), 97)}% - 8px)` }} />
                                             </div>
-                                            <div className="flex justify-between mt-2 text-[10px] font-black tabular-nums text-slate-500">
+                                            <div className="flex justify-between mt-2 text-[10px] font-semibold tabular-nums text-slate-500">
                                                 <span>LB</span>
                                                 <span className="text-indigo-500">{fixed(num(bbp) * 100, 1)}%</span>
                                                 <span>UB</span>
@@ -1128,25 +1128,25 @@ export function DailySignalStatus({
                         
                         {/* ── Intelligence Hero: Health Diagnosis ── */}
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-                            <div className="md:col-span-8 p-6 rounded-[2rem] bg-indigo-600 dark:bg-indigo-500 text-white relative overflow-hidden shadow-2xl shadow-indigo-200/50 dark:shadow-none">
+                            <div className="md:col-span-8 p-6 rounded-[2rem] bg-indigo-600 dark:bg-indigo-500 text-white relative overflow-hidden shadow-sm shadow-indigo-200/50 dark:shadow-none">
                                 <div className="relative z-10">
                                     <div className="flex items-center gap-2 mb-6 opacity-80">
                                         <Sparkles size={14} fill="currentColor" />
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em]">Fundamental Intelligence</span>
+                                        <span className="text-[10px] font-semibold uppercase tracking-[0.2em]">Fundamental Intelligence</span>
                                     </div>
                                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                                         <div>
-                                            <h2 className="text-3xl font-black tracking-tighter mb-2">
+                                            <h2 className="text-3xl font-semibold tracking-tighter mb-2">
                                                 {peRatio > 0 && peRatio < 30 ? 'Quality Value' : peRatio > 30 ? 'Growth Premium' : (eps > 0 ? 'Stable Core' : 'Neutral Outlook')}
                                             </h2>
                                             <div className="flex items-center gap-4 mb-3">
                                                 <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/20">
                                                     <TrendingUp size={10} className="text-emerald-400" />
-                                                    <span className="text-[10px] font-black uppercase tracking-tight">ROE: {fixed(roe, 1)}%</span>
+                                                    <span className="text-[10px] font-semibold uppercase tracking-tight">ROE: {fixed(roe, 1)}%</span>
                                                 </div>
                                                 <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/20">
                                                     <Shield size={10} className="text-sky-400" />
-                                                    <span className="text-[10px] font-black uppercase tracking-tight">D/E: {fixed(debtEquity, 1)}</span>
+                                                    <span className="text-[10px] font-semibold uppercase tracking-tight">D/E: {fixed(debtEquity, 1)}</span>
                                                 </div>
                                             </div>
                                             <p className="text-[13px] font-medium text-white/75 max-w-lg leading-relaxed">
@@ -1157,8 +1157,8 @@ export function DailySignalStatus({
                                         </div>
                                         <div className="flex gap-4">
                                             <div className="px-5 py-3 rounded-[1.5rem] bg-white text-indigo-600 shadow-xl shadow-indigo-700/20">
-                                                <div className="text-[9px] font-black uppercase opacity-60 mb-0.5 whitespace-nowrap tracking-wide">Strategic Verdict</div>
-                                                <div className="text-xl font-black">{peRatio > 0 && roe > 12 ? 'ACCUMULATE' : 'MONITOR'}</div>
+                                                <div className="text-[9px] font-semibold uppercase opacity-60 mb-0.5 whitespace-nowrap tracking-wide">Strategic Verdict</div>
+                                                <div className="text-xl font-semibold">{peRatio > 0 && roe > 12 ? 'ACCUMULATE' : 'MONITOR'}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -1166,9 +1166,9 @@ export function DailySignalStatus({
                                 <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
                             </div>
 
-                            <div className="md:col-span-4 p-6 rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
+                            <div className="md:col-span-4 p-6 rounded-[2rem] bg-white dark:bg-card border border-border dark:border-slate-800 flex flex-col justify-between">
                                 <div className="flex items-center justify-between mb-4">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Financial Health</span>
+                                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Financial Health</span>
                                     <Shield size={14} className="text-emerald-500" />
                                 </div>
                                 <div className="flex-1 flex flex-col justify-center items-center py-4">
@@ -1178,8 +1178,8 @@ export function DailySignalStatus({
                                             <path className="stroke-emerald-500 transition-all duration-1000" strokeWidth="3" strokeDasharray={`${Math.min(100, (roe + (peRatio < 25 ? 20 : 0) + (debtEquity < 1 ? 20 : 0))), 100}, 100`} strokeLinecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                                         </svg>
                                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                            <span className="text-2xl font-black text-slate-800 dark:text-slate-100">{fixed(Math.min(100, (roe + (peRatio < 25 ? 20 : 0) + (debtEquity < 1 ? 20 : 0))), 0)}</span>
-                                            <span className="text-[8px] font-black text-slate-400 uppercase">Score</span>
+                                            <span className="text-2xl font-semibold text-slate-800 dark:text-slate-100">{fixed(Math.min(100, (roe + (peRatio < 25 ? 20 : 0) + (debtEquity < 1 ? 20 : 0))), 0)}</span>
+                                            <span className="text-[8px] font-semibold text-slate-400 uppercase">Score</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1191,11 +1191,11 @@ export function DailySignalStatus({
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             
                             {/* Card 1: Valuation Intelligence */}
-                            <div className="bg-white dark:bg-slate-900/60 rounded-[2rem] border border-slate-100 dark:border-slate-800/60 overflow-hidden">
-                                <div className="p-6 border-b border-slate-100 dark:border-slate-800">
+                            <div className="bg-white dark:bg-card rounded-[2rem] border border-border dark:border-slate-800/60 overflow-hidden">
+                                <div className="p-6 border-b border-border dark:border-slate-800">
                                     <div className="flex items-center gap-2 mb-1">
                                         <Building2 size={14} className="text-indigo-500" />
-                                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-800 dark:text-slate-100">Valuation Matrix</h3>
+                                        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-800 dark:text-slate-100">Valuation Matrix</h3>
                                     </div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Market pricing intelligence</p>
                                 </div>
@@ -1206,23 +1206,23 @@ export function DailySignalStatus({
                                         { label: 'EPS (TTM)', val: eps > 0 ? `Rs.${fixed(eps, 1)}` : '—', sub: 'Earnings Power', cls: 'bg-slate-50 text-slate-600' },
                                         { label: 'Avg Dividend', val: divYield > 0 ? `${fixed(divYield, 1)}%` : '—', sub: 'Yield to Price', cls: 'bg-slate-50 text-slate-600' },
                                     ].map(item => (
-                                        <div key={item.label} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-800/50">
+                                        <div key={item.label} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30 border border-border/50 dark:border-slate-800/50">
                                             <div>
-                                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-tight">{item.label}</div>
+                                                <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-tight">{item.label}</div>
                                                 <div className="text-[9px] font-bold opacity-60">{item.sub}</div>
                                             </div>
-                                            <div className={cn('px-2.5 py-1 rounded-xl text-xs font-black tabular-nums', item.cls)}>{item.val}</div>
+                                            <div className={cn('px-2.5 py-1 rounded-xl text-xs font-semibold tabular-nums', item.cls)}>{item.val}</div>
                                         </div>
                                     ))}
                                 </div>
                             </div>
 
                             {/* Card 2: Strategic Efficiency */}
-                            <div className="bg-white dark:bg-slate-900/60 rounded-[2rem] border border-slate-100 dark:border-slate-800/60 overflow-hidden">
-                                <div className="p-6 border-b border-slate-100 dark:border-slate-800">
+                            <div className="bg-white dark:bg-card rounded-[2rem] border border-border dark:border-slate-800/60 overflow-hidden">
+                                <div className="p-6 border-b border-border dark:border-slate-800">
                                     <div className="flex items-center gap-2 mb-1">
                                         <Zap size={14} className="text-amber-500" />
-                                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-800 dark:text-slate-100">Efficiency Hub</h3>
+                                        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-800 dark:text-slate-100">Efficiency Hub</h3>
                                     </div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Operational competency</p>
                                 </div>
@@ -1233,12 +1233,12 @@ export function DailySignalStatus({
                                         { label: 'YoY Growth', val: yoyGrowth !== 0 ? `${yoyGrowth > 0 ? '+' : ''}${fixed(yoyGrowth, 1)}%` : '—', sub: 'Earnings Momentum', cls: yoyGrowth > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-500' },
                                         { label: 'QoQ Growth', val: qoqGrowth !== 0 ? `${qoqGrowth > 0 ? '+' : ''}${fixed(qoqGrowth, 1)}%` : '—', sub: 'Quarterly Speed', cls: qoqGrowth > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-500' },
                                     ].map(item => (
-                                        <div key={item.label} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100/50 dark:border-slate-800/50">
+                                        <div key={item.label} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30 border border-border/50 dark:border-slate-800/50">
                                             <div>
-                                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-tight">{item.label}</div>
+                                                <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-tight">{item.label}</div>
                                                 <div className="text-[9px] font-bold opacity-60">{item.sub}</div>
                                             </div>
-                                            <div className={cn('px-2.5 py-1 rounded-xl text-xs font-black tabular-nums', item.cls)}>{item.val}</div>
+                                            <div className={cn('px-2.5 py-1 rounded-xl text-xs font-semibold tabular-nums', item.cls)}>{item.val}</div>
                                         </div>
                                     ))}
                                 </div>
@@ -1247,10 +1247,10 @@ export function DailySignalStatus({
                             {/* Card 3: Sector & Health Diagnostic */}
                             <div className="flex flex-col gap-6">
                                 {/* Sector Progress */}
-                                <div className="flex-1 bg-white dark:bg-slate-900/60 rounded-[2rem] border border-slate-100 dark:border-slate-800/60 p-6">
+                                <div className="flex-1 bg-white dark:bg-card rounded-[2rem] border border-border dark:border-slate-800/60 p-6">
                                     <div className="flex items-center gap-2 mb-4">
                                         <BarChart3 size={14} className="text-indigo-500" />
-                                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-800 dark:text-slate-100">Market Benchmarking</h3>
+                                        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-800 dark:text-slate-100">Market Benchmarking</h3>
                                     </div>
                                     <div className="space-y-4">
                                         {fundIndicators.length > 0 ? fundIndicators.slice(0, 3).map((ind: any, i: number) => {
@@ -1262,8 +1262,8 @@ export function DailySignalStatus({
                                             return (
                                                 <div key={i}>
                                                     <div className="flex items-center justify-between mb-1.5 px-0.5">
-                                                        <span className="text-[9px] font-black text-slate-400 uppercase">{ind.name}</span>
-                                                        <span className="text-[10px] font-black tabular-nums text-indigo-500">{ind.value}</span>
+                                                        <span className="text-[9px] font-semibold text-slate-400 uppercase">{ind.name}</span>
+                                                        <span className="text-[10px] font-semibold tabular-nums text-indigo-500">{ind.value}</span>
                                                     </div>
                                                     <div className="relative h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                                         <div className="absolute top-0 bottom-0 left-0 bg-indigo-500/20" style={{ width: `${pct}%` }} />
@@ -1273,7 +1273,7 @@ export function DailySignalStatus({
                                             );
                                         }) : (
                                             <div className="py-6 text-center">
-                                                <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Sector Benchmarking Unavailable</div>
+                                                <div className="text-[10px] font-semibold text-slate-300 uppercase tracking-wider">Sector Benchmarking Unavailable</div>
                                             </div>
                                         )}
                                     </div>
@@ -1283,7 +1283,7 @@ export function DailySignalStatus({
                                 <div className="bg-slate-900 rounded-[2rem] p-6 text-white overflow-hidden relative">
                                     <div className="flex items-center gap-2 mb-4 relative z-10">
                                         <Shield size={14} className="text-emerald-400" />
-                                        <h3 className="text-xs font-black uppercase tracking-widest text-white/60">Risk Audit</h3>
+                                        <h3 className="text-xs font-semibold uppercase tracking-wider text-white/60">Risk Audit</h3>
                                     </div>
                                     <div className="grid grid-cols-2 gap-3 relative z-10">
                                         {[
@@ -1293,8 +1293,8 @@ export function DailySignalStatus({
                                             { label: 'Growth', pass: yoyGrowth > 0, val: yoyGrowth > 0 ? 'EXPAND' : 'STAG' },
                                         ].map(check => (
                                             <div key={check.label} className="p-3 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between">
-                                                <span className="text-[9px] font-black opacity-50 uppercase">{check.label}</span>
-                                                <span className={cn('text-[10px] font-black', check.pass ? 'text-emerald-400' : 'text-rose-400')}>{check.val}</span>
+                                                <span className="text-[9px] font-semibold opacity-50 uppercase">{check.label}</span>
+                                                <span className={cn('text-[10px] font-semibold', check.pass ? 'text-emerald-400' : 'text-rose-400')}>{check.val}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -1308,7 +1308,7 @@ export function DailySignalStatus({
 
             {activeTab === 'accumulators' && (
                 <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 bg-slate-50/30 dark:bg-slate-950/20">
-                    <TickerAccumulation symbol={symbol} initialRange="1Y" />
+                    <TickerAccumulation symbol={symbol} />
                 </div>
             )}
         </div>

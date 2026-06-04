@@ -81,7 +81,7 @@ export function RiskRadar({ accountId }: { accountId?: string }) {
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="overflow-hidden border-none bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm shadow-xl">
+            <Card className="overflow-hidden border-none bg-white/50 dark:bg-card shadow-xl">
                 <CardHeader className="pb-0">
                     <div className="flex items-center justify-between">
                         <div>
@@ -108,8 +108,8 @@ export function RiskRadar({ accountId }: { accountId?: string }) {
                                 <Radar
                                     name="Portfolio Risk"
                                     dataKey="value"
-                                    stroke="#3b82f6"
-                                    fill="#3b82f6"
+                                    stroke="#6366f1"
+                                    fill="#6366f1"
                                     fillOpacity={0.4}
                                 />
                                 <RechartsTooltip
@@ -122,7 +122,7 @@ export function RiskRadar({ accountId }: { accountId?: string }) {
             </Card>
 
             <div className="space-y-4">
-                <Card className="border-none bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm shadow-xl h-full">
+                <Card className="border-none bg-white/50 dark:bg-card shadow-xl h-full">
                     <CardHeader>
                         <CardTitle className="text-sm font-semibold tracking-tight text-slate-500">Risk diagnostics</CardTitle>
                     </CardHeader>

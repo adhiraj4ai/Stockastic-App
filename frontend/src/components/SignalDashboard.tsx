@@ -175,7 +175,7 @@ export default function SignalDashboard({ symbol }: { symbol: string }) {
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Daily Strategy Signals</h2>
                     <div className="flex gap-4 items-center">
-                        <div className="px-4 py-2 bg-blue-50 dark:bg-slate-900 text-blue-600 dark:text-blue-400 rounded-lg border border-blue-100 dark:border-slate-800">
+                        <div className="px-4 py-2 bg-blue-50 dark:bg-card text-blue-600 dark:text-blue-400 rounded-lg border border-blue-100 dark:border-slate-800">
                             Consensus: <span className="font-bold">{consensus}</span>
                         </div>
                         <div className="text-sm text-slate-400 dark:text-slate-500">
@@ -190,7 +190,7 @@ export default function SignalDashboard({ symbol }: { symbol: string }) {
                     ) : (
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="text-[10px] tracking-tight text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/30">
+                                <tr className="text-[10px] tracking-tight text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-card/30">
                                     <th className="p-3 font-bold">Strategy</th>
                                     <th className="p-3 font-bold text-center">Signal</th>
                                     <th className="p-3 font-bold text-center">Date</th>
@@ -199,7 +199,7 @@ export default function SignalDashboard({ symbol }: { symbol: string }) {
                                     <th className="p-3 font-bold">Parameters</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-50 dark:divide-slate-800 bg-white/20 dark:bg-slate-950/40">
+                            <tbody className="divide-y divide-slate-50 dark:divide-slate-800 bg-white/20 dark:bg-card">
                                 {signals.map((sig) => (
                                     <tr key={sig.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
                                         <td className="p-3">
@@ -239,7 +239,7 @@ export default function SignalDashboard({ symbol }: { symbol: string }) {
                                                     }
                                                     
                                                     return formatted.map(({ key, value }) => (
-                                                        <div key={key} className="group/chip flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700 transition-all shadow-sm">
+                                                        <div key={key} className="group/chip flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-50 dark:bg-card border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700 transition-all shadow-sm">
                                                             <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">{key}</span>
                                                             <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 font-mono">{value}</span>
                                                         </div>

@@ -238,7 +238,7 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
         <div className="space-y-2">
             {/* Analytics Chart - First */}
             <Card className="border-0 shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-white rounded-xl overflow-hidden">
-                <CardHeader className="bg-slate-50/50 border-b border-slate-100/50 px-4 py-2">
+                <CardHeader className="bg-slate-50/50 border-b border-border/50 px-4 py-2">
                     <CardTitle className="text-lg font-bold text-slate-700 flex items-center gap-2">
                         <LineChartIcon className="w-5 h-5 text-blue-600" />
                         Performance & Forecast
@@ -258,7 +258,7 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
 
             {/* Training Configuration - Second */}
             <Card className="border-0 shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-white rounded-xl overflow-hidden">
-                <CardHeader className="bg-slate-50/50 border-b border-slate-100/50 px-4 py-2">
+                <CardHeader className="bg-slate-50/50 border-b border-border/50 px-4 py-2">
                     <CardTitle className="text-base font-bold text-slate-700 flex items-center gap-2">
                         <Settings2 className="w-4 h-4 text-blue-600" />
                         Training Configuration
@@ -299,7 +299,7 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {/* Metrics Table */}
                 <Card className="border-0 shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-white rounded-xl overflow-hidden h-full">
-                    <CardHeader className="bg-slate-50/50 border-b border-slate-100/50 px-4 py-2">
+                    <CardHeader className="bg-slate-50/50 border-b border-border/50 px-4 py-2">
                         <CardTitle className="text-base font-bold text-slate-700 flex items-center gap-2">
                             <Target className="w-4 h-4 text-blue-600" />
                             Evaluation Metrics
@@ -308,7 +308,7 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
                     <CardContent className="p-0">
                         <div className="overflow-x-auto">
                             <table className="w-full">
-                                <thead className="bg-slate-50/50 border-b border-slate-100">
+                                <thead className="bg-slate-50/50 border-b border-border">
                                     <tr>
                                         <th className="px-4 py-2 text-left text-[10px] font-semibold text-slate-600 tracking-tight">Metric</th>
                                         <th className="px-4 py-2 text-right text-[10px] font-semibold text-slate-600 tracking-tight">Value</th>
@@ -352,7 +352,7 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
 
                 {/* Forecast Data Table */}
                 <Card className="border-0 shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-white rounded-xl overflow-hidden h-full">
-                    <CardHeader className="bg-slate-50/30 border-b border-slate-100/50 px-4 py-2">
+                    <CardHeader className="bg-slate-50/30 border-b border-border/50 px-4 py-2">
                         <CardTitle className="text-base font-bold text-slate-700 flex items-center gap-2">
                             <Database className="w-4 h-4 text-blue-600" />
                             Forecast Points

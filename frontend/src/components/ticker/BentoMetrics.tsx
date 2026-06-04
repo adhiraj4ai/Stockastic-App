@@ -72,7 +72,7 @@ export function BentoMetrics({ fundamental }: BentoMetricsProps) {
                 </div>
                 <div className="grid grid-cols-1 gap-4">
                     {secondary.map((s, i) => (
-                        <div key={i} className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                        <div key={i} className="flex items-center justify-between py-2 border-b border-border dark:border-slate-800 last:border-0">
                             <div className="flex items-center gap-1">
                                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{s.label}</span>
                                 {(s as any).tooltip && <InfoTooltip content={(s as any).tooltip} />}

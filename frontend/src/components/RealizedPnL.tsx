@@ -94,7 +94,7 @@ export function RealizedPnL({ selectedAccount }: RealizedPnLProps) {
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-amber-100 dark:border-amber-900/30 p-4 shadow-sm">
+                <div className="bg-white dark:bg-card rounded-xl border border-amber-100 dark:border-amber-900/30 p-4 shadow-sm">
                     <div className="flex items-center gap-1.5 mb-1">
                         <DollarSign size={14} className="text-amber-600 dark:text-amber-400" />
                         <span className="text-[10px] font-medium tracking-tight text-slate-500 dark:text-slate-400">CGT paid</span>
@@ -104,7 +104,7 @@ export function RealizedPnL({ selectedAccount }: RealizedPnLProps) {
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-blue-100 dark:border-blue-900/30 p-4 shadow-sm">
+                <div className="bg-white dark:bg-card rounded-xl border border-blue-100 dark:border-blue-900/30 p-4 shadow-sm">
                     <div className="flex items-center gap-1.5 mb-1">
                         <Target size={14} className="text-blue-600 dark:text-blue-400" />
                         <span className="text-[10px] font-medium tracking-tight text-slate-500 dark:text-slate-400">Total trades</span>
@@ -114,7 +114,7 @@ export function RealizedPnL({ selectedAccount }: RealizedPnLProps) {
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-purple-100 dark:border-purple-900/30 p-4 shadow-sm">
+                <div className="bg-white dark:bg-card rounded-xl border border-purple-100 dark:border-purple-900/30 p-4 shadow-sm">
                     <div className="flex items-center gap-1.5 mb-1">
                         <Award size={14} className="text-purple-600 dark:text-purple-400" />
                         <span className="text-[10px] font-medium tracking-tight text-slate-500 dark:text-slate-400">Win rate</span>
@@ -132,7 +132,7 @@ export function RealizedPnL({ selectedAccount }: RealizedPnLProps) {
             </div>
 
             {/* Per-Ticker Breakdown */}
-            <Card className="shadow-sm dark:bg-slate-900 dark:border-slate-800 overflow-hidden">
+            <Card className="shadow-sm dark:bg-card dark:border-slate-800 overflow-hidden">
                 <CardContent className="p-0">
                     <div className="overflow-x-auto">
                         <Table>

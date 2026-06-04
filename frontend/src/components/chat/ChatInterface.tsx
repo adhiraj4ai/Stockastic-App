@@ -52,10 +52,10 @@ export default function ChatInterface({
     };
 
     return (
-        <div className={`flex flex-col h-full bg-white/20 dark:bg-black/20 backdrop-blur-xl rounded-xl border border-white/20 dark:border-white/5 overflow-hidden ${className}`}>
+        <div className={`flex flex-col h-full bg-white/20 dark:bg-black/20 rounded-xl border border-white/20 dark:border-border overflow-hidden ${className}`}>
             {/* Header */}
             {!hideHeader && (
-                <header className="flex items-center justify-between p-4 border-b border-white/20 dark:border-white/5 bg-white/40 dark:bg-black/40 backdrop-blur-md z-20">
+                <header className="flex items-center justify-between p-4 border-b border-white/20 dark:border-border bg-white/40 dark:bg-black/40 z-20">
                     <div className="flex items-center gap-3">
                         <div className="relative">
                             <div className="absolute inset-0 bg-emerald-500/20 blur-lg rounded-full animate-pulse" />
@@ -87,7 +87,7 @@ export default function ChatInterface({
                     {messages.length === 0 ? (
                         <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-8 animate-in fade-in duration-700">
                             <div className="text-center space-y-4 max-w-md mx-auto px-4">
-                                <div className="w-16 h-16 bg-gradient-to-tr from-emerald-500/20 to-blue-500/20 rounded-2xl flex items-center justify-center mx-auto border border-white/20 dark:border-white/5 shadow-2xl shadow-emerald-500/10 ring-1 ring-white/10">
+                                <div className="w-16 h-16 bg-gradient-to-tr from-emerald-500/20 to-blue-500/20 rounded-2xl flex items-center justify-center mx-auto border border-white/20 dark:border-border shadow-sm shadow-emerald-500/10 ring-1 ring-white/10">
                                     <Sparkles size={32} className="text-emerald-500 dark:text-emerald-400" />
                                 </div>
                                 <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-gray-900 to-gray-500 dark:from-white dark:to-gray-500 tracking-tight">
@@ -124,7 +124,7 @@ export default function ChatInterface({
                         onSubmit={handleSubmit}
                         className={`
                             relative transition-all duration-300 rounded-2xl
-                            bg-white/80 dark:bg-gray-900/80 border ring-1 ring-black/5 dark:ring-white/5 shadow-2xl shadow-black/5 dark:shadow-black/20
+                            bg-white/80 dark:bg-gray-900/80 border ring-1 ring-black/5 dark:ring-white/5 shadow-sm shadow-black/5 dark:shadow-black/20
                             ${isLoading ? 'border-gray-200 dark:border-gray-800 opacity-80' : 'border-gray-300 dark:border-gray-700 hover:border-emerald-500/50 dark:hover:border-gray-600 focus-within:border-emerald-500/50 focus-within:ring-emerald-500/20'}
                         `}
                     >

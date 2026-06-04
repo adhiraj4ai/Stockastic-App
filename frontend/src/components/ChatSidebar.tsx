@@ -93,7 +93,7 @@ export function ChatSidebar({ isPinned = false, onPinToggle, hideFloatingButton 
             {!showSidebar && !hideFloatingButton && (
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="fixed right-6 bottom-6 h-14 w-14 bg-slate-900 dark:bg-indigo-600 rounded-full shadow-2xl flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all z-40 hover:shadow-indigo-500/20"
+                    className="fixed right-6 bottom-6 h-14 w-14 bg-slate-900 dark:bg-indigo-600 rounded-full shadow-sm flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all z-40 hover:shadow-indigo-500/20"
                     title="Open Chat Assistant"
                 >
                     <MessageSquare size={28} />
@@ -105,7 +105,7 @@ export function ChatSidebar({ isPinned = false, onPinToggle, hideFloatingButton 
 
             {/* Sidebar Container */}
             <div
-                className={`fixed top-0 right-0 h-full w-96 bg-white dark:bg-slate-950 shadow-2xl transform transition-transform duration-300 ease-in-out z-50 flex flex-col border-l border-slate-100 dark:border-slate-800 ${showSidebar ? 'translate-x-0' : 'translate-x-full'
+                className={`fixed top-0 right-0 h-full w-96 bg-white dark:bg-slate-950 shadow-sm transform transition-transform duration-300 ease-in-out z-50 flex flex-col border-l border-border dark:border-slate-800 ${showSidebar ? 'translate-x-0' : 'translate-x-full'
                     }`}
             >
                 <ChatInterface

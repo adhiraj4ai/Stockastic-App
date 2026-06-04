@@ -342,13 +342,13 @@ export default function SettingsPage() {
                 <div className="max-w-5xl mx-auto space-y-8">
                     <div className="flex justify-between items-end">
                         <div>
-                            <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-slate-100 italic">Settings</h1>
+                            <h1 className="text-4xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 italic">Settings</h1>
                             <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Refine your trading identity and security.</p>
                         </div>
                     </div>
 
                     <Tabs defaultValue="general" className="w-full">
-                        <TabsList className="bg-white dark:bg-slate-900 p-1 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm mb-8 h-auto flex flex-wrap">
+                        <TabsList className="bg-white dark:bg-card p-1 rounded-2xl border border-border dark:border-slate-800 shadow-sm mb-8 h-auto flex flex-wrap">
                             <TabsTrigger
                                 value="general"
                                 className="rounded-xl data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 px-6 py-3 font-bold text-xs capitalize transition-all"
@@ -367,10 +367,10 @@ export default function SettingsPage() {
                         <TabsContent value="general" className="space-y-6">
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 {/* Left Column: Avatar */}
-                                <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden lg:col-span-1 h-fit">
+                                <Card className="border-none shadow-xl bg-white dark:bg-card overflow-hidden lg:col-span-1 h-fit">
                                     <CardContent className="p-8 flex flex-col items-center text-center">
                                         <div className="relative group cursor-pointer mb-6" onClick={triggerFileInput}>
-                                            <div className="h-32 w-32 rounded-3xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-300 border-4 border-white dark:border-slate-900 shadow-xl overflow-hidden transition-all group-hover:scale-105">
+                                            <div className="h-32 w-32 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-300 border-4 border-white dark:border-slate-900 shadow-xl overflow-hidden transition-all group-hover:scale-105">
                                                 {user?.profile_picture ? (
                                                     <img src={user.profile_picture} alt="Profile" className="h-full w-full object-cover" />
                                                 ) : (
@@ -394,7 +394,7 @@ export default function SettingsPage() {
                                         <Button
                                             variant="outline"
                                             onClick={triggerFileInput}
-                                            className="mt-6 w-full rounded-xl border-slate-100 dark:border-slate-800 font-bold text-[10px]"
+                                            className="mt-6 w-full rounded-xl border-border dark:border-slate-800 font-bold text-[10px]"
                                         >
                                             Change Photo
                                         </Button>
@@ -402,7 +402,7 @@ export default function SettingsPage() {
                                 </Card>
 
                                 {/* Right Column: Details */}
-                                <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden lg:col-span-2">
+                                <Card className="border-none shadow-xl bg-white dark:bg-card overflow-hidden lg:col-span-2">
                                     <CardHeader className="border-b border-slate-50 dark:border-slate-800 pb-6">
                                         <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 italic">Personal Details</CardTitle>
                                         <CardDescription className="text-xs font-bold text-slate-400">Public identity and contact information</CardDescription>
@@ -414,7 +414,7 @@ export default function SettingsPage() {
                                                 <Input
                                                     value={user?.first_name || ''}
                                                     onChange={(e) => setUser(prev => prev ? { ...prev, first_name: e.target.value } : null)}
-                                                    className="h-11 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 rounded-xl"
+                                                    className="h-11 bg-slate-50 dark:bg-slate-800 border-border dark:border-slate-700 rounded-xl"
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
@@ -422,7 +422,7 @@ export default function SettingsPage() {
                                                 <Input
                                                     value={user?.last_name || ''}
                                                     onChange={(e) => setUser(prev => prev ? { ...prev, last_name: e.target.value } : null)}
-                                                    className="h-11 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 rounded-xl"
+                                                    className="h-11 bg-slate-50 dark:bg-slate-800 border-border dark:border-slate-700 rounded-xl"
                                                 />
                                             </div>
                                         </div>
@@ -433,7 +433,7 @@ export default function SettingsPage() {
                                                 <Input
                                                     value={user?.nickname || ''}
                                                     onChange={(e) => setUser(prev => prev ? { ...prev, nickname: e.target.value } : null)}
-                                                    className="h-11 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 rounded-xl"
+                                                    className="h-11 bg-slate-50 dark:bg-slate-800 border-border dark:border-slate-700 rounded-xl"
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
@@ -441,7 +441,7 @@ export default function SettingsPage() {
                                                 <Input
                                                     value={user?.phone_number || ''}
                                                     onChange={(e) => setUser(prev => prev ? { ...prev, phone_number: e.target.value } : null)}
-                                                    className="h-11 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 rounded-xl"
+                                                    className="h-11 bg-slate-50 dark:bg-slate-800 border-border dark:border-slate-700 rounded-xl"
                                                 />
                                             </div>
                                         </div>
@@ -463,13 +463,13 @@ export default function SettingsPage() {
                         {/* Security Tab */}
                         <TabsContent value="security" className="space-y-6">
                             {/* 2FA Card */}
-                            <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
+                            <Card className="border-none shadow-xl bg-white dark:bg-card overflow-hidden">
                                 <CardHeader className="border-b border-slate-50 dark:border-slate-800 flex flex-row items-center justify-between py-6">
                                     <div>
                                         <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 italic">Two-Factor Authentication</CardTitle>
                                         <CardDescription className="text-xs font-bold text-slate-400">Enhanced account protection</CardDescription>
                                     </div>
-                                    <div className={`px-4 py-1.5 rounded-full text-[10px] font-black ${twoFactorEnabled ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600' : 'bg-slate-50 dark:bg-slate-800 text-slate-400'}`}>
+                                    <div className={`px-4 py-1.5 rounded-full text-[10px] font-semibold ${twoFactorEnabled ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600' : 'bg-slate-50 dark:bg-slate-800 text-slate-400'}`}>
                                         {twoFactorEnabled ? 'Active' : 'Disabled'}
                                     </div>
                                 </CardHeader>
@@ -500,10 +500,10 @@ export default function SettingsPage() {
 
                                     {/* 2FA Setup Flow */}
                                     {show2faSetup && !twoFactorEnabled && (
-                                        <div className="mt-10 p-8 bg-slate-50 dark:bg-slate-950 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col items-center animate-in zoom-in-95 duration-300">
+                                        <div className="mt-10 p-8 bg-slate-50 dark:bg-slate-950 rounded-xl border border-border dark:border-slate-800 flex flex-col items-center animate-in zoom-in-95 duration-300">
                                             <div className="max-w-xs text-center space-y-6">
                                                 <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">Scan This QR Code</h3>
-                                                <div className="bg-white p-4 rounded-3xl inline-block shadow-inner ring-8 ring-white/50 dark:ring-slate-800/50">
+                                                <div className="bg-white p-4 rounded-xl inline-block shadow-inner ring-8 ring-white/50 dark:ring-slate-800/50">
                                                     <img src={qrCode} alt="2FA QR Code" className="w-48 h-48" />
                                                 </div>
                                                 <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
@@ -512,7 +512,7 @@ export default function SettingsPage() {
                                                 <div className="space-y-4">
                                                     <Input
                                                         placeholder="Enter 6-digit code"
-                                                        className="h-12 text-center text-xl font-mono tracking-widest bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl"
+                                                        className="h-12 text-center text-xl font-mono tracking-wider bg-white dark:bg-card border-slate-200 dark:border-slate-800 rounded-xl"
                                                         value={twoFactorToken}
                                                         onChange={(e) => setTwoFactorToken(e.target.value)}
                                                         maxLength={6}
@@ -541,7 +541,7 @@ export default function SettingsPage() {
 
                             {/* Recovery Codes Card */}
                             {twoFactorEnabled && (
-                                <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
+                                <Card className="border-none shadow-xl bg-white dark:bg-card overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
                                     <CardHeader className="border-b border-slate-50 dark:border-slate-800 py-6">
                                         <div className="flex items-center justify-between w-full">
                                             <div>
@@ -571,7 +571,7 @@ export default function SettingsPage() {
                                             <div className="space-y-8">
                                                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                                                     {recoveryCodes.map((code, idx) => (
-                                                        <div key={idx} className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 p-3 rounded-xl text-center font-mono text-xs font-bold text-slate-700 dark:text-slate-300 shadow-inner">
+                                                        <div key={idx} className="bg-slate-50 dark:bg-slate-950 border border-border dark:border-slate-800 p-3 rounded-xl text-center font-mono text-xs font-bold text-slate-700 dark:text-slate-300 shadow-inner">
                                                             {code}
                                                         </div>
                                                     ))}
@@ -604,7 +604,7 @@ export default function SettingsPage() {
                             )}
 
                             {/* Password Change Card */}
-                            <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
+                            <Card className="border-none shadow-xl bg-white dark:bg-card overflow-hidden">
                                 <CardHeader className="border-b border-slate-50 dark:border-slate-800 py-6">
                                     <CardTitle className="text-xl font-bold text-slate-900 dark:text-slate-100 italic">Update Password</CardTitle>
                                     <CardDescription className="text-xs font-bold text-slate-400">Change your security credentials</CardDescription>
@@ -617,7 +617,7 @@ export default function SettingsPage() {
                                                 type="password"
                                                 value={currentPassword}
                                                 onChange={(e) => setCurrentPassword(e.target.value)}
-                                                className="h-11 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 rounded-xl"
+                                                className="h-11 bg-slate-50 dark:bg-slate-800 border-border dark:border-slate-700 rounded-xl"
                                             />
                                         </div>
                                         <div className="space-y-1.5">
@@ -626,7 +626,7 @@ export default function SettingsPage() {
                                                 type="password"
                                                 value={newPassword}
                                                 onChange={(e) => setNewPassword(e.target.value)}
-                                                className="h-11 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 rounded-xl"
+                                                className="h-11 bg-slate-50 dark:bg-slate-800 border-border dark:border-slate-700 rounded-xl"
                                             />
                                         </div>
                                         <div className="space-y-1.5">
@@ -635,7 +635,7 @@ export default function SettingsPage() {
                                                 type="password"
                                                 value={confirmPassword}
                                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                                className="h-11 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 rounded-xl"
+                                                className="h-11 bg-slate-50 dark:bg-slate-800 border-border dark:border-slate-700 rounded-xl"
                                             />
                                         </div>
                                     </div>
@@ -671,7 +671,7 @@ export default function SettingsPage() {
                             </Card>
 
                             {/* Active Sessions Card */}
-                            <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
+                            <Card className="border-none shadow-xl bg-white dark:bg-card overflow-hidden">
                                 <CardHeader className="border-b border-slate-50 dark:border-slate-800 py-6">
                                     <div className="flex items-center justify-between w-full">
                                         <div>
@@ -717,7 +717,7 @@ export default function SettingsPage() {
                                                                     {session.browser} on {session.os}
                                                                 </span>
                                                                 {session.is_current && (
-                                                                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 text-[9px] font-black tracking-widest whitespace-nowrap">
+                                                                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 text-[9px] font-semibold tracking-wider whitespace-nowrap">
                                                                         This Device
                                                                     </span>
                                                                 )}
@@ -755,7 +755,7 @@ export default function SettingsPage() {
                             </Card>
 
                             {/* Activity Log Card */}
-                            <Card className="border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
+                            <Card className="border-none shadow-xl bg-white dark:bg-card overflow-hidden">
                                 <CardHeader className="border-b border-slate-50 dark:border-slate-800 py-6">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-xl">

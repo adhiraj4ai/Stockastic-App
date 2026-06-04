@@ -642,7 +642,7 @@ export default function TrainModelPage() {
 
                                 <div className="grid grid-cols-1 gap-4 auto-rows-fr">
                                     {batchJobs.map((job) => (
-                                        <div key={job.id} className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all group flex flex-col overflow-hidden">
+                                        <div key={job.id} className="bg-white dark:bg-card rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all group flex flex-col overflow-hidden">
                                             {/* Card Header */}
                                             <div className="px-5 py-4 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
                                                 <div className="flex items-center gap-3">

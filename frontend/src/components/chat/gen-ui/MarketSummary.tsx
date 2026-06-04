@@ -28,7 +28,7 @@ const MarketSummary: React.FC<MarketSummaryProps> = ({
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="horizon-card overflow-hidden border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl"
+            className="horizon-card overflow-hidden border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50"
         >
             <div className="p-6">
                 <div className="flex items-center gap-3 mb-6">

@@ -142,7 +142,7 @@ export default function StrategyDetailPage() {
                 {/* Key Metrics Cards (Overview) */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {/* Total Return - Emerald Theme */}
-                    <Card className="bg-gradient-to-br from-white dark:from-slate-900 to-emerald-50/50 dark:to-emerald-950/20 border-emerald-100 dark:border-emerald-900/30 hover:border-emerald-200 dark:hover:border-emerald-800/50 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
+                    <Card className="border-border hover:border-foreground/20 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
                         <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                             <TrendingUp size={48} className="text-emerald-600" />
                         </div>
@@ -155,14 +155,14 @@ export default function StrategyDetailPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 pt-1 relative z-10">
-                            <div className={`text-2xl font-black tracking-tight ${Number(strategy.pnl_percent || 0) >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+                            <div className={`text-2xl font-semibold tracking-tight ${Number(strategy.pnl_percent || 0) >= 0 ? "text-emerald-700" : "text-red-600"}`}>
                                 {Number(strategy.pnl_percent || 0).toFixed(2)}%
                             </div>
                         </CardContent>
                     </Card>
 
                     {/* Sharpe Ratio - Purple Theme */}
-                    <Card className="bg-gradient-to-br from-white dark:from-slate-900 to-purple-50/50 dark:to-purple-950/20 border-purple-100 dark:border-purple-900/30 hover:border-purple-200 dark:hover:border-purple-800/50 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
+                    <Card className="border-border hover:border-foreground/20 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
                         <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                             <Activity size={48} className="text-purple-600" />
                         </div>
@@ -175,14 +175,14 @@ export default function StrategyDetailPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 pt-1 relative z-10">
-                            <div className="text-2xl font-black tracking-tight text-slate-800 dark:text-slate-200">
+                            <div className="text-2xl font-semibold tracking-tight text-slate-800 dark:text-slate-200">
                                 {Number(strategy.sharpe_ratio || 0).toFixed(2)}
                             </div>
                         </CardContent>
                     </Card>
 
                     {/* Max Drawdown - Red Theme */}
-                    <Card className="bg-gradient-to-br from-white dark:from-slate-900 to-rose-50/50 dark:to-rose-950/20 border-rose-100 dark:border-rose-900/30 hover:border-rose-200 dark:hover:border-rose-800/50 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
+                    <Card className="border-border hover:border-foreground/20 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
                         <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                             <TrendingDown size={48} className="text-rose-600" />
                         </div>
@@ -195,14 +195,14 @@ export default function StrategyDetailPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 pt-1 relative z-10">
-                            <div className="text-2xl font-black tracking-tight text-rose-600">
+                            <div className="text-2xl font-semibold tracking-tight text-rose-600">
                                 {Number(strategy.max_drawdown || 0).toFixed(2)}%
                             </div>
                         </CardContent>
                     </Card>
 
                     {/* Win Rate - Blue Theme */}
-                    <Card className="bg-gradient-to-br from-white to-blue-50/50 border-blue-100 hover:border-blue-200 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
+                    <Card className="border-border hover:border-foreground/20 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
                         <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                             <Target size={48} className="text-blue-600" />
                         </div>
@@ -215,7 +215,7 @@ export default function StrategyDetailPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 pt-1 relative z-10">
-                            <div className="text-2xl font-black tracking-tight text-slate-800">
+                            <div className="text-2xl font-semibold tracking-tight text-slate-800">
                                 {Number(strategy.win_rate || 0).toFixed(0)}%
                             </div>
                         </CardContent>
@@ -224,7 +224,7 @@ export default function StrategyDetailPage() {
 
                 {/* Tabs for Details */}
                 <Tabs defaultValue="history" className="space-y-4">
-                    <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-0.5 h-auto rounded-lg">
+                    <TabsList className="bg-white dark:bg-card border border-slate-200 dark:border-slate-800 p-0.5 h-auto rounded-lg">
                         <TabsTrigger
                             value="history"
                             className="data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-md py-2 px-3 text-xs font-bold text-slate-600 dark:text-slate-400 dark:data-[state=active]:bg-blue-600 dark:data-[state=active]:text-white transition-all"

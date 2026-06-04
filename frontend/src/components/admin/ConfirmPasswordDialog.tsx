@@ -47,7 +47,7 @@ export function ConfirmPasswordDialog({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="sm:max-w-[400px] bg-white dark:bg-slate-950 border-slate-200 dark:border-white/10 shadow-2xl">
+            <DialogContent className="sm:max-w-[400px] bg-white dark:bg-slate-950 border-slate-200 dark:border-border shadow-sm">
                 <form onSubmit={handleSubmit}>
                     <DialogHeader>
                         <div className="mx-auto w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mb-4">
@@ -67,7 +67,7 @@ export function ConfirmPasswordDialog({
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="••••••••"
-                                className="bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10"
+                                className="bg-slate-50 dark:bg-muted border-slate-200 dark:border-border"
                                 autoFocus
                                 required
                                 disabled={isLoading}

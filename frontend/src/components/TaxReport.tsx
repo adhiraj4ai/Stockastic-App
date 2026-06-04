@@ -65,7 +65,7 @@ export function TaxReport({ selectedAccount }: { selectedAccount: string }) {
 
     if (data.length === 0) {
         return (
-            <div className="p-12 text-center bg-gray-50 dark:bg-slate-900/50 rounded-xl border border-dashed border-gray-200 dark:border-slate-800">
+            <div className="p-12 text-center bg-gray-50 dark:bg-card rounded-xl border border-dashed border-gray-200 dark:border-slate-800">
                 <Receipt className="h-10 w-10 text-gray-300 dark:text-slate-700 mx-auto mb-3" />
                 <p className="text-sm font-medium text-gray-500 dark:text-slate-400">No realized trades found to generate tax report.</p>
             </div>
@@ -90,7 +90,7 @@ export function TaxReport({ selectedAccount }: { selectedAccount: string }) {
                         <CardHeader className="bg-slate-50/50 dark:bg-slate-800/50 pb-4">
                             <CardTitle className="flex items-center justify-between">
                                 <span className="text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight">FY {year.fiscal_year}</span>
-                                <Badge variant="secondary" className="bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-[10px] font-bold">
+                                <Badge variant="secondary" className="bg-white dark:bg-card border-border dark:border-slate-800 text-[10px] font-bold">
                                     {year.trades_count} trades
                                 </Badge>
                             </CardTitle>
@@ -112,11 +112,11 @@ export function TaxReport({ selectedAccount }: { selectedAccount: string }) {
                             </div>
 
                             {year.top_gainers.length > 0 && (
-                                <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                                <div className="pt-4 border-t border-border dark:border-slate-800">
                                     <div className="text-[9px] font-bold text-slate-400 tracking-tight mb-2">Top performers</div>
                                     <div className="space-y-2">
                                         {year.top_gainers.map((g) => (
-                                            <div key={g.ticker} className="flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
+                                            <div key={g.ticker} className="flex justify-between items-center bg-slate-50/50 dark:bg-card p-2 rounded-lg border border-border dark:border-slate-800">
                                                 <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">{g.ticker}</span>
                                                 <span className={`text-[11px] font-bold ${g.pnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                     {g.pnl >= 0 ? '+' : ''}{formatRupees(g.pnl)}

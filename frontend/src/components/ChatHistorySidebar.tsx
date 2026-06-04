@@ -44,7 +44,7 @@ export function ChatHistorySidebar({
     );
 
     return (
-        <div className="w-80 h-full border-r border-border/10 bg-background/20 backdrop-blur-3xl flex flex-col relative z-20 overflow-hidden">
+        <div className="w-80 h-full border-r border-border/10 bg-background/20 flex flex-col relative z-20 overflow-hidden">
             {/* Sidebar Header */}
             <div className="p-8 pb-6 space-y-6">
                 <Button
@@ -126,14 +126,14 @@ export function ChatHistorySidebar({
                                         )}
                                     </button>
 
-                                    <div className={`absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-all duration-200 bg-background/80 backdrop-blur-md border border-border/50 rounded-lg p-0.5 z-10 shadow-xl`}>
+                                    <div className={`absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-all duration-200 bg-background/80 border border-border/50 rounded-lg p-0.5 z-10 shadow-xl`}>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <button className="p-1.5 rounded-md hover:bg-foreground/10 text-muted-foreground/60 hover:text-foreground">
                                                     <MoreVertical size={14} />
                                                 </button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="horizon-glass border-border/30 rounded-2xl p-1 z-[100] shadow-2xl">
+                                            <DropdownMenuContent align="end" className="horizon-glass border-border/30 rounded-2xl p-1 z-[100] shadow-sm">
                                                 <DropdownMenuItem
                                                     className="rounded-xl p-3 font-semibold text-[11px] tracking-tight text-muted-foreground/70"
                                                     onSelect={() => { setEditingId(item.id); setEditValue(item.title); }}

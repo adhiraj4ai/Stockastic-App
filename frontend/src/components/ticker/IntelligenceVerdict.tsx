@@ -29,11 +29,11 @@ export function IntelligenceVerdict({
     const verdict = getVerdict();
 
     return (
-        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+        <Card className="bg-white dark:bg-card border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
             <CardContent className="p-0">
                 <div className={cn("px-6 py-4 border-b dark:border-slate-800 flex items-center justify-between", verdict.bg, verdict.border)}>
                     <div className="flex items-center gap-3">
-                        <div className={cn("p-2 rounded-lg bg-white dark:bg-slate-900 shadow-sm", verdict.color)}>
+                        <div className={cn("p-2 rounded-lg bg-white dark:bg-card shadow-sm", verdict.color)}>
                             <verdict.icon size={18} />
                         </div>
                         <div className="space-y-0.5">

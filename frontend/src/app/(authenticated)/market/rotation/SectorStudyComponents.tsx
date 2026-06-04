@@ -87,7 +87,7 @@ export function SectorWinRateChart({ winRates }: { winRates: Record<string, numb
     };
 
     return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white dark:bg-card border border-border dark:border-slate-800 rounded-2xl p-5 shadow-sm">
             <div className="flex items-center mb-4">
                 <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Excess Return Probability (Win Rate)</h3>
                 <InfoTooltip content="Shows the historical probability (%) that an accumulated sector outperforms the broad market across subsequent 5d, 10d, 20d, and 30d periods." />
@@ -159,7 +159,7 @@ export function SectorAvgReturnChart({
     };
 
     return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white dark:bg-card border border-border dark:border-slate-800 rounded-2xl p-5 shadow-sm">
             <div className="flex items-center mb-4">
                 <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Avg vs Median Outperformance</h3>
                 <InfoTooltip content="Illustrates typical sector excess returns. Use Median to understand the 'average' scenario without distortions, and Avg to gauge outlier potential." />
@@ -232,7 +232,7 @@ export function SectorScatterChart({ scatterData }: { scatterData: Array<any> })
     };
 
     return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white dark:bg-card border border-border dark:border-slate-800 rounded-2xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">
@@ -315,7 +315,7 @@ export function SectorLagAnalysisChart({ lagAnalysis }: { lagAnalysis: Array<any
     };
 
     return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white dark:bg-card border border-border dark:border-slate-800 rounded-2xl p-5 shadow-sm">
             <div className="flex items-center mb-4">
                 <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">
                     Lag Analysis — Duration of Sector Edge

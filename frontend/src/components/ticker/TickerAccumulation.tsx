@@ -17,27 +17,27 @@ import { Button } from '@/components/ui/button';
 
 interface BrokerRow {
     broker_id: number;
-    buy_qty:   number;
-    sell_qty:  number;
-    net_qty:   number;
-    buy_amount:  number;
+    buy_qty: number;
+    sell_qty: number;
+    net_qty: number;
+    buy_amount: number;
     sell_amount: number;
-    net_amount:  number;
+    net_amount: number;
     pct?: number;
 }
 
 interface SmartMoneyData {
     kpi: {
-        total_volume:       number;
-        unique_buyers:      number;
-        unique_sellers:     number;
+        total_volume: number;
+        unique_buyers: number;
+        unique_sellers: number;
         smart_broker_count: number;
-        net_smart_qty:      number;
+        net_smart_qty: number;
     };
-    top_buyers:        (BrokerRow & { pct: number })[];
-    top_sellers:       (BrokerRow & { pct: number })[];
-    net_accumulators:  BrokerRow[];
-    net_distributors:  BrokerRow[];
+    top_buyers: (BrokerRow & { pct: number })[];
+    top_sellers: (BrokerRow & { pct: number })[];
+    net_accumulators: BrokerRow[];
+    net_distributors: BrokerRow[];
     smart_broker_activity: BrokerRow[];
     daily_flow: { date: string; volume: number; avg_rate: number }[];
 }
@@ -61,7 +61,7 @@ function TrendBadge({ trend, change }: { trend: string; change: number }) {
     return (
         <span className={cn(
             'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-tight',
-            isUp   ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' :
+            isUp ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' :
             isDown ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400' :
                      'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
         )}>
@@ -108,13 +108,13 @@ function BrokerBar({ rank, broker_id, qty, amount, pct, maxQty, dir }: {
 export default function TickerAccumulation({ symbol }: { symbol: string }) {
     // Shared range
     const [range, setRange] = useState<Range>('1W');
-    const [graphData, setGraphData]   = useState<any>(null);
-    const [accumData, setAccumData]   = useState<any>(null);
-    const [trendData, setTrendData]   = useState<any[]>([]);
+    const [graphData, setGraphData] = useState<any>(null);
+    const [accumData, setAccumData] = useState<any>(null);
+    const [trendData, setTrendData] = useState<any[]>([]);
     const [accumLoading, setAccumLoading] = useState(true);
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; dir: SortDir }>({ key: 'cumulative_net', dir: 'desc' });
 
-    const [smData, setSmData]       = useState<SmartMoneyData | null>(null);
+    const [smData, setSmData] = useState<SmartMoneyData | null>(null);
     const [smLoading, setSmLoading] = useState(true);
     const abortRef = useRef<AbortController | null>(null);
 
@@ -219,10 +219,10 @@ export default function TickerAccumulation({ symbol }: { symbol: string }) {
                 textStyle: { color: '#e2e8f0', fontSize: 12 },
                 extraCssText: 'border-radius:10px;padding:12px 16px;box-shadow:0 8px 32px rgba(0,0,0,0.4)',
                 formatter(params: any[]) {
-                    const vol  = params.find(p => p.seriesName === 'Volume');
+                    const vol = params.find(p => p.seriesName === 'Volume');
                     const rate = params.find(p => p.seriesName === 'Avg Price');
                     return `<div style="font-size:11px;color:#94a3b8;margin-bottom:6px">${params[0]?.axisValue}</div>
-                        ${vol  ? `<div style="display:flex;justify-content:space-between;gap:20px"><span style="color:#94a3b8">Volume</span><b>${formatNepaliNumber(vol.value)}</b></div>`  : ''}
+                        ${vol ? `<div style="display:flex;justify-content:space-between;gap:20px"><span style="color:#94a3b8">Volume</span><b>${formatNepaliNumber(vol.value)}</b></div>` : ''}
                         ${rate ? `<div style="display:flex;justify-content:space-between;gap:20px;margin-top:4px"><span style="color:#94a3b8">Avg Price</span><b>${formatRupees(rate.value, 1)}</b></div>` : ''}`;
                 },
             },
@@ -263,7 +263,7 @@ export default function TickerAccumulation({ symbol }: { symbol: string }) {
             : <ChevronDown className="w-3 h-3 inline ml-1" />;
     };
 
-    const maxBuyQty  = smData?.top_buyers[0]?.buy_qty  ?? 1;
+    const maxBuyQty = smData?.top_buyers[0]?.buy_qty ?? 1;
     const maxSellQty = smData?.top_sellers[0]?.sell_qty ?? 1;
 
     // ─── Render ───────────────────────────────────────────────────────────────
@@ -272,7 +272,7 @@ export default function TickerAccumulation({ symbol }: { symbol: string }) {
         <div className="space-y-6">
             {/* ── Unified Range Selector ──────────────────────────── */}
             <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-1">Period</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Period</span>
                 <div className="flex items-center gap-1">
                     {RANGES.map(r => (
                         <button key={r} onClick={() => setRange(r)}
@@ -289,25 +289,25 @@ export default function TickerAccumulation({ symbol }: { symbol: string }) {
 
             {/* ── All KPIs in one row ──────────────────────────────── */}
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-                <div className="col-span-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-3 shadow-sm">
+                <div className="col-span-1 bg-white dark:bg-card rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-3 shadow-sm">
                     <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Net Smart Flow</p>
                     <p className={cn('text-lg font-bold tabular-nums', isAccumulating ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')}>
                         {netFlow > 0 ? '+' : ''}{formatNepaliNumber(netFlow)}
                     </p>
                 </div>
-                <div className="col-span-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-3 shadow-sm">
+                <div className="col-span-1 bg-white dark:bg-card rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-3 shadow-sm">
                     <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Accum. Ratio</p>
                     <p className={cn('text-lg font-bold', accRatio > 50 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500')}>
                         {accumData ? `${accRatio.toFixed(1)}%` : '–'}
                     </p>
                 </div>
                 {smData && [
-                    { label: 'Total Volume',   value: formatNepaliNumber(smData.kpi.total_volume) },
-                    { label: 'Unique Buyers',  value: smData.kpi.unique_buyers.toString() },
+                    { label: 'Total Volume', value: formatNepaliNumber(smData.kpi.total_volume) },
+                    { label: 'Unique Buyers', value: smData.kpi.unique_buyers.toString() },
                     { label: 'Unique Sellers', value: smData.kpi.unique_sellers.toString() },
-                    { label: 'Smart Brokers',  value: smData.kpi.smart_broker_count.toString() },
+                    { label: 'Smart Brokers', value: smData.kpi.smart_broker_count.toString() },
                 ].map(k => (
-                    <div key={k.label} className="col-span-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-3 shadow-sm">
+                    <div key={k.label} className="col-span-1 bg-white dark:bg-card rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-3 shadow-sm">
                         <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">{k.label}</p>
                         <p className="text-lg font-bold text-slate-800 dark:text-slate-100 tabular-nums">{k.value}</p>
                     </div>
@@ -353,8 +353,8 @@ export default function TickerAccumulation({ symbol }: { symbol: string }) {
 
                     {/* Buy pressure + Sell pressure + Daily flow — 3 columns */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                            <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-emerald-50/60 dark:bg-emerald-900/10">
+                        <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                            <div className="p-3 border-b border-border dark:border-slate-800 bg-emerald-50/60 dark:bg-emerald-900/10">
                                 <p className="font-bold text-emerald-800 dark:text-emerald-400 text-xs">Buying Pressure</p>
                                 <p className="text-[9px] text-slate-400 mt-0.5">Highest net purchases this period</p>
                             </div>
@@ -367,8 +367,8 @@ export default function TickerAccumulation({ symbol }: { symbol: string }) {
                             </div>
                         </div>
 
-                        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                            <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-rose-50/60 dark:bg-rose-900/10">
+                        <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                            <div className="p-3 border-b border-border dark:border-slate-800 bg-rose-50/60 dark:bg-rose-900/10">
                                 <p className="font-bold text-rose-800 dark:text-rose-400 text-xs">Selling Pressure</p>
                                 <p className="text-[9px] text-slate-400 mt-0.5">Highest net sales this period</p>
                             </div>
@@ -382,8 +382,8 @@ export default function TickerAccumulation({ symbol }: { symbol: string }) {
                         </div>
 
                         {smData && smData.daily_flow.length > 1 ? (
-                            <div className="bg-white dark:bg-slate-900/30 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                                <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+                            <div className="bg-white dark:bg-card/30 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                                <div className="p-3 border-b border-border dark:border-slate-800 flex items-center gap-2">
                                     <Activity className="w-3.5 h-3.5 text-slate-400" />
                                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Daily Volume & Price</span>
                                     <div className="ml-auto flex items-center gap-3 text-[9px] text-slate-400">
@@ -394,7 +394,7 @@ export default function TickerAccumulation({ symbol }: { symbol: string }) {
                                 <ReactECharts option={dailyFlowChartOption} style={{ height: '196px' }} opts={{ renderer: 'svg' }} />
                             </div>
                         ) : (
-                            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-center text-slate-400 text-xs min-h-[200px]">
+                            <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-center text-slate-400 text-xs min-h-[200px]">
                                 No daily flow data
                             </div>
                         )}
@@ -407,8 +407,8 @@ export default function TickerAccumulation({ symbol }: { symbol: string }) {
                                 const items = side === 'buyers' ? smData.top_buyers : smData.top_sellers;
                                 const maxQty = side === 'buyers' ? maxBuyQty : maxSellQty;
                                 return (
-                                    <div key={side} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
-                                        <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 flex items-center justify-between">
+                                    <div key={side} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-card overflow-hidden shadow-sm">
+                                        <div className="px-4 py-2.5 border-b border-border dark:border-slate-800 bg-slate-50 dark:bg-card flex items-center justify-between">
                                             <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Top {side === 'buyers' ? 'Buyers' : 'Sellers'}</span>
                                             <span className="text-[10px] text-slate-400">{items.length} brokers</span>
                                         </div>
@@ -437,14 +437,14 @@ export default function TickerAccumulation({ symbol }: { symbol: string }) {
                                 { key: 'accumulators', items: smData.net_accumulators, icon: ArrowUpRight, color: 'text-emerald-500', label: 'Net Accumulators' },
                                 { key: 'distributors', items: smData.net_distributors, icon: ArrowDownRight, color: 'text-rose-500', label: 'Net Distributors' },
                             ] as const).map(({ key, items, icon: Icon, color, label }) => items.length > 0 && (
-                                <div key={key} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
-                                    <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 flex items-center gap-2">
+                                <div key={key} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-card overflow-hidden shadow-sm">
+                                    <div className="px-4 py-2.5 border-b border-border dark:border-slate-800 bg-slate-50 dark:bg-card flex items-center gap-2">
                                         <Icon className={cn('w-3.5 h-3.5', color)} />
                                         <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">{label}</span>
                                     </div>
                                     <table className="w-full text-xs">
                                         <thead>
-                                            <tr className="border-b border-slate-100 dark:border-slate-800">
+                                            <tr className="border-b border-border dark:border-slate-800">
                                                 {['Broker', 'Bought', 'Sold', 'Net'].map(h => (
                                                     <th key={h} className="px-4 py-2 text-left text-[9px] text-slate-400 uppercase tracking-wider">{h}</th>
                                                 ))}
@@ -471,8 +471,8 @@ export default function TickerAccumulation({ symbol }: { symbol: string }) {
                     )}
 
                     {/* Holder trend — full width */}
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+                    <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                        <div className="p-4 border-b border-border dark:border-slate-800 flex items-center gap-2">
                             <BarChart3 className="w-3.5 h-3.5 text-slate-400" />
                             <span className="text-sm font-bold text-slate-800 dark:text-slate-100">Top Holder Accumulation Trend</span>
                             <span className="text-[10px] text-slate-400 ml-1">— cumulative net position of top 5 brokers</span>
@@ -488,8 +488,8 @@ export default function TickerAccumulation({ symbol }: { symbol: string }) {
 
                     {/* ── Holder Position & Trend (pinned to bottom) ───── */}
                     {trendData.length > 0 && (
-                        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden mt-8">
-                            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden mt-8">
+                            <div className="p-5 border-b border-border dark:border-slate-800 flex items-center justify-between">
                                 <div>
                                     <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Holder Position & Trend</h3>
                                     <p className="text-[10px] text-slate-400 mt-0.5">Significant holders with multi-timeframe trend analysis</p>
@@ -502,7 +502,7 @@ export default function TickerAccumulation({ symbol }: { symbol: string }) {
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
-                                    <thead className="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-100 dark:border-slate-800">
+                                    <thead className="bg-slate-50 dark:bg-card/80 border-b border-border dark:border-slate-800">
                                         <tr>
                                             {([
                                                 { label: 'Broker', col: 'broker', align: 'left' },

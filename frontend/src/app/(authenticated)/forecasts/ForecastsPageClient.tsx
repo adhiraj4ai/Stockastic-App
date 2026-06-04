@@ -186,7 +186,7 @@ export default function ForecastsPage() {
         onPageChange: (page: number) => void;
         onPageSizeChange: (size: number) => void;
     }) => (
-        <div className="flex items-center justify-between px-6 py-4 bg-slate-50/30 border-t border-slate-100/50 backdrop-blur-sm">
+        <div className="flex items-center justify-between px-6 py-4 bg-slate-50/30 border-t border-border/50">
             <div className="flex items-center gap-3">
                 <span className="text-sm font-medium text-slate-500">Show</span>
                 <select
@@ -195,7 +195,7 @@ export default function ForecastsPage() {
                         onPageSizeChange(Number(e.target.value));
                         onPageChange(1);
                     }}
-                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-sm font-medium text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 outline-none transition-all cursor-pointer shadow-sm"
+                    className="bg-white dark:bg-card border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-sm font-medium text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 outline-none transition-all cursor-pointer shadow-sm"
                 >
                     {[10, 20, 50, 75, 100].map(size => (
                         <option key={size} value={size}>{size}</option>
@@ -285,13 +285,13 @@ export default function ForecastsPage() {
                                     <p className="text-slate-500 font-bold animate-pulse">Analyzing Models...</p>
                                 </div>
                             ) : models.length === 0 ? (
-                                <Card className="border-dashed border-2 bg-transparent shadow-none border-slate-200 rounded-3xl">
+                                <Card className="border-dashed border-2 bg-transparent shadow-none border-slate-200 rounded-xl">
                                     <CardContent className="py-20 text-center">
                                         <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
                                             <Brain className="w-10 h-10 text-slate-400" />
                                         </div>
                                         <h3 className="text-xl font-bold text-slate-900 mb-2">No any published models</h3>
-                                        <p className="text-slate-500 mb-8 max-w-sm mx-auto font-medium">Published model appears here.</p>                                        <Button
+                                        <p className="text-slate-500 mb-8 max-w-sm mx-auto font-medium">Published model appears here.</p> <Button
                                             onClick={() => router.push('/forecasts/train')}
                                             variant="outline"
                                             className="rounded-xl px-8 border-slate-200 hover:bg-slate-50 text-slate-600"
@@ -301,7 +301,7 @@ export default function ForecastsPage() {
                                     </CardContent>
                                 </Card>
                             ) : (
-                                <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden shadow-sm">
+                                <div className="bg-white dark:bg-card border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden shadow-sm">
                                     <table className="min-w-full divide-y divide-gray-200">
                                         <thead className="bg-gray-50">
                                             <tr>
@@ -314,7 +314,7 @@ export default function ForecastsPage() {
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-700 text-sm">
+                                        <tbody className="bg-white dark:bg-card divide-y divide-gray-200 dark:divide-slate-700 text-sm">
                                             {models.map((model) => (
                                                 <tr key={model.id} className="hover:bg-gray-50">
                                                     <td className="px-6 py-4 whitespace-nowrap text-gray-500 font-mono text-xs">
@@ -387,7 +387,7 @@ export default function ForecastsPage() {
                                     </span>
                                 </div>
 
-                                <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden shadow-sm">
+                                <div className="bg-white dark:bg-card border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden shadow-sm">
                                     <table className="min-w-full divide-y divide-gray-200">
                                         <thead className="bg-gray-50">
                                             <tr>
@@ -401,7 +401,7 @@ export default function ForecastsPage() {
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20"></th>
                                             </tr>
                                         </thead>
-                                        <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-700 text-sm">
+                                        <tbody className="bg-white dark:bg-card divide-y divide-gray-200 dark:divide-slate-700 text-sm">
                                             {allJobs.length === 0 ? (
                                                 <tr>
                                                     <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
@@ -504,7 +504,7 @@ export default function ForecastsPage() {
                                                                 <tr>
                                                                     <td colSpan={8} className="px-0 py-0 border-b bg-gray-50/50">
                                                                         <div className="p-6">
-                                                                            <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-lg overflow-hidden shadow-sm">
+                                                                            <div className="bg-white dark:bg-card border border-gray-100 dark:border-slate-700 rounded-lg overflow-hidden shadow-sm">
                                                                                 <table className="min-w-full divide-y divide-gray-100">
                                                                                     <thead className="bg-gray-50/50">
                                                                                         <tr>

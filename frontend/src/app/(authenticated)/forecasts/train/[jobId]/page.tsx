@@ -253,13 +253,13 @@ export default function JobDetailPage() {
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'SUCCESS':
-                return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200/50 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest">SUCCESS</Badge>;
+                return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200/50 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider">SUCCESS</Badge>;
             case 'RUNNING':
-                return <Badge className="bg-blue-500/10 text-blue-600 border-blue-200/50 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest animate-pulse">RUNNING</Badge>;
+                return <Badge className="bg-blue-500/10 text-blue-600 border-blue-200/50 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider animate-pulse">RUNNING</Badge>;
             case 'FAILED':
-                return <Badge className="bg-red-500/10 text-red-600 border-red-200/50 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest">FAILED</Badge>;
+                return <Badge className="bg-red-500/10 text-red-600 border-red-200/50 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider">FAILED</Badge>;
             default:
-                return <Badge variant="outline" className="px-3 py-1 rounded-full text-[10px] font-bold tracking-widest">{status}</Badge>;
+                return <Badge variant="outline" className="px-3 py-1 rounded-full text-[10px] font-bold tracking-wider">{status}</Badge>;
         }
     };
 
@@ -298,7 +298,7 @@ export default function JobDetailPage() {
                             {job.symbol}
                         </h1>
 
-                        <div className="flex items-center gap-3 text-xs font-semibold text-slate-500 uppercase tracking-widest pl-2 border-l border-slate-200 ml-2">
+                        <div className="flex items-center gap-3 text-xs font-semibold text-slate-500 uppercase tracking-wider pl-2 border-l border-slate-200 ml-2">
                             <span>{new Date(job.started_at).toLocaleString()}</span>
 
                             {job.status === 'SUCCESS' && (
@@ -320,7 +320,7 @@ export default function JobDetailPage() {
                                 size="sm"
                                 variant={job.is_published ? "outline" : "default"}
                                 onClick={handlePublishToggle}
-                                className={`text-[10px] h-7 px-3 font-bold tracking-widest uppercase flex items-center gap-1.5 transition-all
+                                className={`text-[10px] h-7 px-3 font-bold tracking-wider uppercase flex items-center gap-1.5 transition-all
                                     ${job.is_published
                                         ? "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100 hover:text-slate-700"
                                         : "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"}`}
@@ -340,7 +340,7 @@ export default function JobDetailPage() {
                         )}
 
                         {job.is_published && (
-                            <Badge className="bg-emerald-500 text-white border-0 px-2 py-0.5 rounded text-[9px] font-black tracking-tighter uppercase shadow-sm">
+                            <Badge className="bg-emerald-500 text-white border-0 px-2 py-0.5 rounded text-[9px] font-semibold tracking-tighter uppercase shadow-sm">
                                 PUBLISHED
                             </Badge>
                         )}

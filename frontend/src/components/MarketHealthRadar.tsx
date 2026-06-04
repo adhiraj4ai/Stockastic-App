@@ -86,8 +86,8 @@ export const MarketHealthRadar = ({ data, rawData, height = 300 }: MarketHealthR
                             data.participation
                         ],
                         name: 'Today vs Average',
-                        itemStyle: { color: '#3b82f6' },
-                        areaStyle: { color: 'rgba(59, 130, 246, 0.2)' },
+                        itemStyle: { color: '#6366f1' },
+                        areaStyle: { color: 'rgba(99, 102, 241, 0.18)' },
                         lineStyle: { width: 2 },
                         symbol: 'circle',
                         symbolSize: 4

@@ -232,7 +232,7 @@ export default function BrokerPage() {
                 isPos ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
             )}>
                 {percentage !== null && (
-                    <span className="text-[12px] font-black tracking-tight leading-none">
+                    <span className="text-[12px] font-semibold tracking-tight leading-none">
                         {isPos ? '+' : ''}{percentage.toFixed(1)}%
                     </span>
                 )}
@@ -263,7 +263,7 @@ export default function BrokerPage() {
                 <Button 
                     variant="outline" 
                     onClick={() => router.push('/accumulation/trends')}
-                    className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-slate-200 dark:border-slate-800 h-10 px-5 rounded-xl font-bold text-xs gap-2"
+                    className="bg-white/50 dark:bg-card border-slate-200 dark:border-slate-800 h-10 px-5 rounded-xl font-bold text-xs gap-2"
                 >
                     <ArrowLeft size={16} /> Command Center
                 </Button>
@@ -278,7 +278,7 @@ export default function BrokerPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
                         
                         {/* 1. Hero NAV Card (Size Reduced) */}
-                        <div className="glass-card-light dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-800/50 overflow-hidden p-6 space-y-6 relative group h-full">
+                        <div className="glass-card-light dark:bg-card rounded-2xl border border-slate-200 dark:border-slate-800/50 overflow-hidden p-6 space-y-6 relative group h-full">
                             <div className="absolute -right-8 -top-8 opacity-[0.03] group-hover:opacity-[0.05] group-hover:scale-110 transition-all duration-1000">
                                 <Activity size={200} />
                             </div>
@@ -287,22 +287,22 @@ export default function BrokerPage() {
                                 <div className="h-9 w-9 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
                                     <Target size={18} className="text-blue-600 dark:text-blue-400" />
                                 </div>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Node Performance</p>
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Node Performance</p>
                             </div>
                             
                             <div className="space-y-1 relative z-10">
                                 <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500 italic">Net Portfolio NAV</p>
                                 <div className="flex items-baseline gap-2">
-                                    <span className="text-4xl font-black text-slate-900 dark:text-slate-100 tracking-tighter tabular-nums">
+                                    <span className="text-4xl font-semibold text-slate-900 dark:text-slate-100 tracking-tighter tabular-nums">
                                         {profile.total_value ? `रू. ${(profile.total_value / 10000000).toFixed(2)} Cr` : 'N/A'}
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="pt-4 border-t border-slate-100 dark:border-slate-800/50 space-y-3 relative z-10">
+                            <div className="pt-4 border-t border-border dark:border-slate-800/50 space-y-3 relative z-10">
                                 <div className="flex items-center justify-between">
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Diversity</span>
-                                    <span className="text-xs font-black text-slate-900 dark:text-slate-100">{profile.holdings.length} Assets</span>
+                                    <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">{profile.holdings.length} Assets</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Flow Status</span>
@@ -315,10 +315,10 @@ export default function BrokerPage() {
                         </div>
 
                         {/* 2. Sector Allocation Card (Updated to %) */}
-                        <div className="glass-card-light dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-800/50 p-6 flex flex-col h-full relative group">
+                        <div className="glass-card-light dark:bg-card rounded-2xl border border-slate-200 dark:border-slate-800/50 p-6 flex flex-col h-full relative group">
                             <div className="flex items-center gap-2 mb-4">
                                 <PieChartIcon size={16} className="text-blue-500" />
-                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Asset Deployment (%)</h4>
+                                <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Asset Deployment (%)</h4>
                             </div>
                             
                             <div className="flex-1 min-h-[160px] w-full">
@@ -356,48 +356,48 @@ export default function BrokerPage() {
                                 </ResponsiveContainer>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-y-2 w-full mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/50">
+                            <div className="grid grid-cols-2 gap-y-2 w-full mt-4 pt-4 border-t border-border dark:border-slate-800/50">
                                  {chartData.slice(0, 4).map((entry, idx) => (
                                      <div key={idx} className="flex items-center gap-2">
                                          <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
                                          <span className="text-[10px] font-bold truncate max-w-[80px] uppercase text-slate-500">{entry.name}</span>
-                                         <span className="text-[9px] font-black text-slate-900 dark:text-slate-100 ml-auto">{entry.percentage.toFixed(0)}%</span>
+                                         <span className="text-[9px] font-semibold text-slate-900 dark:text-slate-100 ml-auto">{entry.percentage.toFixed(0)}%</span>
                                      </div>
                                  ))}
                             </div>
                         </div>
 
                         {/* 3. [NEW] Summary Intelligence Card */}
-                        <div className="glass-card-light dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-800/50 p-6 flex flex-col h-full relative group space-y-4">
+                        <div className="glass-card-light dark:bg-card rounded-2xl border border-slate-200 dark:border-slate-800/50 p-6 flex flex-col h-full relative group space-y-4">
                             <div className="flex items-center gap-2">
                                 <Activity size={16} className="text-indigo-500" />
-                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Node Intelligence</h4>
+                                <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Node Intelligence</h4>
                             </div>
                             
                             <div className="space-y-3 flex-1">
-                                <div className="p-3 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800/50">
+                                <div className="p-3 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 border border-border dark:border-slate-800/50">
                                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wide mb-1">Dominant Exposure</p>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs font-black text-slate-900 dark:text-slate-100">{summaryInfo?.topSector?.[0] || 'N/A'}</span>
+                                        <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">{summaryInfo?.topSector?.[0] || 'N/A'}</span>
                                         <span className="text-[10px] font-bold text-blue-500">रू. {(Number(summaryInfo?.topSector?.[1] || 0) / 10000000).toFixed(1)} Cr</span>
                                     </div>
                                 </div>
 
-                                <div className="p-3 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800/50">
+                                <div className="p-3 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 border border-border dark:border-slate-800/50">
                                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wide mb-1">Max 5D Velocity</p>
                                     <div className="flex items-center justify-between">
                                         <div className="flex flex-col">
-                                            <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">{summaryInfo?.topBuy?.symbol || 'N/A'}</span>
+                                            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{summaryInfo?.topBuy?.symbol || 'N/A'}</span>
                                             <span className="text-[9px] font-bold text-slate-500">Buying Force</span>
                                         </div>
                                         <TrendIndicator value={summaryInfo?.topBuy?.trend_5d || 0} />
                                     </div>
                                 </div>
 
-                                <div className="p-3 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800/50">
+                                <div className="p-3 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 border border-border dark:border-slate-800/50">
                                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wide mb-1">Avg Deployment / Asset</p>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs font-black text-slate-900 dark:text-slate-100">रू. {(Number(summaryInfo?.avgHolding || 0) / 100000).toFixed(2)} L</span>
+                                        <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">रू. {(Number(summaryInfo?.avgHolding || 0) / 100000).toFixed(2)} L</span>
                                         <Layers size={14} className="text-slate-300" />
                                     </div>
                                 </div>
@@ -406,11 +406,11 @@ export default function BrokerPage() {
                     </div>
 
                     {/* Sector Filter Bar */}
-                    <div className="glass-card-light dark:bg-slate-900/20 rounded-2xl border border-slate-200 dark:border-slate-800/50 p-6 space-y-4">
+                    <div className="glass-card-light dark:bg-card/20 rounded-2xl border border-slate-200 dark:border-slate-800/50 p-6 space-y-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <Filter size={16} className="text-blue-500" />
-                                <h4 className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Filter nodes by Sector</h4>
+                                <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Filter nodes by Sector</h4>
                             </div>
                             <div className="flex gap-4">
                                 <button onClick={selectAllSectors} className="text-[10px] font-bold uppercase tracking-[0.1em] text-blue-500 hover:text-blue-600 transition-colors">Select All</button>
@@ -426,7 +426,7 @@ export default function BrokerPage() {
                                         "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all border",
                                         selectedSectors.includes(sector)
                                             ? "bg-blue-500 text-white border-blue-500 shadow-[0_4px_12px_rgba(59,130,246,0.3)]"
-                                            : "bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-slate-500 hover:border-slate-300 dark:hover:border-slate-700"
+                                            : "bg-white dark:bg-card border-slate-200 dark:border-slate-800 text-slate-500 hover:border-slate-300 dark:hover:border-slate-700"
                                     )}
                                 >
                                     {sector}
@@ -436,75 +436,75 @@ export default function BrokerPage() {
                     </div>
 
                     {/* Holdings Table Section */}
-                    <div className="glass-card-light dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-800/50 overflow-hidden shadow-sm">
-                        <div className="p-8 border-b border-slate-100 dark:border-slate-800/50 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="glass-card-light dark:bg-card rounded-2xl border border-slate-200 dark:border-slate-800/50 overflow-hidden shadow-sm">
+                        <div className="p-8 border-b border-border dark:border-slate-800/50 flex flex-col md:flex-row md:items-center justify-between gap-6">
                             <div className="flex items-center gap-4">
                                 <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
                                     <TrendingUp size={20} />
                                 </div>
                                 <div>
                                     <h3 className="text-xl font-bold tracking-tight">Current Strategic Positions</h3>
-                                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Multi-horizon velocity delta audit for net inventory positions.</p>
+                                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-1">Multi-horizon velocity delta audit for net inventory positions.</p>
                                 </div>
                             </div>
-                            <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-700">
+                            <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-2 rounded-xl border border-border dark:border-slate-700">
                                 <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.1em]">Auditing <span className="text-blue-500">{filteredAndSortedHoldings.length}</span> Active Positions</span>
                             </div>
                         </div>
 
                         <div className="overflow-x-auto overflow-y-hidden">
                             <Table>
-                                <TableHeader className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800">
+                                <TableHeader className="bg-slate-50 dark:bg-card border-b border-slate-200 dark:border-slate-800">
                                     <TableRow className="hover:bg-transparent h-14">
                                         <TableHead onClick={() => handleSort('symbol')} className="cursor-pointer group px-8">
-                                            <div className="flex items-center text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
+                                            <div className="flex items-center text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
                                                 Symbol <SortIcon column="symbol" />
                                             </div>
                                         </TableHead>
                                         <TableHead onClick={() => handleSort('quantity')} className="text-right cursor-pointer group px-4">
-                                            <div className="flex items-center justify-end text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
+                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
                                                 Qty <SortIcon column="quantity" />
                                             </div>
                                         </TableHead>
                                         <TableHead onClick={() => handleSort('wac')} className="text-right cursor-pointer group px-4 bg-orange-500/[0.03]">
-                                            <div className="flex items-center justify-end text-[10px] font-black uppercase tracking-widest text-amber-600/60 dark:text-amber-400/50 group-hover:text-amber-500 transition-colors">
+                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-amber-600/60 dark:text-amber-400/50 group-hover:text-amber-500 transition-colors">
                                                 WAC <SortIcon column="wac" />
                                             </div>
                                         </TableHead>
                                         <TableHead onClick={() => handleSort('current_price')} className="text-right cursor-pointer group px-4">
-                                            <div className="flex items-center justify-end text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
+                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
                                                 LTP <SortIcon column="current_price" />
                                             </div>
                                         </TableHead>
                                         <TableHead onClick={() => handleSort('value')} className="text-right cursor-pointer group px-4">
-                                            <div className="flex items-center justify-end text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
+                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
                                                 NAV <SortIcon column="value" />
                                             </div>
                                         </TableHead>
                                         {/* Trend Columns */}
                                         <TableHead onClick={() => handleSort('trend_5d')} className="text-right cursor-pointer group px-4 bg-blue-500/[0.03]">
-                                            <div className="flex items-center justify-end text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
+                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
                                                 5D Δ (%) <SortIcon column="trend_5d" />
                                             </div>
                                         </TableHead>
                                         <TableHead onClick={() => handleSort('trend_10d')} className="text-right cursor-pointer group px-4">
-                                            <div className="flex items-center justify-end text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
+                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
                                                 10D Δ (%) <SortIcon column="trend_10d" />
                                             </div>
                                         </TableHead>
                                         <TableHead onClick={() => handleSort('trend_1m')} className="text-right cursor-pointer group px-4">
-                                            <div className="flex items-center justify-end text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
+                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
                                                 1M Δ (%) <SortIcon column="trend_1m" />
                                             </div>
                                         </TableHead>
                                         <TableHead onClick={() => handleSort('trend_3m')} className="text-right cursor-pointer group px-8">
-                                            <div className="flex items-center justify-end text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
+                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
                                                 3M Δ (%) <SortIcon column="trend_3m" />
                                             </div>
                                         </TableHead>
                                     </TableRow>
                                 </TableHeader>
-                                <TableBody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white/30 dark:bg-slate-950/40">
+                                <TableBody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white/30 dark:bg-card">
                                     {filteredAndSortedHoldings.map((h) => (
                                         <TableRow key={h.symbol} className="group hover:bg-slate-50/80 dark:hover:bg-slate-900/80 transition-all duration-300">
                                             <TableCell className="py-5 px-8">
@@ -544,7 +544,7 @@ export default function BrokerPage() {
                                     ))}
                                     {filteredAndSortedHoldings.length === 0 && (
                                         <TableRow>
-                                            <TableCell colSpan={9} className="h-40 text-center text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em] bg-white/20 dark:bg-slate-900/20">
+                                            <TableCell colSpan={9} className="h-40 text-center text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em] bg-white/20 dark:bg-card/20">
                                                 No holdings matching selected filter criteria.
                                             </TableCell>
                                         </TableRow>

@@ -38,14 +38,14 @@ const CHART_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] as 
 const PAGE_SIZE = 20;
 
 const TABLE_COLS = [
-    { label: 'Ticker',    col: 'symbol',             align: 'left',   accent: '',        hide: '' },
-    { label: 'LTP',       col: 'close',              align: 'right',  accent: '',        hide: '' },
-    { label: 'RSI',       col: 'rsi',                align: 'right',  accent: '',        hide: 'lg' },
-    { label: 'ROC',       col: 'roc',                align: 'right',  accent: '',        hide: 'lg' },
-    { label: 'Net Acc.',  col: 'net_qty',            align: 'right',  accent: 'emerald', hide: '' },
-    { label: 'Intensity', col: 'accumulation_ratio', align: 'center', accent: '',        hide: '' },
-    { label: 'Buyers',    col: null,                 align: 'center', accent: '',        hide: 'md' },
-    { label: 'Sellers',   col: null,                 align: 'center', accent: '',        hide: 'md' },
+    { label: 'Ticker', col: 'symbol', align: 'left', accent: '', hide: '' },
+    { label: 'LTP', col: 'close', align: 'right', accent: '', hide: '' },
+    { label: 'RSI', col: 'rsi', align: 'right', accent: '', hide: 'lg' },
+    { label: 'ROC', col: 'roc', align: 'right', accent: '', hide: 'lg' },
+    { label: 'Net Acc.', col: 'net_qty', align: 'right', accent: 'emerald', hide: '' },
+    { label: 'Intensity', col: 'accumulation_ratio', align: 'center', accent: '', hide: '' },
+    { label: 'Buyers', col: null, align: 'center', accent: '', hide: 'md' },
+    { label: 'Sellers', col: null, align: 'center', accent: '', hide: 'md' },
 ] as const;
 
 type BottomTab = 'aggressive' | 'smart-money';
@@ -82,16 +82,16 @@ function AggressiveCard({
         <div
             onClick={onSelect}
             className={cn(
-                'group bg-white dark:bg-slate-900 border rounded-xl p-4 shadow-sm hover:shadow-md cursor-pointer transition-all',
+                'group bg-white dark:bg-card border rounded-xl p-4 shadow-sm hover:shadow-md cursor-pointer transition-all',
                 isAcc
-                    ? 'border-slate-100 dark:border-slate-800 hover:border-emerald-200 dark:hover:border-emerald-800/40'
-                    : 'border-slate-100 dark:border-slate-800 hover:border-rose-200 dark:hover:border-rose-800/40',
+                    ? 'border-border dark:border-slate-800 hover:border-emerald-200 dark:hover:border-emerald-800/40'
+                    : 'border-border dark:border-slate-800 hover:border-rose-200 dark:hover:border-rose-800/40',
             )}
         >
             <div className="flex items-start justify-between mb-3">
                 <div>
                     <div className={cn(
-                        'font-black text-base text-slate-900 dark:text-slate-100 transition-colors',
+                        'font-semibold text-base text-slate-900 dark:text-slate-100 transition-colors',
                         isAcc
                             ? 'group-hover:text-emerald-600 dark:group-hover:text-emerald-400'
                             : 'group-hover:text-rose-600 dark:group-hover:text-rose-400',
@@ -101,7 +101,7 @@ function AggressiveCard({
                     <div className="text-[10px] text-slate-400 font-medium truncate max-w-[110px]">{item.name}</div>
                 </div>
                 <div className={cn(
-                    'px-2 py-1 rounded-lg text-xs font-black border shrink-0',
+                    'px-2 py-1 rounded-lg text-xs font-semibold border shrink-0',
                     isAcc
                         ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/30'
                         : 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/30',
@@ -113,11 +113,11 @@ function AggressiveCard({
             <div className="grid grid-cols-2 gap-2 text-[10px] bg-slate-50 dark:bg-slate-800/50 rounded-lg p-2 mb-3">
                 <div>
                     <div className="text-slate-400 font-bold mb-0.5">{isAcc ? 'Inst. Buy' : 'Inst. Sell'}</div>
-                    <div className="font-black text-slate-700 dark:text-slate-300 tabular-nums">{formatNepaliNumber(qty)}</div>
+                    <div className="font-semibold text-slate-700 dark:text-slate-300 tabular-nums">{formatNepaliNumber(qty)}</div>
                 </div>
                 <div>
                     <div className="text-slate-400 font-bold mb-0.5">Avg Vol 20D</div>
-                    <div className="font-black text-slate-700 dark:text-slate-300 tabular-nums">
+                    <div className="font-semibold text-slate-700 dark:text-slate-300 tabular-nums">
                         {formatNepaliNumber(Math.round(item.avg_vol_20d))}
                     </div>
                 </div>
@@ -127,7 +127,7 @@ function AggressiveCard({
                 {brokers?.slice(0, 5).map(p => (
                     <Link href={`/broker/${p}`} key={p} onClick={e => e.stopPropagation()}>
                         <span className={cn(
-                            'px-1.5 py-0.5 bg-white dark:bg-slate-800 rounded text-[10px] font-black border transition-colors',
+                            'px-1.5 py-0.5 bg-white dark:bg-slate-800 rounded text-[10px] font-semibold border transition-colors',
                             isAcc
                                 ? 'text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800/30 hover:bg-emerald-50 dark:hover:bg-emerald-900/30'
                                 : 'text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-800/30 hover:bg-rose-50 dark:hover:bg-rose-900/30',
@@ -156,20 +156,20 @@ export default function AccumulationDashboard() {
     });
 
     // Data
-    const [overviewData, setOverviewData]   = useState<AccumulationData[]>([]);
+    const [overviewData, setOverviewData] = useState<AccumulationData[]>([]);
     const [aggressiveData, setAggressiveData] = useState<{ accumulators: AggressivePattern[]; distributors: AggressivePattern[] }>({ accumulators: [], distributors: [] });
     const [smartMoneyData, setSmartMoneyData] = useState<SmartMoneyData | null>(null);
 
     // Loading & Error
-    const [loadingOverview,   setLoadingOverview]   = useState(true);
+    const [loadingOverview, setLoadingOverview] = useState(true);
     const [loadingAggressive, setLoadingAggressive] = useState(true);
     const [loadingSmartMoney, setLoadingSmartMoney] = useState(true);
-    const [loadingDetail,     setLoadingDetail]     = useState(false);
+    const [loadingDetail, setLoadingDetail] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     // Master-detail
     const [selectedSymbol, setSelectedSymbol] = useState<AccumulationData | null>(null);
-    const [detailData,     setDetailData]     = useState<BrokerDetailData | null>(null);
+    const [detailData, setDetailData] = useState<BrokerDetailData | null>(null);
 
     // Bottom tab
     const [activeTab, setActiveTab] = useState<BottomTab>('aggressive');
@@ -178,9 +178,9 @@ export default function AccumulationDashboard() {
     const [smartMoneyRange, setSmartMoneyRange] = useState('1D');
 
     // Abort controller refs — prevent stale responses overwriting fresh data
-    const abortOverview    = useRef<AbortController | null>(null);
-    const abortDetail      = useRef<AbortController | null>(null);
-    const abortSmartMoney  = useRef<AbortController | null>(null);
+    const abortOverview = useRef<AbortController | null>(null);
+    const abortDetail = useRef<AbortController | null>(null);
+    const abortSmartMoney = useRef<AbortController | null>(null);
 
     // ─── Debounce search ────────────────────────────────────────────────────
     useEffect(() => {
@@ -243,7 +243,7 @@ export default function AccumulationDashboard() {
         setDetailData(null);
         api.get(`/api/stocks/companies/brokers_graph/?symbol=${selectedSymbol.symbol}&range=${range}`, { signal })
             .then(res => setDetailData({
-                history:    res.data.history     || [],
+                history: res.data.history || [],
                 topBrokers: res.data.top_brokers || [],
                 buyLeaders: res.data.buy_leaders || [],
                 sellLeaders: res.data.sell_leaders || [],
@@ -274,13 +274,13 @@ export default function AccumulationDashboard() {
             });
     }, [overviewData, sector, debouncedSearch, sortConfig]);
 
-    const pagedRows   = useMemo(() => filteredOverview.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [filteredOverview, page]);
-    const totalPages  = Math.ceil(filteredOverview.length / PAGE_SIZE) || 1;
+    const pagedRows = useMemo(() => filteredOverview.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [filteredOverview, page]);
+    const totalPages = Math.ceil(filteredOverview.length / PAGE_SIZE) || 1;
 
     const kpi = useMemo(() => ({
-        accCount:       overviewData.filter(d => d.net_qty > 0).length,
-        distCount:      overviewData.filter(d => d.net_qty < 0).length,
-        totalNet:       overviewData.reduce((s, d) => s + d.net_qty, 0),
+        accCount: overviewData.filter(d => d.net_qty > 0).length,
+        distCount: overviewData.filter(d => d.net_qty < 0).length,
+        totalNet: overviewData.reduce((s, d) => s + d.net_qty, 0),
         aggressiveCount: aggressiveData.accumulators.length + aggressiveData.distributors.length,
     }), [overviewData, aggressiveData]);
 
@@ -377,12 +377,12 @@ export default function AccumulationDashboard() {
         <div className="space-y-5 min-h-screen">
 
             {/* ═══ Global Controls Bar ════════════════════════════════════════ */}
-            <div className="bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 shadow-lg px-4 py-3 flex flex-col xl:flex-row items-stretch xl:items-center gap-3 flex-wrap">
-                <div className="bg-slate-50 dark:bg-slate-900/60 p-1 rounded-xl border border-slate-100 dark:border-white/5 flex overflow-x-auto no-scrollbar shrink-0">
+            <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border shadow-lg px-4 py-3 flex flex-col xl:flex-row items-stretch xl:items-center gap-3 flex-wrap">
+                <div className="bg-slate-50 dark:bg-card p-1 rounded-xl border border-border dark:border-border flex overflow-x-auto no-scrollbar shrink-0">
                     {TIME_RANGES.map(t => (
                         <button key={t.value} onClick={() => handleRangeChange(t.value)}
                             className={cn(
-                                'px-3 py-1.5 rounded-lg text-xs font-black transition-all duration-200 tracking-tight whitespace-nowrap',
+                                'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 tracking-tight whitespace-nowrap',
                                 range === t.value
                                     ? 'bg-slate-900 dark:bg-indigo-600 text-white shadow'
                                     : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200',
@@ -394,11 +394,11 @@ export default function AccumulationDashboard() {
 
                 <div className="h-4 w-px bg-slate-200 dark:bg-white/10 hidden xl:block" />
 
-                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/60 px-3 py-1 rounded-xl border border-slate-100 dark:border-white/5 shrink-0">
+                <div className="flex items-center gap-2 bg-slate-50 dark:bg-card px-3 py-1 rounded-xl border border-border dark:border-border shrink-0">
                     <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                     <select value={sector} onChange={e => handleSectorChange(e.target.value)}
-                        className="bg-transparent border-none text-xs font-black text-slate-700 dark:text-slate-300 outline-none min-w-[120px] pr-1">
-                        {sectors.map(s => <option key={s} value={s} className="bg-white dark:bg-slate-900">{s}</option>)}
+                        className="bg-transparent border-none text-xs font-semibold text-slate-700 dark:text-slate-300 outline-none min-w-[120px] pr-1">
+                        {sectors.map(s => <option key={s} value={s} className="bg-white dark:bg-card">{s}</option>)}
                     </select>
                 </div>
 
@@ -408,15 +408,15 @@ export default function AccumulationDashboard() {
                         placeholder="Search symbol or name..."
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        className="pl-9 h-9 rounded-xl bg-slate-50 dark:bg-slate-900/60 border-slate-100 dark:border-white/5 text-xs font-bold focus:ring-2 focus:ring-indigo-500/20"
+                        className="pl-9 h-9 rounded-xl bg-slate-50 dark:bg-card border-border dark:border-border text-xs font-bold focus:ring-2 focus:ring-indigo-500/20"
                     />
                 </div>
 
                 <div className="flex items-center gap-2 ml-auto">
-                    <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-[11px] font-black rounded-lg border border-emerald-100 dark:border-emerald-800/30">
+                    <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-[11px] font-semibold rounded-lg border border-emerald-100 dark:border-emerald-800/30">
                         ↑ {kpi.accCount} acc
                     </span>
-                    <span className="px-2.5 py-1 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 text-[11px] font-black rounded-lg border border-rose-100 dark:border-rose-800/30">
+                    <span className="px-2.5 py-1 bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 text-[11px] font-semibold rounded-lg border border-rose-100 dark:border-rose-800/30">
                         ↓ {kpi.distCount} dist
                     </span>
                 </div>
@@ -450,11 +450,11 @@ export default function AccumulationDashboard() {
                         cls: { wrap: 'border-amber-100 dark:border-amber-900/20', icon: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400', val: 'text-amber-700 dark:text-amber-400' },
                     },
                 ] as const).map((stat, i) => (
-                    <div key={i} className={cn('bg-white dark:bg-slate-950/40 rounded-2xl border p-5 shadow-sm flex items-start gap-4 hover:shadow-md transition-all', stat.cls.wrap)}>
+                    <div key={i} className={cn('bg-white dark:bg-card rounded-2xl border p-5 shadow-sm flex items-start gap-4 hover:shadow-md transition-all', stat.cls.wrap)}>
                         <div className={cn('p-2.5 rounded-xl shrink-0', stat.cls.icon)}>{stat.icon}</div>
                         <div className="min-w-0">
-                            <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 truncate">{stat.label}</div>
-                            <div className={cn('text-xl font-black tracking-tight', stat.cls.val)}>
+                            <div className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 truncate">{stat.label}</div>
+                            <div className={cn('text-xl font-semibold tracking-tight', stat.cls.val)}>
                                 {stat.value}<span className="text-sm ml-1 opacity-60">{stat.unit}</span>
                             </div>
                             <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">{stat.sub}</div>
@@ -470,18 +470,18 @@ export default function AccumulationDashboard() {
             )}>
 
                 {/* ─── Master Table ──────────────────────────────────────────── */}
-                <div className="bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 shadow-2xl overflow-hidden">
-                    <div className="px-5 py-3 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] flex items-center justify-between gap-3">
+                <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border shadow-sm overflow-hidden">
+                    <div className="px-5 py-3 border-b border-border dark:border-border bg-slate-50/50 dark:bg-muted flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                             <Layers className="w-4 h-4 text-indigo-500 shrink-0" />
-                            <span className="text-sm font-black text-slate-700 dark:text-slate-200">Accumulation Overview</span>
-                            <span className="text-[10px] font-black text-slate-400 px-2 py-0.5 bg-slate-100 dark:bg-white/5 rounded-full shrink-0">
+                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Accumulation Overview</span>
+                            <span className="text-[10px] font-semibold text-slate-400 px-2 py-0.5 bg-slate-100 dark:bg-muted rounded-full shrink-0">
                                 {filteredOverview.length}
                             </span>
                         </div>
                         {selectedSymbol && (
                             <button onClick={() => setSelectedSymbol(null)}
-                                className="text-[10px] font-black text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center gap-1 shrink-0 transition-colors">
+                                className="text-[10px] font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center gap-1 shrink-0 transition-colors">
                                 <X className="w-3.5 h-3.5" /> Clear
                             </button>
                         )}
@@ -497,7 +497,7 @@ export default function AccumulationDashboard() {
                                                 <th key={h.label}
                                                     onClick={() => h.col && handleSort(h.col as keyof AccumulationData)}
                                                     className={cn(
-                                                        'px-4 py-2 sticky top-0 z-10 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-100 dark:border-slate-800 text-[10px] font-black uppercase tracking-wider transition-colors',
+                                                        'px-4 py-2 sticky top-0 z-10 bg-slate-50/90 dark:bg-card/90 border-b border-border dark:border-slate-800 text-[10px] font-semibold uppercase tracking-wider transition-colors',
                                                         h.col ? 'cursor-pointer hover:text-indigo-500' : '',
                                                         h.align === 'right' ? 'text-right' : h.align === 'center' ? 'text-center' : 'text-left',
                                                         h.accent === 'emerald' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400',
@@ -511,7 +511,7 @@ export default function AccumulationDashboard() {
                                                     </div>
                                                 </th>
                                             ))}
-                                            <th className="w-6 sticky top-0 z-10 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-sm border-b border-slate-100 dark:border-slate-800" />
+                                            <th className="w-6 sticky top-0 z-10 bg-slate-50/90 dark:bg-card/90 border-b border-border dark:border-slate-800" />
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -546,7 +546,7 @@ export default function AccumulationDashboard() {
                                                 <td className="px-4 py-3 text-right hidden lg:table-cell">
                                                     {item.rsi != null ? (
                                                         <span className={cn(
-                                                            'text-[10px] font-black px-1.5 py-0.5 rounded',
+                                                            'text-[10px] font-semibold px-1.5 py-0.5 rounded',
                                                             item.rsi >= 70 ? 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400'
                                                                 : item.rsi <= 30 ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
                                                                 : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300',
@@ -554,14 +554,14 @@ export default function AccumulationDashboard() {
                                                     ) : <span className="text-slate-300 dark:text-slate-600">—</span>}
                                                 </td>
                                                 <td className="px-4 py-3 text-right hidden lg:table-cell">
-                                                    <span className={cn('text-xs font-black tabular-nums',
+                                                    <span className={cn('text-xs font-semibold tabular-nums',
                                                         item.roc != null && item.roc >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400',
                                                     )}>
                                                         {item.roc != null ? `${item.roc >= 0 ? '+' : ''}${item.roc.toFixed(2)}%` : '—'}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3 text-right">
-                                                    <span className={cn('text-sm font-black tabular-nums',
+                                                    <span className={cn('text-sm font-semibold tabular-nums',
                                                         item.net_qty >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400',
                                                     )}>
                                                         {item.net_qty >= 0 ? '+' : ''}{formatNepaliNumber(item.net_qty)}
@@ -570,15 +570,15 @@ export default function AccumulationDashboard() {
                                                 {/* Intensity bar — CSS transition, no framer-motion */}
                                                 <td className="px-4 py-3 w-[130px]">
                                                     <div className="flex items-center gap-2">
-                                                        <div className="flex-1 bg-slate-100 dark:bg-white/5 rounded-full h-1.5 overflow-hidden">
+                                                        <div className="flex-1 bg-slate-100 dark:bg-muted rounded-full h-1.5 overflow-hidden">
                                                             <div
                                                                 style={{ width: `${Math.min(item.accumulation_ratio, 100)}%`, transition: 'width 0.4s ease-out' }}
                                                                 className={cn('h-full rounded-full',
-                                                                    item.net_qty >= 0 ? 'bg-gradient-to-r from-emerald-400 to-emerald-600' : 'bg-gradient-to-r from-rose-400 to-rose-600',
+                                                                    item.net_qty >= 0 ? 'bg-emerald-500' : 'bg-rose-500',
                                                                 )}
                                                             />
                                                         </div>
-                                                        <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 w-7 text-right tabular-nums shrink-0">
+                                                        <span className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 w-7 text-right tabular-nums shrink-0">
                                                             {item.accumulation_ratio.toFixed(0)}%
                                                         </span>
                                                     </div>
@@ -586,7 +586,7 @@ export default function AccumulationDashboard() {
                                                 <td className="px-3 py-3 hidden md:table-cell">
                                                     <div className="flex gap-1 justify-center">
                                                         {item.top_buyers?.slice(0, 3).map(b => (
-                                                            <span key={b} className="w-6 h-6 flex items-center justify-center bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded text-[9px] font-black border border-emerald-100 dark:border-emerald-800/30">
+                                                            <span key={b} className="w-6 h-6 flex items-center justify-center bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded text-[9px] font-semibold border border-emerald-100 dark:border-emerald-800/30">
                                                                 {b}
                                                             </span>
                                                         ))}
@@ -595,7 +595,7 @@ export default function AccumulationDashboard() {
                                                 <td className="px-3 py-3 hidden md:table-cell">
                                                     <div className="flex gap-1 justify-center">
                                                         {item.top_sellers?.slice(0, 3).map(b => (
-                                                            <span key={b} className="w-6 h-6 flex items-center justify-center bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded text-[9px] font-black border border-rose-100 dark:border-rose-800/30">
+                                                            <span key={b} className="w-6 h-6 flex items-center justify-center bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded text-[9px] font-semibold border border-rose-100 dark:border-rose-800/30">
                                                                 {b}
                                                             </span>
                                                         ))}
@@ -616,15 +616,15 @@ export default function AccumulationDashboard() {
                             </div>
 
                             {filteredOverview.length > PAGE_SIZE && (
-                                <div className="px-5 py-3 border-t border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-white/[0.01] flex items-center justify-between">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{filteredOverview.length} total</span>
+                                <div className="px-5 py-3 border-t border-border dark:border-border bg-slate-50/30 dark:bg-white/[0.01] flex items-center justify-between">
+                                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{filteredOverview.length} total</span>
                                     <div className="flex items-center gap-3">
-                                        <span className="text-[10px] font-black text-slate-400">{page} / {totalPages}</span>
+                                        <span className="text-[10px] font-semibold text-slate-400">{page} / {totalPages}</span>
                                         <div className="flex gap-1.5">
                                             <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                                                className="h-7 px-3 text-[10px] font-black rounded-lg border-slate-200 dark:border-white/10">Prev</Button>
+                                                className="h-7 px-3 text-[10px] font-semibold rounded-lg border-slate-200 dark:border-border">Prev</Button>
                                             <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
-                                                className="h-7 px-3 text-[10px] font-black rounded-lg border-slate-200 dark:border-white/10">Next</Button>
+                                                className="h-7 px-3 text-[10px] font-semibold rounded-lg border-slate-200 dark:border-border">Next</Button>
                                         </div>
                                     </div>
                                 </div>
@@ -641,15 +641,15 @@ export default function AccumulationDashboard() {
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: 24 }}
                             transition={{ duration: 0.22, ease: 'easeOut' }}
-                            className="bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 shadow-2xl overflow-hidden flex flex-col"
+                            className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border shadow-sm overflow-hidden flex flex-col"
                         >
                             {/* Symbol Header */}
-                            <div className="p-5 border-b border-slate-100 dark:border-white/5 bg-gradient-to-br from-indigo-50/40 to-slate-50/10 dark:from-indigo-900/10 dark:to-slate-900/5">
+                            <div className="p-5 border-b border-border bg-muted/40">
                                 <div className="flex items-start justify-between mb-3">
                                     <div>
-                                        <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{selectedSymbol.symbol}</div>
+                                        <div className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight">{selectedSymbol.symbol}</div>
                                         <div className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate max-w-[210px] mt-0.5">{selectedSymbol.name}</div>
-                                        <span className="mt-1.5 inline-block text-[9px] px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-full font-black uppercase tracking-wider">
+                                        <span className="mt-1.5 inline-block text-[9px] px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-full font-semibold uppercase tracking-wider">
                                             {selectedSymbol.sector}
                                         </span>
                                     </div>
@@ -676,16 +676,16 @@ export default function AccumulationDashboard() {
                                             cls: selectedSymbol.roc != null && selectedSymbol.roc >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400',
                                         },
                                     ] as const).map(m => (
-                                        <div key={m.label} className="bg-white/60 dark:bg-slate-900/40 rounded-xl p-2.5 border border-slate-100 dark:border-white/5">
-                                            <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{m.label}</div>
-                                            <div className={cn('text-base font-black font-mono tabular-nums', m.cls)}>{m.val}</div>
+                                        <div key={m.label} className="bg-white/60 dark:bg-card rounded-xl p-2.5 border border-border dark:border-border">
+                                            <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">{m.label}</div>
+                                            <div className={cn('text-base font-semibold font-mono tabular-nums', m.cls)}>{m.val}</div>
                                         </div>
                                     ))}
                                 </div>
 
                                 {(isAggressiveAcc || isAggressiveDist) && (
                                     <div className={cn(
-                                        'mt-3 flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-black',
+                                        'mt-3 flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold',
                                         isAggressiveAcc
                                             ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/30 text-emerald-700 dark:text-emerald-400'
                                             : 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800/30 text-rose-700 dark:text-rose-400',
@@ -697,36 +697,36 @@ export default function AccumulationDashboard() {
                             </div>
 
                             {/* Net Accumulation Bar — CSS transition */}
-                            <div className="px-5 py-4 border-b border-slate-100 dark:border-white/5">
+                            <div className="px-5 py-4 border-b border-border dark:border-border">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Net Accumulation ({range})</span>
-                                    <span className={cn('text-sm font-black tabular-nums',
+                                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Net Accumulation ({range})</span>
+                                    <span className={cn('text-sm font-semibold tabular-nums',
                                         selectedSymbol.net_qty >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400',
                                     )}>
                                         {selectedSymbol.net_qty >= 0 ? '+' : ''}{formatNepaliNumber(selectedSymbol.net_qty)}
                                     </span>
                                 </div>
-                                <div className="w-full bg-slate-100 dark:bg-white/5 rounded-full h-2 overflow-hidden">
+                                <div className="w-full bg-slate-100 dark:bg-muted rounded-full h-2 overflow-hidden">
                                     <div
                                         style={{ width: `${Math.min(selectedSymbol.accumulation_ratio, 100)}%`, transition: 'width 0.5s ease-out' }}
                                         className={cn('h-full rounded-full',
                                             selectedSymbol.net_qty >= 0
-                                                ? 'bg-gradient-to-r from-emerald-400 to-emerald-600'
-                                                : 'bg-gradient-to-r from-rose-400 to-rose-600',
+                                                ? 'bg-emerald-500'
+                                                : 'bg-rose-500',
                                         )}
                                     />
                                 </div>
                                 <div className="flex justify-between mt-1.5">
-                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Buy Intensity</span>
-                                    <span className="text-[10px] font-black text-slate-600 dark:text-slate-300">{selectedSymbol.accumulation_ratio.toFixed(1)}%</span>
+                                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Buy Intensity</span>
+                                    <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-300">{selectedSymbol.accumulation_ratio.toFixed(1)}%</span>
                                 </div>
                             </div>
 
                             {/* Broker Flow Chart */}
-                            <div className="px-5 pt-4 pb-2 border-b border-slate-100 dark:border-white/5">
+                            <div className="px-5 pt-4 pb-2 border-b border-border dark:border-border">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Broker Flow Chart</span>
-                                    {loadingDetail && <span className="text-[9px] font-black text-indigo-500 animate-pulse">Loading...</span>}
+                                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Broker Flow Chart</span>
+                                    {loadingDetail && <span className="text-[9px] font-semibold text-indigo-500 animate-pulse">Loading...</span>}
                                 </div>
                                 {loadingDetail ? (
                                     <div className="h-[170px] flex items-center justify-center">
@@ -743,13 +743,13 @@ export default function AccumulationDashboard() {
 
                             {/* Buy / Sell Leaders */}
                             {detailData && (detailData.buyLeaders.length > 0 || detailData.sellLeaders.length > 0) && (
-                                <div className="px-5 py-4 border-b border-slate-100 dark:border-white/5 grid grid-cols-2 gap-3">
+                                <div className="px-5 py-4 border-b border-border dark:border-border grid grid-cols-2 gap-3">
                                     {([
-                                        { title: 'Top Buyers',  items: detailData.buyLeaders.slice(0, 4),  isGreen: true },
+                                        { title: 'Top Buyers', items: detailData.buyLeaders.slice(0, 4), isGreen: true },
                                         { title: 'Top Sellers', items: detailData.sellLeaders.slice(0, 4), isGreen: false },
                                     ] as const).map(side => (
                                         <div key={side.title}>
-                                            <div className={cn('text-[9px] font-black uppercase tracking-widest mb-2',
+                                            <div className={cn('text-[9px] font-semibold uppercase tracking-wider mb-2',
                                                 side.isGreen ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400',
                                             )}>{side.title}</div>
                                             <div className="space-y-1">
@@ -759,11 +759,11 @@ export default function AccumulationDashboard() {
                                                         side.isGreen ? 'bg-emerald-50/60 dark:bg-emerald-900/10' : 'bg-rose-50/60 dark:bg-rose-900/10',
                                                     )}>
                                                         <Link href={`/broker/${l.broker}`} onClick={e => e.stopPropagation()}>
-                                                            <span className={cn('text-[10px] font-black hover:underline',
+                                                            <span className={cn('text-[10px] font-semibold hover:underline',
                                                                 side.isGreen ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400',
                                                             )}>#{l.broker}</span>
                                                         </Link>
-                                                        <span className={cn('text-[10px] font-black tabular-nums',
+                                                        <span className={cn('text-[10px] font-semibold tabular-nums',
                                                             side.isGreen ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400',
                                                         )}>
                                                             {side.isGreen ? '+' : ''}{formatNepaliNumber(Math.abs(l.net_qty ?? l.buy_qty ?? l.sell_qty ?? 0))}
@@ -779,17 +779,17 @@ export default function AccumulationDashboard() {
                             {/* Quick Actions */}
                             <div className="px-5 py-4 mt-auto flex gap-2 flex-wrap">
                                 <Link href={`/ticker/${selectedSymbol.symbol}`} className="flex-1 min-w-[100px]">
-                                    <Button className="w-full h-9 text-[11px] font-black bg-slate-900 dark:bg-indigo-600 hover:bg-black dark:hover:bg-indigo-700 text-white rounded-xl gap-1.5 shadow-md">
+                                    <Button className="w-full h-9 text-[11px] font-semibold bg-slate-900 dark:bg-indigo-600 hover:bg-black dark:hover:bg-indigo-700 text-white rounded-xl gap-1.5 shadow-md">
                                         <ExternalLink className="w-3.5 h-3.5" /> Full Analysis
                                     </Button>
                                 </Link>
                                 <Link href={`/accumulation/navigator?symbol=${selectedSymbol.symbol}`}>
-                                    <Button variant="outline" className="h-9 px-3 text-[11px] font-black rounded-xl border-slate-200 dark:border-white/10 gap-1.5 hover:bg-slate-50 dark:hover:bg-white/5">
+                                    <Button variant="outline" className="h-9 px-3 text-[11px] font-semibold rounded-xl border-slate-200 dark:border-border gap-1.5 hover:bg-slate-50 dark:hover:bg-white/5">
                                         <Activity className="w-3.5 h-3.5" />
                                     </Button>
                                 </Link>
                                 <Link href={`/accumulation/history?symbol=${selectedSymbol.symbol}`}>
-                                    <Button variant="outline" className="h-9 px-3 text-[11px] font-black rounded-xl border-slate-200 dark:border-white/10 gap-1.5 hover:bg-slate-50 dark:hover:bg-white/5">
+                                    <Button variant="outline" className="h-9 px-3 text-[11px] font-semibold rounded-xl border-slate-200 dark:border-border gap-1.5 hover:bg-slate-50 dark:hover:bg-white/5">
                                         <BarChart3 className="w-3.5 h-3.5" />
                                     </Button>
                                 </Link>
@@ -800,15 +800,15 @@ export default function AccumulationDashboard() {
             </div>
 
             {/* ═══ Bottom Tabbed Section ══════════════════════════════════════ */}
-            <div className="bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 shadow-2xl overflow-hidden">
-                <div className="border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] px-5 flex items-center gap-1 overflow-x-auto no-scrollbar">
+            <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border shadow-sm overflow-hidden">
+                <div className="border-b border-border dark:border-border bg-slate-50/50 dark:bg-muted px-5 flex items-center gap-1 overflow-x-auto no-scrollbar">
                     {([
-                        { key: 'aggressive',  label: 'Aggressive Patterns', icon: <Zap className="w-3.5 h-3.5" /> },
-                        { key: 'smart-money', label: 'Smart Money',         icon: <Crown className="w-3.5 h-3.5" /> },
+                        { key: 'aggressive', label: 'Aggressive Patterns', icon: <Zap className="w-3.5 h-3.5" /> },
+                        { key: 'smart-money', label: 'Smart Money', icon: <Crown className="w-3.5 h-3.5" /> },
                     ] as { key: BottomTab; label: string; icon: React.ReactNode }[]).map(tab => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                             className={cn(
-                                'flex items-center gap-2 px-4 py-4 text-xs font-black tracking-tight border-b-2 transition-all whitespace-nowrap',
+                                'flex items-center gap-2 px-4 py-4 text-xs font-semibold tracking-tight border-b-2 transition-all whitespace-nowrap',
                                 activeTab === tab.key
                                     ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
                                     : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300',
@@ -829,7 +829,7 @@ export default function AccumulationDashboard() {
                                     { variant: 'distributor' as const, items: aggressiveData.distributors, label: 'Aggressive Distributors', isGreen: false },
                                 ]).map(col => (
                                     <div key={col.variant}>
-                                        <h3 className={cn('flex items-center gap-2 text-sm font-black mb-4',
+                                        <h3 className={cn('flex items-center gap-2 text-sm font-semibold mb-4',
                                             col.isGreen ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400',
                                         )}>
                                             {col.isGreen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -844,7 +844,7 @@ export default function AccumulationDashboard() {
                                         </h3>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[520px] overflow-y-auto pr-1">
                                             {col.items.length === 0 ? (
-                                                <div className="col-span-2 p-8 text-center text-slate-400 text-sm bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+                                                <div className="col-span-2 p-8 text-center text-slate-400 text-sm bg-slate-50 dark:bg-card rounded-xl">
                                                     No {col.isGreen ? 'aggressive accumulation' : 'aggressive distribution'} detected
                                                 </div>
                                             ) : col.items.map((item, idx) => (
@@ -869,7 +869,7 @@ export default function AccumulationDashboard() {
                                 {(['1D', '2D', '3D', '1W', '1M', '3M', '6M'] as const).map(r => (
                                     <button key={r} onClick={() => setSmartMoneyRange(r)}
                                         className={cn(
-                                            'px-3 py-1.5 text-[11px] font-black rounded-lg border transition-all',
+                                            'px-3 py-1.5 text-[11px] font-semibold rounded-lg border transition-all',
                                             smartMoneyRange === r
                                                 ? 'bg-amber-500 border-amber-500 text-white shadow-sm'
                                                 : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-amber-300 dark:hover:border-amber-700 hover:text-amber-600 dark:hover:text-amber-400',
@@ -879,28 +879,28 @@ export default function AccumulationDashboard() {
                         {loadingSmartMoney ? <PageLoader text="Loading smart money signals..." /> : (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 <div>
-                                    <h3 className="flex items-center gap-2 text-sm font-black text-amber-700 dark:text-amber-400 mb-4">
+                                    <h3 className="flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-400 mb-4">
                                         <Crown className="w-4 h-4 fill-current" />
                                         Smart Broker Leaderboard
                                     </h3>
                                     <div className="space-y-2">
                                         {!smartMoneyData?.leaderboard?.length ? (
-                                            <div className="p-8 text-center text-slate-400 text-sm bg-slate-50 dark:bg-slate-900/50 rounded-xl">No leaderboard data</div>
+                                            <div className="p-8 text-center text-slate-400 text-sm bg-slate-50 dark:bg-card rounded-xl">No leaderboard data</div>
                                         ) : smartMoneyData.leaderboard.map((broker, idx) => (
                                             <Link href={`/broker/${broker.broker_id}`} key={broker.broker_id}>
-                                                <div className="flex items-center gap-3 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-800/30 transition-all">
+                                                <div className="flex items-center gap-3 p-3 bg-white dark:bg-card rounded-xl border border-border dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-800/30 transition-all">
                                                     <div className={cn(
-                                                        'w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0',
+                                                        'w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0',
                                                         idx === 0 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400'
                                                             : idx === 1 ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
                                                             : idx === 2 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400'
-                                                            : 'bg-slate-50 text-slate-400 dark:bg-slate-900 dark:text-slate-500',
+                                                            : 'bg-slate-50 text-slate-400 dark:bg-card dark:text-slate-500',
                                                     )}>{idx + 1}</div>
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="text-xs font-black text-slate-800 dark:text-slate-200">Broker #{broker.broker_id}</div>
+                                                        <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">Broker #{broker.broker_id}</div>
                                                         <div className="text-[10px] text-slate-400">{broker.rank} Tier</div>
                                                     </div>
-                                                    <div className="text-sm font-black text-amber-600 dark:text-amber-400 shrink-0">{broker.score} pts</div>
+                                                    <div className="text-sm font-semibold text-amber-600 dark:text-amber-400 shrink-0">{broker.score} pts</div>
                                                 </div>
                                             </Link>
                                         ))}
@@ -908,7 +908,7 @@ export default function AccumulationDashboard() {
                                 </div>
 
                                 <div className="lg:col-span-2">
-                                    <h3 className="flex items-center gap-2 text-sm font-black text-indigo-700 dark:text-indigo-400 mb-4">
+                                    <h3 className="flex items-center gap-2 text-sm font-semibold text-indigo-700 dark:text-indigo-400 mb-4">
                                         <Zap className="w-4 h-4 fill-current" />
                                         Active Whale Signals
                                         {smartMoneyData?.signals && smartMoneyData.signals.length > 0 && (
@@ -917,12 +917,12 @@ export default function AccumulationDashboard() {
                                             </span>
                                         )}
                                     </h3>
-                                    <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-slate-800">
+                                    <div className="overflow-x-auto rounded-xl border border-border dark:border-slate-800">
                                         <table className="w-full text-xs">
-                                            <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                                            <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-border dark:border-slate-800">
                                                 <tr>
                                                     {['Broker', 'Symbol', 'Qty', 'Avg Price', 'LTP', 'Amount'].map(h => (
-                                                        <th key={h} className="px-4 py-3 text-left font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px]">{h}</th>
+                                                        <th key={h} className="px-4 py-3 text-left font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px]">{h}</th>
                                                     ))}
                                                 </tr>
                                             </thead>
@@ -933,20 +933,20 @@ export default function AccumulationDashboard() {
                                                     <tr key={idx} className="hover:bg-amber-50/30 dark:hover:bg-amber-900/5 transition-colors">
                                                         <td className="px-4 py-3">
                                                             <Link href={`/broker/${signal.broker_id}`}>
-                                                                <span className="px-2 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-lg font-black border border-amber-100 dark:border-amber-800/30 hover:bg-amber-100 transition-colors text-[10px]">
+                                                                <span className="px-2 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-lg font-semibold border border-amber-100 dark:border-amber-800/30 hover:bg-amber-100 transition-colors text-[10px]">
                                                                     #{signal.broker_id}
                                                                 </span>
                                                             </Link>
                                                         </td>
                                                         <td className="px-4 py-3">
                                                             <Link href={`/ticker/${signal.symbol}`}>
-                                                                <span className="font-black text-indigo-600 dark:text-indigo-400 hover:underline">{signal.symbol}</span>
+                                                                <span className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">{signal.symbol}</span>
                                                             </Link>
                                                         </td>
                                                         <td className="px-4 py-3 font-mono font-bold text-slate-700 dark:text-slate-300 tabular-nums">{signal.qty.toLocaleString()}</td>
                                                         <td className="px-4 py-3 font-mono text-slate-500 dark:text-slate-400 tabular-nums">{formatRupees(signal.avg_buy_price, 0)}</td>
-                                                        <td className="px-4 py-3 font-mono font-black text-slate-800 dark:text-slate-200 tabular-nums">{formatRupees(signal.ltp, 0)}</td>
-                                                        <td className="px-4 py-3 font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{formatRupees(signal.amount, 0)}</td>
+                                                        <td className="px-4 py-3 font-mono font-semibold text-slate-800 dark:text-slate-200 tabular-nums">{formatRupees(signal.ltp, 0)}</td>
+                                                        <td className="px-4 py-3 font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{formatRupees(signal.amount, 0)}</td>
                                                     </tr>
                                                 ))}
                                             </tbody>

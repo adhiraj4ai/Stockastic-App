@@ -47,7 +47,7 @@ export const SuggestionGrid: React.FC<SuggestionGridProps> = ({ onSelect }) => {
                 <div
                     key={idx}
                     className={`
-                        p-4 rounded-xl border backdrop-blur-sm transition-all duration-200
+                        p-4 rounded-xl border transition-all duration-200
                         hover:bg-white/50 bg-white/30 border-gray-200/50
                         dark:hover:bg-gray-800/40 dark:bg-gray-900/20 ${cat.border}
                     `}

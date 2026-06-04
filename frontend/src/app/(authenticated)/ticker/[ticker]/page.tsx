@@ -694,7 +694,7 @@ export default function StockDetailPage() {
                         >
                             <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-4 mb-8">
                                 <div className="flex items-center gap-6">
-                                    <TabsList className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 h-10 rounded-xl shadow-smCondensed">
+                                    <TabsList className="bg-slate-100 dark:bg-card border border-slate-200 dark:border-slate-800 p-1 h-10 rounded-xl shadow-smCondensed">
                                         {(currentUser?.permissions === 'all' || currentUser?.permissions?.['ticker_pa']) && (
                                             <TabsTrigger value="price_action" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:shadow-sm transition-all">Price Action</TabsTrigger>
                                         )}
@@ -774,7 +774,7 @@ export default function StockDetailPage() {
 
                                         <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
                                             <table className="w-full text-sm">
-                                                <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+                                                <thead className="bg-slate-50 dark:bg-card border-b border-slate-200 dark:border-slate-800">
                                                     <tr>
                                                         <th className="px-6 py-4 text-left font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Metric</th>
                                                         <th className="px-6 py-4 text-center font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Audited</th>
@@ -782,7 +782,7 @@ export default function StockDetailPage() {
                                                         <th className="px-6 py-4 text-left font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Sector Range (Low - High)</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/30 dark:bg-slate-950/40">
+                                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/30 dark:bg-card">
                                                     {[
                                                         { name: 'P/E Ratio', key: 'pe_ratio', label: 'P/E' },
                                                         { name: 'P/B Ratio', key: 'pb_ratio', label: 'P/B' },
@@ -838,7 +838,7 @@ export default function StockDetailPage() {
                                     </div>
 
                                     {/* Dividend Distribution History */}
-                                    <div className="glass-card-light dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
+                                    <div className="glass-card-light dark:bg-card rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
                                         <div className="flex items-center gap-3 mb-8">
                                             <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800">
                                                 <PieChart size={18} />
@@ -915,7 +915,7 @@ export default function StockDetailPage() {
                                         </div>
 
                                         {/* Financial Summary Chart */}
-                                        <div className="bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 mb-8 shadow-sm">
+                                        <div className="bg-white/50 dark:bg-card rounded-2xl border border-slate-200 dark:border-slate-800 p-6 mb-8 shadow-sm">
                                             <div className="h-[400px]">
                                                 <ReactECharts
                                                     key={`${reportType}-${visibleMetrics.join('-')}`}
@@ -947,7 +947,7 @@ export default function StockDetailPage() {
                                                                     <ChevronDown size={16} className={cn("text-slate-400 dark:text-slate-500 transition-transform", !collapsedItems.has(`section-${section}`) && "rotate-180")} />
                                                                 </button>
                                                                 {!collapsedItems.has(`section-${section}`) && (
-                                                                    <div className="p-6 bg-white/50 dark:bg-slate-900/50 overflow-x-auto no-scrollbar">
+                                                                    <div className="p-6 bg-white/50 dark:bg-card overflow-x-auto no-scrollbar">
                                                                         <table className="w-full text-sm">
                                                                             <thead>
                                                                                 <tr className="border-b border-slate-50 dark:border-slate-800">

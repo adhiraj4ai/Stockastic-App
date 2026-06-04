@@ -55,7 +55,7 @@ function OptimizeForm({ onOptimize, onCancel, optimizing }: any) {
                         setJsonError('');
                     }}
                     className="w-full h-48 p-3 border border-gray-300 rounded-md font-mono text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder='{\n  "n1": [5, 30],\n  "n2": [20, 100]\n}'
+                    placeholder='{\n "n1": [5, 30],\n "n2": [20, 100]\n}'
                 />
                 {jsonError && (
                     <p className="text-xs text-red-600 mt-1">{jsonError}</p>

@@ -128,7 +128,7 @@ function MessageRenderer({ content, role, isFinished }: { content: string; role:
         return (
             <div className="space-y-4">
                 <MessageRenderer content={before} role={role} isFinished={isFinished} />
-                <div className="w-full h-96 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm my-4">
+                <div className="w-full h-96 bg-white dark:bg-card rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm my-4">
                     <ReactECharts option={option} style={{ height: '100%', width: '100%' }} notMerge={true} lazyUpdate={true} />
                 </div>
                 <MessageRenderer content={after} role={role} isFinished={isFinished} />
@@ -196,7 +196,7 @@ function MessageRenderer({ content, role, isFinished }: { content: string; role:
 function CollapsibleSQL({ sql }: { sql: string }) {
     const [isOpen, setIsOpen] = useState(false);
     return (
-        <div className="my-1 border border-indigo-100 dark:border-indigo-900/50 rounded-lg overflow-hidden bg-white dark:bg-slate-900 shadow-sm transition-all hover:border-indigo-200 dark:hover:border-indigo-800">
+        <div className="my-1 border border-indigo-100 dark:border-indigo-900/50 rounded-lg overflow-hidden bg-white dark:bg-card shadow-sm transition-all hover:border-indigo-200 dark:hover:border-indigo-800">
             <div onClick={() => setIsOpen(!isOpen)} className="px-4 py-2.5 bg-indigo-50/50 dark:bg-indigo-950/50 flex items-center justify-between cursor-pointer select-none group">
                 <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400 font-bold text-sm">
                     <span className="p-1 bg-indigo-100 dark:bg-indigo-900/50 rounded text-indigo-600 dark:text-indigo-400"><Code2 size={14} /></span>
@@ -216,7 +216,7 @@ function CollapsibleSQL({ sql }: { sql: string }) {
 function CollapsiblePython({ code }: { code: string }) {
     const [isOpen, setIsOpen] = useState(false);
     return (
-        <div className="my-1 border border-emerald-100 dark:border-emerald-900/50 rounded-lg overflow-hidden bg-white dark:bg-slate-900 shadow-sm transition-all hover:border-emerald-200 dark:hover:border-emerald-800">
+        <div className="my-1 border border-emerald-100 dark:border-emerald-900/50 rounded-lg overflow-hidden bg-white dark:bg-card shadow-sm transition-all hover:border-emerald-200 dark:hover:border-emerald-800">
             <div onClick={() => setIsOpen(!isOpen)} className="px-4 py-2.5 bg-emerald-50/50 dark:bg-emerald-950/50 flex items-center justify-between cursor-pointer select-none group">
                 <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold text-sm">
                     <span className="p-1 bg-emerald-100 dark:bg-emerald-900/50 rounded text-emerald-600 dark:text-emerald-400"><Code2 size={14} /></span>
@@ -251,12 +251,12 @@ function MarkdownRenderer({ content }: { content: string }) {
                             <code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-sm font-mono text-pink-600 dark:text-pink-400" {...props}>{children}</code>
                         );
                     },
-                    table({ children }) { return <div className="overflow-x-auto my-1.5 border rounded-lg border-slate-200 dark:border-slate-800 max-w-xl mx-auto backdrop-blur-sm bg-white/50 dark:bg-slate-900/50"><table className="w-full text-left border-collapse">{children}</table></div>; },
-                    thead({ children }) { return <thead className="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-100 dark:border-slate-800">{children}</thead>; },
+                    table({ children }) { return <div className="overflow-x-auto my-1.5 border rounded-lg border-slate-200 dark:border-slate-800 max-w-xl mx-auto bg-white/50 dark:bg-card"><table className="w-full text-left border-collapse">{children}</table></div>; },
+                    thead({ children }) { return <thead className="bg-slate-50 dark:bg-card/80 border-b border-border dark:border-slate-800">{children}</thead>; },
                     th({ children }) { return <th className="px-4 py-2 font-semibold text-slate-700 dark:text-slate-400 text-xs tracking-tight">{children}</th>; },
-                    td({ children }) { return <td className="px-4 py-2 border-t border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400">{children}</td>; },
+                    td({ children }) { return <td className="px-4 py-2 border-t border-border dark:border-slate-800 text-slate-600 dark:text-slate-400">{children}</td>; },
                     p({ children }) { return <p className="mb-2 last:mb-0 text-slate-700 dark:text-slate-300 leading-relaxed font-medium">{children}</p>; },
-                    img({ node, ...props }: any) { return <div className="my-4 flex justify-center"><img className="rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm max-w-md w-full object-cover" {...props} /></div>; }
+                    img({ node, ...props }: any) { return <div className="my-4 flex justify-center"><img className="rounded-xl border border-border dark:border-slate-800 shadow-sm max-w-md w-full object-cover" {...props} /></div>; }
                 }}
             >
                 {content}
@@ -374,7 +374,7 @@ export function ChatInterface({ hideHeader = false, messages = [], onSendMessage
                         const isActive = msg.id === activeMessageId;
                         return (
                             <div key={msg.id} className="group flex items-center gap-4 pointer-events-auto">
-                                <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0 bg-background/80 backdrop-blur-md text-[10px] py-1.5 px-3 rounded-full border border-border/50 text-foreground/70 font-medium tracking-tight shadow-2xl pointer-events-none truncate max-w-[180px]">
+                                <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0 bg-background/80 text-[10px] py-1.5 px-3 rounded-full border border-border/50 text-foreground/70 font-medium tracking-tight shadow-sm pointer-events-none truncate max-w-[180px]">
                                     {msg.content}
                                 </div>
                                 <button
@@ -393,7 +393,7 @@ export function ChatInterface({ hideHeader = false, messages = [], onSendMessage
             <div className="flex-1 flex flex-col min-h-0 relative z-10 overflow-hidden">
                 {/* Minimal Header */}
                 {!hideHeader && !isNewChat && (
-                    <header className="px-8 py-5 flex items-center justify-between shrink-0 backdrop-blur-sm bg-background/5 border-b border-border/10">
+                    <header className="px-8 py-5 flex items-center justify-between shrink-0 bg-background/5 border-b border-border/10">
                         <div className="flex items-center gap-3">
                             <div className="w-2 h-2 rounded-full bg-primary horizon-glow" />
                             <span className="text-xs font-semibold tracking-tight text-foreground/40">
@@ -452,7 +452,7 @@ export function ChatInterface({ hideHeader = false, messages = [], onSendMessage
                                                     className={`group relative ${isUser ? 'flex items-center justify-end' : 'w-full'}`}
                                                 >
                                                     {isUser ? (
-                                                        <div className={`px-6 py-3 rounded-full border bg-foreground/5 dark:bg-white/5 border-border/40 backdrop-blur-md transition-all ${isLastUser ? 'border-primary/30 horizon-glow' : 'opacity-60'}`}>
+                                                        <div className={`px-6 py-3 rounded-full border bg-foreground/5 dark:bg-muted border-border/40 transition-all ${isLastUser ? 'border-primary/30 horizon-glow' : 'opacity-60'}`}>
                                                             <span className="text-sm font-bold tracking-tight text-foreground/80">{msg.content}</span>
                                                         </div>
                                                     ) : (
@@ -499,7 +499,7 @@ export function ChatInterface({ hideHeader = false, messages = [], onSendMessage
                     {/* The Floating Pill Input */}
                     <div className="absolute bottom-10 left-0 right-0 z-40 px-6 pointer-events-none">
                         <div className="max-w-3xl mx-auto pointer-events-auto">
-                            <div className="horizon-glass rounded-[2rem] p-2 pr-4 flex items-center transition-all focus-within:horizon-glow group border-border/20 shadow-2xl">
+                            <div className="horizon-glass rounded-[2rem] p-2 pr-4 flex items-center transition-all focus-within:horizon-glow group border-border/20 shadow-sm">
                                 <div className="p-3 text-muted-foreground/40 group-focus-within:text-primary/60 transition-colors">
                                     <Sparkles size={20} />
                                 </div>

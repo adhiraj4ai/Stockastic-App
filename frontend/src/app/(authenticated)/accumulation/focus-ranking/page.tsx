@@ -220,26 +220,26 @@ export default function FocusRankingPage() {
             {loading ? <PageLoader text="Syncing institutional datasets..." /> : !data?.series?.length ? (
                 <div className="flex flex-col items-center justify-center p-32 space-y-4">
                     <Activity className="w-12 h-12 text-slate-300 animate-pulse" />
-                    <p className="text-slate-500 font-black uppercase tracking-widest">No data matching range</p>
+                    <p className="text-slate-500 font-semibold uppercase tracking-wider">No data matching range</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 gap-8">
 
                     {/* Bump Chart Terminal */}
-                    <div className="bg-white/80 dark:bg-slate-950/40 backdrop-blur-2xl rounded-[2.5rem] border border-slate-200/50 dark:border-white/5 shadow-2xl overflow-hidden flex flex-col">
-                        <div className="px-8 py-6 border-b border-slate-100 dark:border-white/5 bg-slate-50/20 dark:bg-white/[0.02] flex items-center justify-between">
+                    <div className="bg-white/80 dark:bg-card rounded-[2.5rem] border border-border dark:border-border shadow-sm overflow-hidden flex flex-col">
+                        <div className="px-8 py-6 border-b border-border dark:border-border bg-slate-50/20 dark:bg-muted flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <Activity className="w-5 h-5 text-indigo-500" />
-                                <h2 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest">
+                                <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
                                     Smart Money Net Accumulation History
                                 </h2>
                             </div>
                             <div className="flex items-center gap-6">
-                                <div className="flex p-1 bg-slate-100/50 dark:bg-slate-900/60 rounded-xl border border-slate-200/50 dark:border-white/5">
+                                <div className="flex p-1 bg-slate-100/50 dark:bg-card rounded-xl border border-border dark:border-border">
                                     {RANGES.map(r => (
                                         <button key={r} onClick={() => setRange(r)}
                                             className={cn(
-                                                'px-4 py-1.5 text-[10px] font-black rounded-lg transition-all duration-300 tracking-widest uppercase',
+                                                'px-4 py-1.5 text-[10px] font-semibold rounded-lg transition-all duration-300 tracking-wider uppercase',
                                                 range === r
                                                     ? 'bg-white dark:bg-slate-800 text-orange-500 shadow-sm'
                                                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200',
@@ -248,7 +248,7 @@ export default function FocusRankingPage() {
                                         </button>
                                     ))}
                                 </div>
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 dark:bg-white/5 px-3 py-1 rounded-lg">
+                                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-100 dark:bg-muted px-3 py-1 rounded-lg">
                                     {data.dates.length} SESSIONS
                                 </span>
                             </div>
@@ -266,13 +266,13 @@ export default function FocusRankingPage() {
                         <div className="px-8 pb-8 flex flex-wrap gap-4">
                             {data.series.map(s => (
                                 <Link href={`/ticker/${s.symbol}`} key={s.symbol}>
-                                    <div className="group flex items-center gap-3 px-4 py-2 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200/50 dark:border-white/5 rounded-2xl hover:bg-white dark:hover:bg-slate-800 transition-all hover:scale-105 cursor-pointer">
+                                    <div className="group flex items-center gap-3 px-4 py-2 bg-slate-50/50 dark:bg-muted border border-border dark:border-border rounded-2xl hover:bg-white dark:hover:bg-slate-800 transition-all hover:scale-105 cursor-pointer">
                                         <span
                                             className="w-3 h-3 rounded-full flex-shrink-0 animate-pulse"
                                             style={{ backgroundColor: symbolColor(s.symbol) }}
                                         />
                                         <div className="flex flex-col">
-                                            <span className="text-xs font-black text-slate-900 dark:text-slate-200 group-hover:text-orange-500 transition-colors">
+                                            <span className="text-xs font-semibold text-slate-900 dark:text-slate-200 group-hover:text-orange-500 transition-colors">
                                                 {s.symbol}
                                             </span>
                                             <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
@@ -287,11 +287,11 @@ export default function FocusRankingPage() {
 
                     <div className="grid grid-cols-1 gap-8">
                         {/* Latest session spotlight (Full width) */}
-                        <div className="bg-white/80 dark:bg-slate-950/40 backdrop-blur-2xl rounded-[2.5rem] border border-slate-200/50 dark:border-white/5 shadow-2xl overflow-hidden">
-                            <div className="px-8 py-6 border-b border-slate-100 dark:border-white/5 bg-slate-50/20 dark:bg-white/[0.02] flex items-center justify-between">
+                        <div className="bg-white/80 dark:bg-card rounded-[2.5rem] border border-border dark:border-border shadow-sm overflow-hidden">
+                            <div className="px-8 py-6 border-b border-border dark:border-border bg-slate-50/20 dark:bg-muted flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <Zap className="w-5 h-5 text-yellow-500" />
-                                    <h2 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest">
+                                    <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
                                         Latest Tactical Pulse — {fmtDate(latestDate!)}
                                     </h2>
                                 </div>
@@ -301,7 +301,7 @@ export default function FocusRankingPage() {
                                     <thead>
                                         <tr className="bg-slate-50/50 dark:bg-white/[0.01]">
                                             {['Rank', 'Symbol', 'LTP', 'Buy Price', 'Net Vol', 'Top 5 Sellers', 'Momentum'].map(h => (
-                                                <th key={h} className="px-8 py-5 text-left font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[10px] border-b border-slate-100 dark:border-white/5">{h}</th>
+                                                <th key={h} className="px-8 py-5 text-left font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[10px] border-b border-border dark:border-border">{h}</th>
                                             ))}
                                         </tr>
                                     </thead>
@@ -315,7 +315,7 @@ export default function FocusRankingPage() {
                                                 <tr key={entry.symbol} className="group hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition-all duration-300">
                                                     <td className="px-8 py-5">
                                                         <div
-                                                            className="w-9 h-9 rounded-2xl flex items-center justify-center text-xs font-black text-white shadow-lg shadow-inner"
+                                                            className="w-9 h-9 rounded-2xl flex items-center justify-center text-xs font-semibold text-white shadow-lg shadow-inner"
                                                             style={{ backgroundColor: color, boxShadow: `0 8px 16px ${color}33` }}
                                                         >
                                                             {entry.rank}
@@ -323,19 +323,19 @@ export default function FocusRankingPage() {
                                                     </td>
                                                     <td className="px-8 py-5">
                                                         <Link href={`/ticker/${entry.symbol}`}>
-                                                            <div className="font-black text-sm text-slate-900 dark:text-white group-hover:text-orange-500 transition-colors tracking-tight">
+                                                            <div className="font-semibold text-sm text-slate-900 dark:text-white group-hover:text-orange-500 transition-colors tracking-tight">
                                                                 {entry.symbol}
                                                             </div>
                                                         </Link>
                                                     </td>
-                                                    <td className="px-8 py-5 font-black text-slate-900 dark:text-white">
+                                                    <td className="px-8 py-5 font-semibold text-slate-900 dark:text-white">
                                                         {entry.ltp ? `Rs. ${entry.ltp.toLocaleString()}` : <Minus className="w-3 h-3 text-slate-300" />}
                                                     </td>
                                                     <td className="px-8 py-5 text-slate-500 dark:text-slate-400 font-bold">
                                                         {entry.buy_price ? `Rs. ${entry.buy_price.toLocaleString()}` : <Minus className="w-3 h-3 text-slate-300" />}
                                                     </td>
                                                     <td className={cn(
-                                                        "px-8 py-5 font-mono font-black tabular-nums",
+                                                        "px-8 py-5 font-mono font-semibold tabular-nums",
                                                         isAccumulation ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
                                                     )}>
                                                         {isAccumulation ? '+' : ''}{formatNepaliNumber(entry.volume)}
@@ -343,7 +343,7 @@ export default function FocusRankingPage() {
                                                     <td className="px-8 py-5">
                                                         <div className="flex gap-1.5 flex-wrap max-w-[200px]">
                                                             {entry.top_sellers?.slice(0, 5).map(b => (
-                                                                <span key={b} className="px-2 py-1 rounded-lg text-[9px] font-black bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/50 hover:scale-110 transition-transform cursor-default">
+                                                                <span key={b} className="px-2 py-1 rounded-lg text-[9px] font-semibold bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/50 hover:scale-110 transition-transform cursor-default">
                                                                     #{b}
                                                                 </span>
                                                             ))}
@@ -351,22 +351,22 @@ export default function FocusRankingPage() {
                                                     </td>
                                                     <td className="px-8 py-5">
                                                         {rankChange === null ? (
-                                                            <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100/50 dark:bg-slate-800/50 px-3 py-1.5 rounded-full w-fit">
+                                                            <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-100/50 dark:bg-slate-800/50 px-3 py-1.5 rounded-full w-fit">
                                                                 <Zap className="w-3 h-3 text-orange-500" />
                                                                 New Focus
                                                             </div>
                                                         ) : rankChange > 0 ? (
-                                                            <div className="flex items-center gap-2 text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1.5 rounded-full w-fit border border-emerald-100 dark:border-emerald-900/30">
+                                                            <div className="flex items-center gap-2 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1.5 rounded-full w-fit border border-emerald-100 dark:border-emerald-900/30">
                                                                 <ArrowUp className="w-3 h-3" />
                                                                 +{rankChange} Rank
                                                             </div>
                                                         ) : rankChange < 0 ? (
-                                                            <div className="flex items-center gap-2 text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest bg-rose-50 dark:bg-rose-950/30 px-3 py-1.5 rounded-full w-fit border border-rose-100 dark:border-rose-900/30">
+                                                            <div className="flex items-center gap-2 text-[10px] font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider bg-rose-50 dark:bg-rose-950/30 px-3 py-1.5 rounded-full w-fit border border-rose-100 dark:border-rose-900/30">
                                                                 <ArrowDown className="w-3 h-3" />
                                                                 {rankChange} Rank
                                                             </div>
                                                         ) : (
-                                                            <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-full w-fit">
+                                                            <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-card px-3 py-1.5 rounded-full w-fit">
                                                                 <Minus className="w-3 h-3" />
                                                                 Stable
                                                             </div>
@@ -382,9 +382,9 @@ export default function FocusRankingPage() {
                     </div>
 
                     {/* Daily Breakdown Grid */}
-                    <div className="bg-white/80 dark:bg-slate-950/40 backdrop-blur-2xl rounded-[2.5rem] border border-slate-100 dark:border-white/5 shadow-2xl overflow-hidden">
-                        <div className="px-8 py-6 border-b border-slate-100 dark:border-white/5 bg-slate-50/20 dark:bg-white/[0.02]">
-                            <h2 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest flex items-center gap-3">
+                    <div className="bg-white/80 dark:bg-card rounded-[2.5rem] border border-border dark:border-border shadow-sm overflow-hidden">
+                        <div className="px-8 py-6 border-b border-border dark:border-border bg-slate-50/20 dark:bg-muted">
+                            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-3">
                                 <Activity className="w-5 h-5 text-emerald-500" />
                                 Daily Displacement Matrix
                             </h2>
@@ -393,24 +393,24 @@ export default function FocusRankingPage() {
                             {[...data.dates].reverse().map(date => {
                                 const entries = data.daily_rankings[date] ?? [];
                                 return (
-                                    <div key={date} className="flex flex-col h-full rounded-3xl border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] p-5 hover:border-orange-500/30 transition-all duration-300">
+                                    <div key={date} className="flex flex-col h-full rounded-xl border border-border dark:border-border bg-slate-50/50 dark:bg-muted p-5 hover:border-orange-500/30 transition-all duration-300">
                                         <div className="flex items-center justify-between mb-4">
-                                            <span className="text-[11px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest">{fmtDate(date)}</span>
+                                            <span className="text-[11px] font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider">{fmtDate(date)}</span>
                                             <span className="text-[9px] font-mono text-slate-400">10 ITEMS</span>
                                         </div>
 
                                         <div className="space-y-2">
                                             {entries.map(entry => (
                                                 <Link href={`/ticker/${entry.symbol}`} key={entry.symbol}>
-                                                    <div className="group flex items-center gap-3 p-2 rounded-xl bg-white dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 hover:border-orange-500/50 transition-all cursor-pointer">
+                                                    <div className="group flex items-center gap-3 p-2 rounded-xl bg-white dark:bg-card border border-border dark:border-slate-800 hover:border-orange-500/50 transition-all cursor-pointer">
                                                         <span
-                                                            className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black text-white shrink-0"
+                                                            className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-semibold text-white shrink-0"
                                                             style={{ backgroundColor: symbolColor(entry.symbol) }}
                                                         >
                                                             {entry.rank}
                                                         </span>
                                                         <div className="flex flex-col min-w-0 flex-1">
-                                                            <span className="text-[11px] font-black text-slate-900 dark:text-slate-200 truncate group-hover:text-orange-500 transition-colors">
+                                                            <span className="text-[11px] font-semibold text-slate-900 dark:text-slate-200 truncate group-hover:text-orange-500 transition-colors">
                                                                 {entry.symbol}
                                                             </span>
                                                             <div className="flex items-center gap-1">

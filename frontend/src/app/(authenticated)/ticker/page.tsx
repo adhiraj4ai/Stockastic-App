@@ -113,7 +113,7 @@ export default function TickerLandingPage() {
             <div className="min-h-screen flex flex-col items-center justify-center px-4">
                 {/* Wordmark & Greeting */}
                 <div className="mb-14 text-center">
-                    <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white">
+                    <h1 className="text-4xl font-semibold tracking-tight text-slate-900 dark:text-white">
                         Ticker <span className="text-emerald-500">Search</span>
                     </h1>
                 </div>
@@ -121,7 +121,7 @@ export default function TickerLandingPage() {
                 {/* Search */}
                 <div className="w-full max-w-md relative">
                     <div className={cn(
-                        "flex items-center gap-3 bg-white dark:bg-slate-900 border rounded-2xl px-5 py-3.5 transition-all duration-200",
+                        "flex items-center gap-3 bg-white dark:bg-card border rounded-2xl px-5 py-3.5 transition-all duration-200",
                         focused
                             ? "border-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.08)]"
                             : "border-slate-200 dark:border-slate-800 shadow-sm"
@@ -151,14 +151,14 @@ export default function TickerLandingPage() {
 
                     {/* Dropdown */}
                     {showDropdown && companies.length > 0 && (
-                        <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                        <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white dark:bg-card border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150">
                             {companies.map((c, i) => (
                                 <button
                                     key={c.symbol}
                                     onMouseDown={() => go(c.symbol)}
                                     className={cn(
                                         "w-full flex items-center gap-3.5 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors",
-                                        i !== 0 && "border-t border-slate-100 dark:border-slate-800/60"
+                                        i !== 0 && "border-t border-border dark:border-slate-800/60"
                                     )}
                                 >
                                     <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
@@ -177,7 +177,7 @@ export default function TickerLandingPage() {
                 {/* Quick picks / Portfolio */}
                 {!focused && !search && displaySymbols.length > 0 && (
                     <div className="mt-8 flex items-center gap-3 animate-in fade-in duration-500 delay-300">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                             {displayLabel}
                         </span>
                         <div className="flex flex-wrap gap-2">

@@ -94,8 +94,8 @@ export function OptimizePortfolioDialog({ isOpen, onClose, currentHoldings, acco
     }) : [];
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+            <div className="bg-white rounded-2xl shadow-sm w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Header */}
                 <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
                     <div className="flex items-center gap-3">
@@ -238,7 +238,7 @@ export function OptimizePortfolioDialog({ isOpen, onClose, currentHoldings, acco
                                                 />
                                                 <Legend verticalAlign="top" wrapperStyle={{ paddingTop: '0px', paddingBottom: '20px' }} />
                                                 <Bar dataKey="current" name="Current Weight" fill="#e5e7eb" radius={[4, 4, 0, 0]} />
-                                                <Bar dataKey="suggested" name="Optimized Weight" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                                                <Bar dataKey="suggested" name="Optimized Weight" fill="#6366f1" radius={[4, 4, 0, 0]} />
                                             </BarChart>
                                         </ResponsiveContainer>
                                     </div>

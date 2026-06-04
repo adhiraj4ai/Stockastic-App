@@ -16,8 +16,8 @@ interface FundamentalCoreProps {
 
 export function FundamentalCore({ metrics }: FundamentalCoreProps) {
     return (
-        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/30 dark:bg-slate-800/20">
+        <Card className="bg-white dark:bg-card border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-border dark:border-slate-800 flex items-center justify-between bg-slate-50/30 dark:bg-slate-800/20">
                 <CardTitle className="text-[10px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-2 tracking-tight">
                     <Activity size={14} className="text-blue-500" />
                     Fundamental DNA & ratios
@@ -29,7 +29,7 @@ export function FundamentalCore({ metrics }: FundamentalCoreProps) {
                     {metrics.map((m, idx) => (
                         <div key={idx} className="p-6 space-y-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
                             <div className="flex items-center justify-between">
-                                <div className={cn("p-2 rounded-lg bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 group-hover:scale-110 transition-transform", m.color)}>
+                                <div className={cn("p-2 rounded-lg bg-white dark:bg-slate-800 shadow-sm border border-border dark:border-slate-700 group-hover:scale-110 transition-transform", m.color)}>
                                     <m.icon size={16} />
                                 </div>
                                 <div className="text-[9px] font-medium text-slate-300 tracking-tight">Ref: 2025.Q4</div>

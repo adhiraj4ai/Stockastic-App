@@ -62,16 +62,16 @@ export function TopNavigationBar() {
     if (!mounted) return null;
 
     return (
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-white/70 dark:bg-[#020617]/70 backdrop-blur-2xl border-b border-slate-200/50 dark:border-white/5 transition-all duration-500">
-            <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between">
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border">
+            <div className="max-w-[1600px] mx-auto px-6 h-14 flex items-center justify-between">
                 {/* Logo Section */}
-                <div className="flex items-center gap-8">
+                <div className="flex items-center gap-6">
                     <Link href="/" className="hover:opacity-80 transition-opacity">
                         <Image
                             src={logoSrc}
                             alt="Stockastic"
-                            width={110}
-                            height={80}
+                            width={104}
+                            height={28}
                             className="object-contain"
                             priority
                         />
@@ -82,17 +82,17 @@ export function TopNavigationBar() {
                         {navLinks.map((link) => {
                             const isActive = pathname === link.href;
                             return (
-                                <Link 
-                                    key={link.href} 
+                                <Link
+                                    key={link.href}
                                     href={link.href}
                                     className={cn(
-                                        "px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 flex items-center gap-2",
-                                        isActive 
-                                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
-                                            : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white"
+                                        "px-2.5 py-1.5 rounded-md text-[13px] font-medium transition-colors flex items-center gap-2",
+                                        isActive
+                                            ? "bg-accent text-foreground"
+                                            : "text-muted-foreground hover:bg-accent hover:text-foreground"
                                     )}
                                 >
-                                    <link.icon size={16} className={isActive ? "text-emerald-500" : "opacity-60"} />
+                                    <link.icon size={14} />
                                     {link.name}
                                 </Link>
                             );
@@ -101,42 +101,42 @@ export function TopNavigationBar() {
                 </div>
 
                 {/* Action Section */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                     {isAuthenticated ? (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <button className="h-10 w-10 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-black shadow-lg hover:scale-105 transition-all duration-300 border border-slate-200/50 dark:border-white/10 uppercase">
-                                    <User size={18} />
+                                <button className="h-8 w-8 rounded-md bg-foreground text-background flex items-center justify-center hover:opacity-90 transition-opacity">
+                                    <User size={15} />
                                 </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-slate-200 dark:border-white/5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl">
-                                <DropdownMenuLabel className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 py-2">Account</DropdownMenuLabel>
-                                <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/5" />
-                                <DropdownMenuItem onClick={() => router.push('/portfolio')} className="cursor-pointer gap-3 p-3 rounded-xl focus:bg-emerald-50 dark:focus:bg-emerald-500/10 focus:text-emerald-600 dark:focus:text-emerald-400 transition-all">
-                                    <Briefcase size={16} />
-                                    <span className="text-sm font-bold">My Portfolio</span>
+                            <DropdownMenuContent align="end" className="w-48 p-1 rounded-md">
+                                <DropdownMenuLabel className="text-[11px] font-normal text-muted-foreground px-2 py-1.5">Account</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => router.push('/portfolio')} className="cursor-pointer gap-2 px-2 py-1.5 text-[13px]">
+                                    <Briefcase size={14} className="text-muted-foreground" />
+                                    <span>My portfolio</span>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => router.push('/market')} className="cursor-pointer gap-3 p-3 rounded-xl focus:bg-blue-50 dark:focus:bg-blue-500/10 focus:text-blue-600 dark:focus:text-blue-400 transition-all">
-                                    <LayoutDashboard size={16} />
-                                    <span className="text-sm font-bold">Dashboard</span>
+                                <DropdownMenuItem onClick={() => router.push('/market')} className="cursor-pointer gap-2 px-2 py-1.5 text-[13px]">
+                                    <LayoutDashboard size={14} className="text-muted-foreground" />
+                                    <span>Dashboard</span>
                                 </DropdownMenuItem>
-                                <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/5" />
-                                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer gap-3 p-3 rounded-xl text-rose-600 dark:text-rose-400 focus:bg-rose-50 dark:focus:bg-rose-500/10 focus:text-rose-700 dark:focus:text-rose-300 transition-all">
-                                    <LogOut size={16} />
-                                    <span className="text-sm font-bold">Sign Out</span>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer gap-2 px-2 py-1.5 text-[13px] text-destructive focus:text-destructive">
+                                    <LogOut size={14} />
+                                    <span>Sign out</span>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     ) : (
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
                             <Link href="/login">
-                                <Button variant="ghost" className="rounded-xl font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-                                    Sign In
+                                <Button variant="ghost" size="sm" className="text-[13px] font-medium">
+                                    Sign in
                                 </Button>
                             </Link>
                             <Link href="/login?mode=signup">
-                                <Button className="rounded-xl font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 px-6">
-                                    Get Started
+                                <Button size="sm" className="text-[13px] font-medium">
+                                    Get started
                                 </Button>
                             </Link>
                         </div>

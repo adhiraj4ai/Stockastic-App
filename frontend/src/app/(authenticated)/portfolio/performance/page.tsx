@@ -43,7 +43,7 @@ export default function PerformancePage() {
                     <select
                         value={selectedAccount}
                         onChange={(e) => setSelectedAccount(e.target.value)}
-                        className="appearance-none bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-300 py-2 pl-4 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium shadow-sm cursor-pointer text-sm"
+                        className="appearance-none bg-white dark:bg-card border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-300 py-2 pl-4 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium shadow-sm cursor-pointer text-sm"
                     >
                         <option value="all">All Accounts</option>
                         {accounts.map((acc: any) => (

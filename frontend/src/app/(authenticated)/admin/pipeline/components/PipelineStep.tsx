@@ -49,7 +49,7 @@ export function PipelineStep({
             "group relative overflow-hidden rounded-2xl border transition-all duration-300",
             status === 'running' ? "border-blue-500 shadow-lg shadow-blue-500/10 bg-blue-50/20 dark:border-indigo-500 dark:shadow-indigo-500/10 dark:bg-indigo-900/10" :
                 status === 'completed' ? "border-emerald-200 bg-emerald-50/10 dark:border-emerald-800 dark:bg-emerald-900/10" :
-                    "border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-200 dark:hover:border-indigo-700 hover:shadow-md"
+                    "border-gray-200 dark:border-slate-800 bg-white dark:bg-card hover:border-blue-200 dark:hover:border-indigo-700 hover:shadow-md"
         )}>
             {/* Left accent bar */}
             <div className={cn(

@@ -22,11 +22,11 @@ function SummaryTile({ title, value, value2, subtext, icon: Icon, colorClass, tr
     title: string, value: string, value2?: string, subtext: string, icon: any, colorClass: string, trend?: 'up' | 'down'
 }) {
     return (
-        <Card className="overflow-hidden border-none shadow-lg bg-white dark:bg-slate-900 group hover:shadow-2xl transition-all duration-500">
+        <Card className="overflow-hidden border-none shadow-lg bg-white dark:bg-card group hover:shadow-sm transition-all duration-500">
             <div className={`h-1.5 w-full ${colorClass.split(' ')[0]}`} />
             <CardContent className="p-6">
                 <div className="flex justify-between items-center mb-5">
-                    <h4 className="text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-tight">{title}</h4>
+                    <h4 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-tight">{title}</h4>
                     <div className={`p-2 rounded-xl ${colorClass.split(' ')[1]} dark:bg-slate-800 ${colorClass.split(' ')[2]} transition-all duration-300 group-hover:rotate-6 group-hover:scale-110 shadow-sm`}>
                         <Icon size={18} />
                     </div>
@@ -34,7 +34,7 @@ function SummaryTile({ title, value, value2, subtext, icon: Icon, colorClass, tr
 
                 <div className="space-y-1">
                     <div className="flex items-baseline flex-wrap gap-x-4 gap-y-1">
-                        <span className="text-3xl font-black text-gray-900 dark:text-slate-100 tracking-tighter transition-all group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                        <span className="text-3xl font-semibold text-gray-900 dark:text-slate-100 tracking-tighter transition-all group-hover:text-blue-600 dark:group-hover:text-blue-400">
                             {value}
                         </span>
                         {value2 && (
@@ -50,7 +50,7 @@ function SummaryTile({ title, value, value2, subtext, icon: Icon, colorClass, tr
                         {subtext}
                     </p>
                     {trend && (
-                        <div className={`text-[9px] font-black px-2.5 py-1 rounded-full whitespace-nowrap shadow-sm ${trend === 'up' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+                        <div className={`text-[9px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap shadow-sm ${trend === 'up' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
                             {trend === 'up' ? '↑ Positive' : '↓ Warning'}
                         </div>
                     )}
@@ -138,7 +138,7 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
         <div className="space-y-6">
             {/* Chart Section */}
             {plotHtml && (
-                <div className="w-full bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl overflow-hidden mb-8 shadow-sm" style={{ height: chartHeight }}>
+                <div className="w-full bg-white dark:bg-card border border-gray-100 dark:border-slate-800 rounded-2xl overflow-hidden mb-8 shadow-sm" style={{ height: chartHeight }}>
                     <div className="px-5 py-3 bg-gray-50/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
                         <div className="flex items-center gap-2">
                             <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
@@ -213,7 +213,7 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
                 {Object.entries(categorized).map(([category, metrics]: [string, any]) => (
-                    <Card key={category} className="shadow-sm border-gray-100 dark:border-slate-800 overflow-hidden bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+                    <Card key={category} className="shadow-sm border-gray-100 dark:border-slate-800 overflow-hidden bg-white/50 dark:bg-card">
                         <CardHeader className="py-3 px-5 bg-gray-50/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800">
                             <CardTitle className="text-[11px] font-bold text-gray-600 dark:text-slate-400 flex items-center gap-2">
                                 {category === 'Performance Metrics' && <TrendingUp size={14} className="text-green-500" />}
@@ -230,7 +230,7 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
                                             <TableCell className="py-2.5 px-5 text-xs font-semibold text-gray-500 dark:text-slate-500">
                                                 {label}
                                             </TableCell>
-                                            <TableCell className="py-2.5 px-5 text-xs font-mono text-right font-black text-gray-900 dark:text-slate-100">
+                                            <TableCell className="py-2.5 px-5 text-xs font-mono text-right font-semibold text-gray-900 dark:text-slate-100">
                                                 {String(value)}
                                             </TableCell>
                                         </TableRow>

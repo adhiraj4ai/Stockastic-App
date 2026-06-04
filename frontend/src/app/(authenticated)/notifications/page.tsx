@@ -37,22 +37,22 @@ interface Notification {
 type Severity = 'all' | 'high' | 'medium' | 'low';
 
 const SEVERITIES: { key: Severity; label: string; icon: React.ReactNode }[] = [
-    { key: 'all',    label: 'All Alerts',      icon: <Bell size={14} /> },
-    { key: 'high',   label: 'High Priority',   icon: <AlertCircle size={14} /> },
+    { key: 'all', label: 'All Alerts', icon: <Bell size={14} /> },
+    { key: 'high', label: 'High Priority', icon: <AlertCircle size={14} /> },
     { key: 'medium', label: 'Medium Priority', icon: <Target size={14} /> },
-    { key: 'low',    label: 'Low Priority',    icon: <Info size={14} /> },
+    { key: 'low', label: 'Low Priority', icon: <Info size={14} /> },
 ];
 
 type Category = 'all' | 'portfolio' | 'watchlist' | 'technical' | 'broker' | 'market' | 'system';
 
 const CATEGORIES: { key: Category; label: string; icon: any; color: string }[] = [
-    { key: 'all',       label: 'All Areas',      icon: Bell,     color: 'text-slate-500' },
-    { key: 'portfolio', label: 'Portfolio',      icon: Target,   color: 'text-emerald-500' },
-    { key: 'watchlist', label: 'Watchlist',      icon: Eye,      color: 'text-blue-500' },
-    { key: 'technical', label: 'Technical',      icon: TrendingUp, color: 'text-purple-500' },
-    { key: 'broker',    label: 'Broker Analysis', icon: Fish,      color: 'text-cyan-500' },
-    { key: 'market',    label: 'Market Trends',  icon: RefreshCw, color: 'text-orange-500' },
-    { key: 'system',    label: 'System',         icon: Info,     color: 'text-slate-400' },
+    { key: 'all', label: 'All Areas', icon: Bell, color: 'text-slate-500' },
+    { key: 'portfolio', label: 'Portfolio', icon: Target, color: 'text-emerald-500' },
+    { key: 'watchlist', label: 'Watchlist', icon: Eye, color: 'text-blue-500' },
+    { key: 'technical', label: 'Technical', icon: TrendingUp, color: 'text-purple-500' },
+    { key: 'broker', label: 'Broker Analysis', icon: Fish, color: 'text-cyan-500' },
+    { key: 'market', label: 'Market Trends', icon: RefreshCw, color: 'text-orange-500' },
+    { key: 'system', label: 'System', icon: Info, color: 'text-slate-400' },
 ];
 
 function getCategory(type: NotificationType): Category {
@@ -126,12 +126,12 @@ function getSeverity(type: NotificationType): Severity {
 
 function getIcon(type: NotificationType) {
     switch (type) {
-        case 'STOP_LOSS_HIT':   return <AlertCircle size={15} />;
-        case 'TARGET_REACHED':  return <Target size={15} />;
+        case 'STOP_LOSS_HIT': return <AlertCircle size={15} />;
+        case 'TARGET_REACHED': return <Target size={15} />;
         case 'SIGNIFICANT_GAIN': return <TrendingUp size={15} />;
         case 'SIGNIFICANT_LOSS': return <TrendingDown size={15} />;
-        case 'BELOW_WACC':       return <TrendingDown size={15} />;
-        case 'WATCHLIST_ENTRY':  return <Eye size={15} />;
+        case 'BELOW_WACC': return <TrendingDown size={15} />;
+        case 'WATCHLIST_ENTRY': return <Eye size={15} />;
         case 'WATCHLIST_BREAKOUT': return <TrendingUp size={15} />;
         case 'SIGNAL_BUY': case 'SIGNAL_STRONG_BUY': return <TrendingUp size={15} />;
         case 'SIGNAL_SELL': case 'SIGNAL_STRONG_SELL': return <TrendingDown size={15} />;
@@ -294,11 +294,11 @@ export default function AlertsPage() {
                 {/* Notification Detail Modal */}
                 {selectedAlert && (
                     <div 
-                        className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm transition-opacity duration-300 ${isDetailOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                        className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 transition-opacity duration-300 ${isDetailOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                         onClick={() => setIsDetailOpen(false)}
                     >
                         <div 
-                            className={`bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 transform transition-transform duration-300 ${isDetailOpen ? 'scale-100' : 'scale-95'}`}
+                            className={`bg-white dark:bg-card w-full max-w-2xl rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800 transform transition-transform duration-300 ${isDetailOpen ? 'scale-100' : 'scale-95'}`}
                             onClick={e => e.stopPropagation()}
                         >
                             <div className={`h-2 w-full ${getIconClass(selectedAlert.type)} opacity-50`} />
@@ -317,15 +317,15 @@ export default function AlertsPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                                    <h3 className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight leading-tight">
                                         {selectedAlert.title}
                                     </h3>
-                                    <p className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                                    <p className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                                         {format(new Date(selectedAlert.created_at), 'eeee, MMM dd • HH:mm')}
                                     </p>
                                 </div>
 
-                                <div className="bg-slate-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-slate-100 dark:border-slate-800/60">
+                                <div className="bg-slate-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-border dark:border-slate-800/60">
                                     <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
                                         {selectedAlert.message}
                                     </p>
@@ -334,7 +334,7 @@ export default function AlertsPage() {
                                 {selectedAlert.ticker === 'SUMMARY' && (
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
-                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 flex items-center gap-2">
+                                            <h4 className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-2">
                                                 <LayoutGrid size={12} /> Detailed Breakdown
                                             </h4>
                                             <span className="text-[10px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1 rounded-full border border-blue-100/50 dark:border-blue-800/30">
@@ -353,14 +353,14 @@ export default function AlertsPage() {
                                             if (tableItems.length === 0) return null;
 
                                             return (
-                                                <div className="relative border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm bg-white dark:bg-slate-900">
+                                                <div className="relative border border-border dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm bg-white dark:bg-card">
                                                     <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
                                                         <table className="w-full text-left border-collapse">
-                                                            <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800">
+                                                            <thead className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800/80 border-b border-border dark:border-slate-800">
                                                                 <tr>
-                                                                    <th className="px-5 py-3 text-[9px] font-black uppercase tracking-widest text-slate-500">Symbol</th>
-                                                                    <th className="px-5 py-3 text-[9px] font-black uppercase tracking-widest text-slate-500">Event Detail</th>
-                                                                    <th className="px-5 py-3 text-[9px] font-black uppercase tracking-widest text-slate-500 text-right">Price</th>
+                                                                    <th className="px-5 py-3 text-[9px] font-semibold uppercase tracking-wider text-slate-500">Symbol</th>
+                                                                    <th className="px-5 py-3 text-[9px] font-semibold uppercase tracking-wider text-slate-500">Event Detail</th>
+                                                                    <th className="px-5 py-3 text-[9px] font-semibold uppercase tracking-wider text-slate-500 text-right">Price</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
@@ -375,7 +375,7 @@ export default function AlertsPage() {
                                                                     >
                                                                         <td className="px-5 py-4">
                                                                             <div className="flex items-center gap-2">
-                                                                                <span className="text-xs font-black text-slate-900 dark:text-white uppercase group-hover:text-blue-600 transition-colors">
+                                                                                <span className="text-xs font-semibold text-slate-900 dark:text-white uppercase group-hover:text-blue-600 transition-colors">
                                                                                     {item.symbol}
                                                                                 </span>
                                                                                 <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 text-blue-400 transition-all" />
@@ -388,7 +388,7 @@ export default function AlertsPage() {
                                                                         </td>
                                                                         <td className="px-5 py-4 text-right">
                                                                             {item.price ? (
-                                                                                <span className="text-xs font-black text-slate-900 dark:text-white tabular-nums">
+                                                                                <span className="text-xs font-semibold text-slate-900 dark:text-white tabular-nums">
                                                                                     Rs. {item.price.toLocaleString()}
                                                                                 </span>
                                                                             ) : (
@@ -409,7 +409,7 @@ export default function AlertsPage() {
                                 <div className="pt-4 flex gap-3">
                                     <button 
                                         onClick={() => setIsDetailOpen(false)}
-                                        className="flex-1 px-6 py-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black text-xs uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                                        className="flex-1 px-6 py-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold text-xs uppercase tracking-wider hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
                                     >
                                         Dismiss
                                     </button>
@@ -419,7 +419,7 @@ export default function AlertsPage() {
                                                 setIsDetailOpen(false);
                                                 router.push(selectedAlert.redirect_url || `/ticker/${selectedAlert.ticker}`);
                                             }}
-                                            className="flex-1 px-6 py-4 rounded-2xl bg-blue-600 text-white font-black text-xs uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-500/20 transition-all"
+                                            className="flex-1 px-6 py-4 rounded-2xl bg-blue-600 text-white font-semibold text-xs uppercase tracking-wider hover:bg-blue-700 shadow-xl shadow-blue-500/20 transition-all"
                                         >
                                             View Details
                                         </button>
@@ -446,7 +446,7 @@ export default function AlertsPage() {
                             >
                                 {s.icon} {s.label}
                                 {s.key === 'all' && unreadCount > 0 && (
-                                    <span className="ml-0.5 bg-blue-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">
+                                    <span className="ml-0.5 bg-blue-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full">
                                         {unreadCount}
                                     </span>
                                 )}
@@ -471,7 +471,7 @@ export default function AlertsPage() {
                             <button
                                 onClick={triggerCheck}
                                 disabled={actionLoading}
-                                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50"
+                                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50"
                                 title="Refresh & check new alerts"
                             >
                                 <RefreshCw size={13} className={actionLoading ? 'animate-spin' : ''} /> Check New Alerts
@@ -510,17 +510,17 @@ export default function AlertsPage() {
                                 <Loader2 className="animate-spin text-blue-500" size={28} />
                             </div>
                         ) : filteredNotifications.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-24 gap-3 bg-white dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800/60">
+                            <div className="flex flex-col items-center justify-center py-24 gap-3 bg-white dark:bg-card rounded-2xl border border-border dark:border-slate-800/60">
                                 <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                                     <Bell size={24} className="text-slate-300 dark:text-slate-600" />
                                 </div>
-                                <p className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                                <p className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                                     No alerts found
                                 </p>
                                 {(category !== 'all' || severity !== 'all') && (
                                     <button 
                                         onClick={() => { setCategory('all'); setSeverity('all'); }}
-                                        className="text-[10px] font-black text-blue-500 uppercase hover:underline"
+                                        className="text-[10px] font-semibold text-blue-500 uppercase hover:underline"
                                     >
                                         Clear all filters
                                     </button>
@@ -531,7 +531,7 @@ export default function AlertsPage() {
                                 {Object.entries(grouped).map(([dateLabel, items]) => (
                                     <div key={dateLabel}>
                                         <div className="flex items-center gap-3 mb-3 px-1">
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                                            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                                 {dateLabel}
                                             </span>
                                             <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800" />
@@ -548,7 +548,7 @@ export default function AlertsPage() {
                                                     className={`relative flex gap-4 p-4 rounded-xl border-l-4 cursor-pointer transition-all
                                                         ${getBorderClass(n.type)}
                                                         ${n.read
-                                                            ? 'bg-white dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/60 opacity-70 hover:opacity-100'
+                                                            ? 'bg-white dark:bg-card border border-border dark:border-slate-800/60 opacity-70 hover:opacity-100'
                                                             : 'bg-blue-50/40 dark:bg-blue-900/10 border border-blue-100/50 dark:border-blue-800/30 hover:bg-blue-50/70 dark:hover:bg-blue-900/20 shadow-sm'
                                                         }`}
                                                 >
@@ -565,7 +565,7 @@ export default function AlertsPage() {
                                                     {/* Body */}
                                                     <div className="flex-1 min-w-0 space-y-1">
                                                         <div className="flex items-start justify-between gap-3">
-                                                            <h4 className={`text-sm font-black tracking-tight ${n.read ? 'text-slate-500 dark:text-slate-400' : 'text-slate-900 dark:text-slate-100'}`}>
+                                                            <h4 className={`text-sm font-semibold tracking-tight ${n.read ? 'text-slate-500 dark:text-slate-400' : 'text-slate-900 dark:text-slate-100'}`}>
                                                                 {n.title}
                                                             </h4>
                                                             <span className="shrink-0 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
@@ -579,14 +579,14 @@ export default function AlertsPage() {
 
                                                         <div className="flex items-center gap-2 pt-0.5">
                                                             {n.ticker && (
-                                                                <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full uppercase">
+                                                                <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full uppercase">
                                                                     {n.ticker}
                                                                 </span>
                                                             )}
                                                             <span className="text-[10px] font-bold text-slate-300 dark:text-slate-600 uppercase tracking-wider">
                                                                 {n.type.replace(/_/g, ' ')}
                                                             </span>
-                                                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-tighter ml-auto">
+                                                            <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-tighter ml-auto">
                                                                 #{getCategory(n.type)}
                                                             </span>
                                                         </div>
@@ -602,9 +602,9 @@ export default function AlertsPage() {
 
                     {/* Right Sidebar - Category Grouping */}
                     <div className="md:col-span-4 space-y-6">
-                        <div className="bg-white dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800/60 overflow-hidden sticky top-5">
-                            <div className="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800/60">
-                                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                        <div className="bg-white dark:bg-card rounded-2xl border border-border dark:border-slate-800/60 overflow-hidden sticky top-5">
+                            <div className="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-border dark:border-slate-800/60">
+                                <h3 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
                                     <Filter size={12} /> Filter by Area
                                 </h3>
                             </div>
@@ -640,7 +640,7 @@ export default function AlertsPage() {
                                                 {unread > 0 && (
                                                     <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
                                                 )}
-                                                <span className={`text-[10px] font-black ${category === cat.key ? 'text-blue-500' : 'text-slate-400'}`}>
+                                                <span className={`text-[10px] font-semibold ${category === cat.key ? 'text-blue-500' : 'text-slate-400'}`}>
                                                     {count}
                                                 </span>
                                             </div>
@@ -649,7 +649,7 @@ export default function AlertsPage() {
                                 })}
                             </div>
 
-                            <div className="px-4 py-3 bg-slate-50/50 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800/60 mt-2">
+                            <div className="px-4 py-3 bg-slate-50/50 dark:bg-slate-800/20 border-t border-border dark:border-slate-800/60 mt-2">
                                 <p className="text-[9px] text-slate-400 leading-tight">
                                     Click an area to isolate specific alerts. You can combine this with Priority filters above.
                                 </p>
@@ -657,15 +657,15 @@ export default function AlertsPage() {
                         </div>
 
                         {/* Stats card */}
-                        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-5 text-white shadow-lg shadow-blue-500/20">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest opacity-70 mb-4">Total Health</h4>
+                        <div className="bg-primary text-primary-foreground rounded-2xl p-5 text-white shadow-lg shadow-blue-500/20">
+                            <h4 className="text-[10px] font-semibold uppercase tracking-wider opacity-70 mb-4">Total Health</h4>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <p className="text-2xl font-black">{notifications.length}</p>
+                                    <p className="text-2xl font-semibold">{notifications.length}</p>
                                     <p className="text-[9px] font-bold uppercase opacity-70">Total Alerts</p>
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-black">{notifications.filter(n => !n.read).length}</p>
+                                    <p className="text-2xl font-semibold">{notifications.filter(n => !n.read).length}</p>
                                     <p className="text-[9px] font-bold uppercase opacity-70">Unread</p>
                                 </div>
                             </div>

@@ -52,7 +52,7 @@ function BacktestContent() {
     const [symbol, setSymbol] = useState('');
     const [sector, setSector] = useState('');
     const [sectors, setSectors] = useState<{ name: string; count: number }[]>([]);
-    const [paramsJson, setParamsJson] = useState('{\\n  "fast_window": 20,\\n  "slow_window": 50\\n}');
+    const [paramsJson, setParamsJson] = useState('{\\n "fast_window": 20,\\n "slow_window": 50\\n}');
 
     // Period state
     const [startDate, setStartDate] = useState('');
@@ -266,7 +266,7 @@ function BacktestContent() {
                     <span className="truncate dark:text-slate-100">Backtest - {strategy?.name || 'Strategy'}</span>
                     <Link
                         href={`/strategies/${strategyId}/editor`}
-                        className="p-1 w-7 h-7 flex items-center justify-center rounded-md border border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-200 dark:hover:border-blue-900 transition-all shadow-sm group"
+                        className="p-1 w-7 h-7 flex items-center justify-center rounded-md border border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-card text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-200 dark:hover:border-blue-900 transition-all shadow-sm group"
                         title="Edit Strategy code"
                     >
                         <Code size={14} className="group-hover:scale-110 transition-transform" />
@@ -278,7 +278,7 @@ function BacktestContent() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Configuration Panel */}
                     <div className="lg:col-span-4 xl:col-span-3">
-                        <Card className="border-gray-200 dark:border-slate-800 shadow-md overflow-hidden sticky top-6 dark:bg-slate-900">
+                        <Card className="border-gray-200 dark:border-slate-800 shadow-md overflow-hidden sticky top-6 dark:bg-card">
                             <CardContent className="p-6 space-y-8">
                                 {/* Mode Toggle */}
                                 <div className="space-y-4">
@@ -309,7 +309,7 @@ function BacktestContent() {
                                 {mode === 'symbol' && (
                                     <div className="space-y-3">
                                         <Label className="text-sm font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wide">Ticker Symbol</Label>
-                                        <CompanySelect className="h-11 text-base dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100" value={symbol} onChange={(val) => setSymbol(val)} />
+                                        <CompanySelect className="h-11 text-base dark:bg-card dark:border-slate-800 dark:text-slate-100" value={symbol} onChange={(val) => setSymbol(val)} />
                                     </div>
                                 )}
 
@@ -319,11 +319,11 @@ function BacktestContent() {
                                         <select
                                             value={sector}
                                             onChange={(e) => setSector(e.target.value)}
-                                            className="w-full h-11 px-4 rounded-lg border-2 border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-slate-100 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm hover:border-gray-300 dark:hover:border-slate-700"
+                                            className="w-full h-11 px-4 rounded-lg border-2 border-gray-200 dark:border-slate-800 bg-white dark:bg-card dark:text-slate-100 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm hover:border-gray-300 dark:hover:border-slate-700"
                                         >
                                             <option value="">Select a sector...</option>
                                             {sectors.map((s) => (
-                                                <option key={s.name} value={s.name} className="dark:bg-slate-900">
+                                                <option key={s.name} value={s.name} className="dark:bg-card">
                                                     {s.name} ({s.count})
                                                 </option>
                                             ))}
@@ -373,7 +373,7 @@ function BacktestContent() {
                                             type="number"
                                             value={initialBalance}
                                             onChange={(e) => setInitialBalance(Number(e.target.value))}
-                                            className="w-full h-11 px-4 rounded-lg border-2 border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-slate-100 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm hover:border-gray-300 dark:hover:border-slate-700"
+                                            className="w-full h-11 px-4 rounded-lg border-2 border-gray-200 dark:border-slate-800 bg-white dark:bg-card dark:text-slate-100 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm hover:border-gray-300 dark:hover:border-slate-700"
                                             placeholder="100,000"
                                         />
                                     </div>
@@ -392,7 +392,7 @@ function BacktestContent() {
                                     <Button
                                         onClick={running ? handleCancel : handleRun}
                                         disabled={(mode === 'symbol' && !symbol) || (mode === 'sector' && !sector)}
-                                        className={`w-full h-12 font-black uppercase tracking-wider text-sm shadow-lg group border-0 transition-all ${running ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-red-300 text-white' : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-blue-300 text-white hover:shadow-xl hover:scale-105'}`}
+                                        className={`w-full h-12 font-semibold uppercase tracking-wider text-sm shadow-lg group border-0 transition-all ${running ? 'bg-destructive text-white hover:opacity-90' : 'bg-primary text-primary-foreground hover:opacity-90 shadow-blue-300 text-white hover:shadow-xl hover:scale-105'}`}
                                     >
                                         {running ? (
                                             <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" /> Cancel Run</>
@@ -403,7 +403,7 @@ function BacktestContent() {
                                     <Button
                                         variant="outline"
                                         onClick={() => router.push(`/strategies/${strategyId}/optimize`)}
-                                        className="w-full h-11 text-xs uppercase font-extrabold border-2 border-purple-200 dark:border-purple-900/50 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 dark:bg-slate-900 hover:border-purple-300 dark:hover:border-purple-800 hover:shadow-md transition-all"
+                                        className="w-full h-11 text-xs uppercase font-extrabold border-2 border-purple-200 dark:border-purple-900/50 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 dark:bg-card hover:border-purple-300 dark:hover:border-purple-800 hover:shadow-md transition-all"
                                     >
                                         <Zap size={14} className="mr-2" /> Find Best Parameters
                                     </Button>
@@ -413,7 +413,7 @@ function BacktestContent() {
                     </div>
 
                     {/* Results Panel */}
-                    <div className="lg:col-span-8 xl:col-span-9 bg-white dark:bg-slate-900 rounded-2xl shadow-lg border-2 border-gray-100 dark:border-slate-800 overflow-hidden flex flex-col min-h-[700px]">
+                    <div className="lg:col-span-8 xl:col-span-9 bg-white dark:bg-card rounded-2xl shadow-lg border-2 border-gray-100 dark:border-slate-800 overflow-hidden flex flex-col min-h-[700px]">
                         {running ? (
                             <div className="h-full flex flex-col items-center justify-center">
                                 <PageLoader text="Running backtest strategy..." />
@@ -444,7 +444,7 @@ function BacktestContent() {
                                             <Button
                                                 onClick={handleSaveExperiment}
                                                 disabled={isSaving}
-                                                className="bg-white text-blue-600 hover:bg-blue-50 h-9 px-5 text-[10px] font-black uppercase shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
+                                                className="bg-white text-blue-600 hover:bg-blue-50 h-9 px-5 text-[10px] font-semibold uppercase shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
                                             >
                                                 {isSaving ? 'Saving...' : 'Save Experiment'}
                                             </Button>
@@ -457,7 +457,7 @@ function BacktestContent() {
                                                 <Check size={16} />
                                             </div>
                                             <div>
-                                                <p className="text-xs font-black uppercase tracking-widest">Experiment Saved</p>
+                                                <p className="text-xs font-semibold uppercase tracking-wider">Experiment Saved</p>
                                                 <p className="text-[10px] opacity-80 font-medium">This run has been persisted to your strategy history.</p>
                                             </div>
                                         </div>
@@ -520,7 +520,7 @@ function BacktestContent() {
                                                         </TableHeader>
                                                         <TableBody>
                                                             {results.individual_results.map((r: any, idx: number) => (
-                                                                <TableRow key={idx} className="hover:bg-blue-50/20 dark:hover:bg-blue-900/10 border-slate-100 dark:border-slate-800">
+                                                                <TableRow key={idx} className="hover:bg-blue-50/20 dark:hover:bg-blue-900/10 border-border dark:border-slate-800">
                                                                     <TableCell className="font-medium dark:text-slate-200">{r.symbol}</TableCell>
                                                                     <TableCell className={`text-right font-bold ${r.pnl_percent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                                                         {r.pnl_percent?.toFixed(2)}%
@@ -541,11 +541,11 @@ function BacktestContent() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="h-full flex flex-col items-center justify-center p-12 text-center bg-gradient-to-br from-blue-50/30 dark:from-blue-900/10 via-white dark:via-slate-950 to-purple-50/30 dark:to-purple-900/10">
-                                <div className="mb-6 p-6 bg-gradient-to-br from-blue-100 dark:from-blue-950 to-blue-50 dark:to-blue-900/50 rounded-3xl shadow-lg border border-blue-200 dark:border-blue-800">
+                            <div className="h-full flex flex-col items-center justify-center p-12 text-center bg-muted/40">
+                                <div className="mb-6 p-6 surface">
                                     <Play size={48} className="text-blue-600 dark:text-blue-400" />
                                 </div>
-                                <h3 className="text-2xl font-black text-gray-900 dark:text-slate-100 mb-3">Ready to Backtest</h3>
+                                <h3 className="text-2xl font-semibold text-gray-900 dark:text-slate-100 mb-3">Ready to Backtest</h3>
                                 <p className="text-base text-gray-600 dark:text-slate-400 max-w-lg mb-8 leading-relaxed">
                                     Configure your parameters on the left and run a backtest to see how your strategy would have performed with historical data.
                                 </p>

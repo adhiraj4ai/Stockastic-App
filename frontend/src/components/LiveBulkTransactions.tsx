@@ -66,7 +66,7 @@ export function LiveBulkTransactions() {
 
     if (loading && transactions.length === 0) {
         return (
-            <div className="h-[400px] flex items-center justify-center bg-slate-50/50 dark:bg-white/[0.02] rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+            <div className="h-[400px] flex items-center justify-center bg-slate-50/50 dark:bg-muted rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
                 <div className="flex flex-col items-center gap-3">
                     <Activity className="h-8 w-8 text-blue-500 animate-pulse" />
                     <span className="text-sm font-bold text-slate-500">Connecting to Bulk Feed...</span>
@@ -83,25 +83,25 @@ export function LiveBulkTransactions() {
                         <Layers size={18} />
                     </div>
                     <div>
-                        <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Bulk Live Feed</h3>
+                        <h3 className="text-sm font-semibold text-slate-900 dark:text-white uppercase tracking-wider">Bulk Live Feed</h3>
                         <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter opacity-60">High-Impact Market Shifts</p>
                     </div>
                 </div>
-                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-none font-black text-[10px] px-2 py-0.5 flex items-center gap-1.5 animate-pulse">
+                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-none font-semibold text-[10px] px-2 py-0.5 flex items-center gap-1.5 animate-pulse">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                     LIVE
                 </Badge>
             </div>
 
-            <div className="flex-1 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-950/20 backdrop-blur-sm overflow-hidden flex flex-col">
+            <div className="flex-1 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-950/20 overflow-hidden flex flex-col">
                 <div className="overflow-x-auto">
                     <Table>
                         <TableHeader>
-                            <TableRow className="hover:bg-transparent border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-white/[0.02]">
-                                <TableHead className="text-[10px] font-black uppercase tracking-widest py-3 px-4 text-slate-500">Sym</TableHead>
-                                <TableHead className="text-right text-[10px] font-black uppercase tracking-widest py-3 px-4 text-slate-500">Qty</TableHead>
-                                <TableHead className="text-right text-[10px] font-black uppercase tracking-widest py-3 px-4 text-slate-500">Amount</TableHead>
-                                <TableHead className="text-center text-[10px] font-black uppercase tracking-widest py-3 px-4 text-slate-500">B/S</TableHead>
+                            <TableRow className="hover:bg-transparent border-border dark:border-slate-800 bg-slate-50/50 dark:bg-muted">
+                                <TableHead className="text-[10px] font-semibold uppercase tracking-wider py-3 px-4 text-slate-500">Sym</TableHead>
+                                <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider py-3 px-4 text-slate-500">Qty</TableHead>
+                                <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider py-3 px-4 text-slate-500">Amount</TableHead>
+                                <TableHead className="text-center text-[10px] font-semibold uppercase tracking-wider py-3 px-4 text-slate-500">B/S</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -136,7 +136,7 @@ export function LiveBulkTransactions() {
                                             
                                             <TableCell className="text-right py-2 px-4">
                                                 <span className={cn(
-                                                    "font-mono font-black text-[12px] tabular-nums",
+                                                    "font-mono font-semibold text-[12px] tabular-nums",
                                                     trade.transaction_quantity >= 10000 ? "text-amber-500" : "text-slate-700 dark:text-slate-300"
                                                 )}>
                                                     {formatNepaliNumber(trade.transaction_quantity)}
@@ -175,10 +175,10 @@ export function LiveBulkTransactions() {
                     </div>
                 )}
                 
-                <div className="p-3 bg-slate-50/50 dark:bg-white/[0.02] border-t border-slate-100 dark:border-slate-800 flex justify-center">
+                <div className="p-3 bg-slate-50/50 dark:bg-muted border-t border-border dark:border-slate-800 flex justify-center">
                     <button 
                         onClick={() => router.push('/market/bulk')}
-                        className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest hover:underline flex items-center gap-1.5"
+                        className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider hover:underline flex items-center gap-1.5"
                     >
                         View Historical Shifts <ExternalLink size={10} />
                     </button>

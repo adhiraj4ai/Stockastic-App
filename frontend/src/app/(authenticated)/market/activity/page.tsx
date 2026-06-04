@@ -126,8 +126,8 @@ export default function MarketActivityPage() {
                 </div>
 
                 {/* Performance Chart for this Category */}
-                <Card className="bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden backdrop-blur-xl relative group">
-                    <CardHeader className="p-5 border-b border-slate-50 dark:border-white/5 flex flex-row items-center justify-between relative z-10">
+                <Card className="bg-white dark:bg-card border-none shadow-xl shadow-sm dark:shadow-none overflow-hidden relative group">
+                    <CardHeader className="p-5 border-b border-slate-50 dark:border-border flex flex-row items-center justify-between relative z-10">
                         <div className="space-y-1">
                             <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
                                 <TrendingUp size={14} className="text-blue-500" />
@@ -163,7 +163,7 @@ export default function MarketActivityPage() {
 
                     <Tabs defaultValue="gainers" value={category} onValueChange={setCategory} className="w-full">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-transparent sm:border-slate-200 dark:sm:border-white/10 mb-6 gap-4">
-                            <TabsList className="inline-flex h-auto bg-slate-100 dark:bg-slate-800 p-1 rounded-lg sm:mb-0 mb-2 border sm:border-none border-slate-200 dark:border-white/5">
+                            <TabsList className="inline-flex h-auto bg-slate-100 dark:bg-slate-800 p-1 rounded-lg sm:mb-0 mb-2 border sm:border-none border-slate-200 dark:border-border">
                             <TabsTrigger
                                 value="gainers"
                                 className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-emerald-600 data-[state=active]:shadow-sm transition-all"
@@ -200,12 +200,12 @@ export default function MarketActivityPage() {
 
                         {/* Top Right Controls */}
                         <div className="flex items-center gap-3">
-                            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:inline-block">Show</span>
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider hidden sm:inline-block">Show</span>
                             <div className="relative">
                                 <select
                                     value={limit}
                                     onChange={(e) => setLimit(Number(e.target.value))}
-                                    className="appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-xs font-bold rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer text-slate-700 dark:text-slate-300 transition-colors"
+                                    className="appearance-none bg-white dark:bg-card border border-slate-200 dark:border-border text-xs font-bold rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer text-slate-700 dark:text-slate-300 transition-colors"
                                 >
                                     <option value={10}>Top 10</option>
                                     <option value={20}>Top 20</option>
@@ -246,23 +246,23 @@ function ActivityTable({ data, type }: { data: ActivityData[], type: string }) {
 
     if (!data || data.length === 0) {
         return (
-            <div className="p-8 text-center text-xs text-slate-400 border border-dashed border-slate-200 dark:border-white/10 rounded-xl bg-slate-50/50 dark:bg-white/5">
+            <div className="p-8 text-center text-xs text-slate-400 border border-dashed border-slate-200 dark:border-border rounded-xl bg-slate-50/50 dark:bg-muted">
                 No stocks found.
             </div>
         );
     }
 
     return (
-        <Card className="bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden backdrop-blur-xl h-full">
+        <Card className="bg-white dark:bg-card border-none shadow-xl shadow-sm dark:shadow-none overflow-hidden h-full">
             <CardContent className="p-0">
                 <Table>
-                    <TableHeader className="bg-slate-50/50 dark:bg-white/5">
-                        <TableRow className="border-slate-100 dark:border-white/5">
+                    <TableHeader className="bg-slate-50/50 dark:bg-muted">
+                        <TableRow className="border-border dark:border-border">
                             <TableHead className="w-[30px] p-2"></TableHead>
-                            <TableHead className="font-bold text-[10px] uppercase tracking-widest text-slate-500 p-2">Stock</TableHead>
-                            <TableHead className="font-bold text-[10px] uppercase tracking-widest text-slate-500 text-right p-2">Price</TableHead>
-                            <TableHead className="font-bold text-[10px] uppercase tracking-widest text-slate-500 text-right p-2">Chg%</TableHead>
-                            <TableHead className="font-bold text-[10px] uppercase tracking-widest text-slate-500 text-right p-2">
+                            <TableHead className="font-bold text-[10px] uppercase tracking-wider text-slate-500 p-2">Stock</TableHead>
+                            <TableHead className="font-bold text-[10px] uppercase tracking-wider text-slate-500 text-right p-2">Price</TableHead>
+                            <TableHead className="font-bold text-[10px] uppercase tracking-wider text-slate-500 text-right p-2">Chg%</TableHead>
+                            <TableHead className="font-bold text-[10px] uppercase tracking-wider text-slate-500 text-right p-2">
                                 {type === 'volume' ? 'Vol' : type === 'roc' ? 'ROC' : 'Turn'}
                             </TableHead>
                         </TableRow>
@@ -271,7 +271,7 @@ function ActivityTable({ data, type }: { data: ActivityData[], type: string }) {
                         {data.map((item) => (
                             <React.Fragment key={item.ticker}>
                                 <TableRow
-                                    className={`cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 border-slate-50 dark:border-white/5 ${expandedRow === item.ticker ? 'bg-slate-50 dark:bg-white/5' : ''}`}
+                                    className={`cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 border-slate-50 dark:border-border ${expandedRow === item.ticker ? 'bg-slate-50 dark:bg-muted' : ''}`}
                                     onClick={() => toggleRow(item.ticker)}
                                 >
                                     <TableCell className="p-2 pl-3">
@@ -296,7 +296,7 @@ function ActivityTable({ data, type }: { data: ActivityData[], type: string }) {
                                 {/* EXPANDED DETAILS */}
                                 <AnimatePresence>
                                     {expandedRow === item.ticker && (
-                                        <TableRow className="border-none bg-slate-50/50 dark:bg-white/5 hover:bg-slate-50/50 dark:hover:bg-white/5">
+                                        <TableRow className="border-none bg-slate-50/50 dark:bg-muted hover:bg-slate-50/50 dark:hover:bg-white/5">
                                             <TableCell colSpan={5} className="p-0">
                                                 <motion.div
                                                     initial={{ height: 0, opacity: 0 }}
@@ -304,20 +304,20 @@ function ActivityTable({ data, type }: { data: ActivityData[], type: string }) {
                                                     exit={{ height: 0, opacity: 0 }}
                                                     className="overflow-hidden"
                                                 >
-                                                    <div className="p-4 flex flex-col gap-4 border-b border-slate-100 dark:border-white/5">
+                                                    <div className="p-4 flex flex-col gap-4 border-b border-border dark:border-border">
 
                                                         {/* Transaction Stats Row */}
-                                                        <div className="flex justify-between items-center bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-100 dark:border-white/5">
+                                                        <div className="flex justify-between items-center bg-white dark:bg-card rounded-lg p-3 border border-border dark:border-border">
                                                             <div>
-                                                                <div className="text-[9px] text-slate-400 uppercase tracking-widest">W. Avg</div>
+                                                                <div className="text-[9px] text-slate-400 uppercase tracking-wider">W. Avg</div>
                                                                 <div className="text-sm font-bold text-blue-600">{item.analysis.weighted_avg_price}</div>
                                                             </div>
                                                             <div className="text-right">
-                                                                <div className="text-[9px] text-slate-400 uppercase tracking-widest">Trades</div>
+                                                                <div className="text-[9px] text-slate-400 uppercase tracking-wider">Trades</div>
                                                                 <div className="text-sm font-bold text-slate-700 dark:text-slate-300">{item.analysis.total_transactions}</div>
                                                             </div>
                                                             <div className="text-right">
-                                                                <div className="text-[9px] text-slate-400 uppercase tracking-widest">Avg Size</div>
+                                                                <div className="text-[9px] text-slate-400 uppercase tracking-wider">Avg Size</div>
                                                                 <div className="text-sm font-bold text-slate-700 dark:text-slate-300">
                                                                     {item.analysis.total_transactions > 0
                                                                         ? Math.round(item.metrics.volume / item.analysis.total_transactions)
@@ -368,7 +368,7 @@ const BrokerBarChart = ({ brokers, type, totalQty }: { brokers: BrokerData[], ty
 
     return (
         <div className="space-y-1">
-            <h4 className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${textClass} flex items-center gap-1`}>
+            <h4 className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${textClass} flex items-center gap-1`}>
                 {type === 'buy' ? 'Buy' : 'Sell'}
             </h4>
             <div className="space-y-1">

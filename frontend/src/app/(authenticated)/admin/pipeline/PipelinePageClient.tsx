@@ -815,7 +815,7 @@ export default function PipelinePage() {
                                 {...getRootProps()}
                                 className={cn(
                                     "group relative rounded-2xl border-2 border-dashed p-4 transition-all duration-300",
-                                    isDragActive ? "border-blue-500 bg-blue-50/50 dark:border-indigo-500 dark:bg-indigo-900/20 scale-[1.01]" : "border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-blue-200 dark:hover:border-indigo-700",
+                                    isDragActive ? "border-blue-500 bg-blue-50/50 dark:border-indigo-500 dark:bg-indigo-900/20 scale-[1.01]" : "border-gray-100 dark:border-slate-800 bg-white dark:bg-card hover:border-blue-200 dark:hover:border-indigo-700",
                                     uploading && "opacity-50 pointer-events-none"
                                 )}
                             >
@@ -831,9 +831,9 @@ export default function PipelinePage() {
                                         <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">1. Upload Floorsheet</h3>
                                         <p className="text-[10px] text-indigo-600/70 dark:text-indigo-400/60 font-medium leading-relaxed">Drag and drop the latest floorsheet JSON to update accumulation data.</p>
                                         {uploading && (
-                                            <div className="flex items-center gap-2 mb-2 p-2 rounded-lg bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5">
+                                            <div className="flex items-center gap-2 mb-2 p-2 rounded-lg bg-slate-100/50 dark:bg-muted border border-border dark:border-border">
                                             <Terminal size={12} className="text-indigo-500" />
-                                            <span className="text-[10px] font-black tracking-widest text-indigo-600/70 dark:text-indigo-400/60 uppercase">Process output</span>
+                                            <span className="text-[10px] font-semibold tracking-wider text-indigo-600/70 dark:text-indigo-400/60 uppercase">Process output</span>
                                         </div>
                                         )}
                                     </div>
@@ -842,7 +842,7 @@ export default function PipelinePage() {
                         </Card>
 
                         {/* Step 2: Daily Prices */}
-                        <div className="group bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 space-y-4 shadow-sm hover:border-blue-200 dark:hover:border-indigo-700 transition-colors">
+                        <div className="group bg-white dark:bg-card rounded-2xl border border-border dark:border-slate-800 p-4 space-y-4 shadow-sm hover:border-blue-200 dark:hover:border-indigo-700 transition-colors">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 group-hover:bg-blue-50 dark:group-hover:bg-indigo-900/30 group-hover:text-blue-500 dark:group-hover:text-indigo-400 transition-colors">
                                     <Clock className="w-5 h-5" />
@@ -1020,12 +1020,12 @@ function DailyPriceUpload({ onSuccess }: { onSuccess?: () => void }) {
                 <div className="flex gap-2">
                     <Popover>
                         <PopoverTrigger asChild>
-                            <Button variant="outline" className="flex-1 justify-start font-medium rounded-xl border-gray-200 dark:border-slate-800 dark:bg-slate-900">
+                            <Button variant="outline" className="flex-1 justify-start font-medium rounded-xl border-gray-200 dark:border-slate-800 dark:bg-card">
                                 <CalendarIcon className="mr-2 h-4 w-4 text-blue-500 dark:text-indigo-400" />
                                 {date ? format(date, "PPP") : "Select date..."}
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 rounded-2xl overflow-hidden shadow-2xl">
+                        <PopoverContent className="w-auto p-0 rounded-2xl overflow-hidden shadow-sm">
                             <Calendar
                                 mode="single"
                                 selected={date}

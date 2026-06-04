@@ -214,7 +214,7 @@ export default function AdminFinancials({ ticker, onHasReports }: AdminFinancial
                                     </span>
                                 </Button>
                             </TooltipTrigger>
-                            <TooltipContent className="dark:bg-slate-900 dark:border-slate-800 dark:text-slate-300">
+                            <TooltipContent className="dark:bg-card dark:border-slate-800 dark:text-slate-300">
                                 <p>Net Profit: {report.net_profit?.toLocaleString()}</p>
                                 <p>Status: {report.is_audited ? 'Audited' : 'Unaudited'}</p>
                             </TooltipContent>
@@ -261,17 +261,17 @@ export default function AdminFinancials({ ticker, onHasReports }: AdminFinancial
                 </Button>
             </div>
 
-            <div className="overflow-hidden bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-xl shadow-sm transition-colors duration-500">
+            <div className="overflow-hidden bg-white dark:bg-card border dark:border-slate-800 rounded-xl shadow-sm transition-colors duration-500">
                 <div className="p-0">
                     <Table>
                         <TableHeader>
                             <TableRow className="bg-gray-50/50 dark:bg-slate-800/50 hover:bg-gray-50/50 dark:hover:bg-slate-800/50 border-b dark:border-slate-800">
-                                <TableHead className="w-[150px] font-bold text-sm uppercase tracking-widest text-gray-500 dark:text-slate-500 py-4 px-6">Fiscal Year</TableHead>
-                                <TableHead className="text-center font-bold text-sm uppercase tracking-widest text-gray-500 dark:text-slate-500 py-4 w-[100px]">Q1</TableHead>
-                                <TableHead className="text-center font-bold text-sm uppercase tracking-widest text-gray-500 dark:text-slate-500 py-4 w-[100px]">Q2</TableHead>
-                                <TableHead className="text-center font-bold text-sm uppercase tracking-widest text-gray-500 dark:text-slate-500 py-4 w-[100px]">Q3</TableHead>
-                                <TableHead className="text-center font-bold text-sm uppercase tracking-widest text-gray-500 dark:text-slate-500 py-4 w-[100px]">Q4</TableHead>
-                                <TableHead className="text-center font-bold text-sm uppercase tracking-widest text-gray-500 dark:text-slate-500 py-4 w-[120px] bg-blue-50/50 dark:bg-blue-900/10 text-blue-600 dark:text-blue-400">Annual</TableHead>
+                                <TableHead className="w-[150px] font-bold text-sm uppercase tracking-wider text-gray-500 dark:text-slate-500 py-4 px-6">Fiscal Year</TableHead>
+                                <TableHead className="text-center font-bold text-sm uppercase tracking-wider text-gray-500 dark:text-slate-500 py-4 w-[100px]">Q1</TableHead>
+                                <TableHead className="text-center font-bold text-sm uppercase tracking-wider text-gray-500 dark:text-slate-500 py-4 w-[100px]">Q2</TableHead>
+                                <TableHead className="text-center font-bold text-sm uppercase tracking-wider text-gray-500 dark:text-slate-500 py-4 w-[100px]">Q3</TableHead>
+                                <TableHead className="text-center font-bold text-sm uppercase tracking-wider text-gray-500 dark:text-slate-500 py-4 w-[100px]">Q4</TableHead>
+                                <TableHead className="text-center font-bold text-sm uppercase tracking-wider text-gray-500 dark:text-slate-500 py-4 w-[120px] bg-blue-50/50 dark:bg-blue-900/10 text-blue-600 dark:text-blue-400">Annual</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -280,7 +280,7 @@ export default function AdminFinancials({ ticker, onHasReports }: AdminFinancial
                                     <TableCell colSpan={6} className="text-center py-20">
                                         <div className="flex flex-col items-center gap-3">
                                             <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Gathering records...</p>
+                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Gathering records...</p>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -326,7 +326,7 @@ export default function AdminFinancials({ ticker, onHasReports }: AdminFinancial
             </div>
             {/* Add Fiscal Year Modal */}
             <Dialog open={isAddYearDialogOpen} onOpenChange={setIsAddYearDialogOpen}>
-                <DialogContent className="sm:max-w-[425px] dark:bg-slate-900 dark:border-slate-800">
+                <DialogContent className="sm:max-w-[425px] dark:bg-card dark:border-slate-800">
                     <DialogHeader>
                         <DialogTitle className="dark:text-slate-100">Add New Fiscal Year</DialogTitle>
                         <DialogDescription className="dark:text-slate-400">

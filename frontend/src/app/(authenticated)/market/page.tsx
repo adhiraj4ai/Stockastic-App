@@ -60,7 +60,7 @@ const itemVariants: Variants = {
         opacity: 1,
         y: 0,
         transition: {
-            type: 'spring',
+            type: 'spring' as const,
             stiffness: 100,
             damping: 15
         }
@@ -304,14 +304,14 @@ export default function DashboardPage() {
         return (
             <DashboardLayout>
                 <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8">
-                    <ShieldAlert className="h-12 w-12 text-red-500 mb-4" />
-                    <div className="text-red-500 dark:text-red-400 text-xl font-bold mb-2">Error Loading Dashboard</div>
-                    <div className="text-gray-600 dark:text-gray-400 mb-6">{error}</div>
+                    <ShieldAlert className="h-10 w-10 text-destructive mb-4" />
+                    <div className="text-foreground text-base font-semibold mb-2">Error loading dashboard</div>
+                    <div className="text-muted-foreground text-sm mb-6">{error}</div>
                     <button
                         onClick={() => window.location.reload()}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-lg shadow-blue-200"
+                        className="px-4 py-1.5 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition text-sm font-medium"
                     >
-                        Retry Connection
+                        Retry connection
                     </button>
                 </div>
             </DashboardLayout>
@@ -373,26 +373,26 @@ export default function DashboardPage() {
         return (
             <TableRow
                 key={stock.ticker}
-                className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent transition-colors group"
+                className="cursor-pointer hover:bg-accent transition-colors"
                 onClick={() => handleStockClick(stock.ticker)}
             >
                 <TableCell className="py-2.5">
-                    <div className="flex flex-col">
-                        <span className="font-semibold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{stock.ticker}</span>
-                        <span className="text-[10px] text-indigo-600/60 dark:text-indigo-400/60 font-medium">{stock.sector || 'Listed Equity'}</span>
+                    <div className="flex flex-col leading-tight">
+                        <span className="font-medium text-foreground">{stock.ticker}</span>
+                        <span className="text-[11px] text-muted-foreground">{stock.sector || 'Listed Equity'}</span>
                     </div>
                 </TableCell>
-                <TableCell className="text-right py-2.5 font-mono font-medium text-slate-700 dark:text-slate-300">
+                <TableCell className="text-right py-2.5 font-mono text-foreground tabular-nums">
                     {formatNepaliNumber(stock.close)}
                 </TableCell>
-                <TableCell className={`text-right py-2.5 font-bold ${isStockPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    <div className="flex flex-col items-end">
+                <TableCell className={`text-right py-2.5 font-medium tabular-nums ${isStockPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                    <div className="flex flex-col items-end leading-tight">
                         <div className="flex items-center justify-end gap-1">
                             {isStockPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                             {Number(stock.percent_change).toFixed(2)}%
                         </div>
                         {stock.roc !== undefined && stock.roc !== null && (
-                            <span className="text-[9px] font-mono text-indigo-500/70 dark:text-indigo-400/60 font-bold">ROC: {stock.roc}%</span>
+                            <span className="text-[10px] font-mono text-muted-foreground">ROC: {stock.roc}%</span>
                         )}
                     </div>
                 </TableCell>
@@ -403,27 +403,26 @@ export default function DashboardPage() {
     return (
         <DashboardLayout
             noPadding
-            title={<>Market <span className="text-blue-600 dark:text-blue-400">Terminal</span></>}
-            subtitle="Real-time analytics and predictive insights for your strategic operations."
+            title="Market Terminal"
+            subtitle="Real-time analytics and predictive insights."
         >
             {/* 1. Market Pulse Ticker */}
-            <div className="bg-slate-900 dark:bg-black/80 overflow-hidden py-1.5 border-b border-slate-800 dark:border-slate-900 transition-colors duration-500">
-                <div className="flex animate-infinite-scroll whitespace-nowrap items-center gap-12 px-4">
+            <div className="bg-muted/50 border-b border-border overflow-hidden py-2">
+                <div className="flex animate-infinite-scroll whitespace-nowrap items-center gap-10 px-4">
                     {top_gainers.concat(top_losers).slice(0, 10).map((stock, i) => (
-                        <div key={i} className="flex items-center gap-2 cursor-pointer opacity-80 hover:opacity-100 transition-opacity" onClick={() => router.push(`/ticker/${stock.ticker}`)}>
-                            <span className="font-bold text-xs text-indigo-100 tracking-wider">{stock.ticker}</span>
-                            <span className="font-mono text-xs text-indigo-400/80">{formatNepaliNumber(stock.close)}</span>
-                            <span className={`text-[10px] font-bold px-1.5 rounded-sm ${stock.change >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                        <div key={i} className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity" onClick={() => router.push(`/ticker/${stock.ticker}`)}>
+                            <span className="font-medium text-xs text-foreground">{stock.ticker}</span>
+                            <span className="font-mono text-xs text-muted-foreground tabular-nums">{formatNepaliNumber(stock.close)}</span>
+                            <span className={`text-[11px] font-medium tabular-nums ${stock.change >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                 {stock.change >= 0 ? '+' : ''}{stock.percent_change.toFixed(1)}%
                             </span>
                         </div>
                     ))}
-                    {/* Duplicate for seamless scroll */}
                     {top_gainers.concat(top_losers).slice(0, 10).map((stock, i) => (
-                        <div key={`d-${i}`} className="flex items-center gap-2 cursor-pointer opacity-80 hover:opacity-100 transition-opacity" onClick={() => router.push(`/ticker/${stock.ticker}`)}>
-                            <span className="font-bold text-xs text-indigo-100 tracking-wider">{stock.ticker}</span>
-                            <span className="font-mono text-xs text-indigo-400/80">{formatNepaliNumber(stock.close)}</span>
-                            <span className={`text-[10px] font-bold px-1.5 rounded-sm ${stock.change >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                        <div key={`d-${i}`} className="flex items-center gap-2 cursor-pointer hover:opacity-70 transition-opacity" onClick={() => router.push(`/ticker/${stock.ticker}`)}>
+                            <span className="font-medium text-xs text-foreground">{stock.ticker}</span>
+                            <span className="font-mono text-xs text-muted-foreground tabular-nums">{formatNepaliNumber(stock.close)}</span>
+                            <span className={`text-[11px] font-medium tabular-nums ${stock.change >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                 {stock.change >= 0 ? '+' : ''}{stock.percent_change.toFixed(1)}%
                             </span>
                         </div>
@@ -431,7 +430,7 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            <div className="px-6 lg:px-12 py-8 space-y-8 bg-transparent relative min-h-screen transition-colors duration-500">
+            <div className="px-6 lg:px-10 py-6 space-y-6 min-h-screen">
 
 
                 {/* 3. Main Operational Grid */}
@@ -455,8 +454,7 @@ export default function DashboardPage() {
                         />
 
                         {/* Market Sentiment Gauge */}
-                        <Card className="bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none hover:shadow-2xl transition-all duration-500 cursor-default group backdrop-blur-xl relative overflow-hidden">
-                            <div className="absolute -right-8 -top-8 w-32 h-32 bg-gradient-to-br from-rose-500/10 to-transparent blur-2xl opacity-50" />
+                        <Card >
                             <CardHeader className="p-3 pb-1">
                                 <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center">
                                     <HeartPulse size={14} className="text-rose-500 mr-2" /> 
@@ -471,7 +469,7 @@ export default function DashboardPage() {
                                         <div className="h-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" style={{ width: `${market_summary.advancers_percent}%` }}></div>
                                         <div className="h-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.3)]" style={{ width: `${market_summary.decliners_percent}%` }}></div>
                                     </div>
-                                    <div className="flex justify-between text-[10px] font-black tracking-widest">
+                                    <div className="flex justify-between text-[10px] font-semibold tracking-wider">
                                         <div className="flex flex-col items-start gap-1">
                                             <span className="text-emerald-700 dark:text-emerald-400 italic">Advancers</span>
                                             <span className="text-xl text-black dark:text-slate-100">{market_summary.advancers}</span>
@@ -486,8 +484,7 @@ export default function DashboardPage() {
                         </Card>
 
                         {/* Market Snapshot Recap */}
-                        <Card className="bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden relative backdrop-blur-xl">
-                            <div className="absolute -left-8 -top-8 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent blur-2xl opacity-50" />
+                        <Card >
                             <CardHeader className="p-4 pb-1 border-b border-slate-50 dark:border-slate-800">
                                 <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight flex items-center">
                                     <ActivityIcon size={14} className="text-blue-600 mr-2" /> 
@@ -507,7 +504,7 @@ export default function DashboardPage() {
                                     </div>
                                 </div>
 
-                                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between group/breadth hover:border-indigo-500/30 transition-colors">
+                                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-border dark:border-slate-800 flex items-center justify-between group/breadth hover:border-indigo-500/30 transition-colors">
                                     <div className="flex flex-col">
                                         <span className="text-[9px] font-bold text-indigo-600/70 dark:text-indigo-400/60">Breadth ratio</span>
                                         <span className="text-lg font-bold text-slate-900 dark:text-slate-100 italic">{(market_summary.advancers / (market_summary.advancers + market_summary.decliners || 1)).toFixed(2)}</span>
@@ -520,21 +517,21 @@ export default function DashboardPage() {
                         </Card>
 
                         {/* Breakout Watchlist */}
-                        <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
+                        <Card >
                             <CardContent className="p-5">
                                 <BreakoutWatchlist stocks={allStocks} />
                             </CardContent>
                         </Card>
 
                         {/* Institutional Interest */}
-                        <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
+                        <Card >
                             <CardContent className="p-5">
                                 <InstitutionalInterest />
                             </CardContent>
                         </Card>
 
                         {/* Market Breadth Trend (Moved to Sidebar) */}
-                        <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
+                        <Card >
                             <CardHeader className="p-3 pb-1">
                                 <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
                                     <LineChart size={14} className="text-emerald-500" /> Breadth (5D)
@@ -546,7 +543,7 @@ export default function DashboardPage() {
                         </Card>
 
                         {/* Volume Shockers (Moved from Main Grid) */}
-                        <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
+                        <Card >
                             <CardHeader className="p-3 pb-1">
                                 <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
                                     <Zap size={14} className="text-orange-500" /> Volume Shockers
@@ -564,8 +561,8 @@ export default function DashboardPage() {
                     <motion.div variants={itemVariants} className="xl:col-span-3 grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                         {/* Broker Flow / Whale Watch (Moved to Main Grid - Full Width) */}
-                        <Card className="lg:col-span-3 bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none">
-                            <CardHeader className="p-5 pb-2 border-b border-slate-50 dark:border-white/5">
+                        <Card className="lg:col-span-3 ">
+                            <CardHeader className="p-5 pb-2 border-b border-slate-50 dark:border-border">
                                 <div className="space-y-1">
                                     <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center">
                                         <Wallet size={14} className="text-blue-500 mr-2" /> 
@@ -582,9 +579,8 @@ export default function DashboardPage() {
                         </Card>
 
                         {/* Market Heatmap */}
-                        <Card className="lg:col-span-2 bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden group hover:shadow-2xl transition-all duration-300 backdrop-blur-xl relative">
-                            <div className="absolute -right-12 -bottom-12 w-48 h-48 bg-gradient-to-tl from-blue-500/10 to-transparent blur-3xl opacity-50" />
-                            <CardHeader className="p-5 border-b border-slate-50 dark:border-white/5 flex flex-row items-center justify-between relative z-10">
+                        <Card >
+                            <CardHeader className="p-5 border-b border-slate-50 dark:border-border flex flex-row items-center justify-between relative z-10">
                                 <div className="space-y-1">
                                     <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center">
                                         <Globe size={14} className="text-blue-600 mr-2 group-hover:rotate-12 transition-transform" /> 
@@ -600,8 +596,7 @@ export default function DashboardPage() {
                         </Card>
 
                         {/* Actionable Stock Lists (Tabbed) */}
-                        <Card className="xl:col-span-1 bg-white dark:bg-slate-900/50 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full flex flex-col backdrop-blur-xl relative overflow-hidden hidden xl:flex">
-                            <div className="absolute -left-8 -bottom-8 w-32 h-32 bg-gradient-to-tr from-indigo-500/10 to-transparent blur-2xl opacity-50" />
+                        <Card >
                             <CardHeader className="p-3 pb-1 relative z-10">
                                 <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center gap-2">
                                     <Zap size={14} className="text-blue-500" /> High Alpha Signals
@@ -609,7 +604,7 @@ export default function DashboardPage() {
                             </CardHeader>
                             <CardContent className="p-6 pt-0 flex-1 overflow-hidden flex flex-col">
                                 <Tabs defaultValue="gainers" className="w-full h-full flex flex-col">
-                                    <TabsList className="grid w-full grid-cols-3 mb-4 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl h-10 border border-slate-200/50 dark:border-slate-800">
+                                    <TabsList className="grid w-full grid-cols-3 mb-4 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl h-10 border border-border dark:border-slate-800">
                                         <TabsTrigger value="gainers" className="rounded-lg font-bold text-[10px] data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Top Gainers</TabsTrigger>
                                         <TabsTrigger value="losers" className="rounded-lg font-bold text-[10px] data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">Top Losers</TabsTrigger>
                                         <TabsTrigger value="roc" className="rounded-lg font-bold text-[10px] data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm">ROC Watch</TabsTrigger>
@@ -652,7 +647,7 @@ export default function DashboardPage() {
 
                             {/* Market Health Radar */}
                             <div className="lg:col-span-12">
-                                <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full">
+                                <Card className=" h-full">
                                     <CardHeader className="p-3 pb-1">
                                         <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center">
                                             <ActivityIcon size={14} className="text-blue-500 mr-2" /> 
@@ -670,11 +665,11 @@ export default function DashboardPage() {
                                                 />
                                             </div>
                                             <div className="w-full md:w-64 space-y-4">
-                                                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:border-indigo-500/20">
+                                                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-border dark:border-slate-800 shadow-sm transition-all hover:border-indigo-500/20">
                                                     <span className="text-[9px] font-bold text-indigo-800 dark:text-indigo-400/60 block mb-1">Health index</span>
                                                     <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 tracking-tighter">72.4 <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold ml-1">Stable</span></div>
                                                 </div>
-                                                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:border-indigo-500/20">
+                                                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-border dark:border-slate-800 shadow-sm transition-all hover:border-indigo-500/20">
                                                     <span className="text-[9px] font-bold text-indigo-400 dark:text-indigo-400/60 block mb-1">Confirmation</span>
                                                     <div className="text-[10px] font-bold text-slate-700 dark:text-slate-300 leading-tight">Price action confirmed by volume participation.</div>
                                                 </div>
@@ -689,7 +684,7 @@ export default function DashboardPage() {
                         <div className="lg:col-span-3 grid grid-cols-1 gap-6">
 
                             {/* Sector Rankings */}
-                            <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full">
+                            <Card className=" h-full">
                                 <CardHeader className="p-3 pb-1 flex flex-row items-center justify-between">
                                     <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center">
                                         <BarChart3 size={14} className="mr-2" /> 
@@ -705,7 +700,7 @@ export default function DashboardPage() {
 
                             {/* Rotation Analysis */}
                             <div className="lg:col-span-3">
-                                <Card className="bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/50 dark:shadow-none h-full">
+                                <Card className=" h-full">
                                     <CardHeader className="p-3 pb-1">
                                         <CardTitle className="text-sm font-bold text-black dark:text-slate-100 tracking-tight flex items-center">
                                             <ActivityIcon size={14} className="text-indigo-500 mr-2" /> 
@@ -728,8 +723,8 @@ export default function DashboardPage() {
                         variants={itemVariants}
                         className="xl:col-span-4"
                     >
-                        <Card className="bg-white/50 dark:bg-slate-900/40 border-none shadow-xl shadow-slate-200/50 dark:shadow-none backdrop-blur-xl overflow-hidden">
-                            <CardHeader className="p-4 pb-2 border-b border-slate-100 dark:border-white/5 flex flex-row items-center justify-between">
+                        <Card >
+                            <CardHeader className="p-4 pb-2 border-b border-border dark:border-border flex flex-row items-center justify-between">
                                 <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center">
                                     <TrendingUp size={14} className="text-blue-600 mr-2" /> 
                                     Sector Performance Matrix
@@ -752,7 +747,7 @@ export default function DashboardPage() {
                                             {(sector_summary || []).slice(0, 15).map((sector, i) => {
                                                 const isPositive = sector.change >= 0;
                                                 return (
-                                                    <TableRow key={i} className="group border-slate-50 dark:border-white/5 hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors">
+                                                    <TableRow key={i} className="group border-slate-50 dark:border-border hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors">
                                                         <TableCell className="py-3">
                                                             <div className="flex items-center gap-3">
                                                                 <div className={`p-1.5 rounded-lg bg-gradient-to-br ${sectorConfig[sector.name]?.gradient || 'from-indigo-500/10 to-blue-600/10'} text-indigo-600 dark:text-indigo-400 shadow-sm opacity-70 group-hover:opacity-100 transition-opacity`}>

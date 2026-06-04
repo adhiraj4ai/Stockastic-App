@@ -10,7 +10,7 @@ export const FundamentalBenchmarks: React.FC<FundamentalBenchmarksProps> = ({ fu
     if (!fundamental) return null;
 
     return (
-        <div className="glass-card-light rounded-3xl p-8">
+        <div className="glass-card-light rounded-xl p-8">
             <div className="flex items-center gap-3 mb-10">
                 <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
                     <BarChart2 size={18} />
@@ -21,16 +21,16 @@ export const FundamentalBenchmarks: React.FC<FundamentalBenchmarksProps> = ({ fu
                 </div>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800">
+            <div className="overflow-hidden rounded-2xl border border-border dark:border-slate-800">
                 <table className="w-full text-sm">
-                    <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-800">
+                    <thead className="bg-slate-50 dark:bg-slate-800 border-b border-border dark:border-slate-800">
                         <tr>
                             <th className="px-6 py-4 text-left font-semibold text-slate-400 tracking-tight text-[9px]">Metric</th>
                             <th className="px-6 py-4 text-center font-semibold text-slate-400 tracking-tight text-[9px]">Value</th>
                             <th className="px-6 py-4 text-left font-semibold text-slate-400 tracking-tight text-[9px]">Sector range (low - high)</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/50 dark:bg-slate-900/50">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/50 dark:bg-card">
                         {[
                             { name: 'P/E Ratio', key: 'pe_ratio', label: 'P/E Ratio' },
                             { name: 'P/B Ratio', key: 'price_to_book', label: 'P/B Ratio' },

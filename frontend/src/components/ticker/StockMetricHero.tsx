@@ -42,7 +42,7 @@ export function StockMetricHero({
                     <div className="flex items-center gap-8">
                         <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800 font-semibold text-[9px] px-1.5 py-0">
+                                <Badge variant="outline" className="bg-slate-50 dark:bg-card text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800 font-semibold text-[9px] px-1.5 py-0">
                                     {sector}
                                 </Badge>
                                 <span className="w-1 h-1 rounded-full bg-emerald-500"></span>
@@ -63,7 +63,7 @@ export function StockMetricHero({
                         </div>
 
                         {/* 52W Range - Inline Compact */}
-                        <div className="hidden xl:block w-56 space-y-2 border-l border-slate-100 dark:border-slate-800 pl-8">
+                        <div className="hidden xl:block w-56 space-y-2 border-l border-border dark:border-slate-800 pl-8">
                             <div className="flex justify-between items-end">
                                 <p className="text-[9px] font-semibold text-slate-400 dark:text-slate-500">52W Range</p>
                                 <p className="text-[10px] font-bold text-slate-900 dark:text-slate-100 tabular-nums">{progress.toFixed(0)}% <span className="text-slate-400 dark:text-slate-500 text-[8px]">tile</span></p>

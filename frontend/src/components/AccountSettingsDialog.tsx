@@ -107,7 +107,7 @@ export function AccountSettingsDialog({
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px] bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800">
+            <DialogContent className="sm:max-w-[500px] bg-white dark:bg-card border-gray-200 dark:border-slate-800">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold flex items-center gap-2">
                         Setting: {account.name}
@@ -120,7 +120,7 @@ export function AccountSettingsDialog({
                 {!showDeleteConfirm ? (
                     <div className="space-y-6 py-4">
                         {/* Account Summary Card */}
-                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-100 dark:border-slate-700 space-y-3">
+                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-border dark:border-slate-700 space-y-3">
                             <h4 className="text-sm font-bold text-slate-500 dark:text-slate-400 tracking-tight">Account summary</h4>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>

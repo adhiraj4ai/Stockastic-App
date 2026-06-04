@@ -82,7 +82,7 @@ function OHLCStrip({ day }: { day: PriceActionDay }) {
         <div className="flex flex-wrap items-center gap-2">
             {/* Sentiment pill */}
             <div className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black',
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold',
                 isUp
                     ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/40'
                     : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/40'
@@ -94,9 +94,9 @@ function OHLCStrip({ day }: { day: PriceActionDay }) {
             {/* OHLC values */}
             <div className="flex items-center divide-x divide-slate-200 dark:divide-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
                 {fields.map(f => (
-                    <div key={f.label} className="flex flex-col items-center px-3 py-1.5 bg-white dark:bg-slate-900/60">
+                    <div key={f.label} className="flex flex-col items-center px-3 py-1.5 bg-white dark:bg-card">
                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{f.label}</span>
-                        <span className={cn('text-xs font-black font-mono tabular-nums', f.accent || 'text-slate-800 dark:text-slate-100')}>{f.value}</span>
+                        <span className={cn('text-xs font-semibold font-mono tabular-nums', f.accent || 'text-slate-800 dark:text-slate-100')}>{f.value}</span>
                     </div>
                 ))}
             </div>
@@ -104,10 +104,10 @@ function OHLCStrip({ day }: { day: PriceActionDay }) {
             {/* Candle anatomy mini */}
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg">
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Body</span>
-                <span className="text-xs font-black text-slate-700 dark:text-slate-200 font-mono">{bodyPct}%</span>
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 font-mono">{bodyPct}%</span>
                 <span className="text-slate-300 dark:text-slate-600">·</span>
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Wicks</span>
-                <span className="text-xs font-black text-slate-500 dark:text-slate-400 font-mono">↑{wickTopPct}% ↓{wickBotPct}%</span>
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-mono">↑{wickTopPct}% ↓{wickBotPct}%</span>
             </div>
 
             {/* Volume */}
@@ -143,7 +143,7 @@ function ZoneCard({ zone }: { zone: Zone }) {
             </div>
             <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                    <span className={cn('font-black text-[11px]', isSupply ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400')}>
+                    <span className={cn('font-semibold text-[11px]', isSupply ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400')}>
                         {isSupply ? 'Supply' : 'Demand'}
                     </span>
                     <span className="font-mono font-bold text-[10px] text-slate-500 dark:text-slate-400">
@@ -177,7 +177,7 @@ function PatternCard({ pattern }: { pattern: Pattern }) {
                 <div className="flex items-center justify-between gap-2">
                     <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate">{pattern.name}</span>
                     {pattern.win_rate && (
-                        <span className="shrink-0 text-[9px] font-black text-slate-400 font-mono">{pattern.win_rate}</span>
+                        <span className="shrink-0 text-[9px] font-semibold text-slate-400 font-mono">{pattern.win_rate}</span>
                     )}
                 </div>
                 {pattern.desc && (
@@ -199,7 +199,7 @@ function SMCBadge({ ev }: { ev: SMCEvent }) {
     }[ev.type] || { bg: 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700', icon: <Activity size={10} /> };
 
     return (
-        <div className={cn('flex items-center gap-1 px-2 py-1 rounded-md border text-[9px] font-black', config.bg)} title={ev.desc}>
+        <div className={cn('flex items-center gap-1 px-2 py-1 rounded-md border text-[9px] font-semibold', config.bg)} title={ev.desc}>
             {config.icon}
             <span>{ev.tag || ev.type}</span>
             {ev.sentiment && (
@@ -252,7 +252,7 @@ function TrendBias({ history }: { history: PriceActionDay[] }) {
 
     return (
         <div className={cn(
-            'flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-black',
+            'flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold',
             bias === 'BULLISH'
                 ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/40 text-emerald-600 dark:text-emerald-400'
                 : bias === 'BEARISH'
@@ -390,7 +390,7 @@ export function PriceActionTerminal({ symbol, grouping = 1 }: PriceActionTermina
             if (!d.smc_events) return;
             d.smc_events.forEach(ev => {
                 if (ev.type === 'FVG' && ev.sentiment === 'BULLISH') {
-                    markPoints.push({ coord: [idx, d.low], symbol: 'path://M0,10 L5,0 L10,10 Z', symbolSize: 12, itemStyle: { color: '#8b5cf6' }, label: { show: false } });
+                    markPoints.push({ coord: [idx, d.low], symbol: 'path://M0,10 L5,0 L10,10 Z', symbolSize: 12, itemStyle: { color: '#94a3b8' }, label: { show: false } });
                 }
                 if (ev.type === 'FVG' && ev.sentiment === 'BEARISH') {
                     markPoints.push({ coord: [idx, d.high], symbol: 'path://M0,0 L5,10 L10,0 Z', symbolSize: 12, itemStyle: { color: '#ec4899' }, label: { show: false } });
@@ -587,7 +587,7 @@ export function PriceActionTerminal({ symbol, grouping = 1 }: PriceActionTermina
                         <CandlestickChart size={18} />
                     </div>
                     <div>
-                        <h4 className="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <h4 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                             Price Action
                             <InfoTooltip content="Candlestick anatomy, Smart Money Concepts (FVG, BoS, Sniper), and supply/demand zone detection." />
                         </h4>
@@ -604,10 +604,10 @@ export function PriceActionTerminal({ symbol, grouping = 1 }: PriceActionTermina
 
             {/* ── Chart ── */}
             <div className={cn(
-                "bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-all duration-300",
+                "bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-all duration-300",
                 isFullscreen ? "fixed inset-0 z-[100] rounded-none bg-white dark:bg-slate-950 p-6" : "relative"
             )}>
-                <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-border dark:border-slate-800">
                     <div className="flex items-center gap-2">
                         <Activity size={13} className="text-slate-400" />
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -667,8 +667,8 @@ export function PriceActionTerminal({ symbol, grouping = 1 }: PriceActionTermina
 
             {/* ── Smart Money Structure ── */}
             {(orderBlocks.length > 0 || liquiditySweeps.length > 0) && (
-                <div className="bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                    <div className="px-5 pt-4 pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div className="px-5 pt-4 pb-3 border-b border-border dark:border-slate-800 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Target size={13} className="text-indigo-500" />
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Smart Money Structure</span>
@@ -686,7 +686,7 @@ export function PriceActionTerminal({ symbol, grouping = 1 }: PriceActionTermina
                         {/* Order Blocks */}
                         {orderBlocks.length > 0 && (
                             <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2.5">Active Order Blocks</p>
+                                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2.5">Active Order Blocks</p>
                                 <div className="space-y-2">
                                     {orderBlocks.map((ob, i) => {
                                         const midZone = (ob.high + ob.low) / 2;
@@ -728,7 +728,7 @@ export function PriceActionTerminal({ symbol, grouping = 1 }: PriceActionTermina
                         {/* Liquidity Sweeps */}
                         {liquiditySweeps.length > 0 && (
                             <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2.5">Liquidity Sweeps</p>
+                                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2.5">Liquidity Sweeps</p>
                                 <div className="space-y-2">
                                     {liquiditySweeps.map((sweep, i) => (
                                         <div key={i} className={cn(
@@ -764,8 +764,8 @@ export function PriceActionTerminal({ symbol, grouping = 1 }: PriceActionTermina
                 <div className="lg:col-span-2 space-y-4">
                     {/* SMC Events */}
                     {latestSMC.length > 0 && (
-                        <div className="bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5">
-                            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">
+                        <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5">
+                            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">
                                 Smart Money Events — Latest Session
                             </p>
                             <div className="flex flex-wrap gap-2">
@@ -780,9 +780,9 @@ export function PriceActionTerminal({ symbol, grouping = 1 }: PriceActionTermina
                     )}
 
                     {/* Candlestick patterns */}
-                    <div className="bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5">
+                    <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5">
                         <div className="flex items-center justify-between mb-3">
-                            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                                 Detected Patterns — {new Date(latest.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                             </p>
                             {latest.patterns.length > 6 && (
@@ -797,7 +797,7 @@ export function PriceActionTerminal({ symbol, grouping = 1 }: PriceActionTermina
                             <p className="text-xs text-slate-400 dark:text-slate-500 italic">No patterns detected in this session</p>
                         )}
                         {/* Shape desc */}
-                        <p className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs font-semibold text-slate-500 dark:text-slate-400 italic">
+                        <p className="mt-3 pt-3 border-t border-border dark:border-slate-800 text-xs font-semibold text-slate-500 dark:text-slate-400 italic">
                             {latest.shape_desc}
                         </p>
                     </div>
@@ -805,10 +805,10 @@ export function PriceActionTerminal({ symbol, grouping = 1 }: PriceActionTermina
 
                 {/* Zones */}
                 <div className="space-y-4">
-                    <div className="bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5">
+                    <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5">
                         <div className="flex items-center gap-2 mb-3">
                             <Layers size={13} className="text-slate-400" />
-                            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Active Zones</p>
+                            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Active Zones</p>
                         </div>
                         {data.zones && data.zones.length > 0 ? (
                             <div className="space-y-2">
@@ -822,10 +822,10 @@ export function PriceActionTerminal({ symbol, grouping = 1 }: PriceActionTermina
             </div>
 
             {/* ── Chronological log ── */}
-            <div className="bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                <div className="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+            <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div className="px-5 py-3.5 border-b border-border dark:border-slate-800 flex items-center gap-2">
                     <Clock size={13} className="text-slate-400" />
-                    <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Session Log</h4>
+                    <h4 className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Session Log</h4>
                 </div>
                 <div className="divide-y divide-slate-50 dark:divide-slate-800/60 max-h-[480px] overflow-y-auto">
                     {data.history.map((day, idx) => {
@@ -847,28 +847,28 @@ export function PriceActionTerminal({ symbol, grouping = 1 }: PriceActionTermina
 
                                 {/* Date */}
                                 <div className="w-16 shrink-0">
-                                    <p className="text-[10px] font-black font-mono text-slate-500 dark:text-slate-400">
+                                    <p className="text-[10px] font-semibold font-mono text-slate-500 dark:text-slate-400">
                                         {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                     </p>
                                 </div>
 
                                 {/* OHLC values */}
-                                <div className="hidden md:flex items-center divide-x divide-slate-100 dark:divide-slate-800 border border-slate-100 dark:border-slate-800 rounded-lg overflow-hidden shrink-0">
+                                <div className="hidden md:flex items-center divide-x divide-slate-100 dark:divide-slate-800 border border-border dark:border-slate-800 rounded-lg overflow-hidden shrink-0">
                                     {[
                                         { label: 'O', value: day.open, cls: 'text-slate-600 dark:text-slate-300' },
                                         { label: 'H', value: day.high, cls: 'text-emerald-600 dark:text-emerald-400' },
-                                        { label: 'L', value: day.low,  cls: 'text-rose-500 dark:text-rose-400' },
+                                        { label: 'L', value: day.low, cls: 'text-rose-500 dark:text-rose-400' },
                                         { label: 'C', value: day.close, cls: isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400' },
                                     ].map(f => (
-                                        <div key={f.label} className="flex items-center gap-1 px-2 py-1.5 bg-white dark:bg-slate-900/40">
+                                        <div key={f.label} className="flex items-center gap-1 px-2 py-1.5 bg-white dark:bg-card">
                                             <span className="text-[8px] font-bold text-slate-400 uppercase">{f.label}</span>
-                                            <span className={cn('text-[10px] font-black font-mono tabular-nums', f.cls)}>
+                                            <span className={cn('text-[10px] font-semibold font-mono tabular-nums', f.cls)}>
                                                 {f.value.toLocaleString()}
                                             </span>
                                         </div>
                                     ))}
-                                    <div className="flex items-center px-2 py-1.5 bg-white dark:bg-slate-900/40">
-                                        <span className={cn('text-[10px] font-black', isUp ? 'text-emerald-500' : 'text-rose-500')}>
+                                    <div className="flex items-center px-2 py-1.5 bg-white dark:bg-card">
+                                        <span className={cn('text-[10px] font-semibold', isUp ? 'text-emerald-500' : 'text-rose-500')}>
                                             {isUp ? '+' : ''}{pct}%
                                         </span>
                                     </div>

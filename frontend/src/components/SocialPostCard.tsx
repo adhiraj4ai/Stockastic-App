@@ -102,11 +102,11 @@ export const SocialPostCard = ({ type, data }: SocialPostCardProps) => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
                         <span className="text-[10px] font-medium text-slate-500 block mb-1 tracking-tight">Turnover</span>
                         <div className="text-xl font-bold text-white tracking-tight">Rs. {(total_turnover / 10000000).toFixed(2)}<span className="text-xs ml-1 opacity-60">Cr</span></div>
                     </div>
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
                         <span className="text-[10px] font-medium text-slate-500 block mb-1 tracking-tight">Sentiment</span>
                         <div className="text-xl font-bold text-white tracking-tight">{(advancers / (advancers + decliners || 1)).toFixed(2)}<span className="text-xs ml-1 opacity-60">Ratio</span></div>
                     </div>
@@ -210,7 +210,7 @@ export const SocialPostCard = ({ type, data }: SocialPostCardProps) => {
         <div className="flex flex-col gap-6 max-w-md mx-auto">
             <div
                 ref={cardRef}
-                className="relative aspect-[4/5] w-full rounded-[2rem] overflow-hidden bg-slate-950 border border-white/10 shadow-2xl p-8 flex flex-col justify-between"
+                className="relative aspect-[4/5] w-full rounded-[2rem] overflow-hidden bg-slate-950 border border-white/10 shadow-sm p-8 flex flex-col justify-between"
             >
                 {/* Background Decor */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 blur-[100px] -mr-32 -mt-32" />

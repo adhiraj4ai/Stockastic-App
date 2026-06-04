@@ -92,7 +92,7 @@ export const TopGainersChart = ({ gainers, height = 300, metricTitle = 'One-Mont
         '#6366f1', // indigo
         '#f43f5e', // rose
         '#84cc16', // lime
-        '#a855f7'  // purple
+        '#a855f7' // purple
     ];
 
     const hexToRGBA = (hex: string, opacity: number) => {

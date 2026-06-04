@@ -445,7 +445,7 @@ export function FullFeaturedChart({ symbol, crossoverDate, crossoverPrice, signa
 
     if (loading) {
         return (
-            <div className="w-full h-full flex items-center justify-center bg-white dark:bg-slate-900">
+            <div className="w-full h-full flex items-center justify-center bg-white dark:bg-card">
                 <div className="flex flex-col items-center gap-3">
                     <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
                     <div className="text-center">
@@ -459,7 +459,7 @@ export function FullFeaturedChart({ symbol, crossoverDate, crossoverPrice, signa
 
     if (error) {
         return (
-            <div className="w-full h-full flex items-center justify-center bg-white dark:bg-slate-900">
+            <div className="w-full h-full flex items-center justify-center bg-white dark:bg-card">
                 <div className="flex flex-col items-center gap-3 text-rose-500">
                     <Activity className="w-8 h-8" />
                     <span className="text-sm font-medium">{error}</span>
@@ -469,7 +469,7 @@ export function FullFeaturedChart({ symbol, crossoverDate, crossoverPrice, signa
     }
 
     return (
-        <div className="relative w-full h-full flex flex-col bg-white dark:bg-slate-900">
+        <div className="relative w-full h-full flex flex-col bg-white dark:bg-card">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-slate-50 dark:from-slate-800 to-white dark:to-slate-900 shrink-0">
                 <div className="flex items-center gap-4">
@@ -524,7 +524,7 @@ export function FullFeaturedChart({ symbol, crossoverDate, crossoverPrice, signa
                     <div className="relative">
                         <button
                             onClick={() => setIndicatorPanelOpen(!indicatorPanelOpen)}
-                            className="flex items-center gap-2 px-3 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                            className="flex items-center gap-2 px-3 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-card border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                         >
                             <Layers size={14} />
                             Indicators
@@ -537,8 +537,8 @@ export function FullFeaturedChart({ symbol, crossoverDate, crossoverPrice, signa
                         </button>
 
                         {indicatorPanelOpen && (
-                            <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 overflow-hidden">
-                                <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 flex items-center justify-between">
+                            <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-card border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 overflow-hidden">
+                                <div className="p-3 border-b border-border dark:border-slate-800 bg-slate-50 dark:bg-slate-800 flex items-center justify-between">
                                     <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Technical Indicators</span>
                                     <button onClick={() => setIndicatorPanelOpen(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
                                         <X size={14} />
@@ -627,7 +627,7 @@ export function FullFeaturedChart({ symbol, crossoverDate, crossoverPrice, signa
 
             {/* Active Indicators Pills */}
             {activeIndicators.length > 0 && (
-                <div className="flex flex-wrap gap-1 px-4 py-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+                <div className="flex flex-wrap gap-1 px-4 py-2 border-b border-border dark:border-slate-800 bg-white dark:bg-card shrink-0">
                     {activeIndicators.map((ind, idx) => (
                         <span
                             key={ind}
@@ -659,7 +659,7 @@ export function FullFeaturedChart({ symbol, crossoverDate, crossoverPrice, signa
             </div>
 
             {/* Footer */}
-            <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800 border-t border-slate-100 dark:border-slate-800 shrink-0">
+            <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800 border-t border-border dark:border-slate-800 shrink-0">
                 <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
                     <div className="flex items-center gap-4">
                         <span>🖱️ Drag to zoom • Scroll to pan • Click legend to toggle series</span>

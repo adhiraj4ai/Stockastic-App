@@ -147,7 +147,7 @@ function SignalBadge({ signal, size = 'sm' }: { signal: string; size?: 'sm' | 'l
             isBuy && 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700',
             isSell && 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-700',
             isHold && 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700',
-            !isBuy && !isSell && !isHold && 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 border-slate-100 dark:border-slate-800',
+            !isBuy && !isSell && !isHold && 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 border-border dark:border-slate-800',
         )}>
             {isBuy && <ArrowUpRight size={size === 'lg' ? 14 : 10} />}
             {isSell && <ArrowDownRight size={size === 'lg' ? 14 : 10} />}
@@ -201,10 +201,10 @@ const getActionability = (signalPrice: number, currentPrice?: number, signal?: s
     // Technical Structural Breakdown check
     if (intelligence) {
         if (isBuy && (intelligence.macd === 'BEARISH' || intelligence.technicalScore < 30)) {
-            return { label: 'Setup Broken', color: 'bg-slate-100 dark:bg-slate-900/40 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-800', status: 'invalid' };
+            return { label: 'Setup Broken', color: 'bg-slate-100 dark:bg-card text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-800', status: 'invalid' };
         }
         if (isSell && (intelligence.macd === 'BULLISH' || intelligence.technicalScore > 70)) {
-            return { label: 'Setup Broken', color: 'bg-slate-100 dark:bg-slate-900/40 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-800', status: 'invalid' };
+            return { label: 'Setup Broken', color: 'bg-slate-100 dark:bg-card text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-800', status: 'invalid' };
         }
     }
 
@@ -260,7 +260,7 @@ function ConsensusHero({ consensus, buyPct, sellPct, total, intelCount }: { cons
     const isSell = consensus === 'SELL';
 
     return (
-        <div className="glass-card-light dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-800/50 p-6 flex flex-col md:flex-row gap-6 items-center">
+        <div className="glass-card-light dark:bg-card rounded-2xl border border-slate-200 dark:border-slate-800/50 p-6 flex flex-col md:flex-row gap-6 items-center">
             <div className="flex-1 flex items-center gap-4">
                 <div className={cn(
                     "w-12 h-12 rounded-xl flex items-center justify-center shadow-sm",
@@ -514,9 +514,9 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                             )}
                         </div>
 
-                        <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40">
+                        <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-card">
                             <table className="w-full text-xs">
-                                <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+                                <thead className="bg-slate-50 dark:bg-card border-b border-slate-200 dark:border-slate-800">
                                     <tr>
                                         <th className="px-4 py-3 text-left font-semibold text-slate-400 tracking-tight text-[9px]">Strategy</th>
                                         <th className="px-4 py-3 text-center font-semibold text-slate-400 tracking-tight text-[9px]">Status</th>
@@ -551,12 +551,12 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
                                                     {freshness ? (
-                                                        <div className={cn("inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border tracking-tight", freshness?.color || 'text-slate-400 border-slate-100')}>
+                                                        <div className={cn("inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border tracking-tight", freshness?.color || 'text-slate-400 border-border')}>
                                                             {freshness && <freshness.icon size={8} />}
                                                             {freshness.label}
                                                         </div>
                                                     ) : (
-                                                        <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border border-slate-100 dark:border-slate-800 text-slate-400 tracking-tight">
+                                                        <div className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border border-border dark:border-slate-800 text-slate-400 tracking-tight">
                                                             Steady
                                                         </div>
                                                     )}
@@ -599,7 +599,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div className="md:col-span-1 rounded-xl border p-4 bg-white dark:bg-slate-900/50 flex flex-col justify-between">
+                            <div className="md:col-span-1 rounded-xl border p-4 bg-white dark:bg-card flex flex-col justify-between">
                                 <span className="text-[9px] font-medium text-slate-400 tracking-tight leading-none">Fundamental score</span>
                                 <div className="flex items-baseline gap-1 mt-2">
                                     <span className="text-3xl font-bold text-slate-800 dark:text-white tabular-nums tracking-tight">{intelligence?.fundamentalScore || 0}</span>
@@ -619,7 +619,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                                     { label: 'ROE', value: fundamental?.fundamental_indicators?.find((i: any) => i.name.includes('ROE'))?.value || 'N/A', sub: 'Return on Equity' },
                                     { label: 'Div yield', value: fundamental?.dividend_yield ? fundamental.dividend_yield.toFixed(2) + '%' : 'N/A', sub: 'Sector comparison' }
                                 ].map((m, idx) => (
-                                    <div key={idx} className="rounded-xl border border-slate-100 dark:border-slate-800 p-4 bg-slate-50/30 dark:bg-slate-800/20">
+                                    <div key={idx} className="rounded-xl border border-border dark:border-slate-800 p-4 bg-slate-50/30 dark:bg-slate-800/20">
                                         <span className="text-[8px] font-medium text-slate-400 tracking-tight">{m.label}</span>
                                         <div className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-1 tracking-tight">{m.value}</div>
                                         <div className="text-[8px] text-slate-400 mt-0.5 tracking-tight">{m.sub}</div>
@@ -727,7 +727,7 @@ function IntelCard({ source, signals, currentPrice, intelligence }: { source: st
 
     return (
         <div className={cn(
-            "rounded-xl border p-4 transition-all duration-300 bg-white dark:bg-slate-900/50 relative overflow-hidden group hover:shadow-md",
+            "rounded-xl border p-4 transition-all duration-300 bg-white dark:bg-card relative overflow-hidden group hover:shadow-md",
             isPlatinum ? "border-slate-800 dark:border-white ring-1 ring-slate-900/5" : colors.border,
             freshness.status === 'historical' && "opacity-60"
         )}>
@@ -742,10 +742,10 @@ function IntelCard({ source, signals, currentPrice, intelligence }: { source: st
                         <div>
                             <div className="flex items-center gap-1.5">
                                 <h4 className="font-bold text-sm text-slate-800 dark:text-slate-100 leading-tight tracking-tight">{SOURCE_LABELS[source] || source}</h4>
-                                {isPlatinum && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-900 dark:bg-white text-white dark:text-black tracking-widest border border-slate-700 dark:border-slate-200">Platinum</span>}
-                                {isGold && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500 text-white tracking-widest border border-amber-600">Gold</span>}
+                                {isPlatinum && <span className="text-[8px] font-semibold uppercase px-1.5 py-0.5 rounded bg-slate-900 dark:bg-white text-white dark:text-black tracking-wider border border-slate-700 dark:border-slate-200">Platinum</span>}
+                                {isGold && <span className="text-[8px] font-semibold uppercase px-1.5 py-0.5 rounded bg-amber-500 text-white tracking-wider border border-amber-600">Gold</span>}
                             </div>
-                            <div className={cn("inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border tracking-tight", freshness?.color || 'text-slate-400 border-slate-100')}>
+                            <div className={cn("inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border tracking-tight", freshness?.color || 'text-slate-400 border-border')}>
                                 <freshness.icon size={8} />{freshness?.label || 'Steady'}
                             </div>
                         </div>
@@ -766,14 +766,14 @@ function IntelCard({ source, signals, currentPrice, intelligence }: { source: st
                 </div>
 
                 {/* Metrics Row */}
-                <div className="grid grid-cols-3 gap-2 py-2 border-y border-slate-100 dark:border-slate-800/60">
+                <div className="grid grid-cols-3 gap-2 py-2 border-y border-border dark:border-slate-800/60">
                     <div className="text-center">
                         <div className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">Strength</div>
-                        <div className={cn("text-xs font-black tabular-nums tracking-tight", latestSignal.strength > 80 ? "text-emerald-500" : latestSignal.strength > 50 ? "text-amber-500" : "text-rose-500")}>
+                        <div className={cn("text-xs font-semibold tabular-nums tracking-tight", latestSignal.strength > 80 ? "text-emerald-500" : latestSignal.strength > 50 ? "text-amber-500" : "text-rose-500")}>
                             {latestSignal.strength}%
                         </div>
                     </div>
-                    <div className="text-center border-x border-slate-100 dark:border-slate-800/60 leading-none flex flex-col justify-center">
+                    <div className="text-center border-x border-border dark:border-slate-800/60 leading-none flex flex-col justify-center">
                         <div className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">At Signal</div>
                         <div className="text-[10px] font-bold text-slate-700 dark:text-slate-300 tabular-nums tracking-tight">
                             Rs.{parseFloat(latestSignal.ltp).toLocaleString()}
@@ -786,7 +786,7 @@ function IntelCard({ source, signals, currentPrice, intelligence }: { source: st
                 </div>
 
                 <div className="space-y-3">
-                    <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800">
+                    <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/30 border border-border dark:border-slate-800">
                         <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-normal line-clamp-2 tracking-tight italic">&ldquo;{latestSignal.rationale || 'Quantitative intelligence signal.'}&rdquo;</p>
                     </div>
                     
@@ -795,14 +795,14 @@ function IntelCard({ source, signals, currentPrice, intelligence }: { source: st
                         <div className="flex items-center gap-3">
                             <div className="flex flex-col">
                                 <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">RSI</span>
-                                <span className={cn("text-[10px] font-black font-mono", (intelligence?.rsi || 50) > 70 ? "text-rose-500" : (intelligence?.rsi || 50) < 30 ? "text-emerald-500" : "text-slate-600 dark:text-slate-400")}>
+                                <span className={cn("text-[10px] font-semibold font-mono", (intelligence?.rsi || 50) > 70 ? "text-rose-500" : (intelligence?.rsi || 50) < 30 ? "text-emerald-500" : "text-slate-600 dark:text-slate-400")}>
                                     {intelligence?.rsi?.toFixed(1) || '--'}
                                 </span>
                             </div>
                             <div className="w-px h-5 bg-slate-200 dark:bg-slate-800" />
                             <div className="flex flex-col">
                                 <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">MACD</span>
-                                <span className={cn("text-[10px] font-black font-mono", (intelligence?.macdScore || 0) > 50 ? "text-emerald-500" : "text-rose-500")}>
+                                <span className={cn("text-[10px] font-semibold font-mono", (intelligence?.macdScore || 0) > 50 ? "text-emerald-500" : "text-rose-500")}>
                                     {intelligence?.macd || 'NEUTRAL'}
                                 </span>
                             </div>

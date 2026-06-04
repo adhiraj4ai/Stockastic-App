@@ -112,7 +112,7 @@ export default function StockChart({ data, ticker }: StockChartProps) {
                 yAxisIndex: 1,
                 data: volumes,
                 itemStyle: {
-                    color: '#3b82f6',
+                    color: '#6366f1',
                     opacity: 0.5,
                 },
             },

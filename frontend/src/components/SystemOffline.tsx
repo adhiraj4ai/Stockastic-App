@@ -29,7 +29,7 @@ export default function SystemOffline() {
                     <ServerOff size={32} />
                 </div>
                 
-                <h1 className="text-2xl font-black text-white tracking-tight mb-2">
+                <h1 className="text-2xl font-semibold text-white tracking-tight mb-2">
                     System <span className="text-rose-500">Offline</span>
                 </h1>
                 
@@ -41,7 +41,7 @@ export default function SystemOffline() {
                     onClick={handleRetry}
                     disabled={isRetrying}
                     className={cn(
-                        "group relative inline-flex items-center gap-3 px-8 py-3.5 rounded-full text-white text-xs font-black uppercase tracking-[0.2em] transition-all active:scale-95 disabled:opacity-80 shadow-lg",
+                        "group relative inline-flex items-center gap-3 px-8 py-3.5 rounded-full text-white text-xs font-semibold uppercase tracking-[0.2em] transition-all active:scale-95 disabled:opacity-80 shadow-lg",
                         isRetrying ? "bg-orange-500 shadow-orange-500/20" : "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20"
                     )}
                 >
@@ -52,7 +52,7 @@ export default function SystemOffline() {
             
             <div className="absolute bottom-12 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
-                <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Connection Lost</span>
+                <span className="text-[10px] font-semibold text-slate-700 uppercase tracking-wider">Connection Lost</span>
             </div>
         </div>
     );

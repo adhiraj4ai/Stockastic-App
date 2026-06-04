@@ -19,7 +19,8 @@ function Calendar({
     ...props
 }: CalendarProps) {
     const [view, setView] = React.useState<'days' | 'months' | 'years'>('days');
-    const [navDate, setNavDate] = React.useState<Date>(() => externalMonth || (props.selected && props.selected instanceof Date) ? props.selected : new Date());
+    const selected = (props as any).selected;
+    const [navDate, setNavDate] = React.useState<Date>(() => externalMonth || (selected && selected instanceof Date) ? selected : new Date());
 
     const handleMonthChange = (newMonth: Date) => {
         setNavDate(newMonth);

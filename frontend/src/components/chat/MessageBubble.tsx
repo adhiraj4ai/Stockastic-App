@@ -70,7 +70,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ role, content, isS
                                     } catch (e: any) {
                                         console.error("Gen-UI Parse Error:", e);
                                         return (
-                                            <div className="p-4 rounded-xl border border-rose-500/20 bg-rose-500/5 backdrop-blur-md my-4">
+                                            <div className="p-4 rounded-xl border border-rose-500/20 bg-rose-500/5 my-4">
                                                 <div className="flex items-center gap-2 text-rose-500 font-bold text-xs tracking-tight mb-2">
                                                     <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
                                                     Rendering error
@@ -131,7 +131,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ role, content, isS
                                 </div>
                             ),
                             th: ({ children }) => (
-                                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-400 tracking-tight backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90 border-b border-gray-200 dark:border-gray-800">
+                                <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-400 tracking-tight bg-opacity-90 dark:bg-opacity-90 border-b border-gray-200 dark:border-gray-800">
                                     {children}
                                 </th>
                             ),
@@ -156,13 +156,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ role, content, isS
             className={`flex gap-4 ${role === 'user' ? 'justify-end' : 'justify-start'}`}
         >
             {role === 'assistant' && (
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-600/20 to-emerald-900/20 border border-emerald-500/20 flex items-center justify-center shrink-0 backdrop-blur-md shadow-lg shadow-emerald-900/10 dark:from-emerald-600/20 dark:to-emerald-900/20 dark:border-emerald-500/20 bg-emerald-100 border-emerald-200">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-600/20 to-emerald-900/20 border border-emerald-500/20 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-900/10 dark:from-emerald-600/20 dark:to-emerald-900/20 dark:border-emerald-500/20 bg-emerald-100 border-emerald-200">
                     <Bot size={18} className="text-emerald-600 dark:text-emerald-400" />
                 </div>
             )}
 
             <div className={`
-                max-w-[85%] rounded-2xl px-5 py-4 shadow-xl backdrop-blur-md border
+                max-w-[85%] rounded-2xl px-5 py-4 shadow-xl border
                 ${role === 'user'
                     ? 'bg-emerald-600/90 border-emerald-500/50 text-white shadow-emerald-900/20 from-emerald-600 to-emerald-500 bg-gradient-to-br'
                     : 'bg-white/80 border-gray-200 text-gray-800 shadow-gray-200/50 dark:bg-gray-900/60 dark:border-gray-800/60 dark:text-gray-100 dark:shadow-black/20'}

@@ -215,7 +215,7 @@ function FloorsheetContent() {
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 items-center bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div className="flex flex-wrap gap-2 items-center bg-white dark:bg-card p-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
                         <Filter className="w-4 h-4 text-slate-400 ml-2" />
                         <Input
                             placeholder="Symbol"
@@ -259,47 +259,47 @@ function FloorsheetContent() {
                     <>
                         {/* Summary Cards */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-slate-900 dark:to-slate-900 border-blue-100 dark:border-slate-800">
+                            <Card className="bg-muted/40 dark:from-slate-900 dark:to-slate-900 border-blue-100 dark:border-slate-800">
                                 <CardContent className="p-4 flex items-center gap-4">
                                     <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                                         <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                     </div>
                                     <div>
                                         <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">Total turnover</p>
-                                        <p className="text-xl font-black text-slate-900 dark:text-slate-100">{formatCurrency(summary?.total_turnover || 0)}</p>
+                                        <p className="text-xl font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(summary?.total_turnover || 0)}</p>
                                     </div>
                                 </CardContent>
                             </Card>
-                            <Card className="bg-gradient-to-br from-indigo-50 to-white dark:from-slate-900 dark:to-slate-900 border-indigo-100 dark:border-slate-800">
+                            <Card className="bg-muted/40 dark:from-slate-900 dark:to-slate-900 border-indigo-100 dark:border-slate-800">
                                 <CardContent className="p-4 flex items-center gap-4">
                                     <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
                                         <Users className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                                     </div>
                                     <div>
                                         <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">Total volume</p>
-                                        <p className="text-xl font-black text-slate-900 dark:text-slate-100">{formatNumber(summary?.total_volume || 0)}</p>
+                                        <p className="text-xl font-semibold text-slate-900 dark:text-slate-100">{formatNumber(summary?.total_volume || 0)}</p>
                                     </div>
                                 </CardContent>
                             </Card>
-                            <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-slate-900 dark:to-slate-900 border-emerald-100 dark:border-slate-800">
+                            <Card className="bg-muted/40 dark:from-slate-900 dark:to-slate-900 border-emerald-100 dark:border-slate-800">
                                 <CardContent className="p-4 flex items-center gap-4">
                                     <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
                                         <Activity className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                                     </div>
                                     <div>
                                         <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">Transactions</p>
-                                        <p className="text-xl font-black text-slate-900 dark:text-slate-100">{formatNumber(summary?.total_transactions || 0)}</p>
+                                        <p className="text-xl font-semibold text-slate-900 dark:text-slate-100">{formatNumber(summary?.total_transactions || 0)}</p>
                                     </div>
                                 </CardContent>
                             </Card>
-                            <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                            <Card className="bg-white dark:bg-card border-slate-200 dark:border-slate-800">
                                 <CardContent className="p-4 flex items-center gap-4">
                                     <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
                                         <TrendingUp className="w-5 h-5 text-slate-600 dark:text-slate-400" />
                                     </div>
                                     <div>
                                         <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-0.5">Average rate</p>
-                                        <p className="text-xl font-black text-slate-900 dark:text-slate-100">{formatCurrency(summary?.avg_rate || 0)}</p>
+                                        <p className="text-xl font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(summary?.avg_rate || 0)}</p>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -307,8 +307,8 @@ function FloorsheetContent() {
 
                         {/* Charts Section */}
                         <div className="grid md:grid-cols-2 gap-6">
-                            <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
-                                <CardHeader className="pb-2 border-b border-slate-100 dark:border-slate-800/50">
+                            <Card className="bg-white dark:bg-card border-slate-200 dark:border-slate-800 shadow-sm">
+                                <CardHeader className="pb-2 border-b border-border dark:border-slate-800/50">
                                     <CardTitle className="text-base font-semibold flex items-center gap-2">
                                         <TrendingUp className="w-4 h-4 text-emerald-500" />
                                         Top Buyers (by Amount)
@@ -321,8 +321,8 @@ function FloorsheetContent() {
                                 </CardContent>
                             </Card>
 
-                            <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
-                                <CardHeader className="pb-2 border-b border-slate-100 dark:border-slate-800/50">
+                            <Card className="bg-white dark:bg-card border-slate-200 dark:border-slate-800 shadow-sm">
+                                <CardHeader className="pb-2 border-b border-border dark:border-slate-800/50">
                                     <CardTitle className="text-base font-semibold flex items-center gap-2">
                                         <TrendingDown className="w-4 h-4 text-rose-500" />
                                         Top Sellers (by Amount)
@@ -337,8 +337,8 @@ function FloorsheetContent() {
                         </div>
 
                         {/* Transaction List */}
-                        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
-                            <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 dark:border-slate-800/50">
+                        <Card className="bg-white dark:bg-card border-slate-200 dark:border-slate-800 shadow-sm">
+                            <CardHeader className="flex flex-row items-center justify-between border-b border-border dark:border-slate-800/50">
                                 <CardTitle className="text-lg flex items-center gap-2">
                                     <Filter className="w-4 h-4 text-slate-400" />
                                     Transaction Log
@@ -415,7 +415,7 @@ function FloorsheetContent() {
                                         </div>
 
                                         {/* Pagination Controls */}
-                                        <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                                        <div className="p-4 border-t border-border dark:border-slate-800 flex items-center justify-between">
                                             <div className="text-xs text-slate-500 dark:text-slate-400">
                                                 Page {page} of {totalPages}
                                             </div>

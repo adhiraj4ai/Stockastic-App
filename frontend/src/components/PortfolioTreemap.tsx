@@ -21,14 +21,14 @@ function CustomizedContent(props: any) {
 
     // Color based on P&L %
     let bgColor: string;
-    if (pnlPercent > 20) bgColor = '#059669';       // emerald-600
-    else if (pnlPercent > 10) bgColor = '#10B981';   // emerald-500
-    else if (pnlPercent > 5) bgColor = '#34D399';    // emerald-400
-    else if (pnlPercent > 0) bgColor = '#6EE7B7';    // emerald-300
-    else if (pnlPercent > -5) bgColor = '#FCA5A5';   // red-300
-    else if (pnlPercent > -10) bgColor = '#F87171';   // red-400
-    else if (pnlPercent > -20) bgColor = '#EF4444';   // red-500
-    else bgColor = '#DC2626';                          // red-600
+    if (pnlPercent > 20) bgColor = '#059669'; // emerald-600
+    else if (pnlPercent > 10) bgColor = '#10B981'; // emerald-500
+    else if (pnlPercent > 5) bgColor = '#34D399'; // emerald-400
+    else if (pnlPercent > 0) bgColor = '#6EE7B7'; // emerald-300
+    else if (pnlPercent > -5) bgColor = '#FCA5A5'; // red-300
+    else if (pnlPercent > -10) bgColor = '#F87171'; // red-400
+    else if (pnlPercent > -20) bgColor = '#EF4444'; // red-500
+    else bgColor = '#DC2626'; // red-600
 
     const textColor = Math.abs(pnlPercent) > 5 ? '#FFFFFF' : (isPositive ? '#064E3B' : '#7F1D1D');
     const showPct = width > 50 && height > 30;
@@ -85,7 +85,7 @@ function CustomTooltip({ active, payload }: any) {
     const data = payload[0].payload;
 
     return (
-        <div className="bg-gray-900/95 dark:bg-slate-950/95 text-white p-3 rounded-xl shadow-2xl border border-gray-700/50 dark:border-slate-700/50 backdrop-blur-sm min-w-[180px]">
+        <div className="bg-gray-900/95 dark:bg-slate-950/95 text-white p-3 rounded-xl shadow-sm border border-gray-700/50 dark:border-slate-700/50 min-w-[180px]">
             <div className="flex items-center justify-between border-b border-gray-700 dark:border-slate-700 pb-2 mb-2">
                 <span className="font-bold text-sm">{data.name}</span>
                 <span className="text-[9px] font-bold text-slate-400">{data.sector}</span>

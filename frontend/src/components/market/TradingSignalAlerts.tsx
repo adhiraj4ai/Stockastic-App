@@ -110,11 +110,11 @@ export default function TradingSignalAlerts() {
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between px-1">
-                <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                <h2 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-2">
                     <Activity className="w-3 h-3" />
                     Institutional Signal Alerts
                 </h2>
-                <Badge variant="outline" className="text-[9px] font-bold bg-slate-50/50 dark:bg-white/[0.02] border-slate-200 dark:border-white/5 uppercase tracking-tight">
+                <Badge variant="outline" className="text-[9px] font-bold bg-slate-50/50 dark:bg-muted border-slate-200 dark:border-border uppercase tracking-tight">
                     {lastScanDate ? `Snapshot: ${lastScanDate}` : 'Pipeline Live'}
                 </Badge>
             </div>
@@ -127,15 +127,15 @@ export default function TradingSignalAlerts() {
                     return (
                         <Card 
                             key={group.id}
-                            className="border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900 shadow-sm overflow-hidden flex flex-col group transition-all"
+                            className="border-slate-200 dark:border-border bg-white dark:bg-card shadow-sm overflow-hidden flex flex-col group transition-all"
                         >
                             {/* Header Section */}
-                            <div className="p-4 flex items-center gap-3 border-b border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-white/[0.01]">
+                            <div className="p-4 flex items-center gap-3 border-b border-border dark:border-border bg-slate-50/30 dark:bg-white/[0.01]">
                                 <div className="h-9 w-9 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                                     {group.icon}
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight truncate leading-tight">
+                                    <h3 className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-tight truncate leading-tight">
                                         {group.label}
                                     </h3>
                                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">ENGINE</p>
@@ -148,7 +148,7 @@ export default function TradingSignalAlerts() {
                                     onClick={(e) => handleCardSideClick(e, group.buyId)}
                                     className="flex-1 flex flex-col items-center justify-center hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors group/buy"
                                 >
-                                    <span className="text-sm font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                                    <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
                                         <TrendingUp size={12} className="group-hover/buy:translate-y-[-1px] transition-transform" />
                                         {loading ? '...' : buyCount}
                                     </span>
@@ -159,7 +159,7 @@ export default function TradingSignalAlerts() {
                                     onClick={(e) => handleCardSideClick(e, group.sellId)}
                                     className="flex-1 flex flex-col items-center justify-center hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors group/sell"
                                 >
-                                    <span className="text-sm font-black text-rose-600 dark:text-rose-400 flex items-center gap-0.5">
+                                    <span className="text-sm font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-0.5">
                                         <TrendingDown size={12} className="group-hover/sell:translate-y-[1px] transition-transform" />
                                         {loading ? '...' : sellCount}
                                     </span>
@@ -172,7 +172,7 @@ export default function TradingSignalAlerts() {
             </div>
 
             <Dialog open={!!selectedCategory} onOpenChange={(open) => !open && setSelectedCategory(null)}>
-                <DialogContent className="max-w-2xl bg-white dark:bg-slate-950 border-slate-200 dark:border-white/10 p-0 overflow-hidden">
+                <DialogContent className="max-w-2xl bg-white dark:bg-slate-950 border-slate-200 dark:border-border p-0 overflow-hidden">
                     <DialogHeader className="p-6 pb-0">
                         <div className="flex items-center justify-between gap-4">
                             <div className="flex items-center gap-3">
@@ -183,15 +183,15 @@ export default function TradingSignalAlerts() {
                                     {activeType?.icon}
                                 </div>
                                 <div className="min-w-0">
-                                    <DialogTitle className="text-xl font-black text-slate-900 dark:text-white truncate">
+                                    <DialogTitle className="text-xl font-semibold text-slate-900 dark:text-white truncate">
                                         {activeType?.label}
                                     </DialogTitle>
-                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-0.5 truncate">
+                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-0.5 truncate">
                                         Institutional Analysis Drill-down
                                     </p>
                                 </div>
                             </div>
-                            <Badge className={cn("px-3 py-1 font-black shrink-0", activeType?.side === 'buy' ? "bg-emerald-500 text-white" : "bg-rose-500 text-white")}>
+                            <Badge className={cn("px-3 py-1 font-semibold shrink-0", activeType?.side === 'buy' ? "bg-emerald-500 text-white" : "bg-rose-500 text-white")}>
                                 {detailSymbols.length} ACTIVE
                             </Badge>
                         </div>
@@ -201,7 +201,7 @@ export default function TradingSignalAlerts() {
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 <Input 
                                     placeholder="Filter symbols..." 
-                                    className="pl-9 h-10 bg-slate-50 dark:bg-white/[0.03] border-slate-200 dark:border-white/5 text-sm font-bold"
+                                    className="pl-9 h-10 bg-slate-50 dark:bg-white/[0.03] border-slate-200 dark:border-border text-sm font-bold"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
@@ -216,7 +216,7 @@ export default function TradingSignalAlerts() {
                                 <p className="text-sm font-bold text-slate-500 italic">Scanning institutional order flow...</p>
                             </div>
                         ) : detailSymbols.length === 0 ? (
-                            <div className="py-20 text-center bg-slate-50/50 dark:bg-white/[0.01] rounded-3xl border-2 border-dashed border-slate-100 dark:border-white/5">
+                            <div className="py-20 text-center bg-slate-50/50 dark:bg-white/[0.01] rounded-xl border-2 border-dashed border-border dark:border-border">
                                 <Info className="w-10 h-10 text-slate-300 mx-auto mb-2" />
                                 <p className="text-sm font-bold text-slate-500">No active {activeType?.label} detected.</p>
                             </div>
@@ -226,10 +226,10 @@ export default function TradingSignalAlerts() {
                                     <a 
                                         key={symbol}
                                         href={`/ticker/${symbol}`}
-                                        className="p-3 rounded-xl border border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.05] hover:border-slate-300 dark:hover:border-white/20 transition-all group flex items-center justify-between"
+                                        className="p-3 rounded-xl border border-border dark:border-border bg-slate-50/30 dark:bg-muted hover:bg-white dark:hover:bg-white/[0.05] hover:border-slate-300 dark:hover:border-white/20 transition-all group flex items-center justify-between"
                                     >
                                         <div>
-                                            <span className="text-sm font-black text-slate-900 dark:text-white leading-none">
+                                            <span className="text-sm font-semibold text-slate-900 dark:text-white leading-none">
                                                 {symbol}
                                             </span>
                                             <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-tight">ACTIVE ALERT</p>

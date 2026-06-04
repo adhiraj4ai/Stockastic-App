@@ -23,7 +23,7 @@ import {
 // Dynamically import Monaco Editor to prevent hydration mismatches and loading hangs in Next.js 15
 const Editor = dynamic(() => import('@monaco-editor/react'), { 
     ssr: false,
-    loading: () => <div className="flex items-center justify-center h-full bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 font-mono text-xs text-slate-400 animate-pulse">Initializing Terminal Editor...</div>
+    loading: () => <div className="flex items-center justify-center h-full bg-slate-50 dark:bg-card border-r border-slate-200 dark:border-slate-800 font-mono text-xs text-slate-400 animate-pulse">Initializing Terminal Editor...</div>
 });
 
 interface Strategy {
@@ -331,7 +331,7 @@ export default function EditStrategyPage() {
                     </div>
 
                     {/* Right Sidebar: Configuration */}
-                    <div className="w-80 bg-gray-50 dark:bg-slate-900 border-l border-gray-200 dark:border-slate-800 flex flex-col h-full overflow-hidden">
+                    <div className="w-80 bg-gray-50 dark:bg-card border-l border-gray-200 dark:border-slate-800 flex flex-col h-full overflow-hidden">
                         <div className="flex-1 overflow-y-auto p-6 space-y-8">
                             {/* Action Buttons */}
                             <div className="space-y-4 pb-8 border-b border-gray-200">
@@ -339,7 +339,7 @@ export default function EditStrategyPage() {
                                     onClick={handleSave}
                                     disabled={saving || !isDirty || isPublished}
                                     variant={isDirty && !isPublished ? "default" : "outline"}
-                                    className={`w-full h-12 px-5 gap-2 transition-all font-black rounded-xl text-sm uppercase tracking-widest ${isDirty && !isPublished ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-100 dark:shadow-green-900/20' : 'text-gray-400 dark:text-slate-500 bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 cursor-not-allowed opacity-60'}`}
+                                    className={`w-full h-12 px-5 gap-2 transition-all font-semibold rounded-xl text-sm uppercase tracking-wider ${isDirty && !isPublished ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-100 dark:shadow-green-900/20' : 'text-gray-400 dark:text-slate-500 bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 cursor-not-allowed opacity-60'}`}
                                 >
                                     <Save size={18} />
                                     {saving ? 'Saving...' : 'Save Changes'}
@@ -348,7 +348,7 @@ export default function EditStrategyPage() {
                                 {isPublished && (
                                     <Button
                                         onClick={() => setUnpublishModalOpen(true)}
-                                        className="w-full h-11 px-5 gap-2 bg-white dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/40 font-black rounded-xl text-[10px] uppercase tracking-widest shadow-sm transition-all"
+                                        className="w-full h-11 px-5 gap-2 bg-white dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/40 font-semibold rounded-xl text-[10px] uppercase tracking-wider shadow-sm transition-all"
                                     >
                                         <XOctagon size={16} />
                                         Unpublish Strategy
@@ -357,7 +357,7 @@ export default function EditStrategyPage() {
 
                                 <Button
                                     onClick={handleRun}
-                                    className="w-full h-12 px-5 gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-black rounded-xl text-sm uppercase tracking-widest shadow-lg shadow-blue-100 dark:shadow-blue-900/20 active:scale-[0.98] transition-all"
+                                    className="w-full h-12 px-5 gap-2 bg-primary text-primary-foreground hover:opacity-90 text-white font-semibold rounded-xl text-sm uppercase tracking-wider shadow-lg shadow-blue-100 dark:shadow-blue-900/20 active:scale-[0.98] transition-all"
                                 >
                                     <Play size={18} />
                                     Backtest
@@ -396,9 +396,9 @@ export default function EditStrategyPage() {
                         </div>
 
                         {/* Theme Toggle at Bottom */}
-                        <div className="p-4 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800">
+                        <div className="p-4 bg-white dark:bg-card border-t border-gray-200 dark:border-slate-800">
                             <div className="flex flex-col gap-2">
-                                <Label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest px-1 text-center">Editor Theme</Label>
+                                <Label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider px-1 text-center">Editor Theme</Label>
                                 <div className="flex items-center gap-1 p-1 bg-gray-50 dark:bg-slate-950 rounded-xl border border-gray-100 dark:border-slate-800">
                                     <button
                                         onClick={() => setThemeMode('default')}
@@ -435,7 +435,7 @@ export default function EditStrategyPage() {
                         <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/40 rounded-full flex items-center justify-center mb-4">
                             <AlertTriangle className="text-amber-600 dark:text-amber-500" size={24} />
                         </div>
-                        <DialogTitle className="text-xl font-black text-slate-900 dark:text-slate-100">Unpublish Strategy?</DialogTitle>
+                        <DialogTitle className="text-xl font-semibold text-slate-900 dark:text-slate-100">Unpublish Strategy?</DialogTitle>
                         <DialogDescription className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed pt-2">
                             This will stop generating automated recommendations for this strategy.
                             You will be able to edit and save your code changes after unpublishing.
@@ -456,7 +456,7 @@ export default function EditStrategyPage() {
                                 handleUnpublish();
                             }}
                             disabled={isUnpublishing}
-                            className="flex-1 sm:flex-none sm:min-w-[160px] h-12 rounded-xl font-black uppercase tracking-widest text-xs bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-100 transition-all"
+                            className="flex-1 sm:flex-none sm:min-w-[160px] h-12 rounded-xl font-semibold uppercase tracking-wider text-xs bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-100 transition-all"
                         >
                             {isUnpublishing ? 'Unpublishing...' : 'Confirm Unpublish'}
                         </Button>

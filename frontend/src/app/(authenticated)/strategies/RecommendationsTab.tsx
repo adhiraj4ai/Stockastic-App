@@ -42,7 +42,7 @@ export default function RecommendationsTab() {
     };
 
     return (
-        <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-6">
+        <Card className="border-none shadow-sm bg-white/50 dark:bg-card p-6">
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 flex items-center">
@@ -51,7 +51,7 @@ export default function RecommendationsTab() {
                     </h2>
                     <p className="text-sm text-gray-500 dark:text-slate-400">Active signals from your published strategies running on latest market data.</p>
                 </div>
-                <Button variant="outline" size="sm" onClick={fetchRecommendations} disabled={loading} className="dark:border-slate-800 dark:bg-slate-900">
+                <Button variant="outline" size="sm" onClick={fetchRecommendations} disabled={loading} className="dark:border-slate-800 dark:bg-card">
                     Referesh Signals
                 </Button>
             </div>
@@ -63,7 +63,7 @@ export default function RecommendationsTab() {
                     <p className="text-gray-500 dark:text-slate-400">No signals found today from published strategies.</p>
                 </div>
             ) : (
-                <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-card">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 font-medium border-b border-gray-200 dark:border-slate-700">
                             <tr>

@@ -106,7 +106,7 @@ export default function StrategyComparePage() {
             const response = await api.post(endpoint, {
                 symbol,
                 periods: PERIODS,
-                n_trials: 20,  // Fewer trials for speed
+                n_trials: 20, // Fewer trials for speed
                 force_refresh: forceRefresh
             }, {
                 signal: abortControllerRef.current.signal
@@ -333,7 +333,7 @@ export default function StrategyComparePage() {
         >
             <div className="w-full px-4 py-6">
                 <Card className="border-gray-200 shadow-sm overflow-hidden">
-                    <CardHeader className="py-6 px-6 bg-gradient-to-r from-white to-gray-50 border-b">
+                    <CardHeader className="py-6 px-6 bg-muted/40 border-b">
                         <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
                             <div className="flex items-center gap-6 flex-wrap">
                                 <div className="flex items-center gap-3">
@@ -392,7 +392,7 @@ export default function StrategyComparePage() {
                                     onClick={() => handleRunComparison(true)}
                                     disabled={loading || !symbol}
                                     size="sm"
-                                    className="h-9 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-sm transition-all border-0 ring-offset-2 focus:ring-2 focus:ring-blue-500"
+                                    className="h-9 px-4 bg-primary text-primary-foreground text-white hover:from-blue-700 hover:to-indigo-700 shadow-sm transition-all border-0 ring-offset-2 focus:ring-2 focus:ring-blue-500"
                                 >
                                     <Zap size={14} className="mr-1.5" />
                                     Optimize & Run
@@ -437,21 +437,21 @@ export default function StrategyComparePage() {
                                     </div>
                                     <div className="flex items-center gap-5">
                                         <div className="flex flex-col items-center">
-                                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Win Rate</span>
+                                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">Win Rate</span>
                                             <div className="flex items-center gap-1.5">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                                                 <span className="text-[10px] font-bold text-blue-500">Benchmark Avg</span>
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-center">
-                                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Return %</span>
+                                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">Return %</span>
                                             <div className="flex items-center gap-1.5">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
                                                 <span className="text-[10px] font-bold text-green-500">Positive Trend</span>
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-center">
-                                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Risk</span>
+                                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">Risk</span>
                                             <div className="flex items-center gap-1.5">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
                                                 <span className="text-[10px] font-bold text-red-500">Max Drawdown</span>
@@ -467,7 +467,7 @@ export default function StrategyComparePage() {
                                                     Strategy Name
                                                 </th>
                                                 {results.periods.filter(p => activePeriods.includes(p)).map(period => (
-                                                    <th key={period} colSpan={5} className="text-center px-2 py-2.5 text-sm font-bold text-gray-700 uppercase tracking-widest border-r border-gray-200 bg-gray-50/80">
+                                                    <th key={period} colSpan={5} className="text-center px-2 py-2.5 text-sm font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200 bg-gray-50/80">
                                                         {period} Historical Performance
                                                     </th>
                                                 ))}
@@ -554,7 +554,7 @@ export default function StrategyComparePage() {
                                                                                 <td className="text-center px-2 py-3 text-xs font-bold text-gray-500">
                                                                                     {pMetrics.win_rate?.toFixed(0) || '-'}%
                                                                                 </td>
-                                                                                <td className={`text-center px-2 py-3 text-xs font-black ${(pMetrics.return_pct || 0) > 0 ? 'text-green-700 bg-green-50/20' : 'text-red-700 bg-red-50/20'}`}>
+                                                                                <td className={`text-center px-2 py-3 text-xs font-semibold ${(pMetrics.return_pct || 0) > 0 ? 'text-green-700 bg-green-50/20' : 'text-red-700 bg-red-50/20'}`}>
                                                                                     {(pMetrics.return_pct || 0) > 0 ? '+' : ''}{(pMetrics.return_pct || 0).toFixed(1)}%
                                                                                 </td>
                                                                                 <td className="text-center px-2 py-3 text-xs font-semibold text-orange-600">
@@ -565,7 +565,7 @@ export default function StrategyComparePage() {
                                                                                 </td>
                                                                                 <td className="text-center px-2 py-3 text-xs border-r border-gray-100">
                                                                                     <div className="flex items-center justify-center gap-1">
-                                                                                        <span className="text-purple-600 font-black">{pMetrics.sharpe_ratio?.toFixed(2)}</span>
+                                                                                        <span className="text-purple-600 font-semibold">{pMetrics.sharpe_ratio?.toFixed(2)}</span>
                                                                                     </div>
                                                                                 </td>
                                                                             </>
@@ -661,7 +661,7 @@ export default function StrategyComparePage() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="p-24 flex flex-col items-center justify-center text-center space-y-6 bg-gray-50/30 border-dashed border-2 border-gray-100 m-6 rounded-3xl">
+                            <div className="p-24 flex flex-col items-center justify-center text-center space-y-6 bg-gray-50/30 border-dashed border-2 border-gray-100 m-6 rounded-xl">
                                 <div className="relative">
                                     <div className="w-20 h-20 rounded-full bg-white shadow-xl flex items-center justify-center ring-8 ring-gray-100/50">
                                         <Activity size={36} className="text-gray-300" />
@@ -671,17 +671,17 @@ export default function StrategyComparePage() {
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <h3 className="text-xl font-black text-gray-800 tracking-tight">Ready for Comparison</h3>
+                                    <h3 className="text-xl font-semibold text-gray-800 tracking-tight">Ready for Comparison</h3>
                                     <p className="text-sm text-gray-500 max-w-sm mx-auto font-medium">
                                         Select a symbol from the dropdown above and launch a comprehensive analysis of all your trading strategies across historical timeframes.
                                     </p>
                                 </div>
                                 <div className="flex gap-4">
-                                    <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-white px-4 py-2 rounded-full border border-gray-100 shadow-sm">
+                                    <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-white px-4 py-2 rounded-full border border-gray-100 shadow-sm">
                                         <TrendingUp size={12} className="text-green-500" />
                                         Profit Focus
                                     </div>
-                                    <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-white px-4 py-2 rounded-full border border-gray-100 shadow-sm">
+                                    <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-white px-4 py-2 rounded-full border border-gray-100 shadow-sm">
                                         <Zap size={12} className="text-purple-500" />
                                         Win Rate Priority
                                     </div>
