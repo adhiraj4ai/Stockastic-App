@@ -115,18 +115,6 @@ services:
       retries: 3
       start_period: 40s
 
-  # Ollama for Local LLM
-  ollama:
-    image: ollama/ollama:latest
-    container_name: stockastic-ollama
-    ports:
-      - "11435:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    networks:
-      - stockastic-network
-    restart: always
-
 volumes:
   postgres_data:
     driver: local
