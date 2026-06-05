@@ -9,7 +9,17 @@ from asgiref.sync import async_to_sync
 from django.http import StreamingHttpResponse
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.renderers import BaseRenderer
 from rest_framework.response import Response
+
+
+class ServerSentEventRenderer(BaseRenderer):
+    media_type = "text/event-stream"
+    format = "sse"
+
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        return data
+
 
 from .models import ChatMessage, ChatSession
 from .serializers import ChatMessageSerializer, ChatSessionSerializer
@@ -35,7 +45,7 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
         msgs = session.messages.all().order_by("created_at")
         return Response(ChatMessageSerializer(msgs, many=True).data)
 
-    @action(detail=True, methods=["post"], url_path="send")
+    @action(detail=True, methods=["post"], url_path="send", renderer_classes=[ServerSentEventRenderer])
     def send(self, request, pk=None):
         """Persist the user's message and stream the assistant's reply over SSE.
 
