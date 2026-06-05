@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { LayoutDashboard, TrendingUp, TrendingDown, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Users, BarChart3, History, Star, Brain, Radar, Building2, ScanLine, Zap, Share2, Crosshair, DollarSign, Layers, GitMerge, Shield, Search } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, TrendingDown, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, NotebookPen, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Users, BarChart3, History, Star, Brain, Radar, Building2, ScanLine, Zap, Share2, Crosshair, DollarSign, Layers, GitMerge, Shield, Search } from 'lucide-react';
 import { FullPageLoader } from '@/components/ui/StockLoader';
 import { SearchBar } from './SearchBar';
 import { AlertsDropdown } from './AlertsDropdown';
@@ -87,6 +87,14 @@ const navItems = [
         ]
     },
     {
+        name: 'Stockastic AI',
+        icon: Brain,
+        subItems: [
+            { name: 'Chat', href: '/chat', icon: MessageSquare, permission: 'chat' },
+            { name: 'Notebooks', href: '/notebook', icon: NotebookPen, permission: 'chat' },
+        ]
+    },
+    {
         name: 'Administration',
         icon: Shield,
         subItems: [
@@ -165,6 +173,8 @@ function DashboardContent({
     const [marketMeta, setMarketMeta] = useState<{ date: string, status: string } | null>(null);
 
     const isChatPage = pathname === '/chat';
+    const isNotebookPage = pathname === '/notebook';
+    const isFullWidthPage = isChatPage || isNotebookPage;
 
     useEffect(() => {
         // Fetch Market Status for Header
@@ -312,8 +322,8 @@ function DashboardContent({
     }, [pathname, currentUser, router]);
 
     useEffect(() => {
-        setIsSidebarCollapsed(isChatPinned || isChatPage);
-    }, [isChatPinned, isChatPage]);
+        setIsSidebarCollapsed(isChatPinned || isFullWidthPage);
+    }, [isChatPinned, isFullWidthPage]);
 
     // Auto-expand menus that contain the active sub-item
     useEffect(() => {
@@ -553,11 +563,11 @@ function DashboardContent({
             {/* Main content */}
             <main
                 className={`flex-1 flex flex-col min-w-0 transition-[margin] duration-200 ease-out z-10 ${isSidebarCollapsed ? 'ml-20' : 'ml-64'
-                    } ${isChatPinned && !isChatPage ? 'mr-96' : ''}`}
+                    } ${isChatPinned && !isFullWidthPage ? 'mr-96' : ''}`}
             >
                 {/* Top Navigation Bar */}
                 {!hideHeader && (
-                    <header className={`bg-background border-b border-border fixed top-0 right-0 z-40 px-6 h-14 flex justify-between items-center transition-[left,right] duration-200 ${isSidebarCollapsed ? 'left-20' : 'left-64'} ${isChatPinned && !isChatPage ? 'right-96' : 'right-0'}`}>
+                    <header className={`bg-background border-b border-border fixed top-0 right-0 z-40 px-6 h-14 flex justify-between items-center transition-[left,right] duration-200 ${isSidebarCollapsed ? 'left-20' : 'left-64'} ${isChatPinned && !isFullWidthPage ? 'right-96' : 'right-0'}`}>
                         {headerContent ? (
                             <div className="flex-1 mr-4">
                                 {headerContent}
@@ -670,18 +680,6 @@ function DashboardContent({
                                 </div>
                             )}
                             <AlertsDropdown />
-
-                            {(!currentUser || currentUser.username !== 'ashmi') &&
-                                (currentUser?.permissions === 'all' || currentUser?.permissions?.['chat']) && (
-                                    <Link href="/chat">
-                                        <button
-                                            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                                            title="Chat"
-                                        >
-                                            <MessageSquare size={16} />
-                                        </button>
-                                    </Link>
-                                )}
                         </div>
                     </header>
                 )}

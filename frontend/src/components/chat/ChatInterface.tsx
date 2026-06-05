@@ -222,7 +222,7 @@ export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) 
     return (
         <div className="flex flex-col h-full">
             <div ref={scrollerRef} className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar">
-                <div className="max-w-3xl mx-auto space-y-4">
+                <div className="max-w-5xl mx-auto space-y-4">
                     {loadingHistory ? (
                         <div className="text-sm text-muted-foreground flex items-center gap-2">
                             <Loader2 size={14} className="animate-spin" /> Loading history…
@@ -269,7 +269,7 @@ function Composer({
 
     return (
         <div className="border-t border-border bg-background p-4">
-            <div className="max-w-3xl mx-auto flex items-end gap-2">
+            <div className="max-w-5xl mx-auto flex items-end gap-2">
                 <textarea
                     ref={taRef}
                     value={prompt}

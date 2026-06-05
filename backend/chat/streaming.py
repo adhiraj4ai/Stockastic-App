@@ -180,9 +180,30 @@ async def stream_chat(
                             yield _sse("card", card_payload)
 
             elif isinstance(msg, UserMessage):
-                # User messages in the stream are tool_result echoes — skip;
-                # we already emitted them as ToolResultBlock content above.
-                pass
+                subagent_marker = "subagent" if _is_subagent(msg) else None
+                for block in msg.content:
+                    if isinstance(block, ToolResultBlock):
+                        text = _content_text(block.content)
+                        payload = {
+                            "kind": "tool_result",
+                            "subagent": subagent_marker,
+                            "id": block.tool_use_id,
+                            "is_error": bool(block.is_error),
+                            "text": text,
+                        }
+                        blocks.append(payload)
+                        yield _sse("tool_result", payload)
+
+                        # Emit any cards that the tool pushed into the buffer.
+                        for card in _user_context.take_cards():
+                            card_payload = {
+                                "kind": "card",
+                                "type": card.get("type"),
+                                "data": card.get("data"),
+                                "tool": card.get("tool"),
+                            }
+                            blocks.append(card_payload)
+                            yield _sse("card", card_payload)
 
             elif isinstance(msg, SystemMessage):
                 # init/setup messages; not user-facing.

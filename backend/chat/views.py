@@ -21,8 +21,8 @@ class ServerSentEventRenderer(BaseRenderer):
         return data
 
 
-from .models import ChatMessage, ChatSession
-from .serializers import ChatMessageSerializer, ChatSessionSerializer
+from .models import ChatMessage, ChatSession, Notebook, NotebookCell
+from .serializers import ChatMessageSerializer, ChatSessionSerializer, NotebookSerializer, NotebookCellSerializer
 from .streaming import stream_chat
 
 log = logging.getLogger(__name__)
@@ -44,6 +44,19 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
         session = self.get_object()
         msgs = session.messages.all().order_by("created_at")
         return Response(ChatMessageSerializer(msgs, many=True).data)
+
+    @action(detail=True, methods=["post"], url_path="add_message")
+    def add_message(self, request, pk=None):
+        """Add a manual message to the session."""
+        session = self.get_object()
+        role = request.data.get("role", ChatMessage.ROLE_USER)
+        text = request.data.get("text") or request.data.get("content") or ""
+        msg = ChatMessage.objects.create(
+            session=session,
+            role=role,
+            text=text,
+        )
+        return Response(ChatMessageSerializer(msg).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"], url_path="send", renderer_classes=[ServerSentEventRenderer])
     def send(self, request, pk=None):
@@ -90,3 +103,80 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
         response["Cache-Control"] = "no-cache"
         response["X-Accel-Buffering"] = "no"
         return response
+
+
+class NotebookViewSet(viewsets.ModelViewSet):
+    serializer_class = NotebookSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Notebook.objects.filter(user=self.request.user).order_by("-updated_at")
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class NotebookCellViewSet(viewsets.ModelViewSet):
+    serializer_class = NotebookCellSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = NotebookCell.objects.filter(notebook__user=self.request.user).order_by("order")
+        notebook_id = self.request.query_params.get("notebook")
+        if notebook_id:
+            try:
+                queryset = queryset.filter(notebook_id=notebook_id)
+            except ValueError:
+                pass
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+    @action(detail=False, methods=["post"], url_path="sync")
+    def sync(self, request):
+        """Bulk synchronize prompt cells, orderings, and outputs for the user's notebook."""
+        notebook_id = request.query_params.get("notebook")
+        if not notebook_id:
+            return Response({"detail": "notebook query parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            notebook = Notebook.objects.get(id=notebook_id, user=self.request.user)
+        except (Notebook.DoesNotExist, ValueError):
+            return Response({"detail": "Notebook not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        cell_ids = []
+        for index, data in enumerate(request.data):
+            cell_id = data.get("id")
+            prompt = data.get("prompt", "")
+            execution_count = data.get("execution_count")
+            outputs = data.get("outputs", [])
+
+            cell = None
+            if cell_id:
+                try:
+                    cell = NotebookCell.objects.get(id=cell_id, notebook=notebook)
+                    cell.prompt = prompt
+                    cell.order = index
+                    cell.execution_count = execution_count
+                    cell.outputs = outputs
+                    cell.save()
+                except (NotebookCell.DoesNotExist, ValueError):
+                    pass
+
+            if not cell:
+                cell = NotebookCell.objects.create(
+                    notebook=notebook,
+                    prompt=prompt,
+                    order=index,
+                    execution_count=execution_count,
+                    outputs=outputs,
+                )
+            cell_ids.append(cell.id)
+
+        # Clean up any deleted cells for this specific notebook
+        NotebookCell.objects.filter(notebook=notebook).exclude(id__in=cell_ids).delete()
+
+        queryset = self.get_queryset().filter(notebook=notebook)
+        return Response(NotebookCellSerializer(queryset, many=True).data)
+

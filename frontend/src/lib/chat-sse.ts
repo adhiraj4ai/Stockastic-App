@@ -50,19 +50,38 @@ export async function* openChatStream({
     const decoder = new TextDecoder();
     let buffer = '';
 
-    while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
+    const abortHandler = () => {
+        reader.cancel().catch(() => {});
+    };
 
-        // Frames are separated by a blank line.
-        let frameEnd: number;
-        while ((frameEnd = buffer.indexOf('\n\n')) !== -1) {
-            const raw = buffer.slice(0, frameEnd);
-            buffer = buffer.slice(frameEnd + 2);
-            const frame = parseFrame(raw);
-            if (frame) yield frame;
+    if (signal) {
+        if (signal.aborted) {
+            reader.cancel().catch(() => {});
+            throw new DOMException('The user aborted a request.', 'AbortError');
         }
+        signal.addEventListener('abort', abortHandler);
+    }
+
+    try {
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            // Frames are separated by a blank line.
+            let frameEnd: number;
+            while ((frameEnd = buffer.indexOf('\n\n')) !== -1) {
+                const raw = buffer.slice(0, frameEnd);
+                buffer = buffer.slice(frameEnd + 2);
+                const frame = parseFrame(raw);
+                if (frame) yield frame;
+            }
+        }
+    } finally {
+        if (signal) {
+            signal.removeEventListener('abort', abortHandler);
+        }
+        reader.releaseLock();
     }
 }
 
