@@ -325,7 +325,7 @@ export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) 
 
                 {/* Main chat column */}
                 <div className="flex flex-col flex-1 min-w-0">
-                    <div ref={scrollerRef} className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar">
+                    <div ref={scrollerRef} data-testid="chat-scroller" className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar">
                         <div className="max-w-5xl mx-auto space-y-4">
                             {loadingHistory ? (
                                 <div className="text-sm text-muted-foreground flex items-center gap-2">
@@ -474,7 +474,7 @@ function ChatTimeline({
     const visible = messages.slice(start);
 
     return (
-        <div className="w-7 shrink-0 flex flex-col items-center justify-center border-r border-border/50 bg-background select-none">
+        <div data-testid="chat-timeline" className="w-7 shrink-0 flex flex-col items-center justify-center border-r border-border/50 bg-background select-none">
             <div className="h-[100px] flex flex-col items-center w-full">
                 {/* Horizontal bars with dock magnification */}
                 <div className="flex-1 flex flex-col justify-evenly items-center w-full py-1">
@@ -490,6 +490,7 @@ function ChatTimeline({
                         return (
                             <div
                                 key={msg.id}
+                                data-testid="timeline-bar-row"
                                 className="relative flex items-center justify-center w-full"
                                 onMouseEnter={() => setHoveredIdx(i)}
                                 onMouseLeave={() => setHoveredIdx(null)}
