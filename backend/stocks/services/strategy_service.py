@@ -84,7 +84,7 @@ class StrategyService:
                 # 3. Execution & Wrapper
                 local_scope = {
                     'Backtest': Backtest, 'Strategy': Strategy, 'crossover': crossover, 
-                    'SMA': SMA, 'pd': pd, 'np': np, 'ta': SafeTa(talib), 'symbol': symbol
+                    'SMA': SMA, 'pd': pd, 'np': np, 'ta': SafeTa(talib), 'talib': talib, 'symbol': symbol
                 }
                 exec(code, local_scope)
                 

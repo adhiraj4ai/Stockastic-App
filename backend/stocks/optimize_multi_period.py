@@ -11,82 +11,13 @@ import numpy as np
 import inspect
 import talib
 
+# Use the full SafeTa implementation (returns proper pandas Series/DataFrames)
+from .services.optimization_service import SafeTa, SafeIndicator
 
 # Default Risk values for optimization
 DEFAULT_SL_ATR_MULT = 2.0
 DEFAULT_TP_ATR_MULT = 3.0
 DEFAULT_COMMISSION = 0.0036  # 0.36% NEPSE average brokerage
-
-
-# create_sl_tp_wrapped_strategy removed - logic now internal to strategies for ATR-based optimization
-
-
-class SafeIndicator:
-    """Wrapper to prevent .values crash on None indicators"""
-    def __init__(self, obj):
-        self.obj = obj
-    
-    @property
-    def values(self):
-        if self.obj is None:
-            # Return empty numpy array to prevent backtesting.py from crashing
-            return np.array([])
-        if hasattr(self.obj, 'values'):
-            return self.obj.values
-        return self.obj
-    
-    def __len__(self):
-        return len(self.obj) if self.obj is not None else 0
-    
-    def __getitem__(self, key):
-        if self.obj is None: return None
-        return self.obj[key]
-
-
-class SafeTa:
-    """
-    Wrapper for talib to provide compatibility with pandas-ta naming conventions.
-    Maps 'length' -> 'timeperiod', 'fast' -> 'fastperiod', etc.
-    """
-    def __init__(self, real_ta):
-        self._ta = real_ta
-        self._param_map = {
-            'length': 'timeperiod',
-            'fast': 'fastperiod',
-            'slow': 'slowperiod',
-            'signal': 'signalperiod',
-            'n': 'timeperiod',
-            'upper': 'nbdevup',
-            'lower': 'nbdevdn'
-        }
-
-    def __getattr__(self, name):
-        talib_name = name.upper()
-        try:
-            attr = getattr(self._ta, talib_name)
-        except AttributeError:
-            attr = getattr(self._ta, name)
-
-        if callable(attr):
-            def wrapper(*args, **kwargs):
-                mapped_kwargs = {}
-                for k, v in kwargs.items():
-                    if k in self._param_map:
-                        mapped_kwargs[self._param_map[k]] = v
-                    else:
-                        mapped_kwargs[k] = v
-                
-                mapped_args = []
-                for a in args:
-                    if isinstance(a, (pd.Series, pd.DataFrame)):
-                        mapped_args.append(a.values.astype(float))
-                    else:
-                        mapped_args.append(a)
-                
-                res = attr(*mapped_args, **mapped_kwargs)
-                return SafeIndicator(res)
-            return wrapper
-        return attr
 
 
 def calculate_3y_splits(symbol, DailyStockPrice, end_date=None):
@@ -256,19 +187,27 @@ class CrossValidationObjective:
         if '.position.entry_price' in code:
             code = code.replace('.position.entry_price', '.trades[0].entry_price')
         
+        import sys as _sys
+        ta_adapter = SafeTa(talib)
+        _sys.modules['pandas_ta'] = ta_adapter  # type: ignore[assignment]
         local_scope = {
             'Backtest': Backtest, 'Strategy': Strategy, 'crossover': crossover,
-            'SMA': SMA, 'pd': pd, 'np': np, 'ta': SafeTa(talib),
+            'SMA': SMA, 'pd': pd, 'np': np, 'ta': ta_adapter, 'talib': talib,
         }
-        
+
         try:
             exec(code, local_scope)
-        except Exception as e:
+        except Exception:
             return -9999
-        
-        # Strategy class now contains its own SL/TP logic based on ATR
-        strategy_class = strategy_class
-        
+
+        strategy_class = next(
+            (v for name, v in local_scope.items()
+             if inspect.isclass(v) and issubclass(v, Strategy) and v is not Strategy),
+            None,
+        )
+        if strategy_class is None:
+            return -9999
+
         # Helper function for parallel backtest execution
         def run_single_bt(ticker_data):
             ticker, df_data = ticker_data
@@ -409,6 +348,9 @@ def run_final_backtest(data_map, code_template, params):
     if '.position.entry_price' in code:
         code = code.replace('.position.entry_price', '.trades[0].entry_price')
 
+    import sys as _sys
+    ta_adapter = SafeTa(talib)
+    _sys.modules['pandas_ta'] = ta_adapter  # type: ignore[assignment]
     local_scope = {
         'Backtest': Backtest,
         'Strategy': Strategy,
@@ -416,9 +358,10 @@ def run_final_backtest(data_map, code_template, params):
         'SMA': SMA,
         'pd': pd,
         'np': np,
-        'ta': SafeTa(talib),
+        'ta': ta_adapter,
+        'talib': talib,
     }
-    
+
     try:
         exec(code, local_scope)
         from backtesting import Strategy as BTStrategy

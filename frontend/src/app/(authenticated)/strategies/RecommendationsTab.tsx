@@ -52,7 +52,7 @@ export default function RecommendationsTab() {
                     <p className="text-sm text-gray-500 dark:text-slate-400">Active signals from your published strategies running on latest market data.</p>
                 </div>
                 <Button variant="outline" size="sm" onClick={fetchRecommendations} disabled={loading} className="dark:border-slate-800 dark:bg-card">
-                    Referesh Signals
+                    Refresh Signals
                 </Button>
             </div>
 

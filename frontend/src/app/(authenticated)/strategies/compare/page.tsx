@@ -661,12 +661,12 @@ export default function StrategyComparePage() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="p-24 flex flex-col items-center justify-center text-center space-y-6 bg-gray-50/30 border-dashed border-2 border-gray-100 m-6 rounded-xl">
+                            <div className="p-24 flex flex-col items-center justify-center text-center space-y-6 bg-slate-50/50 dark:bg-card/30 border-dashed border border-slate-200 dark:border-slate-800 m-6 rounded-xl">
                                 <div className="relative">
                                     <div className="w-20 h-20 rounded-full bg-white shadow-xl flex items-center justify-center ring-8 ring-gray-100/50">
                                         <Activity size={36} className="text-gray-300" />
                                     </div>
-                                    <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white p-1.5 rounded-full shadow-lg border-2 border-white">
+                                    <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white p-1.5 rounded-full shadow-lg border border-white">
                                         <Play size={14} fill="white" />
                                     </div>
                                 </div>

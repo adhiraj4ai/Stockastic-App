@@ -147,7 +147,7 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
                         <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 text-[10px] font-bold border-2 border-gray-200 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-200 dark:hover:border-blue-900 transition-all dark:text-slate-100"
+                            className="h-8 text-[10px] font-bold border border-gray-200 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-200 dark:hover:border-blue-900 transition-all dark:text-slate-100"
                             onClick={() => {
                                 const newWindow = window.open('', '_blank');
                                 if (newWindow) {
@@ -168,7 +168,7 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
                         title="Backtest Plot"
                         srcDoc={plotHtml}
                         className="w-full h-full border-0 dark:invert-[0.9] dark:hue-rotate-180"
-                        sandbox="allow-scripts"
+                        sandbox="allow-scripts allow-same-origin"
                     />
                 </div>
             )}

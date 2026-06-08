@@ -348,7 +348,7 @@ export default function EditStrategyPage() {
                                 {isPublished && (
                                     <Button
                                         onClick={() => setUnpublishModalOpen(true)}
-                                        className="w-full h-11 px-5 gap-2 bg-white dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/40 font-semibold rounded-xl text-[10px] uppercase tracking-wider shadow-sm transition-all"
+                                        className="w-full h-11 px-5 gap-2 bg-white dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/40 font-semibold rounded-xl text-[10px] uppercase tracking-wider shadow-sm transition-all"
                                     >
                                         <XOctagon size={16} />
                                         Unpublish Strategy

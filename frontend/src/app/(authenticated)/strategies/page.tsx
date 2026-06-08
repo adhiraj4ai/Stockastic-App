@@ -246,7 +246,7 @@ function StrategiesContent() {
                         <TabsList className="bg-gray-200/50 dark:bg-slate-800/50 p-1 gap-1 rounded-lg h-auto">
                             <TabsTrigger
                                 value="my-strategies"
-                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
+                                className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                             >
                                 <Zap className="w-4 h-4 mr-2" />
                                 All Strategies
@@ -254,7 +254,7 @@ function StrategiesContent() {
                             </TabsTrigger>
                             <TabsTrigger
                                 value="published"
-                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
+                                className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                             >
                                 <FileCheck className="w-4 h-4 mr-2" />
                                 Published
@@ -262,7 +262,7 @@ function StrategiesContent() {
                             </TabsTrigger>
                             <TabsTrigger
                                 value="experiment-logs"
-                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
+                                className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                             >
                                 <Beaker className="w-4 h-4 mr-2" />
                                 Experiment Logs
@@ -271,7 +271,7 @@ function StrategiesContent() {
 
                             <TabsTrigger
                                 value="recommendations"
-                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
+                                className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                             >
                                 <Target className="w-4 h-4 mr-2" />
                                 Recommendations
@@ -408,7 +408,7 @@ function StrategiesContent() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                     {/* System Strategy: PA Screener */}
                                     <Card
-                                        className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-2 border-amber-500/30 hover:border-amber-500 flex flex-col cursor-pointer bg-amber-50/10 dark:bg-amber-900/10 rounded-xl"
+                                        className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-amber-500/30 hover:border-amber-500 flex flex-col cursor-pointer bg-amber-50/10 dark:bg-amber-900/10 rounded-xl"
                                         onClick={() => router.push(`/market/pa-screener`)}
                                     >
                                         <div className="hidden" />

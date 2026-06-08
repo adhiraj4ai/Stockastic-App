@@ -99,7 +99,7 @@ export default function StrategyDetailPage() {
                     </Button>
                     <div className="flex flex-col min-w-0">
                         <div className="flex items-center gap-3">
-                            <h1 className="text-lg font-bold text-slate-900 leading-tight truncate">{strategy.name}</h1>
+                            <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100 leading-tight truncate">{strategy.name}</h1>
                             {strategy.published_experiments && strategy.published_experiments.length > 0 && (
                                 <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] px-2 py-0.5 rounded-full font-bold shadow-none border">
                                     {strategy.published_experiments.length} Published
@@ -215,7 +215,7 @@ export default function StrategyDetailPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 pt-1 relative z-10">
-                            <div className="text-2xl font-semibold tracking-tight text-slate-800">
+                            <div className="text-2xl font-semibold tracking-tight text-slate-800 dark:text-slate-200">
                                 {Number(strategy.win_rate || 0).toFixed(0)}%
                             </div>
                         </CardContent>
@@ -224,24 +224,24 @@ export default function StrategyDetailPage() {
 
                 {/* Tabs for Details */}
                 <Tabs defaultValue="history" className="space-y-4">
-                    <TabsList className="bg-white dark:bg-card border border-slate-200 dark:border-slate-800 p-0.5 h-auto rounded-lg">
+                    <TabsList className="bg-gray-200/50 dark:bg-slate-800/50 p-1 gap-1 rounded-lg h-auto">
                         <TabsTrigger
                             value="history"
-                            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-md py-2 px-3 text-xs font-bold text-slate-600 dark:text-slate-400 dark:data-[state=active]:bg-blue-600 dark:data-[state=active]:text-white transition-all"
+                            className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                         >
                             <History size={14} className="mr-1.5" /> History
                         </TabsTrigger>
                         <TabsTrigger
                             value="implementation"
-                            className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white rounded-md py-2 px-3 text-xs font-bold text-slate-600 dark:text-slate-400 dark:data-[state=active]:bg-indigo-600 dark:data-[state=active]:text-white transition-all"
+                            className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                         >
                             <Code size={14} className="mr-1.5" /> Implementation
                         </TabsTrigger>
                         <TabsTrigger
                             value="parameters"
-                            className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 rounded-none bg-transparent py-3 px-4 text-gray-600 dark:text-slate-400 font-medium transition-all"
+                            className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                         >
-                            <FileJson size={16} className="mr-2" /> Published Config
+                            <FileJson size={14} className="mr-1.5" /> Published Config
                         </TabsTrigger>
                     </TabsList>
 

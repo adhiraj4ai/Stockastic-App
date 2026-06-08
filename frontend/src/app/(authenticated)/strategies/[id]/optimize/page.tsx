@@ -147,15 +147,17 @@ export default function OptimizePage() {
 
             const response = await api.post(`/api/stocks/strategies/${strategy!.id}/optimize_multi_period/`, requestData);
 
-            if (response.data.success || response.data.status === 'success') {
+            if (response.data.results && Object.keys(response.data.results).length > 0) {
                 setResults({
                     status: 'success',
                     data: response.data.results,
                     folds: response.data.folds_evaluated
                 });
                 toast.success(`K-fold optimization complete!`);
+            } else if (response.data.error) {
+                throw new Error(response.data.error);
             } else {
-                throw new Error(response.data.error || 'Optimization failed');
+                throw new Error('Optimization produced no results. Check strategy code and parameter ranges.');
             }
         } catch (error: any) {
             console.error('Optimization failed', error);
@@ -263,7 +265,7 @@ export default function OptimizePage() {
                                                 <select
                                                     value={sector}
                                                     onChange={(e) => setSector(e.target.value)}
-                                                    className="w-full h-10 px-3 text-xs rounded-xl border-2 border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:border-purple-200 dark:focus:border-purple-900/50 focus:ring-4 focus:ring-purple-500/5 outline-none transition-all shadow-sm"
+                                                    className="w-full h-10 px-3 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:border-purple-200 dark:focus:border-purple-900/50 focus:ring-4 focus:ring-purple-500/5 outline-none transition-all shadow-sm"
                                                 >
                                                     <option value="" className="dark:bg-card">Select sector...</option>
                                                     {sectors.map((s) => (
@@ -335,7 +337,7 @@ export default function OptimizePage() {
                                             className="w-full h-11 text-xs font-bold uppercase tracking-wider bg-purple-600 dark:bg-purple-700 hover:bg-purple-700 dark:hover:bg-purple-800 text-white shadow-lg shadow-purple-200 dark:shadow-purple-900/20 active:scale-95 transition-all rounded-xl"
                                         >
                                             {optimizing ? (
-                                                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" /> RUNNING</>
+                                                <><div className="w-4 h-4 border border-white/30 border-t-white rounded-full animate-spin mr-2" /> RUNNING</>
                                             ) : (
                                                 <><Zap size={16} className="mr-2" /> START OPTIMIZATION</>
                                             )}
@@ -349,7 +351,7 @@ export default function OptimizePage() {
                     {/* K-Fold Optimization Results Panel */}
                     <div className="lg:col-span-8 xl:col-span-9 space-y-6 pb-20">
                         {results.status === 'pending' && (
-                            <div className="h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-xl bg-gray-50/30 dark:bg-card/20 text-center px-10">
+                            <div className="h-[400px] flex flex-col items-center justify-center border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-gray-50/30 dark:bg-card/20 text-center px-10">
                                 <div className="p-4 bg-white dark:bg-card rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 mb-4 scale-110">
                                     <Activity size={32} className="text-purple-200 dark:text-purple-900" />
                                 </div>
