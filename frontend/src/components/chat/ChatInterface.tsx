@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
 import { Send, StopCircle, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
 import api from '@/lib/api';
 import { openChatStream } from '@/lib/chat-sse';
@@ -17,6 +17,8 @@ interface ChatInterfaceProps {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const TIMELINE_WINDOW = 10;
+const RENDER_WINDOW = 20; // ~10 Q&A pairs rendered at a time
+const PAGE_SIZE = 20;     // messages to prepend per scroll-to-top
 
 export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -26,20 +28,30 @@ export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) 
     const [selectedTool, setSelectedTool] = useState<WorkbenchTool | null>(null);
     const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
     const [timelinePage, setTimelinePage] = useState(0);
+    const [visibleFrom, setVisibleFrom] = useState(0);
     const abortRef = useRef<AbortController | null>(null);
     const scrollerRef = useRef<HTMLDivElement | null>(null);
     const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
     const messagesRef = useRef(messages);
     messagesRef.current = messages;
+    const visibleFromRef = useRef(0);
+    visibleFromRef.current = visibleFrom;
+    // Saved scroll position before prepending older messages, to restore after render
+    const prevScrollRef = useRef<{ height: number; top: number } | null>(null);
+    // ID to scroll into view after expanding the render window via timeline navigation
+    const pendingScrollIdRef = useRef<string | null>(null);
 
     // Load persisted history when the session changes.
     useEffect(() => {
         let cancelled = false;
         setLoadingHistory(true);
+        setVisibleFrom(0);
         api.get(`/api/chat/sessions/${sessionId}/messages/`)
             .then((res) => {
                 if (cancelled) return;
-                setMessages(res.data || []);
+                const loaded: ChatMessage[] = res.data || [];
+                setMessages(loaded);
+                setVisibleFrom(Math.max(0, loaded.length - RENDER_WINDOW));
             })
             .catch(() => {
                 if (!cancelled) setMessages([]);
@@ -53,21 +65,48 @@ export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) 
         };
     }, [sessionId]);
 
-    // Auto-scroll on new content.
+    // Auto-scroll on new content (only when not in the middle of scroll-restoration).
     useEffect(() => {
+        if (prevScrollRef.current) return; // useLayoutEffect will handle scroll instead
         scrollerRef.current?.scrollTo({
             top: scrollerRef.current.scrollHeight,
             behavior: 'smooth',
         });
     }, [messages]);
 
+    // Restore scroll position after prepending older messages so the viewport doesn't jump.
+    // Also handles pending timeline navigations to messages outside the current window.
+    useLayoutEffect(() => {
+        const saved = prevScrollRef.current;
+        if (saved && scrollerRef.current) {
+            const scroller = scrollerRef.current;
+            scroller.scrollTop = scroller.scrollHeight - saved.height + saved.top;
+            prevScrollRef.current = null;
+            return;
+        }
+        const pendingId = pendingScrollIdRef.current;
+        if (pendingId) {
+            const el = messageRefs.current.get(pendingId);
+            if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' });
+            pendingScrollIdRef.current = null;
+        }
+    }, [visibleFrom]);
+
     // Derived: only user messages, for the timeline
     const userMessages = messages.filter(m => m.role === 'user');
 
-    // Track active user message on scroll
+    // Track active user message on scroll + trigger infinite scroll upward
     const handleScroll = useCallback(() => {
         const scroller = scrollerRef.current;
         if (!scroller) return;
+
+        // Infinite scroll: load previous PAGE_SIZE messages when near top
+        if (scroller.scrollTop < 80 && visibleFromRef.current > 0 && !prevScrollRef.current) {
+            prevScrollRef.current = { height: scroller.scrollHeight, top: scroller.scrollTop };
+            setVisibleFrom(prev => Math.max(0, prev - PAGE_SIZE));
+        }
+
+        // Active message tracking for timeline
         const top = scroller.getBoundingClientRect().top;
         let closestId: string | null = null;
         let closestDist = Infinity;
@@ -96,10 +135,17 @@ export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) 
     }, [userMessages.length]);
 
     const scrollToMessage = useCallback((id: string) => {
-        const el = messageRefs.current.get(id);
-        if (el && scrollerRef.current) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            setActiveMessageId(id);
+        setActiveMessageId(id);
+        const msgIdx = messagesRef.current.findIndex(m => m.id === id);
+        if (msgIdx === -1) return;
+        if (msgIdx < visibleFromRef.current) {
+            // Expand the window to include this message, then scroll once rendered
+            pendingScrollIdRef.current = id;
+            prevScrollRef.current = null;
+            setVisibleFrom(Math.max(0, msgIdx));
+        } else {
+            const el = messageRefs.current.get(id);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }, []);
 
@@ -127,6 +173,8 @@ export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) 
             blocks: [],
             created_at: new Date().toISOString(),
         };
+        // Snap window to latest so new messages are always visible
+        setVisibleFrom(Math.max(0, messages.length + 2 - RENDER_WINDOW));
         setMessages((prev) => [...prev, userMsg, assistantMsg]);
         setPrompt('');
         setStreaming(true);
@@ -296,17 +344,28 @@ export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) 
                             ) : messages.length === 0 ? (
                                 <Suggestions onPick={(s) => setPrompt(s)} />
                             ) : (
-                                messages.map((m) => (
-                                    <div
-                                        key={m.id}
-                                        ref={(el) => {
-                                            if (el) messageRefs.current.set(m.id, el);
-                                            else messageRefs.current.delete(m.id);
-                                        }}
-                                    >
-                                        <MessageBubble message={m} />
-                                    </div>
-                                ))
+                                <>
+                                    {visibleFrom > 0 && (
+                                        <div className="flex items-center gap-2 py-1 select-none">
+                                            <div className="h-px flex-1 bg-border/40" />
+                                            <span className="text-[11px] text-muted-foreground/60 font-medium">
+                                                {visibleFrom} older {visibleFrom === 1 ? 'message' : 'messages'} — scroll up to load
+                                            </span>
+                                            <div className="h-px flex-1 bg-border/40" />
+                                        </div>
+                                    )}
+                                    {messages.slice(visibleFrom).map((m) => (
+                                        <div
+                                            key={m.id}
+                                            ref={(el) => {
+                                                if (el) messageRefs.current.set(m.id, el);
+                                                else messageRefs.current.delete(m.id);
+                                            }}
+                                        >
+                                            <MessageBubble message={m} />
+                                        </div>
+                                    ))}
+                                </>
                             )}
                         </div>
                     </div>
@@ -402,6 +461,14 @@ function Composer({
 
 // ─── Chat Timeline ─────────────────────────────────────────────────────────────
 
+const DOCK_MAG = [2, 1.5, 1.2];  // scale at distance 0, 1, 2
+const BAR_BASE_W = 12;            // px, inactive base width
+const BAR_BASE_H = 3;             // px, inactive base height
+
+function getDockMag(dist: number): number {
+    return DOCK_MAG[dist] ?? 1;
+}
+
 function ChatTimeline({
     messages,
     activeId,
@@ -417,6 +484,7 @@ function ChatTimeline({
     onPrev: () => void;
     onNext: () => void;
 }) {
+    const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
     const total = messages.length;
     const start = page * TIMELINE_WINDOW;
     const visible = messages.slice(start, start + TIMELINE_WINDOW);
@@ -425,7 +493,7 @@ function ChatTimeline({
 
     return (
         // Full-height column; the 100px block is centered inside it
-        <div className="w-5 shrink-0 flex flex-col items-center justify-center border-r border-border/50 bg-background select-none">
+        <div className="w-7 shrink-0 flex flex-col items-center justify-center border-r border-border/50 bg-background select-none">
             <div className="h-[100px] flex flex-col items-center w-full">
                 {/* Prev */}
                 <button
@@ -439,30 +507,51 @@ function ChatTimeline({
                     <ChevronUp size={10} />
                 </button>
 
-                {/* Horizontal bars */}
+                {/* Horizontal bars with dock magnification */}
                 <div className="flex-1 flex flex-col justify-evenly items-center w-full py-0.5">
                     {visible.map((msg, i) => {
                         const globalIdx = start + i;
                         const isActive = msg.id === activeId;
                         const preview = msg.text.slice(0, 80) + (msg.text.length > 80 ? '…' : '');
+                        const dist = hoveredIdx !== null ? Math.abs(i - hoveredIdx) : Infinity;
+                        const mag = hoveredIdx !== null ? getDockMag(Math.min(dist, 3)) : 1;
+                        const barW = Math.round(BAR_BASE_W * mag);
+                        const barH = Math.round(BAR_BASE_H * mag);
+                        const isHovered = hoveredIdx === i;
                         return (
-                            <div key={msg.id} className="relative group flex items-center justify-center w-full">
+                            <div
+                                key={msg.id}
+                                className="relative group flex items-center justify-center w-full"
+                                onMouseEnter={() => setHoveredIdx(i)}
+                                onMouseLeave={() => setHoveredIdx(null)}
+                            >
                                 <button
                                     onClick={() => onNavigate(msg.id)}
+                                    style={{
+                                        width: barW,
+                                        height: barH,
+                                        transition: 'width 150ms ease-out, height 150ms ease-out, background-color 150ms ease-out',
+                                    }}
                                     className={cn(
-                                        'rounded-full transition-all duration-150',
-                                        isActive
-                                            ? 'w-3.5 h-[3px] bg-amber-400 dark:bg-amber-500'
-                                            : 'w-2.5 h-[2px] bg-border/70 hover:bg-amber-300 dark:hover:bg-amber-600 hover:w-3.5',
+                                        'rounded-full',
+                                        isActive || isHovered
+                                            ? 'bg-amber-400 dark:bg-amber-500'
+                                            : dist === 1
+                                                ? 'bg-amber-300/70 dark:bg-amber-600/60'
+                                                : dist === 2
+                                                    ? 'bg-amber-200/50 dark:bg-amber-700/40'
+                                                    : 'bg-border/70',
                                     )}
                                 />
-                                {/* Tooltip */}
-                                <div className="pointer-events-none absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                                    <div className="bg-popover border border-border rounded-md px-2.5 py-1.5 shadow-md w-max max-w-[220px]">
-                                        <div className="text-[10px] text-muted-foreground mb-0.5 font-medium">Q{globalIdx + 1}</div>
-                                        <div className="text-[11px] text-foreground leading-snug whitespace-normal">{preview}</div>
+                                {/* Tooltip — only on directly hovered bar */}
+                                {isHovered && (
+                                    <div className="pointer-events-none absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50">
+                                        <div className="bg-popover border border-border rounded-md px-2.5 py-1.5 shadow-md w-max max-w-[220px]">
+                                            <div className="text-[10px] text-muted-foreground mb-0.5 font-medium">Q{globalIdx + 1}</div>
+                                            <div className="text-[11px] text-foreground leading-snug whitespace-normal">{preview}</div>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         );
                     })}
