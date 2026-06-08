@@ -1,6 +1,9 @@
 'use client';
 
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { X, Wrench, CheckCircle2, XCircle } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
 import type { WorkbenchTool } from './WorkbenchContext';
 
@@ -32,13 +35,58 @@ function prettyTool(raw: string): string {
     return TOOL_LABELS[stripped] || stripped.replace(/_/g, ' ');
 }
 
-function tryFormatJson(text: string): string {
+function tryParseJson(text: string): { isJson: true; formatted: string } | { isJson: false } {
     try {
-        return JSON.stringify(JSON.parse(text), null, 2);
+        return { isJson: true, formatted: JSON.stringify(JSON.parse(text), null, 2) };
     } catch {
-        return text;
+        return { isJson: false };
     }
 }
+
+const MarkdownComponents = {
+    p: ({ children }: any) => <p className="mb-2 last:mb-0 leading-relaxed text-[13px]">{children}</p>,
+    ul: ({ children }: any) => <ul className="list-disc pl-4 mb-2 last:mb-0 space-y-0.5 text-[13px]">{children}</ul>,
+    ol: ({ children }: any) => <ol className="list-decimal pl-4 mb-2 last:mb-0 space-y-0.5 text-[13px]">{children}</ol>,
+    li: ({ children }: any) => <li className="leading-relaxed">{children}</li>,
+    h1: ({ children }: any) => <h1 className="text-sm font-semibold mt-3 mb-1 first:mt-0">{children}</h1>,
+    h2: ({ children }: any) => <h2 className="text-[13px] font-semibold mt-3 mb-1 first:mt-0">{children}</h2>,
+    h3: ({ children }: any) => <h3 className="text-[12px] font-semibold mt-2 mb-1 first:mt-0">{children}</h3>,
+    strong: ({ children }: any) => <strong className="font-semibold">{children}</strong>,
+    a: ({ href, children }: any) => (
+        <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">
+            {children}
+        </a>
+    ),
+    code: ({ className, children, ...props }: any) => {
+        const isBlock = className?.includes('language-');
+        if (isBlock) {
+            return (
+                <pre className="overflow-x-auto rounded bg-muted/60 p-2.5 my-2 text-[11px] font-mono border border-border">
+                    <code className={className} {...props}>{children}</code>
+                </pre>
+            );
+        }
+        return (
+            <code className="rounded bg-muted px-1 py-0.5 text-[11px] font-mono border border-border" {...props}>
+                {children}
+            </code>
+        );
+    },
+    table: ({ children }: any) => (
+        <div className="overflow-x-auto my-2">
+            <table className="min-w-full divide-y divide-border border border-border rounded text-[12px]">{children}</table>
+        </div>
+    ),
+    thead: ({ children }: any) => <thead className="bg-muted/50">{children}</thead>,
+    tbody: ({ children }: any) => <tbody className="divide-y divide-border">{children}</tbody>,
+    tr: ({ children }: any) => <tr>{children}</tr>,
+    th: ({ children }: any) => <th className="px-2.5 py-1.5 text-left font-semibold text-muted-foreground">{children}</th>,
+    td: ({ children }: any) => <td className="px-2.5 py-1.5">{children}</td>,
+};
+
+const MIN_WIDTH = 280;
+const MAX_WIDTH = 720;
+const DEFAULT_WIDTH = 360;
 
 export function WorkbenchPanel({
     tool,
@@ -47,11 +95,62 @@ export function WorkbenchPanel({
     tool: WorkbenchTool;
     onClose: () => void;
 }) {
+    const [width, setWidth] = useState(DEFAULT_WIDTH);
+    const dragging = useRef(false);
+    const startX = useRef(0);
+    const startWidth = useRef(0);
+
+    const onMouseMove = useCallback((e: MouseEvent) => {
+        if (!dragging.current) return;
+        const delta = startX.current - e.clientX;
+        setWidth(Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startWidth.current + delta)));
+    }, []);
+
+    const onMouseUp = useCallback(() => {
+        dragging.current = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+    }, [onMouseMove]);
+
+    const onHandleMouseDown = (e: React.MouseEvent) => {
+        e.preventDefault();
+        dragging.current = true;
+        startX.current = e.clientX;
+        startWidth.current = width;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+    };
+
+    useEffect(() => () => {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+    }, [onMouseMove, onMouseUp]);
+
     const inputJson = JSON.stringify(tool.input, null, 2);
-    const resultFormatted = tool.result ? tryFormatJson(tool.result.text) : '';
+    const resultParsed = tool.result ? tryParseJson(tool.result.text) : null;
 
     return (
-        <div className="w-[360px] shrink-0 border-l border-border flex flex-col bg-card overflow-hidden">
+        <div
+            style={{ width }}
+            className="relative shrink-0 border-l border-border flex flex-col bg-card overflow-hidden"
+        >
+            {/* Drag handle */}
+            <div
+                onMouseDown={onHandleMouseDown}
+                className="absolute left-0 top-0 bottom-0 w-1 z-20 cursor-col-resize group"
+            >
+                <div className="absolute inset-y-0 left-0 w-1 bg-transparent group-hover:bg-amber-300/50 dark:group-hover:bg-amber-700/40 transition-colors" />
+                <div className="absolute left-[-1px] top-1/2 -translate-y-1/2 flex flex-col gap-[3px] opacity-0 group-hover:opacity-100 transition-opacity">
+                    {[0, 1, 2].map(i => (
+                        <div key={i} className="w-[3px] h-[3px] rounded-full bg-amber-400 dark:bg-amber-600" />
+                    ))}
+                </div>
+            </div>
+
             {/* Header */}
             <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border bg-muted/40 shrink-0">
                 <div className="p-1.5 rounded-md bg-amber-100/70 dark:bg-amber-900/30 border border-amber-200/60 dark:border-amber-800/40">
@@ -86,11 +185,11 @@ export function WorkbenchPanel({
 
                 {/* Output */}
                 <section className="px-4 py-3">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-2.5">
                         <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                             Output
                         </div>
-                        {tool.result ? (
+                        {tool.result && (
                             tool.result.isError ? (
                                 <span className="inline-flex items-center gap-1 text-[10px] text-red-500">
                                     <XCircle size={10} /> Error
@@ -100,20 +199,28 @@ export function WorkbenchPanel({
                                     <CheckCircle2 size={10} /> Success
                                 </span>
                             )
-                        ) : null}
+                        )}
+                        {resultParsed?.isJson && (
+                            <span className="ml-auto text-[10px] text-muted-foreground/60 font-mono">JSON</span>
+                        )}
                     </div>
 
                     {tool.result ? (
-                        <pre
-                            className={cn(
-                                'text-[11px] font-mono rounded-md p-3 overflow-x-auto border whitespace-pre-wrap break-all leading-relaxed',
-                                tool.result.isError
-                                    ? 'bg-red-50/60 dark:bg-red-950/20 border-red-200/50 dark:border-red-900/40 text-red-800 dark:text-red-300'
-                                    : 'bg-muted/50 border-border text-foreground/80',
-                            )}
-                        >
-                            {resultFormatted}
-                        </pre>
+                        tool.result.isError ? (
+                            <pre className="text-[11px] font-mono rounded-md p-3 overflow-x-auto border bg-red-50/60 dark:bg-red-950/20 border-red-200/50 dark:border-red-900/40 text-red-800 dark:text-red-300 whitespace-pre-wrap break-all leading-relaxed">
+                                {tool.result.text}
+                            </pre>
+                        ) : resultParsed?.isJson ? (
+                            <pre className="text-[11px] font-mono text-foreground/80 bg-muted/50 rounded-md p-3 overflow-x-auto border border-border whitespace-pre-wrap break-all leading-relaxed">
+                                {resultParsed.formatted}
+                            </pre>
+                        ) : (
+                            <div className="text-foreground leading-relaxed">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+                                    {tool.result.text}
+                                </ReactMarkdown>
+                            </div>
+                        )
                     ) : (
                         <div className="text-[12px] text-muted-foreground italic py-2">
                             Waiting for result…
