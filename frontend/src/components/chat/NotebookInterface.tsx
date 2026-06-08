@@ -2,14 +2,13 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Play, Plus, Trash2, RotateCcw, AlertCircle, Loader2, StopCircle, ArrowLeft, Pencil, Check } from 'lucide-react';
+import { Play, Plus, Trash2, RotateCcw, AlertCircle, Loader2, StopCircle, ArrowLeft, Pencil, Check, Brain, Wrench, CheckCircle2, XCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import api from '@/lib/api';
 import { openChatStream } from '@/lib/chat-sse';
 import { cn } from '@/lib/utils';
 import { SubagentBadge } from './SubagentBadge';
-import { ToolEventRow } from './ToolEventRow';
 import GenUIContainer from './gen-ui/GenUIRegistry';
 import type { ChatBlock, ToolResultBlock, ToolUseBlock } from './types';
 import { getColorConfig, getIconComponent } from './NotebookDashboard';
@@ -667,45 +666,125 @@ function AddCellDivider({ onClick }: { onClick: () => void }) {
     );
 }
 
+// ─── Timeline types ────────────────────────────────────────────────────────────
+
+type NbThinkingEntry = { kind: 'thinking'; text: string };
+type NbToolEntry = {
+    kind: 'tool';
+    tool: string;
+    id: string;
+    result?: { text: string; isError: boolean };
+};
+type NbTimelineEntry = NbThinkingEntry | NbToolEntry;
+
+const NB_TOOL_LABELS: Record<string, string> = {
+    get_market_summary: 'Fetching market summary',
+    get_top_movers: 'Fetching top movers',
+    get_index_history: 'Pulling index history',
+    get_floorsheet_whales: 'Identifying whale brokers',
+    get_stock_quote: 'Fetching latest quote',
+    get_price_history: 'Loading price history',
+    get_technicals: 'Computing technical indicators',
+    get_fundamentals: 'Reading fundamentals',
+    get_dividend_history: 'Reading dividend history',
+    get_accumulation: 'Reading broker accumulation',
+    get_signals_for_ticker: 'Aggregating signals',
+    get_signal_track_record: 'Reading signal track record',
+    calc_position_size: 'Sizing the position',
+    get_portfolio_overview: 'Reading portfolio',
+    get_holdings: 'Listing holdings',
+    get_watchlist: 'Reading watchlist',
+    get_risk_profile: 'Analyzing portfolio risk',
+    get_realized_pnl: 'Reading realized P/L',
+    Task: 'Delegating to subagent',
+};
+
+function nbPrettyTool(raw: string): string {
+    if (NB_TOOL_LABELS[raw]) return NB_TOOL_LABELS[raw];
+    const stripped = raw.replace(/^mcp__[^_]+__/, '');
+    return NB_TOOL_LABELS[stripped] || stripped.replace(/_/g, ' ');
+}
+
+function buildNbTimeline(innerBlocks: ChatBlock[]): NbTimelineEntry[] {
+    const resultById = new Map<string, ToolResultBlock>();
+    for (const b of innerBlocks) {
+        if (b.kind === 'tool_result') resultById.set(b.id, b);
+    }
+
+    const entries: NbTimelineEntry[] = [];
+    let pendingThinking = '';
+
+    for (const b of innerBlocks) {
+        if (b.kind === 'thinking') {
+            pendingThinking += b.text;
+        } else if (b.kind === 'tool_use') {
+            if (pendingThinking.trim()) {
+                entries.push({ kind: 'thinking', text: pendingThinking });
+                pendingThinking = '';
+            }
+            const tu = b as ToolUseBlock;
+            const result = resultById.get(tu.id);
+            entries.push({
+                kind: 'tool',
+                tool: tu.tool,
+                id: tu.id,
+                result: result ? { text: result.text, isError: result.is_error } : undefined,
+            });
+        }
+    }
+
+    if (pendingThinking.trim()) {
+        entries.push({ kind: 'thinking', text: pendingThinking });
+    }
+
+    return entries;
+}
+
+// ─── Block grouping ────────────────────────────────────────────────────────────
+
 type NbRenderGroup =
-    | { kind: 'reasoning'; thinking: string; toolBlocks: ChatBlock[]; text: string }
+    | { kind: 'reasoning'; innerBlocks: ChatBlock[]; text: string }
     | { kind: 'block'; block: ChatBlock };
 
 function groupOutputs(outputs: ChatBlock[]): NbRenderGroup[] {
     const groups: NbRenderGroup[] = [];
-    let inReasoning = false;
-    let thinking = '';
-    let toolBlocks: ChatBlock[] = [];
 
-    const flush = (text = '') => {
-        groups.push({ kind: 'reasoning', thinking, toolBlocks, text });
-        thinking = '';
-        toolBlocks = [];
-        inReasoning = false;
-    };
+    const firstThinkingIdx = outputs.findIndex(b => b.kind === 'thinking');
+    if (firstThinkingIdx === -1) {
+        for (const block of outputs) groups.push({ kind: 'block', block });
+        return groups;
+    }
 
-    for (const block of outputs) {
-        if (block.kind === 'thinking') {
-            inReasoning = true;
-            thinking += block.text;
-        } else if (inReasoning) {
-            if (block.kind === 'text') {
-                flush(block.text);
-            } else if (block.kind === 'tool_use' || block.kind === 'tool_result') {
-                toolBlocks.push(block);
-            } else if (block.kind === 'card') {
-                flush();
-                groups.push({ kind: 'block', block });
-            }
-        } else {
-            groups.push({ kind: 'block', block });
+    for (let i = 0; i < firstThinkingIdx; i++) {
+        groups.push({ kind: 'block', block: outputs[i] });
+    }
+
+    let lastTextIdx = -1;
+    for (let i = outputs.length - 1; i >= firstThinkingIdx; i--) {
+        if (outputs[i].kind === 'text') { lastTextIdx = i; break; }
+    }
+
+    const innerBlocks = lastTextIdx > firstThinkingIdx
+        ? outputs.slice(firstThinkingIdx, lastTextIdx)
+        : outputs.slice(firstThinkingIdx);
+
+    const outputBlock = lastTextIdx !== -1 ? outputs[lastTextIdx] : null;
+    groups.push({
+        kind: 'reasoning',
+        innerBlocks,
+        text: outputBlock?.kind === 'text' ? outputBlock.text : '',
+    });
+
+    if (lastTextIdx !== -1) {
+        for (let i = lastTextIdx + 1; i < outputs.length; i++) {
+            groups.push({ kind: 'block', block: outputs[i] });
         }
     }
 
-    if (inReasoning) flush();
-
     return groups;
 }
+
+// ─── CellOutput ───────────────────────────────────────────────────────────────
 
 function CellOutput({ outputs }: { outputs: ChatBlock[] }) {
     const groups = groupOutputs(outputs);
@@ -714,14 +793,7 @@ function CellOutput({ outputs }: { outputs: ChatBlock[] }) {
         <div className="space-y-3">
             {groups.map((group, idx) => {
                 if (group.kind === 'reasoning') {
-                    return (
-                        <NbReasoningCard
-                            key={idx}
-                            thinking={group.thinking}
-                            toolBlocks={group.toolBlocks}
-                            text={group.text}
-                        />
-                    );
+                    return <NbReasoningCard key={idx} innerBlocks={group.innerBlocks} text={group.text} />;
                 }
                 const block = group.block;
                 switch (block.kind) {
@@ -734,23 +806,14 @@ function CellOutput({ outputs }: { outputs: ChatBlock[] }) {
                                 </ReactMarkdown>
                             </div>
                         );
-
-                    case 'subagent_start':
-                        return (
-                            <div key={idx} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                                <ChevronRight size={11} />
-                                Delegating to a subagent...
-                            </div>
-                        );
-
                     case 'card':
                         return (
                             <div key={idx} className="my-1">
                                 <GenUIContainer type={block.type} data={block.data} />
                             </div>
                         );
-
                     case 'tool_result':
+                    case 'subagent_start':
                     case 'subagent_end':
                     default:
                         return null;
@@ -760,7 +823,9 @@ function CellOutput({ outputs }: { outputs: ChatBlock[] }) {
     );
 }
 
-function NbReasoningCard({ thinking, toolBlocks, text }: { thinking: string; toolBlocks: ChatBlock[]; text: string }) {
+// ─── NbReasoningCard ──────────────────────────────────────────────────────────
+
+function NbReasoningCard({ innerBlocks, text }: { innerBlocks: ChatBlock[]; text: string }) {
     const hasOutput = !!text.trim();
     const [open, setOpen] = useState(!hasOutput);
     const prevHasOutput = useRef(hasOutput);
@@ -770,70 +835,103 @@ function NbReasoningCard({ thinking, toolBlocks, text }: { thinking: string; too
         prevHasOutput.current = hasOutput;
     }, [hasOutput]);
 
-    const resultById = new Map<string, ToolResultBlock>();
-    for (const b of toolBlocks) {
-        if (b.kind === 'tool_result') resultById.set(b.id, b);
-    }
+    const entries = buildNbTimeline(innerBlocks);
 
-    const toolUseBlocks = toolBlocks.filter((b): b is ToolUseBlock => b.kind === 'tool_use');
-    const hasInner = thinking.trim() || toolUseBlocks.length > 0;
+    if (entries.length === 0 && !hasOutput) return null;
 
-    if (!hasInner && !hasOutput) return null;
+    const stepCount = entries.length;
 
     return (
         <div className="rounded-lg border border-amber-200/60 dark:border-amber-800/40 overflow-hidden">
-            {/* Collapsible reasoning header */}
-            {hasInner && (
+            {entries.length > 0 && (
                 <>
                     <button
                         onClick={() => setOpen(v => !v)}
-                        className="w-full flex items-center gap-2 px-3 py-2 bg-amber-50/80 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 text-[12px] font-medium hover:bg-amber-100/70 dark:hover:bg-amber-900/30 transition-colors"
+                        className="w-full flex items-center gap-2 px-3 py-2.5 bg-amber-50/80 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 text-[12px] font-medium hover:bg-amber-100/70 dark:hover:bg-amber-900/30 transition-colors"
                     >
-                        <ChevronRight
-                            size={11}
-                            className={cn('transition-transform shrink-0', open && 'rotate-90')}
-                        />
+                        <ChevronRight size={11} className={cn('transition-transform shrink-0', open && 'rotate-90')} />
+                        <Brain size={12} className="shrink-0 opacity-70" />
                         <span>Reasoning</span>
+                        <span className="text-amber-500/70 dark:text-amber-500/50 font-normal">
+                            · {stepCount} step{stepCount !== 1 ? 's' : ''}
+                        </span>
                         <span className="ml-auto text-amber-500/60 dark:text-amber-500/50 text-[11px] font-normal">
                             {open ? 'collapse' : 'expand'}
                         </span>
                     </button>
 
                     {open && (
-                        <div className="px-3 py-2.5 bg-amber-50/40 dark:bg-amber-950/10 border-t border-amber-200/40 dark:border-amber-800/30 space-y-2">
-                            {thinking.trim() && (
-                                <div className="text-[12px] text-amber-900/75 dark:text-amber-200/60 leading-relaxed">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
-                                        {thinking}
-                                    </ReactMarkdown>
-                                </div>
-                            )}
-                            {toolUseBlocks.map((tu, i) => {
-                                const result = resultById.get(tu.id);
-                                return (
-                                    <ToolEventRow
-                                        key={i}
-                                        tool={tu.tool}
-                                        status={result ? (result.is_error ? 'error' : 'done') : 'running'}
-                                        text={result?.text}
-                                    />
-                                );
-                            })}
+                        <div className="px-4 py-3 bg-amber-50/40 dark:bg-amber-950/10 border-t border-amber-200/40 dark:border-amber-800/30">
+                            <NbTimelineView entries={entries} />
                         </div>
                     )}
                 </>
             )}
 
-            {/* Output body */}
             {hasOutput && (
                 <>
-                    {hasInner && <div className="h-px bg-amber-200/50 dark:bg-amber-800/30" />}
+                    {entries.length > 0 && <div className="h-px bg-amber-200/50 dark:bg-amber-800/30" />}
                     <div className="px-3 py-2.5 bg-card text-sm text-foreground leading-relaxed">
                         <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
                             {text}
                         </ReactMarkdown>
                     </div>
                 </>
+            )}
+        </div>
+    );
+}
+
+function NbTimelineView({ entries }: { entries: NbTimelineEntry[] }) {
+    return (
+        <div className="relative pl-5">
+            <div className="absolute left-[7px] top-[10px] bottom-[10px] w-px bg-amber-200 dark:bg-amber-800/60" />
+            <div className="space-y-4">
+                {entries.map((entry, i) => (
+                    <NbTimelineItem key={i} entry={entry} />
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function NbTimelineItem({ entry }: { entry: NbTimelineEntry }) {
+    if (entry.kind === 'thinking') {
+        return (
+            <div className="relative">
+                <div className="absolute -left-[14px] top-[5px] w-2.5 h-2.5 rounded-full bg-amber-50 dark:bg-amber-950 border-2 border-amber-400 dark:border-amber-600 z-10" />
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-600/80 dark:text-amber-500/70 mb-1.5">
+                    Thinking
+                </div>
+                <div className="text-[12px] text-amber-900/70 dark:text-amber-200/60 leading-relaxed">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+                        {entry.text}
+                    </ReactMarkdown>
+                </div>
+            </div>
+        );
+    }
+
+    const status = !entry.result ? 'running' : entry.result.isError ? 'error' : 'done';
+    return (
+        <div className="relative">
+            <div className={cn(
+                'absolute -left-[14px] top-[5px] w-2.5 h-2.5 rounded-full border-2 z-10',
+                status === 'done'    && 'bg-emerald-50 dark:bg-emerald-950 border-emerald-400 dark:border-emerald-600',
+                status === 'error'   && 'bg-red-50 dark:bg-red-950 border-red-400 dark:border-red-600',
+                status === 'running' && 'bg-amber-50 dark:bg-amber-950 border-amber-400 dark:border-amber-600',
+            )} />
+            <div className="flex items-center gap-1.5 mb-0.5">
+                <Wrench size={10} className="text-amber-600/70 dark:text-amber-500/60 shrink-0" />
+                <span className="text-[11px] font-medium text-foreground/80">{nbPrettyTool(entry.tool)}</span>
+                {status === 'running' && <Loader2 size={10} className="animate-spin text-amber-500" />}
+                {status === 'done'    && <CheckCircle2 size={10} className="text-emerald-500" />}
+                {status === 'error'   && <XCircle size={10} className="text-red-500" />}
+            </div>
+            {entry.result && (
+                <div className="text-[11px] text-muted-foreground/60 font-mono leading-snug line-clamp-2 pl-[14px]">
+                    {entry.result.text.slice(0, 180)}{entry.result.text.length > 180 ? '…' : ''}
+                </div>
             )}
         </div>
     );
