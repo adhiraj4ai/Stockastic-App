@@ -19,7 +19,9 @@ export default function ChatPageClient() {
     const refresh = async () => {
         try {
             const res = await api.get('/api/chat/sessions/');
-            const items: ChatSession[] = res.data?.results || res.data || [];
+            const all: ChatSession[] = res.data?.results || res.data || [];
+            // Exclude sessions created internally for notebooks
+            const items = all.filter(s => !s.title.startsWith('Notebook Session:'));
             setSessions(items);
             return items;
         } finally {

@@ -64,7 +64,14 @@ def _build_options(sdk_session_id: str = "") -> ClaudeAgentOptions:
     )
 
 
-_STALE_SESSION_PHRASES = ("no conversation found", "conversation not found", "session not found")
+_STALE_SESSION_PHRASES = (
+    "no conversation found",
+    "conversation not found",
+    "session not found",
+    "exit code 1",           # SDK subprocess crash on bad resume
+    "command failed",        # generic subprocess failure
+    "invalid session",
+)
 
 
 def _is_stale_session(exc: Exception) -> bool:

@@ -28,8 +28,8 @@ def _initial(name: str) -> str | None:
 MARKET_ANALYST = AgentDefinition(
     description=(
         "Reports on the NEPSE market: index turnover trend, breadth (advancers/decliners), "
-        "sector rotation, and broker floorsheet whale activity. "
-        "Use for any market-wide question or daily briefing."
+        "sector rotation, broker floorsheet whale activity, and stock search. "
+        "Use for any market-wide question, sector analysis, daily briefing, or 'find me stocks in X sector'."
     ),
     prompt=_system("market_analyst"),
     initialPrompt=_initial("market_analyst"),
@@ -38,6 +38,9 @@ MARKET_ANALYST = AgentDefinition(
         tool_id("get_top_movers"),
         tool_id("get_index_history"),
         tool_id("get_floorsheet_whales"),
+        tool_id("get_sector_breakdown"),
+        tool_id("get_broker_trades_for_stock"),
+        tool_id("search_stocks"),
     ],
     model="sonnet",
     effort="medium",
@@ -47,8 +50,11 @@ STOCK_ANALYST = AgentDefinition(
     description=(
         "Deep-dive per-ticker NEPSE equity research: latest quote, 60-day OHLCV, "
         "full TA-Lib technical suite (RSI/MACD/ADX/ATR/Bollinger/OBV/support-resistance), "
-        "fundamentals (PE/PB/ROE/health score), dividend history, and broker accumulation. "
-        "Use for any single-stock question. Runs tools in parallel for speed."
+        "fundamentals (PE/PB/ROE/health score), quarterly/annual financial reports, "
+        "full balance sheet / income statement / cash flow / key ratios, "
+        "VWAP and moving average price levels, dividend history, broker accumulation, "
+        "and multi-stock comparison. "
+        "Use for any single-stock question or 'compare X vs Y'. Runs tools in parallel for speed."
     ),
     prompt=_system("stock_analyst"),
     initialPrompt=_initial("stock_analyst"),
@@ -57,8 +63,13 @@ STOCK_ANALYST = AgentDefinition(
         tool_id("get_price_history"),
         tool_id("get_technicals"),
         tool_id("get_fundamentals"),
+        tool_id("get_financial_reports"),
+        tool_id("get_financial_statements"),
+        tool_id("get_price_levels"),
         tool_id("get_dividend_history"),
         tool_id("get_accumulation"),
+        tool_id("compare_stocks"),
+        tool_id("search_stocks"),
     ],
     model="sonnet",
     effort="high",
@@ -69,7 +80,10 @@ BUY_SELL_STRATEGIST = AgentDefinition(
         "Synthesizes analyst findings, signal aggregates, and the user's portfolio "
         "into a BUY / SELL / HOLD verdict with confluence score, conviction tier, "
         "entry/stop/target levels, R/R ratio, and position sizing. "
-        "Use when the user asks for a decision, not just data."
+        "Can also screen stocks by criteria, surface all active signals, "
+        "assess closed-signal P/L track record, and review strategy backtest results. "
+        "Use when the user asks for a decision, screening, 'what should I buy today?', "
+        "or 'how did my past signals perform?'."
     ),
     prompt=_system("strategist"),
     initialPrompt=_initial("strategist"),
@@ -79,6 +93,12 @@ BUY_SELL_STRATEGIST = AgentDefinition(
         tool_id("calc_position_size"),
         tool_id("get_holdings"),
         tool_id("get_risk_profile"),
+        tool_id("get_active_signals"),
+        tool_id("get_strategy_performance"),
+        tool_id("get_strategy_experiments"),
+        tool_id("get_closed_signals"),
+        tool_id("screen_stocks"),
+        tool_id("search_stocks"),
     ],
     model="opus",
     effort="high",
@@ -88,8 +108,11 @@ BUY_SELL_STRATEGIST = AgentDefinition(
 PORTFOLIO_ADVISOR = AgentDefinition(
     description=(
         "Reports on the user's portfolio: holdings performance, P/L attribution, "
-        "sector concentration, risk alerts, watchlist setups, and realized P/L. "
-        "Use for any 'my portfolio' / 'my holdings' / 'my watchlist' question."
+        "sector concentration, risk alerts, watchlist setups (including deep single-item detail), "
+        "target vs actual allocation for rebalancing, realized P/L, "
+        "transaction history, portfolio NAV over time, accounts, and notification alerts. "
+        "Use for any 'my portfolio' / 'my holdings' / 'my watchlist' / 'my trades' / "
+        "'my alerts' / 'rebalance' question."
     ),
     prompt=_system("portfolio_advisor"),
     initialPrompt=_initial("portfolio_advisor"),
@@ -97,8 +120,15 @@ PORTFOLIO_ADVISOR = AgentDefinition(
         tool_id("get_portfolio_overview"),
         tool_id("get_holdings"),
         tool_id("get_watchlist"),
+        tool_id("get_watchlist_item"),
         tool_id("get_risk_profile"),
         tool_id("get_realized_pnl"),
+        tool_id("get_portfolio_accounts"),
+        tool_id("get_transaction_history"),
+        tool_id("get_portfolio_history"),
+        tool_id("get_sector_allocation"),
+        tool_id("get_rebalance_targets"),
+        tool_id("get_recent_alerts"),
     ],
     model="sonnet",
     effort="medium",

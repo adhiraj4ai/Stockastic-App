@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ChevronRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -67,16 +67,129 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
     return <AssistantBubble blocks={message.blocks || []} />;
 }
 
+type RenderGroup =
+    | { kind: 'reasoning'; thinking: string; text: string; subagent?: string }
+    | { kind: 'block'; block: ChatBlock };
+
+function groupBlocks(blocks: ChatBlock[]): RenderGroup[] {
+    const groups: RenderGroup[] = [];
+    let pendingThinking = '';
+    let pendingSubagent: string | undefined;
+
+    for (const block of blocks) {
+        if (block.kind === 'thinking') {
+            pendingThinking += block.text;
+            pendingSubagent = (block as any).subagent ?? pendingSubagent;
+        } else if (block.kind === 'text' && pendingThinking) {
+            groups.push({
+                kind: 'reasoning',
+                thinking: pendingThinking,
+                text: block.text,
+                subagent: (block as any).subagent ?? pendingSubagent,
+            });
+            pendingThinking = '';
+            pendingSubagent = undefined;
+        } else {
+            if (pendingThinking) {
+                groups.push({ kind: 'reasoning', thinking: pendingThinking, text: '', subagent: pendingSubagent });
+                pendingThinking = '';
+                pendingSubagent = undefined;
+            }
+            groups.push({ kind: 'block', block });
+        }
+    }
+
+    if (pendingThinking) {
+        groups.push({ kind: 'reasoning', thinking: pendingThinking, text: '', subagent: pendingSubagent });
+    }
+
+    return groups;
+}
+
 function AssistantBubble({ blocks }: { blocks: ChatBlock[] }) {
-    // Pair tool_use with tool_result so the row toggles state in place.
     const resultById = new Map<string, ToolResultBlock>();
     for (const b of blocks) {
         if (b.kind === 'tool_result') resultById.set(b.id, b);
     }
 
+    const groups = groupBlocks(blocks);
+
     return (
         <div className="max-w-[85%] space-y-2">
-            {blocks.map((block, idx) => renderBlock(block, idx, resultById))}
+            {groups.map((group, idx) => {
+                if (group.kind === 'reasoning') {
+                    return (
+                        <ReasoningCard
+                            key={idx}
+                            thinking={group.thinking}
+                            text={group.text}
+                            subagent={group.subagent}
+                        />
+                    );
+                }
+                return renderBlock(group.block, idx, resultById);
+            })}
+        </div>
+    );
+}
+
+function ReasoningCard({ thinking, text, subagent }: { thinking: string; text: string; subagent?: string }) {
+    const hasOutput = !!text.trim();
+    const [open, setOpen] = useState(!hasOutput);
+    const prevHasOutput = useRef(hasOutput);
+
+    useEffect(() => {
+        if (!prevHasOutput.current && hasOutput) {
+            setOpen(false);
+        }
+        prevHasOutput.current = hasOutput;
+    }, [hasOutput]);
+
+    if (!thinking.trim() && !text.trim()) return null;
+
+    return (
+        <div className="rounded-lg border border-amber-200/60 dark:border-amber-800/40 overflow-hidden">
+            {/* Reasoning header */}
+            <button
+                onClick={() => setOpen(v => !v)}
+                className="w-full flex items-center gap-2 px-3 py-2 bg-amber-50/80 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 text-[12px] font-medium hover:bg-amber-100/70 dark:hover:bg-amber-900/30 transition-colors"
+            >
+                <ChevronRight
+                    size={11}
+                    className={cn('transition-transform shrink-0', open && 'rotate-90')}
+                />
+                <span>Reasoning</span>
+                {subagent && <SubagentBadge name={subagent} size="sm" className="ml-1 border-amber-300/50 dark:border-amber-700/50" />}
+                <span className="ml-auto text-amber-500/60 dark:text-amber-500/50 text-[11px] font-normal">
+                    {open ? 'collapse' : 'expand'}
+                </span>
+            </button>
+
+            {/* Reasoning content */}
+            {open && (
+                <div className="px-3 py-2.5 bg-amber-50/40 dark:bg-amber-950/10 border-t border-amber-200/40 dark:border-amber-800/30 text-[12px] text-amber-900/75 dark:text-amber-200/60 leading-relaxed">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+                        {thinking}
+                    </ReactMarkdown>
+                </div>
+            )}
+
+            {/* Output body */}
+            {text.trim() && (
+                <>
+                    <div className="h-px bg-amber-200/50 dark:bg-amber-800/30" />
+                    <div className="px-3 py-2.5 bg-card text-sm text-foreground leading-relaxed">
+                        {subagent && (
+                            <div className="mb-1.5">
+                                <SubagentBadge name={subagent} size="sm" />
+                            </div>
+                        )}
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+                            {text}
+                        </ReactMarkdown>
+                    </div>
+                </>
+            )}
         </div>
     );
 }
@@ -103,10 +216,10 @@ function renderBlock(
             );
 
         case 'thinking':
-            return <ThinkingBlock key={idx} text={block.text} />;
+            // Orphaned thinking block (not paired with text) — shouldn't normally occur after grouping
+            return null;
 
         case 'subagent_start': {
-            const sb = (block as any).subagent_name || block.parent || 'subagent';
             return (
                 <div key={idx} className="flex items-center gap-1.5 text-[11px] text-muted-foreground pl-1">
                     <ChevronRight size={11} />
@@ -132,7 +245,6 @@ function renderBlock(
         }
 
         case 'tool_result':
-            // Rendered via its paired tool_use.
             return null;
 
         case 'card':
@@ -145,28 +257,4 @@ function renderBlock(
         default:
             return null;
     }
-}
-
-function ThinkingBlock({ text }: { text: string }) {
-    const [open, setOpen] = useState(false);
-    if (!text.trim()) return null;
-    return (
-        <div className="text-[12px] text-muted-foreground">
-            <button
-                onClick={() => setOpen((v) => !v)}
-                className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
-            >
-                <ChevronRight
-                    size={11}
-                    className={cn('transition-transform', open && 'rotate-90')}
-                />
-                Reasoning
-            </button>
-            {open && (
-                <div className="mt-1 pl-4 border-l border-border text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                    {text}
-                </div>
-            )}
-        </div>
-    );
 }

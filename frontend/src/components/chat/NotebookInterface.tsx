@@ -77,6 +77,15 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
     const [cells, setCells] = useState<NotebookCell[]>([]);
     const [globalExecutionCount, setGlobalExecutionCount] = useState(0);
     const abortControllersRef = useRef<Record<string, AbortController>>({});
+    const cellRefsMap = useRef<Record<string, HTMLTextAreaElement | null>>({});
+    const pendingFocusRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (pendingFocusRef.current) {
+            cellRefsMap.current[pendingFocusRef.current]?.focus();
+            pendingFocusRef.current = null;
+        }
+    }, [cells]);
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [loadingSession, setLoadingSession] = useState(true);
     const [loadingCells, setLoadingCells] = useState(true);
@@ -215,7 +224,7 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
         }
     };
 
-    const addCell = () => {
+    const insertCell = (atIndex: number) => {
         const newCell: NotebookCell = {
             id: `temp-${Date.now()}`,
             prompt: '',
@@ -223,10 +232,14 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
             outputs: [],
             executionCount: null,
         };
-        const updated = [...cells, newCell];
+        const updated = [...cells];
+        updated.splice(atIndex, 0, newCell);
+        pendingFocusRef.current = newCell.id;
         setCells(updated);
-        triggerSync(updated, true); // sync immediately
+        triggerSync(updated, true);
     };
+
+    const addCell = () => insertCell(cells.length);
 
     const deleteCell = (id: string) => {
         stopCell(id);
@@ -540,73 +553,148 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
             </div>
 
             {/* Scrollable Cell List */}
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 custom-scrollbar">
-                <div className="max-w-5xl mx-auto space-y-8">
+            <div className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar">
+                <div className="max-w-5xl mx-auto">
+                    <AddCellDivider onClick={() => insertCell(0)} />
                     {cells.map((cell, idx) => (
-                        <div key={cell.id} className="group/cell space-y-2 border-l-2 border-transparent hover:border-border pl-4 transition-all">
-                            {/* Input Area block */}
-                            <div className="flex items-start gap-4">
-                                <div className="w-16 shrink-0 text-right text-xs font-mono text-muted-foreground pt-3 select-none">
-                                    In [{cell.executionCount !== null ? cell.executionCount : ' '}] :
-                                </div>
-                                <div className="flex-1 relative flex items-start gap-2 bg-card border border-border rounded-md px-3 py-2 shadow-sm focus-within:ring-2 focus-within:ring-ring transition-all">
-                                    <textarea
-                                        value={cell.prompt}
-                                        onChange={(e) => updatePrompt(cell.id, e.target.value)}
-                                        placeholder="Enter a prompt/question..."
-                                        rows={Math.max(1, cell.prompt.split('\n').length)}
-                                        className="flex-1 bg-transparent border-0 outline-0 p-0 text-sm resize-none focus:ring-0 placeholder:text-muted-foreground font-mono"
-                                    />
-                                    <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                                        {cell.running ? (
-                                            <button
-                                                onClick={() => stopCell(cell.id)}
-                                                className="p-1 rounded text-rose-500 hover:bg-accent"
-                                                title="Stop execution"
-                                            >
-                                                <StopCircle size={14} />
-                                            </button>
-                                        ) : (
-                                            <button
-                                                onClick={() => runCell(cell.id)}
-                                                disabled={!cell.prompt.trim()}
-                                                className={cn(
-                                                    "p-1 rounded transition-colors",
-                                                    cell.prompt.trim() ? "text-emerald-500 hover:bg-accent" : "text-muted-foreground opacity-40 cursor-not-allowed"
-                                                )}
-                                                title="Run cell"
-                                            >
-                                                <Play size={14} fill={cell.prompt.trim() ? "currentColor" : "none"} />
-                                            </button>
-                                        )}
+                        <React.Fragment key={cell.id}>
+                        <div
+                            className="group/cell rounded-lg border border-border bg-card shadow-sm overflow-hidden transition-shadow hover:shadow-md"
+                        >
+                            {/* Card Header — the cell prompt */}
+                            <div className="flex items-start gap-3 px-4 py-3 bg-muted/30 border-b border-border focus-within:bg-muted/50 transition-colors">
+                                <span className="shrink-0 text-[11px] font-mono text-muted-foreground pt-[3px] select-none min-w-[2rem] text-right">
+                                    [{cell.executionCount !== null ? cell.executionCount : ' '}]
+                                </span>
+                                <textarea
+                                    ref={(el) => { cellRefsMap.current[cell.id] = el; }}
+                                    value={cell.prompt}
+                                    onChange={(e) => updatePrompt(cell.id, e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                                            e.preventDefault();
+                                            runCell(cell.id);
+                                        } else if (e.key === 'Enter' && e.shiftKey) {
+                                            e.preventDefault();
+                                            runCell(cell.id);
+                                            if (idx + 1 < cells.length) {
+                                                cellRefsMap.current[cells[idx + 1].id]?.focus();
+                                            } else {
+                                                insertCell(cells.length);
+                                            }
+                                        }
+                                    }}
+                                    placeholder="Ask a question… (Ctrl+↵ run · Shift+↵ run & next)"
+                                    rows={Math.max(1, cell.prompt.split('\n').length)}
+                                    className="flex-1 bg-transparent border-0 outline-none p-0 text-sm resize-none focus:ring-0 placeholder:text-muted-foreground font-mono leading-relaxed"
+                                />
+                                <div className="flex items-center gap-1 shrink-0">
+                                    {cell.running ? (
                                         <button
-                                            onClick={() => deleteCell(cell.id)}
-                                            className="p-1 rounded text-muted-foreground hover:text-rose-500 opacity-0 group-hover/cell:opacity-100 transition-opacity"
-                                            title="Delete cell"
+                                            onClick={() => stopCell(cell.id)}
+                                            className="p-1.5 rounded-md text-rose-500 hover:bg-accent transition-colors"
+                                            title="Stop execution"
                                         >
-                                            <Trash2 size={14} />
+                                            <StopCircle size={14} />
                                         </button>
-                                    </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => runCell(cell.id)}
+                                            disabled={!cell.prompt.trim()}
+                                            className={cn(
+                                                "p-1.5 rounded-md transition-colors",
+                                                cell.prompt.trim()
+                                                    ? "text-emerald-500 hover:bg-accent"
+                                                    : "text-muted-foreground opacity-40 cursor-not-allowed"
+                                            )}
+                                            title="Run cell (⌘↵)"
+                                        >
+                                            <Play size={14} fill={cell.prompt.trim() ? "currentColor" : "none"} />
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => clearOutputs(cell.id)}
+                                        className="p-1.5 rounded-md text-muted-foreground hover:text-foreground opacity-0 group-hover/cell:opacity-100 transition-opacity hover:bg-accent"
+                                        title="Clear output"
+                                    >
+                                        <RotateCcw size={13} />
+                                    </button>
+                                    <button
+                                        onClick={() => deleteCell(cell.id)}
+                                        className="p-1.5 rounded-md text-muted-foreground hover:text-rose-500 opacity-0 group-hover/cell:opacity-100 transition-opacity hover:bg-accent"
+                                        title="Delete cell"
+                                    >
+                                        <Trash2 size={13} />
+                                    </button>
                                 </div>
                             </div>
 
-                            {/* Output Area block */}
+                            {/* Card Body — output */}
+                            {cell.running && cell.outputs.length === 0 && (
+                                <div className="flex items-center gap-2 px-5 py-4 text-xs text-muted-foreground">
+                                    <Loader2 size={12} className="animate-spin" />
+                                    Running…
+                                </div>
+                            )}
                             {cell.outputs.length > 0 && (
-                                <div className="flex items-start gap-4">
-                                    <div className="w-16 shrink-0 text-right text-xs font-mono text-muted-foreground pt-1.5 select-none">
-                                        Out [{cell.executionCount !== null ? cell.executionCount : ' '}] :
-                                    </div>
-                                    <div className="flex-1 space-y-2 border border-border/40 bg-muted/20 rounded-md p-4 max-w-none">
-                                        <CellOutput outputs={cell.outputs} />
-                                    </div>
+                                <div className="px-5 py-4 space-y-2">
+                                    <CellOutput outputs={cell.outputs} />
                                 </div>
                             )}
                         </div>
+                        <AddCellDivider onClick={() => insertCell(idx + 1)} />
+                        </React.Fragment>
                     ))}
                 </div>
             </div>
         </div>
     );
+}
+
+function AddCellDivider({ onClick }: { onClick: () => void }) {
+    return (
+        <div className="group/divider flex items-center gap-2 h-8 px-1">
+            <div className="flex-1 h-px bg-border/40 group-hover/divider:bg-border transition-colors" />
+            <button
+                onClick={onClick}
+                className="flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground rounded-full border border-dashed border-border/50 opacity-0 group-hover/divider:opacity-100 hover:border-border hover:text-foreground hover:bg-accent transition-all"
+            >
+                <Plus size={10} />
+                Add Cell
+            </button>
+            <div className="flex-1 h-px bg-border/40 group-hover/divider:bg-border transition-colors" />
+        </div>
+    );
+}
+
+type NbRenderGroup =
+    | { kind: 'reasoning'; thinking: string; text: string }
+    | { kind: 'block'; block: ChatBlock };
+
+function groupOutputs(outputs: ChatBlock[]): NbRenderGroup[] {
+    const groups: NbRenderGroup[] = [];
+    let pendingThinking = '';
+
+    for (const block of outputs) {
+        if (block.kind === 'thinking') {
+            pendingThinking += block.text;
+        } else if (block.kind === 'text' && pendingThinking) {
+            groups.push({ kind: 'reasoning', thinking: pendingThinking, text: block.text });
+            pendingThinking = '';
+        } else {
+            if (pendingThinking) {
+                groups.push({ kind: 'reasoning', thinking: pendingThinking, text: '' });
+                pendingThinking = '';
+            }
+            groups.push({ kind: 'block', block });
+        }
+    }
+
+    if (pendingThinking) {
+        groups.push({ kind: 'reasoning', thinking: pendingThinking, text: '' });
+    }
+
+    return groups;
 }
 
 function CellOutput({ outputs }: { outputs: ChatBlock[] }) {
@@ -615,9 +703,15 @@ function CellOutput({ outputs }: { outputs: ChatBlock[] }) {
         if (b.kind === 'tool_result') resultById.set(b.id, b);
     }
 
+    const groups = groupOutputs(outputs);
+
     return (
         <div className="space-y-3">
-            {outputs.map((block, idx) => {
+            {groups.map((group, idx) => {
+                if (group.kind === 'reasoning') {
+                    return <NbReasoningCard key={idx} thinking={group.thinking} text={group.text} />;
+                }
+                const block = group.block;
                 switch (block.kind) {
                     case 'text':
                         if (!block.text.trim()) return null;
@@ -628,9 +722,6 @@ function CellOutput({ outputs }: { outputs: ChatBlock[] }) {
                                 </ReactMarkdown>
                             </div>
                         );
-
-                    case 'thinking':
-                        return <ThinkingBlock key={idx} text={block.text} />;
 
                     case 'subagent_start':
                         return (
@@ -670,25 +761,56 @@ function CellOutput({ outputs }: { outputs: ChatBlock[] }) {
     );
 }
 
-function ThinkingBlock({ text }: { text: string }) {
-    const [open, setOpen] = useState(false);
-    if (!text.trim()) return null;
+function NbReasoningCard({ thinking, text }: { thinking: string; text: string }) {
+    const hasOutput = !!text.trim();
+    const [open, setOpen] = useState(!hasOutput);
+    const prevHasOutput = useRef(hasOutput);
+
+    useEffect(() => {
+        if (!prevHasOutput.current && hasOutput) {
+            setOpen(false);
+        }
+        prevHasOutput.current = hasOutput;
+    }, [hasOutput]);
+
+    if (!thinking.trim() && !text.trim()) return null;
+
     return (
-        <div className="text-[12px] text-muted-foreground">
+        <div className="rounded-lg border border-amber-200/60 dark:border-amber-800/40 overflow-hidden">
+            {/* Reasoning header */}
             <button
-                onClick={() => setOpen((v) => !v)}
-                className="inline-flex items-center gap-1 hover:text-foreground transition-colors font-mono"
+                onClick={() => setOpen(v => !v)}
+                className="w-full flex items-center gap-2 px-3 py-2 bg-amber-50/80 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 text-[12px] font-medium hover:bg-amber-100/70 dark:hover:bg-amber-900/30 transition-colors"
             >
                 <ChevronRight
                     size={11}
-                    className={cn('transition-transform', open && 'rotate-90')}
+                    className={cn('transition-transform shrink-0', open && 'rotate-90')}
                 />
-                [Reasoning]
+                <span>Reasoning</span>
+                <span className="ml-auto text-amber-500/60 dark:text-amber-500/50 text-[11px] font-normal">
+                    {open ? 'collapse' : 'expand'}
+                </span>
             </button>
+
+            {/* Reasoning content */}
             {open && (
-                <div className="mt-1 pl-4 border-l border-border text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                    {text}
+                <div className="px-3 py-2.5 bg-amber-50/40 dark:bg-amber-950/10 border-t border-amber-200/40 dark:border-amber-800/30 text-[12px] text-amber-900/75 dark:text-amber-200/60 leading-relaxed">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+                        {thinking}
+                    </ReactMarkdown>
                 </div>
+            )}
+
+            {/* Output body */}
+            {text.trim() && (
+                <>
+                    <div className="h-px bg-amber-200/50 dark:bg-amber-800/30" />
+                    <div className="px-3 py-2.5 bg-card text-sm text-foreground leading-relaxed">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+                            {text}
+                        </ReactMarkdown>
+                    </div>
+                </>
             )}
         </div>
     );

@@ -82,6 +82,11 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
         # Bridge the async SSE generator into Django's sync streaming response.
         user = request.user
 
+        # Notebook cells are independent queries — never resume an SDK session.
+        # Each cell run starts fresh so stale/expired sessions can't cause failures.
+        if session.title.startswith("Notebook Session:"):
+            session.sdk_session_id = ""
+
         def byte_iter():
             agen = stream_chat(user=user, session=session, prompt=prompt)
             loop = asyncio.new_event_loop()
