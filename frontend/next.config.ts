@@ -2,10 +2,11 @@ import type { NextConfig } from "next";
 
 const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.bokeh.org https://cdn.pydata.org;
-    style-src 'self' 'unsafe-inline';
+    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.bokeh.org https://cdn.pydata.org https://cdn.jsdelivr.net;
+    worker-src blob:;
+    style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
     img-src 'self' blob: data: https://*;
-    font-src 'self' data:;
+    font-src 'self' data: https://cdn.jsdelivr.net;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
