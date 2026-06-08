@@ -84,6 +84,69 @@ const MarkdownComponents = {
     td: ({ children }: any) => <td className="px-2.5 py-1.5">{children}</td>,
 };
 
+// ─── Syntax-highlighted JSON tree ─────────────────────────────────────────────
+
+function JsonNode({ value, depth = 0 }: { value: unknown; depth?: number }) {
+    if (value === null) {
+        return <span className="text-rose-400 dark:text-rose-500">null</span>;
+    }
+    if (typeof value === 'boolean') {
+        return <span className="text-violet-500 dark:text-violet-400">{String(value)}</span>;
+    }
+    if (typeof value === 'number') {
+        return <span className="text-amber-600 dark:text-amber-400">{value}</span>;
+    }
+    if (typeof value === 'string') {
+        return <span className="text-emerald-600 dark:text-emerald-400">"{value}"</span>;
+    }
+    if (Array.isArray(value)) {
+        if (value.length === 0) return <span className="text-muted-foreground">[]</span>;
+        return (
+            <>
+                <span className="text-muted-foreground">{'['}</span>
+                <div className="pl-4">
+                    {value.map((item, i) => (
+                        <div key={i}>
+                            <JsonNode value={item} depth={depth + 1} />
+                            {i < value.length - 1 && <span className="text-muted-foreground">,</span>}
+                        </div>
+                    ))}
+                </div>
+                <span className="text-muted-foreground">{']'}</span>
+            </>
+        );
+    }
+    if (typeof value === 'object') {
+        const entries = Object.entries(value as Record<string, unknown>);
+        if (entries.length === 0) return <span className="text-muted-foreground">{'{}'}</span>;
+        return (
+            <>
+                <span className="text-muted-foreground">{'{'}</span>
+                <div className="pl-4">
+                    {entries.map(([k, v], i) => (
+                        <div key={k}>
+                            <span className="text-sky-600 dark:text-sky-400">"{k}"</span>
+                            <span className="text-muted-foreground">: </span>
+                            <JsonNode value={v} depth={depth + 1} />
+                            {i < entries.length - 1 && <span className="text-muted-foreground">,</span>}
+                        </div>
+                    ))}
+                </div>
+                <span className="text-muted-foreground">{'}'}</span>
+            </>
+        );
+    }
+    return <span>{String(value)}</span>;
+}
+
+function JsonView({ data }: { data: unknown }) {
+    return (
+        <div className="text-[11px] font-mono bg-muted/50 rounded-md p-3 overflow-x-auto border border-border leading-relaxed">
+            <JsonNode value={data} />
+        </div>
+    );
+}
+
 const MIN_WIDTH = 280;
 const MAX_WIDTH = 720;
 const DEFAULT_WIDTH = 360;
@@ -178,9 +241,11 @@ export function WorkbenchPanel({
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                         Input
                     </div>
-                    <pre className="text-[11px] font-mono text-foreground/80 bg-muted/50 rounded-md p-3 overflow-x-auto border border-border whitespace-pre-wrap break-all leading-relaxed">
-                        {inputJson === '{}' ? '(no parameters)' : inputJson}
-                    </pre>
+                    {inputJson === '{}' ? (
+                        <div className="text-[12px] text-muted-foreground italic py-1">(no parameters)</div>
+                    ) : (
+                        <JsonView data={tool.input} />
+                    )}
                 </section>
 
                 {/* Output */}
@@ -211,9 +276,7 @@ export function WorkbenchPanel({
                                 {tool.result.text}
                             </pre>
                         ) : resultParsed?.isJson ? (
-                            <pre className="text-[11px] font-mono text-foreground/80 bg-muted/50 rounded-md p-3 overflow-x-auto border border-border whitespace-pre-wrap break-all leading-relaxed">
-                                {resultParsed.formatted}
-                            </pre>
+                            <JsonView data={JSON.parse(tool.result!.text)} />
                         ) : (
                             <div className="text-foreground leading-relaxed">
                                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
