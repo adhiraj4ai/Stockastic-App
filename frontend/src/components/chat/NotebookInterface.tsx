@@ -873,8 +873,17 @@ function NbReasoningCard({ innerBlocks, text }: { innerBlocks: ChatBlock[]; text
                     </button>
 
                     {open && (
-                        <div className="px-4 py-3 bg-amber-50/40 dark:bg-amber-950/10 border-t border-amber-200/40 dark:border-amber-800/30">
-                            <NbTimelineView entries={entries} />
+                        <div className="bg-amber-50/40 dark:bg-amber-950/10 border-t border-amber-200/40 dark:border-amber-800/30">
+                            <div className="px-4 py-3">
+                                <NbTimelineView entries={entries} />
+                            </div>
+                            <button
+                                onClick={() => setOpen(false)}
+                                className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] text-amber-600/70 dark:text-amber-500/60 hover:text-amber-700 dark:hover:text-amber-400 hover:bg-amber-100/50 dark:hover:bg-amber-900/20 border-t border-amber-200/40 dark:border-amber-800/30 transition-colors"
+                            >
+                                <ChevronRight size={11} className="rotate-[-90deg]" />
+                                collapse
+                            </button>
                         </div>
                     )}
                 </>
