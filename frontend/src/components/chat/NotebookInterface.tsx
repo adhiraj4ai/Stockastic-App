@@ -10,6 +10,8 @@ import { openChatStream } from '@/lib/chat-sse';
 import { cn } from '@/lib/utils';
 import { SubagentBadge } from './SubagentBadge';
 import GenUIContainer from './gen-ui/GenUIRegistry';
+import { WorkbenchContext, useWorkbench, type WorkbenchTool } from './WorkbenchContext';
+import { WorkbenchPanel } from './WorkbenchPanel';
 import type { ChatBlock, ToolResultBlock, ToolUseBlock } from './types';
 import { getColorConfig, getIconComponent } from './NotebookDashboard';
 
@@ -75,6 +77,7 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
     const router = useRouter();
     const [cells, setCells] = useState<NotebookCell[]>([]);
     const [globalExecutionCount, setGlobalExecutionCount] = useState(0);
+    const [selectedTool, setSelectedTool] = useState<WorkbenchTool | null>(null);
     const abortControllersRef = useRef<Record<string, AbortController>>({});
     const cellRefsMap = useRef<Record<string, HTMLTextAreaElement | null>>({});
     const pendingFocusRef = useRef<string | null>(null);
@@ -475,7 +478,9 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
     };
 
     return (
-        <div className="flex flex-col h-full bg-background border-l border-border">
+        <WorkbenchContext.Provider value={{ selectedTool, selectTool: setSelectedTool }}>
+        <div className="flex h-full bg-background border-l border-border">
+        <div className="flex flex-col flex-1 min-w-0">
             {/* Top Toolbar */}
             <div className="flex items-center justify-between border-b border-border bg-muted/40 px-4 py-2.5">
                 <div className="flex items-center gap-3">
@@ -647,6 +652,11 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
                 </div>
             </div>
         </div>
+        {selectedTool && (
+            <WorkbenchPanel tool={selectedTool} onClose={() => setSelectedTool(null)} />
+        )}
+        </div>
+        </WorkbenchContext.Provider>
     );
 }
 
@@ -673,6 +683,7 @@ type NbToolEntry = {
     kind: 'tool';
     tool: string;
     id: string;
+    input: Record<string, unknown>;
     result?: { text: string; isError: boolean };
 };
 type NbTimelineEntry = NbThinkingEntry | NbToolEntry;
@@ -728,6 +739,7 @@ function buildNbTimeline(innerBlocks: ChatBlock[]): NbTimelineEntry[] {
                 kind: 'tool',
                 tool: tu.tool,
                 id: tu.id,
+                input: tu.input,
                 result: result ? { text: result.text, isError: result.is_error } : undefined,
             });
         }
@@ -896,6 +908,8 @@ function NbTimelineView({ entries }: { entries: NbTimelineEntry[] }) {
 }
 
 function NbTimelineItem({ entry }: { entry: NbTimelineEntry }) {
+    const { selectTool, selectedTool } = useWorkbench();
+
     if (entry.kind === 'thinking') {
         return (
             <div className="relative">
@@ -913,6 +927,8 @@ function NbTimelineItem({ entry }: { entry: NbTimelineEntry }) {
     }
 
     const status = !entry.result ? 'running' : entry.result.isError ? 'error' : 'done';
+    const isSelected = selectedTool?.tool === entry.tool && selectedTool?.input === entry.input;
+
     return (
         <div className="relative">
             <div className={cn(
@@ -921,18 +937,35 @@ function NbTimelineItem({ entry }: { entry: NbTimelineEntry }) {
                 status === 'error'   && 'bg-red-50 dark:bg-red-950 border-red-400 dark:border-red-600',
                 status === 'running' && 'bg-amber-50 dark:bg-amber-950 border-amber-400 dark:border-amber-600',
             )} />
-            <div className="flex items-center gap-1.5 mb-0.5">
-                <Wrench size={10} className="text-amber-600/70 dark:text-amber-500/60 shrink-0" />
-                <span className="text-[11px] font-medium text-foreground/80">{nbPrettyTool(entry.tool)}</span>
-                {status === 'running' && <Loader2 size={10} className="animate-spin text-amber-500" />}
-                {status === 'done'    && <CheckCircle2 size={10} className="text-emerald-500" />}
-                {status === 'error'   && <XCircle size={10} className="text-red-500" />}
-            </div>
-            {entry.result && (
-                <div className="text-[11px] text-muted-foreground/60 font-mono leading-snug line-clamp-2 pl-[14px]">
-                    {entry.result.text.slice(0, 180)}{entry.result.text.length > 180 ? '…' : ''}
+            <button
+                onClick={() => selectTool(isSelected ? null : {
+                    tool: entry.tool,
+                    input: entry.input,
+                    result: entry.result,
+                })}
+                className={cn(
+                    'w-full text-left rounded-md px-2 py-1.5 -mx-2 transition-colors group',
+                    isSelected
+                        ? 'bg-amber-100/60 dark:bg-amber-900/30 ring-1 ring-amber-300/50 dark:ring-amber-700/50'
+                        : 'hover:bg-amber-100/40 dark:hover:bg-amber-900/20',
+                )}
+            >
+                <div className="flex items-center gap-1.5 mb-0.5">
+                    <Wrench size={10} className="text-amber-600/70 dark:text-amber-500/60 shrink-0" />
+                    <span className="text-[11px] font-medium text-foreground/80">{nbPrettyTool(entry.tool)}</span>
+                    {status === 'running' && <Loader2 size={10} className="animate-spin text-amber-500" />}
+                    {status === 'done'    && <CheckCircle2 size={10} className="text-emerald-500" />}
+                    {status === 'error'   && <XCircle size={10} className="text-red-500" />}
+                    <span className="ml-auto text-[10px] text-amber-500/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                        inspect →
+                    </span>
                 </div>
-            )}
+                {entry.result && (
+                    <div className="text-[11px] text-muted-foreground/60 font-mono leading-snug line-clamp-2 pl-[14px]">
+                        {entry.result.text.slice(0, 180)}{entry.result.text.length > 180 ? '…' : ''}
+                    </div>
+                )}
+            </button>
         </div>
     );
 }

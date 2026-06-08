@@ -6,6 +6,8 @@ import api from '@/lib/api';
 import { openChatStream } from '@/lib/chat-sse';
 import { cn } from '@/lib/utils';
 import { MessageBubble } from './MessageBubble';
+import { WorkbenchContext, type WorkbenchTool } from './WorkbenchContext';
+import { WorkbenchPanel } from './WorkbenchPanel';
 import type { ChatBlock, ChatMessage } from './types';
 
 interface ChatInterfaceProps {
@@ -20,6 +22,7 @@ export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) 
     const [prompt, setPrompt] = useState('');
     const [streaming, setStreaming] = useState(false);
     const [loadingHistory, setLoadingHistory] = useState(true);
+    const [selectedTool, setSelectedTool] = useState<WorkbenchTool | null>(null);
     const abortRef = useRef<AbortController | null>(null);
     const scrollerRef = useRef<HTMLDivElement | null>(null);
 
@@ -220,28 +223,38 @@ export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) 
     };
 
     return (
-        <div className="flex flex-col h-full">
-            <div ref={scrollerRef} className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar">
-                <div className="max-w-5xl mx-auto space-y-4">
-                    {loadingHistory ? (
-                        <div className="text-sm text-muted-foreground flex items-center gap-2">
-                            <Loader2 size={14} className="animate-spin" /> Loading history…
+        <WorkbenchContext.Provider value={{ selectedTool, selectTool: setSelectedTool }}>
+            <div className="flex h-full">
+                {/* Main chat column */}
+                <div className="flex flex-col flex-1 min-w-0">
+                    <div ref={scrollerRef} className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar">
+                        <div className="max-w-5xl mx-auto space-y-4">
+                            {loadingHistory ? (
+                                <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                    <Loader2 size={14} className="animate-spin" /> Loading history…
+                                </div>
+                            ) : messages.length === 0 ? (
+                                <Suggestions onPick={(s) => setPrompt(s)} />
+                            ) : (
+                                messages.map((m) => <MessageBubble key={m.id} message={m} />)
+                            )}
                         </div>
-                    ) : messages.length === 0 ? (
-                        <Suggestions onPick={(s) => setPrompt(s)} />
-                    ) : (
-                        messages.map((m) => <MessageBubble key={m.id} message={m} />)
-                    )}
+                    </div>
+                    <Composer
+                        prompt={prompt}
+                        onChange={setPrompt}
+                        onSend={handleSend}
+                        onStop={handleStop}
+                        streaming={streaming}
+                    />
                 </div>
+
+                {/* Workbench panel */}
+                {selectedTool && (
+                    <WorkbenchPanel tool={selectedTool} onClose={() => setSelectedTool(null)} />
+                )}
             </div>
-            <Composer
-                prompt={prompt}
-                onChange={setPrompt}
-                onSend={handleSend}
-                onStop={handleStop}
-                streaming={streaming}
-            />
-        </div>
+        </WorkbenchContext.Provider>
     );
 }
 

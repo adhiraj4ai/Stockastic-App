@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronRight, Brain, CheckCircle2, XCircle, Loader2, Wrench } from 'lucide-react';
+import { useWorkbench } from './WorkbenchContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
@@ -99,6 +100,7 @@ type ToolEntry = {
     kind: 'tool';
     tool: string;
     id: string;
+    input: Record<string, unknown>;
     result?: { text: string; isError: boolean };
 };
 type TimelineEntry = ThinkingEntry | ToolEntry;
@@ -126,6 +128,7 @@ function buildTimeline(innerBlocks: ChatBlock[]): TimelineEntry[] {
                 kind: 'tool',
                 tool: tu.tool,
                 id: tu.id,
+                input: tu.input,
                 result: result ? { text: result.text, isError: result.is_error } : undefined,
             });
         }
@@ -291,6 +294,8 @@ function TimelineView({ entries }: { entries: TimelineEntry[] }) {
 }
 
 function TimelineItem({ entry }: { entry: TimelineEntry }) {
+    const { selectTool, selectedTool } = useWorkbench();
+
     if (entry.kind === 'thinking') {
         return (
             <div className="relative">
@@ -308,6 +313,8 @@ function TimelineItem({ entry }: { entry: TimelineEntry }) {
     }
 
     const status = !entry.result ? 'running' : entry.result.isError ? 'error' : 'done';
+    const isSelected = selectedTool?.tool === entry.tool && selectedTool?.input === entry.input;
+
     return (
         <div className="relative">
             <div className={cn(
@@ -316,20 +323,37 @@ function TimelineItem({ entry }: { entry: TimelineEntry }) {
                 status === 'error'   && 'bg-red-50 dark:bg-red-950 border-red-400 dark:border-red-600',
                 status === 'running' && 'bg-amber-50 dark:bg-amber-950 border-amber-400 dark:border-amber-600',
             )} />
-            <div className="flex items-center gap-1.5 mb-0.5">
-                <Wrench size={10} className="text-amber-600/70 dark:text-amber-500/60 shrink-0" />
-                <span className="text-[11px] font-medium text-foreground/80">
-                    {prettyTool(entry.tool)}
-                </span>
-                {status === 'running' && <Loader2 size={10} className="animate-spin text-amber-500" />}
-                {status === 'done'    && <CheckCircle2 size={10} className="text-emerald-500" />}
-                {status === 'error'   && <XCircle size={10} className="text-red-500" />}
-            </div>
-            {entry.result && (
-                <div className="text-[11px] text-muted-foreground/60 font-mono leading-snug line-clamp-2 pl-[14px]">
-                    {entry.result.text.slice(0, 180)}{entry.result.text.length > 180 ? '…' : ''}
+            <button
+                onClick={() => selectTool(isSelected ? null : {
+                    tool: entry.tool,
+                    input: entry.input,
+                    result: entry.result,
+                })}
+                className={cn(
+                    'w-full text-left rounded-md px-2 py-1.5 -mx-2 transition-colors group',
+                    isSelected
+                        ? 'bg-amber-100/60 dark:bg-amber-900/30 ring-1 ring-amber-300/50 dark:ring-amber-700/50'
+                        : 'hover:bg-amber-100/40 dark:hover:bg-amber-900/20',
+                )}
+            >
+                <div className="flex items-center gap-1.5 mb-0.5">
+                    <Wrench size={10} className="text-amber-600/70 dark:text-amber-500/60 shrink-0" />
+                    <span className="text-[11px] font-medium text-foreground/80">
+                        {prettyTool(entry.tool)}
+                    </span>
+                    {status === 'running' && <Loader2 size={10} className="animate-spin text-amber-500" />}
+                    {status === 'done'    && <CheckCircle2 size={10} className="text-emerald-500" />}
+                    {status === 'error'   && <XCircle size={10} className="text-red-500" />}
+                    <span className="ml-auto text-[10px] text-amber-500/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                        inspect →
+                    </span>
                 </div>
-            )}
+                {entry.result && (
+                    <div className="text-[11px] text-muted-foreground/60 font-mono leading-snug line-clamp-2 pl-[14px]">
+                        {entry.result.text.slice(0, 180)}{entry.result.text.length > 180 ? '…' : ''}
+                    </div>
+                )}
+            </button>
         </div>
     );
 }
