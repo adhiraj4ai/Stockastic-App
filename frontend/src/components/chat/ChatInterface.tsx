@@ -424,68 +424,62 @@ function ChatTimeline({
     const hasNext = start + TIMELINE_WINDOW < total;
 
     return (
-        <div className="w-5 shrink-0 flex flex-col items-center py-3 gap-1 border-r border-border/50 bg-background select-none">
-            {/* Prev */}
-            <button
-                onClick={onPrev}
-                disabled={!hasPrev}
-                className={cn(
-                    'p-0.5 rounded transition-colors',
-                    hasPrev ? 'text-muted-foreground hover:text-foreground' : 'text-muted-foreground/20 cursor-not-allowed',
-                )}
-            >
-                <ChevronUp size={11} />
-            </button>
+        // Full-height column; the 100px block is centered inside it
+        <div className="w-5 shrink-0 flex flex-col items-center justify-center border-r border-border/50 bg-background select-none">
+            <div className="h-[100px] flex flex-col items-center w-full">
+                {/* Prev */}
+                <button
+                    onClick={onPrev}
+                    disabled={!hasPrev}
+                    className={cn(
+                        'shrink-0 p-0.5 rounded transition-colors',
+                        hasPrev ? 'text-muted-foreground hover:text-foreground' : 'text-muted-foreground/20 cursor-not-allowed',
+                    )}
+                >
+                    <ChevronUp size={10} />
+                </button>
 
-            {/* Dots */}
-            <div className="relative flex-1 w-full flex flex-col items-center">
-                {/* Vertical connecting line */}
-                <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-border/50" />
-
-                <div className="relative h-full w-full flex flex-col justify-evenly items-center">
+                {/* Horizontal bars */}
+                <div className="flex-1 flex flex-col justify-evenly items-center w-full py-0.5">
                     {visible.map((msg, i) => {
                         const globalIdx = start + i;
                         const isActive = msg.id === activeId;
                         const preview = msg.text.slice(0, 80) + (msg.text.length > 80 ? '…' : '');
                         return (
-                            <div key={msg.id} className="relative group flex items-center justify-center z-10">
+                            <div key={msg.id} className="relative group flex items-center justify-center w-full">
                                 <button
                                     onClick={() => onNavigate(msg.id)}
                                     className={cn(
                                         'rounded-full transition-all duration-150',
                                         isActive
-                                            ? 'w-2.5 h-2.5 bg-amber-400 dark:bg-amber-500 ring-2 ring-amber-200 dark:ring-amber-800/60'
-                                            : 'w-1.5 h-1.5 bg-border hover:bg-amber-300 dark:hover:bg-amber-600 hover:scale-125',
+                                            ? 'w-3.5 h-[3px] bg-amber-400 dark:bg-amber-500'
+                                            : 'w-2.5 h-[2px] bg-border/70 hover:bg-amber-300 dark:hover:bg-amber-600 hover:w-3.5',
                                     )}
                                 />
                                 {/* Tooltip */}
                                 <div className="pointer-events-none absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                                     <div className="bg-popover border border-border rounded-md px-2.5 py-1.5 shadow-md w-max max-w-[220px]">
-                                        <div className="text-[10px] text-muted-foreground mb-0.5 font-medium">
-                                            Q{globalIdx + 1}
-                                        </div>
-                                        <div className="text-[11px] text-foreground leading-snug whitespace-normal">
-                                            {preview}
-                                        </div>
+                                        <div className="text-[10px] text-muted-foreground mb-0.5 font-medium">Q{globalIdx + 1}</div>
+                                        <div className="text-[11px] text-foreground leading-snug whitespace-normal">{preview}</div>
                                     </div>
                                 </div>
                             </div>
                         );
                     })}
                 </div>
-            </div>
 
-            {/* Next */}
-            <button
-                onClick={onNext}
-                disabled={!hasNext}
-                className={cn(
-                    'p-0.5 rounded transition-colors',
-                    hasNext ? 'text-muted-foreground hover:text-foreground' : 'text-muted-foreground/20 cursor-not-allowed',
-                )}
-            >
-                <ChevronDown size={11} />
-            </button>
+                {/* Next */}
+                <button
+                    onClick={onNext}
+                    disabled={!hasNext}
+                    className={cn(
+                        'shrink-0 p-0.5 rounded transition-colors',
+                        hasNext ? 'text-muted-foreground hover:text-foreground' : 'text-muted-foreground/20 cursor-not-allowed',
+                    )}
+                >
+                    <ChevronDown size={10} />
+                </button>
+            </div>
         </div>
     );
 }
