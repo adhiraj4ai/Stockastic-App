@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Send, StopCircle, Loader2 } from 'lucide-react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { Send, StopCircle, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
 import api from '@/lib/api';
 import { openChatStream } from '@/lib/chat-sse';
 import { cn } from '@/lib/utils';
@@ -16,6 +16,7 @@ interface ChatInterfaceProps {
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const TIMELINE_WINDOW = 10;
 
 export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -23,8 +24,13 @@ export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) 
     const [streaming, setStreaming] = useState(false);
     const [loadingHistory, setLoadingHistory] = useState(true);
     const [selectedTool, setSelectedTool] = useState<WorkbenchTool | null>(null);
+    const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
+    const [timelinePage, setTimelinePage] = useState(0);
     const abortRef = useRef<AbortController | null>(null);
     const scrollerRef = useRef<HTMLDivElement | null>(null);
+    const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+    const messagesRef = useRef(messages);
+    messagesRef.current = messages;
 
     // Load persisted history when the session changes.
     useEffect(() => {
@@ -54,6 +60,48 @@ export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) 
             behavior: 'smooth',
         });
     }, [messages]);
+
+    // Derived: only user messages, for the timeline
+    const userMessages = messages.filter(m => m.role === 'user');
+
+    // Track active user message on scroll
+    const handleScroll = useCallback(() => {
+        const scroller = scrollerRef.current;
+        if (!scroller) return;
+        const top = scroller.getBoundingClientRect().top;
+        let closestId: string | null = null;
+        let closestDist = Infinity;
+        for (const msg of messagesRef.current) {
+            if (msg.role !== 'user') continue;
+            const el = messageRefs.current.get(msg.id);
+            if (!el) continue;
+            const dist = Math.abs(el.getBoundingClientRect().top - top);
+            if (dist < closestDist) { closestDist = dist; closestId = msg.id; }
+        }
+        if (closestId) setActiveMessageId(closestId);
+    }, []);
+
+    useEffect(() => {
+        const scroller = scrollerRef.current;
+        if (!scroller) return;
+        scroller.addEventListener('scroll', handleScroll, { passive: true });
+        return () => scroller.removeEventListener('scroll', handleScroll);
+    }, [handleScroll, loadingHistory]);
+
+    // Auto-advance timeline to the latest page when a new question is sent
+    useEffect(() => {
+        if (userMessages.length === 0) return;
+        const lastPage = Math.floor((userMessages.length - 1) / TIMELINE_WINDOW);
+        setTimelinePage(lastPage);
+    }, [userMessages.length]);
+
+    const scrollToMessage = useCallback((id: string) => {
+        const el = messageRefs.current.get(id);
+        if (el && scrollerRef.current) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setActiveMessageId(id);
+        }
+    }, []);
 
     const handleStop = () => {
         abortRef.current?.abort();
@@ -225,6 +273,18 @@ export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) 
     return (
         <WorkbenchContext.Provider value={{ selectedTool, selectTool: setSelectedTool }}>
             <div className="flex h-full">
+                {/* Timeline strip */}
+                {!loadingHistory && userMessages.length > 0 && (
+                    <ChatTimeline
+                        messages={userMessages}
+                        activeId={activeMessageId}
+                        page={timelinePage}
+                        onNavigate={scrollToMessage}
+                        onPrev={() => setTimelinePage(p => Math.max(0, p - 1))}
+                        onNext={() => setTimelinePage(p => Math.min(Math.ceil(userMessages.length / TIMELINE_WINDOW) - 1, p + 1))}
+                    />
+                )}
+
                 {/* Main chat column */}
                 <div className="flex flex-col flex-1 min-w-0">
                     <div ref={scrollerRef} className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar">
@@ -236,7 +296,17 @@ export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) 
                             ) : messages.length === 0 ? (
                                 <Suggestions onPick={(s) => setPrompt(s)} />
                             ) : (
-                                messages.map((m) => <MessageBubble key={m.id} message={m} />)
+                                messages.map((m) => (
+                                    <div
+                                        key={m.id}
+                                        ref={(el) => {
+                                            if (el) messageRefs.current.set(m.id, el);
+                                            else messageRefs.current.delete(m.id);
+                                        }}
+                                    >
+                                        <MessageBubble message={m} />
+                                    </div>
+                                ))
                             )}
                         </div>
                     </div>
@@ -326,6 +396,96 @@ function Composer({
                     </button>
                 )}
             </div>
+        </div>
+    );
+}
+
+// ─── Chat Timeline ─────────────────────────────────────────────────────────────
+
+function ChatTimeline({
+    messages,
+    activeId,
+    page,
+    onNavigate,
+    onPrev,
+    onNext,
+}: {
+    messages: ChatMessage[];
+    activeId: string | null;
+    page: number;
+    onNavigate: (id: string) => void;
+    onPrev: () => void;
+    onNext: () => void;
+}) {
+    const total = messages.length;
+    const start = page * TIMELINE_WINDOW;
+    const visible = messages.slice(start, start + TIMELINE_WINDOW);
+    const hasPrev = page > 0;
+    const hasNext = start + TIMELINE_WINDOW < total;
+
+    return (
+        <div className="w-5 shrink-0 flex flex-col items-center py-3 gap-1 border-r border-border/50 bg-background select-none">
+            {/* Prev */}
+            <button
+                onClick={onPrev}
+                disabled={!hasPrev}
+                className={cn(
+                    'p-0.5 rounded transition-colors',
+                    hasPrev ? 'text-muted-foreground hover:text-foreground' : 'text-muted-foreground/20 cursor-not-allowed',
+                )}
+            >
+                <ChevronUp size={11} />
+            </button>
+
+            {/* Dots */}
+            <div className="relative flex-1 w-full flex flex-col items-center">
+                {/* Vertical connecting line */}
+                <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-border/50" />
+
+                <div className="relative h-full w-full flex flex-col justify-evenly items-center">
+                    {visible.map((msg, i) => {
+                        const globalIdx = start + i;
+                        const isActive = msg.id === activeId;
+                        const preview = msg.text.slice(0, 80) + (msg.text.length > 80 ? '…' : '');
+                        return (
+                            <div key={msg.id} className="relative group flex items-center justify-center z-10">
+                                <button
+                                    onClick={() => onNavigate(msg.id)}
+                                    className={cn(
+                                        'rounded-full transition-all duration-150',
+                                        isActive
+                                            ? 'w-2.5 h-2.5 bg-amber-400 dark:bg-amber-500 ring-2 ring-amber-200 dark:ring-amber-800/60'
+                                            : 'w-1.5 h-1.5 bg-border hover:bg-amber-300 dark:hover:bg-amber-600 hover:scale-125',
+                                    )}
+                                />
+                                {/* Tooltip */}
+                                <div className="pointer-events-none absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                                    <div className="bg-popover border border-border rounded-md px-2.5 py-1.5 shadow-md w-max max-w-[220px]">
+                                        <div className="text-[10px] text-muted-foreground mb-0.5 font-medium">
+                                            Q{globalIdx + 1}
+                                        </div>
+                                        <div className="text-[11px] text-foreground leading-snug whitespace-normal">
+                                            {preview}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Next */}
+            <button
+                onClick={onNext}
+                disabled={!hasNext}
+                className={cn(
+                    'p-0.5 rounded transition-colors',
+                    hasNext ? 'text-muted-foreground hover:text-foreground' : 'text-muted-foreground/20 cursor-not-allowed',
+                )}
+            >
+                <ChevronDown size={11} />
+            </button>
         </div>
     );
 }
