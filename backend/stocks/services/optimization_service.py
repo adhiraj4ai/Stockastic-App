@@ -181,6 +181,25 @@ class SafeTa:
         idx = _idx(close)
         return pd.DataFrame({'STOCHk': slowk, 'STOCHd': slowd}, index=idx)
 
+    def psar(self, high, low, *_, af0=0.02, af=0.02, max_af=0.2, **__):
+        """Parabolic SAR — pandas_ta-compatible (talib.SAR underneath).
+
+        Returns DataFrame with columns [PSARl, PSARs] matching iloc[:, 0/1].
+        PSARl holds the SAR value when it is below price (uptrend), NaN otherwise.
+        PSARs holds the SAR value when it is above price (downtrend), NaN otherwise.
+        """
+        h, l = _to_arr(high), _to_arr(low)
+        acceleration = float(af0 if af0 else af)
+        sar = talib.SAR(h, l, acceleration=acceleration, maximum=float(max_af))
+        mid = (h + l) / 2.0
+        psar_l = np.where(sar < mid, sar, np.nan)
+        psar_s = np.where(sar >= mid, sar, np.nan)
+        col = f'{acceleration:.2f}_{float(max_af):.1f}'
+        return pd.DataFrame(
+            {f'PSARl_{col}': psar_l, f'PSARs_{col}': psar_s},
+            index=_idx(high),
+        )
+
     # ------------------------------------------------------------------ #
     #  Ichimoku  (no talib equivalent — manual implementation)            #
     #  Column order matches pandas_ta: ISA, ISB, ITS, IKS, ICS           #

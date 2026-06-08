@@ -30,7 +30,8 @@ interface Strategy {
     name: string;
     description: string;
     code: string;
-    default_parameters?: Record<string, number>;
+    default_parameters?: Record<string, unknown>;
+    optimization_config?: string;
 }
 
 const SKIP_PARAMS = new Set(['self', 'data', 'position', 'equity', 'True', 'False', 'None']);
@@ -92,10 +93,27 @@ function BacktestContent() {
     // Derive default params from API or by parsing code
     const defaultParams = useMemo(() => {
         if (!strategy) return {};
+        // 1. API-provided defaults (AST-parsed class attributes)
         if (strategy.default_parameters) {
             const fromApi = filterNumericParams(strategy.default_parameters as Record<string, unknown>);
             if (Object.keys(fromApi).length > 0) return fromApi;
         }
+        // 2. optimization_config ranges → use midpoint as default
+        if (strategy.optimization_config) {
+            try {
+                const parsed: Record<string, [number, number]> = JSON.parse(strategy.optimization_config);
+                if (Object.keys(parsed).length > 0) {
+                    const midpoints: Record<string, number> = {};
+                    for (const [k, v] of Object.entries(parsed)) {
+                        if (Array.isArray(v) && v.length >= 2) {
+                            midpoints[k] = Math.round((v[0] + v[1]) / 2);
+                        }
+                    }
+                    if (Object.keys(midpoints).length > 0) return midpoints;
+                }
+            } catch { /* ignore */ }
+        }
+        // 3. Regex fallback on strategy code
         return extractParamsFromCode(strategy.code);
     }, [strategy]);
 
@@ -271,18 +289,18 @@ function BacktestContent() {
 
                     {/* ── Configuration Panel ── */}
                     <div className="lg:col-span-4 xl:col-span-3">
-                        <Card className="border-gray-200 dark:border-slate-800 shadow-md overflow-hidden sticky top-6 dark:bg-card">
-                            <CardContent className="p-6 space-y-8">
+                        <Card className="border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden sticky top-6 dark:bg-card">
+                            <CardContent className="p-6 space-y-6">
 
                                 {/* Mode Toggle */}
-                                <div className="space-y-4">
-                                    <Label className="text-sm font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wide">Backtest Mode</Label>
-                                    <div className="flex p-1.5 bg-gray-100 dark:bg-slate-800 rounded-xl gap-1 shadow-inner">
+                                <div>
+                                    <Label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-2 block uppercase tracking-wider">Backtest Mode</Label>
+                                    <div className="flex p-1.5 bg-gray-100 dark:bg-slate-950 rounded-xl gap-1 shadow-inner border border-gray-200/50 dark:border-slate-800">
                                         {(['symbol', 'sector', 'all'] as const).map(m => (
                                             <button
                                                 key={m}
                                                 onClick={() => setMode(m)}
-                                                className={`flex-1 py-2 px-3 text-xs font-bold rounded-lg transition-all capitalize ${mode === m ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-md scale-105' : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800/50'}`}
+                                                className={`flex-1 py-2.5 px-2 text-xs font-bold rounded-lg transition-all duration-200 capitalize ${mode === m ? 'bg-white dark:bg-slate-800 text-blue-700 dark:text-blue-400 shadow-sm scale-[1.02]' : 'text-gray-500 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800/50'}`}
                                             >
                                                 {m}
                                             </button>
@@ -292,31 +310,29 @@ function BacktestContent() {
 
                                 {/* Scope selector */}
                                 {mode === 'symbol' && (
-                                    <div className="space-y-3">
-                                        <Label className="text-sm font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wide">Ticker Symbol</Label>
-                                        <CompanySelect className="h-11 text-base dark:bg-card dark:border-slate-800 dark:text-slate-100" value={symbol} onChange={setSymbol} />
+                                    <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                                        <Label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-2 block uppercase tracking-wider">Symbol Target</Label>
+                                        <CompanySelect className="w-full h-10 text-xs dark:bg-slate-950 dark:border-slate-800 dark:text-slate-100" value={symbol} onChange={setSymbol} />
                                     </div>
                                 )}
                                 {mode === 'sector' && (
-                                    <div className="space-y-3">
-                                        <Label className="text-sm font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wide">Sector</Label>
+                                    <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                                        <Label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-2 block uppercase tracking-wider">Sector Target</Label>
                                         <select
                                             value={sector}
                                             onChange={e => setSector(e.target.value)}
-                                            className="w-full h-11 px-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-card dark:text-slate-100 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm"
+                                            className="w-full h-10 px-3 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:border-blue-200 dark:focus:border-blue-900/50 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all shadow-sm"
                                         >
-                                            <option value="">Select a sector...</option>
+                                            <option value="" className="dark:bg-card">Select sector...</option>
                                             {sectors.map(s => <option key={s.name} value={s.name} className="dark:bg-card">{s.name} ({s.count})</option>)}
                                         </select>
                                     </div>
                                 )}
                                 {mode === 'all' && (
-                                    <div className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-lg p-3">
-                                        <div className="flex gap-2">
-                                            <AlertTriangle size={14} className="text-blue-500 shrink-0 mt-0.5" />
-                                            <p className="text-[11px] text-blue-700 dark:text-blue-400 leading-relaxed">
-                                                Runs strategy on <strong>all active companies</strong>. This processing is resource intensive.
-                                            </p>
+                                    <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                                        <Label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-2 block uppercase tracking-wider">Target</Label>
+                                        <div className="w-full h-10 px-3 text-xs flex items-center text-gray-500 dark:text-slate-400 bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl italic">
+                                            All available symbols
                                         </div>
                                     </div>
                                 )}
@@ -334,35 +350,31 @@ function BacktestContent() {
                                 )}
 
                                 {/* ── Parameters Form ── */}
-                                <div className="space-y-3 pt-6 border-t border-slate-100 dark:border-slate-800">
-                                    <div className="flex items-center justify-between">
-                                        <Label className="text-sm font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wide">Parameters</Label>
+                                <div className="pt-6 border-t border-gray-100 dark:border-slate-800/60">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <Label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Parameters</Label>
                                         {Object.keys(defaultParams).length > 0 && (
                                             <button
                                                 onClick={() => setParameters(defaultParams)}
-                                                className="flex items-center gap-1 text-[10px] font-semibold text-gray-400 dark:text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                                                className="flex items-center gap-1 text-[9px] font-semibold text-gray-400 dark:text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors uppercase tracking-wide"
                                                 title="Reset to code defaults"
                                             >
-                                                <RotateCcw size={10} /> Reset
+                                                <RotateCcw size={9} /> Reset
                                             </button>
                                         )}
                                     </div>
 
                                     {paramEntries.length === 0 ? (
-                                        <p className="text-[11px] text-gray-400 dark:text-slate-500 italic py-2">
-                                            No parameters detected in strategy code.
+                                        <p className="text-[10px] text-gray-400 dark:text-slate-500 italic text-center py-4">
+                                            No parameters found
                                         </p>
                                     ) : (
-                                        <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                                        <div className="relative max-h-[40vh] overflow-y-auto pr-1 space-y-3">
                                             {paramEntries.map(([name, value]) => (
-                                                <div key={name} className="flex items-center gap-2">
-                                                    <label
-                                                        htmlFor={`param-${name}`}
-                                                        className="flex-1 text-xs font-mono font-semibold text-gray-600 dark:text-slate-400 truncate"
-                                                        title={name}
-                                                    >
+                                                <div key={name} className="space-y-1">
+                                                    <div className="text-xs font-mono font-semibold text-gray-600 dark:text-slate-400 truncate" title={name}>
                                                         {name}
-                                                    </label>
+                                                    </div>
                                                     <input
                                                         id={`param-${name}`}
                                                         type="number"
@@ -375,7 +387,7 @@ function BacktestContent() {
                                                                 : parseInt(raw, 10);
                                                             if (!isNaN(num)) setParam(name, num);
                                                         }}
-                                                        className="w-24 h-8 px-2 text-xs text-right font-mono rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                                        className="w-full h-9 px-3 text-xs text-center border rounded-md border-gray-200 dark:border-slate-800 focus:ring-1 focus:ring-blue-500 outline-none bg-gray-50/50 dark:bg-slate-950 dark:text-slate-100 font-medium font-mono"
                                                     />
                                                 </div>
                                             ))}
@@ -384,14 +396,14 @@ function BacktestContent() {
                                 </div>
 
                                 {/* Capital & Period */}
-                                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
-                                    <div className="space-y-3">
-                                        <Label className="text-sm font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wide">Initial Capital (NPR)</Label>
+                                <div className="pt-6 border-t border-gray-100 dark:border-slate-800/60 space-y-4">
+                                    <div>
+                                        <Label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-2 block uppercase tracking-wider">Initial Capital (NPR)</Label>
                                         <input
                                             type="number"
                                             value={initialBalance}
                                             onChange={e => setInitialBalance(Number(e.target.value))}
-                                            className="w-full h-11 px-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-card dark:text-slate-100 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm"
+                                            className="w-full h-10 px-3 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:border-blue-200 dark:focus:border-blue-900/50 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all shadow-sm"
                                             placeholder="100,000"
                                         />
                                     </div>
@@ -406,22 +418,22 @@ function BacktestContent() {
                                 </div>
 
                                 {/* Actions */}
-                                <div className="space-y-3 pt-8">
+                                <div className="pt-6 border-t border-gray-100 dark:border-slate-800/60 space-y-3">
                                     <Button
                                         onClick={running ? handleCancel : handleRun}
                                         disabled={(mode === 'symbol' && !symbol) || (mode === 'sector' && !sector)}
-                                        className={`w-full h-12 font-semibold uppercase tracking-wider text-sm shadow-lg group border-0 transition-all ${running ? 'bg-destructive text-white hover:opacity-90' : 'bg-primary text-primary-foreground hover:opacity-90 shadow-blue-300 text-white hover:shadow-xl hover:scale-105'}`}
+                                        className={`w-full h-11 text-xs font-bold uppercase tracking-wider shadow-lg active:scale-95 transition-all rounded-xl border-0 ${running ? 'bg-destructive text-white hover:opacity-90' : 'bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800 text-white shadow-blue-200 dark:shadow-blue-900/20'}`}
                                     >
                                         {running ? (
                                             <><div className="w-4 h-4 border border-white/30 border-t-white rounded-full animate-spin mr-2" /> Cancel Run</>
                                         ) : (
-                                            <><Play size={16} className="mr-2 group-hover:scale-110 transition-transform" /> Run Backtest</>
+                                            <><Play size={15} className="mr-2" /> Run Backtest</>
                                         )}
                                     </Button>
                                     <Button
                                         variant="outline"
                                         onClick={() => router.push(`/strategies/${strategyId}/optimize`)}
-                                        className="w-full h-11 text-xs uppercase font-extrabold border border-purple-200 dark:border-purple-900/50 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 dark:bg-card hover:border-purple-300 dark:hover:border-purple-800 hover:shadow-md transition-all"
+                                        className="w-full h-11 text-xs font-bold uppercase tracking-wider border border-purple-200 dark:border-purple-900/50 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 dark:bg-card hover:border-purple-300 dark:hover:border-purple-800 active:scale-95 transition-all rounded-xl"
                                     >
                                         <Zap size={14} className="mr-2" /> Find Best Parameters
                                     </Button>
