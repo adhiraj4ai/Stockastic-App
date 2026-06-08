@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
-import { Send, StopCircle, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
+import { Send, StopCircle, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { openChatStream } from '@/lib/chat-sse';
 import { cn } from '@/lib/utils';
@@ -27,7 +27,6 @@ export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) 
     const [loadingHistory, setLoadingHistory] = useState(true);
     const [selectedTool, setSelectedTool] = useState<WorkbenchTool | null>(null);
     const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
-    const [timelinePage, setTimelinePage] = useState(0);
     const [visibleFrom, setVisibleFrom] = useState(0);
     const abortRef = useRef<AbortController | null>(null);
     const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -127,12 +126,6 @@ export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) 
         return () => scroller.removeEventListener('scroll', handleScroll);
     }, [handleScroll, loadingHistory]);
 
-    // Auto-advance timeline to the latest page when a new question is sent
-    useEffect(() => {
-        if (userMessages.length === 0) return;
-        const lastPage = Math.floor((userMessages.length - 1) / TIMELINE_WINDOW);
-        setTimelinePage(lastPage);
-    }, [userMessages.length]);
 
     const scrollToMessage = useCallback((id: string) => {
         setActiveMessageId(id);
@@ -326,10 +319,7 @@ export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) 
                     <ChatTimeline
                         messages={userMessages}
                         activeId={activeMessageId}
-                        page={timelinePage}
                         onNavigate={scrollToMessage}
-                        onPrev={() => setTimelinePage(p => Math.max(0, p - 1))}
-                        onNext={() => setTimelinePage(p => Math.min(Math.ceil(userMessages.length / TIMELINE_WINDOW) - 1, p + 1))}
                     />
                 )}
 
@@ -472,43 +462,22 @@ function getDockMag(dist: number): number {
 function ChatTimeline({
     messages,
     activeId,
-    page,
     onNavigate,
-    onPrev,
-    onNext,
 }: {
     messages: ChatMessage[];
     activeId: string | null;
-    page: number;
     onNavigate: (id: string) => void;
-    onPrev: () => void;
-    onNext: () => void;
 }) {
     const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-    const total = messages.length;
-    const start = page * TIMELINE_WINDOW;
-    const visible = messages.slice(start, start + TIMELINE_WINDOW);
-    const hasPrev = page > 0;
-    const hasNext = start + TIMELINE_WINDOW < total;
+    // Always show the last TIMELINE_WINDOW messages, sliding as new ones arrive
+    const start = Math.max(0, messages.length - TIMELINE_WINDOW);
+    const visible = messages.slice(start);
 
     return (
-        // Full-height column; the 100px block is centered inside it
         <div className="w-7 shrink-0 flex flex-col items-center justify-center border-r border-border/50 bg-background select-none">
             <div className="h-[100px] flex flex-col items-center w-full">
-                {/* Prev */}
-                <button
-                    onClick={onPrev}
-                    disabled={!hasPrev}
-                    className={cn(
-                        'shrink-0 p-0.5 rounded transition-colors',
-                        hasPrev ? 'text-muted-foreground hover:text-foreground' : 'text-muted-foreground/20 cursor-not-allowed',
-                    )}
-                >
-                    <ChevronUp size={10} />
-                </button>
-
                 {/* Horizontal bars with dock magnification */}
-                <div className="flex-1 flex flex-col justify-evenly items-center w-full py-0.5">
+                <div className="flex-1 flex flex-col justify-evenly items-center w-full py-1">
                     {visible.map((msg, i) => {
                         const globalIdx = start + i;
                         const isActive = msg.id === activeId;
@@ -521,7 +490,7 @@ function ChatTimeline({
                         return (
                             <div
                                 key={msg.id}
-                                className="relative group flex items-center justify-center w-full"
+                                className="relative flex items-center justify-center w-full"
                                 onMouseEnter={() => setHoveredIdx(i)}
                                 onMouseLeave={() => setHoveredIdx(null)}
                             >
@@ -543,7 +512,6 @@ function ChatTimeline({
                                                     : 'bg-border/70',
                                     )}
                                 />
-                                {/* Tooltip — only on directly hovered bar */}
                                 {isHovered && (
                                     <div className="pointer-events-none absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50">
                                         <div className="bg-popover border border-border rounded-md px-2.5 py-1.5 shadow-md w-max max-w-[220px]">
@@ -556,18 +524,6 @@ function ChatTimeline({
                         );
                     })}
                 </div>
-
-                {/* Next */}
-                <button
-                    onClick={onNext}
-                    disabled={!hasNext}
-                    className={cn(
-                        'shrink-0 p-0.5 rounded transition-colors',
-                        hasNext ? 'text-muted-foreground hover:text-foreground' : 'text-muted-foreground/20 cursor-not-allowed',
-                    )}
-                >
-                    <ChevronDown size={10} />
-                </button>
             </div>
         </div>
     );
