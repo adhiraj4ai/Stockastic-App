@@ -668,48 +668,60 @@ function AddCellDivider({ onClick }: { onClick: () => void }) {
 }
 
 type NbRenderGroup =
-    | { kind: 'reasoning'; thinking: string; text: string }
+    | { kind: 'reasoning'; thinking: string; toolBlocks: ChatBlock[]; text: string }
     | { kind: 'block'; block: ChatBlock };
 
 function groupOutputs(outputs: ChatBlock[]): NbRenderGroup[] {
     const groups: NbRenderGroup[] = [];
-    let pendingThinking = '';
+    let inReasoning = false;
+    let thinking = '';
+    let toolBlocks: ChatBlock[] = [];
+
+    const flush = (text = '') => {
+        groups.push({ kind: 'reasoning', thinking, toolBlocks, text });
+        thinking = '';
+        toolBlocks = [];
+        inReasoning = false;
+    };
 
     for (const block of outputs) {
         if (block.kind === 'thinking') {
-            pendingThinking += block.text;
-        } else if (block.kind === 'text' && pendingThinking) {
-            groups.push({ kind: 'reasoning', thinking: pendingThinking, text: block.text });
-            pendingThinking = '';
-        } else {
-            if (pendingThinking) {
-                groups.push({ kind: 'reasoning', thinking: pendingThinking, text: '' });
-                pendingThinking = '';
+            inReasoning = true;
+            thinking += block.text;
+        } else if (inReasoning) {
+            if (block.kind === 'text') {
+                flush(block.text);
+            } else if (block.kind === 'tool_use' || block.kind === 'tool_result') {
+                toolBlocks.push(block);
+            } else if (block.kind === 'card') {
+                flush();
+                groups.push({ kind: 'block', block });
             }
+        } else {
             groups.push({ kind: 'block', block });
         }
     }
 
-    if (pendingThinking) {
-        groups.push({ kind: 'reasoning', thinking: pendingThinking, text: '' });
-    }
+    if (inReasoning) flush();
 
     return groups;
 }
 
 function CellOutput({ outputs }: { outputs: ChatBlock[] }) {
-    const resultById = new Map<string, ToolResultBlock>();
-    for (const b of outputs) {
-        if (b.kind === 'tool_result') resultById.set(b.id, b);
-    }
-
     const groups = groupOutputs(outputs);
 
     return (
         <div className="space-y-3">
             {groups.map((group, idx) => {
                 if (group.kind === 'reasoning') {
-                    return <NbReasoningCard key={idx} thinking={group.thinking} text={group.text} />;
+                    return (
+                        <NbReasoningCard
+                            key={idx}
+                            thinking={group.thinking}
+                            toolBlocks={group.toolBlocks}
+                            text={group.text}
+                        />
+                    );
                 }
                 const block = group.block;
                 switch (block.kind) {
@@ -731,19 +743,6 @@ function CellOutput({ outputs }: { outputs: ChatBlock[] }) {
                             </div>
                         );
 
-                    case 'tool_use': {
-                        const tu = block as ToolUseBlock;
-                        const result = resultById.get(tu.id);
-                        return (
-                            <ToolEventRow
-                                key={idx}
-                                tool={tu.tool}
-                                status={result ? (result.is_error ? 'error' : 'done') : 'running'}
-                                text={result?.text}
-                            />
-                        );
-                    }
-
                     case 'card':
                         return (
                             <div key={idx} className="my-1">
@@ -761,50 +760,74 @@ function CellOutput({ outputs }: { outputs: ChatBlock[] }) {
     );
 }
 
-function NbReasoningCard({ thinking, text }: { thinking: string; text: string }) {
+function NbReasoningCard({ thinking, toolBlocks, text }: { thinking: string; toolBlocks: ChatBlock[]; text: string }) {
     const hasOutput = !!text.trim();
     const [open, setOpen] = useState(!hasOutput);
     const prevHasOutput = useRef(hasOutput);
 
     useEffect(() => {
-        if (!prevHasOutput.current && hasOutput) {
-            setOpen(false);
-        }
+        if (!prevHasOutput.current && hasOutput) setOpen(false);
         prevHasOutput.current = hasOutput;
     }, [hasOutput]);
 
-    if (!thinking.trim() && !text.trim()) return null;
+    const resultById = new Map<string, ToolResultBlock>();
+    for (const b of toolBlocks) {
+        if (b.kind === 'tool_result') resultById.set(b.id, b);
+    }
+
+    const toolUseBlocks = toolBlocks.filter((b): b is ToolUseBlock => b.kind === 'tool_use');
+    const hasInner = thinking.trim() || toolUseBlocks.length > 0;
+
+    if (!hasInner && !hasOutput) return null;
 
     return (
         <div className="rounded-lg border border-amber-200/60 dark:border-amber-800/40 overflow-hidden">
-            {/* Reasoning header */}
-            <button
-                onClick={() => setOpen(v => !v)}
-                className="w-full flex items-center gap-2 px-3 py-2 bg-amber-50/80 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 text-[12px] font-medium hover:bg-amber-100/70 dark:hover:bg-amber-900/30 transition-colors"
-            >
-                <ChevronRight
-                    size={11}
-                    className={cn('transition-transform shrink-0', open && 'rotate-90')}
-                />
-                <span>Reasoning</span>
-                <span className="ml-auto text-amber-500/60 dark:text-amber-500/50 text-[11px] font-normal">
-                    {open ? 'collapse' : 'expand'}
-                </span>
-            </button>
+            {/* Collapsible reasoning header */}
+            {hasInner && (
+                <>
+                    <button
+                        onClick={() => setOpen(v => !v)}
+                        className="w-full flex items-center gap-2 px-3 py-2 bg-amber-50/80 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 text-[12px] font-medium hover:bg-amber-100/70 dark:hover:bg-amber-900/30 transition-colors"
+                    >
+                        <ChevronRight
+                            size={11}
+                            className={cn('transition-transform shrink-0', open && 'rotate-90')}
+                        />
+                        <span>Reasoning</span>
+                        <span className="ml-auto text-amber-500/60 dark:text-amber-500/50 text-[11px] font-normal">
+                            {open ? 'collapse' : 'expand'}
+                        </span>
+                    </button>
 
-            {/* Reasoning content */}
-            {open && (
-                <div className="px-3 py-2.5 bg-amber-50/40 dark:bg-amber-950/10 border-t border-amber-200/40 dark:border-amber-800/30 text-[12px] text-amber-900/75 dark:text-amber-200/60 leading-relaxed">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
-                        {thinking}
-                    </ReactMarkdown>
-                </div>
+                    {open && (
+                        <div className="px-3 py-2.5 bg-amber-50/40 dark:bg-amber-950/10 border-t border-amber-200/40 dark:border-amber-800/30 space-y-2">
+                            {thinking.trim() && (
+                                <div className="text-[12px] text-amber-900/75 dark:text-amber-200/60 leading-relaxed">
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+                                        {thinking}
+                                    </ReactMarkdown>
+                                </div>
+                            )}
+                            {toolUseBlocks.map((tu, i) => {
+                                const result = resultById.get(tu.id);
+                                return (
+                                    <ToolEventRow
+                                        key={i}
+                                        tool={tu.tool}
+                                        status={result ? (result.is_error ? 'error' : 'done') : 'running'}
+                                        text={result?.text}
+                                    />
+                                );
+                            })}
+                        </div>
+                    )}
+                </>
             )}
 
             {/* Output body */}
-            {text.trim() && (
+            {hasOutput && (
                 <>
-                    <div className="h-px bg-amber-200/50 dark:bg-amber-800/30" />
+                    {hasInner && <div className="h-px bg-amber-200/50 dark:bg-amber-800/30" />}
                     <div className="px-3 py-2.5 bg-card text-sm text-foreground leading-relaxed">
                         <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
                             {text}
