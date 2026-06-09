@@ -2,7 +2,6 @@ from django.db.models import Max
 from ..models.portfolio import WatchlistItem
 from ..models.market import DailyStockPrice, Company, DailyCumulativeAccumulation
 from ..models.fundamentals import StockFundamental, Dividend
-from ..models.strategy import StrategySignal
 from .portfolio_service import PortfolioService
 from .fundamental_service import FundamentalService
 import pandas as pd

@@ -12,7 +12,7 @@ import numpy as np
 
 from ..models import (
     PortfolioAccount, PortfolioItem, PortfolioTransaction, PortfolioSnapshot,
-    DailyStockPrice, Company, StrategySignal, FinancialReport, TransactionType, PortfolioTarget,
+    DailyStockPrice, Company, FinancialReport, TransactionType, PortfolioTarget,
     TradePlan, TradePlanLeg,
 )
 from ..serializers import (

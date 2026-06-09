@@ -3,7 +3,7 @@ from django.db.models import Sum, Max
 from ..models.portfolio import PortfolioItem, PortfolioTransaction, TransactionType, PortfolioAccount, AccountType
 from ..models.market import DailyStockPrice, Company
 from ..models.fundamentals import StockFundamental
-from ..models.strategy import StrategySignal
+from ..models.signal import SignalEpisode
 from .fundamental_service import FundamentalService
 from ..utils import (
     calculate_broker_commission, calculate_sebon_fee, 
@@ -305,34 +305,50 @@ class PortfolioService:
         """Helper to get latest strategy signals for tickers."""
         if not tickers:
             return {}
-            
-        latest_dates = StrategySignal.objects.filter(
+
+        # Find the most recent start_date per symbol across all SignalEpisodes.
+        latest_dates = SignalEpisode.objects.filter(
             symbol__in=tickers
-        ).values('symbol').annotate(max_date=Max('date'))
-        
+        ).values('symbol').annotate(max_date=Max('start_date'))
+
         latest_date_map = {item['symbol']: item['max_date'] for item in latest_dates}
         signals_map = {}
 
         for ticker, latest_date in latest_date_map.items():
             if not latest_date:
                 continue
-                
-            signals = StrategySignal.objects.filter(
+
+            # Fetch all episodes that started on the latest date for this symbol.
+            # Episodes are only BUY/SELL (no HOLD/NEUTRAL stored) — no direction filter needed.
+            episodes = SignalEpisode.objects.filter(
                 symbol=ticker,
-                date=latest_date
+                start_date=latest_date
             ).select_related('strategy')
-            
-            signal_list = [{'signal': s.signal, 'strategy_name': s.strategy.name, 'strategy_description': s.strategy.description} for s in signals]
-            
+
+            signal_list = [
+                {
+                    'signal': ep.direction,
+                    # strategy is nullable on SignalEpisode — guard for None
+                    'strategy_name': ep.strategy.name if ep.strategy else ep.source,
+                    'strategy_description': ep.strategy.description if ep.strategy else '',
+                }
+                for ep in episodes
+            ]
+
             buy_count = sum(1 for s in signal_list if 'BUY' in s['signal'])
             sell_count = sum(1 for s in signal_list if 'SELL' in s['signal'])
-            
+
+            # NOTE: HOLD/NEUTRAL episodes are never stored in SignalEpisode, so the
+            # former "elif any('HOLD' ...)" branch has been dropped — summary falls
+            # through to NEUTRAL when counts are both 0.
             summary = 'NEUTRAL'
-            if buy_count > sell_count: summary = 'BUY'
-            elif sell_count > buy_count: summary = 'SELL'
-            elif buy_count > 0 and buy_count == sell_count: summary = 'MIXED'
-            elif any('HOLD' in s['signal'] for s in signal_list): summary = 'HOLD'
-                
+            if buy_count > sell_count:
+                summary = 'BUY'
+            elif sell_count > buy_count:
+                summary = 'SELL'
+            elif buy_count > 0 and buy_count == sell_count:
+                summary = 'MIXED'
+
             signals_map[ticker] = {'latest_date': latest_date, 'summary': summary, 'details': signal_list}
-            
+
         return signals_map

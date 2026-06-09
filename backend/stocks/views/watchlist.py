@@ -3,7 +3,7 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.db.models import Q
-from ..models import WatchlistItem, Company, DailyStockPrice, StrategySignal
+from ..models import WatchlistItem, Company, DailyStockPrice
 from ..serializers import WatchlistItemSerializer
 import pandas as pd
 
