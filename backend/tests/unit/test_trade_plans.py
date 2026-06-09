@@ -102,3 +102,111 @@ class TradePlanSerializerTests(TestCase):
         assert out['total_legs'] == 2
         assert out['executed_legs'] == 0
         assert out['per_leg_risk_pct'] == 1.0  # 2.00 / 2
+
+
+from rest_framework.test import APIClient
+from django.urls import reverse
+from stocks.models.portfolio import PortfolioTransaction
+
+
+class TradePlanViewSetTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user('viewuser', password='pass')
+        self.client.force_authenticate(user=self.user)
+        self.account = PortfolioAccount.objects.create(
+            user=self.user, name='Paper', account_type=AccountType.PAPER,
+            balance=Decimal('2000000'),
+        )
+        self.plan = TradePlan.objects.create(
+            user=self.user, account=self.account, ticker='NABIL',
+            risk_budget_pct=Decimal('2.00'), status=TradePlan.PlanStatus.OPEN,
+        )
+        self.leg1 = TradePlanLeg.objects.create(
+            plan=self.plan, leg_number=1,
+            price_target=Decimal('1200.00'), allocation_pct=Decimal('60.00'),
+            stop_loss_price=Decimal('1140.00'),
+        )
+        self.leg2 = TradePlanLeg.objects.create(
+            plan=self.plan, leg_number=2,
+            price_target=Decimal('1150.00'), allocation_pct=Decimal('40.00'),
+            stop_loss_price=Decimal('1095.00'),
+        )
+
+    def test_list_returns_user_plans(self):
+        res = self.client.get('/api/stocks/trade-plans/')
+        assert res.status_code == 200
+        assert len(res.data) == 1
+
+    def test_list_filter_by_status(self):
+        self.plan.status = TradePlan.PlanStatus.CLOSED
+        self.plan.save()
+        res = self.client.get('/api/stocks/trade-plans/?status=OPEN')
+        assert res.status_code == 200
+        assert len(res.data) == 0
+
+    def test_delete_cancels_plan_not_hard_delete(self):
+        res = self.client.delete(f'/api/stocks/trade-plans/{self.plan.id}/')
+        assert res.status_code == 204
+        self.plan.refresh_from_db()
+        assert self.plan.status == TradePlan.PlanStatus.CANCELLED
+
+    def test_execute_leg_creates_transaction_and_updates_leg(self):
+        res = self.client.post(
+            f'/api/stocks/trade-plans/{self.plan.id}/execute_leg/',
+            {'leg_id': self.leg1.id, 'rate': '1200.00', 'quantity': 50},
+            format='json',
+        )
+        assert res.status_code == 200
+        self.leg1.refresh_from_db()
+        assert self.leg1.status == TradePlanLeg.LegStatus.EXECUTED
+        assert self.leg1.transaction is not None
+
+    def test_execute_leg_auto_closes_plan_when_all_legs_resolved(self):
+        self.client.post(
+            f'/api/stocks/trade-plans/{self.plan.id}/execute_leg/',
+            {'leg_id': self.leg1.id, 'rate': '1200.00', 'quantity': 50},
+            format='json',
+        )
+        self.client.post(
+            f'/api/stocks/trade-plans/{self.plan.id}/skip_leg/',
+            {'leg_id': self.leg2.id},
+            format='json',
+        )
+        self.plan.refresh_from_db()
+        assert self.plan.status == TradePlan.PlanStatus.CLOSED
+
+    def test_execute_leg_on_closed_plan_returns_400(self):
+        self.plan.status = TradePlan.PlanStatus.CLOSED
+        self.plan.save()
+        res = self.client.post(
+            f'/api/stocks/trade-plans/{self.plan.id}/execute_leg/',
+            {'leg_id': self.leg1.id, 'rate': '1200.00', 'quantity': 50},
+            format='json',
+        )
+        assert res.status_code == 400
+
+    def test_execute_leg_insufficient_balance_returns_400(self):
+        self.account.balance = Decimal('100.00')
+        self.account.save()
+        res = self.client.post(
+            f'/api/stocks/trade-plans/{self.plan.id}/execute_leg/',
+            {'leg_id': self.leg1.id, 'rate': '1200.00', 'quantity': 50},
+            format='json',
+        )
+        assert res.status_code == 400
+
+    def test_skip_leg_sets_skipped_status(self):
+        res = self.client.post(
+            f'/api/stocks/trade-plans/{self.plan.id}/skip_leg/',
+            {'leg_id': self.leg1.id},
+            format='json',
+        )
+        assert res.status_code == 200
+        self.leg1.refresh_from_db()
+        assert self.leg1.status == TradePlanLeg.LegStatus.SKIPPED
+
+    def test_unauthenticated_request_returns_401(self):
+        unauth_client = APIClient()
+        res = unauth_client.get('/api/stocks/trade-plans/')
+        assert res.status_code == 401

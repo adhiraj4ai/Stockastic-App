@@ -11,6 +11,7 @@ router.register(r'accounts', portfolio.PortfolioAccountViewSet, basename='portfo
 router.register(r'transactions', portfolio.PortfolioTransactionViewSet, basename='portfolio-transactions')
 router.register(r'portfolio-performance', portfolio.PortfolioPerformanceView, basename='portfolio-performance')
 router.register(r'portfolio-targets', portfolio.PortfolioTargetViewSet, basename='portfolio-targets')
+router.register(r'trade-plans', portfolio.TradePlanViewSet, basename='trade-plans')
 router.register(r'strategies', strategy.StrategyViewSet, basename='strategies')
 router.register(r'portfolio/dividends', dividends.DividendView, basename='portfolio-dividends')
 router.register(r'portfolio/risk-radar', risk.RiskRadarView, basename='portfolio-risk-radar')

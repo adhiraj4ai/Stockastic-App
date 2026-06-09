@@ -11,10 +11,12 @@ import numpy as np
 
 from ..models import (
     PortfolioAccount, PortfolioItem, PortfolioTransaction, PortfolioSnapshot,
-    DailyStockPrice, Company, StrategySignal, FinancialReport, TransactionType, PortfolioTarget
+    DailyStockPrice, Company, StrategySignal, FinancialReport, TransactionType, PortfolioTarget,
+    TradePlan, TradePlanLeg,
 )
 from ..serializers import (
-    PortfolioAccountSerializer, PortfolioItemSerializer, PortfolioTransactionSerializer, PortfolioTargetSerializer
+    PortfolioAccountSerializer, PortfolioItemSerializer, PortfolioTransactionSerializer,
+    PortfolioTargetSerializer, TradePlanSerializer,
 )
 from ..utils import (
     calculate_broker_commission, calculate_sebon_fee, 
@@ -1028,3 +1030,133 @@ class PortfolioPerformanceView(viewsets.ViewSet):
             "period": period,
             "has_benchmark": has_benchmark
         })
+
+
+def _check_and_close_plan(plan):
+    """Auto-close the plan if all legs are EXECUTED or SKIPPED."""
+    if plan.legs.filter(status=TradePlanLeg.LegStatus.PENDING).count() == 0:
+        plan.status = TradePlan.PlanStatus.CLOSED
+        plan.save()
+
+
+class TradePlanViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = TradePlanSerializer
+    http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']
+
+    def get_queryset(self):
+        qs = TradePlan.objects.filter(user=self.request.user).prefetch_related('legs')
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            qs = qs.filter(status=status_param)
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    def perform_destroy(self, instance):
+        instance.status = TradePlan.PlanStatus.CANCELLED
+        instance.save()
+
+    @action(detail=True, methods=['post'])
+    def execute_leg(self, request, pk=None):
+        plan = self.get_object()
+        if plan.status != TradePlan.PlanStatus.OPEN:
+            return Response(
+                {'error': 'Can only execute legs on an OPEN plan.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        leg_id = request.data.get('leg_id')
+        rate = request.data.get('rate')
+        quantity = request.data.get('quantity')
+
+        if not all([leg_id, rate, quantity]):
+            return Response(
+                {'error': 'leg_id, rate, and quantity are required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            leg = plan.legs.get(id=leg_id)
+        except TradePlanLeg.DoesNotExist:
+            return Response({'error': 'Leg not found on this plan.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if leg.status != TradePlanLeg.LegStatus.PENDING:
+            return Response(
+                {'error': f'Leg is already {leg.status}.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            metrics = PortfolioService.process_transaction(
+                user=request.user,
+                ticker=plan.ticker,
+                txn_type=TransactionType.BUY,
+                quantity=int(quantity),
+                rate=Decimal(str(rate)),
+                account=plan.account,
+            )
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        txn = PortfolioTransaction.objects.create(
+            user=request.user,
+            account=plan.account,
+            ticker=plan.ticker,
+            transaction_type=TransactionType.BUY,
+            quantity=int(quantity),
+            rate=Decimal(str(rate)),
+            transaction_date=timezone.now(),
+            amount=metrics['amount'],
+            commission=metrics['commission'],
+            sebon_fee=metrics['sebon_fee'],
+            dp_charge=metrics['dp_charge'],
+            cgt=metrics['cgt'],
+            receivable_amount=metrics['receivable_amount'],
+        )
+
+        leg.transaction = txn
+        leg.status = TradePlanLeg.LegStatus.EXECUTED
+        leg.save()
+
+        _check_and_close_plan(plan)
+
+        rate_deviation = abs(float(rate) - float(leg.price_target)) / float(leg.price_target)
+        plan.refresh_from_db()
+        response_data = self.get_serializer(plan).data
+        if rate_deviation > 0.10:
+            response_data['rate_deviation_warning'] = True
+        return Response(response_data)
+
+    @action(detail=True, methods=['post'])
+    def skip_leg(self, request, pk=None):
+        plan = self.get_object()
+        if plan.status != TradePlan.PlanStatus.OPEN:
+            return Response(
+                {'error': 'Can only skip legs on an OPEN plan.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        leg_id = request.data.get('leg_id')
+        if not leg_id:
+            return Response({'error': 'leg_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            leg = plan.legs.get(id=leg_id)
+        except TradePlanLeg.DoesNotExist:
+            return Response({'error': 'Leg not found on this plan.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if leg.status != TradePlanLeg.LegStatus.PENDING:
+            return Response(
+                {'error': f'Leg is already {leg.status}.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        leg.status = TradePlanLeg.LegStatus.SKIPPED
+        leg.save()
+
+        _check_and_close_plan(plan)
+
+        plan.refresh_from_db()
+        return Response(self.get_serializer(plan).data)
