@@ -74,8 +74,8 @@ function ActionBlock({ kind, comps, node, onChange, onRemove, first }: {
                         {selected && selected.params.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 mt-2">
                                 {selected.params.map((pr) => (
-                                    <ParamPill key={pr.name} param={pr} value={node.params[pr.name]}
-                                        onChange={(v) => onChange({ type: node.type, params: { ...node.params, [pr.name]: v } })} />
+                                    <ParamPill key={pr.name} param={pr} value={node.params?.[pr.name] ?? pr.default}
+                                        onChange={(v) => onChange({ type: node.type, params: { ...(node.params || {}), [pr.name]: v } })} />
                                 ))}
                             </div>
                         )}
@@ -102,9 +102,18 @@ export default function StrategyBuilderPage() {
     useEffect(() => {
         Promise.all([api.get('/api/stocks/strategies/components/'), api.get(`/api/stocks/strategies/${id}/`)])
             .then(([reg, strat]) => {
-                setRegistry(reg.data); setStrategy(strat.data);
+                const registry: Registry = reg.data;
+                setRegistry(registry); setStrategy(strat.data);
+                // Fill default params for nodes that omit them (auto-converted specs are minimal).
+                const all: Comp[] = [...registry.alpha, ...registry.regime, ...registry.stop, ...registry.exit];
+                const norm = (n: any): Node | null => {
+                    if (!n) return null;
+                    const c = all.find((x) => x.type === n.type);
+                    return { type: n.type, params: { ...defaultParams(c), ...(n.params || {}) } };
+                };
+                const arr = (v: any): Node[] => (Array.isArray(v) ? v : v ? [v] : []).map(norm).filter(Boolean) as Node[];
                 const sp = strat.data.spec;
-                if (sp) setSpec({ version: 1, alpha: sp.alpha ?? null, regime: Array.isArray(sp.regime) ? sp.regime : sp.regime ? [sp.regime] : [], stop: sp.stop ?? null, exit: Array.isArray(sp.exit) ? sp.exit : sp.exit ? [sp.exit] : [], rr: sp.rr ?? null, name: sp.name });
+                if (sp) setSpec({ version: 1, alpha: norm(sp.alpha), regime: arr(sp.regime), stop: norm(sp.stop), exit: arr(sp.exit), rr: sp.rr ?? null, name: sp.name });
                 else setSpec((s) => ({ ...s, name: strat.data.name }));
             }).catch(() => toast.error('Failed to load builder'));
     }, [id]);
