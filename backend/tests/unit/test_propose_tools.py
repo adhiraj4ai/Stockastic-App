@@ -20,7 +20,7 @@ def _call(tool, args, user):
     _user_context.reset_cards()
     # An SDK @tool object is an SdkMcpTool; .handler is the underlying async fn
     # (confirmed: dir(get_holdings) -> name, handler, input_schema, description).
-    return asyncio.get_event_loop().run_until_complete(tool.handler(args))
+    return asyncio.run(tool.handler(args))
 
 
 @pytest.mark.django_db(transaction=True)

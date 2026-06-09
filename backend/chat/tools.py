@@ -26,7 +26,6 @@ from stocks.models.market import (
     DailyMarketSummary,
     DailyStockPrice,
 )
-from django.utils import timezone
 from stocks.models.portfolio import (
     PortfolioAccount,
     PortfolioActionDraft,
@@ -2304,8 +2303,9 @@ async def propose_trade(args: dict) -> dict:
             user=user, account=account, kind=PortfolioActionDraft.Kind.TRADE,
             title=title, payload=payload, preview=card_preview,
         )
+        money_label = "Total cost" if action == "BUY" else "Net proceeds"
         warn = f" ⚠️ {'; '.join(preview['warnings'])}" if preview["warnings"] else ""
-        prose = (f"Drafted: {title}. Net Rs {preview['net']:,.0f} "
+        prose = (f"Drafted: {title}. {money_label} Rs {preview['net']:,.0f} "
                  f"(fees Rs {preview['commission'] + preview['sebon_fee'] + preview['dp_charge']:,.0f}, "
                  f"CGT Rs {preview['cgt']:,.0f}). Awaiting your confirmation.{warn}")
         return _result(prose, card={
