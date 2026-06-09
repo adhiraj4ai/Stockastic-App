@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Table2, LayoutGrid, Columns2, Search, Play, Activity, Settings2, Plus, ArrowUpDown,
+import { Table2, LayoutGrid, Columns2, Search, Play, Activity, Settings2, Plus, ArrowUpDown, Radar,
     Lightbulb, TrendingUp, Zap, Target, Shield, BarChart3, PieChart, Flame, Rocket, Cpu, Layers } from 'lucide-react';
 
 const ICONS: Record<string, any> = { Lightbulb, TrendingUp, Zap, Target, Activity, Shield, BarChart3, PieChart, Flame, Rocket, Cpu, Layers };
@@ -110,6 +110,8 @@ export function StrategyLibrary({ strategies, onCreate }: { strategies: Strategy
                             className={`p-1.5 rounded-md ${view === v ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-gray-500'}`}><Icon size={16} /></button>
                     ))}
                 </div>
+                <button onClick={() => router.push('/strategies/scan')} title="Find the best strategy for a symbol"
+                    className="px-3 py-1.5 text-sm font-semibold rounded-lg border border-gray-200 dark:border-slate-700 inline-flex items-center gap-1.5 hover:border-blue-300 hover:text-blue-600"><Radar size={15} /> Scan</button>
                 {onCreate && <button onClick={onCreate} className="px-3 py-1.5 text-sm font-semibold rounded-lg bg-blue-600 text-white inline-flex items-center gap-1.5"><Plus size={15} /> New</button>}
             </div>
 
