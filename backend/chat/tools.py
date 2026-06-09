@@ -148,6 +148,28 @@ def _rank_strategy_signals(strat_signals: list) -> tuple[list[dict], str | None]
     return enriched, best
 
 
+def score_candidate(*, expected_return_pct, win_rate, concentration_pct, health_score):
+    """Manager Scorecard: blend return, win rate, and risk into a 0–100 score.
+
+    - return component: expected_return_pct, clamped to [-20, 40] → [0, 1]
+    - win-rate component: win_rate (0–100) → [0, 1]
+    - risk penalty: concentration above 25% and health below 40 subtract.
+
+    Weights: 45% return, 40% win rate, 15% health; minus a concentration penalty.
+    """
+    ret = max(-20.0, min(40.0, float(expected_return_pct)))
+    ret_norm = (ret + 20.0) / 60.0                      # [0, 1]
+    wr_norm = max(0.0, min(100.0, float(win_rate))) / 100.0
+    health_norm = max(0.0, min(100.0, float(health_score))) / 100.0
+
+    score = (0.45 * ret_norm + 0.40 * wr_norm + 0.15 * health_norm) * 100.0
+
+    conc = max(0.0, float(concentration_pct))
+    if conc > 25.0:
+        score -= min(30.0, (conc - 25.0))               # up to -30 for heavy concentration
+    return max(0.0, min(100.0, score))
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Market Analyst tools
 # ─────────────────────────────────────────────────────────────────────────────
