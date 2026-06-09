@@ -1737,6 +1737,39 @@ class SmaCross(Strategy):
             self.position.close()
 """
 
+# -----------------------------------------------------------------------------
+# Composition ports: strategies re-expressed via the composable strategy framework
+# (stocks.services.strategy_framework). Each matched or beat its hand-written version
+# on the 24-symbol basket while collapsing ~40 lines to ~3. Defined here (overriding
+# the constants above) so seeding persists the ported form.
+# -----------------------------------------------------------------------------
+CODE_TURTLE = """
+from stocks.services.strategy_framework import build_strategy, alphas, regimes, stops
+Strategy = build_strategy(alpha=alphas.DonchianBreakout(entry_window=20, exit_window=10),
+                          regime=regimes.AboveEMA(200), stop=stops.AtrTrail(multiplier=3.0),
+                          name="TurtleTrading")
+"""
+
+CODE_ICHIMOKU = """
+from stocks.services.strategy_framework import build_strategy, alphas, regimes, stops
+Strategy = build_strategy(alpha=alphas.IchimokuCloud(), regime=regimes.AboveEMA(200),
+                          stop=stops.AtrTrail(multiplier=3.0), name="IchimokuCloudTrend")
+"""
+
+CODE_MACD_SAR = """
+from stocks.services.strategy_framework import build_strategy, alphas, regimes, stops, exits
+Strategy = build_strategy(alpha=alphas.MacdCross(), regime=regimes.AboveEMA(200),
+                          stop=stops.AtrTrail(multiplier=3.0), exit=exits.TrendBreak(200),
+                          name="MacdTrend")
+"""
+
+CODE_ZSCORE = """
+from stocks.services.strategy_framework import build_strategy, alphas, regimes, stops
+Strategy = build_strategy(alpha=alphas.ZScoreReversion(window=20, z_entry=-2.0, z_exit=1.0),
+                          regime=regimes.AboveEMA(200), stop=stops.FixedAtr(multiplier=6.0),
+                          name="ZScoreReversion")
+"""
+
 strategies = [
     {
         "name": "SMA Crossover",

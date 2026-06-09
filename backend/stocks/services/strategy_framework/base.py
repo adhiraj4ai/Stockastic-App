@@ -119,7 +119,9 @@ def build_strategy(alpha, regime=None, stop=None, exit=None, name="ComposedStrat
             if not self.position:
                 if _alpha.entry(self) and (_regime is None or _regime.ok(self)):
                     sl = _stop.initial(self, price) if _stop is not None else None
-                    if sl is not None and sl < price:
+                    # A wide ATR stop can fall below zero on low-priced / high-vol names;
+                    # only attach the stop when it's a valid (0, price) level.
+                    if sl is not None and 0 < sl < price:
                         self.buy(sl=sl)
                     else:
                         self.buy()

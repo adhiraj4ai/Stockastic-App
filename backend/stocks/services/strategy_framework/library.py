@@ -13,7 +13,9 @@ from .base import Alpha, Regime, Stop, ExitRule, ta
 __all__ = [
     # alphas
     "SupertrendFlip", "SmaCross", "RsiOversold", "DonchianBreakout", "MacdCross",
-    "AccumulationAboveMA",
+    "AccumulationAboveMA", "AccumulationMaCross", "StochRsiCross", "MfiOversold",
+    "VwapReclaim", "VolumeBreakout", "ParabolicSarFlip", "IchimokuCloud",
+    "KeltnerReclaim", "AdxDi", "ZScoreReversion",
     # regimes
     "AboveEMA", "AdxAbove",
     # stops
@@ -162,6 +164,206 @@ class AccumulationAboveMA(Alpha):
 
     def exit(self, strat):
         return self._get(strat, "line")[-1] < self._get(strat, "ma")[-1]
+
+
+class AccumulationMaCross(Alpha):
+    """Trade the trend of OWNERSHIP: fast/slow MA crossover of top brokers' flow."""
+
+    def __init__(self, symbol, top_n=5, fast=10, slow=50):
+        self.symbol, self.top_n, self.fast, self.slow = symbol, top_n, fast, slow
+
+    def register(self, strat):
+        from stocks.models import DailyCumulativeAccumulation
+        dates = strat.data.index
+        qs = DailyCumulativeAccumulation.objects.filter(symbol=self.symbol).values(
+            'transaction_date', 'entity_id', 'cumulative_net')
+        if not qs:
+            self._put(strat, fast=strat.I(lambda: np.zeros(len(dates))),
+                      slow=strat.I(lambda: np.zeros(len(dates))))
+            return
+        df = pd.DataFrame(list(qs))
+        df['transaction_date'] = pd.to_datetime(df['transaction_date'])
+        pivot = df.pivot_table(index='transaction_date', columns='entity_id',
+                               values='cumulative_net', aggfunc='last').ffill().fillna(0)
+        pivot = pivot.reindex(dates).ffill().fillna(0)
+        top = pivot.iloc[-1].sort_values(ascending=False).head(self.top_n).index
+        flow = pivot[top].sum(axis=1).astype(float)
+        self._put(strat,
+                  fast=strat.I(lambda: flow.rolling(self.fast).mean().values),
+                  slow=strat.I(lambda: flow.rolling(self.slow).mean().values))
+
+    def entry(self, strat):
+        f, s = self._get(strat, "fast"), self._get(strat, "slow")
+        return f[-2] <= s[-2] and f[-1] > s[-1]
+
+    def exit(self, strat):
+        f, s = self._get(strat, "fast"), self._get(strat, "slow")
+        return f[-1] < s[-1]
+
+
+class StochRsiCross(Alpha):
+    """StochRSI K-over-D cross from oversold; exit on bearish cross from overbought."""
+
+    def __init__(self, oversold=20, overbought=80):
+        self.oversold, self.overbought = oversold, overbought
+
+    def register(self, strat):
+        c = _close(strat)
+        sr = ta.stochrsi(c)
+        self._put(strat, k=strat.I(lambda: sr.iloc[:, 0].values),
+                  d=strat.I(lambda: sr.iloc[:, 1].values))
+
+    def entry(self, strat):
+        k, d = self._get(strat, "k"), self._get(strat, "d")
+        return k[-2] < d[-2] and k[-1] > d[-1] and k[-1] < self.oversold
+
+    def exit(self, strat):
+        k, d = self._get(strat, "k"), self._get(strat, "d")
+        return k[-2] > d[-2] and k[-1] < d[-1] and k[-1] > self.overbought
+
+
+class MfiOversold(Alpha):
+    def __init__(self, period=14, oversold=20, overbought=80):
+        self.period, self.oversold, self.overbought = period, oversold, overbought
+
+    def register(self, strat):
+        h, l, c = _hlc(strat)
+        v = pd.Series(strat.data.Volume)
+        self._put(strat, mfi=strat.I(lambda: ta.mfi(h, l, c, v, length=self.period).values))
+
+    def entry(self, strat):
+        return self._get(strat, "mfi")[-1] < self.oversold
+
+    def exit(self, strat):
+        return self._get(strat, "mfi")[-1] > self.overbought
+
+
+class VwapReclaim(Alpha):
+    """Close reclaims the rolling VWAP from below."""
+
+    def register(self, strat):
+        idx = strat.data.index
+        self._put(strat, vwap=strat.I(lambda: ta.vwap(
+            pd.Series(strat.data.High, index=idx), pd.Series(strat.data.Low, index=idx),
+            pd.Series(strat.data.Close, index=idx), pd.Series(strat.data.Volume, index=idx)).values))
+
+    def entry(self, strat):
+        w = self._get(strat, "vwap")
+        return strat.data.Close[-2] < w[-2] and strat.data.Close[-1] > w[-1]
+
+
+class VolumeBreakout(Alpha):
+    """N-day-high breakout confirmed by a volume spike."""
+
+    def __init__(self, lookback=20, vol_mult=2.0):
+        self.lookback, self.vol_mult = lookback, vol_mult
+
+    def register(self, strat):
+        h = pd.Series(strat.data.High)
+        v = pd.Series(strat.data.Volume)
+        self._put(strat,
+                  hi=strat.I(lambda: h.rolling(self.lookback).max().values),
+                  vavg=strat.I(lambda: v.rolling(self.lookback).mean().values))
+
+    def entry(self, strat):
+        return (strat.data.Close[-1] >= self._get(strat, "hi")[-2]
+                and strat.data.Volume[-1] > self._get(strat, "vavg")[-1] * self.vol_mult)
+
+
+class ParabolicSarFlip(Alpha):
+    """Close crosses above Parabolic SAR; exit on cross below (SAR is the trail)."""
+
+    def register(self, strat):
+        h, l, c = _hlc(strat)
+        psar = ta.psar(h, l, c)
+        self._put(strat, sar=strat.I(lambda: psar.iloc[:, 0].fillna(psar.iloc[:, 1]).values))
+
+    def entry(self, strat):
+        s = self._get(strat, "sar")
+        return strat.data.Close[-2] < s[-2] and strat.data.Close[-1] > s[-1]
+
+    def exit(self, strat):
+        s = self._get(strat, "sar")
+        return strat.data.Close[-1] < s[-1]
+
+
+class IchimokuCloud(Alpha):
+    """Long while price holds above the cloud (Span A/B); exit below the cloud top."""
+
+    def register(self, strat):
+        h, l, c = _hlc(strat)
+        ich = ta.ichimoku(h, l, c)[0]
+        self._put(strat, a=strat.I(lambda: ich.iloc[:, 0].values),
+                  b=strat.I(lambda: ich.iloc[:, 1].values))
+
+    def entry(self, strat):
+        a, b = self._get(strat, "a"), self._get(strat, "b")
+        return strat.data.Close[-1] > max(a[-1], b[-1])
+
+    def exit(self, strat):
+        a, b = self._get(strat, "a"), self._get(strat, "b")
+        return strat.data.Close[-1] < max(a[-1], b[-1])
+
+
+class KeltnerReclaim(Alpha):
+    """Pullback continuation: price reclaims a rising Keltner basis."""
+
+    def __init__(self, length=20, scalar=2.0):
+        self.length, self.scalar = length, scalar
+
+    def register(self, strat):
+        h, l, c = _hlc(strat)
+        kc = ta.kc(h, l, c, length=self.length, scalar=self.scalar)
+        self._put(strat, basis=strat.I(lambda: kc.iloc[:, 1].values))
+
+    def entry(self, strat):
+        bs = self._get(strat, "basis")
+        return (strat.data.Close[-2] <= bs[-2] and strat.data.Close[-1] > bs[-1]
+                and bs[-1] > bs[-5])
+
+
+class AdxDi(Alpha):
+    """ADX strong + +DI over -DI; exit when -DI tops +DI."""
+
+    def __init__(self, length=14, threshold=25):
+        self.length, self.threshold = length, threshold
+
+    def register(self, strat):
+        h, l, c = _hlc(strat)
+        adx = ta.adx(h, l, c, length=self.length)
+        self._put(strat, adx=strat.I(lambda: adx.iloc[:, 0].values),
+                  dmp=strat.I(lambda: adx.iloc[:, 1].values),
+                  dmn=strat.I(lambda: adx.iloc[:, 2].values))
+
+    def entry(self, strat):
+        return (self._get(strat, "adx")[-1] > self.threshold
+                and self._get(strat, "dmp")[-1] > self._get(strat, "dmn")[-1])
+
+    def exit(self, strat):
+        return self._get(strat, "dmn")[-1] > self._get(strat, "dmp")[-1]
+
+
+class ZScoreReversion(Alpha):
+    """Statistical dip: enter z std below the rolling mean; exit on reversion."""
+
+    def __init__(self, window=20, z_entry=-2.0, z_exit=1.0):
+        self.window, self.z_entry, self.z_exit = window, z_entry, z_exit
+
+    def register(self, strat):
+        c = _close(strat)
+
+        def z():
+            m = c.rolling(self.window).mean()
+            s = c.rolling(self.window).std()
+            return ((c - m) / s).values
+
+        self._put(strat, z=strat.I(z))
+
+    def entry(self, strat):
+        return self._get(strat, "z")[-1] < self.z_entry
+
+    def exit(self, strat):
+        return self._get(strat, "z")[-1] > self.z_exit
 
 
 # --------------------------------------------------------------------------- #
