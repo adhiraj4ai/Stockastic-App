@@ -24,9 +24,9 @@ def _df(n=400, seed=3):
 
 SPEC = {
     "version": 1,
-    "alpha": {"type": "SmaCross", "params": {"fast": 20, "slow": 50}},
-    "regime": {"type": "AboveEMA", "params": {"period": 100}},
-    "stop": {"type": "AtrTrail", "params": {"multiplier": 3.0}},
+    "alpha": {"type": "SmaCross", "params": {"fast_period": 20, "slow_period": 50}},
+    "regime": {"type": "AboveEMA", "params": {"ema_period": 100}},
+    "stop": {"type": "AtrTrail", "params": {"atr_multiplier": 3.0}},
     "name": "TestCompose",
 }
 
@@ -56,7 +56,7 @@ def test_compile_spec_builds_a_trading_strategy():
 
 
 def test_compile_spec_coerces_and_defaults_params():
-    spec = {"alpha": {"type": "RsiOversold", "params": {"period": "14"}}}  # string coerced to int
+    spec = {"alpha": {"type": "RsiOversold", "params": {"rsi_period": "14"}}}  # string coerced to int
     cls = compile_spec(spec, symbol="SYNTH")
     assert Backtest(_df(), cls, cash=1_000_000, commission=.002).run()["# Trades"] >= 0
 
@@ -96,12 +96,54 @@ def test_validate_rejects_wrong_kind():
 
 def test_validate_rejects_out_of_range_param():
     with pytest.raises(SpecError):
-        validate_spec({"alpha": {"type": "SupertrendFlip", "params": {"period": 999}}})
+        validate_spec({"alpha": {"type": "SupertrendFlip", "params": {"supertrend_period": 999}}})
 
 
 def test_validate_rejects_unknown_param():
     with pytest.raises(SpecError):
         validate_spec({"alpha": {"type": "SupertrendFlip", "params": {"bogus": 1}}})
+
+
+# --------------------------------------------------------------------------- #
+# multiple regimes (AND) and multiple exits
+# --------------------------------------------------------------------------- #
+MULTI_SPEC = {
+    "version": 1,
+    "alpha": {"type": "SmaCross", "params": {"fast_period": 20, "slow_period": 50}},
+    "regime": [
+        {"type": "AboveEMA", "params": {"ema_period": 100}},
+        {"type": "RsiBand", "params": {"min_level": 30, "max_level": 75}},
+    ],
+    "stop": {"type": "AtrTrail", "params": {"atr_multiplier": 3.0}},
+    "exit": [
+        {"type": "TakeProfitPct", "params": {"target_pct": 20.0}},
+        {"type": "TimeExit", "params": {"max_bars": 40}},
+    ],
+    "rr": None,
+    "name": "Multi",
+}
+
+
+def test_multi_regime_and_exit_compile_and_codegen():
+    cls = compile_spec(MULTI_SPEC, symbol="SYNTH")
+    assert Backtest(_df(), cls, cash=1_000_000, commission=.002, exclusive_orders=True).run()["# Trades"] >= 0
+    code = spec_to_code(MULTI_SPEC)
+    assert " & " in code  # regimes AND-combined
+    assert "exit=[" in code  # multiple exits as a list
+    # generated code execs and matches the compiled spec
+    scope = {}
+    exec(code, scope)
+    df = _df()
+    a = Backtest(df, scope["Strategy"], cash=1_000_000, commission=.002, exclusive_orders=True).run()["# Trades"]
+    b = Backtest(df, cls, cash=1_000_000, commission=.002, exclusive_orders=True).run()["# Trades"]
+    assert a == b
+
+
+def test_params_carry_labels():
+    sma = next(c for c in registry_schema()["alpha"] if c["type"] == "SmaCross")
+    names = {p["name"] for p in sma["params"]}
+    assert names == {"fast_period", "slow_period"}  # descriptive, not fast/slow
+    assert all("label" in p for p in sma["params"])
 
 
 # --------------------------------------------------------------------------- #

@@ -75,9 +75,9 @@ export default function CreateStrategyModal({ isOpen, onClose, onSuccess }: Crea
             onSuccess();
             onClose();
 
-            // Navigate to edit page
+            // Navigate to the visual builder (primary authoring; Code view is one click away)
             if (response.data && response.data.id) {
-                router.push(`/strategies/${response.data.id}/editor`);
+                router.push(`/strategies/${response.data.id}/builder`);
             }
         } catch (err: any) {
             console.error('Failed to create strategy', err);

@@ -21,11 +21,11 @@ __all__ = [
     "AlligatorBreakout", "Nr7Breakout", "InsideBarBreakout", "FibGoldenZone",
     "TurtleSoupReversal", "AccumulationDivergence",
     # regimes
-    "AboveEMA", "AdxAbove",
+    "AboveEMA", "AdxAbove", "AboveSMA", "RsiBand", "VolumeAboveAverage",
     # stops
     "AtrTrail", "FixedAtr",
     # exits
-    "TrendBreak",
+    "TrendBreak", "TakeProfitPct", "TrailingStopPct", "TimeExit", "RsiExit", "MaCrossExit",
 ]
 
 
@@ -732,17 +732,137 @@ class FixedAtr(Stop):
 
 
 # --------------------------------------------------------------------------- #
-# Exits
+# Regimes (extra entry filters)
+# --------------------------------------------------------------------------- #
+class AboveSMA(Regime):
+    """Allow entries only while price is above a simple moving average."""
+
+    def __init__(self, sma_period=50):
+        self.sma_period = sma_period
+
+    def register(self, strat):
+        c = _close(strat)
+        self._put(strat, sma=strat.I(lambda: ta.sma(c, self.sma_period).values))
+
+    def ok(self, strat):
+        return strat.data.Close[-1] > self._get(strat, "sma")[-1]
+
+
+class RsiBand(Regime):
+    """Only enter when RSI sits in a sane band (avoid buying into overbought froth)."""
+
+    def __init__(self, rsi_period=14, min_level=35, max_level=70):
+        self.rsi_period, self.min_level, self.max_level = rsi_period, min_level, max_level
+
+    def register(self, strat):
+        c = _close(strat)
+        self._put(strat, rsi=strat.I(lambda: ta.rsi(c, self.rsi_period).values))
+
+    def ok(self, strat):
+        return self.min_level <= self._get(strat, "rsi")[-1] <= self.max_level
+
+
+class VolumeAboveAverage(Regime):
+    """Only enter when volume confirms (current volume above its average × multiplier)."""
+
+    def __init__(self, volume_period=20, volume_multiplier=1.0):
+        self.volume_period, self.volume_multiplier = volume_period, volume_multiplier
+
+    def register(self, strat):
+        v = pd.Series(strat.data.Volume)
+        self._put(strat, vavg=strat.I(lambda: v.rolling(self.volume_period).mean().values))
+
+    def ok(self, strat):
+        return strat.data.Volume[-1] > self._get(strat, "vavg")[-1] * self.volume_multiplier
+
+
+# --------------------------------------------------------------------------- #
+# Exits (richer exit rules — compose several; any one triggers a close)
 # --------------------------------------------------------------------------- #
 class TrendBreak(ExitRule):
     """Exit when price loses a long-term EMA (lets winners run otherwise)."""
 
-    def __init__(self, period=200):
-        self.period = period
+    def __init__(self, ema_period=200):
+        self.ema_period = ema_period
 
     def register(self, strat):
         c = _close(strat)
-        self._put(strat, ema=strat.I(lambda: ta.ema(c, self.period).values))
+        self._put(strat, ema=strat.I(lambda: ta.ema(c, self.ema_period).values))
 
     def exit(self, strat):
         return strat.data.Close[-1] < self._get(strat, "ema")[-1]
+
+
+class TakeProfitPct(ExitRule):
+    """Bank a fixed percentage gain from the entry price."""
+
+    def __init__(self, target_pct=15.0):
+        self.target_pct = target_pct
+
+    def exit(self, strat):
+        if not self.position(strat):
+            return False
+        entry = strat.trades[0].entry_price
+        return strat.data.Close[-1] >= entry * (1 + self.target_pct / 100.0)
+
+    @staticmethod
+    def position(strat):
+        return bool(strat.trades)
+
+
+class TrailingStopPct(ExitRule):
+    """Percent trailing stop from the highest close reached since entry."""
+
+    def __init__(self, trail_pct=10.0):
+        self.trail_pct = trail_pct
+
+    def exit(self, strat):
+        if not strat.trades:
+            strat._tsp_peak = None
+            return False
+        price = strat.data.Close[-1]
+        peak = getattr(strat, "_tsp_peak", None)
+        peak = price if peak is None else max(peak, price)
+        strat._tsp_peak = peak
+        return price < peak * (1 - self.trail_pct / 100.0)
+
+
+class TimeExit(ExitRule):
+    """Exit after a maximum number of bars held (avoids dead-money positions)."""
+
+    def __init__(self, max_bars=20):
+        self.max_bars = max_bars
+
+    def exit(self, strat):
+        if not strat.trades:
+            return False
+        return (len(strat.data) - 1 - strat.trades[0].entry_bar) >= self.max_bars
+
+
+class RsiExit(ExitRule):
+    """Exit when RSI becomes overbought."""
+
+    def __init__(self, rsi_period=14, exit_level=70):
+        self.rsi_period, self.exit_level = rsi_period, exit_level
+
+    def register(self, strat):
+        c = _close(strat)
+        self._put(strat, rsi=strat.I(lambda: ta.rsi(c, self.rsi_period).values))
+
+    def exit(self, strat):
+        return self._get(strat, "rsi")[-1] > self.exit_level
+
+
+class MaCrossExit(ExitRule):
+    """Exit when a fast MA crosses back below a slow MA (momentum fading)."""
+
+    def __init__(self, fast_period=10, slow_period=30):
+        self.fast_period, self.slow_period = fast_period, slow_period
+
+    def register(self, strat):
+        c = _close(strat)
+        self._put(strat, fast=strat.I(lambda: ta.sma(c, self.fast_period).values),
+                  slow=strat.I(lambda: ta.sma(c, self.slow_period).values))
+
+    def exit(self, strat):
+        return self._get(strat, "fast")[-1] < self._get(strat, "slow")[-1]
