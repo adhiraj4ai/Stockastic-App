@@ -8,6 +8,8 @@ session via the schema editor. Per-test DML is still rolled back by the normal
 `db` transaction; only the table DDL persists for the session.
 """
 import pytest
+from rest_framework.test import APIClient
+from django.contrib.auth.models import User
 
 
 @pytest.fixture(scope="session")
@@ -21,3 +23,22 @@ def django_db_setup(django_db_setup, django_db_blocker):
             with connection.schema_editor() as schema_editor:
                 schema_editor.create_model(DailyStockPrice)
     yield
+
+
+@pytest.fixture
+def api_client():
+    return APIClient()
+
+
+@pytest.fixture
+def create_user(db):
+    def make_user(**kwargs):
+        return User.objects.create_user(**kwargs)
+    return make_user
+
+
+@pytest.fixture
+def auth_client(api_client, create_user):
+    user = create_user(username='testuser', password='password')
+    api_client.force_authenticate(user=user)
+    return api_client

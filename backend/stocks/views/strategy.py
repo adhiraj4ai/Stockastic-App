@@ -32,12 +32,12 @@ os.environ.setdefault('NUMBA_CACHE_DIR', '/tmp/numba_cache')
 from ..services.optimization_service import SafeTa
 
 from ..models import (
-    DailyStockPrice, Strategy, Company, StrategyExperiment, 
-    ScopeType, StrategySignal, StrategySymbolConfig
+    DailyStockPrice, Strategy, Company, StrategyExperiment,
+    ScopeType, StrategySymbolConfig
 )
 from ..serializers import (
     StrategySerializer, StrategyExperimentSerializer,
-    StrategyExperimentDetailSerializer, StrategySignalSerializer,
+    StrategyExperimentDetailSerializer,
     StrategySymbolConfigSerializer
 )
 
@@ -1021,139 +1021,43 @@ class StrategySignalPagination(PageNumberPagination):
     max_page_size = 1000
 
 class StrategySignalViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = StrategySignal.objects.all().order_by('-date', 'strategy__name')
-    serializer_class = StrategySignalSerializer
+    from ..models import SignalEpisode
+    from ..serializers.signal import SignalEpisodeSerializer as _SESerializer
+
+    queryset = SignalEpisode.objects.all().order_by('-start_date')
+    serializer_class = _SESerializer
     pagination_class = StrategySignalPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['symbol', 'date', 'strategy', 'signal']
-    search_fields = ['symbol', 'strategy__name']
+    filterset_fields = ['symbol', 'source', 'status', 'direction', 'strategy']
+    search_fields = ['symbol']
 
     @action(detail=False, methods=['get'])
     def tracking(self, request):
-        """
-        Pairs BUY and SELL signals to track positions and calculate performance.
-        """
-        signals = StrategySignal.objects.all().order_by('strategy', 'symbol', 'date')
-        
-        active_positions = []
-        closed_positions = []
-        
-        # Group signals by (strategy, symbol)
-        groups = {}
-        for sig in signals:
-            key = (sig.strategy_id, sig.symbol)
-            if key not in groups:
-                groups[key] = []
-            groups[key].append(sig)
-            
-        for key, group_signals in groups.items():
-            strategy_id, symbol = key
-            current_buy = None
-            
-            for sig in group_signals:
-                if sig.signal == 'BUY':
-                    # If we already have a buy, the previous one is essentially "superseded" 
-                    # or they are layered. For simple tracking, we'll take the latest buy 
-                    # before a sell.
-                    current_buy = sig
-                elif sig.signal == 'SELL' and current_buy:
-                    # Found a pair
-                    buy_date = current_buy.date
-                    sell_date = sig.date
-                    buy_price = float(current_buy.last_close or 0)
-                    sell_price = float(sig.last_close or 0)
-                    
-                    return_pct = 0
-                    if buy_price > 0:
-                        return_pct = ((sell_price - buy_price) / buy_price) * 100
-                        
-                    days_held = (sell_date - buy_date).days
-                    
-                    closed_positions.append({
-                        'symbol': symbol,
-                        'buy_signal': StrategySignalSerializer(current_buy).data,
-                        'sell_signal': StrategySignalSerializer(sig).data,
-                        'buy_date': buy_date.isoformat(),
-                        'sell_date': sell_date.isoformat(),
-                        'buy_price': f"{buy_price:,.2f}",
-                        'sell_price': f"{sell_price:,.2f}",
-                        'return_pct': round(return_pct, 2),
-                        'days_held': days_held,
-                        'buy_strategy': current_buy.strategy.name,
-                        'sell_strategy': sig.strategy.name,
-                    })
-                    current_buy = None
-                elif sig.signal == 'HOLD' and current_buy:
-                    # Just an update, keep current_buy
-                    pass
-            
-            # If still have a current_buy, it's an active position
-            if current_buy:
-                buy_price = float(current_buy.last_close or 0)
-                days_held = (date.today() - current_buy.date).days
-                
-                active_positions.append({
-                    'symbol': symbol,
-                    'buy_signal': StrategySignalSerializer(current_buy).data,
-                    'buy_date': current_buy.date.isoformat(),
-                    'buy_price': f"{buy_price:,.2f}",
-                    'days_held': days_held,
-                    'strategies': [current_buy.strategy.name],
-                })
+        from ..models import SignalEpisode
+        from ..serializers.signal import SignalEpisodeSerializer
 
-        # Fetch LTP for all symbols in active positions
-        active_symbols = [pos['symbol'] for pos in active_positions]
-        ltp_map = {}
-        if active_symbols:
-            # For each symbol, get the latest price
-            # Since we're on Postgres, we can use distinct('ticker')
-            latest_prices = DailyStockPrice.objects.filter(
-                ticker__in=active_symbols
-            ).order_by('ticker', '-date').distinct('ticker')
-            
-            for price in latest_prices:
-                ltp_map[price.ticker] = float(price.close)
-                
-        # Update active positions with LTP and unrealized PnL
-        for pos in active_positions:
-            symbol = pos['symbol']
-            buy_price = float(pos['buy_price'].replace(',', ''))
-            ltp = ltp_map.get(symbol, 0)
-            
-            return_pct = 0
-            if buy_price > 0 and ltp > 0:
-                return_pct = ((ltp - buy_price) / buy_price) * 100
-                
-            pos['current_price'] = f"{ltp:,.2f}" if ltp > 0 else "N/A"
-            pos['return_pct'] = round(return_pct, 2)
+        active_qs = SignalEpisode.objects.filter(status='ACTIVE').order_by('start_date')
+        closed_qs = SignalEpisode.objects.exclude(status='ACTIVE').order_by('-end_date')
 
-        # Sort active positions by days held descending
-        active_positions.sort(key=lambda x: x['days_held'], reverse=True)
+        def pos(ep, closed):
+            data = SignalEpisodeSerializer(ep).data
+            data['days_held'] = ep.days_held()
+            data['return_pct'] = float(ep.pnl_percent) if ep.pnl_percent is not None else 0.0
+            return data
 
-        # Calculate summary
-        total_active = len(active_positions)
-        total_closed = len(closed_positions)
-        
-        # Combine realized and unrealized returns for avg_return
-        all_returns = [pos['return_pct'] for pos in closed_positions] + [pos['return_pct'] for pos in active_positions]
-        
-        avg_return = 0
-        if all_returns:
-            avg_return = sum(all_returns) / len(all_returns)
-            
-        avg_holding = 0
-        if total_closed > 0:
-            avg_holding = sum(pos['days_held'] for pos in closed_positions) / total_closed
-            
+        active = [pos(e, False) for e in active_qs]
+        closed = [pos(e, True) for e in closed_qs]
+        returns = [p['return_pct'] for p in active + closed]
+        held = [p['days_held'] for p in closed]
         return Response({
-            'active_positions': active_positions,
-            'closed_positions': closed_positions,
+            'active_positions': sorted(active, key=lambda x: x['days_held'], reverse=True),
+            'closed_positions': closed,
             'summary': {
-                'total_active': total_active,
-                'total_closed': total_closed,
-                'avg_return': round(avg_return, 2),
-                'avg_holding_period': round(avg_holding, 1)
-            }
+                'total_active': len(active),
+                'total_closed': len(closed),
+                'avg_return': round(sum(returns) / len(returns), 2) if returns else 0,
+                'avg_holding_period': round(sum(held) / len(held), 1) if held else 0,
+            },
         })
 
 
@@ -1165,29 +1069,31 @@ class GeneratedSignalPagination(PageNumberPagination):
 
 class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    ViewSet to serve stored generated signals (Smart Money, Whale Watch engines).
-    Signals are generated via pipeline (generate_all_signals command).
+    ViewSet to serve stored signal episodes (Smart Money, Whale Watch engines).
+    Episodes are created via the ingest_reading / evaluate_active_episodes pipeline.
     """
-    from ..models import GeneratedSignal
-    from ..serializers import GeneratedSignalSerializer
+    from ..models import SignalEpisode
+    from ..serializers.signal import SignalEpisodeSerializer as _SESerializer
 
-    queryset = GeneratedSignal.objects.all()
-    serializer_class = GeneratedSignalSerializer
+    queryset = SignalEpisode.objects.all().order_by('-start_date')
+    serializer_class = _SESerializer
     pagination_class = GeneratedSignalPagination
     permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['source', 'symbol', 'signal', 'generated_date', 'status', 'closed_date']
+    filterset_fields = ['source', 'symbol', 'status', 'direction', 'strategy']
     search_fields = ['symbol']
 
     @action(detail=False, methods=['get'])
     def track_record(self, request):
-        """Return signals paginated. Optionally filter by status (comma-separated)."""
+        """Return episodes paginated. Optionally filter by status (comma-separated)."""
+        from ..models import SignalEpisode
+
         status_param = request.query_params.get('status', '')
         if status_param:
             statuses = [s.strip().upper() for s in status_param.split(',')]
-            qs = self.get_queryset().filter(status__in=statuses).order_by('-generated_date')
+            qs = SignalEpisode.objects.filter(status__in=statuses).order_by('-start_date')
         else:
-            qs = self.get_queryset().order_by('-generated_date')
+            qs = SignalEpisode.objects.all().order_by('-start_date')
         page = self.paginate_queryset(qs)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
@@ -1197,30 +1103,30 @@ class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=['get'])
     def latest(self, request):
-        """Return only the most recent date's signals, optionally filtered by source."""
-        from ..models import GeneratedSignal
-        from ..serializers import GeneratedSignalSerializer
+        """Return only the most recent date's episodes, optionally filtered by source."""
+        from ..models import SignalEpisode
+        from ..serializers.signal import SignalEpisodeSerializer
 
         source = request.query_params.get('source')
 
-        qs = GeneratedSignal.objects.all()
+        qs = SignalEpisode.objects.all()
         if source:
             qs = qs.filter(source=source)
 
-        latest_date = qs.order_by('-generated_date').values_list('generated_date', flat=True).first()
+        latest_date = qs.order_by('-last_signal_date').values_list('last_signal_date', flat=True).first()
         if not latest_date:
             return Response([])
 
-        signals = qs.filter(generated_date=latest_date).order_by('-strength')
-        return Response(GeneratedSignalSerializer(signals, many=True).data)
+        episodes = qs.filter(last_signal_date=latest_date).order_by('-entry_strength')
+        return Response(SignalEpisodeSerializer(episodes, many=True).data)
 
     @action(detail=False, methods=['get'])
     def performance(self, request):
         """Return historical performance aggregated by source."""
         from django.db.models import Count, Q, Avg
-        from ..models import GeneratedSignal
+        from ..models import SignalEpisode
 
-        stats = GeneratedSignal.objects.values('source').annotate(
+        stats = SignalEpisode.objects.values('source').annotate(
             total=Count('id'),
             won=Count('id', filter=Q(status='WON')),
             lost=Count('id', filter=Q(status='LOST')),
@@ -1256,24 +1162,33 @@ class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
         monthly performance, PnL distribution, buy/sell splits, top symbols.
         """
         from django.db.models import Count, Q, Avg, Sum, Max, Min, F
-        from ..models import GeneratedSignal
+        from ..models import SignalEpisode
         from collections import defaultdict
-        from itertools import groupby
 
-        all_signals = list(
-            GeneratedSignal.objects.filter(
+        all_episodes = list(
+            SignalEpisode.objects.filter(
                 status__in=['WON', 'LOST', 'ACTIVE']
             ).values(
-                'id', 'source', 'symbol', 'signal', 'status',
-                'pnl_percent', 'generated_date', 'closed_date',
-                'ltp', 'target_price', 'stop_loss_price',
-                'strength', 'signal_tier', 'rationale', 'metadata'
-            ).order_by('source', 'generated_date')
+                'id', 'source', 'symbol', 'direction', 'status',
+                'pnl_percent', 'start_date', 'end_date',
+                'entry_price', 'target_price', 'stop_loss_price',
+                'entry_strength', 'signal_tier', 'rationale', 'metadata'
+            ).order_by('source', 'start_date')
         )
+
+        # Normalise field names to match old GeneratedSignal shape used below:
+        # signal → direction, generated_date → start_date, closed_date → end_date,
+        # ltp → entry_price, strength → entry_strength
+        for ep in all_episodes:
+            ep['signal'] = ep['direction']
+            ep['generated_date'] = ep['start_date']
+            ep['closed_date'] = ep['end_date']
+            ep['ltp'] = ep['entry_price']
+            ep['strength'] = ep['entry_strength']
 
         # ── Group by source ──────────────────────────────────────────
         source_groups = defaultdict(list)
-        for sig in all_signals:
+        for sig in all_episodes:
             source_groups[sig['source']].append(sig)
 
         engines = []
@@ -1281,7 +1196,7 @@ class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
         total_loss = 0
         total_resolved = 0
         total_won = 0
-        total_signals = len(all_signals)
+        total_signals = len(all_episodes)
 
         for source, sigs in source_groups.items():
             won = [s for s in sigs if s['status'] == 'WON']
@@ -1462,29 +1377,29 @@ class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=['get'])
     def summary(self, request):
-        """Aggregated counts by source and signal type for the latest date."""
-        from ..models import GeneratedSignal
+        """Aggregated counts by source and direction for the latest signal date."""
+        from ..models import SignalEpisode
         from django.db.models import Count
 
-        latest_date = GeneratedSignal.objects.order_by('-generated_date').values_list('generated_date', flat=True).first()
+        latest_date = SignalEpisode.objects.order_by('-last_signal_date').values_list('last_signal_date', flat=True).first()
         if not latest_date:
             return Response({'date': None, 'sources': {}})
 
-        qs = GeneratedSignal.objects.filter(generated_date=latest_date)
+        qs = SignalEpisode.objects.filter(last_signal_date=latest_date)
 
-        by_source = qs.values('source', 'signal').annotate(count=Count('id'))
+        by_source = qs.values('source', 'direction').annotate(count=Count('id'))
 
         sources = {}
         for row in by_source:
             src = row['source']
             if src not in sources:
                 sources[src] = {'BUY': 0, 'SELL': 0, 'total': 0}
-            sources[src][row['signal']] = row['count']
+            sources[src][row['direction']] = row['count']
             sources[src]['total'] += row['count']
 
         total = qs.count()
-        buys = qs.filter(signal='BUY').count()
-        sells = qs.filter(signal='SELL').count()
+        buys = qs.filter(direction='BUY').count()
+        sells = qs.filter(direction='SELL').count()
 
         return Response({
             'date': latest_date.isoformat(),

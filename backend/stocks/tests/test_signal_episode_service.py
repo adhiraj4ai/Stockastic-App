@@ -145,3 +145,23 @@ def test_serializer_exposes_compat_keys():
         assert key in data
     assert data["signal"] == "BUY"           # direction surfaced as `signal`
     assert data["generated_date"] == "2026-01-01"   # start_date surfaced as `generated_date`
+
+
+@pytest.mark.django_db
+def test_tracking_endpoint_uses_episodes(auth_client):
+    _ingest(1, "BUY", close="100", target="110", stop="95")     # active
+    resp = auth_client.get("/api/stocks/signals/tracking/")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["summary"]["total_active"] == 1
+    assert body["active_positions"][0]["symbol"] == "NABIL"
+
+
+@pytest.mark.django_db
+def test_performance_groups_by_source(auth_client):
+    # one WON BUY episode
+    ep = _open_episode(symbol="AAA")
+    ep.status, ep.end_date, ep.exit_reason, ep.pnl_percent = "WON", date(2026, 1, 5), "TARGET", Decimal("10")
+    ep.save()
+    resp = auth_client.get("/api/stocks/generated-signals/performance/")
+    assert resp.status_code == 200
