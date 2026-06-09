@@ -36,23 +36,36 @@ import pandas as pd
 from stocks.models import DailyCumulativeAccumulation
 
 class BrokerAccumulationStrategy(Strategy):
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
+
     def init(self):
-        ticker = symbol
-        qs = DailyCumulativeAccumulation.objects.filter(symbol=ticker).values('transaction_date', 'cumulative_net')
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
+        dates = self.data.index  # align accumulation onto the real price dates
+        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values('transaction_date', 'cumulative_net')
         if not qs:
-            self.acc = self.I(lambda x: np.zeros(len(x)), self.data.Close)
+            self.acc = self.I(lambda: np.zeros(len(dates)))
             return
         df = pd.DataFrame(list(qs))
         df['transaction_date'] = pd.to_datetime(df['transaction_date'])
-        daily = df.groupby('transaction_date')['cumulative_net'].sum()
-        self.acc = self.I(lambda x: daily.reindex(pd.Series(x).index).ffill().fillna(0).values, self.data.Close)
+        daily = df.groupby('transaction_date')['cumulative_net'].sum().reindex(dates).ffill().fillna(0)
+        self.acc = self.I(lambda: daily.values)
 
     def next(self):
-        if len(self.acc) < 2: return
-        if self.acc[-1] > 0 and self.acc[-2] <= 0:
-            if not self.position: self.buy()
-        elif self.acc[-1] < 0 and self.acc[-2] >= 0:
-            if self.position: self.position.close()
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl: trade.sl = new_sl
+        rising = self.acc[-1] > self.acc[-2]
+        if rising and self.acc[-1] > 0 and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price: self.buy(sl=stop)
+        elif (self.acc[-1] < 0 or price < self.ema_trend[-1]) and self.position:
+            self.position.close()
 """
 
 _ICHIMOKU_ACCUMULATION_SRC = """
@@ -63,31 +76,40 @@ import pandas_ta as ta
 from stocks.models import DailyCumulativeAccumulation
 
 class IchimokuAccumulation(Strategy):
-    def init(self):
-        close = pd.Series(self.data.Close)
-        high = pd.Series(self.data.High)
-        low = pd.Series(self.data.Low)
-        ichimoku_df = ta.ichimoku(high, low, close)[0]
-        self.span_a = self.I(lambda: ichimoku_df.iloc[:, 2].values)
-        self.span_b = self.I(lambda: ichimoku_df.iloc[:, 3].values)
+    atr_period = 14
+    atr_mult = 3.0
 
+    def init(self):
+        high, low, close = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        ichimoku_df = ta.ichimoku(high, low, close)[0]
+        self.span_a = self.I(lambda: ichimoku_df.iloc[:, 0].values)
+        self.span_b = self.I(lambda: ichimoku_df.iloc[:, 1].values)
+        self.atr = self.I(lambda: ta.atr(high, low, close, self.atr_period).values)
+
+        dates = self.data.index
         qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values('transaction_date', 'cumulative_net')
         if not qs:
-            self.acc = self.I(lambda x: np.zeros(len(x)), self.data.Close)
+            self.acc = self.I(lambda: np.zeros(len(dates)))
             return
         df = pd.DataFrame(list(qs))
         df['transaction_date'] = pd.to_datetime(df['transaction_date'])
-        daily = df.groupby('transaction_date')['cumulative_net'].sum()
-        self.acc = self.I(lambda x: daily.reindex(pd.Series(x).index).ffill().fillna(0).values, self.data.Close)
+        daily = df.groupby('transaction_date')['cumulative_net'].sum().reindex(dates).ffill().fillna(0)
+        self.acc = self.I(lambda: daily.values)
 
     def next(self):
         price = self.data.Close[-1]
-        above_cloud = price > self.span_a[-1] and price > self.span_b[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl: trade.sl = new_sl
+        cloud_top = max(self.span_a[-1], self.span_b[-1])
         accumulating = self.acc[-1] > 0
-        if above_cloud and accumulating:
-            if not self.position: self.buy()
-        elif price < self.span_a[-1] or price < self.span_b[-1]:
-            if self.position: self.position.close()
+        if price > cloud_top and accumulating and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price: self.buy(sl=stop)
+        # Exit once price loses the cloud top; ATR stop trails in between.
+        elif price < cloud_top and self.position:
+            self.position.close()
 """
 
 _SMART_ACCUMULATED_CROSSOVER_SRC = """
@@ -101,27 +123,40 @@ from stocks.models import DailyCumulativeAccumulation
 class SmartAccumulatedCrossover(Strategy):
     fast = 10
     slow = 50
+    top_n = 5
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
 
     def init(self):
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
+        dates = self.data.index
         qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values('transaction_date', 'entity_id', 'cumulative_net')
         if not qs:
-            self.fast_ma = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            self.slow_ma = self.I(lambda x: np.zeros(len(x)), self.data.Close)
+            self.fast_ma = self.I(lambda: np.zeros(len(dates)))
+            self.slow_ma = self.I(lambda: np.zeros(len(dates)))
             return
         df = pd.DataFrame(list(qs))
         df['transaction_date'] = pd.to_datetime(df['transaction_date'])
         pivot = df.pivot_table(index='transaction_date', columns='entity_id', values='cumulative_net', aggfunc='last').ffill().fillna(0)
-        top = pivot.iloc[-1].sort_values(ascending=False).head(5).index
-        flow = pivot[top].sum(axis=1)
-        line = self.I(lambda x: flow.reindex(pd.Series(x).index).ffill().fillna(0).values, self.data.Close)
-        self.fast_ma = self.I(lambda x: pd.Series(x).rolling(self.fast).mean().values, line)
-        self.slow_ma = self.I(lambda x: pd.Series(x).rolling(self.slow).mean().values, line)
+        top = pivot.iloc[-1].sort_values(ascending=False).head(self.top_n).index
+        flow = pivot[top].sum(axis=1).reindex(dates).ffill().fillna(0)
+        self.fast_ma = self.I(lambda: flow.rolling(self.fast).mean().values)
+        self.slow_ma = self.I(lambda: flow.rolling(self.slow).mean().values)
 
     def next(self):
-        if crossover(self.fast_ma, self.slow_ma):
-            if not self.position: self.buy()
-        elif crossover(self.slow_ma, self.fast_ma):
-            if self.position: self.position.close()
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl: trade.sl = new_sl
+        if crossover(self.fast_ma, self.slow_ma) and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price: self.buy(sl=stop)
+        elif crossover(self.slow_ma, self.fast_ma) and self.position:
+            self.position.close()
 """
 
 SPECIAL_CODE_SOURCES = {

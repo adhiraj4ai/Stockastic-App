@@ -290,39 +290,43 @@ class DualThrust(Strategy):
 CODE_INSIDE_BAR = """
 from backtesting import Strategy
 import pandas as pd
+import numpy as np
 
 class InsideBarMomentum(Strategy):
+    # Inside-bar breakout: the PREVIOUS bar was an inside bar (contained by its
+    # mother bar); enter when the CURRENT bar breaks the mother-bar high in a
+    # long-term uptrend. (The original tested the breakout on the inside bar itself,
+    # where Close < mother_high by definition — so it never traded.)
+    trend_ema = 200
     atr_period = 14
-    
+    atr_mult = 2.5
+
     def init(self):
-        # Used for stop loss sizing
-        pass # Pure price action often doesn't need indicators in init
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
-        if len(self.data) < 3: return
-        
-        # Definitions
-        # Bar -1 is the "Inside Bar"
-        # Bar -2 is the "Mother Bar"
-        
-        mother_high = self.data.High[-2]
-        mother_low = self.data.Low[-2]
-        
-        inside_high = self.data.High[-1]
-        inside_low = self.data.Low[-1]
-        
-        # Check if it was an Inside Bar
-        is_inside_bar = (inside_high < mother_high) and (inside_low > mother_low)
-        
-        # Trigger: Current price breaks the Mother Bar High
-        if is_inside_bar and self.data.Close[-1] > mother_high:
-            if not self.position:
-                self.buy()
-        
-        # Exit: Stop loss below mother bar low
-        if self.position:
-            if self.data.Close[-1] < mother_low:
-                self.position.close()
+        if len(self.data) < 4:
+            return
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        # mother = bar[-3], inside = bar[-2], breakout = current bar[-1]
+        mother_high, mother_low = self.data.High[-3], self.data.Low[-3]
+        inside_high, inside_low = self.data.High[-2], self.data.Low[-2]
+        is_inside = inside_high < mother_high and inside_low > mother_low
+
+        if is_inside and price > mother_high and price > self.ema_trend[-1] and not self.position:
+            stop = min(inside_low, price - self.atr_mult * self.atr[-1])
+            if stop < price:
+                self.buy(sl=stop)
+        elif price < self.ema_trend[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -495,62 +499,51 @@ from stocks.models import DailyCumulativeAccumulation
 # Global symbol variable is injected by views.py: 'symbol'
 
 class SmartMoneyAccumulation(Strategy):
+    # Follow the top brokers' cumulative net position: go long while their flow line
+    # is above its MA AND price is in a long-term uptrend; ATR trailing stop.
     top_n_brokers = 5
-    
-    def init(self):
-        # Fetch detailed accumulation data for this symbol
-        # This runs ONCE at the start of backtest
-        
-        ticker = symbol # 'symbol' is available in global scope of this script execution
-        
-        # Get data sorted by date
-        qs = DailyCumulativeAccumulation.objects.filter(symbol=ticker).values('transaction_date', 'entity_id', 'cumulative_net')
-        if not qs:
-            # Fallback if no data: Array of zeros
-            self.acc_indicator = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            return
+    acc_ma = 20
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
 
+    def init(self):
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
+
+        dates = self.data.index  # real DatetimeIndex — align accumulation onto price bars
+        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values(
+            'transaction_date', 'entity_id', 'cumulative_net')
+        if not qs:
+            self.smart_cum = self.I(lambda: np.zeros(len(dates)))
+            self.smart_ma = self.I(lambda: np.zeros(len(dates)))
+            return
         acc_df = pd.DataFrame(list(qs))
         acc_df['transaction_date'] = pd.to_datetime(acc_df['transaction_date'])
-        
-        # Reindex to match the price data dates
-        price_dates = pd.Series(self.data.Close).index
-        
-        # Pivot to get: Index=Date, Cols=Brokers, Values=CumulativeNet
-        pivot_df = acc_df.pivot_table(index='transaction_date', columns='entity_id', values='cumulative_net', aggfunc='last').ffill().fillna(0)
-        
-        # Align with price data dates
-        pivot_df = pivot_df.reindex(price_dates).ffill().fillna(0)
-        
-        # Identify "Smart Money"? 
-        # Find top 5 brokers with highest cumulative sum at the end
-        total_acc = pivot_df.iloc[-1].sort_values(ascending=False)
-        top_buyers = total_acc.head(self.top_n_brokers).index
-        
-        # Calculate daily net flow of ONLY top buyers (diff of cumulative)
-        smart_money_cum = pivot_df[top_buyers].sum(axis=1)
-        
-        # Register indicator
-        self.smart_money_cum = self.I(lambda x: smart_money_cum.values, self.data.Close)
+        pivot = acc_df.pivot_table(index='transaction_date', columns='entity_id',
+                                   values='cumulative_net', aggfunc='last').ffill().fillna(0)
+        pivot = pivot.reindex(dates).ffill().fillna(0)
+        top = pivot.iloc[-1].sort_values(ascending=False).head(self.top_n_brokers).index
+        line = pivot[top].sum(axis=1)
+        self.smart_cum = self.I(lambda: line.values)
+        self.smart_ma = self.I(lambda: line.rolling(self.acc_ma).mean().values)
 
     def next(self):
-        # Buy if Smart Money is Accumulating Aggressively
-        # i.e., Smart Money Cumulative Line is ABOVE its 20-day MA
-        
-        # Calculate MA of Indicator manually
-        period = 20
-        if len(self.smart_money_cum) < period: return
-        
-        sma_acc = pd.Series(self.smart_money_cum).rolling(period).mean().iloc[-1]
-        current_acc = self.smart_money_cum[-1]
-        
-        if current_acc > sma_acc:
-             if not self.position:
-                 self.buy()
-        
-        elif current_acc < sma_acc:
-             if self.position:
-                 self.position.close()
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        accumulating = self.smart_cum[-1] > self.smart_ma[-1]
+        if accumulating and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif self.smart_cum[-1] < self.smart_ma[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -564,42 +557,48 @@ import numpy as np
 from stocks.models import DailyCumulativeAccumulation
 
 class AccumulationDivergence(Strategy):
-    def init(self):
-        ticker = symbol 
-        qs = DailyCumulativeAccumulation.objects.filter(symbol=ticker).values('transaction_date', 'cumulative_net')
-        if not qs:
-            self.buying_pressure = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            return
+    # Contrarian: buy bullish divergence (price falling while broker accumulation
+    # rises — smart money absorbing supply). No trend filter (it is a reversal
+    # signal by design); risk controlled with an ATR stop.
+    lookback = 10
+    atr_period = 14
+    atr_mult = 3.0
 
+    def init(self):
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
+
+        dates = self.data.index
+        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values(
+            'transaction_date', 'cumulative_net')
+        if not qs:
+            self.buying_pressure = self.I(lambda: np.zeros(len(dates)))
+            return
         acc_df = pd.DataFrame(list(qs))
         acc_df['transaction_date'] = pd.to_datetime(acc_df['transaction_date'])
-        
-        # Total Cumulative Net across all reporting brokers
         daily_cum = acc_df.groupby('transaction_date')['cumulative_net'].sum()
-        
-        def get_acc_line(dates_idx):
-            return daily_cum.reindex(dates_idx).ffill().fillna(0).values
-
-        self.buying_pressure = self.I(lambda x: get_acc_line(pd.Series(x).index), self.data.Close)
+        line = daily_cum.reindex(dates).ffill().fillna(0)
+        self.buying_pressure = self.I(lambda: line.values)
 
     def next(self):
-        # Divergence Logic
-        # Price is LOWER than 10 days ago
-        # Buying Pressure is HIGHER than 10 days ago (Smart money absorbing supply)
-        lookback = 10
-        if len(self.data) < lookback: return
-        
-        price_change = self.data.Close[-1] - self.data.Close[-lookback]
-        acc_change = self.buying_pressure[-1] - self.buying_pressure[-lookback]
-        
-        if price_change < 0 and acc_change > 0:
-            if not self.position:
-                self.buy()
-                
-        # Exit
-        if price_change > 0 and acc_change < 0:
-            if self.position:
-                self.position.close()
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        if len(self.data) < self.lookback:
+            return
+        price_change = self.data.Close[-1] - self.data.Close[-self.lookback]
+        acc_change = self.buying_pressure[-1] - self.buying_pressure[-self.lookback]
+
+        if price_change < 0 and acc_change > 0 and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif price_change > 0 and acc_change < 0 and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -613,55 +612,53 @@ import numpy as np
 from stocks.models import DailyCumulativeAccumulation
 
 class InstitutionalBreakout(Strategy):
-    def init(self):
-        ticker = symbol 
-        qs = DailyCumulativeAccumulation.objects.filter(symbol=ticker).values('transaction_date', 'entity_id', 'cumulative_net')
-        if not qs:
-            self.buy_vol = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            return
+    # Price breaks the prior N-day high WITH a broker buy-flow spike, inside a
+    # long-term uptrend; ATR trailing stop, exit on trend break.
+    lookback = 20
+    vol_mult = 1.5
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
 
+    def init(self):
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
+        # Prior-N-day high (shifted so today's bar is excluded).
+        self.high_n = self.I(lambda: H.rolling(self.lookback).max().shift(1).values)
+
+        dates = self.data.index
+        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values(
+            'transaction_date', 'entity_id', 'cumulative_net')
+        if not qs:
+            self.buy_vol = self.I(lambda: np.zeros(len(dates)))
+            self.avg_buy_vol = self.I(lambda: np.zeros(len(dates)))
+            return
         acc_df = pd.DataFrame(list(qs))
         acc_df['transaction_date'] = pd.to_datetime(acc_df['transaction_date'])
-        
-        # Calculate daily flow from cumulative
-        daily_flow = acc_df.pivot_table(index='transaction_date', columns='entity_id', values='cumulative_net').sum(axis=1).diff().fillna(0)
-        
-        def get_buy_vol(dates_idx):
-            return daily_flow.reindex(dates_idx).fillna(0).values
-
-        self.buy_vol = self.I(lambda x: get_buy_vol(pd.Series(x).index), self.data.Close)
-        
-        # Calculate Rolling Average of Buy Vol
-        self.avg_buy_vol = self.I(lambda x: pd.Series(x).rolling(20).mean().values, self.buy_vol)
+        flow = (acc_df.pivot_table(index='transaction_date', columns='entity_id',
+                                   values='cumulative_net', aggfunc='last')
+                .sum(axis=1).diff().fillna(0))
+        flow = flow.reindex(dates).fillna(0)
+        self.buy_vol = self.I(lambda: flow.values)
+        self.avg_buy_vol = self.I(lambda: flow.rolling(self.lookback).mean().values)
 
     def next(self):
-        # 1. Price Breakout (20 day high)
-        # 2. Institutional Volume Spike (Buy Vol > 1.5 * Avg Buy Vol)
-        
-        # Need to calculate 20 day high manually or use helper?
-        # Lets rely on simple High[-1] check vs Rolling max
-        
-        # Note: In 'next', indicators are already arrays. 
-        # self.data.High is an array if we access via [-N:] slices but simplified here.
-        # We need self.I for indicators usually.
-        pass # Logic handled in next step directly
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
 
-        # Check Breakout
-        # We can simulate rolling max by checking previous candles
-        # Efficient way:
-        highs = self.data.High[-21:-1] # Last 20 days excluding today
-        if len(highs) < 20: return
-        max_h = max(highs)
-        
-        price_breakout = self.data.Close[-1] > max_h
-        vol_spike = self.buy_vol[-1] > (self.avg_buy_vol[-1] * 1.5)
-        
-        if price_breakout and vol_spike:
-            if not self.position:
-                self.buy()
-        
-        if self.position and self.data.Close[-1] < self.data.Close[-1] * 0.95:
-             self.position.close()
+        breakout = not np.isnan(self.high_n[-1]) and price > self.high_n[-1]
+        vol_spike = self.buy_vol[-1] > self.avg_buy_vol[-1] * self.vol_mult
+        if breakout and vol_spike and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif price < self.ema_trend[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -676,52 +673,53 @@ from stocks.models import DailyCumulativeAccumulation
 import numpy as np
 
 class AccumulationSqueeze(Strategy):
-    def init(self):
-        ticker = symbol 
-        # Broker Buying Intensity
-        qs = DailyCumulativeAccumulation.objects.filter(symbol=ticker).values('transaction_date', 'cumulative_net')
-        if not qs:
-            self.buying_pressure = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            return
+    # Coiled volatility (tight Bollinger bands) + hidden accumulation (broker buying
+    # intensity in its recent top quartile) inside a long-term uptrend. ATR trailing
+    # stop; exit on trend break.
+    squeeze_pct = 0.10
+    acc_quantile = 0.70
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
 
+    def init(self):
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
+        bb = ta.bbands(C, length=20, std=2.0)
+        self.bb_width = self.I(lambda: (bb.iloc[:, 2] - bb.iloc[:, 0]).values)
+
+        dates = self.data.index
+        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values(
+            'transaction_date', 'cumulative_net')
+        if not qs:
+            self.buying_pressure = self.I(lambda: np.zeros(len(dates)))
+            return
         acc_df = pd.DataFrame(list(qs))
         acc_df['transaction_date'] = pd.to_datetime(acc_df['transaction_date'])
-        
-        # Buying Intensity = Diff of total cumulative
-        total_cum = acc_df.groupby('transaction_date')['cumulative_net'].sum()
-        daily_intensity = total_cum.diff().fillna(0)
-        
-        def get_buy_intensity(dates_idx):
-            return daily_intensity.reindex(dates_idx).fillna(0).values
-
-        self.buying_pressure = self.I(lambda x: get_buy_intensity(pd.Series(x).index), self.data.Close)
-        
-        # Bollinger Band Width
-        self.bb_width = self.I(lambda x: (ta.bbands(pd.Series(x), length=20, std=2.0).iloc[:, 2] - ta.bbands(pd.Series(x), length=20, std=2.0).iloc[:, 0]).values, self.data.Close)
+        intensity = acc_df.groupby('transaction_date')['cumulative_net'].sum().diff().fillna(0)
+        intensity = intensity.reindex(dates).fillna(0).astype(float)
+        self.buying_pressure = self.I(lambda: intensity.values)
 
     def next(self):
-        # 1. Volatility Squeeze (BB Width is historically low < 5%)
-        # 2. Hidden Accumulation (Buying Pressure in top quartile)
-        
         price = self.data.Close[-1]
-        width_ratio = self.bb_width[-1] / price # relative width
-        
-        is_squeeze = width_ratio < 0.05 # 5% band width is quite tight
-        
-        # Check if accumulation is high relative to recent history
-        if len(self.buying_pressure) < 50: return
-        recent_acc = pd.Series(self.buying_pressure[-50:])
-        high_acc = self.buying_pressure[-1] > recent_acc.quantile(0.80)
-        
-        if is_squeeze and high_acc:
-            if not self.position:
-                self.buy()
-                
-        # Exit on sharp move or stop
-        # Standard deviation expansion or 5% target
-        if self.position:
-             if price > self.position.entry_price * 1.10 or price < self.position.entry_price * 0.95:
-                 self.position.close()
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        if len(self.buying_pressure) < 50:
+            return
+        is_squeeze = (self.bb_width[-1] / price) < self.squeeze_pct
+        recent = pd.Series(self.buying_pressure[-50:])
+        high_acc = self.buying_pressure[-1] > recent.quantile(self.acc_quantile)
+        if is_squeeze and high_acc and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif price < self.ema_trend[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -736,38 +734,50 @@ import numpy as np
 from stocks.models import DailyCumulativeAccumulation
 
 class SmartMoneyTrend(Strategy):
-    def init(self):
-        ticker = symbol 
-        qs = DailyCumulativeAccumulation.objects.filter(symbol=ticker).values('transaction_date', 'entity_id', 'cumulative_net')
-        if not qs:
-             self.smart_line = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-             return
+    # Trade the TREND OF OWNERSHIP: fast/slow MA crossover of the top brokers'
+    # cumulative flow line, gated by a long-term price uptrend; ATR trailing stop.
+    top_n_brokers = 5
+    fast = 10
+    slow = 50
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
 
+    def init(self):
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
+
+        dates = self.data.index
+        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values(
+            'transaction_date', 'entity_id', 'cumulative_net')
+        if not qs:
+            self.acc_fast = self.I(lambda: np.zeros(len(dates)))
+            self.acc_slow = self.I(lambda: np.zeros(len(dates)))
+            return
         acc_df = pd.DataFrame(list(qs))
         acc_df['transaction_date'] = pd.to_datetime(acc_df['transaction_date'])
-        
-        pivot = acc_df.pivot_table(index='transaction_date', columns='entity_id', values='cumulative_net', aggfunc='last').ffill().fillna(0)
-        top_buyers = pivot.iloc[-1].sort_values(ascending=False).head(5).index
-        flow = pivot[top_buyers].sum(axis=1) # Cumulative Flow Line
-        
-        def get_flow_line(dates_idx):
-            return flow.reindex(dates_idx).ffill().fillna(0).values
-
-        self.smart_line = self.I(lambda x: get_flow_line(pd.Series(x).index), self.data.Close)
-        
-        # MAs of the Flow Line
-        self.acc_fast = self.I(lambda x: pd.Series(self.smart_line).rolling(10).mean().values, self.data.Close)
-        self.acc_slow = self.I(lambda x: pd.Series(self.smart_line).rolling(50).mean().values, self.data.Close)
+        pivot = acc_df.pivot_table(index='transaction_date', columns='entity_id',
+                                   values='cumulative_net', aggfunc='last').ffill().fillna(0)
+        top = pivot.iloc[-1].sort_values(ascending=False).head(self.top_n_brokers).index
+        flow = pivot[top].sum(axis=1).reindex(dates).ffill().fillna(0)
+        self.acc_fast = self.I(lambda: flow.rolling(self.fast).mean().values)
+        self.acc_slow = self.I(lambda: flow.rolling(self.slow).mean().values)
 
     def next(self):
-        # Trade the Trend of OWNERSHIP, not Price
-        if crossover(self.acc_fast, self.acc_slow):
-            if not self.position:
-                self.buy()
-        
-        elif crossover(self.acc_slow, self.acc_fast):
-            if self.position:
-                 self.position.close()
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        if crossover(self.acc_fast, self.acc_slow) and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif crossover(self.acc_slow, self.acc_fast) and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
