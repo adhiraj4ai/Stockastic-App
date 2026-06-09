@@ -110,3 +110,17 @@ class TestProposeTradePlan:
             "legs": [{"leg_number": 1, "price_target": 1200.0, "allocation_pct": 50.0, "stop_loss_price": 1140.0}],
         }, user)
         assert res["is_error"] is True
+
+    def test_rejects_legs_that_round_below_100(self, create_user):
+        # Three legs at 33.33 each sum to 99.99 (the stored, 2dp-rounded value the
+        # serializer sees) — must be rejected up front, not pass-then-fail at confirm.
+        user = create_user(username="ptp3", password="p")
+        res = _call(propose_trade_plan, {
+            "ticker": "NABIL", "risk_budget_pct": 2.0,
+            "legs": [
+                {"leg_number": 1, "price_target": 1200.0, "allocation_pct": 33.33, "stop_loss_price": 1140.0},
+                {"leg_number": 2, "price_target": 1150.0, "allocation_pct": 33.33, "stop_loss_price": 1095.0},
+                {"leg_number": 3, "price_target": 1100.0, "allocation_pct": 33.33, "stop_loss_price": 1045.0},
+            ],
+        }, user)
+        assert res["is_error"] is True

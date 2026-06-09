@@ -2476,12 +2476,20 @@ async def propose_trade_plan(args: dict) -> dict:
     if not ticker or not legs or risk_budget_pct is None:
         return _result("Provide ticker, risk_budget_pct, and at least one leg.", is_error=True)
 
-    total_alloc = sum(float(l.get("allocation_pct") or 0) for l in legs)
+    total_alloc = 0.0
+    for l in legs:
+        for key in ("leg_number", "price_target", "allocation_pct", "stop_loss_price"):
+            if l.get(key) is None:
+                return _result(
+                    f"Each leg needs leg_number, price_target, allocation_pct, and stop_loss_price. "
+                    f"Leg {l.get('leg_number', '?')} is missing {key}.",
+                    is_error=True,
+                )
+        if float(l["stop_loss_price"]) >= float(l["price_target"]):
+            return _result(f"Leg {l['leg_number']}: stop_loss_price must be below price_target.", is_error=True)
+        total_alloc += round(float(l["allocation_pct"]), 2)
     if round(total_alloc, 2) != 100.0:
         return _result(f"Leg allocation_pct must sum to 100 (got {total_alloc:.2f}).", is_error=True)
-    for l in legs:
-        if float(l.get("stop_loss_price") or 0) >= float(l.get("price_target") or 0):
-            return _result(f"Leg {l.get('leg_number')}: stop_loss_price must be below price_target.", is_error=True)
 
     account_id = args.get("account_id")
     thesis = args.get("thesis") or ""
