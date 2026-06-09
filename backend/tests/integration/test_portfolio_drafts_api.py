@@ -64,4 +64,25 @@ class TestDraftConfirmAPI:
         _draft_for(other)
         res = auth_client.get(reverse("portfolio-action-drafts-list"))
         assert res.status_code == status.HTTP_200_OK
-        assert all(row["user"] == user.id for row in res.data) if res.data and "user" in res.data[0] else len(res.data) == 1
+        assert len(res.data) == 1
+        assert res.data[0]["user"] == user.id
+
+    def test_cancel_confirmed_returns_409(self, auth_client, django_user_model):
+        user = django_user_model.objects.get(username="testuser")
+        draft = _draft_for(user)
+        draft.status = PortfolioActionDraft.Status.CONFIRMED
+        draft.save(update_fields=["status"])
+        res = auth_client.post(reverse("portfolio-action-drafts-cancel", args=[draft.id]))
+        assert res.status_code == status.HTTP_409_CONFLICT
+
+    def test_status_filter_returns_only_matching(self, auth_client, django_user_model):
+        user = django_user_model.objects.get(username="testuser")
+        pending = _draft_for(user)
+        confirmed = _draft_for(user)
+        confirmed.status = PortfolioActionDraft.Status.CONFIRMED
+        confirmed.save(update_fields=["status"])
+        res = auth_client.get(reverse("portfolio-action-drafts-list") + "?status=pending")
+        assert res.status_code == status.HTTP_200_OK
+        ids = [row["id"] for row in res.data]
+        assert pending.id in ids
+        assert confirmed.id not in ids

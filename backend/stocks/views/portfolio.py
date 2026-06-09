@@ -1198,4 +1198,10 @@ class PortfolioActionDraftViewSet(viewsets.ReadOnlyModelViewSet):
         if draft.status == PortfolioActionDraft.Status.PENDING:
             draft.status = PortfolioActionDraft.Status.CANCELLED
             draft.save(update_fields=['status'])
+        elif draft.status != PortfolioActionDraft.Status.CANCELLED:
+            # CONFIRMED or EXPIRED — a resolved draft cannot be cancelled.
+            return Response(
+                {"error": f"Draft is {draft.status} and cannot be cancelled."},
+                status=status.HTTP_409_CONFLICT,
+            )
         return Response({"status": draft.status})
