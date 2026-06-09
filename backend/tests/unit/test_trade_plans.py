@@ -42,3 +42,63 @@ class TradePlanModelTests(TestCase):
         legs = list(plan.legs.all())
         assert legs[0].leg_number == 1
         assert legs[1].leg_number == 2
+
+
+from stocks.serializers.portfolio import TradePlanSerializer
+
+
+class TradePlanSerializerTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user('trader2', password='pass')
+        self.account = PortfolioAccount.objects.create(
+            user=self.user, name='Paper', account_type=AccountType.PAPER,
+            balance=Decimal('1000000'),
+        )
+        self.valid_data = {
+            'ticker': 'NABIL',
+            'account': self.account.id,
+            'risk_budget_pct': '2.00',
+            'legs': [
+                {'leg_number': 1, 'price_target': '1200.00', 'allocation_pct': '60.00', 'stop_loss_price': '1140.00'},
+                {'leg_number': 2, 'price_target': '1150.00', 'allocation_pct': '40.00', 'stop_loss_price': '1095.00'},
+            ],
+        }
+
+    def test_valid_data_creates_plan_with_two_legs(self):
+        s = TradePlanSerializer(data=self.valid_data)
+        assert s.is_valid(), s.errors
+        plan = s.save(user=self.user)
+        assert TradePlan.objects.filter(id=plan.id).exists()
+        assert TradePlanLeg.objects.filter(plan=plan).count() == 2
+
+    def test_allocation_not_100_is_invalid(self):
+        data = {**self.valid_data, 'legs': [
+            {'leg_number': 1, 'price_target': '1200.00', 'allocation_pct': '50.00', 'stop_loss_price': '1140.00'},
+            {'leg_number': 2, 'price_target': '1150.00', 'allocation_pct': '30.00', 'stop_loss_price': '1095.00'},
+        ]}
+        s = TradePlanSerializer(data=data)
+        assert not s.is_valid()
+        assert 'legs' in s.errors
+
+    def test_empty_legs_is_invalid(self):
+        data = {**self.valid_data, 'legs': []}
+        s = TradePlanSerializer(data=data)
+        assert not s.is_valid()
+        assert 'legs' in s.errors
+
+    def test_stop_loss_above_price_target_is_invalid(self):
+        data = {**self.valid_data, 'legs': [
+            {'leg_number': 1, 'price_target': '1200.00', 'allocation_pct': '100.00', 'stop_loss_price': '1300.00'},
+        ]}
+        s = TradePlanSerializer(data=data)
+        assert not s.is_valid()
+
+    def test_computed_fields_present_on_retrieve(self):
+        s = TradePlanSerializer(data=self.valid_data)
+        s.is_valid()
+        plan = s.save(user=self.user)
+        out = TradePlanSerializer(plan).data
+        assert out['total_allocated_pct'] == 100.0
+        assert out['total_legs'] == 2
+        assert out['executed_legs'] == 0
+        assert out['per_leg_risk_pct'] == 1.0  # 2.00 / 2

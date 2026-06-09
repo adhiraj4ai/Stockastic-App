@@ -1,5 +1,8 @@
 from rest_framework import serializers
-from ..models.portfolio import PortfolioAccount, PortfolioItem, PortfolioTransaction, WatchlistItem, PortfolioTarget
+from ..models.portfolio import (
+    PortfolioAccount, PortfolioItem, PortfolioTransaction,
+    WatchlistItem, PortfolioTarget, TradePlan, TradePlanLeg,
+)
 from ..models.market import DailyStockPrice, Company
 
 class PortfolioAccountSerializer(serializers.ModelSerializer):
@@ -74,3 +77,70 @@ class PortfolioTargetSerializer(serializers.ModelSerializer):
         model = PortfolioTarget
         fields = ['id', 'account', 'target_type', 'category_name', 'target_percentage', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+
+class TradePlanLegSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TradePlanLeg
+        fields = [
+            'id', 'leg_number', 'price_target', 'allocation_pct',
+            'stop_loss_price', 'status', 'transaction', 'notes',
+        ]
+        read_only_fields = ['id', 'status', 'transaction']
+
+    def validate(self, data):
+        price = data.get('price_target') or (self.instance.price_target if self.instance else None)
+        stop = data.get('stop_loss_price') or (self.instance.stop_loss_price if self.instance else None)
+        if price and stop and stop >= price:
+            raise serializers.ValidationError(
+                {'stop_loss_price': 'stop_loss_price must be less than price_target.'}
+            )
+        return data
+
+
+class TradePlanSerializer(serializers.ModelSerializer):
+    legs = TradePlanLegSerializer(many=True)
+    total_allocated_pct = serializers.SerializerMethodField()
+    executed_legs = serializers.SerializerMethodField()
+    total_legs = serializers.SerializerMethodField()
+    per_leg_risk_pct = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TradePlan
+        fields = [
+            'id', 'account', 'ticker', 'thesis', 'risk_budget_pct', 'target_price',
+            'status', 'created_at', 'legs',
+            'total_allocated_pct', 'executed_legs', 'total_legs', 'per_leg_risk_pct',
+        ]
+        read_only_fields = ['id', 'status', 'created_at']
+
+    def get_total_allocated_pct(self, obj):
+        return float(sum(leg.allocation_pct for leg in obj.legs.all()))
+
+    def get_executed_legs(self, obj):
+        return obj.legs.filter(status=TradePlanLeg.LegStatus.EXECUTED).count()
+
+    def get_total_legs(self, obj):
+        return obj.legs.count()
+
+    def get_per_leg_risk_pct(self, obj):
+        total = obj.legs.count()
+        return round(float(obj.risk_budget_pct) / total, 2) if total else 0.0
+
+    def validate(self, data):
+        legs_data = data.get('legs', [])
+        if not legs_data:
+            raise serializers.ValidationError({'legs': 'At least one leg is required.'})
+        total_pct = sum(float(leg['allocation_pct']) for leg in legs_data)
+        if round(total_pct, 2) != 100.00:
+            raise serializers.ValidationError(
+                {'legs': f'Leg allocation_pct must sum to 100. Got {total_pct:.2f}.'}
+            )
+        return data
+
+    def create(self, validated_data):
+        legs_data = validated_data.pop('legs')
+        plan = TradePlan.objects.create(**validated_data)
+        for leg_data in legs_data:
+            TradePlanLeg.objects.create(plan=plan, **leg_data)
+        return plan
