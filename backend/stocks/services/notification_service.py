@@ -315,48 +315,48 @@ def check_active_signal_alerts(user):
     Aggregates multiple hits into a single summary notification.
     """
     from datetime import date
-    from ..models import GeneratedSignal, Notification
-    
+    from ..models import SignalEpisode, Notification
+
     notifications_created = 0
     today = date.today()
-    
+
     # Group results for aggregation: { 'WON': [sig1, sig2], 'LOST': [sig3] }
     hits = {'WON': [], 'LOST': []}
-    
+
     # 1. Check ACTIVE signals and update status if hit
-    active_signals = GeneratedSignal.objects.filter(status='ACTIVE')
-    
+    active_signals = SignalEpisode.objects.filter(status='ACTIVE')
+
     for sig in active_signals:
         price = get_latest_price(sig.symbol)
         if not price: continue
-        
+
         hit = False
         hit_type = None
-        
-        if sig.signal == 'BUY':
+
+        if sig.direction == 'BUY':
             if sig.target_price and price >= float(sig.target_price):
                 hit = True
                 hit_type = 'WON'
             elif sig.stop_loss_price and price <= float(sig.stop_loss_price):
                 hit = True
                 hit_type = 'LOST'
-        elif sig.signal == 'SELL':
+        elif sig.direction == 'SELL':
             if sig.target_price and price <= float(sig.target_price):
                 hit = True
                 hit_type = 'WON'
             elif sig.stop_loss_price and price >= float(sig.stop_loss_price):
                 hit = True
                 hit_type = 'LOST'
-                
+
         if hit:
             # First user to trigger this today updates the global state
             sig.status = hit_type
-            sig.closed_date = today
+            sig.end_date = today
             sig.save()
             hits[hit_type].append(sig)
 
     # 2. Check signals closed TODAY for users who haven't been notified yet
-    closed_today = GeneratedSignal.objects.filter(closed_date=today, status__in=['WON', 'LOST'])
+    closed_today = SignalEpisode.objects.filter(end_date=today, status__in=['WON', 'LOST'])
     for sig in closed_today:
         if sig not in hits[sig.status]: # Avoid double counting if already in hits from step 1
             hits[sig.status].append(sig)
@@ -440,15 +440,15 @@ def check_whale_watch_alerts(user):
     """
     from datetime import date, timedelta
     from django.utils import timezone
-    from ..models import StrategySignal, Notification
+    from ..models import SignalEpisode, Notification
 
     notifications_created = 0
 
     try:
         today = date.today()
-        signals = StrategySignal.objects.filter(
-            date=today,
-            signal__in=['BUY', 'SELL'],
+        signals = SignalEpisode.objects.filter(
+            start_date=today,
+            direction__in=['BUY', 'SELL'],
             strategy__name__in=WHALE_WATCH_STRATEGY_NAMES,
         ).select_related('strategy')
 
@@ -456,7 +456,7 @@ def check_whale_watch_alerts(user):
         summary_groups = {'BUY': [], 'SELL': []}
         for sig in signals:
             if not sig: continue
-            summary_groups[sig.signal].append(sig)
+            summary_groups[sig.direction].append(sig)
 
         for signal_type, sig_list in summary_groups.items():
             if not sig_list:
@@ -526,40 +526,40 @@ def check_signal_alerts(user):
     Returns the number of notifications created.
     """
     from datetime import date
-    from ..models import StrategySignal
-    
+    from ..models import SignalEpisode
+
     notifications_created = 0
-    
+
     try:
         # Get user's tickers
         portfolio_tickers = PortfolioItem.objects.filter(user=user).values_list('ticker', flat=True)
         watchlist_tickers = WatchlistItem.objects.filter(user=user).values_list('ticker', flat=True)
         all_tickers = set(list(portfolio_tickers) + list(watchlist_tickers))
-        
+
         if not all_tickers:
             return 0
-        
-        # Get today's signals for user's tickers
+
+        # Get today's episodes for user's tickers (BUY/SELL only; HOLD/NEUTRAL no longer exist as episodes)
         today = date.today()
-        signals = StrategySignal.objects.filter(
+        signals = SignalEpisode.objects.filter(
             symbol__in=all_tickers,
-            date=today,
-            signal__in=['BUY', 'SELL']
+            start_date=today,
+            direction__in=['BUY', 'SELL']
         ).select_related('strategy')
-        
-        # Group by ticker and signal type
+
+        # Group by ticker and direction
         signal_groups = {}
         for sig in signals:
-            key = f"{sig.symbol}_{sig.signal}"
+            key = f"{sig.symbol}_{sig.direction}"
             if key not in signal_groups:
                 signal_groups[key] = []
             signal_groups[key].append(sig)
-        
+
         # Create notifications for each group
         for key, sig_list in signal_groups.items():
             symbol, signal_type = key.split('_')
             count = len(sig_list)
-            
+
             # Determine notification type based on signal strength
             if signal_type == 'BUY':
                 notif_type = Notification.NotificationType.SIGNAL_STRONG_BUY if count >= 3 else Notification.NotificationType.SIGNAL_BUY
@@ -569,9 +569,9 @@ def check_signal_alerts(user):
                 notif_type = Notification.NotificationType.SIGNAL_STRONG_SELL if count >= 3 else Notification.NotificationType.SIGNAL_SELL
                 title = f"{symbol} - {'Strong ' if count >= 3 else ''}Sell Signal"
                 message = f"{count} {'strategies are' if count > 1 else 'strategy is'} signaling SELL for {symbol}."
-            
-            # Get strategy names for metadata
-            strategy_names = [s.strategy.name for s in sig_list]
+
+            # Get strategy names for metadata (strategy FK may be null for source-based episodes)
+            strategy_names = [s.strategy.name for s in sig_list if s.strategy]
             
             # Use 24-hour deduplication window for signals (override default 1-hour)
             from django.utils import timezone
