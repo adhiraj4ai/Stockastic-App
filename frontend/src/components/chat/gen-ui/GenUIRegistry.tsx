@@ -26,6 +26,7 @@ const HoldingsCard = dynamic(() => import('./HoldingsCard'), { loading: () => LO
 const TechnicalsCard = dynamic(() => import('./TechnicalsCard'), { loading: () => LOADER('h-56') });
 const FundamentalsCard = dynamic(() => import('./FundamentalsCard'), { loading: () => LOADER('h-40') });
 const RiskCard = dynamic(() => import('./RiskCard'), { loading: () => LOADER('h-48') });
+const ProposalCard = dynamic(() => import('./ProposalCard'), { loading: () => LOADER('h-40') });
 
 // Cards that share a module
 const SimpleCards = {
@@ -100,6 +101,8 @@ export const GenUIContainer: React.FC<GenUIContainerProps> = ({ type, data }) =>
             return <SimpleCards.PositionSizingCard {...data} />;
         case 'realized_pnl':
             return <SimpleCards.RealizedPnLCard {...data} />;
+        case 'proposal':
+            return <ProposalCard {...data} />;
         default:
             return (
                 <div className="px-3 py-2 rounded-md border border-border bg-muted/40 text-xs text-muted-foreground">
