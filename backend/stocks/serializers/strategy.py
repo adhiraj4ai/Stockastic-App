@@ -34,13 +34,27 @@ class StrategySerializer(serializers.ModelSerializer):
     max_drawdown = serializers.SerializerMethodField()
     sharpe_ratio = serializers.SerializerMethodField()
     win_rate = serializers.SerializerMethodField()
+    kind = serializers.SerializerMethodField()
+    summary = serializers.SerializerMethodField()
 
     class Meta:
         model = Strategy
-        fields = ['id', 'name', 'description', 'code', 'spec', 'optimization_config', 'created_at', 'is_public',
+        fields = ['id', 'name', 'description', 'code', 'spec', 'kind', 'summary', 'optimization_config', 'created_at', 'is_public',
                   'pnl_amount', 'pnl_percent', 'max_drawdown', 'sharpe_ratio', 'win_rate', 'icon', 'icon_color', 'default_parameters',
                   'published_experiments']
-        read_only_fields = ['id', 'created_at', 'published_experiments']
+        read_only_fields = ['id', 'created_at', 'published_experiments', 'kind', 'summary']
+
+    def get_kind(self, obj):
+        return 'composed' if obj.spec else 'custom'
+
+    def get_summary(self, obj):
+        if obj.spec:
+            try:
+                from ..services.strategy_framework import spec_to_sentence
+                return spec_to_sentence(obj.spec)
+            except Exception:
+                return 'Composed strategy.'
+        return 'Custom Python strategy.'
 
     def _apply_spec(self, validated_data):
         """Keep `spec` and `code` consistent: when a spec is provided, it is the source of

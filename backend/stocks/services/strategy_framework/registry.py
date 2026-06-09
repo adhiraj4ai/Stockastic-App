@@ -17,7 +17,8 @@ from . import library as L
 from .base import build_strategy
 
 __all__ = [
-    "REGISTRY", "registry_schema", "validate_spec", "compile_spec", "spec_to_code", "SpecError",
+    "REGISTRY", "registry_schema", "validate_spec", "compile_spec", "spec_to_code",
+    "spec_to_sentence", "SpecError",
 ]
 
 NAMESPACE = {"alpha": "alphas", "regime": "regimes", "stop": "stops", "exit": "exits"}
@@ -359,6 +360,33 @@ def _node_code(node):
         v = given.get(p["name"], p["default"])
         args.append(f"{p.get('arg') or p['name']}={v!r}")
     return f"{NAMESPACE[meta['kind']]}.{node['type']}({', '.join(args)})"
+
+
+def _phrase(node):
+    meta = REGISTRY[node["type"]]
+    params = node.get("params") or {}
+    detail = ", ".join(f"{p['label'].lower()} {params.get(p['name'], p['default'])}"
+                       for p in meta["params"][:2])
+    return f"{meta['label']}" + (f" ({detail})" if detail else "")
+
+
+def spec_to_sentence(spec):
+    """Plain-English description of a composed strategy (for headers / chat)."""
+    if not spec or not spec.get("alpha"):
+        return "Empty strategy."
+    s = f"Signal: {_phrase(spec['alpha'])}."
+    regimes = _as_nodes(spec.get("regime"))
+    if regimes:
+        s += " Only enters while " + " and ".join(_phrase(n) for n in regimes) + "."
+    if spec.get("stop"):
+        s += f" Risk-managed with {_phrase(spec['stop'])}."
+    exits = _as_nodes(spec.get("exit"))
+    if exits:
+        s += " Exits on " + ", or ".join(REGISTRY[n["type"]]["label"] for n in exits) \
+             + " (plus the signal's own reverse)."
+    if spec.get("rr") is not None:
+        s += f" Take-profit at {spec['rr']}× risk."
+    return s
 
 
 def spec_to_code(spec):

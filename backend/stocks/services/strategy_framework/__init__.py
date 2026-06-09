@@ -19,7 +19,8 @@ runs it like any other strategy.
 from . import library as _lib
 from .base import build_strategy, Component, Alpha, Regime, Stop, ExitRule
 from .registry import (
-    REGISTRY, registry_schema, validate_spec, compile_spec, spec_to_code, SpecError,
+    REGISTRY, registry_schema, validate_spec, compile_spec, spec_to_code,
+    spec_to_sentence, SpecError,
 )
 
 # Namespaced accessors so composition reads declaratively.
@@ -31,6 +32,7 @@ exits = _lib
 __all__ = [
     "build_strategy", "Component", "Alpha", "Regime", "Stop", "ExitRule",
     "alphas", "regimes", "stops", "exits", "library",
-    "REGISTRY", "registry_schema", "validate_spec", "compile_spec", "spec_to_code", "SpecError",
+    "REGISTRY", "registry_schema", "validate_spec", "compile_spec", "spec_to_code",
+    "spec_to_sentence", "SpecError",
 ]
 library = _lib
