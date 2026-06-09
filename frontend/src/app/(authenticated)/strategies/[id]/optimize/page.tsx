@@ -147,15 +147,17 @@ export default function OptimizePage() {
 
             const response = await api.post(`/api/stocks/strategies/${strategy!.id}/optimize_multi_period/`, requestData);
 
-            if (response.data.success || response.data.status === 'success') {
+            if (response.data.results && Object.keys(response.data.results).length > 0) {
                 setResults({
                     status: 'success',
                     data: response.data.results,
                     folds: response.data.folds_evaluated
                 });
                 toast.success(`K-fold optimization complete!`);
+            } else if (response.data.error) {
+                throw new Error(response.data.error);
             } else {
-                throw new Error(response.data.error || 'Optimization failed');
+                throw new Error('Optimization produced no results. Check strategy code and parameter ranges.');
             }
         } catch (error: any) {
             console.error('Optimization failed', error);
@@ -185,7 +187,7 @@ export default function OptimizePage() {
                     <span className="truncate">Optimize - {strategy?.name || 'Strategy'}</span>
                     <Link
                         href={`/strategies/${strategyId}/editor`}
-                        className="p-1 w-7 h-7 flex items-center justify-center rounded-md border border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-200 dark:hover:border-blue-900/50 transition-all shadow-sm group"
+                        className="p-1 w-7 h-7 flex items-center justify-center rounded-md border border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-card text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-200 dark:hover:border-blue-900/50 transition-all shadow-sm group"
                         title="Edit Strategy code"
                     >
                         <Code size={14} className="group-hover:scale-110 transition-transform" />
@@ -197,7 +199,7 @@ export default function OptimizePage() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Configuration Panel */}
                     <div className="lg:col-span-4 xl:col-span-3">
-                        <Card className="border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden sticky top-6 dark:bg-slate-900">
+                        <Card className="border-gray-200 dark:border-slate-800 shadow-sm overflow-hidden sticky top-6 dark:bg-card">
                             {configExpanded && (
                                 <CardContent className="p-6 space-y-6">
                                     {/* Scope Section */}
@@ -263,11 +265,11 @@ export default function OptimizePage() {
                                                 <select
                                                     value={sector}
                                                     onChange={(e) => setSector(e.target.value)}
-                                                    className="w-full h-10 px-3 text-xs rounded-xl border-2 border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:border-purple-200 dark:focus:border-purple-900/50 focus:ring-4 focus:ring-purple-500/5 outline-none transition-all shadow-sm"
+                                                    className="w-full h-10 px-3 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:border-purple-200 dark:focus:border-purple-900/50 focus:ring-4 focus:ring-purple-500/5 outline-none transition-all shadow-sm"
                                                 >
-                                                    <option value="" className="dark:bg-slate-900">Select sector...</option>
+                                                    <option value="" className="dark:bg-card">Select sector...</option>
                                                     {sectors.map((s) => (
-                                                        <option key={s.name} value={s.name} className="dark:bg-slate-900">{s.name} ({s.count})</option>
+                                                        <option key={s.name} value={s.name} className="dark:bg-card">{s.name} ({s.count})</option>
                                                     ))}
                                                 </select>
                                             </div>
@@ -335,7 +337,7 @@ export default function OptimizePage() {
                                             className="w-full h-11 text-xs font-bold uppercase tracking-wider bg-purple-600 dark:bg-purple-700 hover:bg-purple-700 dark:hover:bg-purple-800 text-white shadow-lg shadow-purple-200 dark:shadow-purple-900/20 active:scale-95 transition-all rounded-xl"
                                         >
                                             {optimizing ? (
-                                                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" /> RUNNING</>
+                                                <><div className="w-4 h-4 border border-white/30 border-t-white rounded-full animate-spin mr-2" /> RUNNING</>
                                             ) : (
                                                 <><Zap size={16} className="mr-2" /> START OPTIMIZATION</>
                                             )}
@@ -349,8 +351,8 @@ export default function OptimizePage() {
                     {/* K-Fold Optimization Results Panel */}
                     <div className="lg:col-span-8 xl:col-span-9 space-y-6 pb-20">
                         {results.status === 'pending' && (
-                            <div className="h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-3xl bg-gray-50/30 dark:bg-slate-900/20 text-center px-10">
-                                <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 mb-4 scale-110">
+                            <div className="h-[400px] flex flex-col items-center justify-center border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-gray-50/30 dark:bg-card/20 text-center px-10">
+                                <div className="p-4 bg-white dark:bg-card rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 mb-4 scale-110">
                                     <Activity size={32} className="text-purple-200 dark:text-purple-900" />
                                 </div>
                                 <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100">Ready to Optimize</h3>
@@ -361,13 +363,13 @@ export default function OptimizePage() {
                         )}
 
                         {results.status === 'loading' && (
-                            <Card className="border-purple-100 dark:border-purple-900/50 dark:bg-slate-900 shadow-xl shadow-purple-50/50 dark:shadow-purple-900/10 overflow-hidden">
+                            <Card className="border-purple-100 dark:border-purple-900/50 dark:bg-card shadow-xl shadow-purple-50/50 dark:shadow-purple-900/10 overflow-hidden">
                                 <div className="p-12 flex flex-col items-center justify-center text-center">
                                     <div className="w-20 h-2 bg-purple-50 dark:bg-purple-900/20 rounded-full overflow-hidden mb-6">
                                         <div className="h-full bg-purple-600 dark:bg-purple-500 animate-[loading_1.5s_ease-in-out_infinite]" />
                                     </div>
                                     <Zap size={40} className="text-purple-600 dark:text-purple-400 animate-pulse mb-4" />
-                                    <h3 className="text-xl font-black text-gray-900 dark:text-slate-100 uppercase tracking-tight">Optimizing Strategy</h3>
+                                    <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-100 uppercase tracking-tight">Optimizing Strategy</h3>
                                     <p className="text-sm font-medium text-gray-600 dark:text-slate-400 mt-2">Evaluating parameters across all 3-year historical folds...</p>
                                     <p className="text-xs text-gray-400 dark:text-slate-500 mt-2 font-mono italic">This ensures robustness across different market regimes</p>
                                 </div>
@@ -394,43 +396,43 @@ export default function OptimizePage() {
                         )}
 
                         {results.status === 'success' && results.data && (
-                            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-slate-950 border border-slate-200 dark:border-slate-800 overflow-hidden">
-                                <div className="px-8 py-5 bg-gradient-to-r from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 flex items-center justify-between">
+                            <div className="bg-white dark:bg-card rounded-xl shadow-xl shadow-sm dark:shadow-slate-950 border border-slate-200 dark:border-slate-800 overflow-hidden">
+                                <div className="px-8 py-5 bg-muted/60 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-purple-500/20 rounded-lg">
                                             <Activity size={18} className="text-purple-300" />
                                         </div>
                                         <div>
-                                            <h3 className="text-sm font-black text-white uppercase tracking-widest">K-Fold Results</h3>
+                                            <h3 className="text-sm font-semibold text-white uppercase tracking-wider">K-Fold Results</h3>
                                             <p className="text-[10px] text-slate-400 font-bold">Evaluated across {results.folds || 0} folds (3Y each)</p>
                                         </div>
                                     </div>
-                                    <Badge className="bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border-emerald-500/30 text-[10px] uppercase font-black tracking-widest px-3 py-1">
+                                    <Badge className="bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border-emerald-500/30 text-[10px] uppercase font-semibold tracking-wider px-3 py-1">
                                         <CheckCircle size={10} className="mr-1.5" /> Complete & Auto-Published
                                     </Badge>
                                 </div>
 
                                 <div className="p-8">
-                                    <div className="overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/20">
+                                    <div className="overflow-x-auto rounded-2xl border border-border dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/20">
                                         <table className="w-full text-sm border-collapse">
                                             <thead>
                                                 <tr>
-                                                    <th className="p-4 text-left bg-slate-100/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 w-1/4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Optimization Metric</th>
+                                                    <th className="p-4 text-left bg-slate-100/50 dark:bg-card border-b border-slate-200 dark:border-slate-800 w-1/4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Optimization Metric</th>
                                                     {['win_rate', 'profit', 'balanced'].map(obj => (
-                                                        <th key={obj} className={`p-4 text-left border-b border-slate-200 dark:border-slate-800 w-1/4 uppercase tracking-widest text-[10px] font-black ${obj === 'balanced' ? 'bg-purple-600 dark:bg-purple-700 text-white' : 'bg-slate-100/50 dark:bg-slate-900/50 text-slate-700 dark:text-slate-300'}`}>
+                                                        <th key={obj} className={`p-4 text-left border-b border-slate-200 dark:border-slate-800 w-1/4 uppercase tracking-wider text-[10px] font-semibold ${obj === 'balanced' ? 'bg-purple-600 dark:bg-purple-700 text-white' : 'bg-slate-100/50 dark:bg-card text-slate-700 dark:text-slate-300'}`}>
                                                             {obj.replace('_', ' ')}
                                                         </th>
                                                     ))}
                                                 </tr>
                                             </thead>
-                                            <tbody className="bg-white dark:bg-slate-900">
+                                            <tbody className="bg-white dark:bg-card">
                                                 {/* Parameters Row */}
                                                 <tr>
-                                                    <td className="p-4 font-bold text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-slate-800 align-top text-xs uppercase">Best Parameters</td>
+                                                    <td className="p-4 font-bold text-slate-400 dark:text-slate-500 border-b border-border dark:border-slate-800 align-top text-xs uppercase">Best Parameters</td>
                                                     {['win_rate', 'profit', 'balanced'].map(obj => {
                                                         const objData = results.data![obj];
                                                         return (
-                                                            <td key={obj} className={`p-4 border-b border-slate-100 dark:border-slate-800 align-top ${obj === 'balanced' ? 'bg-purple-50/30 dark:bg-purple-900/20' : ''}`}>
+                                                            <td key={obj} className={`p-4 border-b border-border dark:border-slate-800 align-top ${obj === 'balanced' ? 'bg-purple-50/30 dark:bg-purple-900/20' : ''}`}>
                                                                 <pre className="text-[11px] text-slate-600 dark:text-slate-300 whitespace-pre-wrap font-mono font-bold leading-relaxed">
                                                                     {JSON.stringify(objData?.best_params || {}, null, 2).replace(/{|}|"/g, '').trim()}
                                                                 </pre>
@@ -466,7 +468,7 @@ export default function OptimizePage() {
 
                                                             const isBalanced = obj === 'balanced';
                                                             return (
-                                                                <td key={obj} className={`p-4 border-b border-slate-50 dark:border-slate-800/50 font-mono text-xs ${isBalanced ? 'bg-purple-50/30 dark:bg-purple-900/20 font-black text-purple-900 dark:text-purple-300' : 'text-slate-600 dark:text-slate-400 font-bold'}`}>
+                                                                <td key={obj} className={`p-4 border-b border-slate-50 dark:border-slate-800/50 font-mono text-xs ${isBalanced ? 'bg-purple-50/30 dark:bg-purple-900/20 font-semibold text-purple-900 dark:text-purple-300' : 'text-slate-600 dark:text-slate-400 font-bold'}`}>
                                                                     {value}
                                                                 </td>
                                                             );
@@ -486,7 +488,7 @@ export default function OptimizePage() {
                                                                         <Button
                                                                             variant="ghost"
                                                                             size="sm"
-                                                                            className="w-full text-[10px] h-8 uppercase font-black text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-purple-100 dark:hover:border-purple-900 transition-all"
+                                                                            className="w-full text-[10px] h-8 uppercase font-semibold text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-purple-100 dark:hover:border-purple-900 transition-all"
                                                                             onClick={() => window.open(`/strategies/${strategyId}/experiments/${expId}`, '_blank')}
                                                                         >
                                                                             <ExternalLink size={12} className="mr-1.5" /> View Results
@@ -501,20 +503,20 @@ export default function OptimizePage() {
                                         </table>
                                     </div>
 
-                                    <div className="mt-10 p-6 bg-slate-900 dark:bg-slate-950 rounded-3xl text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl shadow-slate-400 dark:shadow-slate-950">
+                                    <div className="mt-10 p-6 bg-slate-900 dark:bg-slate-950 rounded-xl text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm shadow-slate-400 dark:shadow-slate-950">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-white/10 dark:bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 dark:border-white/5">
+                                            <div className="w-12 h-12 bg-white/10 dark:bg-muted rounded-2xl flex items-center justify-center border border-white/10 dark:border-border">
                                                 <TrendingUp size={24} className="text-purple-300 dark:text-purple-400" />
                                             </div>
                                             <div>
-                                                <p className="text-white dark:text-slate-200 font-black uppercase tracking-widest text-[10px]">Ready to deploy?</p>
+                                                <p className="text-white dark:text-slate-200 font-semibold uppercase tracking-wider text-[10px]">Ready to deploy?</p>
                                                 <h4 className="text-blue-200 dark:text-blue-300 font-bold text-sm">Balanced optimization found stable parameters.</h4>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <Button
                                                 onClick={handleApplyParameters}
-                                                className="h-12 px-8 rounded-2xl bg-white dark:bg-slate-200 text-slate-900 dark:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-300 font-black uppercase tracking-widest text-xs shadow-lg transition-transform active:scale-95"
+                                                className="h-12 px-8 rounded-2xl bg-white dark:bg-slate-200 text-slate-900 dark:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-300 font-semibold uppercase tracking-wider text-xs shadow-lg transition-transform active:scale-95"
                                             >
                                                 Apply Balanced Config
                                             </Button>

@@ -122,7 +122,7 @@ export default function TechnicalAnalysis({ symbol, data, history }: TechnicalAn
                                 </button>
 
                                 {isExpanded && (
-                                    <div className="bg-white/50 dark:bg-slate-900/50 animate-in slide-in-from-top-2 duration-300">
+                                    <div className="bg-white/50 dark:bg-card animate-in slide-in-from-top-2 duration-300">
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-sm">
                                                 <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">

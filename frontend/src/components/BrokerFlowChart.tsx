@@ -98,7 +98,7 @@ export const BrokerFlowChart = ({ data, height = 350 }: BrokerFlowChartProps) =>
                 stack: 'total',
                 label: { show: true, position: 'inside', formatter: (p: any) => p.data.name, fontSize: 9, color: '#fff', fontWeight: 'bold' },
                 data: series1,
-                itemStyle: { color: '#3b82f6', borderRadius: [0, 4, 4, 0] }
+                itemStyle: { color: '#6366f1', borderRadius: [0, 4, 4, 0] }
             },
             {
                 name: 'Pick 2',
@@ -114,7 +114,7 @@ export const BrokerFlowChart = ({ data, height = 350 }: BrokerFlowChartProps) =>
                 stack: 'total',
                 label: { show: true, position: 'inside', formatter: (p: any) => p.data.name, fontSize: 9, color: '#fff', fontWeight: 'bold' },
                 data: series3,
-                itemStyle: { color: '#8b5cf6', borderRadius: [0, 4, 4, 0] } // visually rouding end only if last? Hard with stack. Actually just round last one.
+                itemStyle: { color: '#94a3b8', borderRadius: [0, 4, 4, 0] } // visually rouding end only if last? Hard with stack. Actually just round last one.
             }
         ]
     };

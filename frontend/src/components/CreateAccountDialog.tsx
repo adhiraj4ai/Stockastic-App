@@ -49,7 +49,7 @@ export function CreateAccountDialog({ isOpen, onOpenChange, onSuccess }: CreateA
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100">
+            <div className="bg-white dark:bg-card rounded-xl shadow-sm w-full max-w-md overflow-hidden transform transition-all scale-100">
 
                 {/* Header */}
                 <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-slate-800">

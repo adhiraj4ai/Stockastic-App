@@ -39,7 +39,7 @@ class SignalDetailErrorBoundary extends React.Component<
     render() {
         if (this.state.hasError) {
             return (
-                <div className="flex flex-col items-center justify-center h-full bg-white dark:bg-slate-900 rounded-3xl gap-4 p-10 border border-slate-200 dark:border-slate-800 shadow-2xl">
+                <div className="flex flex-col items-center justify-center h-full bg-white dark:bg-card rounded-xl gap-4 p-10 border border-slate-200 dark:border-slate-800 shadow-sm">
                     <div className="text-4xl">⚠️</div>
                     <h3 className="text-lg font-bold text-slate-800 dark:text-white">Signal Detail Unavailable</h3>
                     <p className="text-sm text-slate-500 text-center max-w-md">
@@ -174,7 +174,7 @@ const isSignalActionable = (signalPrice: number, currentPrice?: number, signalDi
 function SignalBadge({ direction }: { direction: 'BUY' | 'SELL' }) {
     return (
         <span className={cn(
-            'inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-[11px] font-black tracking-wider',
+            'inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-[11px] font-semibold tracking-wider',
             direction === 'BUY' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
         )}>
             {direction === 'BUY' ? '↑' : '↓'} {direction}
@@ -190,7 +190,7 @@ function TrendPill({ label, val }: { label: string; val?: number }) {
         <div className="flex flex-col items-center">
             <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{label}</span>
             <span className={cn(
-                'text-[11px] font-black font-mono',
+                'text-[11px] font-semibold font-mono',
                 isPos ? 'text-emerald-500' : isNeg ? 'text-rose-500' : 'text-slate-400'
             )}>
                 {val !== undefined ? `${isPos ? '+' : ''}${fixed(val, 0)}%` : '--'}
@@ -272,7 +272,7 @@ function UnifiedSignalCard({
         <div
             onClick={() => onSelect({ symbol, ltp, currentPrice, strength: strength || 50, direction, targetPrice, stopLoss, tp1, tp2, tp3, status })}
             className={cn(
-                'group relative rounded-2xl border bg-white dark:bg-slate-900/50 cursor-pointer transition-all duration-200 hover:shadow-md overflow-hidden',
+                'group relative rounded-2xl border bg-white dark:bg-card cursor-pointer transition-all duration-200 hover:shadow-md overflow-hidden',
                 direction === 'BUY'
                     ? 'border-slate-200/80 dark:border-slate-800/60 hover:border-emerald-300/60 dark:hover:border-emerald-700/40'
                     : 'border-slate-200/80 dark:border-slate-800/60 hover:border-rose-300/60 dark:hover:border-rose-700/40',
@@ -291,15 +291,15 @@ function UnifiedSignalCard({
                                 <Link
                                     href={`/ticker/${symbol}`}
                                     onClick={(e) => e.stopPropagation()}
-                                    className="text-lg font-black tracking-tight text-slate-900 dark:text-slate-100 hover:underline"
+                                    className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100 hover:underline"
                                 >
                                     {symbol}
                                 </Link>
                                 <SignalBadge direction={direction} />
                             </div>
 
-                            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/50 px-2 py-0.5 rounded-md border border-slate-100 dark:border-slate-800">
-                                <span className="text-sm font-black font-mono text-slate-900 dark:text-slate-100 tracking-tight">
+                            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/50 px-2 py-0.5 rounded-md border border-border dark:border-slate-800">
+                                <span className="text-sm font-semibold font-mono text-slate-900 dark:text-slate-100 tracking-tight">
                                     Rs.{num(ltp).toLocaleString()}
                                 </span>
                                 {change !== null && (
@@ -315,19 +315,19 @@ function UnifiedSignalCard({
                             <div className="flex items-center gap-2.5">
                                 <div className="flex items-center gap-1">
                                     <span className="text-[10px] font-bold text-slate-400 uppercase">RSI</span>
-                                    <span className={cn('text-xs font-black font-mono', num(indicators?.rsi) > 70 ? 'text-rose-500' : num(indicators?.rsi) < 30 ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-300')}>{fixed(indicators?.rsi, 1, '--')}</span>
+                                    <span className={cn('text-xs font-semibold font-mono', num(indicators?.rsi) > 70 ? 'text-rose-500' : num(indicators?.rsi) < 30 ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-300')}>{fixed(indicators?.rsi, 1, '--')}</span>
                                 </div>
                                 <div className="w-px h-3 bg-slate-200 dark:bg-slate-700"></div>
                                 <div className="flex items-center gap-1">
                                     <span className="text-[10px] font-bold text-slate-400 uppercase">MACD</span>
-                                    <span className={cn('text-xs font-black font-mono', num(indicators?.macd_hist) > 0 ? 'text-emerald-500' : 'text-rose-500')}>{fixed(indicators?.macd, 1, '--')}</span>
+                                    <span className={cn('text-xs font-semibold font-mono', num(indicators?.macd_hist) > 0 ? 'text-emerald-500' : 'text-rose-500')}>{fixed(indicators?.macd, 1, '--')}</span>
                                 </div>
                             </div>
                         </div>
                         
                         <div className="flex flex-wrap items-center gap-1.5">
                             {date && (
-                                <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-md', freshness.color)}>
+                                <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-md', freshness?.color || 'bg-slate-500/10 text-slate-500')}>
                                     {freshness.label}
                                 </span>
                             )}
@@ -366,7 +366,7 @@ function UnifiedSignalCard({
                 )}
 
                 {/* ── Footer bar ── */}
-                <div className="flex items-center gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/60">
+                <div className="flex items-center gap-3 pt-3 border-t border-border dark:border-slate-800/60">
                     {/* Indicators */}
                     <div className="flex items-center gap-3 flex-1">
                         {indicators?.trends && (
@@ -381,7 +381,7 @@ function UnifiedSignalCard({
                     {/* Right side: status + arrow */}
                     <div className="flex items-center gap-2 shrink-0">
                         {resolvedAction && (
-                            <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-md border', resolvedAction.color)}>
+                            <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-md border', resolvedAction?.color || 'bg-slate-500/10 text-slate-500')}>
                                 {resolvedAction.label}
                             </span>
                         )}
@@ -512,51 +512,45 @@ function AllSourcesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
     return (
         <div className="space-y-6">
             {/* ── Market Pulse Hero ── */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 p-6 sm:p-8 flex items-center justify-between shadow-2xl">
-                <div className="absolute top-[-20px] right-[-20px] p-8 opacity-5 pointer-events-none transition-transform hover:scale-110 duration-1000">
-                    <Activity size={200} strokeWidth={1} />
-                </div>
-                
-                <div className="relative z-10 w-full">
-                    <div className="flex items-center justify-between mb-8">
-                        <div>
-                            <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-                                <Activity className="text-indigo-400" size={24} />
-                                Market Pulse
-                            </h2>
-                            <p className="text-slate-400 text-sm font-medium mt-1">
-                                Consolidated intelligence from all specialized engines.
-                            </p>
+            <div className="surface p-6">
+                <div className="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 className="text-lg font-semibold text-foreground tracking-tight flex items-center gap-2">
+                            <Activity size={16} className="text-muted-foreground" />
+                            Market Pulse
+                        </h2>
+                        <p className="text-muted-foreground text-sm mt-1">
+                            Consolidated intelligence from all specialized engines.
+                        </p>
+                    </div>
+                    {generatedDate && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border text-xs text-muted-foreground">
+                            <Clock size={12} />
+                            {new Date(generatedDate).toLocaleDateString()}
                         </div>
-                        {generatedDate && (
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 backdrop-blur-md rounded-full border border-white/10 text-xs font-semibold text-slate-300">
-                                <Clock size={12} className="text-indigo-400" />
-                                {new Date(generatedDate).toLocaleDateString()}
+                    )}
+                </div>
+
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    {[
+                        { label: 'Actionable Buys', value: buys, icon: <TrendingUp className="text-emerald-600 dark:text-emerald-400" size={14} /> },
+                        { label: 'Actionable Sells', value: sells, icon: <TrendingDown className="text-rose-600 dark:text-rose-400" size={14} /> },
+                        { label: 'High Conviction', value: multiSource, icon: <Zap className="text-muted-foreground" size={14} /> },
+                        { label: 'Total Tracked', value: unified.length, icon: <Radar className="text-muted-foreground" size={14} /> },
+                    ].map(m => (
+                        <div key={m.label} className="rounded-md border border-border p-3 flex flex-col justify-between">
+                            <div className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                {m.icon}
+                                {m.label}
                             </div>
-                        )}
-                    </div>
-                    
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        {[
-                            { label: 'Actionable Buys', value: buys, icon: <TrendingUp className="text-emerald-400" size={16} /> },
-                            { label: 'Actionable Sells', value: sells, icon: <TrendingDown className="text-rose-400" size={16} /> },
-                            { label: 'High Conviction', value: multiSource, icon: <Zap className="text-amber-400" size={16} /> },
-                            { label: 'Total Tracked', value: unified.length, icon: <Radar className="text-indigo-400" size={16} /> },
-                        ].map(m => (
-                            <div key={m.label} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 flex flex-col justify-between group hover:bg-white/10 transition-colors">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                    {m.icon}
-                                    {m.label}
-                                </div>
-                                <div className="text-3xl font-black text-white">{m.value}</div>
-                            </div>
-                        ))}
-                    </div>
+                            <div className="text-2xl font-semibold text-foreground tabular-nums">{m.value}</div>
+                        </div>
+                    ))}
                 </div>
             </div>
 
             {/* ── Advanced Filter Dock ── */}
-            <div className="flex flex-col lg:flex-row gap-4 items-center justify-between p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="flex flex-col lg:flex-row gap-4 items-center justify-between p-2 bg-white dark:bg-card rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
                 <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
                     {/* Sector */}
                     <div className="flex-1 lg:flex-none">
@@ -585,7 +579,7 @@ function AllSourcesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
                         <span className="text-[10px] font-bold text-slate-400 pl-2 pr-1 uppercase tracking-wider hidden sm:block">Sources</span>
                         {[1, 2, 3].map(n => (
                             <button key={n} onClick={() => setMinConviction(n)}
-                                className={cn('w-8 h-7 rounded-md text-xs font-black transition-all flex items-center justify-center',
+                                className={cn('w-8 h-7 rounded-md text-xs font-semibold transition-all flex items-center justify-center',
                                     minConviction === n
                                         ? 'bg-slate-900 dark:bg-slate-700 text-white shadow-sm'
                                         : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200')}>
@@ -604,7 +598,7 @@ function AllSourcesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
 
             {/* ── Section Header ── */}
             <div className="flex items-center justify-between pt-2 px-1">
-                <h3 className="text-lg font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-white tracking-tight flex items-center gap-2">
                     {dirFilter === 'BUY' ? 'Actionable Buys' : dirFilter === 'SELL' ? 'Actionable Sells' : 'Active Intelligence'}
                     {minConviction > 1 && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50 text-[10px] font-bold uppercase tracking-wider shadow-sm">
@@ -696,7 +690,7 @@ function SmartMoneyView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
         <div className="space-y-5">
             <SectorFilter sectors={availableSectors} value={sectorFilter} onChange={setSectorFilter} />
             <div className="flex flex-wrap gap-3 items-center">
-                <div className="flex p-0.5 bg-slate-100 dark:bg-slate-800/60 rounded-lg border border-slate-200/50 dark:border-slate-700/50">
+                <div className="flex p-0.5 bg-slate-100 dark:bg-slate-800/60 rounded-lg border border-border dark:border-slate-700/50">
                     {sections.map(s => (
                         <button key={s.id} onClick={() => setActiveSection(s.id)}
                             className={cn(
@@ -794,7 +788,7 @@ function StrategiesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
         <div className="space-y-5">
             <SectorFilter sectors={availableSectors} value={sectorFilter} onChange={setSectorFilter} />
             <div className="flex flex-wrap gap-3 items-center">
-                <div className="flex p-0.5 bg-slate-100 dark:bg-slate-800/60 rounded-lg border border-slate-200/50 dark:border-slate-700/50">
+                <div className="flex p-0.5 bg-slate-100 dark:bg-slate-800/60 rounded-lg border border-border dark:border-slate-700/50">
                     {(['ALL', 'BUY', 'SELL', 'HOLD'] as const).map(d => (
                         <button key={d} onClick={() => setFilter(d)}
                             className={cn('px-3 py-1.5 rounded-md text-xs font-bold transition-all',
@@ -880,7 +874,7 @@ function WhaleWatchView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
         <div className="space-y-5">
             <SectorFilter sectors={availableSectors} value={sectorFilter} onChange={setSectorFilter} />
             <div className="flex flex-wrap gap-3 items-center">
-                <div className="flex p-0.5 bg-slate-100 dark:bg-slate-800/60 rounded-lg border border-slate-200/50 dark:border-slate-700/50">
+                <div className="flex p-0.5 bg-slate-100 dark:bg-slate-800/60 rounded-lg border border-border dark:border-slate-700/50">
                     {WHALE_SOURCES.map((src, i) => (
                         <button key={src} onClick={() => setSourceIdx(i)}
                             className={cn('px-3 py-1.5 rounded-md text-xs font-bold transition-all',
@@ -1017,7 +1011,7 @@ export default function IntelHubClient() {
                                 showHistorical ? 'bg-slate-900 dark:bg-white' : 'bg-slate-200 dark:bg-slate-700'
                             )}>
                             <span className={cn(
-                                'absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white dark:bg-slate-900 shadow transition-transform duration-200',
+                                'absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white dark:bg-card shadow transition-transform duration-200',
                                 showHistorical ? 'translate-x-4' : 'translate-x-0'
                             )} />
                         </button>
@@ -1033,13 +1027,13 @@ export default function IntelHubClient() {
                 </div>
 
                 {/* ── Tab navigation ── */}
-                <div className="flex p-0.5 bg-slate-100 dark:bg-slate-900/60 rounded-xl border border-slate-200/60 dark:border-slate-800/50 w-fit">
+                <div className="flex p-0.5 bg-slate-100 dark:bg-card rounded-xl border border-border dark:border-slate-800/50 w-fit">
                     {TABS.map(t => (
                         <button key={t.key} onClick={() => setTab(t.key)}
                             className={cn(
                                 'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all',
                                 tab === t.key
-                                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm border border-slate-200/50 dark:border-slate-700/50'
+                                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm border border-border dark:border-slate-700/50'
                                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                             )}>
                             <span className={tab === t.key ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-600'}>
@@ -1052,9 +1046,9 @@ export default function IntelHubClient() {
 
                 {/* ── Main content ── */}
                 <div className="animate-in fade-in slide-in-from-bottom-1 duration-300">
-                    {tab === 'all'        && <AllSourcesView {...sharedProps} />}
-                    {tab === 'smart'      && <SmartMoneyView {...sharedProps} />}
-                    {tab === 'whale'      && <WhaleWatchView {...sharedProps} />}
+                    {tab === 'all' && <AllSourcesView {...sharedProps} />}
+                    {tab === 'smart' && <SmartMoneyView {...sharedProps} />}
+                    {tab === 'whale' && <WhaleWatchView {...sharedProps} />}
                     {tab === 'strategies' && <StrategiesView {...sharedProps} />}
                 </div>
             </div>
@@ -1082,7 +1076,7 @@ export default function IntelHubClient() {
                                 tp2={selectedSignal.tp2}
                                 tp3={selectedSignal.tp3}
                                 status={selectedSignal.status}
-                                className="shadow-2xl border-slate-200 dark:border-slate-800"
+                                className="shadow-sm border-slate-200 dark:border-slate-800"
                             />
                         </SignalDetailErrorBoundary>
                     )}

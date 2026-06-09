@@ -84,8 +84,8 @@ export function TagPopover({ itemId, tags, onTagsUpdate }: TagPopoverProps) {
             {isOpen && (
                 <>
                     <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-                    <div className="absolute left-0 top-full mt-2 z-50 w-56 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xl p-3 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
-                        <div className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Quick Tags</div>
+                    <div className="absolute left-0 top-full mt-2 z-50 w-56 bg-white dark:bg-card rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-3 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                        <div className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Quick Tags</div>
                         <div className="flex flex-wrap gap-1.5">
                             {PRESET_TAGS.map(preset => {
                                 const isActive = localTags.includes(preset.label);
@@ -105,8 +105,8 @@ export function TagPopover({ itemId, tags, onTagsUpdate }: TagPopoverProps) {
                             })}
                         </div>
 
-                        <div className="border-t border-slate-100 dark:border-slate-800 pt-2">
-                            <div className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5">Custom Tag</div>
+                        <div className="border-t border-border dark:border-slate-800 pt-2">
+                            <div className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">Custom Tag</div>
                             <div className="flex gap-1.5">
                                 <Input
                                     placeholder="e.g. Tax Loss"
@@ -129,8 +129,8 @@ export function TagPopover({ itemId, tags, onTagsUpdate }: TagPopoverProps) {
 
                         {/* Active tags with remove */}
                         {localTags.length > 0 && (
-                            <div className="border-t border-slate-100 dark:border-slate-800 pt-2 space-y-1">
-                                <div className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Active</div>
+                            <div className="border-t border-border dark:border-slate-800 pt-2 space-y-1">
+                                <div className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Active</div>
                                 <div className="flex flex-wrap gap-1">
                                     {localTags.map(tag => (
                                         <Badge

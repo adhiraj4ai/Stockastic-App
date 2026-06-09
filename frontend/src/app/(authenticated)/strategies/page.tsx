@@ -246,7 +246,7 @@ function StrategiesContent() {
                         <TabsList className="bg-gray-200/50 dark:bg-slate-800/50 p-1 gap-1 rounded-lg h-auto">
                             <TabsTrigger
                                 value="my-strategies"
-                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
+                                className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                             >
                                 <Zap className="w-4 h-4 mr-2" />
                                 All Strategies
@@ -254,7 +254,7 @@ function StrategiesContent() {
                             </TabsTrigger>
                             <TabsTrigger
                                 value="published"
-                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
+                                className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                             >
                                 <FileCheck className="w-4 h-4 mr-2" />
                                 Published
@@ -262,7 +262,7 @@ function StrategiesContent() {
                             </TabsTrigger>
                             <TabsTrigger
                                 value="experiment-logs"
-                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
+                                className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                             >
                                 <Beaker className="w-4 h-4 mr-2" />
                                 Experiment Logs
@@ -271,7 +271,7 @@ function StrategiesContent() {
 
                             <TabsTrigger
                                 value="recommendations"
-                                className="px-4 py-2 rounded-md text-sm font-medium transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
+                                className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                             >
                                 <Target className="w-4 h-4 mr-2" />
                                 Recommendations
@@ -289,7 +289,7 @@ function StrategiesContent() {
 
                     <TabsContent value="my-strategies" className="space-y-6 m-0 px-8 pb-8">
                         {/* Unified Toolbar */}
-                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm">
+                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white dark:bg-card p-2 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm">
                             {/* Left: Search */}
                             <div className="relative flex-1 w-full sm:max-w-md">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-slate-500" />
@@ -324,7 +324,7 @@ function StrategiesContent() {
                                 {/* Sort */}
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" size="sm" className="gap-2 h-10 border-gray-200 dark:border-slate-800 dark:bg-slate-900">
+                                        <Button variant="outline" size="sm" className="gap-2 h-10 border-gray-200 dark:border-slate-800 dark:bg-card">
                                             <ArrowUpDown size={14} className="text-gray-500 dark:text-slate-400" />
                                             <span className="hidden sm:inline">Sort</span>
                                         </Button>
@@ -365,7 +365,7 @@ function StrategiesContent() {
                                     onClick={() => router.push('/strategies/compare')}
                                     variant="outline"
                                     size="sm"
-                                    className="gap-2 h-10 border-purple-200 dark:border-purple-900 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 dark:bg-slate-900 hidden sm:flex"
+                                    className="gap-2 h-10 border-purple-200 dark:border-purple-900 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 dark:bg-card hidden sm:flex"
                                 >
                                     <GitCompare size={16} />
                                     <span>Compare</span>
@@ -391,7 +391,7 @@ function StrategiesContent() {
                         {loadingStrategies ? (
                             <div className="p-8 text-center text-gray-500 dark:text-slate-400 animate-pulse">Loading your strategies...</div>
                         ) : strategies.length === 0 && !strategiesError ? (
-                            <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-gray-300 dark:border-slate-800">
+                            <div className="text-center py-20 bg-white dark:bg-card rounded-2xl border border-dashed border-gray-300 dark:border-slate-800">
                                 <div className="mx-auto h-12 w-12 text-gray-300 dark:text-slate-700 mb-4">
                                     <Lightbulb size={48} />
                                 </div>
@@ -408,12 +408,12 @@ function StrategiesContent() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                     {/* System Strategy: PA Screener */}
                                     <Card
-                                        className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-2 border-amber-500/30 hover:border-amber-500 flex flex-col cursor-pointer bg-amber-50/10 dark:bg-amber-900/10 rounded-xl"
+                                        className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-amber-500/30 hover:border-amber-500 flex flex-col cursor-pointer bg-amber-50/10 dark:bg-amber-900/10 rounded-xl"
                                         onClick={() => router.push(`/market/pa-screener`)}
                                     >
-                                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-400" />
+                                        <div className="hidden" />
                                         
-                                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-br from-amber-50/50 dark:from-amber-900/20 via-white dark:via-slate-900 to-transparent">
+                                        <div className="p-4 border-b border-border dark:border-slate-800 bg-muted/40">
                                             <div className="flex items-start gap-3">
                                                 <div className="h-11 w-11 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-md group-hover:scale-105 transition-all duration-300 bg-amber-500">
                                                     <Target size={20} />
@@ -421,7 +421,7 @@ function StrategiesContent() {
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex items-start justify-between gap-2 mb-1.5">
                                                         <div className="flex flex-col gap-1.5 min-w-0 flex-1">
-                                                            <h3 className="text-base font-black text-slate-900 dark:text-slate-100 leading-tight group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                                                            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 leading-tight group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
                                                                 Global PA Screener
                                                             </h3>
                                                             <Badge className="w-fit text-[9px] bg-slate-800 text-white">SYSTEM NODE</Badge>
@@ -431,14 +431,14 @@ function StrategiesContent() {
                                             </div>
                                         </div>
 
-                                        <div className="px-4 py-1.5 flex-1 bg-white/50 dark:bg-slate-900/50">
+                                        <div className="px-4 py-1.5 flex-1 bg-white/50 dark:bg-card">
                                             <p className="text-xs font-medium text-slate-600 dark:text-slate-400 leading-relaxed">
                                                 Autonomous institutional screener tracking Smart Money Concepts (FVG, BoS) and native candlestick setups across the entire market globally.
                                             </p>
                                         </div>
 
-                                        <div className="px-3 py-2 flex gap-2 bg-white/50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800">
-                                            <button className="flex-1 py-1.5 flex items-center justify-center gap-1.5 text-xs font-black text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 transition-all rounded-lg">
+                                        <div className="px-3 py-2 flex gap-2 bg-white/50 dark:bg-card border-t border-border dark:border-slate-800">
+                                            <button className="flex-1 py-1.5 flex items-center justify-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 transition-all rounded-lg">
                                                 <Zap size={14} /> Open Scanner
                                             </button>
                                         </div>
@@ -448,14 +448,14 @@ function StrategiesContent() {
                                     {filteredStrategies.map((strategy) => (
                                         <Card
                                             key={strategy.id}
-                                            className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-slate-200 dark:border-slate-800 hover:border-blue-300 flex flex-col cursor-pointer bg-white dark:bg-slate-900 rounded-xl"
+                                            className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-slate-200 dark:border-slate-800 hover:border-blue-300 flex flex-col cursor-pointer bg-white dark:bg-card rounded-xl"
                                             onClick={() => router.push(`/strategies/${strategy.id}`)}
                                         >
                                             {/* Gradient Top Border */}
-                                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-400" />
+                                            <div className="hidden" />
 
                                             {/* Header */}
-                                            <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-br from-blue-50/20 dark:from-blue-900/10 via-white dark:via-slate-900 to-purple-50/10 dark:to-purple-900/10">
+                                            <div className="p-4 border-b border-border dark:border-slate-800 bg-muted/40">
                                                 <div className="flex items-start gap-3">
                                                     <div className="h-11 w-11 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-md group-hover:scale-105 transition-all duration-300" style={{ backgroundColor: strategy.icon_color || "#000000" }}>
                                                         {(() => {
@@ -508,20 +508,20 @@ function StrategiesContent() {
                                             </div>
 
                                             {/* Description */}
-                                            <div className="px-4 py-1.5 flex-1 bg-white dark:bg-slate-900">
+                                            <div className="px-4 py-1.5 flex-1 bg-white dark:bg-card">
                                                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-5">
                                                     {strategy.description}
                                                 </p>
                                             </div>
 
                                             {/* Action Buttons */}
-                                            <div className="px-3 py-2 flex gap-2 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+                                            <div className="px-3 py-2 flex gap-2 bg-white dark:bg-card border-t border-border dark:border-slate-800">
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         router.push(`/strategies/${strategy.id}/backtest`);
                                                     }}
-                                                    className="flex-1 py-2 flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 transition-all active:scale-95 rounded-lg shadow-sm hover:shadow"
+                                                    className="flex-1 py-2 flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-primary text-primary-foreground hover:opacity-90 transition-all active:scale-95 rounded-lg shadow-sm hover:shadow"
                                                 >
                                                     <Play size={14} fill="currentColor" /> Run
                                                 </button>
@@ -548,7 +548,7 @@ function StrategiesContent() {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden shadow-sm flex flex-col max-h-[calc(100vh-320px)]">
+                                <div className="bg-white dark:bg-card rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden shadow-sm flex flex-col max-h-[calc(100vh-320px)]">
                                     <div className="overflow-x-auto overflow-y-auto">
                                         <table className="w-full text-sm text-left border-collapse">
                                             <thead className="sticky top-0 z-10">
@@ -567,7 +567,7 @@ function StrategiesContent() {
                                                                 <Target size={18} />
                                                             </div>
                                                             <div className="min-w-0">
-                                                                <div className="flex items-center gap-2 font-black text-amber-700 dark:text-amber-500">
+                                                                <div className="flex items-center gap-2 font-semibold text-amber-700 dark:text-amber-500">
                                                                     Global PA Screener <Badge className="text-[9px] bg-slate-800 text-white border-none py-0 h-4">SYSTEM CORE</Badge>
                                                                 </div>
                                                                 <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[240px] font-medium leading-relaxed mt-0.5">
@@ -751,7 +751,7 @@ function StrategiesContent() {
                                                         type="button"
                                                         onClick={() => setSelectedIcon(iconName)}
                                                         className={`h-12 w-12 rounded-lg flex items-center justify-center transition-all ${isSelected
-                                                            ? 'bg-gradient-to-br from-sky-400 to-blue-500 text-white shadow-md scale-110'
+                                                            ? 'bg-primary text-primary-foreground hover:opacity-90 text-white shadow-md scale-110'
                                                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-105'
                                                             }`}
                                                         title={iconName}
@@ -811,7 +811,7 @@ function StrategiesContent() {
                     </TabsContent>
 
                     <TabsContent value="published" className="m-0 px-8 pb-8">
-                        <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+                        <Card className="border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-card">
                             <CardHeader>
                                 <CardTitle className="dark:text-slate-100">Published Strategies</CardTitle>
                                 <CardDescription className="dark:text-slate-400">All active configurations used for generating market recommendations</CardDescription>
@@ -833,7 +833,7 @@ function StrategiesContent() {
                                                     <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase tracking-wider">Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-100 dark:divide-slate-800">
+                                            <tbody className="bg-white dark:bg-card divide-y divide-gray-100 dark:divide-slate-800">
                                                 {strategies
                                                     .filter(s => s.published_experiments && s.published_experiments.length > 0)
                                                     .flatMap((strategy) =>
@@ -950,7 +950,7 @@ function StrategiesContent() {
                     </TabsContent>
 
                     <TabsContent value="experiment-logs" className="m-0 px-8 pb-8">
-                        <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-0">
+                        <Card className="border-none shadow-sm bg-white/50 dark:bg-card p-0">
                             <ExperimentsTab />
                         </Card>
                     </TabsContent>

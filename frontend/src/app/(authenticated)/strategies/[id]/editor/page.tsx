@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { useRouter, useParams } from 'next/navigation'; // Changed from 'next/router' for App Router
+import { useRouter, useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Play, Save, ArrowLeft, Activity, Sun, Moon, AlertTriangle, XOctagon, ShieldAlert } from 'lucide-react';
+import { Play, Save, Sun, Moon, AlertTriangle, XOctagon, ShieldAlert, Zap, Activity, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { FullPageLoader } from '@/components/ui/StockLoader';
 import {
@@ -20,10 +19,13 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 
-// Dynamically import Monaco Editor to prevent hydration mismatches and loading hangs in Next.js 15
-const Editor = dynamic(() => import('@monaco-editor/react'), { 
+const Editor = dynamic(() => import('@monaco-editor/react'), {
     ssr: false,
-    loading: () => <div className="flex items-center justify-center h-full bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 font-mono text-xs text-slate-400 animate-pulse">Initializing Terminal Editor...</div>
+    loading: () => (
+        <div className="flex items-center justify-center h-full bg-slate-950 font-mono text-xs text-slate-500 animate-pulse">
+            Initializing editor…
+        </div>
+    ),
 });
 
 interface Strategy {
@@ -40,33 +42,10 @@ export default function EditStrategyPage() {
     const params = useParams();
     const strategyId = params.id;
 
-    // Editor State
-    const [code, setCode] = useState<string>(`class MyStrategy(Strategy):
-    # Performance Parameters (Editable in UI)
-    fast_window = 20
-    slow_window = 50
-
-    def init(self):
-        # Using pandas_ta for robust technical calculation
-        # Indicators are declared once in init for performance
-        close = pd.Series(self.data.Close)
-        self.ma_fast = self.I(ta.sma, close, self.fast_window)
-        self.ma_slow = self.I(ta.sma, close, self.slow_window)
-
-    def next(self):
-        # Core execution logic
-        # Buy when fast MA crosses above slow MA
-        if crossover(self.ma_fast, self.ma_slow):
-            self.buy()
-        
-        # Sell when fast MA crosses below slow MA
-        elif crossover(self.ma_slow, self.ma_fast):
-            self.position.close()
-`);
+    const [code, setCode] = useState<string>('');
     const [optimizationConfig, setOptimizationConfig] = useState<string>('');
-    const [themeMode, setThemeMode] = useState<'default' | 'light' | 'dark'>('dark'); // Default to dark for premium feel
+    const [themeMode, setThemeMode] = useState<'light' | 'dark'>('dark');
 
-    // Sidebar State
     const [strategy, setStrategy] = useState<Strategy | null>(null);
     const [originalData, setOriginalData] = useState<{ code: string; config: string; name: string; description: string } | null>(null);
     const [loading, setLoading] = useState(true);
@@ -76,9 +55,7 @@ export default function EditStrategyPage() {
     const [isUnpublishing, setIsUnpublishing] = useState(false);
 
     useEffect(() => {
-        if (strategyId) {
-            fetchStrategy();
-        }
+        if (strategyId) fetchStrategy();
     }, [strategyId]);
 
     const fetchStrategy = async () => {
@@ -86,75 +63,59 @@ export default function EditStrategyPage() {
             const response = await api.get(`/api/stocks/strategies/${strategyId}/`);
             const data = response.data;
             setStrategy(data);
-            if (data.code) {
-                setCode(data.code);
-            }
+            if (data.code) setCode(data.code);
 
-            let initialConfig = data.optimization_config || '';
-            let displayConfig = initialConfig;
+            let displayConfig = data.optimization_config || '';
             try {
-                if (initialConfig.trim()) {
-                    const parsed = JSON.parse(initialConfig);
+                if (displayConfig.trim()) {
+                    const parsed = JSON.parse(displayConfig);
                     displayConfig = Object.entries(parsed)
                         .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
                         .join('\n');
                 }
-            } catch (e) {
-                console.warn('Optimization config is not valid JSON', e);
-            }
+            } catch { /* keep raw */ }
 
             setOptimizationConfig(displayConfig);
-
             setOriginalData({
                 code: data.code || '',
                 config: displayConfig,
                 name: data.name || '',
-                description: data.description || ''
+                description: data.description || '',
             });
-            setIsPublished(data.published_experiments && data.published_experiments.length > 0);
-        } catch (error: any) {
-            console.error('Failed to fetch strategy', error);
-            toast.error('Failed to load strategy data');
+            setIsPublished(data.published_experiments?.length > 0);
+        } catch {
+            toast.error('Failed to load strategy');
         } finally {
-            // Add a small delay for smoother transition
-            setTimeout(() => setLoading(false), 500);
+            setTimeout(() => setLoading(false), 300);
         }
     };
 
     const isDirty = originalData && (
         code !== originalData.code ||
         optimizationConfig !== originalData.config ||
-        (strategy?.name !== originalData.name) ||
-        (strategy?.description !== originalData.description)
+        strategy?.name !== originalData.name ||
+        strategy?.description !== originalData.description
     );
 
     const handleSave = async () => {
         if (!originalData || !strategy) return;
         setSaving(true);
 
-        // Convert line-by-line back to JSON
         let configToSave = optimizationConfig;
         try {
             const lines = optimizationConfig.split('\n').filter(l => l.trim());
             const obj: any = {};
-            lines.forEach(line => {
-                const colonIndex = line.indexOf(':');
-                if (colonIndex > -1) {
-                    const key = line.substring(0, colonIndex).trim();
-                    const value = line.substring(colonIndex + 1).trim();
-                    try {
-                        obj[key] = JSON.parse(value);
-                    } catch (e) {
-                        obj[key] = value;
-                    }
+            for (const line of lines) {
+                const colonIdx = line.indexOf(':');
+                if (colonIdx > -1) {
+                    const key = line.substring(0, colonIdx).trim();
+                    const val = line.substring(colonIdx + 1).trim();
+                    try { obj[key] = JSON.parse(val); } catch { obj[key] = val; }
                 }
-            });
+            }
             configToSave = JSON.stringify(obj);
-        } catch (e) {
-            console.error('Failed to parse config lines', e);
-        }
+        } catch { /* keep raw */ }
 
-        // Construct only modified fields
         const payload: any = {};
         if (code !== originalData.code) payload.code = code;
         if (optimizationConfig !== originalData.config) payload.optimization_config = configToSave;
@@ -163,21 +124,12 @@ export default function EditStrategyPage() {
 
         try {
             await api.patch(`/api/stocks/strategies/${strategyId}/`, payload);
-            setOriginalData({
-                code,
-                config: optimizationConfig,
-                name: strategy.name || '',
-                description: strategy.description || ''
-            });
-            toast.success('Strategy updated successfully');
+            setOriginalData({ code, config: optimizationConfig, name: strategy.name, description: strategy.description });
+            toast.success('Strategy saved');
         } catch (error: any) {
-            console.error('Failed to save strategy', error);
-            const errorData = error.response?.data;
-            const message = errorData?.detail ||
-                (errorData && typeof errorData === 'object' ? Object.values(errorData)[0] : null) ||
-                'Failed to save strategy. Please check if the strategy is published.';
-
-            toast.error(typeof message === 'string' ? message : 'Failed to save strategy');
+            const err = error.response?.data;
+            const msg = err?.detail || (err && typeof err === 'object' ? Object.values(err)[0] : null) || 'Failed to save';
+            toast.error(typeof msg === 'string' ? msg : 'Failed to save');
         } finally {
             setSaving(false);
         }
@@ -187,142 +139,107 @@ export default function EditStrategyPage() {
         setIsUnpublishing(true);
         try {
             await api.post(`/api/stocks/strategies/${strategyId}/unpublish/`);
-            toast.success('Strategy unpublished. Logic editing enabled.');
+            toast.success('Strategy unpublished');
             setIsPublished(false);
             setUnpublishModalOpen(false);
             fetchStrategy();
-        } catch (error: any) {
-            console.error('Failed to unpublish strategy', error);
-            toast.error('Failed to unpublish strategy');
+        } catch {
+            toast.error('Failed to unpublish');
         } finally {
             setIsUnpublishing(false);
         }
     };
 
-    // Monaco Editor Ref
-    const [editorRef, setEditorRef] = useState<any>(null);
-    const [monacoRef, setMonacoRef] = useState<any>(null);
-
     const handleBeforeMount = (monaco: any) => {
-        // Define Theme Tokens
-        const themeRules = [
+        const rules = [
             { token: 'comment', foreground: '5C6773', fontStyle: 'italic' },
             { token: 'keyword', foreground: 'FFB454' },
             { token: 'string', foreground: 'ADDB67' },
             { token: 'number', foreground: 'D484FF' },
-            { token: 'regexp', foreground: '5FB3B3' },
             { token: 'type', foreground: '73D0FF' },
             { token: 'function', foreground: 'FFB454' },
-            { token: 'variable', foreground: 'CCCAC2' },
             { token: 'class', foreground: '73D0FF' },
         ];
-
         monaco.editor.defineTheme('ayu-light', {
-            base: 'vs',
-            inherit: true,
-            rules: themeRules,
+            base: 'vs', inherit: true, rules,
             colors: {
                 'editor.background': '#FAFAFA',
                 'editor.foreground': '#5C6773',
                 'editor.lineHighlightBackground': '#F2F2F2',
                 'editorCursor.foreground': '#FFCC66',
                 'editor.selectionBackground': '#F0EEE4',
-                'editorIndentGuide.background': '#EDEEF0',
-            }
+            },
         });
-
         monaco.editor.defineTheme('ayu-dark', {
-            base: 'vs-dark',
-            inherit: true,
-            rules: themeRules,
+            base: 'vs-dark', inherit: true, rules,
             colors: {
-                'editor.background': '#020617', // Match Stockastic slate-950
+                'editor.background': '#020617',
                 'editor.foreground': '#E2E8F0',
                 'editor.lineHighlightBackground': '#0F172A',
                 'editorCursor.foreground': '#3B82F6',
                 'editor.selectionBackground': '#1E293B',
-                'editorIndentGuide.background': '#1E293B',
-            }
+            },
         });
     };
 
-    const handleEditorDidMount = (editor: any, monaco: any) => {
-        setEditorRef(editor);
-        setMonacoRef(monaco);
-    };
-
-    if (loading) {
-        return <FullPageLoader />;
-    }
-
-    const handleRun = async () => {
-        if (isDirty) {
-            await handleSave();
-        }
-        router.push(`/strategies/${strategyId}/run`);
-    };
-
-    const getEditorTheme = () => {
-        if (themeMode === 'default') return 'ayu-dark';
-        return themeMode === 'light' ? 'ayu-light' : 'ayu-dark';
-    };
+    if (loading) return <FullPageLoader />;
 
     return (
         <DashboardLayout
             showBack={true}
-            title={`Edit Strategy - ${strategy?.name || 'Loading...'}`}
+            title={`Edit — ${strategy?.name || 'Strategy'}`}
         >
             <div className="flex flex-col h-[calc(100vh-100px)] -mt-4">
-                {/* Warning Banner if Published */}
+
+                {/* Published warning */}
                 {isPublished && (
-                    <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-100 dark:border-amber-900/50 px-6 py-3 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-100 dark:border-amber-900/50 px-6 py-3 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="bg-amber-100 dark:bg-amber-900/40 p-2 rounded-full">
-                                <ShieldAlert size={18} className="text-amber-700 dark:text-amber-500" />
+                                <ShieldAlert size={16} className="text-amber-700 dark:text-amber-500" />
                             </div>
                             <div>
-                                <h4 className="text-sm font-bold text-amber-900 dark:text-amber-200 leading-tight">Strategy is Published</h4>
-                                <p className="text-xs text-amber-700 dark:text-amber-400/80 mt-0.5">
-                                    The code cannot be modified while experiments are published. Unpublish to enable editing.
+                                <p className="text-xs font-bold text-amber-900 dark:text-amber-200">Strategy is Published</p>
+                                <p className="text-[10px] text-amber-700 dark:text-amber-400/80 mt-0.5">
+                                    Code cannot be modified while experiments are published.
                                 </p>
                             </div>
                         </div>
                         <Button
-                            variant="outline"
                             size="sm"
+                            variant="outline"
                             onClick={() => setUnpublishModalOpen(true)}
-                            className="bg-white dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 hover:border-amber-300 dark:hover:border-amber-700 font-bold text-xs h-8 px-4 rounded-lg shadow-sm"
+                            className="h-8 px-3 text-xs font-bold bg-white dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-lg shadow-sm"
                         >
-                            Unpublish Now
+                            Unpublish
                         </Button>
                     </div>
                 )}
 
-                {/* Main Content: Split View */}
                 <div className="flex flex-1 overflow-hidden">
-                    {/* Editor Area */}
-                    <div className={`flex-1 border-r ${themeMode === 'dark' ? 'border-[#151A1E] bg-[#0F1419]' : 'border-gray-200 bg-white'}`}>
+                    {/* ── Monaco Editor ── */}
+                    <div className={`flex-1 border-r ${themeMode === 'dark' ? 'border-slate-800 bg-slate-950' : 'border-gray-200 bg-white'}`}>
                         <Editor
                             height="100%"
                             defaultLanguage="python"
                             value={code}
-                            onChange={(value) => setCode(value || '')}
+                            onChange={(v) => setCode(v || '')}
                             beforeMount={handleBeforeMount}
-                            onMount={handleEditorDidMount}
-                            theme={getEditorTheme()}
+                            theme={themeMode === 'dark' ? 'ayu-dark' : 'ayu-light'}
                             options={{
+                                readOnly: isPublished,
                                 minimap: { enabled: false },
-                                fontSize: 16,
+                                fontSize: 14,
                                 fontWeight: '500',
                                 wordWrap: 'on',
                                 automaticLayout: true,
                                 scrollBeyondLastLine: false,
                                 lineNumbersMinChars: 3,
                                 padding: { top: 20, bottom: 20 },
-                                fontFamily: "'SF Mono', 'Geist Mono', 'JetBrains Mono', 'Fira Code', 'IBM Plex Mono', ui-monospace, monospace",
+                                fontFamily: "'JetBrains Mono', 'Fira Code', 'SF Mono', ui-monospace, monospace",
                                 fontLigatures: true,
-                                lineHeight: 26,
-                                letterSpacing: 0.5,
+                                lineHeight: 24,
+                                letterSpacing: 0.3,
                                 renderLineHighlight: 'all',
                                 cursorSmoothCaretAnimation: 'on',
                                 smoothScrolling: true,
@@ -330,135 +247,166 @@ export default function EditStrategyPage() {
                         />
                     </div>
 
-                    {/* Right Sidebar: Configuration */}
-                    <div className="w-80 bg-gray-50 dark:bg-slate-900 border-l border-gray-200 dark:border-slate-800 flex flex-col h-full overflow-hidden">
-                        <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                            {/* Action Buttons */}
-                            <div className="space-y-4 pb-8 border-b border-gray-200">
+                    {/* ── Right Sidebar ── */}
+                    <div className="w-72 bg-gray-50 dark:bg-card border-l border-gray-200 dark:border-slate-800 flex flex-col h-full overflow-hidden">
+                        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+
+                            {/* Strategy name + description */}
+                            <div className="space-y-3">
+                                <div>
+                                    <Label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1.5 block uppercase tracking-wider">Name</Label>
+                                    <input
+                                        value={strategy?.name || ''}
+                                        onChange={e => setStrategy(s => s ? { ...s, name: e.target.value } : s)}
+                                        disabled={isPublished}
+                                        className="w-full h-9 px-3 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 dark:text-slate-100 focus:border-blue-300 dark:focus:border-blue-800 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                        placeholder="Strategy name"
+                                    />
+                                </div>
+                                <div>
+                                    <Label className="text-xs font-bold text-gray-500 dark:text-slate-400 mb-1.5 block uppercase tracking-wider">Description</Label>
+                                    <textarea
+                                        value={strategy?.description || ''}
+                                        onChange={e => setStrategy(s => s ? { ...s, description: e.target.value } : s)}
+                                        disabled={isPublished}
+                                        rows={2}
+                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 dark:text-slate-100 focus:border-blue-300 dark:focus:border-blue-800 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all shadow-sm resize-none disabled:opacity-50 disabled:cursor-not-allowed leading-relaxed"
+                                        placeholder="What does this strategy do?"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="pt-4 border-t border-gray-100 dark:border-slate-800/60 space-y-2.5">
                                 <Button
                                     onClick={handleSave}
                                     disabled={saving || !isDirty || isPublished}
-                                    variant={isDirty && !isPublished ? "default" : "outline"}
-                                    className={`w-full h-12 px-5 gap-2 transition-all font-black rounded-xl text-sm uppercase tracking-widest ${isDirty && !isPublished ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-100 dark:shadow-green-900/20' : 'text-gray-400 dark:text-slate-500 bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 cursor-not-allowed opacity-60'}`}
+                                    className={`w-full h-10 text-xs font-bold uppercase tracking-wider rounded-xl transition-all active:scale-95 shadow-sm ${isDirty && !isPublished ? 'bg-green-600 hover:bg-green-700 text-white shadow-green-200 dark:shadow-green-900/20' : 'bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 border border-gray-200 dark:border-slate-700 cursor-not-allowed opacity-60 shadow-none'}`}
                                 >
-                                    <Save size={18} />
-                                    {saving ? 'Saving...' : 'Save Changes'}
+                                    <Save size={14} className="mr-2" />
+                                    {saving ? 'Saving…' : 'Save Changes'}
+                                </Button>
+
+                                <Button
+                                    onClick={async () => {
+                                        if (isDirty) await handleSave();
+                                        router.push(`/strategies/${strategyId}/backtest`);
+                                    }}
+                                    className="w-full h-10 text-xs font-bold uppercase tracking-wider rounded-xl bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800 text-white shadow-sm shadow-blue-200 dark:shadow-blue-900/20 active:scale-95 transition-all"
+                                >
+                                    <Play size={14} className="mr-2" />
+                                    Backtest
+                                </Button>
+
+                                <Button
+                                    onClick={() => router.push(`/strategies/${strategyId}/optimize`)}
+                                    variant="outline"
+                                    className="w-full h-10 text-xs font-bold uppercase tracking-wider rounded-xl border border-purple-200 dark:border-purple-900/50 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 dark:bg-card hover:border-purple-300 dark:hover:border-purple-800 active:scale-95 transition-all"
+                                >
+                                    <Zap size={14} className="mr-2" />
+                                    Optimize
                                 </Button>
 
                                 {isPublished && (
                                     <Button
                                         onClick={() => setUnpublishModalOpen(true)}
-                                        className="w-full h-11 px-5 gap-2 bg-white dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/40 font-black rounded-xl text-[10px] uppercase tracking-widest shadow-sm transition-all"
+                                        variant="outline"
+                                        className="w-full h-10 text-xs font-bold uppercase tracking-wider rounded-xl border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 dark:bg-card active:scale-95 transition-all"
                                     >
-                                        <XOctagon size={16} />
-                                        Unpublish Strategy
+                                        <XOctagon size={14} className="mr-2" />
+                                        Unpublish
                                     </Button>
                                 )}
-
-                                <Button
-                                    onClick={handleRun}
-                                    className="w-full h-12 px-5 gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-black rounded-xl text-sm uppercase tracking-widest shadow-lg shadow-blue-100 dark:shadow-blue-900/20 active:scale-[0.98] transition-all"
-                                >
-                                    <Play size={18} />
-                                    Backtest
-                                </Button>
                             </div>
 
-                            <div className="space-y-4 pt-2">
-                                <h3 className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-[0.15em]">Optimization Config</h3>
-                                <p className="text-[11px] text-gray-500 dark:text-slate-400 leading-relaxed font-medium">
-                                    Define parameter ranges (max 10 lines).
+                            {/* Optimization Config */}
+                            <div className="pt-4 border-t border-gray-100 dark:border-slate-800/60 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Optimization Ranges</Label>
+                                    {optimizationConfig.trim() && (
+                                        <button
+                                            onClick={() => setOptimizationConfig('')}
+                                            className="flex items-center gap-1 text-[9px] font-semibold text-gray-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors uppercase tracking-wide"
+                                        >
+                                            <RotateCcw size={9} /> Clear
+                                        </button>
+                                    )}
+                                </div>
+                                <p className="text-[10px] text-gray-400 dark:text-slate-500 leading-relaxed">
+                                    One param per line: <span className="font-mono">name: [min, max]</span>
                                 </p>
                                 <textarea
                                     value={optimizationConfig}
-                                    onChange={(e) => {
+                                    onChange={e => {
                                         const lines = e.target.value.split('\n');
-                                        if (lines.length <= 10) {
-                                            setOptimizationConfig(e.target.value);
-                                        } else {
-                                            setOptimizationConfig(lines.slice(0, 10).join('\n'));
-                                        }
+                                        setOptimizationConfig(lines.length <= 12 ? e.target.value : lines.slice(0, 12).join('\n'));
                                     }}
-                                    className="w-full h-[240px] p-4 text-sm font-mono font-medium bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 text-gray-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none shadow-sm leading-relaxed"
+                                    disabled={isPublished}
+                                    className="w-full h-48 p-3 text-xs font-mono bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 text-gray-800 dark:text-slate-200 rounded-xl focus:border-blue-300 dark:focus:border-blue-800 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all resize-none leading-relaxed shadow-sm disabled:opacity-50"
                                     placeholder={'fast_window: [10, 30]\nslow_window: [40, 60]'}
+                                    spellCheck={false}
                                 />
                             </div>
 
-                            <div className="p-4 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl space-y-2">
-                                <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-bold text-[10px] uppercase">
-                                    <Activity size={12} />
-                                    Tips
+                            {/* Tips */}
+                            <div className="p-3 bg-blue-50/60 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl space-y-1.5">
+                                <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-400 font-bold text-[10px] uppercase tracking-wider">
+                                    <Activity size={11} /> Tips
                                 </div>
-                                <p className="text-[10px] text-blue-600/80 dark:text-blue-400/60 leading-relaxed">
-                                    Use list format `[min, max]` for continuous ranges or `[1, 2, 3]` for categorical values. Example: `param_name: [start, end]`.
+                                <p className="text-[10px] text-blue-600/70 dark:text-blue-400/60 leading-relaxed">
+                                    Class-level numeric assignments are auto-detected as parameters. Use <span className="font-mono">param = value</span> at the class body level.
                                 </p>
                             </div>
                         </div>
 
-                        {/* Theme Toggle at Bottom */}
-                        <div className="p-4 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800">
-                            <div className="flex flex-col gap-2">
-                                <Label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest px-1 text-center">Editor Theme</Label>
-                                <div className="flex items-center gap-1 p-1 bg-gray-50 dark:bg-slate-950 rounded-xl border border-gray-100 dark:border-slate-800">
-                                    <button
-                                        onClick={() => setThemeMode('default')}
-                                        className={`flex-1 flex items-center justify-center h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'default' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'}`}
-                                    >
-                                        Default
-                                    </button>
-                                    <button
-                                        onClick={() => setThemeMode('light')}
-                                        className={`flex-1 flex items-center justify-center gap-2 h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'light' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'}`}
-                                    >
-                                        <Sun size={12} />
-                                        Light
-                                    </button>
-                                    <button
-                                        onClick={() => setThemeMode('dark')}
-                                        className={`flex-1 flex items-center justify-center gap-2 h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'dark' ? 'bg-gray-800 dark:bg-slate-800 text-blue-400 shadow-sm' : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'}`}
-                                    >
-                                        <Moon size={12} />
-                                        Dark
-                                    </button>
-                                </div>
+                        {/* Theme toggle (pinned to bottom) */}
+                        <div className="p-4 border-t border-gray-100 dark:border-slate-800 bg-white dark:bg-card">
+                            <Label className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-2 block text-center">Editor Theme</Label>
+                            <div className="flex p-1 bg-gray-100 dark:bg-slate-950 rounded-xl gap-1 border border-gray-200/50 dark:border-slate-800">
+                                <button
+                                    onClick={() => setThemeMode('light')}
+                                    className={`flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'light' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'}`}
+                                >
+                                    <Sun size={11} /> Light
+                                </button>
+                                <button
+                                    onClick={() => setThemeMode('dark')}
+                                    className={`flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'dark' ? 'bg-slate-800 text-blue-400 shadow-sm' : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'}`}
+                                >
+                                    <Moon size={11} /> Dark
+                                </button>
                             </div>
                         </div>
-
                     </div>
                 </div>
             </div>
 
-            {/* Unpublish Confirmation Dialog */}
+            {/* Unpublish dialog */}
             <Dialog open={unpublishModalOpen} onOpenChange={setUnpublishModalOpen}>
-                <DialogContent className="sm:max-w-[425px] rounded-2xl">
+                <DialogContent className="sm:max-w-[400px] rounded-2xl">
                     <DialogHeader>
-                        <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/40 rounded-full flex items-center justify-center mb-4">
-                            <AlertTriangle className="text-amber-600 dark:text-amber-500" size={24} />
+                        <div className="w-11 h-11 bg-amber-100 dark:bg-amber-900/40 rounded-full flex items-center justify-center mb-3">
+                            <AlertTriangle className="text-amber-600 dark:text-amber-500" size={20} />
                         </div>
-                        <DialogTitle className="text-xl font-black text-slate-900 dark:text-slate-100">Unpublish Strategy?</DialogTitle>
-                        <DialogDescription className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed pt-2">
-                            This will stop generating automated recommendations for this strategy.
-                            You will be able to edit and save your code changes after unpublishing.
+                        <DialogTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100">Unpublish Strategy?</DialogTitle>
+                        <DialogDescription className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed pt-1">
+                            This stops automated recommendations for this strategy. You can re-publish after editing.
                         </DialogDescription>
                     </DialogHeader>
-                    <DialogFooter className="mt-6 gap-3 sm:flex-row sm:gap-4">
+                    <DialogFooter className="mt-4 gap-2 sm:flex-row">
                         <Button
                             variant="outline"
-                            onClick={() => {
-                                setUnpublishModalOpen(false);
-                            }}
-                            className="flex-1 sm:flex-none sm:min-w-[120px] h-12 rounded-xl font-bold border-slate-200 text-slate-600 hover:bg-slate-50 transition-all"
+                            onClick={() => setUnpublishModalOpen(false)}
+                            className="flex-1 h-10 rounded-xl font-semibold border-slate-200 text-slate-600 hover:bg-slate-50"
                         >
                             Cancel
                         </Button>
                         <Button
-                            onClick={() => {
-                                handleUnpublish();
-                            }}
+                            onClick={handleUnpublish}
                             disabled={isUnpublishing}
-                            className="flex-1 sm:flex-none sm:min-w-[160px] h-12 rounded-xl font-black uppercase tracking-widest text-xs bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-100 transition-all"
+                            className="flex-1 h-10 rounded-xl font-semibold text-xs uppercase tracking-wider bg-amber-600 hover:bg-amber-700 text-white shadow-sm"
                         >
-                            {isUnpublishing ? 'Unpublishing...' : 'Confirm Unpublish'}
+                            {isUnpublishing ? 'Unpublishing…' : 'Confirm Unpublish'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

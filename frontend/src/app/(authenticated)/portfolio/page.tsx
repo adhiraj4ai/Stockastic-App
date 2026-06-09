@@ -399,7 +399,7 @@ function PortfolioContent() {
                                 <select
                                     value={selectedAccount}
                                     onChange={(e) => setSelectedAccount(e.target.value)}
-                                    className="appearance-none bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-300 py-2.5 pl-4 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium shadow-sm cursor-pointer"
+                                    className="appearance-none bg-white dark:bg-card border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-300 py-2.5 pl-4 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium shadow-sm cursor-pointer"
                                 >
                                     <option value="all">All Accounts</option>
                                     <option disabled>──────────</option>
@@ -416,7 +416,7 @@ function PortfolioContent() {
                             <button
                                 onClick={() => setIsAccountSettingsOpen(true)}
                                 disabled={selectedAccount === 'all'}
-                                className={`p-2.5 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg shadow-sm transition-all ${selectedAccount === 'all'
+                                className={`p-2.5 bg-white dark:bg-card border border-gray-300 dark:border-slate-700 rounded-lg shadow-sm transition-all ${selectedAccount === 'all'
                                     ? 'opacity-50 cursor-not-allowed text-gray-400'
                                     : 'hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400'
                                     }`}
@@ -427,7 +427,7 @@ function PortfolioContent() {
 
                             <button
                                 onClick={() => setIsCreateAccountOpen(true)}
-                                className="bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300 p-2.5 rounded-lg shadow-sm transition-all"
+                                className="bg-white dark:bg-card border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300 p-2.5 rounded-lg shadow-sm transition-all"
                                 title="Create New Portfolio Account"
                             >
                                 <FolderPlus className="h-5 w-5" />
@@ -450,90 +450,82 @@ function PortfolioContent() {
 
                 {/* Summary Cards - Only for Holdings */}
                 {activeTab === 'holdings' && (
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <Card className="bg-gradient-to-br from-white to-blue-50/30 dark:from-slate-950 dark:to-slate-900 border-blue-100 dark:border-blue-900/30 shadow-sm hover:shadow-md transition-all">
-                            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
-                                    Capital Deployed
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2 px-5 pt-4">
+                                <CardTitle className="text-[12px] font-medium text-muted-foreground flex items-center">
+                                    Capital deployed
                                     <InfoTooltip content="Total initial investment across all active holdings in the selected account." />
                                 </CardTitle>
-                                <Wallet className="h-4 w-4 text-blue-500" />
+                                <Wallet className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">
+                            <CardContent className="px-5 pb-4">
+                                <div className="text-2xl font-semibold text-foreground tabular-nums">
                                     {formatRupees(totalInvestment)}
                                 </div>
-                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 font-bold">
+                                <div className="text-xs text-muted-foreground mt-1">
                                     Across {displayedItems.length} holdings
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-gradient-to-br from-white to-purple-50/30 dark:from-slate-950 dark:to-slate-900 border-purple-100 dark:border-purple-900/30 shadow-sm hover:shadow-md transition-all">
-                            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
-                                    Portfolio Value
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2 px-5 pt-4">
+                                <CardTitle className="text-[12px] font-medium text-muted-foreground flex items-center">
+                                    Portfolio value
                                     <InfoTooltip content="Current market valuation of all holdings based on real-time price feeds." />
                                 </CardTitle>
-                                <DollarSign className="h-4 w-4 text-purple-500" />
+                                <DollarSign className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">
+                            <CardContent className="px-5 pb-4">
+                                <div className="text-2xl font-semibold text-foreground tabular-nums">
                                     {formatRupees(totalCurrentValue)}
                                 </div>
-                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 font-bold">
+                                <div className="text-xs text-muted-foreground mt-1">
                                     Real-time valuation
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Card className={`shadow-sm hover:shadow-md transition-all ${totalGainLoss >= 0
-                            ? "bg-gradient-to-br from-white to-green-50/50 dark:from-slate-950 dark:to-green-900/20 border-green-100 dark:border-green-900/30"
-                            : "bg-gradient-to-br from-white to-red-50/50 dark:from-slate-950 dark:to-red-900/20 border-red-100 dark:border-red-900/30"
-                            }`}>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
-                                    Total Returns
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2 px-5 pt-4">
+                                <CardTitle className="text-[12px] font-medium text-muted-foreground flex items-center">
+                                    Total returns
                                     <InfoTooltip content="Net unrealized profit or loss since inception, including reinvested capital." />
                                 </CardTitle>
-                                {totalGainLoss >= 0 ? <TrendingUp className="h-4 w-4 text-green-500" /> : <TrendingDown className="h-4 w-4 text-red-500" />}
+                                {totalGainLoss >= 0 ? <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />}
                             </CardHeader>
-                            <CardContent>
-                                <div className="flex flex-col">
-                                    <div className={`text-2xl font-bold ${totalGainLoss >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                        {formatRupees(Math.abs(totalGainLoss))}
-                                    </div>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${totalGainLoss >= 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
-                                            {totalGainLoss >= 0 ? '+' : '-'}{Math.abs(totalGainLossPercent).toFixed(2)}%
+                            <CardContent className="px-5 pb-4">
+                                <div className={`text-2xl font-semibold tabular-nums ${totalGainLoss >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                    {formatRupees(Math.abs(totalGainLoss))}
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className={`text-xs font-medium tabular-nums ${totalGainLoss >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                        {totalGainLoss >= 0 ? '+' : '-'}{Math.abs(totalGainLossPercent).toFixed(2)}%
+                                    </span>
+                                    {bestPerformer && (
+                                        <span className="text-[11px] text-muted-foreground">
+                                            Top: <span className="text-foreground">{bestPerformer.ticker}</span>
                                         </span>
-                                        {bestPerformer && (
-                                            <span className="text-[9px] text-gray-400 dark:text-slate-500 font-medium">
-                                                Top: <span className={totalGainLoss >= 0 ? "text-green-600 dark:text-green-400 font-bold" : "text-red-600 dark:text-red-400 font-bold"}>{bestPerformer.ticker}</span>
-                                            </span>
-                                        )}
-                                    </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Card className={`shadow-sm hover:shadow-md transition-all ${totalDayGainLoss >= 0
-                            ? "bg-gradient-to-br from-white to-green-50/50 dark:from-slate-950 dark:to-green-900/20 border-green-100 dark:border-green-900/30"
-                            : "bg-gradient-to-br from-white to-red-50/50 dark:from-slate-950 dark:to-red-900/20 border-red-100 dark:border-red-900/30"
-                            }`}>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
-                                    Session Swing
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2 px-5 pt-4">
+                                <CardTitle className="text-[12px] font-medium text-muted-foreground flex items-center">
+                                    Session swing
                                     <InfoTooltip content="Intraday profit or loss change for the current market session." />
                                 </CardTitle>
-                                <Zap className={`h-4 w-4 ${totalDayGainLoss >= 0 ? 'text-amber-500' : 'text-red-400'}`} />
+                                <Zap className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
-                            <CardContent>
-                                <div className={`text-2xl font-bold ${totalDayGainLoss >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                            <CardContent className="px-5 pb-4">
+                                <div className={`text-2xl font-semibold tabular-nums ${totalDayGainLoss >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                     {formatRupees(Math.abs(totalDayGainLoss))}
                                 </div>
-                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 font-bold">
-                                    Intraday Movement
+                                <div className="text-xs text-muted-foreground mt-1">
+                                    Intraday movement
                                 </div>
                             </CardContent>
                         </Card>
@@ -549,7 +541,7 @@ function PortfolioContent() {
 
                 {/* Holdings Table - MOVED UP - Only for Holdings */}
                 {activeTab === 'holdings' && (
-                    <Card className="shadow-lg border-blue-50/50 dark:border-slate-800 dark:bg-slate-900">
+                    <Card className="shadow-lg border-blue-50/50 dark:border-slate-800 dark:bg-card">
                         <CardHeader className="py-4 px-6 border-b border-gray-50 dark:border-slate-800">
                             <CardTitle className="flex flex-col md:flex-row md:items-center justify-start gap-6">
                                 <div className="flex items-center gap-2 text-slate-800 dark:text-slate-100">
@@ -557,10 +549,10 @@ function PortfolioContent() {
                                     <span className="font-bold">Strategic Holdings</span>
                                     <InfoTooltip content="Real-time list of all active positions, tracking entry costs, current value, and profit metrics." />
                                     <div className="flex items-center gap-1.5 ml-2">
-                                        <Badge className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800 hover:bg-emerald-50 text-[10px] px-2 py-0 h-5 font-black">
+                                        <Badge className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800 hover:bg-emerald-50 text-[10px] px-2 py-0 h-5 font-semibold">
                                             #{stats.profit} Profit
                                         </Badge>
-                                        <Badge className="bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-100 dark:border-rose-800 hover:bg-rose-50 text-[10px] px-2 py-0 h-5 font-black">
+                                        <Badge className="bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-100 dark:border-rose-800 hover:bg-rose-50 text-[10px] px-2 py-0 h-5 font-semibold">
                                             #{stats.loss} Loss
                                         </Badge>
                                     </div>
@@ -587,7 +579,7 @@ function PortfolioContent() {
                                         </div>
                                     )}
 
-                                    {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 dark:border-slate-100"></div>}
+                                    {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 dark:border-border"></div>}
                                 </div>
                             </CardTitle>
                         </CardHeader>
@@ -762,7 +754,7 @@ function PortfolioContent() {
                 {activeTab === 'holdings' && displayedItems.length > 0 && (
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                         {/* Sector Analysis */}
-                        <Card className="lg:col-span-8 shadow-sm dark:bg-slate-900 dark:border-slate-800">
+                        <Card className="lg:col-span-8 shadow-sm dark:bg-card dark:border-slate-800">
                             <CardHeader className="flex flex-row items-center justify-between">
                                 <CardTitle className="text-lg flex items-center dark:text-slate-100">
                                     <BarIcon className="h-5 w-5 text-blue-500 mr-2" />
@@ -776,7 +768,7 @@ function PortfolioContent() {
                                     <div className="relative">
                                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                             <span className="text-xs text-gray-400 dark:text-slate-500 font-bold">Diversification</span>
-                                            <span className="text-lg font-black text-gray-800 dark:text-slate-200">{sectorData.length} Sectors</span>
+                                            <span className="text-lg font-semibold text-gray-800 dark:text-slate-200">{sectorData.length} Sectors</span>
                                         </div>
                                         <ResponsiveContainer width="100%" height="100%">
                                             <PieChart>
@@ -845,7 +837,7 @@ function PortfolioContent() {
                         </Card>
 
                         {/* Performance Heatmap (Grid) */}
-                        <Card className="lg:col-span-4 shadow-sm overflow-hidden dark:bg-slate-900 dark:border-slate-800">
+                        <Card className="lg:col-span-4 shadow-sm overflow-hidden dark:bg-card dark:border-slate-800">
                             <CardHeader>
                                 <CardTitle className="text-lg flex items-center gap-2 dark:text-slate-100">
                                     <PieIcon className="h-5 w-5 text-purple-500" />
@@ -869,12 +861,12 @@ function PortfolioContent() {
                                                 key={item.id}
                                                 className={`aspect-square ${bgColor} rounded-md flex flex-col items-center justify-center text-white shadow-inner group relative cursor-help transition-transform hover:scale-105 hover:z-20`}
                                             >
-                                                <span className="text-sm font-black">{item.ticker}</span>
+                                                <span className="text-sm font-semibold">{item.ticker}</span>
                                                 <span className="text-xs font-bold opacity-80">{Number(pnlP).toFixed(0)}%</span>
 
                                                 {/* Tooltip on Hover */}
-                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-gray-900 dark:bg-slate-950 text-white p-2 rounded text-xs opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-2xl z-30">
-                                                    <p className="font-black border-b border-gray-700 dark:border-slate-800 pb-1 mb-1">{item.ticker}</p>
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-gray-900 dark:bg-slate-950 text-white p-2 rounded text-xs opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-sm z-30">
+                                                    <p className="font-semibold border-b border-gray-700 dark:border-slate-800 pb-1 mb-1">{item.ticker}</p>
                                                     <p className="flex justify-between">Profit: <span className="font-mono">{formatRupees(item.gain_loss)}</span></p>
                                                     <p className="flex justify-between">Value: <span className="font-mono">{formatRupees(item.current_value)}</span></p>
                                                 </div>
@@ -882,7 +874,7 @@ function PortfolioContent() {
                                         );
                                     })}
                                 </div>
-                                <div className="mt-6 flex items-center justify-between text-xs font-black uppercase tracking-widest text-gray-400 dark:text-slate-500">
+                                <div className="mt-6 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500">
                                     <span>Bearish</span>
                                     <div className="flex gap-1">
                                         {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className={`h-2 w-2 rounded-sm ${i <= 3 ? 'bg-red-' + (i * 200) : 'bg-green-' + ((7 - i) * 200)}`} />)}
@@ -896,7 +888,7 @@ function PortfolioContent() {
 
                 {/* Risk Management Section - MOVED DOWN - Only for Holdings */}
                 {activeTab === 'holdings' && displayedItems.length > 0 && (
-                    <Card className="bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 border-dashed">
+                    <Card className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 border-dashed">
                         <CardHeader className="pb-3">
                             <CardTitle className="flex items-center gap-2 text-lg text-slate-700 dark:text-slate-200">
                                 <ShieldAlert className="h-5 w-5 text-slate-500 dark:text-slate-400" />
@@ -907,7 +899,7 @@ function PortfolioContent() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 {/* Sector Concentration Risk List */}
                                 <div>
-                                    <h4 className="text-xs font-black mb-4 tracking-[0.2em] flex items-center gap-2 dark:text-slate-400">
+                                    <h4 className="text-xs font-semibold mb-4 tracking-[0.2em] flex items-center gap-2 dark:text-slate-400">
                                         Allocation Alerts
                                     </h4>
                                     <div className="space-y-2">
@@ -923,10 +915,10 @@ function PortfolioContent() {
                                                 const percent = (value / totalCurrentValue) * 100;
                                                 return (
                                                     <div key={sector}>
-                                                        <div className="flex justify-between text-xs mb-1.5 p-2 bg-white dark:bg-slate-900 rounded border border-slate-100 dark:border-slate-800">
+                                                        <div className="flex justify-between text-xs mb-1.5 p-2 bg-white dark:bg-card rounded border border-border dark:border-slate-800">
                                                             <span className="font-bold text-slate-600 dark:text-slate-300">{sector}</span>
                                                             <div className="flex items-center gap-2">
-                                                                <span className={`text-xs font-black ${percent > 40 ? "text-red-500" : "text-slate-400"}`}>
+                                                                <span className={`text-xs font-semibold ${percent > 40 ? "text-red-500" : "text-slate-400"}`}>
                                                                     {percent.toFixed(1)}%
                                                                 </span>
                                                                 <div className="w-16 h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -947,7 +939,7 @@ function PortfolioContent() {
                                 {/* Concentration & Volatility Risks */}
                                 <div className="space-y-6">
                                     <div>
-                                        <h4 className="text-xs font-black tracking-[0.2em] dark:text-slate-400">Holdings Concentration</h4>
+                                        <h4 className="text-xs font-semibold tracking-[0.2em] dark:text-slate-400">Holdings Concentration</h4>
                                         <ul className="space-y-2">
                                             {displayedItems
                                                 .filter(item => (Number(item.current_value) / totalCurrentValue) > 0.20)
@@ -957,7 +949,7 @@ function PortfolioContent() {
                                                             <ShieldAlert className="h-3.5 w-3.5" />
                                                             {item.ticker} Oversized
                                                         </span>
-                                                        <span className="font-black bg-red-100 dark:bg-red-900/50 px-2 py-0.5 rounded-full">{((Number(item.current_value) / totalCurrentValue) * 100).toFixed(1)}%</span>
+                                                        <span className="font-semibold bg-red-100 dark:bg-red-900/50 px-2 py-0.5 rounded-full">{((Number(item.current_value) / totalCurrentValue) * 100).toFixed(1)}%</span>
                                                     </li>
                                                 ))}
                                             {displayedItems.every(item => (Number(item.current_value) / totalCurrentValue) <= 0.20) && (
@@ -970,13 +962,13 @@ function PortfolioContent() {
                                     </div>
 
                                     <div>
-                                        <h4 className="text-xs font-black text-slate-400 mb-4 uppercase tracking-[0.2em]">Volatility Monitoring</h4>
+                                        <h4 className="text-xs font-semibold text-slate-400 mb-4 uppercase tracking-[0.2em]">Volatility Monitoring</h4>
                                         <div className="flex flex-wrap gap-2">
                                             {displayedItems
                                                 .filter(item => (item.volatility || 0) > 40)
                                                 .sort((a, b) => (b.volatility || 0) - (a.volatility || 0))
                                                 .map(item => (
-                                                    <div key={item.ticker} className="flex items-center gap-1.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-lg text-xs font-black border border-slate-200 dark:border-slate-800 shadow-sm">
+                                                    <div key={item.ticker} className="flex items-center gap-1.5 bg-white dark:bg-card text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 shadow-sm">
                                                         <Activity className="h-3 w-3" />
                                                         {item.ticker} <span className="text-slate-400 opacity-60">/</span> {item.volatility?.toFixed(1)}% VOL
                                                     </div>
@@ -994,9 +986,9 @@ function PortfolioContent() {
 
                 {/* Strategic Watchlist Section - Only for Watchlist tab */}
                 {activeTab === 'watchlist' && (
-                    <Card className="shadow-lg border-blue-50/50 dark:border-slate-800 dark:bg-slate-900">
+                    <Card className="shadow-lg border-blue-50/50 dark:border-slate-800 dark:bg-card">
                         <CardHeader className="border-b border-gray-50 dark:border-slate-800 pb-2">
-                            <CardTitle className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center justify-between">
+                            <CardTitle className="text-xl font-semibold text-slate-900 dark:text-slate-100 tracking-tight flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <button
                                         onClick={() => {
@@ -1004,7 +996,7 @@ function PortfolioContent() {
                                             setWatchlistForm({ ticker: '', target_price: '', stop_loss_price: '', alert_enabled: false, notes: '' });
                                             setIsWatchlistModalOpen(true);
                                         }}
-                                        className="h-9 px-4 flex items-center gap-2 bg-gray-900 dark:bg-slate-800 text-white rounded-md text-[11px] font-black hover:bg-black dark:hover:bg-slate-700 transition-all uppercase tracking-widest shadow-md whitespace-nowrap"
+                                        className="h-9 px-4 flex items-center gap-2 bg-gray-900 dark:bg-slate-800 text-white rounded-md text-[11px] font-semibold hover:bg-black dark:hover:bg-slate-700 transition-all uppercase tracking-wider shadow-md whitespace-nowrap"
                                     >
                                         <Plus size={14} /> Add
                                     </button>
@@ -1049,7 +1041,7 @@ function PortfolioContent() {
                                                         <TableCell className="py-4 px-6 relative">
                                                             <div className="flex flex-col">
                                                                 <div className="flex items-center gap-2">
-                                                                    <StockLink ticker={item.ticker} className="font-black text-slate-900 dark:text-slate-100 text-sm" />
+                                                                    <StockLink ticker={item.ticker} className="font-semibold text-slate-900 dark:text-slate-100 text-sm" />
                                                                     <button
                                                                         onClick={() => toggleWatchlistAlert(item)}
                                                                         className={`p-1 rounded-full transition-all ${item.alert_enabled ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/30' : 'text-slate-300 dark:text-slate-700 hover:text-blue-400'}`}
@@ -1066,17 +1058,17 @@ function PortfolioContent() {
                                                             </div>
                                                         </TableCell>
                                                         <TableCell className="text-right py-4">
-                                                            <div className="font-black text-slate-900 dark:text-slate-100">
+                                                            <div className="font-semibold text-slate-900 dark:text-slate-100">
                                                                 {item.current_price ? formatRupees(item.current_price) : 'N/A'}
                                                             </div>
                                                         </TableCell>
                                                         <TableCell className="text-right py-4">
                                                             <div className={`flex flex-col items-end`}>
-                                                                <div className={`font-black flex items-center gap-1 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                <div className={`font-semibold flex items-center gap-1 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                                                     {isPos ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                                                                     {isPos ? '+' : ''}{dayChange.toFixed(1)}
                                                                 </div>
-                                                                <div className={`text-[10px] font-black uppercase tracking-tighter px-1 rounded ${isPos ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
+                                                                <div className={`text-[10px] font-semibold uppercase tracking-tighter px-1 rounded ${isPos ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
                                                                     {item.day_change_percent}%
                                                                 </div>
                                                             </div>
@@ -1095,12 +1087,12 @@ function PortfolioContent() {
                                                                             {item.health_score}
                                                                         </Badge>
                                                                     </TooltipTrigger>
-                                                                    <TooltipContent className="p-0 border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
+                                                                    <TooltipContent className="p-0 border-none shadow-xl bg-white dark:bg-card overflow-hidden">
                                                                         <div className="w-48 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
                                                                             <div className="p-2 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
                                                                                 <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Quality Score</h4>
                                                                                 <div className="flex items-center gap-2 mt-0.5">
-                                                                                    <span className="text-lg font-black text-slate-900 dark:text-slate-100">{item.health_score}</span>
+                                                                                    <span className="text-lg font-semibold text-slate-900 dark:text-slate-100">{item.health_score}</span>
                                                                                 </div>
                                                                             </div>
                                                                             <div className="p-2 space-y-1.5 pb-3">
@@ -1125,11 +1117,11 @@ function PortfolioContent() {
                                                                 {item.is_accumulating && (
                                                                     <Tooltip>
                                                                         <TooltipTrigger asChild>
-                                                                            <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400 text-[8px] font-black uppercase tracking-widest px-1.5 py-0 border-none cursor-help">
+                                                                            <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400 text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0 border-none cursor-help">
                                                                                 <Zap size={8} className="mr-1 inline" /> Institutional Interest
                                                                             </Badge>
                                                                         </TooltipTrigger>
-                                                                        <TooltipContent className="p-3 bg-slate-900 text-white border-none shadow-2xl rounded-xl">
+                                                                        <TooltipContent className="p-3 bg-slate-900 text-white border-none shadow-sm rounded-xl">
                                                                             <p className="text-[10px] font-bold leading-relaxed">
                                                                                 Accumulation Pulse: Local brokers have been <br />
                                                                                 net buyers over the last 5 trading cycles.
@@ -1139,7 +1131,7 @@ function PortfolioContent() {
                                                                 )}
                                                                 {item.rvol !== undefined && item.rvol !== null ? (
                                                                     <div className="flex flex-col items-end">
-                                                                        <div className={`font-black text-sm ${item.rvol > 2 ? 'text-purple-600 dark:text-purple-400' : item.rvol > 1 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                                                                        <div className={`font-semibold text-sm ${item.rvol > 2 ? 'text-purple-600 dark:text-purple-400' : item.rvol > 1 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`}>
                                                                             {item.rvol.toFixed(1)}x
                                                                         </div>
                                                                         <div className="text-[9px] font-bold text-slate-400 uppercase">VOL Intensity</div>
@@ -1156,7 +1148,7 @@ function PortfolioContent() {
                                                                         <span>{item.fifty_two_week_low}</span>
                                                                         <span>{item.fifty_two_week_high}</span>
                                                                     </div>
-                                                                    <div className="relative w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200/50 dark:border-slate-700/50">
+                                                                    <div className="relative w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-border dark:border-slate-700/50">
                                                                         <div
                                                                             className="absolute top-0 h-full bg-blue-500/50 dark:bg-blue-400/50"
                                                                             style={{
@@ -1181,23 +1173,23 @@ function PortfolioContent() {
                                                             <div className="flex flex-col items-end gap-1">
                                                                 <div className="flex items-center gap-1.5">
                                                                     {(item.buy_signal_count || 0) >= 2 && (item.rvol || 0) > 1.5 && (
-                                                                        <Badge className="bg-blue-600 text-white text-[8px] font-black uppercase px-1.5 py-0 animate-pulse border-none">
+                                                                        <Badge className="bg-blue-600 text-white text-[8px] font-semibold uppercase px-1.5 py-0 animate-pulse border-none">
                                                                             High Conviction
                                                                         </Badge>
                                                                     )}
                                                                     {item.buy_signal_count && item.buy_signal_count > 0 ? (
                                                                         <Tooltip>
                                                                             <TooltipTrigger asChild>
-                                                                                <Badge className="bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 border-none shadow-sm flex items-center gap-1 cursor-help">
+                                                                                <Badge className="bg-emerald-500 text-white text-[9px] font-semibold px-2 py-0.5 border-none shadow-sm flex items-center gap-1 cursor-help">
                                                                                     <Rocket size={10} /> {item.buy_signal_count} BUY Strategies
                                                                                 </Badge>
                                                                             </TooltipTrigger>
-                                                                            <TooltipContent className="p-3 bg-slate-900 text-white border-none shadow-2xl rounded-xl">
+                                                                            <TooltipContent className="p-3 bg-slate-900 text-white border-none shadow-sm rounded-xl">
                                                                                 <div className="space-y-1.5">
                                                                                     {item.signals?.details.filter(s => s.signal === 'BUY').map((s, i) => (
                                                                                         <div key={i} className="flex justify-between items-center gap-4 text-[10px]">
                                                                                             <span className="text-slate-400">{s.strategy_name}</span>
-                                                                                            <span className="font-black text-emerald-400">BUY</span>
+                                                                                            <span className="font-semibold text-emerald-400">BUY</span>
                                                                                         </div>
                                                                                     ))}
                                                                                 </div>
@@ -1226,13 +1218,13 @@ function PortfolioContent() {
                                                         <TableCell className="text-right py-4">
                                                             <div className="flex flex-col items-end">
                                                                 {item.upside_percent !== undefined && (
-                                                                    <div className={`text-xs font-black ${item.upside_percent > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
+                                                                    <div className={`text-xs font-semibold ${item.upside_percent > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
                                                                         {item.upside_percent > 0 ? '+' : ''}{item.upside_percent.toFixed(1)}% Upside
                                                                     </div>
                                                                 )}
                                                                 {item.risk_reward_ratio !== undefined && item.risk_reward_ratio !== null ? (
                                                                     <div className="text-[10px] font-bold text-slate-700 dark:text-slate-300">
-                                                                        R:R <span className="font-black">1:{item.risk_reward_ratio.toFixed(1)}</span>
+                                                                        R:R <span className="font-semibold">1:{item.risk_reward_ratio.toFixed(1)}</span>
                                                                     </div>
                                                                 ) : (
                                                                     <div className="text-[9px] font-bold text-slate-400 uppercase">Set SL for R:R</div>
@@ -1242,14 +1234,14 @@ function PortfolioContent() {
                                                         <TableCell className="text-right py-4">
                                                             <div className="flex flex-col items-end gap-1">
                                                                 {item.days_to_book_closure !== undefined && item.days_to_book_closure !== null && (
-                                                                    <Badge className="bg-amber-500 text-white text-[8px] font-black uppercase px-2 py-0 border-none flex items-center gap-1">
+                                                                    <Badge className="bg-amber-500 text-white text-[8px] font-semibold uppercase px-2 py-0 border-none flex items-center gap-1">
                                                                         <Calendar size={10} /> BC in {item.days_to_book_closure} Days
                                                                     </Badge>
                                                                 )}
-                                                                <div className="text-[10px] font-black text-slate-900 dark:text-slate-100 uppercase">
+                                                                <div className="text-[10px] font-semibold text-slate-900 dark:text-slate-100 uppercase">
                                                                     {new Date(item.added_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                                                 </div>
-                                                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest opacity-60">Timeline</span>
+                                                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider opacity-60">Timeline</span>
                                                             </div>
                                                         </TableCell>
                                                         <TableCell className="w-[80px] pr-6 text-right">
@@ -1261,7 +1253,7 @@ function PortfolioContent() {
                                                                 >
                                                                     <div className="bg-emerald-100 dark:bg-emerald-900/40 p-1.5 rounded-lg flex items-center gap-1">
                                                                         <PlusCircle size={14} />
-                                                                        <span className="text-[10px] font-black uppercase tracking-tighter">Buy</span>
+                                                                        <span className="text-[10px] font-semibold uppercase tracking-tighter">Buy</span>
                                                                     </div>
                                                                 </button>
                                                                 <button
@@ -1291,24 +1283,24 @@ function PortfolioContent() {
                             {/* Watchlist Pagination */}
                             {watchlistTotalPages > 1 && (
                                 <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-50 dark:border-slate-800 pb-4 px-6">
-                                    <div className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">
+                                    <div className="text-[10px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">
                                         Monitoring <span className="text-gray-900 dark:text-slate-100">{sortedAndFilteredWatchlist.length}</span> key tickers
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => setWatchlistCurrentPage(p => Math.max(1, p - 1))}
                                             disabled={watchlistCurrentPage === 1}
-                                            className="p-2 rounded-lg border border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-20 transition-all font-black text-gray-600 dark:text-slate-400"
+                                            className="p-2 rounded-lg border border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-20 transition-all font-semibold text-gray-600 dark:text-slate-400"
                                         >
                                             <ChevronLeft size={16} />
                                         </button>
-                                        <span className="text-xs font-black px-4 py-2 bg-gray-900 dark:bg-slate-800 text-white rounded-lg shadow-lg">
+                                        <span className="text-xs font-semibold px-4 py-2 bg-gray-900 dark:bg-slate-800 text-white rounded-lg shadow-lg">
                                             {watchlistCurrentPage} / {watchlistTotalPages}
                                         </span>
                                         <button
                                             onClick={() => setWatchlistCurrentPage(p => Math.min(watchlistTotalPages, p + 1))}
                                             disabled={watchlistCurrentPage === watchlistTotalPages}
-                                            className="p-2 rounded-lg border border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-20 transition-all font-black text-gray-600 dark:text-slate-400"
+                                            className="p-2 rounded-lg border border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-20 transition-all font-semibold text-gray-600 dark:text-slate-400"
                                         >
                                             <ChevronRight size={16} />
                                         </button>
@@ -1351,9 +1343,9 @@ function PortfolioContent() {
 
                 {/* Watchlist Management Modal */}
                 <Dialog open={isWatchlistModalOpen} onOpenChange={setIsWatchlistModalOpen}>
-                    <DialogContent className="sm:max-w-[425px] overflow-hidden p-0 border-none shadow-2xl dark:bg-slate-950">
+                    <DialogContent className="sm:max-w-[425px] overflow-hidden p-0 border-none shadow-sm dark:bg-slate-950">
                         <DialogHeader className="p-6 pb-0">
-                            <DialogTitle className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+                            <DialogTitle className="text-2xl font-semibold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
                                 <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
                                     <Eye className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                                 </div>
@@ -1363,23 +1355,23 @@ function PortfolioContent() {
 
                         <div className="p-6 space-y-4">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest ml-1">Symbol</label>
+                                <label className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 tracking-wider ml-1">Symbol</label>
                                 {selectedWatchlistItem ? (
-                                    <div className="h-12 flex items-center px-4 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl font-medium text-lg text-slate-900 dark:text-slate-100">
+                                    <div className="h-12 flex items-center px-4 bg-slate-50 dark:bg-card border border-border dark:border-slate-800 rounded-xl font-medium text-lg text-slate-900 dark:text-slate-100">
                                         {selectedWatchlistItem.ticker}
                                     </div>
                                 ) : (
                                     <CompanySelect
                                         value={watchlistForm.ticker}
                                         onChange={(val) => setWatchlistForm({ ...watchlistForm, ticker: val })}
-                                        className="h-12 bg-white dark:bg-slate-900 border-blue-100 dark:border-slate-800 font-medium text-lg"
+                                        className="h-12 bg-white dark:bg-card border-blue-100 dark:border-slate-800 font-medium text-lg"
                                     />
                                 )}
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest ml-1">Target Price (रू)</label>
+                                    <label className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 tracking-wider ml-1">Target Price (रू)</label>
                                     <div className="relative">
                                         <Target className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-500 dark:text-blue-400" />
                                         <Input
@@ -1387,12 +1379,12 @@ function PortfolioContent() {
                                             type="number"
                                             value={watchlistForm.target_price}
                                             onChange={(e) => setWatchlistForm({ ...watchlistForm, target_price: e.target.value })}
-                                            className="pl-10 h-12 bg-white dark:bg-slate-900 border-blue-50 dark:border-slate-800 font-black text-slate-900 dark:text-slate-100 text-lg focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 placeholder:text-slate-300 dark:placeholder:text-slate-700"
+                                            className="pl-10 h-12 bg-white dark:bg-card border-blue-50 dark:border-slate-800 font-semibold text-slate-900 dark:text-slate-100 text-lg focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 placeholder:text-slate-300 dark:placeholder:text-slate-700"
                                         />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest ml-1">Stop Loss (रू)</label>
+                                    <label className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 tracking-wider ml-1">Stop Loss (रू)</label>
                                     <div className="relative">
                                         <ShieldAlert className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-red-500 dark:text-red-400" />
                                         <Input
@@ -1400,7 +1392,7 @@ function PortfolioContent() {
                                             type="number"
                                             value={watchlistForm.stop_loss_price}
                                             onChange={(e) => setWatchlistForm({ ...watchlistForm, stop_loss_price: e.target.value })}
-                                            className="pl-10 h-12 bg-white dark:bg-slate-900 border-blue-50 dark:border-slate-800 font-black text-slate-900 dark:text-slate-100 text-lg focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/30 placeholder:text-slate-300 dark:placeholder:text-slate-700"
+                                            className="pl-10 h-12 bg-white dark:bg-card border-blue-50 dark:border-slate-800 font-semibold text-slate-900 dark:text-slate-100 text-lg focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/30 placeholder:text-slate-300 dark:placeholder:text-slate-700"
                                         />
                                     </div>
                                 </div>
@@ -1408,7 +1400,7 @@ function PortfolioContent() {
 
                             <div className="flex items-center justify-between p-4 bg-blue-50/30 dark:bg-blue-900/10 rounded-xl border border-blue-100/50 dark:border-blue-900/30">
                                 <div className="flex flex-col">
-                                    <span className="text-xs font-black text-slate-900 dark:text-slate-100 uppercase tracking-wide flex items-center gap-2">
+                                    <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wide flex items-center gap-2">
                                         <Bell className="h-3.5 w-3.5 text-blue-500" /> Price Alerts
                                     </span>
                                     <span className="text-[10px] font-bold text-slate-500">Notify when target/SL hits</span>
@@ -1423,27 +1415,27 @@ function PortfolioContent() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest ml-1">Watchlist Notes</label>
+                                <label className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 tracking-wider ml-1">Watchlist Notes</label>
                                 <textarea
                                     placeholder="Enter your investment thesis or entry notes..."
                                     value={watchlistForm.notes}
                                     onChange={(e) => setWatchlistForm({ ...watchlistForm, notes: e.target.value })}
-                                    className="w-full min-h-[100px] p-3 rounded-xl border border-blue-50 dark:border-slate-800 bg-white dark:bg-slate-900 font-bold text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-700 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none transition-all"
+                                    className="w-full min-h-[100px] p-3 rounded-xl border border-blue-50 dark:border-slate-800 bg-white dark:bg-card font-bold text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-700 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none transition-all"
                                 />
                             </div>
                         </div>
 
-                        <DialogFooter className="p-6 pt-2 bg-slate-50/50 dark:bg-slate-900/50">
+                        <DialogFooter className="p-6 pt-2 bg-slate-50/50 dark:bg-card">
                             <div className="flex w-full gap-3">
                                 <button
                                     onClick={() => setIsWatchlistModalOpen(false)}
-                                    className="flex-1 h-12 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-slate-500 dark:text-slate-400"
+                                    className="flex-1 h-12 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-card text-[10px] font-semibold uppercase tracking-wider hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-slate-500 dark:text-slate-400"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={selectedWatchlistItem ? updateWatchlistItem : addWatchlistItem}
-                                    className="flex-[2] h-12 rounded-xl bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-black uppercase tracking-widest hover:bg-black dark:hover:bg-slate-700 transition-all shadow-lg flex items-center justify-center gap-2 group"
+                                    className="flex-[2] h-12 rounded-xl bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold uppercase tracking-wider hover:bg-black dark:hover:bg-slate-700 transition-all shadow-lg flex items-center justify-center gap-2 group"
                                 >
                                     {selectedWatchlistItem ? (
                                         <>Update <Target size={14} className="group-hover:scale-125 transition-transform" /></>
@@ -1466,11 +1458,11 @@ function PortfolioContent() {
                 {/* Floating Action Button for Position Calculator */}
                 <button
                     onClick={() => setIsPositionCalcOpen(true)}
-                    className="fixed bottom-8 right-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-all z-50 group"
+                    className="fixed bottom-6 right-6 bg-foreground text-background p-3 rounded-full shadow-md hover:opacity-90 transition-opacity z-50 group"
                     title="Position Sizing Calculator"
                 >
-                    <Calculator className="h-6 w-6" />
-                    <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 px-3 py-1 rounded-lg text-sm font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <Calculator className="h-5 w-5" />
+                    <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-popover text-popover-foreground border border-border px-2.5 py-1 rounded-md text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                         Position Sizing Calculator
                     </span>
                 </button>

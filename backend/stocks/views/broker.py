@@ -110,7 +110,7 @@ class BrokerViewSet(viewsets.ViewSet):
             ORDER BY symbol, transaction_date DESC
         ) dsp ON sa.symbol = dsp.symbol
         WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
-        {"AND c.\"sectorName\" = %s" if sector.lower() != 'all' else ""}
+        {'AND c."sectorName" = %s' if sector.lower() != 'all' else ""}
         ORDER BY net_qty DESC;
         """
 
@@ -231,7 +231,7 @@ class BrokerViewSet(viewsets.ViewSet):
             INNER JOIN companies c ON ss.symbol = c.symbol
             INNER JOIN latest_avg_vol lav ON ss.symbol = lav.symbol
             WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
-            {"AND c.\"sectorName\" = %s" if sector.lower() != 'all' else ""}
+            {'AND c."sectorName" = %s' if sector.lower() != 'all' else ""}
         )
         SELECT * FROM intensity_cte
         WHERE ABS(intensity) > 5

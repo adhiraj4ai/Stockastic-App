@@ -153,7 +153,7 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
     });
 
     return (
-        <Card className="dark:bg-slate-900 dark:border-slate-800">
+        <Card className="dark:bg-card dark:border-slate-800">
             <CardContent className="p-6">
                 <div className="overflow-x-auto">
                     <table className="w-full">
@@ -250,7 +250,7 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                                         Contributing strategies
                                                     </p>
                                                     {group.signals.map(sig => (
-                                                        <div key={sig.id} className="bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm flex justify-between items-center">
+                                                        <div key={sig.id} className="bg-white dark:bg-card p-3 rounded-lg border border-border dark:border-slate-700 shadow-sm flex justify-between items-center">
                                                             <div>
                                                                 <p className="font-bold text-sm text-slate-800 dark:text-slate-100">{sig.strategy_name}</p>
                                                                 <p className="text-xs text-slate-500 dark:text-slate-400">{sig.strategy_description}</p>
@@ -310,37 +310,37 @@ function StrategyCard({ signal }: { signal: StrategySignal }) {
                         <div className={cn("px-6 py-4 border-b", isBuy ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200/50 dark:border-emerald-800/50" : isSell ? "bg-rose-50/50 dark:bg-rose-950/20 border-rose-200/50 dark:border-rose-800/50" : "bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/50 dark:border-amber-800/50")}>
                             <DialogHeader>
                                 <div className="flex items-center gap-3">
-                                    <DialogTitle className="text-lg font-black text-slate-900 dark:text-white">
+                                    <DialogTitle className="text-lg font-semibold text-slate-900 dark:text-white">
                                         {signal.symbol}
                                     </DialogTitle>
                                     <Badge className={cn('font-bold text-white text-xs px-3', isBuy && 'bg-emerald-600', isSell && 'bg-rose-600', !isBuy && !isSell && 'bg-amber-600')}>
                                         {signal.signal}
                                     </Badge>
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-auto">{signal.date}</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-auto">{signal.date}</span>
                                 </div>
                             </DialogHeader>
                         </div>
 
                         <div className="p-6 space-y-5">
                             {/* Strategy Info */}
-                            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200/50 dark:border-slate-700/50">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{signal.strategy_name}</p>
+                            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-border dark:border-slate-700/50">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{signal.strategy_name}</p>
                                 <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{signal.strategy_description}</p>
                             </div>
 
                             {/* Quick Stats Grid */}
                             <div className="grid grid-cols-3 gap-3">
-                                <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-3 border border-slate-200/50 dark:border-slate-700/50 text-center">
+                                <div className="bg-white dark:bg-card rounded-2xl p-3 border border-border dark:border-slate-700/50 text-center">
                                     <p className="text-[9px] font-bold text-slate-400 uppercase">Price</p>
-                                    <p className="text-lg font-black text-slate-900 dark:text-white tabular-nums">Rs. {price.toLocaleString()}</p>
+                                    <p className="text-lg font-semibold text-slate-900 dark:text-white tabular-nums">Rs. {price.toLocaleString()}</p>
                                 </div>
-                                <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-3 border border-slate-200/50 dark:border-slate-700/50 text-center">
+                                <div className="bg-white dark:bg-card rounded-2xl p-3 border border-border dark:border-slate-700/50 text-center">
                                     <p className="text-[9px] font-bold text-slate-400 uppercase">Orders Fired</p>
-                                    <p className="text-lg font-black text-blue-500 tabular-nums">{meta.orders ?? 0}</p>
+                                    <p className="text-lg font-semibold text-blue-500 tabular-nums">{meta.orders ?? 0}</p>
                                 </div>
-                                <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-3 border border-slate-200/50 dark:border-slate-700/50 text-center">
+                                <div className="bg-white dark:bg-card rounded-2xl p-3 border border-border dark:border-slate-700/50 text-center">
                                     <p className="text-[9px] font-bold text-slate-400 uppercase">Position</p>
-                                    <p className={cn("text-lg font-black tabular-nums", (meta.position_size || 0) > 0 ? "text-emerald-500" : (meta.position_size || 0) < 0 ? "text-rose-500" : "text-slate-400")}>
+                                    <p className={cn("text-lg font-semibold tabular-nums", (meta.position_size || 0) > 0 ? "text-emerald-500" : (meta.position_size || 0) < 0 ? "text-rose-500" : "text-slate-400")}>
                                         {(meta.position_size || 0) > 0 ? 'Long' : (meta.position_size || 0) < 0 ? 'Short' : 'Flat'}
                                     </p>
                                 </div>
@@ -348,7 +348,7 @@ function StrategyCard({ signal }: { signal: StrategySignal }) {
 
                             {/* Signal Justification */}
                             <div className={cn("rounded-2xl p-4 border", isBuy ? "bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-200/50 dark:border-emerald-700/50" : isSell ? "bg-rose-50/50 dark:bg-rose-900/10 border-rose-200/50 dark:border-rose-700/50" : "bg-amber-50/50 dark:bg-amber-900/10 border-amber-200/50 dark:border-amber-700/50")}>
-                                <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: isBuy ? '#10b981' : isSell ? '#f43f5e' : '#f59e0b' }}>
+                                <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: isBuy ? '#10b981' : isSell ? '#f43f5e' : '#f59e0b' }}>
                                     Why {signal.signal}?
                                 </p>
                                 <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
@@ -361,12 +361,12 @@ function StrategyCard({ signal }: { signal: StrategySignal }) {
                             {/* Optimized Parameters */}
                             {hasParams && (
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Optimized Parameters</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Optimized Parameters</p>
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                                         {Object.entries(params).map(([k, v]: [string, any]) => (
-                                            <div key={k} className="bg-white dark:bg-slate-900/60 rounded-xl px-3 py-2 border border-slate-200/50 dark:border-slate-700/50">
+                                            <div key={k} className="bg-white dark:bg-card rounded-xl px-3 py-2 border border-border dark:border-slate-700/50">
                                                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{k.replace(/_/g, ' ')}</p>
-                                                <p className="text-sm font-black text-slate-700 dark:text-slate-200 tabular-nums">
+                                                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
                                                     {fixed(v, 4)}
                                                 </p>
                                             </div>
@@ -376,7 +376,7 @@ function StrategyCard({ signal }: { signal: StrategySignal }) {
                             )}
 
                             {/* Optimization Context */}
-                            <div className="flex items-center gap-3 text-[10px] text-slate-400 font-semibold bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 border border-slate-200/50 dark:border-slate-700/50">
+                            <div className="flex items-center gap-3 text-[10px] text-slate-400 font-semibold bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 border border-border dark:border-slate-700/50">
                                 <Zap className="w-3.5 h-3.5 text-blue-400 shrink-0" />
                                 <span>
                                     Optimization: <span className="text-slate-600 dark:text-slate-300 font-bold">{meta.optimization_scope === 'SYMBOL' ? `Symbol-level (${signal.symbol})` : meta.optimization_scope === 'SECTOR' ? 'Sector-level' : meta.optimization_scope === 'ALL' ? 'Market-wide' : 'Default parameters'}</span>
@@ -509,17 +509,17 @@ export default function SignalsPage() {
 
     return (
         <DashboardLayout>
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950 pt-2 px-4 pb-4 transition-colors duration-300">
+            <div className="min-h-screen bg-background pt-2 px-4 pb-4">
                 {/* Filters and View Controls */}
                 <Card className="mb-6 overflow-hidden border-none shadow-xl glass-card-light">
                     <CardContent className="p-0">
                         {/* Integrated Header and Controls */}
-                        <div className="p-6 pb-4 flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between border-b border-slate-100 dark:border-slate-800">
-                            <div className="flex items-center gap-4">
-                                <div className="p-2.5 bg-indigo-600 dark:bg-indigo-500 rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none">
-                                    <BarChart3 className="w-6 h-6 text-white" />
+                        <div className="p-6 pb-4 flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between border-b border-border dark:border-slate-800">
+                            <div className="flex items-center gap-3">
+                                <div className="h-8 w-8 rounded-md border border-border flex items-center justify-center">
+                                    <BarChart3 className="w-4 h-4 text-muted-foreground" />
                                 </div>
-                                <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Market Signals</h2>
+                                <h2 className="text-lg font-semibold text-foreground tracking-tight">Market Signals</h2>
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
@@ -527,14 +527,14 @@ export default function SignalsPage() {
                                                 onClick={handleGenerateSignals}
                                                 disabled={generating}
                                                 size="sm"
-                                                className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-full px-4 h-9 shadow-md shadow-indigo-100 dark:shadow-none transition-all duration-300 hover:scale-105 active:scale-95"
+                                                className="text-[13px] font-medium"
                                             >
                                                 {generating ? (
-                                                    <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                                                    <RefreshCw className="w-3.5 h-3.5 animate-spin mr-1.5" />
                                                 ) : (
-                                                    <Zap className="w-4 h-4 fill-white text-white mr-1.5" />
+                                                    <Zap className="w-3.5 h-3.5 mr-1.5" />
                                                 )}
-                                                {generating ? 'Processing...' : 'Generate New'}
+                                                {generating ? 'Processing…' : 'Generate new'}
                                             </Button>
                                         </TooltipTrigger>
                                         <TooltipContent>
@@ -553,7 +553,7 @@ export default function SignalsPage() {
                                         placeholder="Search symbol or strategy..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all text-sm h-10 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                        className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-border dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all text-sm h-10 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                     />
                                 </div>
 
@@ -590,7 +590,7 @@ export default function SignalsPage() {
                         </div>
 
                         {/* Navigation and Filters Row */}
-                        <div className="px-6 py-3 flex flex-col md:flex-row gap-4 items-center justify-between bg-slate-50/30 dark:bg-slate-900/30">
+                        <div className="px-6 py-3 flex flex-col md:flex-row gap-4 items-center justify-between bg-slate-50/30 dark:bg-card/30">
                             <Tabs value={tabMode} onValueChange={(v) => setTabMode(v as TabMode)} className="w-full md:w-auto">
                                 <TabsList className="bg-slate-200/50 dark:bg-slate-800/50 p-1 h-10 rounded-xl">
                                     <TabsTrigger
@@ -610,7 +610,7 @@ export default function SignalsPage() {
 
                             {tabMode === 'signals' && (
                                 <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
-                                    <div className="flex items-center mr-2 text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-tighter">
+                                    <div className="flex items-center mr-2 text-[10px] font-semibold text-slate-400 dark:text-slate-500 tracking-tighter">
                                         <Filter className="w-3 h-3 mr-1" />
                                         Refine by
                                     </div>
@@ -621,7 +621,7 @@ export default function SignalsPage() {
                                             size="sm"
                                             onClick={() => setSignalFilter(type)}
                                             className={cn(
-                                                'h-8 px-4 rounded-full text-xs font-black transition-all border-slate-200 dark:border-slate-700',
+                                                'h-8 px-4 rounded-full text-xs font-semibold transition-all border-slate-200 dark:border-slate-700',
                                                 signalFilter === type && type === 'BUY' && 'bg-emerald-500 hover:bg-emerald-600 border-emerald-500 shadow-lg shadow-emerald-100 dark:shadow-none text-white',
                                                 signalFilter === type && type === 'SELL' && 'bg-rose-500 hover:bg-rose-600 border-rose-500 shadow-lg shadow-rose-100 dark:shadow-none text-white',
                                                 signalFilter === type && type === 'HOLD' && 'bg-amber-500 hover:bg-amber-600 border-amber-500 shadow-lg shadow-amber-100 dark:shadow-none text-white',
@@ -642,71 +642,63 @@ export default function SignalsPage() {
                 {tabMode === 'signals' && (
                     <>
                         {/* Summary Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
-                            <Card className="border-emerald-200 dark:border-emerald-900/50 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/30 dark:to-slate-900">
-                                <CardContent className="p-3">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+                            <Card>
+                                <CardContent className="p-4">
                                     <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-0.5">Buy signals</p>
-                                            <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">{buyCount}</p>
-                                            <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-0.5">
+                                        <div className="leading-tight">
+                                            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Buy signals</p>
+                                            <p className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{buyCount}</p>
+                                            <p className="text-xs text-muted-foreground mt-1 tabular-nums">
                                                 {total > 0 ? fixed((buyCount / total) * 100, 1) : 0}% of total
                                             </p>
                                         </div>
-                                        <div className="p-2 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg">
-                                            <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                                        </div>
+                                        <TrendingUp className="w-4 h-4 text-muted-foreground" />
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            <Card className="border-rose-200 dark:border-rose-900/50 bg-gradient-to-br from-rose-50 to-white dark:from-rose-950/30 dark:to-slate-900">
-                                <CardContent className="p-3">
+                            <Card>
+                                <CardContent className="p-4">
                                     <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-rose-600 dark:text-rose-400 mb-0.5">Sell signals</p>
-                                            <p className="text-3xl font-bold text-rose-700 dark:text-rose-300">{sellCount}</p>
-                                            <p className="text-xs text-rose-600 dark:text-rose-500 mt-0.5">
+                                        <div className="leading-tight">
+                                            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Sell signals</p>
+                                            <p className="text-2xl font-semibold text-rose-600 dark:text-rose-400 tabular-nums">{sellCount}</p>
+                                            <p className="text-xs text-muted-foreground mt-1 tabular-nums">
                                                 {total > 0 ? fixed((sellCount / total) * 100, 1) : 0}% of total
                                             </p>
                                         </div>
-                                        <div className="p-2 bg-rose-100 dark:bg-rose-900/50 rounded-lg">
-                                            <TrendingDown className="w-5 h-5 text-rose-600 dark:text-rose-400" />
-                                        </div>
+                                        <TrendingDown className="w-4 h-4 text-muted-foreground" />
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            <Card className="border-amber-200 dark:border-amber-900/50 bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/30 dark:to-slate-900">
-                                <CardContent className="p-3">
+                            <Card>
+                                <CardContent className="p-4">
                                     <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-amber-600 dark:text-amber-400 mb-0.5">Hold signals</p>
-                                            <p className="text-3xl font-bold text-amber-700 dark:text-amber-300">{holdCount}</p>
-                                            <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">
+                                        <div className="leading-tight">
+                                            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Hold signals</p>
+                                            <p className="text-2xl font-semibold text-foreground tabular-nums">{holdCount}</p>
+                                            <p className="text-xs text-muted-foreground mt-1 tabular-nums">
                                                 {total > 0 ? fixed((holdCount / total) * 100, 1) : 0}% of total
                                             </p>
                                         </div>
-                                        <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-lg">
-                                            <Minus className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                                        </div>
+                                        <Minus className="w-4 h-4 text-muted-foreground" />
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            <Card className="border-blue-200 dark:border-blue-900/50 bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-slate-900">
-                                <CardContent className="p-3">
+                            <Card>
+                                <CardContent className="p-4">
                                     <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-0.5">Total Signals</p>
-                                            <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">{total}</p>
-                                            <p className="text-xs text-blue-600 dark:text-blue-500 mt-0.5">
+                                        <div className="leading-tight">
+                                            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Total signals</p>
+                                            <p className="text-2xl font-semibold text-foreground tabular-nums">{total}</p>
+                                            <p className="text-xs text-muted-foreground mt-1 tabular-nums">
                                                 {Object.keys(groupedBySymbol).length} symbols
                                             </p>
                                         </div>
-                                        <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
-                                            <BarChart3 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                        </div>
+                                        <BarChart3 className="w-4 h-4 text-muted-foreground" />
                                     </div>
                                 </CardContent>
                             </Card>
@@ -714,7 +706,7 @@ export default function SignalsPage() {
 
                         {/* Signals Display */}
                         {loading ? (
-                            <Card className="dark:bg-slate-900 dark:border-slate-800">
+                            <Card className="dark:bg-card dark:border-slate-800">
                                 <CardContent className="p-12 text-center">
                                     <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
                                     <p className="text-slate-600 dark:text-slate-400">Loading signals...</p>
@@ -730,8 +722,8 @@ export default function SignalsPage() {
                                             const holdSignals = symbolSignals.filter(s => s.signal === 'HOLD' || s.signal.startsWith('HOLD'));
 
                                             return (
-                                                <Card key={symbol} className="overflow-hidden dark:bg-slate-900 dark:border-slate-800">
-                                                    <CardHeader className="bg-white dark:bg-slate-900 border-b dark:border-slate-800 py-2 px-4">
+                                                <Card key={symbol} className="overflow-hidden dark:bg-card dark:border-slate-800">
+                                                    <CardHeader className="bg-white dark:bg-card border-b dark:border-slate-800 py-2 px-4">
                                                         <div className="flex items-center justify-between">
                                                             <div>
                                                                 <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-100">{symbol}</CardTitle>
@@ -827,7 +819,7 @@ export default function SignalsPage() {
                                 )}
 
                                 {filteredSignals.length === 0 && (
-                                    <Card className="dark:bg-slate-900 dark:border-slate-800">
+                                    <Card className="dark:bg-card dark:border-slate-800">
                                         <CardContent className="p-12 text-center">
                                             <p className="text-slate-600 dark:text-slate-400">No signals found matching your filters.</p>
                                         </CardContent>
@@ -842,7 +834,7 @@ export default function SignalsPage() {
                 {tabMode === 'tracking' && (
                     <>
                         {trackingLoading ? (
-                            <Card className="dark:bg-slate-900 dark:border-slate-800">
+                            <Card className="dark:bg-card dark:border-slate-800">
                                 <CardContent className="p-12 text-center">
                                     <div className="animate-spin w-8 h-8 border-4 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full mx-auto mb-4"></div>
                                     <p className="text-slate-600 dark:text-slate-400">Loading tracking data...</p>
@@ -856,8 +848,8 @@ export default function SignalsPage() {
                                         <CardContent className="p-4">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <p className="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-1">Active Positions</p>
-                                                    <p className="text-3xl font-black text-slate-800 dark:text-slate-100">{trackingData.summary?.total_active ?? 0}</p>
+                                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-1">Active Positions</p>
+                                                    <p className="text-3xl font-semibold text-slate-800 dark:text-slate-100">{trackingData.summary?.total_active ?? 0}</p>
                                                     <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase">Awaiting SELL signal</p>
                                                 </div>
                                                 <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-2xl border border-blue-100 dark:border-blue-800/30">
@@ -870,8 +862,8 @@ export default function SignalsPage() {
                                         <CardContent className="p-4">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <p className="text-[10px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400 mb-1">Closed Positions</p>
-                                                    <p className="text-3xl font-black text-slate-800 dark:text-slate-100">{trackingData.summary?.total_closed ?? 0}</p>
+                                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-purple-600 dark:text-purple-400 mb-1">Closed Positions</p>
+                                                    <p className="text-3xl font-semibold text-slate-800 dark:text-slate-100">{trackingData.summary?.total_closed ?? 0}</p>
                                                     <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase">Completed cycles</p>
                                                 </div>
                                                 <div className="p-3 bg-purple-50 dark:bg-purple-900/30 rounded-2xl border border-purple-100 dark:border-purple-800/30">
@@ -884,10 +876,10 @@ export default function SignalsPage() {
                                         <CardContent className="p-4">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <p className={cn("text-[10px] font-black uppercase tracking-wider mb-1",
+                                                    <p className={cn("text-[10px] font-semibold uppercase tracking-wider mb-1",
                                                         (trackingData.summary?.avg_return ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
                                                     )}>Avg Return</p>
-                                                    <p className={cn("text-3xl font-black",
+                                                    <p className={cn("text-3xl font-semibold",
                                                         (trackingData.summary?.avg_return ?? 0) >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"
                                                     )}>{fixed(trackingData.summary?.avg_return, 2, '0.00')}%</p>
                                                     <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase">Per trade</p>
@@ -907,11 +899,11 @@ export default function SignalsPage() {
                                         <CardContent className="p-4">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">Avg Holding Period</p>
-                                                    <p className="text-3xl font-black text-slate-800 dark:text-slate-100">{fixed(trackingData.summary?.avg_holding_period, 1, '0.0')}</p>
+                                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">Avg Holding Period</p>
+                                                    <p className="text-3xl font-semibold text-slate-800 dark:text-slate-100">{fixed(trackingData.summary?.avg_holding_period, 1, '0.0')}</p>
                                                     <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase">Days</p>
                                                 </div>
-                                                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-border dark:border-slate-700">
                                                     <Clock className="w-5 h-5 text-slate-600 dark:text-slate-400" />
                                                 </div>
                                             </div>
@@ -927,7 +919,7 @@ export default function SignalsPage() {
                                     <CardContent className="p-0">
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-sm text-left">
-                                                <thead className="bg-slate-50/50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 uppercase text-[10px] font-black border-b border-slate-100 dark:border-slate-800">
+                                                <thead className="bg-slate-50/50 dark:bg-card text-slate-400 dark:text-slate-500 uppercase text-[10px] font-semibold border-b border-border dark:border-slate-800">
                                                     <tr>
                                                         <th className="px-4 py-4">Symbol</th>
                                                         <th className="px-4 py-4">Buy Price</th>
@@ -938,7 +930,7 @@ export default function SignalsPage() {
                                                         <th className="px-4 py-4">Strategy</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/20 dark:bg-slate-950/40">
+                                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/20 dark:bg-card">
                                                     {(trackingData.active_positions || []).map((pos, idx) => (
                                                         <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                                                             <td className="px-4 py-3 font-bold">{pos.symbol}</td>
@@ -987,7 +979,7 @@ export default function SignalsPage() {
                                     <CardContent className="p-0">
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-sm text-left">
-                                                <thead className="bg-slate-50/50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 uppercase text-[10px] font-black border-b border-slate-100 dark:border-slate-800">
+                                                <thead className="bg-slate-50/50 dark:bg-card text-slate-400 dark:text-slate-500 uppercase text-[10px] font-semibold border-b border-border dark:border-slate-800">
                                                     <tr>
                                                         <th className="px-4 py-4">Symbol</th>
                                                         <th className="px-4 py-4">Buy</th>
@@ -999,7 +991,7 @@ export default function SignalsPage() {
                                                         <th className="px-4 py-4">Strategy</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/20 dark:bg-slate-950/40">
+                                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/20 dark:bg-card">
                                                     {(trackingData.closed_positions || []).map((pos, idx) => (
                                                         <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                                                             <td className="px-4 py-3 font-bold">{pos.symbol}</td>

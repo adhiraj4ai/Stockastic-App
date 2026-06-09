@@ -222,7 +222,7 @@ export default function ExperimentDetailPage() {
         >
             <div className="max-w-[1800px] mx-auto space-y-6 p-4 md:p-6">
                 {/* 1. Command Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-card p-4 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm">
                     <div className="flex items-center gap-4">
                         <div className="h-12 w-12 bg-gray-100 dark:bg-slate-800 rounded-xl flex items-center justify-center text-gray-700 dark:text-slate-300 font-bold text-xl border border-gray-200 dark:border-slate-700">
                             {experiment.scope_value.slice(0, 2)}
@@ -251,7 +251,7 @@ export default function ExperimentDetailPage() {
                     <div className="flex items-center gap-3">
                         {experiment.siblings && experiment.siblings.length > 0 && (
                             <div className="hidden md:flex items-center gap-2 bg-gray-50 dark:bg-slate-800 p-1 pr-3 rounded-lg border border-gray-200 dark:border-slate-700">
-                                <div className="p-1.5 bg-white dark:bg-slate-900 rounded-md shadow-sm border border-gray-100 dark:border-slate-700 text-gray-500 dark:text-slate-400">
+                                <div className="p-1.5 bg-white dark:bg-card rounded-md shadow-sm border border-gray-100 dark:border-slate-700 text-gray-500 dark:text-slate-400">
                                     <Layers size={14} />
                                 </div>
                                 <Select
@@ -283,7 +283,7 @@ export default function ExperimentDetailPage() {
 
                 {batchChildren.length > 0 ? (
                     <div className="w-full">
-                        <Card className="border border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 rounded-xl overflow-visible">
+                        <Card className="border border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-card rounded-xl overflow-visible">
                             <CardHeader className="border-b border-gray-100 dark:border-slate-800 py-4 px-6 flex flex-row items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded">
@@ -338,9 +338,9 @@ export default function ExperimentDetailPage() {
                         {/* Left Panel: Parameters & Context */}
                         <div className="xl:col-span-3 space-y-6">
                             {/* Summary Tiles */}
-                            <Card className="border border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 rounded-xl overflow-hidden">
+                            <Card className="border border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-card rounded-xl overflow-hidden">
                                 <CardHeader className="bg-gray-50/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800 py-3 px-4">
-                                    <CardTitle className="text-sm font-bold text-gray-800 dark:text-slate-200 uppercase tracking-widest flex items-center gap-2">
+                                    <CardTitle className="text-sm font-bold text-gray-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
                                         <BarChart3 size={14} className="text-blue-500" /> Key Metrics
                                     </CardTitle>
                                 </CardHeader>
@@ -376,9 +376,9 @@ export default function ExperimentDetailPage() {
                                     </div>
                                 </CardContent>
                             </Card>
-                            <Card className="border border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 rounded-xl overflow-hidden">
+                            <Card className="border border-gray-200 dark:border-slate-800 shadow-sm bg-white dark:bg-card rounded-xl overflow-hidden">
                                 <CardHeader className="bg-gray-50/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800 py-3 px-4">
-                                    <CardTitle className="text-sm font-bold text-gray-800 dark:text-slate-200 uppercase tracking-widest flex items-center gap-2">
+                                    <CardTitle className="text-sm font-bold text-gray-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
                                         <Zap size={14} className="text-blue-500" /> Parameters
                                     </CardTitle>
                                 </CardHeader>
@@ -401,7 +401,7 @@ export default function ExperimentDetailPage() {
                                 </CardContent>
                             </Card>
 
-                            <Card className="border border-blue-100 dark:border-blue-900/30 shadow-sm bg-gradient-to-br from-blue-50 dark:from-blue-950/30 to-white dark:to-slate-900 rounded-xl overflow-hidden">
+                            <Card className="border border-blue-100 dark:border-blue-900/30 shadow-sm bg-muted/40 rounded-xl overflow-hidden">
                                 <CardContent className="p-5">
                                     <h3 className="text-blue-900 dark:text-blue-300 font-semibold mb-3 flex items-center gap-2">
                                         <Info size={16} /> Run Details

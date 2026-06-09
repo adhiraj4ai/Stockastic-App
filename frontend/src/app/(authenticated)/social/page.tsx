@@ -47,7 +47,7 @@ export default function SocialPage() {
             <div className="max-w-6xl mx-auto space-y-8">
                 <Alert className="bg-blue-500/5 border-blue-500/20 rounded-2xl p-6">
                     <Info className="h-4 w-4 text-blue-500" />
-                    <AlertTitle className="text-blue-700 dark:text-blue-400 font-bold mb-1 uppercase tracking-widest text-[10px]">Strategic Insight</AlertTitle>
+                    <AlertTitle className="text-blue-700 dark:text-blue-400 font-bold mb-1 uppercase tracking-wider text-[10px]">Strategic Insight</AlertTitle>
                     <AlertDescription className="text-slate-600 dark:text-slate-400 text-sm">
                         Use these cards to share today's market performance on X (Twitter), LinkedIn, or Instagram. Each card is optimized for visual engagement and data accuracy.
                     </AlertDescription>
@@ -57,7 +57,7 @@ export default function SocialPage() {
                     {/* Controls */}
                     <div className="lg:col-span-5 space-y-6">
                         <div className="space-y-4">
-                            <h2 className="text-lg font-black text-slate-800 dark:text-white tracking-tight">Select Template</h2>
+                            <h2 className="text-lg font-semibold text-slate-800 dark:text-white tracking-tight">Select Template</h2>
                             <div className="grid grid-cols-1 gap-3">
                                 {[
                                     { id: 'summary', name: 'Daily Market Wrap', icon: Share2, desc: 'A comprehensive view of the market index and turnover.' },
@@ -71,10 +71,10 @@ export default function SocialPage() {
                                         onClick={() => setSelectedType(type.id as any)}
                                         className={`group flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300 text-left ${selectedType === type.id
                                                 ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-500/20 scale-[1.02]'
-                                                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/5 text-slate-600 dark:text-slate-400 hover:border-blue-500/30'
+                                                : 'bg-white dark:bg-card border-slate-200 dark:border-border text-slate-600 dark:text-slate-400 hover:border-blue-500/30'
                                             }`}
                                     >
-                                        <div className={`p-3 rounded-xl transition-colors ${selectedType === type.id ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-500'
+                                        <div className={`p-3 rounded-xl transition-colors ${selectedType === type.id ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-muted text-slate-500'
                                             }`}>
                                             <type.icon size={20} />
                                         </div>
@@ -103,8 +103,8 @@ export default function SocialPage() {
                     <div className="lg:col-span-7">
                         <div className="flex flex-col items-center">
                             <div className="mb-6 flex items-center justify-between w-full max-w-md">
-                                <h2 className="text-lg font-black text-slate-800 dark:text-white tracking-tight">Live Preview</h2>
-                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 py-1 bg-slate-100 dark:bg-white/5 rounded-full border border-slate-200 dark:border-white/5">
+                                <h2 className="text-lg font-semibold text-slate-800 dark:text-white tracking-tight">Live Preview</h2>
+                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 py-1 bg-slate-100 dark:bg-muted rounded-full border border-slate-200 dark:border-border">
                                     High Fidelity
                                 </div>
                             </div>

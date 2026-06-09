@@ -12,27 +12,27 @@ import { Loader2, Crown, ArrowUpRight, ArrowDownRight, Activity, Brain } from 'l
 
 interface BrokerRow {
     broker_id: number;
-    buy_qty:   number;
-    sell_qty:  number;
-    net_qty:   number;
-    buy_amount:  number;
+    buy_qty: number;
+    sell_qty: number;
+    net_qty: number;
+    buy_amount: number;
     sell_amount: number;
-    net_amount:  number;
+    net_amount: number;
     pct?: number;
 }
 
 interface SymbolSmartMoneyData {
     kpi: {
-        total_volume:       number;
-        unique_buyers:      number;
-        unique_sellers:     number;
+        total_volume: number;
+        unique_buyers: number;
+        unique_sellers: number;
         smart_broker_count: number;
-        net_smart_qty:      number;
+        net_smart_qty: number;
     };
-    top_buyers:        (BrokerRow & { pct: number })[];
-    top_sellers:       (BrokerRow & { pct: number })[];
-    net_accumulators:  BrokerRow[];
-    net_distributors:  BrokerRow[];
+    top_buyers: (BrokerRow & { pct: number })[];
+    top_sellers: (BrokerRow & { pct: number })[];
+    net_accumulators: BrokerRow[];
+    net_distributors: BrokerRow[];
     smart_broker_activity: BrokerRow[];
     daily_flow: { date: string; volume: number; avg_rate: number }[];
 }
@@ -81,8 +81,8 @@ function BrokerBarRow({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function TickerSmartMoney({ symbol }: { symbol: string }) {
-    const [range, setRange]     = useState<Range>('1W');
-    const [data, setData]       = useState<SymbolSmartMoneyData | null>(null);
+    const [range, setRange] = useState<Range>('1W');
+    const [data, setData] = useState<SymbolSmartMoneyData | null>(null);
     const [loading, setLoading] = useState(true);
     const abortRef = useRef<AbortController | null>(null);
 
@@ -114,11 +114,11 @@ export default function TickerSmartMoney({ symbol }: { symbol: string }) {
                 textStyle: { color: '#e2e8f0', fontSize: 12 },
                 extraCssText: 'border-radius:10px;padding:12px 16px;box-shadow:0 8px 32px rgba(0,0,0,0.4)',
                 formatter(params: any[]) {
-                    const vol  = params.find(p => p.seriesName === 'Volume');
+                    const vol = params.find(p => p.seriesName === 'Volume');
                     const rate = params.find(p => p.seriesName === 'Avg Price');
                     return `
                         <div style="font-size:11px;color:#94a3b8;margin-bottom:6px">${params[0]?.axisValue}</div>
-                        ${vol  ? `<div style="display:flex;justify-content:space-between;gap:20px"><span style="color:#94a3b8">Volume</span><b>${formatNepaliNumber(vol.value)}</b></div>`  : ''}
+                        ${vol ? `<div style="display:flex;justify-content:space-between;gap:20px"><span style="color:#94a3b8">Volume</span><b>${formatNepaliNumber(vol.value)}</b></div>` : ''}
                         ${rate ? `<div style="display:flex;justify-content:space-between;gap:20px;margin-top:4px"><span style="color:#94a3b8">Avg Price</span><b>${formatRupees(rate.value, 1)}</b></div>` : ''}
                     `;
                 },
@@ -181,8 +181,8 @@ export default function TickerSmartMoney({ symbol }: { symbol: string }) {
         };
     }, [data?.daily_flow]);
 
-    const maxBuyQty  = data?.top_buyers[0]?.buy_qty   ?? 1;
-    const maxSellQty = data?.top_sellers[0]?.sell_qty  ?? 1;
+    const maxBuyQty = data?.top_buyers[0]?.buy_qty ?? 1;
+    const maxSellQty = data?.top_sellers[0]?.sell_qty ?? 1;
 
     return (
         <div className="space-y-5">
@@ -201,7 +201,7 @@ export default function TickerSmartMoney({ symbol }: { symbol: string }) {
                             className={cn(
                                 'px-2.5 py-1 text-[11px] rounded-md border transition-all',
                                 range === r
-                                    ? 'bg-slate-800 dark:bg-slate-100 border-slate-800 dark:border-slate-100 text-white dark:text-slate-900'
+                                    ? 'bg-slate-800 dark:bg-slate-100 border-slate-800 dark:border-border text-white dark:text-slate-900'
                                     : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500',
                             )}>
                             {r}
@@ -222,12 +222,12 @@ export default function TickerSmartMoney({ symbol }: { symbol: string }) {
                     {/* ── KPI strip ─────────────────────────────────────────── */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {([
-                            { label: 'Total Volume',      value: formatNepaliNumber(data.kpi.total_volume) },
-                            { label: 'Unique Buyers',     value: data.kpi.unique_buyers.toString() },
-                            { label: 'Unique Sellers',    value: data.kpi.unique_sellers.toString() },
-                            { label: 'Smart Brokers',     value: data.kpi.smart_broker_count.toString() },
+                            { label: 'Total Volume', value: formatNepaliNumber(data.kpi.total_volume) },
+                            { label: 'Unique Buyers', value: data.kpi.unique_buyers.toString() },
+                            { label: 'Unique Sellers', value: data.kpi.unique_sellers.toString() },
+                            { label: 'Smart Brokers', value: data.kpi.smart_broker_count.toString() },
                         ]).map(c => (
-                            <div key={c.label} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 px-4 py-3">
+                            <div key={c.label} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-card px-4 py-3">
                                 <div className="text-xl font-semibold text-slate-800 dark:text-slate-100 tabular-nums leading-none mb-1">{c.value}</div>
                                 <div className="text-[10px] text-slate-400">{c.label}</div>
                             </div>
@@ -236,7 +236,7 @@ export default function TickerSmartMoney({ symbol }: { symbol: string }) {
 
                     {/* ── Smart broker alert ───────────────────────────────── */}
                     {data.smart_broker_activity.length > 0 && (
-                        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 px-4 py-3">
+                        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-card px-4 py-3">
                             <div className="flex items-center gap-2 mb-2.5">
                                 <Crown className="w-3.5 h-3.5 text-amber-500" />
                                 <span className="text-[11px] text-slate-600 dark:text-slate-300">
@@ -272,7 +272,7 @@ export default function TickerSmartMoney({ symbol }: { symbol: string }) {
 
                     {/* ── Daily flow chart ─────────────────────────────────── */}
                     {data.daily_flow.length > 1 && (
-                        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/30 overflow-hidden">
+                        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-card/30 overflow-hidden">
                             <div className="flex items-center gap-2 px-4 pt-4 pb-1">
                                 <Activity className="w-3.5 h-3.5 text-slate-400" />
                                 <span className="text-[10px] text-slate-400 uppercase tracking-wider">Daily Volume & Avg Price</span>
@@ -292,7 +292,7 @@ export default function TickerSmartMoney({ symbol }: { symbol: string }) {
                     {/* ── Buyers / Sellers ─────────────────────────────────── */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                            <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 flex items-center justify-between">
+                            <div className="px-4 py-2.5 border-b border-border dark:border-slate-800 bg-slate-50 dark:bg-card flex items-center justify-between">
                                 <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider">Top Buyers</span>
                                 <span className="text-[10px] text-slate-400">{data.top_buyers.length} brokers</span>
                             </div>
@@ -308,7 +308,7 @@ export default function TickerSmartMoney({ symbol }: { symbol: string }) {
                         </div>
 
                         <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                            <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 flex items-center justify-between">
+                            <div className="px-4 py-2.5 border-b border-border dark:border-slate-800 bg-slate-50 dark:bg-card flex items-center justify-between">
                                 <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider">Top Sellers</span>
                                 <span className="text-[10px] text-slate-400">{data.top_sellers.length} brokers</span>
                             </div>
@@ -329,13 +329,13 @@ export default function TickerSmartMoney({ symbol }: { symbol: string }) {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {data.net_accumulators.length > 0 && (
                                 <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                                    <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 flex items-center gap-2">
+                                    <div className="px-4 py-2.5 border-b border-border dark:border-slate-800 bg-slate-50 dark:bg-card flex items-center gap-2">
                                         <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500" />
                                         <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider">Net Accumulators</span>
                                     </div>
                                     <table className="w-full text-xs">
                                         <thead>
-                                            <tr className="border-b border-slate-100 dark:border-slate-800">
+                                            <tr className="border-b border-border dark:border-slate-800">
                                                 {['Broker', 'Bought', 'Sold', 'Net'].map(h => (
                                                     <th key={h} className="px-4 py-2 text-left text-[9px] text-slate-400 uppercase tracking-wider">{h}</th>
                                                 ))}
@@ -363,13 +363,13 @@ export default function TickerSmartMoney({ symbol }: { symbol: string }) {
 
                             {data.net_distributors.length > 0 && (
                                 <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                                    <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 flex items-center gap-2">
+                                    <div className="px-4 py-2.5 border-b border-border dark:border-slate-800 bg-slate-50 dark:bg-card flex items-center gap-2">
                                         <ArrowDownRight className="w-3.5 h-3.5 text-rose-500" />
                                         <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider">Net Distributors</span>
                                     </div>
                                     <table className="w-full text-xs">
                                         <thead>
-                                            <tr className="border-b border-slate-100 dark:border-slate-800">
+                                            <tr className="border-b border-border dark:border-slate-800">
                                                 {['Broker', 'Bought', 'Sold', 'Net'].map(h => (
                                                     <th key={h} className="px-4 py-2 text-left text-[9px] text-slate-400 uppercase tracking-wider">{h}</th>
                                                 ))}

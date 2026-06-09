@@ -23,7 +23,7 @@ export const MiniSectorCard = ({
     const isPositive = change >= 0;
 
     return (
-        <div className="relative overflow-hidden bg-white dark:bg-slate-900/50 p-3.5 rounded-2xl border border-slate-200/50 dark:border-slate-800/50 shadow-lg hover:shadow-xl transition-all duration-500 group cursor-pointer backdrop-blur-xl">
+        <div className="relative overflow-hidden bg-white dark:bg-card p-3.5 rounded-2xl border border-border dark:border-slate-800/50 shadow-lg hover:shadow-xl transition-all duration-500 group cursor-pointer">
             {/* Ambient Background Gradient */}
             <div className={`absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-br ${gradient} blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-700`} />
 
@@ -47,7 +47,7 @@ export const MiniSectorCard = ({
                     </div>
                 </div>
 
-                <div className="flex justify-between items-center pt-2.5 border-t border-slate-100 dark:border-white/5">
+                <div className="flex justify-between items-center pt-2.5 border-t border-border dark:border-border">
                     <div className="flex flex-col">
                         <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 tracking-tight">Turnover</span>
                         <span className="text-[10px] font-mono font-bold text-slate-800 dark:text-slate-200">Rs. {(turnover / 1000000).toFixed(1)}M</span>

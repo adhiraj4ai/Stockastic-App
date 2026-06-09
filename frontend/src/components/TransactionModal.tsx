@@ -221,7 +221,7 @@ export default function TransactionModal({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100">
+            <div className="bg-white dark:bg-card rounded-xl shadow-sm w-full max-w-lg overflow-hidden transform transition-all scale-100">
 
                 {/* Header */}
                 <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-slate-800">
@@ -232,7 +232,7 @@ export default function TransactionModal({
                 </div>
 
                 {/* Tabs */}
-                <div className="flex border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 overflow-x-auto custom-scrollbar">
+                <div className="flex border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-card overflow-x-auto custom-scrollbar">
                     {(() => {
                         let types: TransactionType[] = ['BUY', 'SELL', 'BONUS', 'DIVIDEND'];
 
@@ -264,13 +264,13 @@ export default function TransactionModal({
                     {/* Layout: Account (Full Width) */}
                     <div className="space-y-4">
                         {accounts.length > 0 ? (
-                            <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
+                            <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-border dark:border-slate-800">
                                 <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 tracking-tight mb-1.5 block">Portfolio account</label>
                                 <Select
                                     value={formData.account ? formData.account.toString() : ""}
                                     onValueChange={(value) => setFormData({ ...formData, account: value })}
                                 >
-                                    <SelectTrigger className="w-full bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 h-10">
+                                    <SelectTrigger className="w-full bg-white dark:bg-card border-gray-200 dark:border-slate-700 h-10">
                                         <SelectValue placeholder="Select Portfolio Account" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -318,7 +318,7 @@ export default function TransactionModal({
                                     required
                                     min="1"
                                     placeholder="e.g. 100"
-                                    className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-slate-100 font-bold h-10"
+                                    className="w-full px-4 py-2 bg-white dark:bg-card border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-slate-100 font-bold h-10"
                                     value={formData.quantity}
                                     onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                                 />
@@ -334,7 +334,7 @@ export default function TransactionModal({
                                         required
                                         step="0.01"
                                         placeholder="0.00"
-                                        className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-slate-100 font-bold h-10"
+                                        className="w-full pl-10 pr-4 py-2 bg-white dark:bg-card border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-slate-100 font-bold h-10"
                                         value={formData.rate}
                                         onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
                                     />

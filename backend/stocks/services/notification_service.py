@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.db import connections
 from django.db.models import Sum, F, Q, Avg
 import pandas as pd
-import pandas_ta as ta
+import talib
 import numpy as np
 from ..models import (
     Notification, PortfolioItem, WatchlistItem, 
@@ -822,13 +822,14 @@ def check_technical_alerts(user):
             df['date'] = pd.to_datetime(df['date'])
             df.set_index('date', inplace=True)
             
-            # Indicators
-            rsi = ta.rsi(df['close'], length=14)
-            sma_50 = ta.sma(df['close'], length=50)
-            sma_200 = ta.sma(df['close'], length=200)
+            # Indicators using talib
+            close_vals = df['close'].values.astype(float)
+            rsi = talib.RSI(close_vals, timeperiod=14)
+            sma_50 = talib.SMA(close_vals, timeperiod=50)
+            sma_200 = talib.SMA(close_vals, timeperiod=200)
             avg_vol_20 = df['volume'].rolling(window=20).mean()
             
-            latest_rsi = rsi.iloc[-1] if rsi is not None else 50
+            latest_rsi = rsi[-1] if rsi is not None and not np.isnan(rsi[-1]) else 50
             latest_vol = df['volume'].iloc[-1]
             latest_avg_vol = avg_vol_20.iloc[-1] if avg_vol_20 is not None else 0
             latest_close = df['close'].iloc[-1]
@@ -871,10 +872,10 @@ def check_technical_alerts(user):
 
             # --- GOLDEN CROSS ---
             if len(df) > 200:
-                prev_sma50 = sma_50.iloc[-2]
-                prev_sma200 = sma_200.iloc[-2]
-                curr_sma50 = sma_50.iloc[-1]
-                curr_sma200 = sma_200.iloc[-1]
+                prev_sma50 = sma_50[-2]
+                prev_sma200 = sma_200[-2]
+                curr_sma50 = sma_50[-1]
+                curr_sma200 = sma_200[-1]
                 
                 if prev_sma50 <= prev_sma200 and curr_sma50 > curr_sma200:
                     if not Notification.objects.filter(user=user, ticker=symbol, type=Notification.NotificationType.GOLDEN_CROSS, created_at__gte=one_day_ago).exists():

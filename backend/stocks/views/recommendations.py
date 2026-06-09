@@ -13,7 +13,7 @@ from typing import Dict, Optional, List
 
 import numpy as np
 import pandas as pd
-import pandas_ta as ta
+import talib
 
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -125,7 +125,7 @@ class BrokerAccumulationRecommendationEngine:
         return agg_df
 
     def _compute_indicators_for_symbol(self, group: pd.DataFrame) -> pd.DataFrame:
-        """Compute technical indicators for a single symbol's data using pandas_ta."""
+        """Compute technical indicators for a single symbol's data using talib."""
         df = group.copy()
         
         # Ensure we have enough data
@@ -133,68 +133,47 @@ class BrokerAccumulationRecommendationEngine:
             return df
         
         try:
+            close = df['close'].values.astype(float)
+            high = df['high'].values.astype(float)
+            low = df['low'].values.astype(float)
+            volume = df['volume'].values.astype(float)
+
             # Moving Averages
-            df['sma_5'] = ta.sma(df['close'], length=5)
-            df['sma_10'] = ta.sma(df['close'], length=10)
-            df['sma_20'] = ta.sma(df['close'], length=20)
-            df['sma_50'] = ta.sma(df['close'], length=50)
-            df['sma_200'] = ta.sma(df['close'], length=200)
-            df['ema_20'] = ta.ema(df['close'], length=20)
-            df['ema_50'] = ta.ema(df['close'], length=50)
+            df['sma_5'] = talib.SMA(close, timeperiod=5)
+            df['sma_10'] = talib.SMA(close, timeperiod=10)
+            df['sma_20'] = talib.SMA(close, timeperiod=20)
+            df['sma_50'] = talib.SMA(close, timeperiod=50)
+            df['sma_200'] = talib.SMA(close, timeperiod=200)
+            df['ema_20'] = talib.EMA(close, timeperiod=20)
+            df['ema_50'] = talib.EMA(close, timeperiod=50)
 
             # RSI
-            df['rsi_14'] = ta.rsi(df['close'], length=14)
+            df['rsi_14'] = talib.RSI(close, timeperiod=14)
             
             # ROC
-            df['roc_10'] = ta.roc(df['close'], length=10)
+            df['roc_10'] = talib.ROC(close, timeperiod=10)
 
             # ADX
-            adx_result = ta.adx(df['high'], df['low'], df['close'], length=14)
-            if adx_result is not None and not adx_result.empty:
-                if 'ADX_14' in adx_result.columns:
-                    df['adx'] = adx_result['ADX_14'].values
-                if 'DMP_14' in adx_result.columns:
-                    df['plus_di'] = adx_result['DMP_14'].values
-                if 'DMN_14' in adx_result.columns:
-                    df['minus_di'] = adx_result['DMN_14'].values
+            df['adx'] = talib.ADX(high, low, close, timeperiod=14)
+            df['plus_di'] = talib.PLUS_DI(high, low, close, timeperiod=14)
+            df['minus_di'] = talib.MINUS_DI(high, low, close, timeperiod=14)
 
             # MACD
-            macd_result = ta.macd(df['close'], fast=12, slow=26, signal=9)
-            if macd_result is not None and not macd_result.empty:
-                macd_col = [c for c in macd_result.columns if 'MACD_' in c and 'h' not in c.lower() and 's' not in c.lower()]
-                signal_col = [c for c in macd_result.columns if 'MACDs_' in c]
-                if macd_col:
-                    df['macd'] = macd_result[macd_col[0]].values
-                if signal_col:
-                    df['macd_signal'] = macd_result[signal_col[0]].values
+            macd, macdsignal, macdhist = talib.MACD(close, fastperiod=12, slowperiod=26, signalperiod=9)
+            df['macd'] = macd
+            df['macd_signal'] = macdsignal
 
             # OBV
-            obv = ta.obv(df['close'], df['volume'])
-            if obv is not None:
-                df['obv'] = obv.values
+            df['obv'] = talib.OBV(close, volume)
 
             # AD Line (Accumulation/Distribution)
-            ad = ta.ad(df['high'], df['low'], df['close'], df['volume'])
-            if ad is not None:
-                df['ad_line'] = ad.values
+            df['ad_line'] = talib.AD(high, low, close, volume)
 
             # Parabolic SAR
-            psar = ta.psar(df['high'], df['low'], df['close'])
-            if psar is not None and not psar.empty:
-                # Get the SAR value (either long or short)
-                psar_l = [c for c in psar.columns if 'PSARl_' in c]
-                psar_s = [c for c in psar.columns if 'PSARs_' in c]
-                if psar_l and psar_s:
-                    df['sar'] = psar[psar_l[0]].fillna(psar[psar_s[0]]).values
-                elif psar_l:
-                    df['sar'] = psar[psar_l[0]].values
-                elif psar_s:
-                    df['sar'] = psar[psar_s[0]].values
+            df['sar'] = talib.SAR(high, low, acceleration=0.02, maximum=0.2)
 
             # MFI
-            mfi = ta.mfi(df['high'], df['low'], df['close'], df['volume'], length=14)
-            if mfi is not None:
-                df['mfi'] = mfi.values
+            df['mfi'] = talib.MFI(high, low, close, volume, timeperiod=14)
                 
         except Exception as e:
             logger.warning(f"Error computing indicators: {e}")
@@ -878,43 +857,28 @@ class SmartAccumulatedCrossoverRecommendationEngine:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
         
-        # Calculate Indicators using pandas_ta
+        close = df['close'].values.astype(float)
+        high = df['high'].values.astype(float)
+        low = df['low'].values.astype(float)
+
         # EMAs
-        df['ema_9'] = df.ta.ema(length=9)
-        df['ema_26'] = df.ta.ema(length=26)
+        df['ema_9'] = talib.EMA(close, timeperiod=9)
+        df['ema_26'] = talib.EMA(close, timeperiod=26)
         
         # MACD (12, 26, 9)
-        macd = df.ta.macd(fast=12, slow=26, signal=9)
-        if macd is not None and not macd.empty:
-            try:
-                # Dynamic lookup
-                macd_col = next(c for c in macd.columns if c.startswith('MACD_'))
-                signal_col = next(c for c in macd.columns if c.startswith('MACDs_'))
-                hist_col = next(c for c in macd.columns if c.startswith('MACDh_'))
-                
-                df['macd'] = macd[macd_col]
-                df['macd_signal'] = macd[signal_col]
-                df['macd_hist'] = macd[hist_col]
-            except StopIteration:
-                pass
+        macd, macdsignal, macdhist = talib.MACD(close, fastperiod=12, slowperiod=26, signalperiod=9)
+        df['macd'] = macd
+        df['macd_signal'] = macdsignal
+        df['macd_hist'] = macdhist
             
         # Bollinger Bands (20, 2)
-        bb = df.ta.bbands(length=20, std=2)
-        if bb is not None and not bb.empty:
-            # Dynamic lookup because pandas_ta naming can vary (e.g. BBU_20_2.0 vs BBU_20_2.0_2.0)
-            try:
-                upper_col = next(c for c in bb.columns if c.startswith('BBU'))
-                middle_col = next(c for c in bb.columns if c.startswith('BBM'))
-                lower_col = next(c for c in bb.columns if c.startswith('BBL'))
-                
-                df['bb_upper'] = bb[upper_col]
-                df['bb_middle'] = bb[middle_col]
-                df['bb_lower'] = bb[lower_col]
-            except StopIteration:
-                pass
+        upper, middle, lower = talib.BBANDS(close, timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
+        df['bb_upper'] = upper
+        df['bb_middle'] = middle
+        df['bb_lower'] = lower
             
         # RSI (14)
-        df['rsi'] = df.ta.rsi(length=14)
+        df['rsi'] = talib.RSI(close, timeperiod=14)
         
         return df
 
@@ -1403,41 +1367,29 @@ class IchimokuAccumulationRecommendationEngine:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
         
-        # Ichimoku Cloud using pandas_ta
-        # Default params: tenkan=9, kijun=26, senkou=52
-        ichimoku_result = ta.ichimoku(df['high'], df['low'], df['close'])
+        close = df['close'].values.astype(float)
+        high = df['high'].values.astype(float)
+        low = df['low'].values.astype(float)
+
+        # Manual Ichimoku Calculation for Parity
+        high_9 = pd.Series(high).rolling(window=9).max()
+        low_9 = pd.Series(low).rolling(window=9).min()
+        df['tenkan'] = (high_9 + low_9) / 2
         
-        if ichimoku_result is not None and len(ichimoku_result) > 0:
-            ichi_df = ichimoku_result[0]  # First element is the main ichimoku DataFrame
-            
-            if ichi_df is not None and not ichi_df.empty:
-                # Column names from pandas_ta: ISA_9 (Span A), ISB_26 (Span B), 
-                # ITS_9 (Tenkan), IKS_26 (Kijun), ICS_26 (Chikou)
-                try:
-                    isa_col = next(c for c in ichi_df.columns if c.startswith('ISA_'))
-                    isb_col = next(c for c in ichi_df.columns if c.startswith('ISB_'))
-                    its_col = next(c for c in ichi_df.columns if c.startswith('ITS_'))
-                    iks_col = next(c for c in ichi_df.columns if c.startswith('IKS_'))
-                    
-                    df['span_a'] = ichi_df[isa_col].values
-                    df['span_b'] = ichi_df[isb_col].values
-                    df['tenkan'] = ichi_df[its_col].values
-                    df['kijun'] = ichi_df[iks_col].values
-                except (StopIteration, KeyError) as e:
-                    logger.warning(f"Ichimoku column lookup failed: {e}")
-                    # Set defaults
-                    df['span_a'] = np.nan
-                    df['span_b'] = np.nan
-                    df['tenkan'] = np.nan
-                    df['kijun'] = np.nan
-        else:
-            df['span_a'] = np.nan
-            df['span_b'] = np.nan
-            df['tenkan'] = np.nan
-            df['kijun'] = np.nan
+        high_26 = pd.Series(high).rolling(window=26).max()
+        low_26 = pd.Series(low).rolling(window=26).min()
+        df['kijun'] = (high_26 + low_26) / 2
+        
+        # Senkou Span A (Leading Span A)
+        df['span_a'] = ((df['tenkan'] + df['kijun']) / 2)
+        
+        # Senkou Span B (Leading Span B)
+        high_52 = pd.Series(high).rolling(window=52).max()
+        low_52 = pd.Series(low).rolling(window=52).min()
+        df['span_b'] = (high_52 + low_52) / 2
             
         # RSI (14)
-        df['rsi'] = df.ta.rsi(length=14)
+        df['rsi'] = talib.RSI(close, timeperiod=14)
         
         # Cloud top/bottom for reference
         df['cloud_top'] = df[['span_a', 'span_b']].max(axis=1)

@@ -12,7 +12,7 @@ interface SparklineProps {
 
 export const Sparkline: React.FC<SparklineProps> = ({
     data,
-    color = '#3b82f6',
+    color = '#6366f1',
     height = 40,
     width = '100%'
 }) => {
@@ -67,9 +67,9 @@ export const Sparkline: React.FC<SparklineProps> = ({
     return (
         <div style={{ height, width }}>
             <ReactECharts
-                option={option}
+                option={option as any}
                 style={{ height: '100%', width: '100%' }}
-                settings={{ notMerge: true }}
+                notMerge
             />
         </div>
     );

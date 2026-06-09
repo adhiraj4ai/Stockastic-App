@@ -138,7 +138,7 @@ export default function AdminPage() {
             <div className="w-full mx-auto space-y-6 animate-in fade-in duration-500 px-2 lg:px-4">
 
                 {/* Filters & Controls */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border dark:border-slate-800 shadow-sm transition-colors duration-500">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-card p-4 rounded-xl border dark:border-slate-800 shadow-sm transition-colors duration-500">
                     <div className="flex flex-1 items-center gap-4">
                         <div className="relative flex-1 max-w-md">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
@@ -167,7 +167,7 @@ export default function AdminPage() {
                                     )}
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-64 max-h-96 overflow-y-auto dark:bg-slate-900 dark:border-slate-800" align="end">
+                            <DropdownMenuContent className="w-64 max-h-96 overflow-y-auto dark:bg-card dark:border-slate-800" align="end">
                                 <DropdownMenuLabel className="dark:text-slate-300">Sectors</DropdownMenuLabel>
                                 <DropdownMenuSeparator className="dark:bg-slate-800" />
                                 <DropdownMenuCheckboxItem
@@ -254,7 +254,7 @@ export default function AdminPage() {
                                                     <div
                                                         key={company.symbol}
                                                         onClick={() => router.push(`/admin/financials/${company.symbol}`)}
-                                                        className="bg-white dark:bg-slate-900 p-3 rounded-lg border dark:border-slate-800 shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-900 transition-all cursor-pointer group relative overflow-hidden"
+                                                        className="bg-white dark:bg-card p-3 rounded-lg border dark:border-slate-800 shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-900 transition-all cursor-pointer group relative overflow-hidden"
                                                     >
                                                         <div className="flex justify-between items-start mb-2">
                                                             {(company.latest_annual_report || company.latest_quarterly_report) ? (
@@ -289,7 +289,7 @@ export default function AdminPage() {
                                                 ))}
                                             </div>
                                         ) : (
-                                            <div className="bg-white dark:bg-slate-900 rounded-xl border dark:border-slate-800 shadow-sm overflow-hidden transition-colors duration-500">
+                                            <div className="bg-white dark:bg-card rounded-xl border dark:border-slate-800 shadow-sm overflow-hidden transition-colors duration-500">
                                                 <Table>
                                                     <TableHeader>
                                                         <TableRow className="bg-gray-50/50 dark:bg-slate-800/50 hover:bg-gray-50/50 dark:hover:bg-slate-800/50 border-b dark:border-slate-800">
@@ -347,7 +347,7 @@ export default function AdminPage() {
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-xl border border-dashed border-gray-200 dark:border-slate-800">
+                            <div className="text-center py-24 bg-white dark:bg-card rounded-xl border border-dashed border-gray-200 dark:border-slate-800">
                                 <Building2 className="w-10 h-10 text-gray-300 dark:text-slate-700 mx-auto mb-3" />
                                 <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100">No companies found</h3>
                                 <p className="text-gray-400 dark:text-slate-500 text-xs mt-1">Try adjusting your filters.</p>
@@ -358,7 +358,7 @@ export default function AdminPage() {
                     {/* Sticky Sidebar Navigation (Timeline) */}
                     {Object.keys(groupedCompanies).length > 0 && (
                         <div className="hidden xl:block w-56 sticky top-24 h-[calc(100vh-8rem)]">
-                            <div className="bg-white dark:bg-slate-900 rounded-xl border dark:border-slate-800 shadow-sm p-4 h-full overflow-y-auto custom-scrollbar">
+                            <div className="bg-white dark:bg-card rounded-xl border dark:border-slate-800 shadow-sm p-4 h-full overflow-y-auto custom-scrollbar">
                                 <h4 className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-4 px-2">
                                     Sectors
                                 </h4>

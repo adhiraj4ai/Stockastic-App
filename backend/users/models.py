@@ -9,22 +9,29 @@ class Profile(models.Model):
     ROLE_CHOICES = [
         ('ADMIN', 'Admin'),
         ('MANAGER', 'Manager'),
-        ('SILVER', 'Silver Subscriber'),
-        ('GOLD', 'Gold Subscriber'),
-        ('PLATINUM', 'Platinum Subscriber'),
+        ('SUBSCRIBER', 'Subscriber'),
+    ]
+
+    TIER_CHOICES = [
+        ('BASIC', 'Basic'),
+        ('PRO', 'Pro'),
+        ('ULTRA', 'Ultra'),
+        ('NONE', 'None'),
     ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     nickname = models.CharField(max_length=50, blank=True)
     first_name = models.CharField(max_length=50, blank=True)
     last_name = models.CharField(max_length=50, blank=True)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='SILVER')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='SUBSCRIBER')
+    subscription_tier = models.CharField(max_length=20, choices=TIER_CHOICES, default='BASIC')
     # Encrypted fields
     phone_number = EncryptedField(blank=True, null=True)
     encrypted_email = EncryptedField(blank=True, null=True)
     # Changed to TextField to support Base64 strings directly
     profile_picture = models.TextField(blank=True, help_text="Base64 encoded profile picture")
     two_factor_enabled = models.BooleanField(default=False)
+    deactivated_at = models.DateTimeField(null=True, blank=True, help_text="Timestamp when the account was deactivated for retention tracking")
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
@@ -82,6 +89,21 @@ class PasswordHistory(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.created_at}"
+
+
+class TierPermission(models.Model):
+    """Maps subscription tiers to enabled modules/features."""
+    tier = models.CharField(max_length=20, choices=Profile.TIER_CHOICES)
+    module_key = models.CharField(max_length=50) # accumulation, signals_tab, strategic_hub, chat, finfolio
+    is_enabled = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ('tier', 'module_key')
+        verbose_name = "Tier Permission"
+        verbose_name_plural = "Tier Permissions"
+
+    def __str__(self):
+        return f"{self.tier} - {self.module_key}: {'Enabled' if self.is_enabled else 'Disabled'}"
 
 
 @receiver(post_save, sender=User)

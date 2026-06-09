@@ -68,7 +68,7 @@ export default function PaperTradingPage() {
 
                     {/* My Accounts Section */}
                     <div className="lg:col-span-1 space-y-6">
-                        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800">
+                        <div className="bg-white dark:bg-card p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800">
                             <div className="flex items-center gap-2 mb-4">
                                 <BarChart2 className="w-5 h-5 text-blue-500" />
                                 <h2 className="text-lg font-bold text-gray-800 dark:text-slate-200">My Virtual Accounts</h2>
@@ -117,7 +117,7 @@ export default function PaperTradingPage() {
 
                     {/* Leaderboard Section */}
                     <div className="lg:col-span-2">
-                        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
+                        <div className="bg-white dark:bg-card rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
                             <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex items-center gap-2">
                                 <Trophy className="w-5 h-5 text-yellow-500" />
                                 <h2 className="text-lg font-bold text-gray-800 dark:text-slate-200">Global Leaderboard</h2>

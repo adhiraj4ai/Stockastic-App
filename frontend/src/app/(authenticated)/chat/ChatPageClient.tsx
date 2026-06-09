@@ -1,255 +1,96 @@
 'use client';
 
-import { useState, useCallback, useEffect, Suspense, useRef } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import ChatInterface from '@/components/chat/ChatInterface';
-import { ChatHistorySidebar } from '@/components/ChatHistorySidebar';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
-import { chatApi, ChatMessage } from '@/lib/api';
+import { ChatInterface } from '@/components/chat/ChatInterface';
+import { SessionList } from '@/components/chat/SessionList';
+import api from '@/lib/api';
+import type { ChatSession } from '@/components/chat/types';
 
-interface ChatHistoryItem {
-    id: string;
-    title: string;
-    date: Date;
-    messages: ChatMessage[];
-}
+export default function ChatPageClient() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const activeId = searchParams.get('session') || null;
 
-export default function ChatPage() {
+    const [sessions, setSessions] = useState<ChatSession[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const refresh = async () => {
+        try {
+            const res = await api.get('/api/chat/sessions/');
+            const all: ChatSession[] = res.data?.results || res.data || [];
+            // Exclude sessions created internally for notebooks
+            const items = all.filter(s => !s.title.startsWith('Notebook Session:'));
+            setSessions(items);
+            return items;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        refresh();
+    }, []);
+
+    const handleNew = async () => {
+        const res = await api.post('/api/chat/sessions/', { title: 'New chat' });
+        const created = res.data;
+        await refresh();
+        router.replace(`/chat?session=${created.id}`);
+    };
+
+    const handleDelete = async (id: string) => {
+        await api.delete(`/api/chat/sessions/${id}/`);
+        const remaining = await refresh();
+        if (id === activeId) {
+            router.replace(remaining.length ? `/chat?session=${remaining[0].id}` : '/chat');
+        }
+    };
+
     return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <ChatContent />
-        </Suspense>
+        <DashboardLayout title="Chat" noPadding hideHeader>
+            <div className="flex h-screen overflow-hidden">
+                <SessionList
+                    sessions={sessions}
+                    activeId={activeId}
+                    loading={loading}
+                    onNew={handleNew}
+                    onDelete={handleDelete}
+                />
+                <div className="flex-1 min-w-0 flex flex-col bg-background">
+                    {activeId ? (
+                        <ChatInterface
+                            sessionId={activeId}
+                            onTitleChange={refresh}
+                        />
+                    ) : (
+                        <EmptyState onNew={handleNew} />
+                    )}
+                </div>
+            </div>
+        </DashboardLayout>
     );
 }
 
-function ChatContent() {
-    const searchParams = useSearchParams();
-    const router = useRouter();
-    const sessionId = searchParams.get('id');
-
-    const [history, setHistory] = useState<ChatHistoryItem[]>([]);
-    const [activeChatId, setActiveChatId] = useState<string>(sessionId || 'draft');
-    const [isLoading, setIsLoading] = useState(false);
-
-    // Track if we just created this session to avoid race condition with useEffect fetch
-    const creatingSessionId = useRef<string | null>(null);
-
-    // Initial load: fetch sessions
-    const fetchSessions = useCallback(async () => {
-        try {
-            const response = await chatApi.getSessions();
-            const sessions = response.data;
-            setHistory(sessions.map((s: any) => ({
-                id: s.id,
-                title: s.title,
-                date: new Date(s.updated_at),
-                messages: [] // Messages will be loaded per active session
-            })));
-        } catch (error) {
-            console.error('Failed to fetch chat sessions:', error);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchSessions();
-    }, [fetchSessions]);
-
-    // Handle URL param changes
-    useEffect(() => {
-        if (sessionId && sessionId !== activeChatId) {
-            setActiveChatId(sessionId);
-        }
-    }, [sessionId, activeChatId]);
-
-    // Load messages when active chat changes
-    useEffect(() => {
-        const loadMessages = async () => {
-            if (!activeChatId || activeChatId === 'draft') return;
-
-            // Prevent fetching if we're currently loading/streaming a response (avoids race condition)
-            if (isLoading) return;
-
-            // If we already have messages for this chat, don't refetch unless it's a new session we just created
-            const chat = history.find(c => c.id === activeChatId);
-            if (chat && chat.messages.length > 0 && creatingSessionId.current !== activeChatId) return;
-
-            try {
-                const response = await chatApi.getMessages(activeChatId);
-                const messages = response.data;
-                setHistory(prev => prev.map(c =>
-                    c.id === activeChatId ? { ...c, messages } : c
-                ));
-                creatingSessionId.current = null;
-            } catch (error) {
-                console.error('Failed to load messages:', error);
-            }
-        };
-
-        loadMessages();
-    }, [activeChatId, history.length]); // Re-run if history length changes (new item added)
-
-    const activeChat = history.find(c => c.id === activeChatId) || { id: 'draft', title: 'New Chat', date: new Date(), messages: [] };
-
-    const handleSendMessage = useCallback(async (content: string) => {
-        setIsLoading(true);
-        try {
-            let currentSessionId = activeChatId;
-
-            // If it's a new chat, create a session first
-            if (currentSessionId === 'draft') {
-                const sessionRes = await chatApi.createSession(content.slice(0, 30) + '...');
-                const newSession = sessionRes.data;
-                currentSessionId = newSession.id;
-                creatingSessionId.current = currentSessionId;
-
-                const newHistoryItem = {
-                    id: currentSessionId,
-                    title: newSession.title,
-                    date: new Date(),
-                    messages: []
-                };
-
-                setHistory(prev => [newHistoryItem, ...prev]);
-                setActiveChatId(currentSessionId);
-                router.push(`/chat?id=${currentSessionId}`, { scroll: false });
-            }
-
-            // Optimistically add user message and empty assistant message
-            const tempUserMsgLike: ChatMessage = {
-                id: Date.now().toString(),
-                role: 'user',
-                content: content,
-                timestamp: new Date().toISOString()
-            };
-            const tempAssistantMsgId = (Date.now() + 1).toString();
-            const tempAssistantMsgLike: ChatMessage = {
-                id: tempAssistantMsgId,
-                role: 'assistant',
-                content: '',
-                timestamp: new Date().toISOString()
-            };
-
-            setHistory(prev => prev.map(chat =>
-                chat.id === currentSessionId
-                    ? { ...chat, messages: [...chat.messages, tempUserMsgLike, tempAssistantMsgLike] }
-                    : chat
-            ));
-
-            // Stream response
-            await chatApi.streamMessage(currentSessionId, 'user', content, (chunk) => {
-                setHistory(prev => prev.map(chat => {
-                    if (chat.id !== currentSessionId) return chat;
-
-                    const updatedMessages = chat.messages.map(msg =>
-                        msg.id === tempAssistantMsgId
-                            ? { ...msg, content: msg.content + chunk }
-                            : msg
-                    );
-                    return { ...chat, messages: updatedMessages };
-                }));
-            });
-
-        } catch (error) {
-            console.error('Failed to send message:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [activeChatId, router]);
-
-    const handleNewChat = () => {
-        setActiveChatId('draft');
-        router.push('/chat', { scroll: false });
-    };
-
-    const handleSelectChat = (id: string) => {
-        setActiveChatId(id);
-        router.push(`/chat?id=${id}`, { scroll: false });
-    };
-
-    const handleRenameChat = async (id: string, newTitle: string) => {
-        try {
-            await chatApi.renameSession(id, newTitle);
-            setHistory(prev => prev.map(chat =>
-                chat.id === id ? { ...chat, title: newTitle } : chat
-            ));
-        } catch (error) {
-            console.error('Failed to rename chat:', error);
-        }
-    };
-
-    const handleDeleteChat = async (id: string) => {
-        try {
-            await chatApi.deleteSession(id);
-            setHistory(prev => {
-                const newHistory = prev.filter(chat => chat.id !== id);
-                if (activeChatId === id) {
-                    setActiveChatId('draft');
-                    router.push('/chat', { scroll: false });
-                }
-                return newHistory;
-            });
-        } catch (error) {
-            console.error('Failed to delete chat:', error);
-        }
-    };
-
-    const uiMessages = activeChat.messages.map(m => ({
-        ...m,
-        timestamp: new Date(m.timestamp)
-    }));
-
+function EmptyState({ onNew }: { onNew: () => void }) {
     return (
-        <DashboardLayout
-            title="Stockastic AI"
-            subtitle="Get insights and help with your portfolio"
-            noPadding
-        >
-            <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-slate-50 dark:bg-slate-950 relative">
-                {/* Dynamic Background Elements */}
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/5 blur-[120px] rounded-full" />
-                    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/5 blur-[120px] rounded-full" />
+        <div className="flex-1 flex items-center justify-center">
+            <div className="text-center max-w-md">
+                <div className="text-foreground text-lg font-semibold tracking-tight mb-2">
+                    Stockastic chat
                 </div>
-
-                <motion.div
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="relative z-10"
+                <p className="text-muted-foreground text-sm mb-6">
+                    Ask about NEPSE market conditions, a specific ticker, or your portfolio.
+                    The orchestrator delegates to specialist subagents and streams results back live.
+                </p>
+                <button
+                    onClick={onNew}
+                    className="px-4 py-2 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
                 >
-                    <ChatHistorySidebar
-                        history={history}
-                        activeChatId={activeChatId}
-                        onSelectChat={handleSelectChat}
-                        onNewChat={handleNewChat}
-                        onRenameChat={handleRenameChat}
-                        onDeleteChat={handleDeleteChat}
-                    />
-                </motion.div>
-
-                <main className="flex-1 relative flex flex-col min-w-0 bg-transparent z-10">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={activeChatId}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            transition={{ duration: 0.3 }}
-                            className="h-full"
-                        >
-                            <ChatInterface
-                                hideHeader
-                                className="border-0 shadow-none bg-transparent h-full"
-                                messages={uiMessages}
-                                onSendMessage={handleSendMessage}
-                                isLoading={isLoading}
-                                onClearMessages={() => { }}
-                            />
-                        </motion.div>
-                    </AnimatePresence>
-                </main>
+                    Start a new chat
+                </button>
             </div>
-        </DashboardLayout>
+        </div>
     );
 }

@@ -6,7 +6,6 @@ from django.db.models import Q
 from ..models import WatchlistItem, Company, DailyStockPrice, StrategySignal
 from ..serializers import WatchlistItemSerializer
 import pandas as pd
-import pandas_ta as ta
 
 from ..services.watchlist_service import WatchlistService
 

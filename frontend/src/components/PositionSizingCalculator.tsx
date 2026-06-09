@@ -248,35 +248,35 @@ export function PositionSizingCalculator({
 
                             {/* Metrics Grid */}
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
+                                <div className="bg-white dark:bg-card border border-gray-200 dark:border-slate-700 rounded-lg p-4">
                                     <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Total investment</p>
                                     <p className="text-xl font-bold text-gray-900 dark:text-slate-100">
                                         Rs. {result.total_investment.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                     </p>
                                 </div>
 
-                                <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
+                                <div className="bg-white dark:bg-card border border-gray-200 dark:border-slate-700 rounded-lg p-4">
                                     <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Max loss</p>
                                     <p className="text-xl font-bold text-red-600 dark:text-red-400">
                                         Rs. {result.max_loss_if_stopped.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                     </p>
                                 </div>
 
-                                <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
+                                <div className="bg-white dark:bg-card border border-gray-200 dark:border-slate-700 rounded-lg p-4">
                                     <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Risk per share</p>
                                     <p className="text-xl font-bold text-gray-900 dark:text-slate-100">
                                         Rs. {result.risk_per_share.toFixed(2)}
                                     </p>
                                 </div>
 
-                                <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
+                                <div className="bg-white dark:bg-card border border-gray-200 dark:border-slate-700 rounded-lg p-4">
                                     <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Position size</p>
                                     <Badge className={getRiskBadgeColor(result.position_size_percentage)}>
                                         {result.position_size_percentage.toFixed(1)}% of portfolio
                                     </Badge>
                                 </div>
 
-                                <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
+                                <div className="bg-white dark:bg-card border border-gray-200 dark:border-slate-700 rounded-lg p-4">
                                     <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Risk level</p>
                                     <Badge className={getRiskBadgeColor(result.risk_percentage)}>
                                         {result.risk_percentage.toFixed(1)}% risk
@@ -284,7 +284,7 @@ export function PositionSizingCalculator({
                                 </div>
 
                                 {result.risk_reward_ratio && (
-                                    <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
+                                    <div className="bg-white dark:bg-card border border-gray-200 dark:border-slate-700 rounded-lg p-4">
                                         <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">R/R ratio</p>
                                         <p className="text-xl font-bold text-green-600 dark:text-green-400">
                                             1:{result.risk_reward_ratio.toFixed(1)}

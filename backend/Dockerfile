@@ -12,7 +12,12 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     wget \
     autotools-dev \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
+
+# Verify Node is available (required by claude-agent-sdk to run the bundled Claude CLI)
+RUN node --version && npm --version
 
 # Install TA-Lib C library (Required for Python TA-Lib)
 # We update config.guess and config.sub to support modern architectures like aarch64
@@ -24,8 +29,10 @@ RUN wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz && \
     ./configure --prefix=/usr && \
     make && \
     make install && \
+    ldconfig && \
     cd .. && \
     rm -rf ta-lib ta-lib-0.4.0-src.tar.gz
+
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
@@ -46,6 +53,9 @@ RUN uv pip install --system --no-cache \
     django-filter \
     redis \
     celery[redis]
+
+# Verify TA-Lib installation (ensuring Python wrapper can find C library)
+RUN python3 -c "import talib; print('TA-Lib installed successfully, version:', talib.get_functions()[0])"
 
 # Copy application code
 COPY . .

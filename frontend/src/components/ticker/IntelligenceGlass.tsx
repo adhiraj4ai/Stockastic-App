@@ -94,7 +94,7 @@ export function IntelligenceGlass({
                                 )}
                             </div>
                             <div className="flex items-center gap-2 mt-1">
-                                <div className={cn("p-1 rounded bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm", verdict.color)}>
+                                <div className={cn("p-1 rounded bg-white dark:bg-slate-800 border border-border dark:border-slate-700 shadow-sm", verdict.color)}>
                                     <verdict.icon size={14} />
                                 </div>
                                 <span className={cn("text-sm font-bold", verdict.color)}>{verdict.label}</span>
@@ -202,15 +202,15 @@ export function IntelligenceGlass({
             </div>
 
             {/* Signals Grid */}
-            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                <div className="p-3 rounded-xl bg-slate-50/50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 space-y-0.5">
+            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-border dark:border-slate-800">
+                <div className="p-3 rounded-xl bg-slate-50/50 dark:bg-slate-800/50 border border-border dark:border-slate-800 space-y-0.5">
                     <p className="text-[9px] font-semibold text-slate-400 dark:text-slate-500">Trend</p>
                     <div className="flex items-center gap-1.5">
                         {macd === 'BULLISH' ? <ArrowUpRight size={14} className="text-emerald-500" /> : <ArrowDownRight size={14} className="text-rose-500" />}
                         <span className="font-bold text-xs text-slate-800 dark:text-slate-200">{macd.charAt(0) + macd.slice(1).toLowerCase()}</span>
                     </div>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-50/50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 space-y-0.5">
+                <div className="p-3 rounded-xl bg-slate-50/50 dark:bg-slate-800/50 border border-border dark:border-slate-800 space-y-0.5">
                     <p className="text-[9px] font-semibold text-slate-400 dark:text-slate-500">Risk</p>
                     <div className="flex items-center gap-1.5">
                         <div className={cn(

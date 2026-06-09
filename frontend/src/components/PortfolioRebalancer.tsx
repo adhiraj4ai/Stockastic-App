@@ -84,7 +84,7 @@ export const PortfolioRebalancer: React.FC<PortfolioRebalancerProps> = ({ accoun
   const totalTargetPct = suggestions.reduce((sum, s) => sum + s.target_percentage, 0);
 
   return (
-    <Card className="shadow-sm border-gray-200 dark:border-slate-800 dark:bg-slate-900">
+    <Card className="shadow-sm border-gray-200 dark:border-slate-800 dark:bg-card">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg flex items-center gap-2 dark:text-slate-100">
           <Target className="h-5 w-5 text-blue-500" />

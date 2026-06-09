@@ -341,13 +341,13 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[80vw] max-w-[80vw] sm:max-w-[80vw] h-[90vh] max-h-[90vh] overflow-hidden flex flex-col bg-slate-50/98 dark:bg-slate-950/98 backdrop-blur-xl border-white/20 dark:border-slate-800 shadow-2xl p-0 gap-0">
+            <DialogContent className="w-[80vw] max-w-[80vw] sm:max-w-[80vw] h-[90vh] max-h-[90vh] overflow-hidden flex flex-col bg-slate-50/98 dark:bg-slate-950/98 border-white/20 dark:border-slate-800 shadow-sm p-0 gap-0">
                 <Tabs defaultValue="general" className="flex-row w-full h-full" orientation="vertical">
 
                     {/* Left Sidebar (Full Height) */}
-                    <div className="w-64 flex-none border-r border-slate-200/60 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col h-full">
+                    <div className="w-64 flex-none border-r border-border dark:border-slate-700 bg-slate-50/50 dark:bg-card flex flex-col h-full">
                         {/* Header within sidebar */}
-                        <div className="p-6 pb-4 border-b border-slate-200/50 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md">
+                        <div className="p-6 pb-4 border-b border-border dark:border-slate-700 bg-white/50 dark:bg-card">
                             <DialogTitle className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100 flex items-center gap-2">
                                 Settings
                             </DialogTitle>
@@ -388,7 +388,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                         </div>
 
                         {/* User Mini Profile at bottom of sidebar */}
-                        <div className="p-4 border-t border-slate-200/50 dark:border-slate-800 bg-slate-100/30 dark:bg-slate-800/30">
+                        <div className="p-4 border-t border-border dark:border-slate-800 bg-slate-100/30 dark:bg-slate-800/30">
                             <div className="flex items-center gap-3">
                                 <div className="h-9 w-9 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden flex items-center justify-center">
                                     {user?.profile_picture ? (
@@ -422,7 +422,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                         </div>
 
                                         {/* Profile Picture Section */}
-                                        <div className="flex flex-col sm:flex-row items-center gap-8 p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100/80 dark:border-slate-700">
+                                        <div className="flex flex-col sm:flex-row items-center gap-8 p-8 bg-white dark:bg-card rounded-2xl shadow-sm border border-border/80 dark:border-slate-700">
                                             <div className="relative group cursor-pointer" onClick={triggerFileInput}>
                                                 <div className="h-24 w-24 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-300 border-[3px] border-white shadow-lg overflow-hidden ring-4 ring-indigo-50/60 transition-all group-hover:scale-105 group-hover:ring-indigo-100 dark:border-slate-800">
                                                     {user?.profile_picture ? (
@@ -456,7 +456,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                         </div>
 
                                         {/* Personal Info Section */}
-                                        <div className="space-y-6 bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-100/80 dark:border-slate-700">
+                                        <div className="space-y-6 bg-white dark:bg-card p-8 rounded-2xl shadow-sm border border-border/80 dark:border-slate-700">
                                             <h3 className="font-bold text-slate-900 dark:text-slate-100 border-b dark:border-slate-800 pb-3 mb-6 text-base">Personal Information</h3>
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -468,7 +468,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                         value={user?.first_name || ''}
                                                         onChange={(e) => setUser(prev => prev ? { ...prev, first_name: e.target.value } : null)}
                                                         placeholder="e.g. John"
-                                                        className="bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                        className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
@@ -479,7 +479,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                         value={user?.last_name || ''}
                                                         onChange={(e) => setUser(prev => prev ? { ...prev, last_name: e.target.value } : null)}
                                                         placeholder="e.g. Doe"
-                                                        className="bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                        className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
@@ -490,7 +490,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                         value={user?.nickname || ''}
                                                         onChange={(e) => setUser(prev => prev ? { ...prev, nickname: e.target.value } : null)}
                                                         placeholder="e.g. Johnny"
-                                                        className="bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                        className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
@@ -501,7 +501,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                         value={user?.phone_number || ''}
                                                         onChange={(e) => setUser(prev => prev ? { ...prev, phone_number: e.target.value } : null)}
                                                         placeholder="+1 (555) 000-0000"
-                                                        className="bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                        className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
                                                     />
                                                 </div>
                                             </div>
@@ -512,7 +512,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                     value={user?.email || ''}
                                                     onChange={(e) => setUser(prev => prev ? { ...prev, email: e.target.value } : null)}
                                                     placeholder="your@email.com"
-                                                    className="bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                    className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
                                                 />
                                             </div>
 
@@ -522,7 +522,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                 <p className="text-xs text-slate-400 dark:text-slate-500 ml-1">Username cannot be changed.</p>
                                             </div>
 
-                                            <div className="pt-6 flex justify-end border-t border-slate-100 dark:border-slate-800 mt-2">
+                                            <div className="pt-6 flex justify-end border-t border-border dark:border-slate-800 mt-2">
                                                 <Button onClick={handleSaveProfile} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200/50 dark:shadow-indigo-900/20 transition-all hover:scale-[1.02] active:scale-[0.98] px-6">
                                                     <Save size={16} className="mr-2" /> {saving ? 'Saving Changes...' : 'Save Profile Changes'}
                                                 </Button>
@@ -539,13 +539,13 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                     <p className="text-slate-500 dark:text-slate-400 mt-1">Customize the look and feel of the application.</p>
                                 </div>
 
-                                <div className="space-y-6 bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-100/80 dark:border-slate-700">
+                                <div className="space-y-6 bg-white dark:bg-card p-8 rounded-2xl shadow-sm border border-border/80 dark:border-slate-700">
                                     <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
                                         <div>
                                             <div className="font-bold text-slate-800 dark:text-slate-100 text-lg">Theme Preference</div>
                                             <div className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-[280px]">Select your preferred interface theme. Setting the system appearance automatically adapts to your OS settings.</div>
                                         </div>
-                                        <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200/50 dark:border-slate-700">
+                                        <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-border dark:border-slate-700">
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
@@ -584,7 +584,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
                                 <div className="space-y-8">
                                     {/* 2FA Card */}
-                                    <div className="bg-white dark:bg-slate-900 overflow-hidden rounded-2xl shadow-sm border border-slate-100/80 dark:border-slate-700">
+                                    <div className="bg-white dark:bg-card overflow-hidden rounded-2xl shadow-sm border border-border/80 dark:border-slate-700">
                                         <div className="border-b border-slate-50 dark:border-slate-800 flex flex-row items-center justify-between p-6">
                                             <div className="flex items-center gap-3">
                                                 <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
@@ -626,10 +626,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
                                             {/* 2FA Setup Flow */}
                                             {show2faSetup && !twoFactorEnabled && (
-                                                <div className="mt-8 p-8 bg-slate-50 dark:bg-slate-950/50 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col items-center animate-in zoom-in-95 duration-300">
+                                                <div className="mt-8 p-8 bg-slate-50 dark:bg-slate-950/50 rounded-2xl border border-border dark:border-slate-800 flex flex-col items-center animate-in zoom-in-95 duration-300">
                                                     <div className="max-w-xs text-center space-y-6">
                                                         <h4 className="font-bold text-slate-900 dark:text-slate-100 text-lg">Scan this QR Code</h4>
-                                                        <div className="bg-white p-4 rounded-2xl inline-block shadow-sm border border-slate-100 dark:border-slate-700">
+                                                        <div className="bg-white p-4 rounded-2xl inline-block shadow-sm border border-border dark:border-slate-700">
                                                             <img src={qrCode} alt="2FA QR Code" className="w-48 h-48" />
                                                         </div>
                                                         <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
@@ -638,7 +638,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                         <div className="space-y-4">
                                                             <Input
                                                                 placeholder="Enter 6-digit code"
-                                                                className="h-12 text-center text-xl font-mono tracking-widest bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl focus:ring-indigo-500 focus:border-indigo-500"
+                                                                className="h-12 text-center text-xl font-mono tracking-wider bg-white dark:bg-card border-slate-200 dark:border-slate-800 rounded-xl focus:ring-indigo-500 focus:border-indigo-500"
                                                                 value={twoFactorToken}
                                                                 onChange={(e) => setTwoFactorToken(e.target.value)}
                                                                 maxLength={6}
@@ -667,7 +667,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
                                     {/* Recovery Codes Card */}
                                     {twoFactorEnabled && (
-                                        <div className="bg-white dark:bg-slate-900 overflow-hidden rounded-2xl shadow-sm border border-slate-100/80 dark:border-slate-700 animate-in fade-in slide-in-from-top-4 duration-500">
+                                        <div className="bg-white dark:bg-card overflow-hidden rounded-2xl shadow-sm border border-border/80 dark:border-slate-700 animate-in fade-in slide-in-from-top-4 duration-500">
                                             <div className="border-b border-slate-50 dark:border-slate-800 flex items-center justify-between p-6 w-full">
                                                 <div className="flex items-center gap-3">
                                                     <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg text-emerald-600 dark:text-emerald-400">
@@ -699,12 +699,12 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                     <div className="space-y-6">
                                                         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
                                                             {recoveryCodes.map((code, idx) => (
-                                                                <div key={idx} className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 p-3 rounded-lg text-center font-mono text-xs font-bold text-slate-700 dark:text-slate-300 shadow-sm">
+                                                                <div key={idx} className="bg-slate-50 dark:bg-slate-950 border border-border dark:border-slate-800 p-3 rounded-lg text-center font-mono text-xs font-bold text-slate-700 dark:text-slate-300 shadow-sm">
                                                                     {code}
                                                                 </div>
                                                             ))}
                                                         </div>
-                                                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-100 dark:border-slate-800 mt-2">
+                                                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-border dark:border-slate-800 mt-2">
                                                             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                                                                 Keep these codes secure. They each work once.
                                                             </p>
@@ -732,7 +732,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                     )}
 
                                     {/* Password Update Card */}
-                                    <div className="bg-white dark:bg-slate-900 overflow-hidden rounded-2xl shadow-sm border border-slate-100/80 dark:border-slate-700">
+                                    <div className="bg-white dark:bg-card overflow-hidden rounded-2xl shadow-sm border border-border/80 dark:border-slate-700">
                                         <div className="border-b border-slate-50 dark:border-slate-800 flex flex-row items-center p-6 gap-3">
                                             <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
                                                 <Lock size={20} />
@@ -752,7 +752,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                         value={currentPassword}
                                                         onChange={(e) => setCurrentPassword(e.target.value)}
                                                         placeholder="Enter your current password"
-                                                        className="bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                        className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
                                                     />
                                                 </div>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -764,7 +764,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                                 value={newPassword}
                                                                 onChange={(e) => setNewPassword(e.target.value)}
                                                                 placeholder="Create a new password"
-                                                                className="bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                                className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
                                                             />
                                                         </div>
                                                         {newPassword && (
@@ -796,13 +796,13 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                             value={confirmPassword}
                                                             onChange={(e) => setConfirmPassword(e.target.value)}
                                                             placeholder="Confirm your new password"
-                                                            className="bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                            className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
                                                         />
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div className="pt-6 flex justify-end border-t border-slate-100 dark:border-slate-800 mt-2">
+                                            <div className="pt-6 flex justify-end border-t border-border dark:border-slate-800 mt-2">
                                                 <Button onClick={handleUpdatePassword} disabled={passLoading} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200/50 dark:shadow-indigo-900/20 transition-all hover:scale-[1.02] active:scale-[0.98] px-6">
                                                     <Save size={16} className="mr-2" /> {passLoading ? 'Updating Password...' : 'Update Password'}
                                                 </Button>
@@ -811,7 +811,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                     </div>
 
                                     {/* Active Sessions Card */}
-                                    <div className="bg-white dark:bg-slate-900 overflow-hidden rounded-2xl shadow-sm border border-slate-100/80 dark:border-slate-700">
+                                    <div className="bg-white dark:bg-card overflow-hidden rounded-2xl shadow-sm border border-border/80 dark:border-slate-700">
                                         <div className="border-b border-slate-50 dark:border-slate-800 py-6 px-6 flex items-center justify-between w-full">
                                             <div className="flex items-center gap-3">
                                                 <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
@@ -848,9 +848,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                                 }`}
                                                         >
                                                             <div className="flex items-center gap-4 flex-1 min-w-0">
-                                                                <div className={`p-3 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 ${session.is_current
+                                                                <div className={`p-3 rounded-2xl shadow-sm border border-border dark:border-slate-800 ${session.is_current
                                                                     ? 'bg-emerald-100/50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100/50 dark:border-emerald-900/30'
-                                                                    : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400'
+                                                                    : 'bg-white dark:bg-card text-slate-500 dark:text-slate-400'
                                                                     }`}>
                                                                     {getDeviceIcon(session.device)}
                                                                 </div>
@@ -899,7 +899,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                     </div>
 
                                     {/* Activity Log Card */}
-                                    <div className="bg-white dark:bg-slate-900 overflow-hidden rounded-2xl shadow-sm border border-slate-100/80 dark:border-slate-700">
+                                    <div className="bg-white dark:bg-card overflow-hidden rounded-2xl shadow-sm border border-border/80 dark:border-slate-700">
                                         <div className="border-b border-slate-50 dark:border-slate-800 py-6 px-6">
                                             <div className="flex items-center gap-3">
                                                 <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">

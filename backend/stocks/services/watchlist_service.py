@@ -6,7 +6,8 @@ from ..models.strategy import StrategySignal
 from .portfolio_service import PortfolioService
 from .fundamental_service import FundamentalService
 import pandas as pd
-import pandas_ta as ta
+import talib
+import numpy as np
 from decimal import Decimal
 from django.utils import timezone
 from datetime import timedelta
@@ -50,11 +51,12 @@ class WatchlistService:
                 for ticker in tickers:
                     df_t = df_all[df_all['ticker'] == ticker].copy()
                     if len(df_t) >= 14:
-                        rsi = ta.rsi(df_t['close'], length=14)
-                        roc = ta.roc(df_t['close'], length=14)
+                        close_vals = df_t['close'].values.astype(float)
+                        rsi = talib.RSI(close_vals, timeperiod=14)
+                        roc = talib.ROC(close_vals, timeperiod=14)
                         indicators[ticker] = {
-                            'rsi': float(rsi.iloc[-1]) if not pd.isna(rsi.iloc[-1]) else None,
-                            'roc': float(roc.iloc[-1]) if not pd.isna(roc.iloc[-1]) else None
+                            'rsi': float(rsi[-1]) if not np.isnan(rsi[-1]) else None,
+                            'roc': float(roc[-1]) if not np.isnan(roc[-1]) else None
                         }
         except Exception as e:
             print(f"Watchlist Indicator Calc Error: {e}")

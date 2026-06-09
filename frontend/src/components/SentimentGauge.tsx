@@ -32,7 +32,7 @@ export const SentimentGauge = ({ value, height = 200 }: SentimentGaugeProps) => 
                             [0.4, '#fb923c'], // Orange
                             [0.6, '#eab308'], // Yellow
                             [0.8, '#a3e635'], // Lime
-                            [1, '#10b981']    // Emerald
+                            [1, '#10b981'] // Emerald
                         ]
                     }
                 },

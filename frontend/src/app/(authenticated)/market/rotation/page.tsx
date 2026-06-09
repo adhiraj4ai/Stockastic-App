@@ -60,9 +60,9 @@ function StatCard({ label, value, sub, color = 'indigo' }: { label: string; valu
         orange: 'text-orange-500 dark:text-orange-400 bg-orange-500/10',
     };
     return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 flex flex-col gap-1.5 shadow-sm">
-            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{label}</span>
-            <span className={cn('text-2xl font-black tabular-nums', colorMap[color].split(' ')[0])}>{value}</span>
+        <div className="bg-white dark:bg-card border border-border dark:border-slate-800 rounded-2xl p-5 flex flex-col gap-1.5 shadow-sm">
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{label}</span>
+            <span className={cn('text-2xl font-semibold tabular-nums', colorMap[color].split(' ')[0])}>{value}</span>
             {sub && <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">{sub}</span>}
         </div>
     );
@@ -170,7 +170,7 @@ export default function SectorRotationPage() {
                         </div>
                     </>
                 ) : (
-                    <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 flex flex-col items-center gap-4 text-center">
+                    <div className="bg-slate-50 dark:bg-card border border-slate-200 dark:border-slate-800 rounded-2xl p-8 flex flex-col items-center gap-4 text-center">
                         <Database size={32} className="text-slate-400" />
                         <div>
                             <h3 className="font-bold text-slate-800 dark:text-white mb-1">Insufficient Historical Data</h3>
@@ -187,7 +187,7 @@ export default function SectorRotationPage() {
                         <Activity className="text-orange-500" size={24} />
                         <div>
                             <div className="flex items-center">
-                                <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Active Rotation Signals</h2>
+                                <h2 className="text-xl font-semibold text-slate-900 dark:text-white tracking-tight">Active Rotation Signals</h2>
                                 <InfoTooltip content="Sectors currently acting as magnets for heavy capital inflows. The 'Projected 20d Excess' estimates sector outperformance based on historical regression." />
                             </div>
                             <p className="text-xs font-medium text-slate-500 mt-0.5">Sectors currently flashing heavy accumulation, projecting future outperformance.</p>
@@ -195,7 +195,7 @@ export default function SectorRotationPage() {
                     </div>
 
                     {currentSignals.length === 0 ? (
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-10 flex flex-col items-center justify-center text-center gap-4 shadow-sm">
+                        <div className="bg-white dark:bg-card border border-border dark:border-slate-800 rounded-2xl p-10 flex flex-col items-center justify-center text-center gap-4 shadow-sm">
                             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                                 <Compass size={20} className="text-slate-400" />
                             </div>
@@ -211,17 +211,17 @@ export default function SectorRotationPage() {
                                 const isWinRateGood = (signal.historical_win_rate_20d ?? 0) >= 0.5;
 
                                 return (
-                                    <div key={idx} className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                                    <div key={idx} className="bg-white dark:bg-card border border-border dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
                                         
                                         {/* Highlight Bar */}
                                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-indigo-500"></div>
 
                                         <div className="flex justify-between items-start mb-4">
                                             <div>
-                                                <h3 className="text-lg font-black text-slate-900 dark:text-white mb-1.5">{signal.sector}</h3>
+                                                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1.5">{signal.sector}</h3>
                                                 <div className="flex items-center gap-2">
                                                     <span className={cn(
-                                                        "text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded ml-[-1px]",
+                                                        "text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded ml-[-1px]",
                                                         "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                                                     )}>
                                                         Heavy Inflow
@@ -232,14 +232,14 @@ export default function SectorRotationPage() {
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-0.5">Accumulation</div>
-                                                <div className="text-xl font-black text-blue-600 dark:text-blue-500 tabular-nums">
+                                                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">Accumulation</div>
+                                                <div className="text-xl font-semibold text-blue-600 dark:text-blue-500 tabular-nums">
                                                     {fmtIntensity(signal.acc_intensity)}
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-3 gap-2 py-3 border-y border-slate-100 dark:border-slate-800/80 mb-4 bg-slate-50/50 dark:bg-slate-800/20 px-2 rounded-lg">
+                                        <div className="grid grid-cols-3 gap-2 py-3 border-y border-border dark:border-slate-800/80 mb-4 bg-slate-50/50 dark:bg-slate-800/20 px-2 rounded-lg">
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">1M Performance</span>
                                                 <span className={cn("text-sm font-bold tabular-nums", (signal.current_return_1m ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500')}>
@@ -262,7 +262,7 @@ export default function SectorRotationPage() {
 
                                         {signal.top_accumulated_stocks.length > 0 && (
                                             <div>
-                                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Rotation Led By</div>
+                                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Rotation Led By</div>
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {signal.top_accumulated_stocks.map(ticker => (
                                                         <span key={ticker} className="text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-md shadow-sm">
@@ -287,17 +287,17 @@ export default function SectorRotationPage() {
                         <Layers className="text-slate-400" size={24} />
                         <div>
                             <div className="flex items-center">
-                                <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Raw Sector Matrix</h2>
+                                <h2 className="text-lg font-semibold text-slate-900 dark:text-white tracking-tight">Raw Sector Matrix</h2>
                                 <InfoTooltip content="The classic performance matrix tracking absolute sector returns across broad timelines, regardless of accumulation metrics." />
                             </div>
                             <p className="text-xs font-medium text-slate-500 mt-0.5">Traditional broad market absolute returns across timelines.</p>
                         </div>
                     </div>
                     
-                    <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 shadow-sm overflow-hidden">
+                    <Card className="bg-white dark:bg-card border-slate-200 dark:border-border shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left whitespace-nowrap">
-                                <thead className="text-[10px] uppercase tracking-widest bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800">
+                                <thead className="text-[10px] uppercase tracking-wider bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 border-b border-border dark:border-slate-800">
                                     <tr>
                                         <th className="px-6 py-4 font-bold">Sector</th>
                                         <th className="px-6 py-4 font-bold tracking-wider text-right">Stocks</th>

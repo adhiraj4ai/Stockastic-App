@@ -186,14 +186,14 @@ export const TickerLiquidity: React.FC<TickerLiquidityProps> = ({ symbol, histor
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent" />
                 <div className="flex items-center gap-2">
                     <Droplets size={14} className="text-blue-500" />
-                    <span className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Liquidity Intelligence</span>
+                    <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Liquidity Intelligence</span>
                 </div>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent" />
             </div>
 
             {/* Liquidity Metrics Bento Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-slate-200 dark:border-slate-800/50 shadow-sm border">
+                <Card className="bg-white/40 dark:bg-card border-slate-200 dark:border-slate-800/50 shadow-sm border">
                     <CardContent className="p-4">
                         <div className="flex items-start justify-between">
                             <div>
@@ -212,7 +212,7 @@ export const TickerLiquidity: React.FC<TickerLiquidityProps> = ({ symbol, histor
                     </CardContent>
                 </Card>
 
-                <Card className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-slate-200 dark:border-slate-800/50 shadow-sm border">
+                <Card className="bg-white/40 dark:bg-card border-slate-200 dark:border-slate-800/50 shadow-sm border">
                     <CardContent className="p-4">
                         <div className="flex items-start justify-between">
                             <div>
@@ -231,7 +231,7 @@ export const TickerLiquidity: React.FC<TickerLiquidityProps> = ({ symbol, histor
                     </CardContent>
                 </Card>
 
-                <Card className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-slate-200 dark:border-slate-800/50 shadow-sm border">
+                <Card className="bg-white/40 dark:bg-card border-slate-200 dark:border-slate-800/50 shadow-sm border">
                     <CardContent className="p-4">
                         <div className="flex items-start justify-between">
                             <div>
@@ -250,7 +250,7 @@ export const TickerLiquidity: React.FC<TickerLiquidityProps> = ({ symbol, histor
                     </CardContent>
                 </Card>
 
-                <Card className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-slate-200 dark:border-slate-800/50 shadow-sm border">
+                <Card className="bg-white/40 dark:bg-card border-slate-200 dark:border-slate-800/50 shadow-sm border">
                     <CardContent className="p-4">
                         <div className="flex items-start justify-between">
                             <div>
@@ -271,7 +271,7 @@ export const TickerLiquidity: React.FC<TickerLiquidityProps> = ({ symbol, histor
             </div>
 
             {/* Volume Profile Chart */}
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+            <div className="bg-white/80 dark:bg-card/80 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
                 <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         Institutional Volume Profile
@@ -282,7 +282,7 @@ export const TickerLiquidity: React.FC<TickerLiquidityProps> = ({ symbol, histor
 
                 <div className="p-6 relative min-h-[400px]">
                     {loading && (
-                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50 dark:bg-card backdrop-blur-sm">
                             <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
                         </div>
                     )}
@@ -301,7 +301,7 @@ export const TickerLiquidity: React.FC<TickerLiquidityProps> = ({ symbol, histor
                     )}
                     
                     {!loading && !error && profileData && (
-                        <div className="flex flex-wrap items-center gap-6 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/50 text-xs text-slate-500 font-semibold">
+                        <div className="flex flex-wrap items-center gap-6 mt-4 pt-4 border-t border-border dark:border-slate-800/50 text-xs text-slate-500 font-semibold">
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-amber-500" />
                                 POC: <span className="text-slate-900 dark:text-white font-mono font-bold">{profileData.poc}</span>

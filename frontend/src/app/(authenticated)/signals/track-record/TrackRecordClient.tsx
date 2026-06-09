@@ -191,7 +191,7 @@ function PriceLadder({ sig }: { sig: GeneratedSignal }) {
                 return (
                     <div key={label} className="relative flex flex-col items-center flex-1">
                         <div className={cn(
-                            "w-2.5 h-2.5 rounded-full border-2 bg-white dark:bg-slate-900 z-10 transition-all",
+                            "w-2.5 h-2.5 rounded-full border-2 bg-white dark:bg-card z-10 transition-all",
                             isHitTp ? "border-emerald-500 bg-emerald-500 scale-125" :
                             isHitSl ? "border-rose-500 bg-rose-500 scale-125" :
                             isEntry ? "border-slate-400 bg-slate-400" :
@@ -332,7 +332,7 @@ function StatCard({ label, value, sub, accent, icon: Icon, tooltip }: {
     };
 
     return (
-        <div className="group relative overflow-hidden flex flex-col justify-between h-32 bg-white dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800/60 rounded-3xl p-6 transition-all hover:border-primary/20">
+        <div className="group relative overflow-hidden flex flex-col justify-between h-32 bg-white dark:bg-card border border-border dark:border-slate-800/60 rounded-xl p-6 transition-all hover:border-primary/20">
             <div className={cn(
                 "absolute -top-4 -right-4 w-16 h-16 rounded-full blur-2xl opacity-10 transition-all duration-500 group-hover:opacity-20",
                 accent === 'green' ? "bg-emerald-500" :
@@ -348,9 +348,9 @@ function StatCard({ label, value, sub, accent, icon: Icon, tooltip }: {
             </div>
 
             <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{label}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</p>
                 <div className="flex items-baseline gap-2">
-                    <span className={cn("text-2xl font-black tracking-tight", colors[accent].split(' ')[0])}>
+                    <span className={cn("text-2xl font-semibold tracking-tight", colors[accent].split(' ')[0])}>
                         {value}
                     </span>
                     {sub && <span className="text-[10px] text-slate-400 font-semibold">{sub}</span>}
@@ -379,7 +379,7 @@ function EngineRow({ stat }: { stat: EnginePerformance }) {
             <div className="flex-1 min-w-0">
                 <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                     <div
-                        className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500"
+                        className="h-full rounded-full bg-emerald-500 transition-all duration-500"
                         style={{ width: `${barWidth}%` }}
                     />
                 </div>
@@ -388,7 +388,7 @@ function EngineRow({ stat }: { stat: EnginePerformance }) {
             <div className="flex items-center gap-6 shrink-0">
                 <div className="text-right w-14">
                     <span className={cn(
-                        "text-sm font-black tabular-nums",
+                        "text-sm font-semibold tabular-nums",
                         winRate >= 50 ? "text-emerald-500" : "text-rose-500"
                     )}>
                         {winRate}%
@@ -504,9 +504,9 @@ export default function TrackRecordClient() {
 
             {/* ── Engine Leaderboard ──────────────────────────────────────── */}
             {detailedEngines.length > 0 && (
-                <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
-                    <div className="px-6 py-4 border-b border-slate-200/50 dark:border-slate-800/50 flex items-center justify-between">
-                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Engine Leaderboard</h3>
+                <div className="bg-white/60 dark:bg-card border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+                    <div className="px-6 py-4 border-b border-border dark:border-slate-800/50 flex items-center justify-between">
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Engine Leaderboard</h3>
                         <span className="text-[10px] text-slate-400 font-semibold">Ranked by Profit Factor</span>
                     </div>
                     <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
@@ -525,9 +525,9 @@ export default function TrackRecordClient() {
                                             <p className="text-[10px] text-slate-400 font-semibold">{eng.total} signals</p>
                                         </div>
                                         <div className={cn("px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider border", verdictColors[verdict])}>{verdictLabels[verdict]}</div>
-                                        <div className="flex-1 min-w-0"><div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden"><div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500" style={{ width: `${resolved > 0 ? (eng.won / resolved) * 100 : 0}%` }} /></div></div>
+                                        <div className="flex-1 min-w-0"><div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden"><div className="h-full rounded-full bg-emerald-500 transition-all duration-500" style={{ width: `${resolved > 0 ? (eng.won / resolved) * 100 : 0}%` }} /></div></div>
                                         <div className="flex items-center gap-5 shrink-0 text-[10px] font-bold tabular-nums">
-                                            <span className={cn("text-sm font-black", eng.win_rate >= 50 ? "text-emerald-500" : "text-rose-500")}>{eng.win_rate}%</span>
+                                            <span className={cn("text-sm font-semibold", eng.win_rate >= 50 ? "text-emerald-500" : "text-rose-500")}>{eng.win_rate}%</span>
                                             <span className="text-slate-400">PF: <span className={cn(eng.profit_factor >= 1.5 ? "text-emerald-500" : eng.profit_factor >= 1 ? "text-amber-500" : "text-rose-500")}>{eng.profit_factor >= 999 ? '∞' : eng.profit_factor}</span></span>
                                             <span className="text-slate-400">Exp: <span className={cn(eng.expectancy > 0 ? "text-emerald-500" : "text-rose-500")}>{eng.expectancy > 0 ? '+' : ''}{eng.expectancy}%</span></span>
                                             <span className="text-emerald-500">{eng.won}W</span><span className="text-rose-500">{eng.lost}L</span>
@@ -535,7 +535,7 @@ export default function TrackRecordClient() {
                                         {isExpanded ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
                                     </button>
                                     {isExpanded && (
-                                        <div className="px-8 pb-6 pt-2 bg-slate-50/50 dark:bg-slate-800/20 space-y-5 border-t border-slate-100 dark:border-slate-800/50">
+                                        <div className="px-8 pb-6 pt-2 bg-slate-50/50 dark:bg-slate-800/20 space-y-5 border-t border-border dark:border-slate-800/50">
                                             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
                                                 {[
                                                     { l: 'Consistency', v: `${eng.consistency_score}%`, c: eng.consistency_score >= 60 ? 'text-emerald-500' : 'text-rose-500' },
@@ -545,16 +545,16 @@ export default function TrackRecordClient() {
                                                     { l: 'Max Win Streak', v: `${eng.max_consecutive_wins}`, c: 'text-emerald-500' },
                                                     { l: 'Max Loss Streak', v: `${eng.max_consecutive_losses}`, c: 'text-rose-500' },
                                                 ].map(({ l, v, c }) => (
-                                                    <div key={l} className="bg-white dark:bg-slate-900/60 rounded-2xl p-3 border border-slate-200/50 dark:border-slate-700/50">
-                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">{l}</p>
-                                                        <p className={cn("text-lg font-black tabular-nums", c)}>{v}</p>
+                                                    <div key={l} className="bg-white dark:bg-card rounded-2xl p-3 border border-border dark:border-slate-700/50">
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">{l}</p>
+                                                        <p className={cn("text-lg font-semibold tabular-nums", c)}>{v}</p>
                                                     </div>
                                                 ))}
                                             </div>
                                             {/* Monthly Performance */}
                                             {eng.monthly_performance.length > 0 && (
                                                 <div>
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Monthly Performance</p>
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Monthly Performance</p>
                                                     <div className="flex items-end gap-2 h-20">
                                                         {eng.monthly_performance.map(m => {
                                                             const maxPnl = Math.max(...eng.monthly_performance.map(x => Math.abs(x.pnl)), 1);
@@ -572,25 +572,25 @@ export default function TrackRecordClient() {
                                             )}
                                             {/* Buy vs Sell + Symbols */}
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-4 border border-slate-200/50 dark:border-slate-700/50">
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Buy Signals</p>
-                                                    <p className="text-lg font-black text-emerald-500">{eng.buy_stats.win_rate}% <span className="text-xs text-slate-400 font-semibold">win rate</span></p>
+                                                <div className="bg-white dark:bg-card rounded-2xl p-4 border border-border dark:border-slate-700/50">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Buy Signals</p>
+                                                    <p className="text-lg font-semibold text-emerald-500">{eng.buy_stats.win_rate}% <span className="text-xs text-slate-400 font-semibold">win rate</span></p>
                                                     <p className="text-[10px] text-slate-400 font-semibold mt-1">{eng.buy_stats.won}W / {eng.buy_stats.lost}L / {eng.buy_stats.active}A</p>
                                                 </div>
-                                                <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-4 border border-slate-200/50 dark:border-slate-700/50">
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Sell Signals</p>
-                                                    <p className="text-lg font-black text-blue-500">{eng.sell_stats.win_rate}% <span className="text-xs text-slate-400 font-semibold">win rate</span></p>
+                                                <div className="bg-white dark:bg-card rounded-2xl p-4 border border-border dark:border-slate-700/50">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Sell Signals</p>
+                                                    <p className="text-lg font-semibold text-blue-500">{eng.sell_stats.win_rate}% <span className="text-xs text-slate-400 font-semibold">win rate</span></p>
                                                     <p className="text-[10px] text-slate-400 font-semibold mt-1">{eng.sell_stats.won}W / {eng.sell_stats.lost}L / {eng.sell_stats.active}A</p>
                                                 </div>
-                                                <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-4 border border-slate-200/50 dark:border-slate-700/50">
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Top Symbols</p>
+                                                <div className="bg-white dark:bg-card rounded-2xl p-4 border border-border dark:border-slate-700/50">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Top Symbols</p>
                                                     <div className="flex flex-wrap gap-1">{eng.top_symbols.map(s => <span key={s} className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">{s}</span>)}</div>
-                                                    {eng.worst_symbols.length > 0 && <><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-3 mb-1">Weak Symbols</p><div className="flex flex-wrap gap-1">{eng.worst_symbols.map(s => <span key={s} className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-600 border border-rose-500/20">{s}</span>)}</div></>}
+                                                    {eng.worst_symbols.length > 0 && <><p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-3 mb-1">Weak Symbols</p><div className="flex flex-wrap gap-1">{eng.worst_symbols.map(s => <span key={s} className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-600 border border-rose-500/20">{s}</span>)}</div></>}
                                                 </div>
                                             </div>
                                             {/* PnL Distribution */}
                                             <div>
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">PnL Distribution</p>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">PnL Distribution</p>
                                                 <div className="flex items-end gap-1 h-16">
                                                     {Object.entries(eng.pnl_distribution).map(([bucket, count]) => {
                                                         const maxCount = Math.max(...Object.values(eng.pnl_distribution), 1);
@@ -617,7 +617,7 @@ export default function TrackRecordClient() {
 
 
 
-            <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200 dark:border-slate-800 p-4 rounded-3xl space-y-4 shadow-sm">
+            <div className="bg-white/60 dark:bg-card border border-slate-200 dark:border-slate-800 p-4 rounded-xl space-y-4 shadow-sm">
                 <div className="flex flex-wrap items-center gap-3">
                     <FilterPill active={sourceFilter === 'ALL'} onClick={() => setSourceFilter('ALL')}>All Engines</FilterPill>
                     {activeSources.map(s => (
@@ -638,7 +638,7 @@ export default function TrackRecordClient() {
 
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
                     <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-2">Quick Filter:</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-2">Quick Filter:</span>
                         {STATUSES.map(s => (
                             <button
                                 key={s}
@@ -655,7 +655,7 @@ export default function TrackRecordClient() {
                         ))}
                     </div>
 
-                    <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800/60 rounded-2xl border border-slate-200/50 dark:border-slate-700/50">
+                    <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800/60 rounded-2xl border border-border dark:border-slate-700/50">
                         {(['ALL', 'BUY', 'SELL'] as const).map(d => (
                             <button key={d} onClick={() => setDirFilter(d)}
                                 className={cn(
@@ -671,18 +671,18 @@ export default function TrackRecordClient() {
                 </div>
             </div>
 
-            <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/60 rounded-3xl overflow-hidden shadow-2xl shadow-slate-200/10">
+            <div className="bg-white/50 dark:bg-card border border-border dark:border-slate-800/60 rounded-xl overflow-hidden shadow-sm shadow-slate-200/10">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="border-b border-slate-200/50 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/20">
-                                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-40">Symbol</th>
-                                <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-48">Engine Info</th>
-                                <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center w-28">Entry Price</th>
-                                <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-44">Timeline</th>
-                                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Strategic Progression</th>
-                                <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center w-40">Outcome Detail</th>
-                                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right w-36">Efficiency</th>
+                            <tr className="border-b border-border dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/20">
+                                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-wider w-40">Symbol</th>
+                                <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-wider w-48">Engine Info</th>
+                                <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center w-28">Entry Price</th>
+                                <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-wider w-44">Timeline</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Strategic Progression</th>
+                                <th className="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center w-40">Outcome Detail</th>
+                                <th className="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right w-36">Efficiency</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
@@ -703,7 +703,7 @@ export default function TrackRecordClient() {
                                                     {sig.symbol}
                                                 </Link>
                                                 <div className={cn(
-                                                    "px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest border",
+                                                    "px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border",
                                                     sig.signal === 'BUY' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-rose-500/10 text-rose-500 border-rose-500/20"
                                                 )}>
                                                     {sig.signal}
@@ -716,7 +716,7 @@ export default function TrackRecordClient() {
                                         </td>
                                         <td className="px-6 py-8 text-center">
                                             {parseFloat(sig.ltp) > 0 ? (
-                                                <span className="font-mono text-sm font-bold px-3 py-1.5 rounded-lg border text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 border-slate-200/50 dark:border-slate-700/50">
+                                                <span className="font-mono text-sm font-bold px-3 py-1.5 rounded-lg border text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 border-border dark:border-slate-700/50">
                                                     {fmt(parseFloat(sig.ltp))}
                                                 </span>
                                             ) : (
@@ -752,7 +752,7 @@ export default function TrackRecordClient() {
                                                     )}>
                                                         {num(sig.pnl_percent) > 0 ? '+' : ''}{fixed(sig.pnl_percent, 2)}%
                                                     </span>
-                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">
                                                         Captured Alpha
                                                     </span>
                                                 </div>
@@ -791,11 +791,11 @@ export default function TrackRecordClient() {
 
                 return (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setSelectedSignal(null)}>
-                        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4" onClick={e => e.stopPropagation()}>
+                        <div className="bg-white dark:bg-card rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4" onClick={e => e.stopPropagation()}>
                             {/* Header */}
-                            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/50 dark:border-slate-800/50">
+                            <div className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-slate-800/50">
                                 <div className="flex items-center gap-3">
-                                    <Link href={`/ticker/${sig.symbol}`} className="text-2xl font-black text-slate-900 dark:text-white hover:text-primary">{sig.symbol}</Link>
+                                    <Link href={`/ticker/${sig.symbol}`} className="text-2xl font-semibold text-slate-900 dark:text-white hover:text-primary">{sig.symbol}</Link>
                                     <div className={cn("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border", isBuy ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-rose-500/10 text-rose-600 border-rose-500/20")}>{sig.signal}</div>
                                     <span className="text-[10px] font-bold text-slate-400 uppercase">{SOURCE_LABELS[sig.source] || sig.source}</span>
                                     {sig.signal_tier && <span className="text-[10px] text-slate-400 font-semibold">• {sig.signal_tier}</span>}
@@ -806,29 +806,29 @@ export default function TrackRecordClient() {
                             <div className="p-6 space-y-5">
                                 {/* Rationale */}
                                 {sig.rationale && (
-                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200/50 dark:border-slate-700/50">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Rationale</p>
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-border dark:border-slate-700/50">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Rationale</p>
                                         <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{sig.rationale}</p>
                                     </div>
                                 )}
 
                                 {/* Trade Plan */}
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                    <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-3 border border-slate-200/50 dark:border-slate-700/50">
+                                    <div className="bg-white dark:bg-card rounded-2xl p-3 border border-border dark:border-slate-700/50">
                                         <p className="text-[9px] font-bold text-slate-400 uppercase">Entry</p>
-                                        <p className="text-lg font-black text-slate-900 dark:text-white tabular-nums">{fmt(entry)}</p>
+                                        <p className="text-lg font-semibold text-slate-900 dark:text-white tabular-nums">{fmt(entry)}</p>
                                     </div>
                                     {sl && <div className="bg-rose-50 dark:bg-rose-900/20 rounded-2xl p-3 border border-rose-200/50 dark:border-rose-700/50">
                                         <p className="text-[9px] font-bold text-rose-400 uppercase">Stop Loss</p>
-                                        <p className="text-lg font-black text-rose-600 tabular-nums">{fmt(sl)}</p>
+                                        <p className="text-lg font-semibold text-rose-600 tabular-nums">{fmt(sl)}</p>
                                     </div>}
                                     {target && <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-3 border border-emerald-200/50 dark:border-emerald-700/50">
                                         <p className="text-[9px] font-bold text-emerald-400 uppercase">Target</p>
-                                        <p className="text-lg font-black text-emerald-600 tabular-nums">{fmt(target)}</p>
+                                        <p className="text-lg font-semibold text-emerald-600 tabular-nums">{fmt(target)}</p>
                                     </div>}
                                     <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-3 border border-blue-200/50 dark:border-blue-700/50">
                                         <p className="text-[9px] font-bold text-blue-400 uppercase">R:R Ratio</p>
-                                        <p className="text-lg font-black text-blue-600 tabular-nums">{rrRatio}</p>
+                                        <p className="text-lg font-semibold text-blue-600 tabular-nums">{rrRatio}</p>
                                     </div>
                                 </div>
 
@@ -836,9 +836,9 @@ export default function TrackRecordClient() {
                                 {(tp1 || tp2 || tp3) && (
                                     <div className="flex gap-3">
                                         {[{l: isBuy ? 'TP1' : 'D1', v: tp1}, {l: isBuy ? 'TP2' : 'D2', v: tp2}, {l: isBuy ? 'TP3' : 'D3', v: tp3}].filter(x => x.v).map(({l, v}) => (
-                                            <div key={l} className="flex-1 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 border border-slate-200/50 dark:border-slate-700/50 text-center">
+                                            <div key={l} className="flex-1 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 border border-border dark:border-slate-700/50 text-center">
                                                 <p className="text-[9px] font-bold text-slate-400 uppercase">{l}</p>
-                                                <p className="text-sm font-black text-slate-700 dark:text-slate-200 tabular-nums">{fmt(v)}</p>
+                                                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 tabular-nums">{fmt(v)}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -846,13 +846,13 @@ export default function TrackRecordClient() {
 
                                 {/* Engine Context */}
                                 {engStats && (
-                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200/50 dark:border-slate-700/50">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Engine Context — #{engRank} Ranked</p>
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-border dark:border-slate-700/50">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Engine Context — #{engRank} Ranked</p>
                                         <div className="grid grid-cols-4 gap-3 text-center">
-                                            <div><p className="text-[9px] text-slate-400 font-bold uppercase">Win Rate</p><p className={cn("text-sm font-black", engStats.win_rate >= 50 ? 'text-emerald-500' : 'text-rose-500')}>{engStats.win_rate}%</p></div>
-                                            <div><p className="text-[9px] text-slate-400 font-bold uppercase">Profit Factor</p><p className="text-sm font-black text-slate-700 dark:text-white">{engStats.profit_factor >= 999 ? '∞' : engStats.profit_factor}</p></div>
-                                            <div><p className="text-[9px] text-slate-400 font-bold uppercase">Consistency</p><p className="text-sm font-black text-slate-700 dark:text-white">{engStats.consistency_score}%</p></div>
-                                            <div><p className="text-[9px] text-slate-400 font-bold uppercase">Avg Days</p><p className="text-sm font-black text-slate-700 dark:text-white">{engStats.avg_days_to_close}d</p></div>
+                                            <div><p className="text-[9px] text-slate-400 font-bold uppercase">Win Rate</p><p className={cn("text-sm font-semibold", engStats.win_rate >= 50 ? 'text-emerald-500' : 'text-rose-500')}>{engStats.win_rate}%</p></div>
+                                            <div><p className="text-[9px] text-slate-400 font-bold uppercase">Profit Factor</p><p className="text-sm font-semibold text-slate-700 dark:text-white">{engStats.profit_factor >= 999 ? '∞' : engStats.profit_factor}</p></div>
+                                            <div><p className="text-[9px] text-slate-400 font-bold uppercase">Consistency</p><p className="text-sm font-semibold text-slate-700 dark:text-white">{engStats.consistency_score}%</p></div>
+                                            <div><p className="text-[9px] text-slate-400 font-bold uppercase">Avg Days</p><p className="text-sm font-semibold text-slate-700 dark:text-white">{engStats.avg_days_to_close}d</p></div>
                                         </div>
                                     </div>
                                 )}
@@ -860,10 +860,10 @@ export default function TrackRecordClient() {
                                 {/* Metadata Intel */}
                                 {metaEntries.length > 0 && (
                                     <div>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Signal Metadata</p>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Signal Metadata</p>
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                                             {metaEntries.map(([k, v]) => (
-                                                <div key={k} className="bg-white dark:bg-slate-900/60 rounded-xl px-3 py-2 border border-slate-200/50 dark:border-slate-700/50">
+                                                <div key={k} className="bg-white dark:bg-card rounded-xl px-3 py-2 border border-border dark:border-slate-700/50">
                                                     <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{k.replace(/_/g, ' ')}</p>
                                                     <p className="text-xs font-bold text-slate-700 dark:text-slate-200 tabular-nums truncate">{fixed(v, 2)}</p>
                                                 </div>
@@ -875,10 +875,10 @@ export default function TrackRecordClient() {
                                 {/* Outcome */}
                                 {sig.status !== 'ACTIVE' && (
                                     <div className={cn("rounded-2xl p-4 border", sig.status === 'WON' ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200/50 dark:border-emerald-700/50" : "bg-rose-50 dark:bg-rose-900/20 border-rose-200/50 dark:border-rose-700/50")}>
-                                        <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: sig.status === 'WON' ? '#10b981' : '#f43f5e' }}>Outcome: {sig.status}</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: sig.status === 'WON' ? '#10b981' : '#f43f5e' }}>Outcome: {sig.status}</p>
                                         <div className="flex gap-6 text-sm">
-                                            {exitPrice && <div><span className="text-[9px] text-slate-400 font-bold uppercase">Exit Price: </span><span className="font-black tabular-nums">{fmt(exitPrice)}</span></div>}
-                                            {sig.pnl_percent != null && <div><span className="text-[9px] text-slate-400 font-bold uppercase">PnL: </span><span className={cn("font-black tabular-nums", num(sig.pnl_percent) >= 0 ? 'text-emerald-600' : 'text-rose-600')}>{num(sig.pnl_percent) > 0 ? '+' : ''}{fixed(sig.pnl_percent, 2)}%</span></div>}
+                                            {exitPrice && <div><span className="text-[9px] text-slate-400 font-bold uppercase">Exit Price: </span><span className="font-semibold tabular-nums">{fmt(exitPrice)}</span></div>}
+                                            {sig.pnl_percent != null && <div><span className="text-[9px] text-slate-400 font-bold uppercase">PnL: </span><span className={cn("font-semibold tabular-nums", num(sig.pnl_percent) >= 0 ? 'text-emerald-600' : 'text-rose-600')}>{num(sig.pnl_percent) > 0 ? '+' : ''}{fixed(sig.pnl_percent, 2)}%</span></div>}
                                             {sig.closed_date && <div><span className="text-[9px] text-slate-400 font-bold uppercase">Closed: </span><span className="font-bold text-slate-600 dark:text-slate-300">{sig.closed_date}</span></div>}
                                         </div>
                                     </div>

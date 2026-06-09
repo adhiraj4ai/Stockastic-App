@@ -171,25 +171,25 @@ export function TransactionHistory({ selectedAccount, onEdit }: TransactionHisto
         <div className="space-y-6">
             {/* Quick Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-4 shadow-sm">
-                    <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Total Transactions</div>
-                    <div className="text-2xl font-black text-slate-900 dark:text-slate-100">{stats.count}</div>
+                <div className="bg-white dark:bg-card rounded-xl border border-border dark:border-slate-800 p-4 shadow-sm">
+                    <div className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Total Transactions</div>
+                    <div className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{stats.count}</div>
                     <div className="flex gap-2 mt-1">
                         <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-1.5 rounded">{stats.buyCount} Buys</span>
                         <span className="text-[9px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-1.5 rounded">{stats.sellCount} Sells</span>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-4 shadow-sm">
-                    <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Total Bought</div>
-                    <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{formatRupees(stats.totalBuy)}</div>
+                <div className="bg-white dark:bg-card rounded-xl border border-border dark:border-slate-800 p-4 shadow-sm">
+                    <div className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Total Bought</div>
+                    <div className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400">{formatRupees(stats.totalBuy)}</div>
                 </div>
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-4 shadow-sm">
-                    <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Total Sold</div>
-                    <div className="text-2xl font-black text-rose-600 dark:text-rose-400">{formatRupees(stats.totalSell)}</div>
+                <div className="bg-white dark:bg-card rounded-xl border border-border dark:border-slate-800 p-4 shadow-sm">
+                    <div className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Total Sold</div>
+                    <div className="text-2xl font-semibold text-rose-600 dark:text-rose-400">{formatRupees(stats.totalSell)}</div>
                 </div>
-                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-4 shadow-sm">
-                    <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">CGT Paid</div>
-                    <div className="text-2xl font-black text-amber-600 dark:text-amber-400">{formatRupees(stats.totalCGT)}</div>
+                <div className="bg-white dark:bg-card rounded-xl border border-border dark:border-slate-800 p-4 shadow-sm">
+                    <div className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">CGT Paid</div>
+                    <div className="text-2xl font-semibold text-amber-600 dark:text-amber-400">{formatRupees(stats.totalCGT)}</div>
                 </div>
             </div>
 
@@ -201,12 +201,12 @@ export function TransactionHistory({ selectedAccount, onEdit }: TransactionHisto
                         placeholder="Search ticker..."
                         value={searchQuery}
                         onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                        className="pl-9 h-9 text-xs font-medium bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 dark:text-slate-200"
+                        className="pl-9 h-9 text-xs font-medium bg-white dark:bg-card border-gray-200 dark:border-slate-700 dark:text-slate-200"
                     />
                 </div>
 
                 <Select value={typeFilter} onValueChange={(val) => { setTypeFilter(val); setCurrentPage(1); }}>
-                    <SelectTrigger className="w-[140px] h-9 text-xs font-medium dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200">
+                    <SelectTrigger className="w-[140px] h-9 text-xs font-medium dark:bg-card dark:border-slate-700 dark:text-slate-200">
                         <Filter className="h-3 w-3 mr-1.5 text-slate-400" />
                         <SelectValue placeholder="Type" />
                     </SelectTrigger>
@@ -244,7 +244,7 @@ export function TransactionHistory({ selectedAccount, onEdit }: TransactionHisto
                 {(searchQuery || typeFilter !== 'ALL' || fromDate || toDate) && (
                     <button
                         onClick={() => { setSearchQuery(''); setTypeFilter('ALL'); setFromDate(undefined); setToDate(undefined); setCurrentPage(1); }}
-                        className="h-9 px-3 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 hover:border-red-200 dark:hover:border-red-800 transition-all"
+                        className="h-9 px-3 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-card hover:border-red-200 dark:hover:border-red-800 transition-all"
                     >
                         Clear Filters
                     </button>
@@ -287,7 +287,7 @@ export function TransactionHistory({ selectedAccount, onEdit }: TransactionHisto
             </div>
 
             {/* Table */}
-            <Card className="shadow-sm dark:bg-slate-900 dark:border-slate-800 overflow-hidden">
+            <Card className="shadow-sm dark:bg-card dark:border-slate-800 overflow-hidden">
                 <CardContent className="p-0">
                     {filtered.length === 0 ? (
                         <div className="text-center py-16 text-gray-500 dark:text-gray-400 flex flex-col items-center gap-2">
@@ -336,22 +336,22 @@ export function TransactionHistory({ selectedAccount, onEdit }: TransactionHisto
                                                         <span className="text-[10px] text-slate-400 dark:text-slate-600">{new Date(txn.transaction_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="font-black text-slate-900 dark:text-slate-100">{txn.ticker}</TableCell>
+                                                <TableCell className="font-semibold text-slate-900 dark:text-slate-100">{txn.ticker}</TableCell>
                                                 <TableCell className="text-center">
-                                                    <Badge variant="secondary" className={`${config.color} text-[9px] font-black uppercase tracking-wider px-2 py-0.5 border flex items-center gap-1 w-fit mx-auto`}>
+                                                    <Badge variant="secondary" className={`${config.color} text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 border flex items-center gap-1 w-fit mx-auto`}>
                                                         {config.icon} {config.label}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-right font-bold text-slate-700 dark:text-slate-300">{formatNepaliNumber(txn.quantity)}</TableCell>
                                                 <TableCell className="text-right font-medium text-slate-600 dark:text-slate-400">{formatNepaliNumber(Number(txn.rate).toFixed(2))}</TableCell>
-                                                <TableCell className="text-right font-black text-slate-900 dark:text-slate-100">{formatRupees(Number(txn.amount))}</TableCell>
+                                                <TableCell className="text-right font-semibold text-slate-900 dark:text-slate-100">{formatRupees(Number(txn.amount))}</TableCell>
                                                 <TableCell className="text-right text-xs text-slate-500 dark:text-slate-400">
                                                     {formatNepaliNumber(Number(txn.commission).toFixed(2))}
                                                 </TableCell>
                                                 <TableCell className="text-right text-xs font-bold text-amber-600 dark:text-amber-400">
                                                     {Number(txn.cgt) > 0 ? formatNepaliNumber(Number(txn.cgt).toFixed(2)) : '—'}
                                                 </TableCell>
-                                                <TableCell className={`text-right font-black ${txn.transaction_type === 'SELL' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-slate-100'}`}>
+                                                <TableCell className={`text-right font-semibold ${txn.transaction_type === 'SELL' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-slate-100'}`}>
                                                     {formatRupees(Number(txn.receivable_amount))}
                                                 </TableCell>
                                                 <TableCell className="text-center">

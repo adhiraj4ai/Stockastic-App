@@ -6,7 +6,7 @@ import logging
 from backtesting import Backtest, Strategy
 from backtesting.lib import crossover
 from backtesting.test import SMA
-import pandas_ta as ta
+import talib
 from ..models.strategy import Strategy as StrategyModel, StrategySignal, StrategyExperiment, ScopeType
 from ..models.portfolio import PortfolioItem
 from ..models.market import DailyStockPrice, Company
@@ -33,7 +33,7 @@ class StrategyService:
         sector_names = set(Company.objects.values_list('sector', flat=True).distinct())
         EXCLUDED_SYMBOLS = {'NEPSE', 'SENSITIVE', 'FLOAT'}
         all_excluded = sector_names | EXCLUDED_SYMBOLS
-
+        
         signals_saved = 0
         signals_skipped = 0
         total_symbols = len(symbols)
@@ -61,10 +61,10 @@ class StrategyService:
             return 0, 0
 
         df = pd.DataFrame(ticks)
-        df.rename(columns={'open':'Open','high':'High','low':'Low','close':'Close','volume':'Volume'}, inplace=True)
+        df = df.rename(columns={'open':'Open','high':'High','low':'Low','close':'Close','volume':'Volume'})
         df[['Open','High','Low','Close','Volume']] = df[['Open','High','Low','Close','Volume']].astype(float)
         df['date'] = pd.to_datetime(df['date'])
-        df.set_index('date', inplace=True)
+        df = df.set_index('date')
         
         last_date = df.index[-1].date()
         last_close = df.iloc[-1]['Close']
@@ -84,7 +84,7 @@ class StrategyService:
                 # 3. Execution & Wrapper
                 local_scope = {
                     'Backtest': Backtest, 'Strategy': Strategy, 'crossover': crossover, 
-                    'SMA': SMA, 'pd': pd, 'np': np, 'ta': SafeTa(ta), 'symbol': symbol
+                    'SMA': SMA, 'pd': pd, 'np': np, 'ta': SafeTa(talib), 'talib': talib, 'symbol': symbol
                 }
                 exec(code, local_scope)
                 

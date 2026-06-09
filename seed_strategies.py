@@ -28,7 +28,6 @@ from backtesting import Strategy
 from backtesting.lib import crossover
 from backtesting.test import SMA
 import pandas as pd
-import pandas_ta as ta
 
 def RSI(array, n):
     return ta.rsi(pd.Series(array), length=n)
@@ -164,7 +163,6 @@ CODE_RSI2 = """
 from backtesting import Strategy
 from backtesting.test import SMA
 import pandas as pd
-import pandas_ta as ta
 import numpy as np
 
 class RSI2Strategy(Strategy):
@@ -208,7 +206,6 @@ from backtesting import Strategy
 from backtesting.lib import crossover
 from backtesting.test import SMA
 import pandas as pd
-import pandas_ta as ta
 
 class MACDTrend(Strategy):
     fast = 12
@@ -335,7 +332,6 @@ class InsideBarMomentum(Strategy):
 CODE_HEIKIN_ASHI = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 
 def calculate_ha(df):
     ha = df.copy()
@@ -414,7 +410,6 @@ class TurtleTrading(Strategy):
 CODE_SUPERTREND = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 import numpy as np
 
 class SupertrendStrategy(Strategy):
@@ -446,7 +441,6 @@ CODE_VWAP = """
 from backtesting import Strategy
 from backtesting.test import SMA
 import pandas as pd
-import pandas_ta as ta
 import numpy as np
 
 class VWAPPullback(Strategy):
@@ -512,10 +506,10 @@ class SmartMoneyAccumulation(Strategy):
         price_dates = pd.Series(self.data.Close).index
         
         # Pivot to get: Index=Date, Cols=Brokers, Values=CumulativeNet
-        pivot_df = acc_df.pivot_table(index='transaction_date', columns='entity_id', values='cumulative_net', aggfunc='last').fillna(method='ffill').fillna(0)
+        pivot_df = acc_df.pivot_table(index='transaction_date', columns='entity_id', values='cumulative_net', aggfunc='last').ffill().fillna(0)
         
         # Align with price data dates
-        pivot_df = pivot_df.reindex(price_dates).fillna(method='ffill').fillna(0)
+        pivot_df = pivot_df.reindex(price_dates).ffill().fillna(0)
         
         # Identify "Smart Money"? 
         # Find top 5 brokers with highest cumulative sum at the end
@@ -573,7 +567,7 @@ class AccumulationDivergence(Strategy):
         daily_cum = acc_df.groupby('transaction_date')['cumulative_net'].sum()
         
         def get_acc_line(dates_idx):
-            return daily_cum.reindex(dates_idx).fillna(method='ffill').fillna(0).values
+            return daily_cum.reindex(dates_idx).ffill().fillna(0).values
 
         self.buying_pressure = self.I(lambda x: get_acc_line(pd.Series(x).index), self.data.Close)
 
@@ -667,7 +661,6 @@ CODE_ACC_SQUEEZE = """
 from backtesting import Strategy
 import pandas as pd
 import numpy as np
-import pandas_ta as ta
 from stocks.models import DailyCumulativeAccumulation
 import numpy as np
 
@@ -742,14 +735,12 @@ class SmartMoneyTrend(Strategy):
         acc_df = pd.DataFrame(list(qs))
         acc_df['transaction_date'] = pd.to_datetime(acc_df['transaction_date'])
         
-        # Net Flow of Top Brokers
-        # We assume Top 5 are Smart Money
-        pivot = acc_df.pivot_table(index='transaction_date', columns='entity_id', values='cumulative_net', aggfunc='last').fillna(method='ffill').fillna(0)
+        pivot = acc_df.pivot_table(index='transaction_date', columns='entity_id', values='cumulative_net', aggfunc='last').ffill().fillna(0)
         top_buyers = pivot.iloc[-1].sort_values(ascending=False).head(5).index
         flow = pivot[top_buyers].sum(axis=1) # Cumulative Flow Line
         
         def get_flow_line(dates_idx):
-            return flow.reindex(dates_idx).fillna(method='ffill').fillna(0).values
+            return flow.reindex(dates_idx).ffill().fillna(0).values
 
         self.smart_line = self.I(lambda x: get_flow_line(pd.Series(x).index), self.data.Close)
         
@@ -775,7 +766,6 @@ class SmartMoneyTrend(Strategy):
 CODE_PSAR = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 
 class ParabolicSAR(Strategy):
     def init(self):
@@ -815,7 +805,6 @@ class ParabolicSAR(Strategy):
 CODE_ICHIMOKU = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 import numpy as np
 
 class IchimokuCloud(Strategy):
@@ -857,7 +846,6 @@ class IchimokuCloud(Strategy):
 CODE_ADX = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 import numpy as np
 
 class ADXTrend(Strategy):
@@ -957,7 +945,6 @@ class FibonacciGoldenZone(Strategy):
 CODE_STOCH_RSI = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 
 class StochasticRSICross(Strategy):
     def init(self):
@@ -992,7 +979,6 @@ class StochasticRSICross(Strategy):
 CODE_WILLIAMS = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 
 class WilliamsTrend(Strategy):
     def init(self):
@@ -1028,7 +1014,6 @@ class WilliamsTrend(Strategy):
 CODE_FORCE = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 import numpy as np
 
 class ForceIndexImpulse(Strategy):
@@ -1063,7 +1048,6 @@ class ForceIndexImpulse(Strategy):
 CODE_CMF = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 
 class CMFDivergence(Strategy):
     def init(self):
@@ -1094,7 +1078,6 @@ class CMFDivergence(Strategy):
 CODE_KELTNER = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 
 class KeltnerBreakout(Strategy):
     def init(self):
@@ -1129,7 +1112,6 @@ class KeltnerBreakout(Strategy):
 CODE_MFI = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 
 class MFIReversal(Strategy):
     def init(self):
@@ -1156,7 +1138,6 @@ class MFIReversal(Strategy):
 CODE_OBV = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 
 class OBVTrend(Strategy):
     def init(self):
@@ -1188,7 +1169,6 @@ class OBVTrend(Strategy):
 CODE_AROON = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 
 class AroonTrend(Strategy):
     def init(self):
@@ -1225,7 +1205,6 @@ class AroonTrend(Strategy):
 CODE_COPPOCK = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 import numpy as np
 
 class CoppockCurve(Strategy):
@@ -1262,7 +1241,6 @@ class CoppockCurve(Strategy):
 CODE_ATR_TRAIL = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 
 class VolatilityStop(Strategy):
     atr_period = 14
@@ -1303,7 +1281,6 @@ class VolatilityStop(Strategy):
 CODE_ALLIGATOR_V2 = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 import numpy as np
 
 class WilliamsAlligatorV2(Strategy):
@@ -1312,9 +1289,9 @@ class WilliamsAlligatorV2(Strategy):
         # Using simple SMMA approximation or EMA for improved responsiveness v2
         
         # Using EMA for v2 (Modern approach)
-        self.jaw = self.I(lambda x: ta.ema(pd.Series(x, index=self.data.index), length=13).shift(8).fillna(method='bfill').values, self.data.Close)
-        self.teeth = self.I(lambda x: ta.ema(pd.Series(x, index=self.data.index), length=8).shift(5).fillna(method='bfill').values, self.data.Close)
-        self.lips = self.I(lambda x: ta.ema(pd.Series(x, index=self.data.index), length=5).shift(3).fillna(method='bfill').values, self.data.Close)
+        self.jaw = self.I(lambda x: ta.ema(pd.Series(x, index=self.data.index), length=13).shift(8).bfill().values, self.data.Close)
+        self.teeth = self.I(lambda x: ta.ema(pd.Series(x, index=self.data.index), length=8).shift(5).bfill().values, self.data.Close)
+        self.lips = self.I(lambda x: ta.ema(pd.Series(x, index=self.data.index), length=5).shift(3).bfill().values, self.data.Close)
         
         # Fractals (5 bar high)
         # We will simply look for "Breakout of 5-day High" as a proxy for fractal trigger
@@ -1344,7 +1321,6 @@ class WilliamsAlligatorV2(Strategy):
 CODE_TURTLE_SOUP = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 import numpy as np
 
 class TurtleSoup(Strategy):
@@ -1376,7 +1352,6 @@ class TurtleSoup(Strategy):
 CODE_GOLDEN_ADX = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 import numpy as np
 
 class GoldenCrossADX(Strategy):
@@ -1416,7 +1391,6 @@ class GoldenCrossADX(Strategy):
 CODE_MACD_SAR = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 import numpy as np
 
 class MACD_SAR(Strategy):
@@ -1456,7 +1430,6 @@ class MACD_SAR(Strategy):
 CODE_ELDER_TRIPLE = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 import numpy as np
 
 class ElderTripleScreen(Strategy):
@@ -1560,7 +1533,6 @@ class NR7Breakout(Strategy):
 CODE_ZSCORE = """
 from backtesting import Strategy
 import pandas as pd
-import pandas_ta as ta
 import numpy as np
 
 class ZScoreReversion(Strategy):

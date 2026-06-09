@@ -102,12 +102,13 @@ type SortDir = 'asc' | 'desc';
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function SmartMoneyPage() {
-    const [range, setRange]             = useState<Range>('1D');
-    const [data, setData]               = useState<SmartMoneyFullData | null>(null);
-    const [loading, setLoading]         = useState(true);
-    const [activeTab, setActiveTab]     = useState<'signals' | 'flow'>('signals');
-    const [sort, setSort]               = useState<{ key: SignalSortKey; dir: SortDir }>({ key: 'amount', dir: 'desc' });
-    const [selectedId, setSelectedId]   = useState<number | null>(null);
+    const [range, setRange] = useState<Range>('1D');
+    const [data, setData] = useState<SmartMoneyFullData | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState<'signals' | 'flow'>('signals');
+    const [sort, setSort] = useState<{ key: SignalSortKey; dir: SortDir }>({ key: 'amount', dir: 'desc' });
+    const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [currentUser, setCurrentUser] = useState<any>(null);
     const abortRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
@@ -120,6 +121,17 @@ export default function SmartMoneyPage() {
             .then(res => setData(res.data))
             .catch(err => { if (err.name !== 'AbortError') console.error('Smart money fetch failed', err); })
             .finally(() => setLoading(false));
+
+        // Fetch user for access control and set default tab
+        api.get('/api/users/me/')
+            .then(res => {
+                setCurrentUser(res.data);
+                const perms = res.data.permissions;
+                if (perms !== 'all' && !perms?.['smart_money'] && activeTab === 'signals') {
+                    setActiveTab('flow');
+                }
+            })
+            .catch(err => console.error("Failed to load user profile", err));
 
         return () => abortRef.current?.abort();
     }, [range]);
@@ -141,8 +153,8 @@ export default function SmartMoneyPage() {
         }));
         return [...enriched].sort((a, b) => {
             const v = sort.key === 'pnl' ? a.pnl - b.pnl
-                : sort.key === 'qty'    ? a.qty - b.qty
-                :                         a.amount - b.amount;
+                : sort.key === 'qty' ? a.qty - b.qty
+                : a.amount - b.amount;
             return sort.dir === 'desc' ? -v : v;
         });
     }, [data?.signals, sort, selectedId]);
@@ -163,17 +175,17 @@ export default function SmartMoneyPage() {
                 broker_count: 1,
             };
             existing.smart_buy_qty += s.qty;
-            existing.net_qty       += s.qty;
-            existing.buy_amount    += s.amount;
-            existing.net_amount    += s.amount;
+            existing.net_qty += s.qty;
+            existing.buy_amount += s.amount;
+            existing.net_amount += s.amount;
             map.set(s.symbol, existing);
         });
 
         return Array.from(map.values()).sort((a, b) => b.net_amount - a.net_amount);
     }, [data?.symbol_flows, data?.signals, selectedId]);
 
-    const profitSignals   = useMemo(() => filteredSignals.filter(s => s.pnl >= 0).length, [filteredSignals]);
-    const avgPnl          = useMemo(() => filteredSignals.length ? filteredSignals.reduce((acc, s) => acc + s.pnl, 0) / filteredSignals.length : 0, [filteredSignals]);
+    const profitSignals = useMemo(() => filteredSignals.filter(s => s.pnl >= 0).length, [filteredSignals]);
+    const avgPnl = useMemo(() => filteredSignals.length ? filteredSignals.reduce((acc, s) => acc + s.pnl, 0) / filteredSignals.length : 0, [filteredSignals]);
 
     // ─── Chart options ────────────────────────────────────────────────────────
 
@@ -378,7 +390,7 @@ export default function SmartMoneyPage() {
     ] as const;
 
     const colorMap = {
-        amber:  { icon: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',  val: 'text-slate-800 dark:text-slate-100' },
+        amber: { icon: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400', val: 'text-slate-800 dark:text-slate-100' },
         indigo: { icon: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400', val: 'text-slate-800 dark:text-slate-100' },
         emerald: { icon: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400', val: 'text-slate-800 dark:text-slate-100' },
         violet: { icon: 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400', val: 'text-slate-800 dark:text-slate-100' },
@@ -394,7 +406,7 @@ export default function SmartMoneyPage() {
                 <div className="space-y-1">
                     <div className="flex items-center gap-2">
                         <Brain className="w-4 h-4 text-amber-500" />
-                        <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                             Institutional Intelligence · {range} Window
                         </span>
                     </div>
@@ -408,7 +420,7 @@ export default function SmartMoneyPage() {
                             className={cn(
                                 'px-3 py-1.5 text-[11px] font-semibold rounded-lg border transition-all',
                                 range === r
-                                    ? 'bg-slate-800 dark:bg-slate-100 border-slate-800 dark:border-slate-100 text-white dark:text-slate-900 shadow-sm'
+                                    ? 'bg-slate-800 dark:bg-slate-100 border-slate-800 dark:border-border text-white dark:text-slate-900 shadow-sm'
                                     : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500',
                             )}>
                             {r}
@@ -428,7 +440,7 @@ export default function SmartMoneyPage() {
                                 <div key={card.label}
                                     onClick={() => isSelectable && selectedId && setSelectedId(null)}
                                     className={cn(
-                                        'bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 p-5 shadow-sm',
+                                        'bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border p-5 shadow-sm',
                                         isSelectable && selectedId && 'cursor-pointer hover:border-amber-500/50 transition-colors group'
                                     )}>
                                     <div className="flex items-center justify-between mb-3">
@@ -453,7 +465,7 @@ export default function SmartMoneyPage() {
 
                     {/* ── Signal Health Bar ────────────────────────────────────── */}
                     {filteredSignals.length > 0 && (
-                        <div className="bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 px-6 py-4 shadow-sm flex flex-wrap items-center gap-6">
+                        <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border px-6 py-4 shadow-sm flex flex-wrap items-center gap-6">
                             <div className="flex items-center gap-2">
                                 <Activity className="w-4 h-4 text-slate-400" />
                                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -463,7 +475,7 @@ export default function SmartMoneyPage() {
                             <div className="flex-1 min-w-[200px]">
                                 <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                                     <div
-                                        className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-500"
+                                        className="h-full rounded-full bg-emerald-500 transition-all duration-500"
                                         style={{ width: `${(profitSignals / filteredSignals.length) * 100}%` }}
                                     />
                                 </div>
@@ -486,8 +498,8 @@ export default function SmartMoneyPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                         {/* Left column: Leaderboard ───────────────────────────── */}
-                        <div className="bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm overflow-hidden">
-                            <div className="px-5 py-4 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02]">
+                        <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border shadow-sm overflow-hidden">
+                            <div className="px-5 py-4 border-b border-border dark:border-border bg-slate-50/50 dark:bg-muted">
                                 <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                                     <Crown className="w-4 h-4 fill-current" />
                                     Smart Broker Leaderboard
@@ -540,7 +552,7 @@ export default function SmartMoneyPage() {
                                             onClick={() => setSelectedId(isSelected ? null : broker.broker_id)}
                                             className={cn(
                                                 'p-3 rounded-xl border transition-all cursor-pointer group relative overflow-hidden',
-                                                isSelected ? `${style.bg} ${style.border} ring-1 ring-inset ring-current/20` : 'border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/[0.02]',
+                                                isSelected ? `${style.bg} ${style.border} ring-1 ring-inset ring-current/20` : 'border-border dark:border-border hover:bg-slate-50 dark:hover:bg-white/[0.02]',
                                             )}>
                                             <div className="flex items-center gap-2.5 mb-2 relative z-10">
                                                 <div className={cn('w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0', style.badge)}>
@@ -557,7 +569,7 @@ export default function SmartMoneyPage() {
                                                     {broker.score.toLocaleString()}<span className="text-[9px] font-normal ml-0.5 opacity-60">pts</span>
                                                 </div>
                                             </div>
-                                            <div className="h-1 rounded-full bg-black/5 dark:bg-white/5 overflow-hidden relative z-10">
+                                            <div className="h-1 rounded-full bg-black/5 dark:bg-muted overflow-hidden relative z-10">
                                                 <div
                                                     className="h-full rounded-full transition-all duration-700"
                                                     style={{ width: `${barPct}%`, backgroundColor: style.barColor, opacity: isSelected ? 1 : 0.4 }}
@@ -575,10 +587,10 @@ export default function SmartMoneyPage() {
                         </div>
 
                         {/* Right column: Signals + Symbol Flow ───────────────── */}
-                        <div className="lg:col-span-2 bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm overflow-hidden flex flex-col">
+                        <div className="lg:col-span-2 bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border shadow-sm overflow-hidden flex flex-col">
                             {/* Section Header */}
                             {selectedId && (
-                                <div className="px-5 py-3 border-b border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-white/[0.01] flex items-center justify-between">
+                                <div className="px-5 py-3 border-b border-border dark:border-border bg-slate-50/30 dark:bg-white/[0.01] flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <div className={cn('w-2 h-2 rounded-full animate-pulse', TIER_STYLES[selectedBroker?.rank || 'C'].bg)} style={{ backgroundColor: TIER_STYLES[selectedBroker?.rank || 'C'].barColor }} />
                                         <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-tight">
@@ -595,11 +607,15 @@ export default function SmartMoneyPage() {
                             )}
 
                             {/* Tab bar */}
-                            <div className="border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] px-5 flex items-center gap-1">
+                            <div className="border-b border-border dark:border-border bg-slate-50/50 dark:bg-muted px-5 flex items-center gap-1">
                                 {([
-                                    { key: 'signals' as const, label: 'Whale Signals', icon: <Zap className="w-3.5 h-3.5" /> },
-                                    { key: 'flow' as const,    label: 'Symbol Intelligence', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+                                    { key: 'signals' as const, label: 'Whale Signals', icon: <Zap className="w-3.5 h-3.5" />, restricted: true },
+                                    { key: 'flow' as const, label: 'Symbol Intelligence', icon: <BarChart3 className="w-3.5 h-3.5" />, restricted: false },
                                 ]).map(tab => {
+                                    if (tab.restricted) {
+                                        const perms = currentUser?.permissions;
+                                        if (perms !== 'all' && !perms?.['smart_money']) return null;
+                                    }
                                     const isActive = activeTab === tab.key;
                                     const themeColor = selectedBroker ? TIER_STYLES[selectedBroker.rank].barColor : '#f59e0b';
                                     return (
@@ -636,18 +652,18 @@ export default function SmartMoneyPage() {
                             <div className="p-5">
                                 {/* ── Whale Signals tab ─────────────────────── */}
                                 {activeTab === 'signals' && (
-                                    <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-slate-800">
+                                    <div className="overflow-x-auto rounded-xl border border-border dark:border-slate-800">
                                         <table className="w-full text-xs">
-                                            <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                                            <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-border dark:border-slate-800">
                                                 <tr>
                                                     <th className="px-4 py-3 text-left font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[10px]">Broker</th>
                                                     <th className="px-4 py-3 text-left font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[10px]">Symbol</th>
                                                     {([
-                                                        { label: 'Qty',     key: 'qty'    as SignalSortKey },
+                                                        { label: 'Qty', key: 'qty' as SignalSortKey },
                                                         { label: 'Avg Buy', key: null },
-                                                        { label: 'LTP',     key: null },
-                                                        { label: 'P&L %',   key: 'pnl'    as SignalSortKey },
-                                                        { label: 'Amount',  key: 'amount' as SignalSortKey },
+                                                        { label: 'LTP', key: null },
+                                                        { label: 'P&L %', key: 'pnl' as SignalSortKey },
+                                                        { label: 'Amount', key: 'amount' as SignalSortKey },
                                                     ] as { label: string; key: SignalSortKey | null }[]).map(h => (
                                                         <th key={h.label}
                                                             onClick={() => h.key && toggleSort(h.key)}
@@ -735,9 +751,9 @@ export default function SmartMoneyPage() {
                                                     style={{ height: `${Math.max(180, Math.min(filteredFlows.length, 15) * 28)}px` }}
                                                     opts={{ renderer: 'svg' }}
                                                 />
-                                                <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-slate-800">
+                                                <div className="overflow-x-auto rounded-xl border border-border dark:border-slate-800">
                                                     <table className="w-full text-xs">
-                                                        <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                                                        <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-border dark:border-slate-800">
                                                             <tr>
                                                                 {['#', 'Symbol', 'Buy', 'Sell', 'Net Accumulation', 'Net Capital', 'Brokers'].map(h => (
                                                                     <th key={h} className="px-4 py-3 text-left font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[10px]">{h}</th>
@@ -786,14 +802,14 @@ export default function SmartMoneyPage() {
                     </div>
 
                     {/* ── Tier Legend ──────────────────────────────────────────── */}
-                    <div className="bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 px-6 py-5 shadow-sm">
-                        <div className="text-[10px] font-medium uppercase tracking-widest text-slate-400 mb-4">Tier Classification</div>
+                    <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border px-6 py-5 shadow-sm">
+                        <div className="text-[10px] font-medium uppercase tracking-wider text-slate-400 mb-4">Tier Classification</div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {([
                                 { tier: 'S', title: 'Elite Accumulator', desc: 'Highest buy volume in the period. Dominant institutional player.' },
-                                { tier: 'A', title: 'Pro Accumulator',   desc: 'Top 3 by buy volume. Consistent large-ticket buyer.' },
-                                { tier: 'B', title: 'Active Broker',     desc: 'Ranks 4–6. Significant institutional activity.' },
-                                { tier: 'C', title: 'Tracked Broker',    desc: 'Ranks 7–10. Worth watching for emerging patterns.' },
+                                { tier: 'A', title: 'Pro Accumulator', desc: 'Top 3 by buy volume. Consistent large-ticket buyer.' },
+                                { tier: 'B', title: 'Active Broker', desc: 'Ranks 4–6. Significant institutional activity.' },
+                                { tier: 'C', title: 'Tracked Broker', desc: 'Ranks 7–10. Worth watching for emerging patterns.' },
                             ] as { tier: 'S' | 'A' | 'B' | 'C'; title: string; desc: string }[]).map(({ tier, title, desc }) => {
                                 const s = TIER_STYLES[tier];
                                 return (

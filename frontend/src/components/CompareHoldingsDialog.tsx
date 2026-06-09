@@ -97,7 +97,7 @@ export function CompareHoldingsDialog({ open, onOpenChange, items }: CompareHold
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
-                <DialogHeader className="pb-4 border-b border-slate-100 dark:border-slate-800">
+                <DialogHeader className="pb-4 border-b border-border dark:border-slate-800">
                     <DialogTitle className="flex items-center gap-3 text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
                         <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
                             <Scale className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -110,7 +110,7 @@ export function CompareHoldingsDialog({ open, onOpenChange, items }: CompareHold
                 </DialogHeader>
 
                 {/* Ticker Headers */}
-                <div className="flex items-center border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center border-b border-border dark:border-slate-800">
                     <div className="w-[140px] shrink-0 py-3 px-4"></div>
                     {items.map((item, idx) => (
                         <div key={item.id} className="flex-1 text-center py-3">
@@ -128,7 +128,7 @@ export function CompareHoldingsDialog({ open, onOpenChange, items }: CompareHold
                 </div>
 
                 {/* Metrics Comparison */}
-                <div className="rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+                <div className="rounded-xl border border-border dark:border-slate-800 overflow-hidden">
                     <MetricRow
                         label="Current Price"
                         values={items.map(i => Number(i.current_price))}
@@ -201,7 +201,7 @@ export function CompareHoldingsDialog({ open, onOpenChange, items }: CompareHold
 
                 {/* Radar Chart */}
                 {radarData.length > 0 && (
-                    <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+                    <div className="mt-6 pt-6 border-t border-border dark:border-slate-800">
                         <h4 className="text-xs font-bold tracking-tight text-slate-400 dark:text-slate-500 mb-4 px-4">
                             Comparative analysis
                         </h4>

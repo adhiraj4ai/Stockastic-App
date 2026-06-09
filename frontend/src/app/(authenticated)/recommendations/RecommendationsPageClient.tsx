@@ -255,7 +255,7 @@ export default function RecommendationsPage() {
             {/* TradingView Chart Modal (90% layout for validation hub) */}
             <Dialog open={chartOpen} onOpenChange={setChartOpen}>
                 <DialogContent
-                    className="p-0 overflow-hidden flex flex-col bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-2xl rounded-2xl"
+                    className="p-0 overflow-hidden flex flex-col bg-white dark:bg-card border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl"
                     style={{ maxWidth: '90vw', width: '90vw', height: '90vh', maxHeight: '90vh' }}
                 >
                     <DialogHeader className="sr-only">
@@ -267,28 +267,28 @@ export default function RecommendationsPage() {
                             <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex flex-row items-center justify-between shrink-0">
                                 <div className="flex items-center gap-4">
                                     <div className="flex flex-col">
-                                        <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+                                        <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
                                             {selectedRec.symbol}
                                             <span className={`text-[10px] px-2 py-0.5 rounded-full border ${selectedRec.signal === 'BUY' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800'}`}>
                                                 {selectedRec.signal} SIGNAL
                                             </span>
                                         </h2>
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Advanced Validation Hub</p>
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Advanced Validation Hub</p>
                                     </div>
 
                                     <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-700 mx-2 hidden sm:block" />
 
                                     <div className="hidden sm:flex items-center gap-6">
                                         <div className="flex flex-col">
-                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Crossover Date</span>
+                                            <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-tighter">Crossover Date</span>
                                             <span className="text-xs font-bold text-blue-600">{selectedRec.crossover_date}</span>
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Crossover Price</span>
+                                            <span className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Crossover Price</span>
                                             <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{formatRupees(selectedRec.crossover_price)}</span>
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Current LTP</span>
+                                            <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-tighter">Current LTP</span>
                                             <span className="text-xs font-bold text-emerald-600">{formatRupees(selectedRec.close)}</span>
                                         </div>
                                     </div>
@@ -327,7 +327,7 @@ export default function RecommendationsPage() {
             {/* Standard Dialog for History */}
             <Dialog open={historyModalOpen} onOpenChange={setHistoryModalOpen}>
                 <DialogContent
-                    className="p-0 overflow-hidden flex flex-col bg-white border-none shadow-2xl rounded-xl"
+                    className="p-0 overflow-hidden flex flex-col bg-white border-none shadow-sm rounded-xl"
                     style={{ maxWidth: '90vw', width: '90vw', height: '90vh', maxHeight: '90vh' }}
                 >
                     <DialogHeader className="sr-only">
@@ -336,7 +336,7 @@ export default function RecommendationsPage() {
                     </DialogHeader>
 
                     {/* 1. HEADER AREA */}
-                    <div className="relative group shrink-0 border-b border-slate-100 bg-white z-10">
+                    <div className="relative group shrink-0 border-b border-border bg-white z-10">
                         {stockDetails ? (
                             <TerminalHeader
                                 symbol={stockDetails.company?.symbol || stockDetails.fundamental?.ticker || selectedSymbol || ''}
@@ -356,7 +356,7 @@ export default function RecommendationsPage() {
                                     <h2 className="text-2xl font-bold text-slate-900 tracking-tighter">{selectedSymbol}</h2>
                                     <div className="flex items-center gap-2">
                                         <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fetching analysis data...</p>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fetching analysis data...</p>
                                     </div>
                                 </div>
                             </div>
@@ -410,7 +410,7 @@ export default function RecommendationsPage() {
                                         </Badge>
                                     </div>
 
-                                    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden bg-white dark:bg-slate-900 rounded-xl">
+                                    <Card className="border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden bg-white dark:bg-card rounded-xl">
                                         {completedTrades.length === 0 ? (
                                             <div className="flex flex-col items-center justify-center py-12 text-slate-400 space-y-2">
                                                 <TrendingDown size={32} className="opacity-20" />
@@ -422,7 +422,7 @@ export default function RecommendationsPage() {
                                         ) : (
                                             <Table>
                                                 <TableHeader className="bg-slate-50 dark:bg-slate-800/50">
-                                                    <TableRow className="border-b border-slate-100 dark:border-slate-800 hover:bg-transparent">
+                                                    <TableRow className="border-b border-border dark:border-slate-800 hover:bg-transparent">
                                                         <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 w-32">Buy Date</TableHead>
                                                         <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 w-32">Sell Date</TableHead>
                                                         <TableHead className="font-semibold text-xs text-slate-500 dark:text-slate-400 h-10 text-right">Entry Price (रू)</TableHead>
@@ -473,8 +473,8 @@ export default function RecommendationsPage() {
                             </TabsContent>
 
                             <TabsContent value="history" className="flex-1 overflow-hidden p-6 pt-2 h-full flex flex-col data-[state=active]:animate-in data-[state=active]:fade-in-0 duration-300">
-                                <Card className="border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col bg-white dark:bg-slate-900 mt-0 rounded-xl flex-1 overflow-hidden">
-                                    <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
+                                <Card className="border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col bg-white dark:bg-card mt-0 rounded-xl flex-1 overflow-hidden">
+                                    <div className="flex items-center justify-between p-4 border-b border-border dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
                                         <div className="flex items-center gap-2">
                                             <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Rows per page:</span>
                                             <select
@@ -497,7 +497,7 @@ export default function RecommendationsPage() {
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                className="h-8 w-8 p-0 dark:border-slate-800 dark:bg-slate-900"
+                                                className="h-8 w-8 p-0 dark:border-slate-800 dark:bg-card"
                                                 onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
                                                 disabled={historyPage === 1}
                                             >
@@ -506,7 +506,7 @@ export default function RecommendationsPage() {
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                className="h-8 w-8 p-0 dark:border-slate-800 dark:bg-slate-900"
+                                                className="h-8 w-8 p-0 dark:border-slate-800 dark:bg-card"
                                                 onClick={() => setHistoryPage(p => Math.min(totalHistoryPages, p + 1))}
                                                 disabled={historyPage >= totalHistoryPages}
                                             >
@@ -531,7 +531,7 @@ export default function RecommendationsPage() {
                                                 </TableHeader>
                                                 <TableBody>
                                                     {paginatedHistory.map((row, i) => (
-                                                        <TableRow key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 last:border-0 group h-12">
+                                                        <TableRow key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-border dark:border-slate-800 last:border-0 group h-12">
                                                             <TableCell className="font-mono text-xs text-slate-500 dark:text-slate-400 pl-6">{row.date}</TableCell>
                                                             <TableCell>
                                                                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${row.signal === 'BUY' ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800' : 'bg-rose-50 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800'
@@ -563,7 +563,7 @@ export default function RecommendationsPage() {
                                                                         const colors = [
                                                                             'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200/50 dark:border-blue-800',
                                                                             'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-800',
-                                                                            'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200/50 dark:border-slate-700',
+                                                                            'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-border dark:border-slate-700',
                                                                             'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border-indigo-200/50 dark:border-indigo-800',
                                                                             'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 border-violet-200/50 dark:border-violet-800',
                                                                             'bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 border-sky-200/50 dark:border-sky-800',
@@ -598,7 +598,7 @@ export default function RecommendationsPage() {
             </Dialog >
 
             <div className="space-y-6">
-                <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+                <Card className="border-none shadow-sm bg-white/50 dark:bg-card">
                     <div className="p-4 flex flex-col md:flex-row gap-4 items-end md:items-center justify-between border-b border-gray-100 dark:border-slate-800">
                         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
                             <div className="space-y-1.5 min-w-[200px]">
@@ -608,7 +608,7 @@ export default function RecommendationsPage() {
                                 <select
                                     value={recStrategy}
                                     onChange={(e) => setRecStrategy(e.target.value)}
-                                    className="w-full h-9 rounded-md border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:border-blue-500 dark:text-slate-200"
+                                    className="w-full h-9 rounded-md border border-gray-200 dark:border-slate-800 bg-white dark:bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:border-blue-500 dark:text-slate-200"
                                 >
                                     {STRATEGIES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                 </select>
@@ -620,7 +620,7 @@ export default function RecommendationsPage() {
                                 <select
                                     value={recSector}
                                     onChange={(e) => setRecSector(e.target.value)}
-                                    className="w-full h-9 rounded-md border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:border-blue-500 dark:text-slate-200"
+                                    className="w-full h-9 rounded-md border border-gray-200 dark:border-slate-800 bg-white dark:bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:border-blue-500 dark:text-slate-200"
                                 >
                                     {SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
                                 </select>
@@ -639,7 +639,7 @@ export default function RecommendationsPage() {
                                         placeholder="Search symbol..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full h-10 rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 hover:bg-white dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 pl-10 pr-10 py-2 text-sm shadow-sm transition-all focus-visible:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 placeholder:text-gray-400/80 dark:text-slate-200"
+                                        className="w-full h-10 rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-card hover:bg-white dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 pl-10 pr-10 py-2 text-sm shadow-sm transition-all focus-visible:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 placeholder:text-gray-400/80 dark:text-slate-200"
                                     />
                                     {searchTerm && (
                                         <button
@@ -658,7 +658,7 @@ export default function RecommendationsPage() {
                                 size="icon"
                                 onClick={fetchRecommendations}
                                 disabled={loadingRecs}
-                                className="h-9 w-9 shrink-0 dark:border-slate-800 dark:bg-slate-900/50"
+                                className="h-9 w-9 shrink-0 dark:border-slate-800 dark:bg-card"
                                 title="Refresh Scan"
                             >
                                 <RefreshCw size={16} className={loadingRecs ? 'animate-spin' : ''} />

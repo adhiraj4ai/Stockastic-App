@@ -115,7 +115,7 @@ export default function ParameterObjectiveSelector({ strategyId, symbol, onParam
         <div className="mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
             <div className="flex items-center gap-2 mb-3">
                 <Settings size={14} className="text-slate-400" />
-                <span className="text-[11px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">
+                <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                     Performance Flavor
                 </span>
             </div>
@@ -157,11 +157,11 @@ export default function ParameterObjectiveSelector({ strategyId, symbol, onParam
 
                             <div className="flex-1 text-left min-w-0">
                                 <div className="flex items-center gap-2">
-                                    <span className={`text-[13px] font-black uppercase tracking-tight transition-colors ${isSelected ? 'text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-400'}`}>
+                                    <span className={`text-[13px] font-semibold uppercase tracking-tight transition-colors ${isSelected ? 'text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-400'}`}>
                                         {obj.label}
                                     </span>
                                     {obj.value === 'balanced' && (
-                                        <span className="text-[8px] font-black bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded tracking-widest animate-pulse">REC</span>
+                                        <span className="text-[8px] font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded tracking-wider animate-pulse">REC</span>
                                     )}
                                 </div>
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate opacity-80 uppercase tracking-tighter">
@@ -171,12 +171,12 @@ export default function ParameterObjectiveSelector({ strategyId, symbol, onParam
 
                             {isAvailable && (
                                 <div className="text-right ml-2">
-                                    <div className={`text-sm font-black tracking-tighter ${returnPct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                    <div className={`text-sm font-semibold tracking-tighter ${returnPct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                         {returnPct >= 0 ? '+' : ''}{returnPct.toFixed(1)}%
                                     </div>
                                     <div className="flex items-center justify-end gap-1 mt-0.5">
-                                        <span className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-tighter">Sharpe</span>
-                                        <span className="text-[10px] font-black text-slate-500 dark:text-slate-400">
+                                        <span className="text-[9px] font-semibold text-slate-300 dark:text-slate-600 uppercase tracking-tighter">Sharpe</span>
+                                        <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
                                             {sharpeRatio.toFixed(2)}
                                         </span>
                                     </div>
@@ -196,7 +196,7 @@ export default function ParameterObjectiveSelector({ strategyId, symbol, onParam
             <div className="mt-3 flex items-center justify-between text-slate-400 dark:text-slate-500">
                 <div className="flex items-center gap-2">
                     <Zap size={10} className="fill-current" />
-                    <span className="text-[9px] font-bold uppercase tracking-widest">
+                    <span className="text-[9px] font-bold uppercase tracking-wider">
                         3Y Optimized Config
                     </span>
                 </div>

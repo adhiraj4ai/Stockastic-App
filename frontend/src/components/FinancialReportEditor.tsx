@@ -403,9 +403,9 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
     }
 
     return (
-        <div className="flex flex-col h-full bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border dark:border-slate-800 shadow-sm transition-colors duration-500">
+        <div className="flex flex-col h-full bg-white dark:bg-card rounded-2xl overflow-hidden border dark:border-slate-800 shadow-sm transition-colors duration-500">
             {/* Header */}
-            <div className="px-6 py-4 bg-white dark:bg-slate-900 border-b dark:border-slate-800 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+            <div className="px-6 py-4 bg-white dark:bg-card border-b dark:border-slate-800 flex items-center justify-between sticky top-0 z-10 shadow-sm">
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" size="sm" onClick={onClose} className="rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 h-10 w-10 p-0 text-gray-500 dark:text-slate-400">
                         <ArrowLeft className="w-5 h-5" />
@@ -482,7 +482,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
             <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 w-full">
                 {/* Granular Data Tabs - Compact */}
                 <Tabs defaultValue="bs" className="w-full">
-                    <TabsList className="bg-white dark:bg-slate-900 p-1 rounded-xl h-10 border dark:border-slate-800 inline-flex shadow-sm mb-2">
+                    <TabsList className="bg-white dark:bg-card p-1 rounded-xl h-10 border dark:border-slate-800 inline-flex shadow-sm mb-2">
                         <TabsTrigger value="bs" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
                             Balance Sheet
                         </TabsTrigger>
@@ -503,10 +503,10 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
 
                     <TabsContent value="bs" className="mt-0 space-y-2 animate-in fade-in duration-300">
                         {template.sections.balance_sheet.map(section => (
-                            <div key={section.key} className="bg-white dark:bg-slate-900 rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
+                            <div key={section.key} className="bg-white dark:bg-card rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="w-1 h-5 bg-blue-500 rounded-full" />
-                                    <h4 className="text-sm font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">{section.label}</h4>
+                                    <h4 className="text-sm font-semibold uppercase text-gray-900 dark:text-slate-100 tracking-wider">{section.label}</h4>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
                                     {section.particulars.map(p => (
@@ -544,10 +544,10 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                     <TabsContent value="pl" className="mt-0 space-y-2 animate-in fade-in duration-300">
                         {/* Report Identity (Editable Only) - Compact 3 Columns */}
                         {(!reportId && !initialData?.fiscalYear) && (
-                            <div className="bg-white dark:bg-slate-900 rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
+                            <div className="bg-white dark:bg-card rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="w-1 h-5 bg-blue-500 rounded-full" />
-                                    <h4 className="text-sm font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">Report Identity</h4>
+                                    <h4 className="text-sm font-semibold uppercase text-gray-900 dark:text-slate-100 tracking-wider">Report Identity</h4>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
                                     <div className="flex items-center justify-between gap-6 py-0.5 group">
@@ -572,7 +572,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                                 <SelectTrigger className="h-9 font-mono text-xs border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                                                     <SelectValue />
                                                 </SelectTrigger>
-                                                <SelectContent className="dark:bg-slate-900 dark:border-slate-800">
+                                                <SelectContent className="dark:bg-card dark:border-slate-800">
                                                     <SelectItem value="QUARTERLY" className="dark:text-slate-300 dark:focus:bg-slate-800">Quarterly</SelectItem>
                                                     <SelectItem value="ANNUAL" className="dark:text-slate-300 dark:focus:bg-slate-800">Annual</SelectItem>
                                                 </SelectContent>
@@ -591,7 +591,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                                     <SelectTrigger className="h-9 font-mono text-xs border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                                                         <SelectValue />
                                                     </SelectTrigger>
-                                                    <SelectContent className="dark:bg-slate-900 dark:border-slate-800">
+                                                    <SelectContent className="dark:bg-card dark:border-slate-800">
                                                         <SelectItem value="1" className="dark:text-slate-300">Q1</SelectItem>
                                                         <SelectItem value="2" className="dark:text-slate-300">Q2</SelectItem>
                                                         <SelectItem value="3" className="dark:text-slate-300">Q3</SelectItem>
@@ -631,10 +631,10 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                         )}
 
                         {/* Key Metrics - Compact 3 Columns */}
-                        <div className="bg-white dark:bg-slate-900 rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
+                        <div className="bg-white dark:bg-card rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
                             <div className="flex items-center gap-3 mb-2">
                                 <div className="w-1 h-5 bg-indigo-500 rounded-full" />
-                                <h4 className="text-sm font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">Key Metrics</h4>
+                                <h4 className="text-sm font-semibold uppercase text-gray-900 dark:text-slate-100 tracking-wider">Key Metrics</h4>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
                                 {[
@@ -669,10 +669,10 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
 
                         {/* Report Status (Annual Only) - Compact */}
                         {(reportType === 'ANNUAL' && (reportId || initialData?.fiscalYear)) && (
-                            <div className="bg-white dark:bg-slate-900 rounded-2xl border dark:border-slate-800 shadow-sm p-4 overflow-hidden flex flex-col justify-center">
+                            <div className="bg-white dark:bg-card rounded-2xl border dark:border-slate-800 shadow-sm p-4 overflow-hidden flex flex-col justify-center">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="w-1 h-5 bg-amber-500 rounded-full" />
-                                    <h4 className="text-sm font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">Report Status</h4>
+                                    <h4 className="text-sm font-semibold uppercase text-gray-900 dark:text-slate-100 tracking-wider">Report Status</h4>
                                 </div>
                                 <label className="flex items-center justify-between gap-6 pb-1 cursor-pointer group">
                                     <span className="text-[11px] font-semibold text-gray-500 dark:text-slate-400 group-hover:text-gray-900 dark:group-hover:text-slate-100 transition-colors">Mark as Audited Report</span>
@@ -687,10 +687,10 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                             </div>
                         )}
                         {template.sections.profit_loss.map(section => (
-                            <div key={section.key} className="bg-white dark:bg-slate-900 rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
+                            <div key={section.key} className="bg-white dark:bg-card rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="w-1 h-5 bg-indigo-500 rounded-full" />
-                                    <h4 className="text-sm font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">{section.label}</h4>
+                                    <h4 className="text-sm font-semibold uppercase text-gray-900 dark:text-slate-100 tracking-wider">{section.label}</h4>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
                                     {section.particulars.map(p => (
@@ -728,10 +728,10 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
 
                     <TabsContent value="cf" className="mt-0 space-y-2 animate-in fade-in duration-300">
                         {template.sections.cash_flow?.map(section => (
-                            <div key={section.key} className="bg-white dark:bg-slate-900 rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
+                            <div key={section.key} className="bg-white dark:bg-card rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="w-1 h-5 bg-emerald-500 rounded-full" />
-                                    <h4 className="text-sm font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">{section.label}</h4>
+                                    <h4 className="text-sm font-semibold uppercase text-gray-900 dark:text-slate-100 tracking-wider">{section.label}</h4>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
                                     {section.particulars.map(p => (
@@ -766,10 +766,10 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                     </TabsContent>
 
                     <TabsContent value="dividend" className="mt-0 space-y-2 animate-in fade-in duration-300">
-                        <div className="bg-white dark:bg-slate-900 rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
+                        <div className="bg-white dark:bg-card rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
                             <div className="flex items-center gap-3 mb-2">
                                 <div className="w-1 h-5 bg-green-500 rounded-full" />
-                                <h4 className="text-sm font-black uppercase text-gray-900 dark:text-slate-100 tracking-wider">Dividend Information</h4>
+                                <h4 className="text-sm font-semibold uppercase text-gray-900 dark:text-slate-100 tracking-wider">Dividend Information</h4>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
                                 <div className="flex items-center justify-between gap-6 py-0.5 group">

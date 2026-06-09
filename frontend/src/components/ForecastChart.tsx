@@ -20,7 +20,7 @@ export default function ForecastChart({ symbol, historicalData = [], forecastDat
 
     useEffect(() => {
         // Combine historical and forecast data
-        const combined = [];
+        const combined: any[] = [];
 
         // Add historical data
         historicalData.forEach(item => {
@@ -71,12 +71,12 @@ export default function ForecastChart({ symbol, historicalData = [], forecastDat
                 <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                     <defs>
                         <linearGradient id="colorForecast" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                            <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#94a3b8" stopOpacity={0} />
                         </linearGradient>
                         <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                         </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -115,7 +115,7 @@ export default function ForecastChart({ symbol, historicalData = [], forecastDat
                     <Line
                         type="monotone"
                         dataKey="actual"
-                        stroke="#3b82f6"
+                        stroke="#6366f1"
                         strokeWidth={2}
                         dot={false}
                         name="Actual Price"
@@ -126,10 +126,10 @@ export default function ForecastChart({ symbol, historicalData = [], forecastDat
                     <Line
                         type="monotone"
                         dataKey="forecast"
-                        stroke="#8b5cf6"
+                        stroke="#94a3b8"
                         strokeWidth={2}
                         strokeDasharray="5 5"
-                        dot={{ fill: '#8b5cf6', r: 3 }}
+                        dot={{ fill: '#94a3b8', r: 3 }}
                         name="Forecast"
                         connectNulls={false}
                     />

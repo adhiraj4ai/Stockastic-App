@@ -243,7 +243,7 @@ export function PortfolioTable({
                                                         {item.health_score}
                                                     </Badge>
                                                 </TooltipTrigger>
-                                                <TooltipContent className="p-0 border-none shadow-xl bg-white dark:bg-slate-900 overflow-hidden">
+                                                <TooltipContent className="p-0 border-none shadow-xl bg-white dark:bg-card overflow-hidden">
                                                     <div className="w-52 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
                                                         <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
                                                             <h4 className="text-xs font-bold tracking-normal text-slate-500">Fundamental health</h4>

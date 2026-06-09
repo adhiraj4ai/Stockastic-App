@@ -38,7 +38,7 @@ export default function TransactionsPage() {
                             <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                         </div>
                         <div>
-                            <h2 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight">Active Filter</h2>
+                            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-tight">Active Filter</h2>
                             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Viewing Data For</p>
                         </div>
                     </div>
@@ -47,7 +47,7 @@ export default function TransactionsPage() {
                         <select
                             value={selectedAccount}
                             onChange={(e) => setSelectedAccount(e.target.value)}
-                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all min-w-[200px]"
+                            className="bg-white dark:bg-card border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all min-w-[200px]"
                         >
                             <option value="all">All Accounts</option>
                             {accounts.map(acc => (
@@ -58,7 +58,7 @@ export default function TransactionsPage() {
                 </div>
 
                 {/* Tax Report Section */}
-                <Card className="shadow-sm dark:bg-slate-900 dark:border-slate-800 border-amber-100 dark:border-amber-900/30">
+                <Card className="shadow-sm dark:bg-card dark:border-slate-800 border-amber-100 dark:border-amber-900/30">
                     <CardHeader className="pb-3 border-b border-gray-50 dark:border-slate-800">
                         <CardTitle className="text-lg flex items-center gap-2 dark:text-slate-100 italic">
                             <Receipt className="h-5 w-5 text-amber-500" />
@@ -71,7 +71,7 @@ export default function TransactionsPage() {
                 </Card>
 
                 {/* Transaction History */}
-                <Card className="shadow-sm dark:bg-slate-900 dark:border-slate-800">
+                <Card className="shadow-sm dark:bg-card dark:border-slate-800">
                     <CardHeader className="pb-3 border-b border-gray-50 dark:border-slate-800">
                         <CardTitle className="text-lg flex items-center gap-2 dark:text-slate-100 italic">
                             <Calendar className="h-5 w-5 text-blue-500" />

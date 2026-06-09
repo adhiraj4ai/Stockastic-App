@@ -134,7 +134,7 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
     };
 
     return (
-        <div className="bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden mb-8 transition-colors duration-500">
+        <div className="bg-white dark:bg-card border dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden mb-8 transition-colors duration-500">
             {/* Market Summary - Full Width Row */}
             <div className="bg-gray-50/50 dark:bg-slate-800/30 border-b dark:border-slate-800 px-8 py-6">
                 <div className="flex items-center mb-6">

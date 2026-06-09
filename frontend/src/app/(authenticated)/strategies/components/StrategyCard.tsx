@@ -28,13 +28,13 @@ export function StrategyCard({
 }: StrategyCardProps) {
     return (
         <Card
-            className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5 border-slate-200/60 flex flex-col cursor-pointer bg-white"
+            className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5 border-border flex flex-col cursor-pointer bg-white"
             onClick={onClick}
         >
             {/* Header Accent */}
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="hidden" />
 
-            <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-br from-white to-slate-50/50">
+            <div className="px-4 py-3 border-b border-border bg-muted/40">
                 <div className="flex items-start gap-4">
                     <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0 shadow-sm border border-blue-100/50 group-hover:scale-110 transition-transform duration-300">
                         <Lightbulb size={20} />
@@ -84,13 +84,13 @@ export function StrategyCard({
                 </p>
             </div>
 
-            <div className="flex bg-slate-50/80 border-t border-slate-100">
+            <div className="flex bg-slate-50/80 border-t border-border">
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
                         onRun?.();
                     }}
-                    className="flex-1 py-3.5 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 hover:text-blue-600 hover:bg-white transition-all active:scale-95 border-r border-slate-100"
+                    className="flex-1 py-3.5 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 hover:text-blue-600 hover:bg-white transition-all active:scale-95 border-r border-border"
                 >
                     <Play size={14} fill="currentColor" className="text-blue-500" /> Run
                 </button>

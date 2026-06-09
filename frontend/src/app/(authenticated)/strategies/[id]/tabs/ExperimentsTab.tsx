@@ -279,13 +279,13 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
                             {uniqueBySymbol.map((item: any, idx) => (
-                                <div key={idx} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
+                                <div key={idx} className="bg-white dark:bg-card border border-slate-200 dark:border-slate-800 rounded-lg p-3 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
                                     <div className="flex justify-between items-start mb-2">
-                                        <Badge className="text-[10px] px-2 py-0 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold uppercase">
+                                        <Badge className="text-[10px] px-2 py-0 rounded-full bg-primary text-primary-foreground hover:opacity-90 text-white font-bold uppercase">
                                             {item.scope_type === 'ALL' ? 'Market' : item.scope_value}
                                         </Badge>
                                         <div className="text-right">
-                                            <div className={`text-lg font-black ${item.return >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            <div className={`text-lg font-semibold ${item.return >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                                 {item.return >= 0 ? '+' : ''}{item.return?.toFixed(1)}%
                                             </div>
                                         </div>
@@ -296,7 +296,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                             {item.run_type}
                                         </Badge>
                                     </div>
-                                    <div className="border-t border-slate-100 dark:border-slate-800 pt-2">
+                                    <div className="border-t border-border dark:border-slate-800 pt-2">
                                         <div className="flex flex-wrap gap-1">
                                             {Object.entries(item.parameters || {}).map(([key, value]: [string, any]) => (
                                                 <div key={key} className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded text-[10px]">
@@ -327,7 +327,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                     )}
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm">
+                <div className="bg-white dark:bg-card border border-gray-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
                         <thead className="bg-gray-50 dark:bg-slate-800">
                             <tr>
@@ -345,7 +345,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                 <th className="px-6 py-3"></th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800 text-sm">
+                        <tbody className="bg-white dark:bg-card divide-y divide-gray-200 dark:divide-slate-800 text-sm">
                             {experiments.length === 0 ? (
                                 <tr>
                                     <td colSpan={strategyId ? 8 : 9} className="px-6 py-12 text-center text-gray-500 dark:text-slate-400">
@@ -448,7 +448,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                         <div className="flex flex-col gap-6">
                                                             {/* Batch Results Table */}
                                                             {exp.batch_id && exp.scope_type !== 'SYMBOL' && batchResults[exp.batch_id] && (
-                                                                <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm">
+                                                                <div className="bg-white dark:bg-card border border-gray-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm">
                                                                     <div className="bg-gray-50 dark:bg-slate-800 px-4 py-2 border-b dark:border-slate-700">
                                                                         <h4 className="text-xs font-bold text-gray-700 dark:text-slate-300 uppercase">Individual Symbol Outcomes ({batchResults[exp.batch_id].filter(e => e.scope_type === 'SYMBOL').length})</h4>
                                                                     </div>
@@ -511,7 +511,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
 
                                                             {/* Chart Section */}
                                                             {exp.plot_html && (
-                                                                <div className="w-full bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-xl overflow-hidden shadow-inner" style={{ height: '700px' }}>
+                                                                <div className="w-full bg-white dark:bg-card border dark:border-slate-800 rounded-xl overflow-hidden shadow-inner" style={{ height: '700px' }}>
                                                                     <iframe
                                                                         title={`Backtest Plot ${exp.id}`}
                                                                         srcDoc={exp.plot_html}
@@ -530,7 +530,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                                     </div>
                                                                     <div className="flex flex-wrap gap-2">
                                                                         {Object.entries(exp.parameters || {}).map(([key, value]: [string, any]) => (
-                                                                            <div key={key} className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 px-3 py-2 rounded-lg shadow-sm flex flex-col min-w-[120px]">
+                                                                            <div key={key} className="bg-white dark:bg-card border border-gray-200 dark:border-slate-800 px-3 py-2 rounded-lg shadow-sm flex flex-col min-w-[120px]">
                                                                                 <span className="text-[10px] text-gray-400 dark:text-slate-500 uppercase font-bold">{key.replace(/_/g, ' ')}</span>
                                                                                 <span className="text-sm font-semibold text-gray-800 dark:text-slate-200">
                                                                                     {typeof value === 'number' ?
@@ -549,7 +549,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                                     <h4 className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-3 flex items-center gap-1">
                                                                         <Activity size={14} className="text-blue-500" /> Outcome Analysis
                                                                     </h4>
-                                                                    <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-4 shadow-sm">
+                                                                    <div className="bg-white dark:bg-card border border-gray-200 dark:border-slate-800 rounded-lg p-4 shadow-sm">
                                                                         {exp.run_type === 'BACKTEST' ? (
                                                                             exp.metrics.aggregated ? (
                                                                                 <div className="space-y-4">
@@ -666,14 +666,14 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                             <button
                                 onClick={() => setPage(p => Math.max(1, p - 1))}
                                 disabled={!hasPrev || loading}
-                                className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-slate-300 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-slate-300 bg-white dark:bg-card border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                                 Previous
                             </button>
                             <button
                                 onClick={() => setPage(p => p + 1)}
                                 disabled={!hasNext || loading}
-                                className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-white dark:bg-card border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                                 Next
                             </button>
@@ -789,7 +789,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                     <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                                         <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">Return</span>
-                                        <span className={`text-xl font-black ${experimentToPublish.metrics.pnl_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        <span className={`text-xl font-semibold ${experimentToPublish.metrics.pnl_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                             {experimentToPublish.metrics.pnl_percent?.toFixed(2)}%
                                         </span>
                                     </div>

@@ -135,9 +135,9 @@ function StatCard({
         orange: 'text-orange-500 dark:text-orange-400 bg-orange-500/10',
     };
     return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 flex flex-col gap-1.5 shadow-sm">
-            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{label}</span>
-            <span className={cn('text-2xl font-black tabular-nums', colorMap[color].split(' ')[0])}>{value}</span>
+        <div className="bg-white dark:bg-card border border-border dark:border-slate-800 rounded-2xl p-5 flex flex-col gap-1.5 shadow-sm">
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{label}</span>
+            <span className={cn('text-2xl font-semibold tabular-nums', colorMap[color].split(' ')[0])}>{value}</span>
             {sub && <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">{sub}</span>}
         </div>
     );
@@ -198,7 +198,7 @@ function WinRateChart({ winRates }: { winRates: StudyData['study']['win_rates'] 
     };
 
     return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white dark:bg-card border border-border dark:border-slate-800 rounded-2xl p-5 shadow-sm">
             <div className="flex items-center mb-4">
                 <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Win Rate by Horizon</h3>
                 <InfoTooltip content="Probability that the price moves higher across 5, 10, 20, and 30 day periods after an accumulation event." />
@@ -265,7 +265,7 @@ function AvgReturnChart({
     };
 
     return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white dark:bg-card border border-border dark:border-slate-800 rounded-2xl p-5 shadow-sm">
             <div className="flex items-center mb-4">
                 <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Avg vs Median Return</h3>
                 <InfoTooltip content="Median Return provides the 'typical' outcome, while Avg shows the broad potential including outliers." />
@@ -340,7 +340,7 @@ function ScatterChart({ scatterData }: { scatterData: StudyData['study']['scatte
     };
 
     return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white dark:bg-card border border-border dark:border-slate-800 rounded-2xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">
@@ -425,7 +425,7 @@ function LagAnalysisChart({ lagAnalysis }: { lagAnalysis: StudyData['study']['la
     };
 
     return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white dark:bg-card border border-border dark:border-slate-800 rounded-2xl p-5 shadow-sm">
             <div className="flex items-center mb-4">
                 <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">
                     Lag Analysis — Which Horizon Has the Best Edge?
@@ -636,7 +636,7 @@ function ProjectionChart({ forecast }: { forecast: ForecastData }) {
     };
 
     return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+        <div className="bg-white dark:bg-card border border-border dark:border-slate-800 rounded-2xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center">
                     <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">
@@ -684,10 +684,10 @@ function ProjectionTargets({ forecast }: { forecast: ForecastData }) {
                 return (
                     <div
                         key={lag}
-                        className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col gap-3"
+                        className="bg-white dark:bg-card border border-border dark:border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col gap-3"
                     >
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">+{lag}</span>
+                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">+{lag}</span>
                             <span className={cn(
                                 'text-[11px] font-bold px-2 py-0.5 rounded-full',
                                 isGood
@@ -700,7 +700,7 @@ function ProjectionTargets({ forecast }: { forecast: ForecastData }) {
 
                         <div>
                             <div className="text-[10px] text-slate-400 font-medium mb-0.5">Target Range (P25–P75)</div>
-                            <div className="text-base font-black text-slate-900 dark:text-white tabular-nums">
+                            <div className="text-base font-semibold text-slate-900 dark:text-white tabular-nums">
                                 {fmtPrice(band.p25)} – {fmtPrice(band.p75)}
                             </div>
                         </div>
@@ -732,8 +732,8 @@ function ProjectionTargets({ forecast }: { forecast: ForecastData }) {
 
 function HistoryTable({ history }: { history: ForecastData['history'] }) {
     return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+        <div className="bg-white dark:bg-card border border-border dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-border dark:border-slate-800 flex items-center gap-3">
                 <History size={16} className="text-orange-500" />
                 <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Historical Accumulation Events</h3>
                 <span className="ml-auto text-[11px] text-slate-400">{history.length} events</span>
@@ -741,7 +741,7 @@ function HistoryTable({ history }: { history: ForecastData['history'] }) {
             <div className="overflow-x-auto">
                 <table className="w-full text-[12px]">
                     <thead>
-                        <tr className="border-b border-slate-100 dark:border-slate-800">
+                        <tr className="border-b border-border dark:border-slate-800">
                             {['Date', 'Intensity', 'Entry', '+5d', '+10d', '+20d', '+30d', 'Outcome'].map(col => (
                                 <th
                                     key={col}
@@ -758,7 +758,7 @@ function HistoryTable({ history }: { history: ForecastData['history'] }) {
                                 key={i}
                                 className={cn(
                                     'border-b border-slate-50 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors',
-                                    i % 2 === 0 ? '' : 'bg-slate-50/50 dark:bg-slate-900/30'
+                                    i % 2 === 0 ? '' : 'bg-slate-50/50 dark:bg-card/30'
                                 )}
                             >
                                 <td className="px-4 py-3 font-mono font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">{row.date}</td>
@@ -778,7 +778,7 @@ function HistoryTable({ history }: { history: ForecastData['history'] }) {
                                 </td>
                                 <td className="px-4 py-3">
                                     <span className={cn(
-                                        'text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider',
+                                        'text-[10px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider',
                                         row.outcome === 'WON'
                                             ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
                                             : row.outcome === 'LOST'
@@ -851,7 +851,7 @@ function SymbolForecastView({ forecast, loadingForecast }: { forecast: ForecastD
             </div>
 
             {/* Win rates summary */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+            <div className="bg-white dark:bg-card border border-border dark:border-slate-800 rounded-2xl p-5 shadow-sm">
                 <div className="flex items-center gap-3 mb-3">
                     <Target size={16} className="text-blue-500" />
                     <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
@@ -861,9 +861,9 @@ function SymbolForecastView({ forecast, loadingForecast }: { forecast: ForecastD
                 <div className="grid grid-cols-4 gap-4">
                     {(['5d', '10d', '20d', '30d'] as const).map(lag => (
                         <div key={lag} className="text-center">
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">+{lag}</div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">+{lag}</div>
                             <div className={cn(
-                                'text-xl font-black tabular-nums',
+                                'text-xl font-semibold tabular-nums',
                                 study.win_rates[lag] >= 60 ? 'text-emerald-500' : study.win_rates[lag] >= 50 ? 'text-indigo-500' : 'text-rose-500'
                             )}>
                                 {fmtPct(study.win_rates[lag])}
@@ -1067,7 +1067,7 @@ export default function AccumulationPriceStudyPage() {
                             placeholder="Enter symbol (e.g. NABIL)"
                             className={cn(
                                 'pl-10 pr-9 py-2.5 text-sm font-bold rounded-xl border transition-all duration-200 outline-none w-56',
-                                'bg-white dark:bg-slate-900 text-slate-900 dark:text-white',
+                                'bg-white dark:bg-card text-slate-900 dark:text-white',
                                 'placeholder:text-slate-400 placeholder:font-normal',
                                 isSymbolMode
                                     ? 'border-orange-400 dark:border-orange-500 ring-2 ring-orange-400/20'
@@ -1106,7 +1106,7 @@ export default function AccumulationPriceStudyPage() {
                         Market Study
                     </button>
                     <ChevronRight size={12} />
-                    <span className="font-black text-orange-500 dark:text-orange-400">{symbol}</span>
+                    <span className="font-semibold text-orange-500 dark:text-orange-400">{symbol}</span>
                 </div>
             )}
 

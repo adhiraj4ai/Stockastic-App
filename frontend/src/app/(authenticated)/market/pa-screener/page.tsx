@@ -74,19 +74,19 @@ export default function PriceActionScreener() {
 
                 {/* Metrics Header */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <Card className="p-6 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex items-center justify-between">
+                    <Card className="p-6 border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm flex items-center justify-between">
                         <div>
                             <p className="text-xs font-bold text-slate-400 uppercase">Active Scans</p>
-                            <h3 className="text-2xl font-black text-slate-800 dark:text-slate-100">{setups.length} Setups</h3>
+                            <h3 className="text-2xl font-semibold text-slate-800 dark:text-slate-100">{setups.length} Setups</h3>
                         </div>
                         <div className="h-12 w-12 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500">
                             <Activity size={24} />
                         </div>
                     </Card>
-                    <Card className="p-6 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex items-center justify-between">
+                    <Card className="p-6 border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm flex items-center justify-between">
                         <div>
                             <p className="text-xs font-bold text-amber-500 uppercase">Sniper Confluences</p>
-                            <h3 className="text-2xl font-black text-slate-800 dark:text-slate-100">
+                            <h3 className="text-2xl font-semibold text-slate-800 dark:text-slate-100">
                                 {setups.filter(s => s.latest_event?.smc_events?.some((e: any) => e.type === 'SNIPER')).length}
                             </h3>
                         </div>
@@ -94,10 +94,10 @@ export default function PriceActionScreener() {
                             <Target size={24} />
                         </div>
                     </Card>
-                    <Card className="p-6 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex items-center justify-between">
+                    <Card className="p-6 border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm flex items-center justify-between">
                         <div>
                             <p className="text-xs font-bold text-violet-500 uppercase">FVG Imbalances</p>
-                            <h3 className="text-2xl font-black text-slate-800 dark:text-slate-100">
+                            <h3 className="text-2xl font-semibold text-slate-800 dark:text-slate-100">
                                 {setups.filter(s => s.latest_event?.smc_events?.some((e: any) => e.type === 'FVG')).length}
                             </h3>
                         </div>
@@ -105,10 +105,10 @@ export default function PriceActionScreener() {
                             <Zap size={24} />
                         </div>
                     </Card>
-                    <Card className="p-6 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex items-center justify-between">
+                    <Card className="p-6 border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm flex items-center justify-between">
                         <div>
                             <p className="text-xs font-bold text-emerald-500 uppercase">Structure Breaks</p>
-                            <h3 className="text-2xl font-black text-slate-800 dark:text-slate-100">
+                            <h3 className="text-2xl font-semibold text-slate-800 dark:text-slate-100">
                                 {setups.filter(s => s.latest_event?.smc_events?.some((e: any) => e.type === 'BOS')).length}
                             </h3>
                         </div>
@@ -119,7 +119,7 @@ export default function PriceActionScreener() {
                 </div>
 
                 {/* Main Content */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden flex flex-col">
+                <div className="bg-white dark:bg-card border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden flex flex-col">
                     <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 flex flex-col sm:flex-row justify-between gap-4">
                         <div className="relative w-full max-w-sm">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -127,7 +127,7 @@ export default function PriceActionScreener() {
                                 placeholder="Search symbol..." 
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+                                className="pl-9 bg-white dark:bg-card border-slate-200 dark:border-slate-700"
                             />
                         </div>
                     </div>
@@ -205,7 +205,7 @@ export default function PriceActionScreener() {
                                                         {signals.length > 0 ? (
                                                             signals.map((sig, i) => (
                                                                 <Badge key={i} className={cn(
-                                                                    "text-[9px] px-1.5 py-0 border-none font-black uppercase tracking-tighter",
+                                                                    "text-[9px] px-1.5 py-0 border-none font-semibold uppercase tracking-tighter",
                                                                     sig.signal === 'BUY' ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"
                                                                 )}>
                                                                     {getSignalLabel(sig.source)}

@@ -151,7 +151,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent showCloseButton={false} className="w-[90vw] h-[90vh] max-w-none sm:max-w-none p-0 overflow-hidden border-none bg-transparent shadow-none font-sans">
-                <Tabs defaultValue="analysis" className="flex flex-col bg-white dark:bg-slate-900 h-full rounded-[2rem] shadow-2xl overflow-hidden">
+                <Tabs defaultValue="analysis" className="flex flex-col bg-white dark:bg-card h-full rounded-[2rem] shadow-sm overflow-hidden">
                     {/* Header Section */}
                     <div className="bg-slate-50/50 dark:bg-slate-800/50 p-5 px-6 border-b border-gray-100/80 dark:border-slate-700/80">
                         <DialogHeader>
@@ -203,8 +203,8 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                             </div>
 
                             {/* Integrated Tabs Navigation */}
-                            <div className="flex items-center justify-start mt-6 pt-4 border-t border-slate-100 dark:border-slate-700/50">
-                                <TabsList className="bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-xl border border-slate-200/50 dark:border-slate-700/50 h-10 shrink-0">
+                            <div className="flex items-center justify-start mt-6 pt-4 border-t border-border dark:border-slate-700/50">
+                                <TabsList className="bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-xl border border-border dark:border-slate-700/50 h-10 shrink-0">
                                     <TabsTrigger value="analysis" className="px-6 py-1.5 text-[11px] font-bold tracking-tight gap-2 h-full">
                                         <BrainCircuit className="h-3.5 w-3.5" />
                                         Deep Technical Analysis
@@ -227,9 +227,9 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                                 <TabsContent value="planner" forceMount className="h-full data-[state=inactive]:hidden space-y-4 overflow-y-auto no-scrollbar px-6 py-4 pb-12 focus-visible:ring-0">
                                     {/* Transaction History Section */}
                                 {transactions.length > 0 && (
-                                    <div className="animate-in fade-in slide-in-from-top-2 duration-500 mb-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+                                    <div className="animate-in fade-in slide-in-from-top-2 duration-500 mb-4 border-b border-border dark:border-slate-800 pb-4">
                                         <div
-                                            className="bg-slate-50/50 dark:bg-slate-800/50 px-6 py-4 border border-slate-100/50 dark:border-slate-800/50 rounded-3xl flex items-center justify-between cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                            className="bg-slate-50/50 dark:bg-slate-800/50 px-6 py-4 border border-border/50 dark:border-slate-800/50 rounded-xl flex items-center justify-between cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                                             onClick={() => setIsHistoryOpen(!isHistoryOpen)}
                                         >
                                             <div className="flex items-center gap-2">
@@ -245,7 +245,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                                         </div>
 
                                         {isHistoryOpen && (
-                                            <div className="overflow-x-auto overflow-y-auto max-h-[220px] scrollbar-thin scrollbar-thumb-slate-200 border-t border-slate-100 dark:border-slate-700">
+                                            <div className="overflow-x-auto overflow-y-auto max-h-[220px] scrollbar-thin scrollbar-thumb-slate-200 border-t border-border dark:border-slate-700">
                                                 <table className="w-full text-xs text-left">
                                                     <thead className="bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold tracking-tight sticky top-0 z-10 text-[10px]">
                                                         <tr>
@@ -384,7 +384,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                                                             value={tp}
                                                             onChange={(e) => { setTp(e.target.value); setSelectedStrategy('MANUAL'); }}
                                                             placeholder="Price"
-                                                            className="pl-9 text-sm font-bold h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl shadow-sm focus-visible:ring-blue-500/20"
+                                                            className="pl-9 text-sm font-bold h-10 bg-white dark:bg-card border-slate-200 dark:border-slate-700 rounded-xl shadow-sm focus-visible:ring-blue-500/20"
                                                         />
                                                     </div>
                                                 </div>
@@ -397,7 +397,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                                                             value={tp2}
                                                             onChange={(e) => { setTp2(e.target.value); setSelectedStrategy('MANUAL'); }}
                                                             placeholder="Scale Out"
-                                                            className="pl-9 text-sm font-bold h-10 bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-700 rounded-xl shadow-sm italic placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                                                            className="pl-9 text-sm font-bold h-10 bg-white dark:bg-card border-border dark:border-slate-700 rounded-xl shadow-sm italic placeholder:text-slate-300 dark:placeholder:text-slate-600"
                                                         />
                                                     </div>
                                                 </div>
@@ -410,7 +410,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                                                             value={tp3}
                                                             onChange={(e) => { setTp3(e.target.value); setSelectedStrategy('MANUAL'); }}
                                                             placeholder="Moonbag"
-                                                            className="pl-9 text-sm font-bold h-10 bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-700 rounded-xl shadow-sm italic placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                                                            className="pl-9 text-sm font-bold h-10 bg-white dark:bg-card border-border dark:border-slate-700 rounded-xl shadow-sm italic placeholder:text-slate-300 dark:placeholder:text-slate-600"
                                                         />
                                                     </div>
                                                 </div>
@@ -427,7 +427,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                                                             type="number"
                                                             value={sl}
                                                             onChange={(e) => { setSl(e.target.value); setSelectedStrategy('MANUAL'); }}
-                                                            className="pl-9 text-sm font-bold h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl shadow-sm focus-visible:ring-red-500/20"
+                                                            className="pl-9 text-sm font-bold h-10 bg-white dark:bg-card border-slate-200 dark:border-slate-700 rounded-xl shadow-sm focus-visible:ring-red-500/20"
                                                         />
                                                     </div>
                                                 </div>
@@ -447,7 +447,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                                             </div>
                                             <Textarea
                                                 placeholder="Document your rationale for this exit plan..."
-                                                className="flex-grow text-xs resize-none bg-slate-50/30 dark:bg-slate-900/30 border-slate-100 dark:border-slate-700 italic leading-relaxed rounded-2xl p-4 focus-visible:ring-slate-200 dark:focus-visible:ring-slate-700 h-[100px]"
+                                                className="flex-grow text-xs resize-none bg-slate-50/30 dark:bg-card/30 border-border dark:border-slate-700 italic leading-relaxed rounded-2xl p-4 focus-visible:ring-slate-200 dark:focus-visible:ring-slate-700 h-[100px]"
                                                 value={thesis}
                                                 onChange={(e) => setThesis(e.target.value)}
                                             />
@@ -470,7 +470,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                                 </TabsContent>
 
                                 <TabsContent value="analysis" forceMount className="flex-1 w-full h-full overflow-hidden focus-visible:ring-0 data-[state=inactive]:hidden">
-                                    <div className="h-full rounded-[2rem] overflow-hidden border border-slate-100 dark:border-slate-800 shadow-inner bg-slate-50/30 dark:bg-slate-900/30">
+                                    <div className="h-full rounded-[2rem] overflow-hidden border border-border dark:border-slate-800 shadow-inner bg-slate-50/30 dark:bg-card/30">
                                         <DailySignalStatus
                                             symbol={portfolioItem?.ticker}
                                             cmp={currentPrice}
@@ -491,7 +491,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                             )}
                         </div>
 
-                    <div className="bg-slate-50/80 dark:bg-slate-800/80 p-3 px-8 border-t border-slate-100 dark:border-slate-700 flex justify-end items-center gap-3">
+                    <div className="bg-slate-50/80 dark:bg-slate-800/80 p-3 px-8 border-t border-border dark:border-slate-700 flex justify-end items-center gap-3">
                         <Button
                             variant="ghost"
                             onClick={() => onOpenChange(false)}

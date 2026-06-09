@@ -39,10 +39,10 @@ export function TechnicalPulse({
     const mStyle = getMacdStyle();
 
     return (
-        <Card className="glass-card-light rounded-3xl overflow-hidden">
+        <Card className="glass-card-light rounded-xl overflow-hidden">
             <div className={cn("px-6 py-4 border-b border-white/10 dark:border-slate-800/50 flex items-center justify-between", mStyle.bg, mStyle.border)}>
                 <div className="flex items-center gap-3">
-                    <div className={cn("p-2 rounded-lg bg-white/80 dark:bg-slate-900/80 shadow-sm", mStyle.color)}>
+                    <div className={cn("p-2 rounded-lg bg-white/80 dark:bg-card/80 shadow-sm", mStyle.color)}>
                         <mStyle.icon size={18} />
                     </div>
                     <div className="space-y-0.5">
@@ -51,7 +51,7 @@ export function TechnicalPulse({
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="font-bold text-[9px] px-2 py-0.5 rounded-md border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 bg-white/50 dark:bg-slate-900/50">
+                    <Badge variant="outline" className="font-bold text-[9px] px-2 py-0.5 rounded-md border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 bg-white/50 dark:bg-card">
                         <Zap size={10} className="mr-1 inline text-amber-500" />
                         Real-time signal
                     </Badge>
@@ -78,7 +78,7 @@ export function TechnicalPulse({
                 </div>
 
                 {/* Moving Averages */}
-                <div className="space-y-4 border-l border-slate-100 dark:border-slate-800 pl-8">
+                <div className="space-y-4 border-l border-border dark:border-slate-800 pl-8">
                     <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">Trend alignment</span>
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">

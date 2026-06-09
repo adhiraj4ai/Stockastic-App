@@ -22,7 +22,14 @@ import pandas as pd
 import numpy as np
 from dateutil.relativedelta import relativedelta
 from backtesting import Backtest, Strategy as BTStrategy
+from backtesting.lib import crossover, resample_apply
+from backtesting.test import SMA
 import traceback
+import talib
+import os
+os.environ.setdefault('NUMBA_CACHE_DIR', '/tmp/numba_cache')
+
+from ..services.optimization_service import SafeTa
 
 from ..models import (
     DailyStockPrice, Strategy, Company, StrategyExperiment, 
@@ -88,6 +95,33 @@ class StrategyViewSet(viewsets.ModelViewSet):
             return Response({"status": "published", "id": exp.id, "scope": f"{exp.scope_type}:{exp.scope_value}"})
         except StrategyExperiment.DoesNotExist:
              return Response({"error": "Experiment not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=True, methods=['post'])
+    def unpublish(self, request, pk=None):
+        """
+        Unpublish an experiment (mark is_published=False).
+        Body: { experiment_id: <int> } or unpublishes all for this strategy if not specified.
+        """
+        strategy = self.get_object()
+
+        if strategy.user_id != self.request.user.id and not self.request.user.is_staff:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You do not have permission to unpublish this strategy.")
+
+        experiment_id = request.data.get('experiment_id')
+
+        if experiment_id:
+            try:
+                exp = StrategyExperiment.objects.get(id=experiment_id, strategy=strategy)
+                exp.is_published = False
+                exp.save()
+                return Response({"status": "unpublished", "id": exp.id})
+            except StrategyExperiment.DoesNotExist:
+                return Response({"error": "Experiment not found."}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            # Unpublish all experiments for this strategy
+            updated = StrategyExperiment.objects.filter(strategy=strategy, is_published=True).update(is_published=False)
+            return Response({"status": "unpublished", "count": updated})
 
     @action(detail=False, methods=['get'])
     def recommendations(self, request):
@@ -273,10 +307,9 @@ class StrategyViewSet(viewsets.ModelViewSet):
         and automatically publishes the best configurations.
         """
         from ..optimize_multi_period import (
-            calculate_3y_splits, fetch_period_data, 
+            calculate_3y_splits, fetch_period_data,
             run_single_objective_optimization, run_final_backtest,
-            calculate_avg_cv_stats, create_sl_tp_wrapped_strategy,
-            DEFAULT_SL_PCT, DEFAULT_TP_PCT
+            calculate_avg_cv_stats,
         )
         
         strategy = self.get_object()
@@ -319,7 +352,11 @@ class StrategyViewSet(viewsets.ModelViewSet):
         # 3. Run optimization for all objectives, evaluating across ALL folds
         results_by_objective = {}
         batch_id = uuid.uuid4()
-        
+
+        # Overall date range across all folds
+        overall_start = folds[0][1]   # earliest fold start  (str 'YYYY-MM-DD')
+        overall_end   = folds[-1][2]  # latest fold end
+
         try:
             for obj_type in ['win_rate', 'profit', 'balanced']:
                 # The engine now handles multiple data maps and averages performance
@@ -346,29 +383,32 @@ class StrategyViewSet(viewsets.ModelViewSet):
                     cross_fold_averages = calculate_avg_cv_stats(
                         data_maps, code_template, result['best_params']
                     )
-                    
-                    # Store results
-                    results_by_objective[obj_type] = {
-                        'best_params': result['best_params'],
-                        'cv_stats': cross_fold_averages,
-                        'latest_stats': full_stats,
-                        'plot_html': plot_html
-                    }
-                    
-                    # Save to StrategyExperiment for each objective
-                    StrategyExperiment.objects.create(
+
+                    # Save to StrategyExperiment and capture the ID
+                    exp = StrategyExperiment.objects.create(
                         strategy=strategy,
                         user=request.user,
                         run_type=StrategyExperiment.RunType.OPTIMIZATION,
                         scope_type=ScopeType.SYMBOL,
                         scope_value=symbol,
+                        start_date=overall_start,
+                        end_date=overall_end,
                         parameters=result['best_params'],
                         metrics={**cross_fold_averages, 'objective': obj_type},
                         plot_html=plot_html,
                         status=StrategyExperiment.Status.SUCCESS,
                         batch_id=batch_id,
-                        is_published=(obj_type == 'balanced') # Auto-publish balanced
+                        is_published=(obj_type == 'balanced'),
                     )
+
+                    # Use 'stats' key to match frontend expectations
+                    results_by_objective[obj_type] = {
+                        'best_params': result['best_params'],
+                        'cv_stats': cross_fold_averages,
+                        'stats': full_stats,
+                        'plot_html': plot_html,
+                        'experiment_id': exp.id,
+                    }
             
             return Response({
                 'batch_id': batch_id,
@@ -598,6 +638,110 @@ class StrategyViewSet(viewsets.ModelViewSet):
                 return Response(StrategyExperimentSerializer(experiments, many=True).data)
         return Response({'error': 'id or batch_id required'}, status=400)
 
+    @action(detail=True, methods=['post'])
+    def save_experiment(self, request, pk=None):
+        """
+        Save a backtest result as a named experiment for the strategy history.
+        Called from the frontend backtest page after a successful run.
+        """
+        strategy = self.get_object()
+        scope_type = request.data.get('scope_type', ScopeType.SYMBOL)
+        scope_value = request.data.get('scope_value', '')
+        start_date = request.data.get('start_date') or None
+        end_date = request.data.get('end_date') or None
+        parameters = request.data.get('parameters', {})
+        metrics = request.data.get('metrics', {})
+        plot_html = request.data.get('plot_html')
+
+        if not scope_value:
+            return Response({'error': 'scope_value is required'}, status=400)
+
+        # DateField is required - provide defaults if not supplied
+        today = date.today()
+        if not end_date:
+            end_date = today
+        if not start_date:
+            start_date = date(today.year - 5, today.month, today.day)
+
+        exp = StrategyExperiment.objects.create(
+            strategy=strategy,
+            user=request.user,
+            run_type=StrategyExperiment.RunType.BACKTEST,
+            scope_type=scope_type,
+            scope_value=scope_value,
+            start_date=start_date,
+            end_date=end_date,
+            parameters=parameters,
+            metrics=metrics,
+            plot_html=plot_html,
+            status=StrategyExperiment.Status.SUCCESS,
+        )
+
+        return Response({'id': exp.id, 'status': 'saved'}, status=201)
+
+    @action(detail=True, methods=['get'])
+    def get_published_config(self, request, pk=None):
+        """
+        Get the published (optimized) config/parameters for a given scope.
+        Query params: ?symbol=NABIL or ?sector=Banking or ?scope_type=ALL
+        """
+        strategy = self.get_object()
+        symbol = request.query_params.get('symbol')
+        sector = request.query_params.get('sector')
+        scope_type_param = request.query_params.get('scope_type')
+
+        qs = StrategyExperiment.objects.filter(strategy=strategy, is_published=True)
+
+        if symbol:
+            qs = qs.filter(scope_type=ScopeType.SYMBOL, scope_value=symbol)
+        elif sector:
+            qs = qs.filter(scope_type=ScopeType.SECTOR, scope_value=sector)
+        elif scope_type_param == 'ALL':
+            qs = qs.filter(scope_type=ScopeType.ALL)
+        else:
+            return Response({'error': 'Provide symbol, sector, or scope_type=ALL'}, status=400)
+
+        exp = qs.order_by('-created_at').first()
+        if not exp:
+            return Response({'error': 'No published config found for this scope'}, status=404)
+
+        return Response({
+            'parameters': exp.parameters,
+            'metrics': exp.metrics,
+            'experiment_id': exp.id,
+            'scope_type': exp.scope_type,
+            'scope_value': exp.scope_value,
+            'created_at': exp.created_at.isoformat() if exp.created_at else None,
+        })
+
+    @action(detail=True, methods=['post'])
+    def unpublish_optimized(self, request, pk=None):
+        """
+        Unpublish strategy parameters for a given scope.
+        Body: { scope_type: 'SECTOR'|'SYMBOL'|'ALL', scope_value: 'Banking' }
+        """
+        strategy = self.get_object()
+
+        # Ownership check
+        if strategy.user_id != self.request.user.id and not self.request.user.is_staff:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You do not have permission to unpublish this strategy.")
+
+        scope_type = request.data.get('scope_type')
+        scope_value = request.data.get('scope_value', '')
+
+        if not scope_type:
+            return Response({'error': 'scope_type is required'}, status=400)
+
+        updated = StrategyExperiment.objects.filter(
+            strategy=strategy,
+            scope_type=scope_type,
+            scope_value=scope_value,
+            is_published=True,
+        ).update(is_published=False)
+
+        return Response({'unpublished': updated, 'scope_type': scope_type, 'scope_value': scope_value})
+
     # --- Private Helpers ---
 
     def _get_signal(self, code, symbol, start_date, end_date, params=None):
@@ -610,7 +754,132 @@ class StrategyViewSet(viewsets.ModelViewSet):
         # Based on views.py logic (if I had it fully)
         return None # Placeholder, implement based on full _get_signal if needed
 
+    def _get_bt_local_scope(self, symbol, params=None):
+        """Build the execution scope for strategy code."""
+        import sys
+        ta_adapter = SafeTa(talib)
+        # Register our talib-based adapter as 'pandas_ta' so that
+        # strategy code with `import pandas_ta as ta` uses talib under the hood.
+        sys.modules['pandas_ta'] = ta_adapter  # type: ignore[assignment]
+
+        scope = {
+            # backtesting.py core
+            'Strategy': BTStrategy,
+            'Backtest': Backtest,
+            'crossover': crossover,
+            'resample_apply': resample_apply,
+            'SMA': SMA,
+            # TA — single `ta` variable covers both old pandas_ta and talib usage
+            'ta': ta_adapter,
+            'talib': talib,
+            # Data science
+            'np': np,
+            'pd': pd,
+            # Context
+            'symbol': symbol,
+        }
+        if params:
+            scope.update(params)
+        return scope
+
     def _run_single_backtest(self, code, symbol, start_date, end_date, params=None, cash=1000000):
+        if code == 'broker_accumulation_v1':
+            code = """
+from backtesting import Strategy
+import numpy as np
+import pandas as pd
+from stocks.models import DailyCumulativeAccumulation
+
+class BrokerAccumulationStrategy(Strategy):
+    def init(self):
+        ticker = symbol
+        qs = DailyCumulativeAccumulation.objects.filter(symbol=ticker).values('transaction_date', 'cumulative_net')
+        if not qs:
+            self.acc = self.I(lambda x: np.zeros(len(x)), self.data.Close)
+            return
+        df = pd.DataFrame(list(qs))
+        df['transaction_date'] = pd.to_datetime(df['transaction_date'])
+        daily = df.groupby('transaction_date')['cumulative_net'].sum()
+        self.acc = self.I(lambda x: daily.reindex(pd.Series(x).index).ffill().fillna(0).values, self.data.Close)
+
+    def next(self):
+        if len(self.acc) < 2: return
+        if self.acc[-1] > 0 and self.acc[-2] <= 0:
+            if not self.position: self.buy()
+        elif self.acc[-1] < 0 and self.acc[-2] >= 0:
+            if self.position: self.position.close()
+"""
+        elif code == 'ichimoku_accumulation_v1' or (isinstance(code, str) and code.startswith('ichimoku_accumulation_v1')):
+            code = """
+from backtesting import Strategy
+import pandas as pd
+import numpy as np
+import pandas_ta as ta
+from stocks.models import DailyCumulativeAccumulation
+
+class IchimokuAccumulation(Strategy):
+    def init(self):
+        close = pd.Series(self.data.Close)
+        high = pd.Series(self.data.High)
+        low = pd.Series(self.data.Low)
+        # Ichimoku
+        ichimoku_df = ta.ichimoku(high, low, close)[0]
+        self.span_a = self.I(lambda: ichimoku_df.iloc[:, 2].values)
+        self.span_b = self.I(lambda: ichimoku_df.iloc[:, 3].values)
+        
+        # Accumulation
+        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values('transaction_date', 'cumulative_net')
+        if not qs:
+            self.acc = self.I(lambda x: np.zeros(len(x)), self.data.Close)
+            return
+        df = pd.DataFrame(list(qs))
+        df['transaction_date'] = pd.to_datetime(df['transaction_date'])
+        daily = df.groupby('transaction_date')['cumulative_net'].sum()
+        self.acc = self.I(lambda x: daily.reindex(pd.Series(x).index).ffill().fillna(0).values, self.data.Close)
+
+    def next(self):
+        price = self.data.Close[-1]
+        above_cloud = price > self.span_a[-1] and price > self.span_b[-1]
+        accumulating = self.acc[-1] > 0
+        if above_cloud and accumulating:
+            if not self.position: self.buy()
+        elif price < self.span_a[-1] or price < self.span_b[-1]:
+            if self.position: self.position.close()
+"""
+        elif code == 'smart_accumulated_crossover_v1':
+            code = """
+from backtesting import Strategy
+from backtesting.lib import crossover
+import pandas as pd
+import numpy as np
+import pandas_ta as ta
+from stocks.models import DailyCumulativeAccumulation
+
+class SmartAccumulatedCrossover(Strategy):
+    fast = 10
+    slow = 50
+
+    def init(self):
+        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values('transaction_date', 'entity_id', 'cumulative_net')
+        if not qs:
+            self.fast_ma = self.I(lambda x: np.zeros(len(x)), self.data.Close)
+            self.slow_ma = self.I(lambda x: np.zeros(len(x)), self.data.Close)
+            return
+        df = pd.DataFrame(list(qs))
+        df['transaction_date'] = pd.to_datetime(df['transaction_date'])
+        pivot = df.pivot_table(index='transaction_date', columns='entity_id', values='cumulative_net', aggfunc='last').ffill().fillna(0)
+        top = pivot.iloc[-1].sort_values(ascending=False).head(5).index
+        flow = pivot[top].sum(axis=1)
+        line = self.I(lambda x: flow.reindex(pd.Series(x).index).ffill().fillna(0).values, self.data.Close)
+        self.fast_ma = self.I(lambda x: pd.Series(x).rolling(self.fast).mean().values, line)
+        self.slow_ma = self.I(lambda x: pd.Series(x).rolling(self.slow).mean().values, line)
+
+    def next(self):
+        if crossover(self.fast_ma, self.slow_ma):
+            if not self.position: self.buy()
+        elif crossover(self.slow_ma, self.fast_ma):
+            if self.position: self.position.close()
+"""
         try:
             # Data Fetching
             queryset = DailyStockPrice.objects.filter(ticker=symbol)
@@ -620,7 +889,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
             
             ticks = list(queryset.values('date', 'open', 'high', 'low', 'close', 'volume'))
             if not ticks or len(ticks) < 20:
-                return {}, "Insufficient data", {}
+                return {}, "Insufficient data (need at least 20 data points)", {}
 
             df = pd.DataFrame(ticks)
             df.rename(columns={'open':'Open','high':'High','low':'Low','close':'Close','volume':'Volume'}, inplace=True)
@@ -650,31 +919,21 @@ class StrategyViewSet(viewsets.ModelViewSet):
             
             plot_html = None
             try:
-                plot_html = bt.plot(open_browser=False, filename=None)
-            except: pass
+                import tempfile, os as _os
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.html') as tmp:
+                    tmp_path = tmp.name
+                bt.plot(filename=tmp_path, open_browser=False)
+                with open(tmp_path, 'r', encoding='utf-8') as f:
+                    plot_html = f.read()
+                _os.unlink(tmp_path)
+            except Exception:
+                pass
 
             metrics, _ = self._extract_bt_stats(stats)
             return self._clean_for_json(metrics), None, {'plot_html': plot_html}
         except Exception as e:
             error_trace = traceback.format_exc()
             return {}, error_trace, {}
-
-    def _get_bt_local_scope(self, symbol, params=None):
-        import pandas_ta as ta
-        from backtesting.lib import crossover, resample_apply
-        
-        scope = {
-            'Strategy': BTStrategy,
-            'crossover': crossover,
-            'resample_apply': resample_apply,
-            'ta': ta,
-            'np': np,
-            'pd': pd,
-            'symbol': symbol
-        }
-        if params:
-            scope.update(params)
-        return scope
 
     def _extract_bt_stats(self, stats):
         """Extract and sanitize backtest stats for JSON serialization."""

@@ -196,7 +196,7 @@ function OptimizeContent() {
                         {/* Metrics Column */}
                         <div className="lg:col-span-1 space-y-6">
                             <Card className="border-gray-200 shadow-sm overflow-hidden">
-                                <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b">
+                                <CardHeader className="bg-muted/40 border-b">
                                     <CardTitle>Projected Metrics</CardTitle>
                                     <CardDescription>Based on historical data (2Y)</CardDescription>
                                 </CardHeader>

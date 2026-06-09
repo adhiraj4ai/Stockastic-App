@@ -92,7 +92,7 @@ export default function AdminTickerPage({ params }: { params: Promise<{ ticker: 
                     </Button>
                     <div className="flex flex-col">
                         <div className="flex items-center gap-3">
-                            <span className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight select-none">
+                            <span className="text-2xl font-semibold text-slate-900 dark:text-slate-100 tracking-tight select-none">
                                 {ticker}
                             </span>
                             <Badge variant="secondary" className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-900/30 font-bold px-2 py-0.5 text-[10px] uppercase">

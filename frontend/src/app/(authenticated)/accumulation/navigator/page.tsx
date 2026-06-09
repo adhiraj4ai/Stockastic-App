@@ -172,16 +172,16 @@ export default function NavigatorPage() {
 
     return (
         <div className="space-y-6 lg:space-y-8 min-h-screen">
-            <div className="bg-white dark:bg-slate-950/40 backdrop-blur-xl rounded-2xl border border-slate-200 dark:border-white/5 shadow-2xl overflow-hidden">
-                <div className="p-4 md:p-6 border-b border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] flex flex-col xl:flex-row justify-between items-stretch xl:items-center gap-6 sticky top-0 z-20">
+            <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border shadow-sm overflow-hidden">
+                <div className="p-4 md:p-6 border-b border-slate-200 dark:border-border bg-slate-50/50 dark:bg-muted flex flex-col xl:flex-row justify-between items-stretch xl:items-center gap-6 sticky top-0 z-20">
                     <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
-                        <div className="bg-white dark:bg-slate-900/60 p-1 rounded-xl border border-slate-200 dark:border-white/5 shadow-inner flex overflow-x-auto no-scrollbar">
+                        <div className="bg-white dark:bg-card p-1 rounded-xl border border-slate-200 dark:border-border shadow-inner flex overflow-x-auto no-scrollbar">
                             {timeRanges.map((t) => (
                                 <button
                                     key={t.value}
                                     onClick={() => setRange(t.value)}
                                     className={cn(
-                                        "px-4 py-1.5 rounded-lg text-xs font-black transition-all duration-300 tracking-tighter whitespace-nowrap",
+                                        "px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 tracking-tighter whitespace-nowrap",
                                         range === t.value
                                             ? "bg-slate-900 dark:bg-indigo-600 text-white shadow-lg"
                                             : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
@@ -196,7 +196,7 @@ export default function NavigatorPage() {
                             <CompanySelect
                                 value={selectedGraphSymbol}
                                 onChange={(val) => setSelectedGraphSymbol(val)}
-                                className="h-10 w-full rounded-xl bg-white dark:bg-slate-900/60 border-slate-200 dark:border-white/5 shadow-none focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-indigo-500/20 transition-all font-bold text-sm"
+                                className="h-10 w-full rounded-xl bg-white dark:bg-card border-slate-200 dark:border-border shadow-none focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-indigo-500/20 transition-all font-bold text-sm"
                             />
                         </div>
                     </div>
@@ -217,7 +217,7 @@ export default function NavigatorPage() {
             ) : (
                 <div className="space-y-6">
                     <div className="bg-white dark:bg-slate-950/50 rounded-xl border dark:border-slate-800/50 shadow-sm h-[45vh] flex flex-col">
-                        <div className="p-4 border-b dark:border-slate-800 bg-white dark:bg-slate-900/80 rounded-t-xl">
+                        <div className="p-4 border-b dark:border-slate-800 bg-white dark:bg-card/80 rounded-t-xl">
                             <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100">Accumulation Trend</h3>
                         </div>
                         <div className="flex-1 p-4 min-h-0">

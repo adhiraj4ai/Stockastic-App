@@ -102,7 +102,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
 
     if (error || !data) {
         return (
-            <div className="glass-card-light dark:bg-slate-900 rounded-3xl p-12 text-center border border-slate-200 dark:border-slate-700">
+            <div className="glass-card-light dark:bg-card rounded-xl p-12 text-center border border-slate-200 dark:border-slate-700">
                 <Activity className="mx-auto mb-4 text-slate-300 dark:text-slate-600" size={48} />
                 <p className="text-slate-400 dark:text-slate-500 font-semibold">{error || 'No data available'}</p>
             </div>
@@ -165,7 +165,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
             {/* Growth & Fall Potential Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Growth Potential */}
-                <div className="glass-card-light dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:shadow-lg transition-all">
+                <div className="glass-card-light dark:bg-card rounded-2xl p-6 border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:shadow-lg transition-all">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-emerald-100/40 dark:from-emerald-900/10 to-transparent rounded-bl-full" />
                     <div className="relative">
                         <div className="flex items-center gap-2 mb-3">
@@ -174,7 +174,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                             </div>
                             <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider">Next resistance</span>
                         </div>
-                        <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+                        <div className="text-3xl font-semibold text-emerald-600 dark:text-emerald-400 tracking-tight">
                             {data.growth_potential !== null ? `+${data.growth_potential}%` : '—'}
                         </div>
                         <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
@@ -186,7 +186,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                 </div>
 
                 {/* Fall Risk */}
-                <div className="glass-card-light dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:shadow-lg transition-all">
+                <div className="glass-card-light dark:bg-card rounded-2xl p-6 border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:shadow-lg transition-all">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-rose-100/40 dark:from-rose-900/10 to-transparent rounded-bl-full" />
                     <div className="relative">
                         <div className="flex items-center gap-2 mb-3">
@@ -195,7 +195,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                             </div>
                             <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider">Next support</span>
                         </div>
-                        <div className="text-3xl font-black text-rose-600 dark:text-rose-400 tracking-tight">
+                        <div className="text-3xl font-semibold text-rose-600 dark:text-rose-400 tracking-tight">
                             {data.fall_risk !== null ? `-${data.fall_risk}%` : '—'}
                         </div>
                         <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
@@ -207,7 +207,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                 </div>
 
                 {/* Max Upside */}
-                <div className="glass-card-light dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:shadow-lg transition-all">
+                <div className="glass-card-light dark:bg-card rounded-2xl p-6 border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:shadow-lg transition-all">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-100/40 dark:from-blue-900/10 to-transparent rounded-bl-full" />
                     <div className="relative">
                         <div className="flex items-center gap-2 mb-3">
@@ -216,7 +216,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                             </div>
                             <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider">Max upside</span>
                         </div>
-                        <div className="text-3xl font-black text-blue-600 dark:text-blue-400 tracking-tight">
+                        <div className="text-3xl font-semibold text-blue-600 dark:text-blue-400 tracking-tight">
                             {data.max_upside !== null ? `+${data.max_upside}%` : '—'}
                         </div>
                         <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
@@ -226,7 +226,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                 </div>
 
                 {/* Max Downside */}
-                <div className="glass-card-light dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:shadow-lg transition-all">
+                <div className="glass-card-light dark:bg-card rounded-2xl p-6 border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:shadow-lg transition-all">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-amber-100/40 dark:from-amber-900/10 to-transparent rounded-bl-full" />
                     <div className="relative">
                         <div className="flex items-center gap-2 mb-3">
@@ -235,7 +235,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                             </div>
                             <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider">Max downside</span>
                         </div>
-                        <div className="text-3xl font-black text-amber-600 dark:text-amber-400 tracking-tight">
+                        <div className="text-3xl font-semibold text-amber-600 dark:text-amber-400 tracking-tight">
                             {data.max_downside !== null ? `-${data.max_downside}%` : '—'}
                         </div>
                         <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
@@ -249,7 +249,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Visual Fibonacci Ladder */}
                 <div className="lg:col-span-3">
-                    <div className="glass-card-light dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-700 h-full">
+                    <div className="glass-card-light dark:bg-card rounded-xl p-8 border border-slate-200 dark:border-slate-700 h-full">
                         <div className="flex items-center gap-3 mb-8">
                             <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800">
                                 <Layers size={18} />
@@ -328,7 +328,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                                                 sortedLevels[idx + 1].price <= data.current_price && (
                                                     <div className="flex items-center py-2 px-4 my-1">
                                                         <div className="w-[35%] text-right pr-6">
-                                                            <span className="font-mono font-black text-blue-600 dark:text-blue-400 text-sm animate-pulse">
+                                                            <span className="font-mono font-semibold text-blue-600 dark:text-blue-400 text-sm animate-pulse">
                                                                 Rs. {data.current_price.toLocaleString()}
                                                             </span>
                                                         </div>
@@ -337,7 +337,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                                                         </div>
                                                         <div className="w-[55%] pl-6">
                                                             <div className="flex items-center gap-2">
-                                                                <span className="font-black text-blue-600 dark:text-blue-400 text-sm">CMP</span>
+                                                                <span className="font-semibold text-blue-600 dark:text-blue-400 text-sm">CMP</span>
                                                                 <Badge className="text-[8px] px-1.5 py-0 bg-blue-500 text-white border-none font-bold animate-pulse">
                                                                     Current
                                                                 </Badge>
@@ -365,10 +365,10 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
 
                 {/* Historical Price Action */}
                 <div className="lg:col-span-9">
-                    <div className="glass-card-light dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-700 h-full">
+                    <div className="glass-card-light dark:bg-card rounded-xl p-8 border border-slate-200 dark:border-slate-700 h-full">
                         <div className="flex items-center justify-between mb-8">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-700">
+                                <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-border dark:border-slate-700">
                                     <Clock size={18} />
                                 </div>
                                 <div>
@@ -397,7 +397,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                         {historyView === 'table' ? (
                             <div className="overflow-hidden overflow-y-auto max-h-[500px] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative no-scrollbar">
                                 <table className="w-full text-sm text-left">
-                                    <thead className="bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
+                                    <thead className="bg-slate-50 dark:bg-card text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
                                         <tr>
                                             <th className="px-6 py-4 font-semibold text-[10px]">Date</th>
                                             <th className="px-6 py-4 font-semibold text-[10px]">Open</th>
@@ -407,7 +407,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                                             <th className="px-6 py-4 font-semibold text-[10px] text-right">Volume</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800 bg-white/30 dark:bg-slate-950/40">
+                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800 bg-white/30 dark:bg-card">
                                         {[...(history || [])]
                                             .filter(row => new Date(row.date) > new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))
                                             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -425,7 +425,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                                 </table>
                             </div>
                         ) : (
-                            <div className="h-[500px] w-full bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 relative">
+                            <div className="h-[500px] w-full bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl border border-border dark:border-slate-800 p-4 relative">
                                 {(() => {
                                     const historyData = [...(history || [])]
                                         .filter(row => new Date(row.date) > new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))
@@ -481,8 +481,8 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                                             <AreaChart data={historyData}>
                                                 <defs>
                                                     <linearGradient id="colorCloseHist" x1="0" y1="0" x2="0" y2="1">
-                                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                                                     </linearGradient>
                                                 </defs>
                                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? '#334155' : '#e2e8f0'} />
@@ -517,7 +517,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                                                 <Area
                                                     type="monotone"
                                                     dataKey="close"
-                                                    stroke="#3b82f6"
+                                                    stroke="#6366f1"
                                                     strokeWidth={2}
                                                     fillOpacity={1}
                                                     fill="url(#colorCloseHist)"
@@ -542,9 +542,9 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                                                 ))}
                                                 <ReferenceLine
                                                     y={current}
-                                                    stroke="#3b82f6"
+                                                    stroke="#6366f1"
                                                     strokeDasharray="3 3"
-                                                    label={(props) => <CustomFlag {...props} value={current} color="#3b82f6" label="CMP" />}
+                                                    label={(props) => <CustomFlag {...props} value={current} color="#6366f1" label="CMP" />}
                                                 />
                                             </AreaChart>
                                         </ResponsiveContainer>

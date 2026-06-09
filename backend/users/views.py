@@ -3,7 +3,8 @@ from rest_framework.decorators import api_view, permission_classes, throttle_cla
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
-from .serializers import UserSerializer, AdminUserSerializer
+from .serializers import UserSerializer, AdminUserSerializer, TierPermissionSerializer
+from .models import UserSession, LoginActivity, PasswordHistory, TierPermission
 from django.contrib.auth.models import User
 from django.db import models
 from django.contrib.auth import authenticate, login
@@ -28,7 +29,6 @@ import re
 import threading
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import UserSession, LoginActivity, PasswordHistory
 from django.contrib.auth.hashers import check_password as auth_check_password
 
 logger = logging.getLogger(__name__)
@@ -89,6 +89,45 @@ def _parse_user_agent(ua_string):
         device = 'Desktop'
     
     return browser, os_name, device
+
+def _verify_admin_password(request):
+    """
+    Verify the provided admin_password against the current authenticated user's password.
+    Raises a PermissionDenied exception if verification fails or password is missing.
+    """
+    from rest_framework.exceptions import PermissionDenied, ValidationError
+    admin_password = request.data.get('admin_password')
+    
+    if not admin_password:
+        raise ValidationError({"admin_password": "Password confirmation is required for this sensitive operation."})
+        
+    if not request.user.check_password(admin_password):
+        raise PermissionDenied("Authentication failed. Incorrect administrative password.")
+    
+    return True
+
+# --- Custom Permissions ---
+
+class IsPlatformAdmin(permissions.BasePermission):
+    """
+    Custom permission to allow access to users with ADMIN role in profile,
+    staff status, or superuser status.
+    """
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        
+        # Admin bypass based on staff/superuser status
+        if user.is_staff or user.is_superuser:
+            return True
+            
+        # Admin bypass based on profile role
+        if hasattr(user, 'profile') and user.profile.role == 'ADMIN':
+            return True
+            
+        return False
+    
 
 def _create_session(user, request, refresh_token):
     """Record a new session after successful login."""
@@ -386,15 +425,39 @@ def login_view(request):
     )
     
     logger.info(f"Successful login for user: {user.username} from {session.ip_address}")
-    return Response({
-        'refresh': str(refresh),
-        'access': str(refresh.access_token),
+
+    response = Response({
         'session_id': session.id,
         'user': {
             'username': user.username,
             'email': user.email
         }
     })
+
+    # Set JWT cookies manually for this custom login view
+    from django.conf import settings
+    
+    cookie_config = settings.REST_AUTH
+    access_token = str(refresh.access_token)
+    refresh_token = str(refresh)
+
+    response.set_cookie(
+        key=cookie_config['JWT_AUTH_COOKIE'],
+        value=access_token,
+        httponly=cookie_config['JWT_AUTH_HTTPONLY'],
+        secure=cookie_config['JWT_AUTH_SECURE'],
+        samesite=cookie_config['JWT_AUTH_SAMESITE'],
+    )
+    
+    response.set_cookie(
+        key=cookie_config['JWT_AUTH_REFRESH_COOKIE'],
+        value=refresh_token,
+        httponly=cookie_config['JWT_AUTH_HTTPONLY'],
+        secure=cookie_config['JWT_AUTH_SECURE'],
+        samesite=cookie_config['JWT_AUTH_SAMESITE'],
+    )
+
+    return response
 
 
 # --- Session Management Views ---
@@ -574,7 +637,120 @@ class AdminUserViewSet(viewsets.ModelViewSet):
     """
     queryset = User.objects.all().select_related('profile').order_by('-date_joined')
     serializer_class = AdminUserSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsPlatformAdmin]
+
+    def _is_protected(self, user):
+        """Check if account is protected from deactivation/deletion."""
+        is_admin_role = hasattr(user, 'profile') and user.profile.role == 'ADMIN'
+        return user.is_superuser or user.is_staff or is_admin_role
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        
+        # REQUIRES PASSWORD
+        _verify_admin_password(request)
+
+        # 1. Protect Admins
+        if self._is_protected(instance):
+            return Response(
+                {"error": "Security Restriction: Administrative accounts cannot be deleted. Downgrade the role first if removal is necessary."},
+                status=403
+            )
+
+        # 2. Account MUST be deactivated first
+        if instance.is_active:
+            return Response(
+                {"error": "Security Restriction: Account must be deactivated before it can be deleted."},
+                status=400
+            )
+
+        # 3. Must wait 90 days since deactivation
+        deactivated_at = getattr(instance, 'profile', None).deactivated_at if hasattr(instance, 'profile') else None
+        if not deactivated_at:
+            return Response(
+                {"error": "Security Restriction: Account deactivation timestamp missing. Please re-activate and deactivate to start the 90-day timer."},
+                status=400
+            )
+        
+        from django.utils import timezone
+        days_deactivated = (timezone.now() - deactivated_at).days
+        if days_deactivated < 90:
+            return Response(
+                {"error": f"Security Restriction: Account must be deactivated for at least 90 days before permanent deletion. Current hold time: {days_deactivated} days."},
+                status=400
+            )
+
+        return super().destroy(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        is_active = request.data.get('is_active')
+        
+        # Prevent deactivation of protected accounts
+        if is_active is False or str(is_active).lower() == 'false':
+            if self._is_protected(instance):
+                return Response(
+                    {"error": "Security Restriction: Administrative/Staff accounts cannot be deactivated via this interface."},
+                    status=403
+                )
+            
+            # Record deactivation time if it's a new deactivation
+            if instance.is_active:
+                from django.utils import timezone
+                instance.profile.deactivated_at = timezone.now()
+                instance.profile.save()
+        
+        # Reset deactivation time if reactivated
+        elif (is_active is True or str(is_active).lower() == 'true') and not instance.is_active:
+            instance.profile.deactivated_at = None
+            instance.profile.save()
+        
+        # Update instance status explicitly to ensure persistence
+        if is_active is not None:
+            # SENSITIVE: Role, Tier, or Deactivation change
+            sensitive_fields = ['role', 'subscription_tier', 'is_active']
+            if any(field in request.data for field in sensitive_fields):
+                _verify_admin_password(request)
+
+            instance.is_active = (str(is_active).lower() == 'true') if isinstance(is_active, str) else bool(is_active)
+            instance.save()
+            
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        is_active = request.data.get('is_active')
+
+        # Prevent deactivation of protected accounts
+        if is_active is False or str(is_active).lower() == 'false':
+            if self._is_protected(instance):
+                return Response(
+                    {"error": "Security Restriction: Administrative/Staff accounts cannot be deactivated via this interface."},
+                    status=403
+                )
+
+            # Record deactivation time if it's a new deactivation
+            if instance.is_active:
+                from django.utils import timezone
+                instance.profile.deactivated_at = timezone.now()
+                instance.profile.save()
+
+        # Reset deactivation time if reactivated
+        elif (is_active is True or str(is_active).lower() == 'true') and not instance.is_active:
+            instance.profile.deactivated_at = None
+            instance.profile.save()
+        
+        # Update instance status explicitly to ensure persistence
+        if is_active is not None:
+             # SENSITIVE: Role, Tier, or Deactivation change
+            sensitive_fields = ['role', 'subscription_tier', 'is_active']
+            if any(field in request.data for field in sensitive_fields):
+                _verify_admin_password(request)
+
+            instance.is_active = (str(is_active).lower() == 'true') if isinstance(is_active, str) else bool(is_active)
+            instance.save()
+        
+        return super().partial_update(request, *args, **kwargs)
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -591,3 +767,32 @@ class AdminUserViewSet(viewsets.ModelViewSet):
                 models.Q(profile__last_name__icontains=search)
             )
         return queryset
+
+
+class TierPermissionViewSet(viewsets.ModelViewSet):
+    """ViewSet to manage tier-based permissions."""
+    queryset = TierPermission.objects.all()
+    serializer_class = TierPermissionSerializer
+    permission_classes = [IsPlatformAdmin]
+
+    def get_queryset(self):
+        tier = self.request.query_params.get('tier')
+        if tier:
+            return self.queryset.filter(tier=tier)
+        return self.queryset.order_by('tier', 'module_key')
+
+    def create(self, request, *args, **kwargs):
+        _verify_admin_password(request)
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        _verify_admin_password(request)
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        _verify_admin_password(request)
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        _verify_admin_password(request)
+        return super().destroy(request, *args, **kwargs)

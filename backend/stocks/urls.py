@@ -32,6 +32,7 @@ urlpatterns = [
     # Market Data
     path('search/', market.search_stocks, name='search_stocks'),
     path('summary/', market.stock_summary, name='stock_summary'),
+    path('health-check/', market.health_check, name='health_check'),
     path('batch-indicators/', market.batch_indicators, name='batch_indicators'),
     path('activity/', market.analyze_activity, name='market_activity'),
     path('history/<str:ticker>/', market.stock_history, name='stock_history'),

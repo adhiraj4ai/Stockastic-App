@@ -8,20 +8,29 @@ const ML_SERVICE_URL = process.env.NEXT_PUBLIC_ML_SERVICE_URL || 'http://localho
 const api = axios.create({
     baseURL: API_BASE_URL,
     withCredentials: true,
+    xsrfCookieName: 'csrftoken',
+    xsrfHeaderName: 'X-CSRFToken',
+    withXSRFToken: true,
 });
 
 // ML service API client
 export const mlApi = axios.create({
     baseURL: ML_SERVICE_URL,
     withCredentials: true,
+    xsrfCookieName: 'csrftoken',
+    xsrfHeaderName: 'X-CSRFToken',
+    withXSRFToken: true,
 });
 
 // Helper to clear session
 const logoutAndRedirect = () => {
+    // Note: LocalStorage items are removed just in case of stale cache,
+    // but the primary tokens are now in HttpOnly cookies which JS cannot clear manually.
+    // The backend /api/auth/logout/ should be used to clear them properly.
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
 
-    // Clear cookies
+    // Attempt to clear non-httpOnly cookies if any were set by mistake
     document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 
@@ -29,16 +38,11 @@ const logoutAndRedirect = () => {
     window.location.href = '/login';
 };
 
-// Request interceptor to add JWT token to both clients
+// Request interceptor: The browser now handles the access_token cookie automatically 
+// via withCredentials: true. No manual Authorization header injection is needed.
 const addAuthInterceptor = (client: typeof api) => {
     client.interceptors.request.use(
-        (config) => {
-            const token = Cookies.get('access_token') || localStorage.getItem('access_token');
-            if (token) {
-                config.headers.Authorization = `Bearer ${token}`;
-            }
-            return config;
-        },
+        (config) => config,
         (error) => Promise.reject(error)
     );
 };
@@ -53,55 +57,45 @@ api.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
         const status = error.response ? error.response.status : null;
-        const detail = error.response?.data?.detail;
 
-        // If 401 and not already retrying
+        // If 401 (Unauthorized) and not already retrying
         if (status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
 
-            const refreshToken = Cookies.get('refresh_token') || localStorage.getItem('refresh_token');
+            try {
+                console.log('Attempting to refresh access token via HttpOnly cookies...');
+                // Note: dj-rest-auth refresh endpoint automatically reads/writes 
+                // httpOnly cookies if configured.
+                await axios.post(`${API_BASE_URL}/api/auth/token/refresh/`, {}, { withCredentials: true });
 
-            if (refreshToken) {
-                try {
-                    console.log('Attempting to refresh access token...');
-                    const response = await axios.post(`${API_BASE_URL}/api/token/refresh/`, {
-                        refresh: refreshToken
-                    });
-
-                    const { access, refresh: newRefresh } = response.data;
-
-                    // Cookie expiry matches login behaviour (1 day) so the 5-second
-                    // cookie-presence check in DashboardLayout doesn't evict the user
-                    // between activity bursts. The JWT itself is still only valid for
-                    // 15 min server-side; expiry is enforced there.
-                    Cookies.set('access_token', access, { expires: 1, sameSite: 'lax' });
-                    localStorage.setItem('access_token', access);
-
-                    // Persist rotated refresh token (ROTATE_REFRESH_TOKENS=True means the
-                    // old one is blacklisted after use — must store the new one or the
-                    // next refresh attempt will fail and force a logout).
-                    if (newRefresh) {
-                        Cookies.set('refresh_token', newRefresh, { expires: 7, sameSite: 'lax' });
-                        localStorage.setItem('refresh_token', newRefresh);
-                    }
-
-                    // Update header and retry
-                    originalRequest.headers.Authorization = `Bearer ${access}`;
-                    return api(originalRequest);
-                } catch (refreshError) {
-                    console.error('Refresh token expired or invalid. Logging out...');
-                    logoutAndRedirect();
-                }
-            } else {
+                // If successful, retry the original request which will now include the new cookie
+                return api(originalRequest);
+            } catch (refreshError) {
+                console.error('Session expired or refresh failed. Logging out...');
                 logoutAndRedirect();
             }
         }
 
         // Handle network/connection errors (backend down)
         if (error.code === 'ERR_NETWORK' || !error.response) {
-            console.error('Terminal backend is unreachable. System might be offline.');
+            console.error('Terminal backend connection error. Verifying system status...');
+            
             if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('terminal-offline'));
+                try {
+                    // Perform a secondary lightweight health check to verify if backend is truly unreachable
+                    // or if this was just a transient/blocked request
+                    const healthUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000') + '/api/stocks/health-check/';
+                    const healthCheck = await axios.get(healthUrl, { timeout: 2000 });
+                    
+                    if (healthCheck.data.status === 'online') {
+                        console.log('Backend is reachable. Treating previous error as transient.');
+                    } else {
+                        window.dispatchEvent(new CustomEvent('terminal-offline'));
+                    }
+                } catch (healthErr) {
+                    console.error('Health check failed. Signaling system offline.');
+                    window.dispatchEvent(new CustomEvent('terminal-offline'));
+                }
             }
         }
 
@@ -133,21 +127,14 @@ export const chatApi = {
     addMessage: (sessionId: string, role: string, content: string) =>
         api.post<ChatMessage[]>(`/api/chat/sessions/${sessionId}/add_message/`, { role, content }),
     streamMessage: async (sessionId: string, role: string, content: string, onChunk: (chunk: string) => void) => {
-        // Check cookies first, then localStorage (same as axios interceptor)
-        const token = Cookies.get('access_token') || localStorage.getItem('access_token');
         const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
-        if (!token) {
-            console.error('No authentication token found');
-            throw new Error('Authentication required');
-        }
 
         const response = await fetch(`${baseURL}/api/chat/sessions/${sessionId}/stream_message/`, {
             method: 'POST',
-            credentials: 'include', // Important for CORS with cookies
+            credentials: 'include', 
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'X-CSRFToken': Cookies.get('csrftoken') || '',
             },
             body: JSON.stringify({ role, content })
         });

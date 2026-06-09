@@ -146,7 +146,7 @@ function BulkTradesContent() {
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 items-center bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div className="flex flex-wrap gap-2 items-center bg-white dark:bg-card p-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
                         <Filter className="w-4 h-4 text-slate-400 ml-2" />
                         <Input
                             placeholder="Symbol"
@@ -185,8 +185,8 @@ function BulkTradesContent() {
                 </div>
 
                 {/* Transaction List */}
-                <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm border-t-4 border-t-amber-500">
-                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 dark:border-slate-800/50">
+                <Card className="bg-white dark:bg-card border-slate-200 dark:border-slate-800 shadow-sm border-t-4 border-t-amber-500">
+                    <CardHeader className="flex flex-row items-center justify-between border-b border-border dark:border-slate-800/50">
                         <CardTitle className="text-lg flex items-center gap-2">
                             <AlertTriangle className="w-4 h-4 text-amber-500" />
                             Confirmed Bulk Trades
@@ -275,7 +275,7 @@ function BulkTradesContent() {
                                 </div>
 
                                 {/* Pagination Controls */}
-                                <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                                <div className="p-4 border-t border-border dark:border-slate-800 flex items-center justify-between">
                                     <div className="text-xs text-slate-500 dark:text-slate-400">
                                         Page {page} of {totalPages}
                                     </div>

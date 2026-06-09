@@ -110,7 +110,7 @@ export function PortfolioGoals({ selectedAccount }: { selectedAccount: string })
                         Strategic Allocation Goals
                     </CardTitle>
                     <div className="flex items-center gap-4">
-                        <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
+                        <div className="flex bg-slate-100 dark:bg-card p-1 rounded-lg">
                             <button 
                                 onClick={() => setView('SECTOR')}
                                 className={`px-3 py-1.5 text-xs font-bold tracking-tight rounded-md transition-all ${view === 'SECTOR' ? 'bg-white dark:bg-slate-800 text-blue-600 shadow-sm' : 'text-slate-500'}`}
@@ -163,7 +163,7 @@ export function PortfolioGoals({ selectedAccount }: { selectedAccount: string })
 
                                     <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                                         {viewTargets.map(t => (
-                                            <div key={t.id} className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800">
+                                            <div key={t.id} className="flex items-center justify-between p-2 bg-slate-50 dark:bg-card rounded-lg border border-border dark:border-slate-800">
                                                 <div className="flex flex-col">
                                                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300 tracking-tight">{t.category_name}</span>
                                                     <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 tracking-tight">Target: {t.target_percentage}%</span>
@@ -190,14 +190,14 @@ export function PortfolioGoals({ selectedAccount }: { selectedAccount: string })
             </CardHeader>
             <CardContent className="p-0">
                 {currentMetrics.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-50/50 dark:bg-slate-900/10">
+                    <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-50/50 dark:bg-card/10">
                          <PieChart className="h-10 w-10 text-slate-200 dark:text-slate-800 mb-3" />
                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 tracking-tight">No holdings found for {view.toLowerCase()}s.</p>
                          <p className="text-[10px] text-slate-400 mt-1 tracking-tight font-bold">Add some transactions to see metrics</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-slate-100 dark:divide-slate-800">
-                        <div className="lg:col-span-2 p-6 flex flex-col items-center justify-center bg-slate-50/30 dark:bg-slate-900/10">
+                        <div className="lg:col-span-2 p-6 flex flex-col items-center justify-center bg-slate-50/30 dark:bg-card/10">
                             <div className="w-full h-64">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <RePieChart>
@@ -235,7 +235,7 @@ export function PortfolioGoals({ selectedAccount }: { selectedAccount: string })
                                 </div>
                                 
                                 {currentMetrics.map((m, idx) => (
-                                    <div key={m.category} className="group flex flex-col gap-2 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-900/50 transition-all">
+                                    <div key={m.category} className="group flex flex-col gap-2 p-3 bg-white dark:bg-card rounded-xl border border-border dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-900/50 transition-all">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
