@@ -74,15 +74,17 @@ class StrategyViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='render_spec')
     def render_spec(self, request):
-        """Validate a composition spec and render the equivalent code (live builder preview)."""
-        from ..services.strategy_framework import spec_to_code, SpecError
+        """Validate a composition spec and render the equivalent code + plain-English
+        summary (live builder preview)."""
+        from ..services.strategy_framework import spec_to_code, spec_to_sentence, SpecError
         spec = request.data.get('spec')
         try:
-            return Response({'valid': True, 'code': spec_to_code(spec), 'error': None})
+            return Response({'valid': True, 'code': spec_to_code(spec),
+                             'sentence': spec_to_sentence(spec), 'error': None})
         except SpecError as e:
-            return Response({'valid': False, 'code': '', 'error': str(e)})
+            return Response({'valid': False, 'code': '', 'sentence': '', 'error': str(e)})
         except Exception as e:  # noqa: BLE001
-            return Response({'valid': False, 'code': '', 'error': f'{type(e).__name__}: {e}'})
+            return Response({'valid': False, 'code': '', 'sentence': '', 'error': f'{type(e).__name__}: {e}'})
 
     @action(detail=True, methods=['post'])
     def publish(self, request, pk=None):

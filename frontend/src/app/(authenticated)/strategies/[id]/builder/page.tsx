@@ -10,7 +10,7 @@ import { PageLoader } from '@/components/ui/StockLoader';
 import { MetricsDisplay } from '../../components/MetricsDisplay';
 import { WorkspaceShell } from '../../components/WorkspaceShell';
 import { toast } from 'sonner';
-import { Play, Save, Code, Check, AlertTriangle, X, Plus, Search, Zap, Filter, Shield, LogOut, Target, ExternalLink, ChevronDown } from 'lucide-react';
+import { Play, Save, Check, AlertTriangle, X, Plus, Search, Zap, Filter, Shield, LogOut, Target, ExternalLink, ChevronDown, ChevronUp, Copy, Wand2 } from 'lucide-react';
 
 type Param = { name: string; label?: string; type: 'int' | 'float' | 'choice'; default: any; min?: number; max?: number; step?: number; options?: any[] };
 type Comp = { type: string; label: string; category: string; desc: string; needs_symbol: boolean; params: Param[] };
@@ -46,8 +46,9 @@ function ParamPill({ param, value, onChange }: { param: Param; value: any; onCha
     );
 }
 
-function ActionBlock({ kind, comps, node, onChange, onRemove, first }: {
-    kind: Kind; comps: Comp[]; node: Node; onChange: (n: Node) => void; onRemove?: () => void; first?: boolean;
+function ActionBlock({ kind, comps, node, onChange, onRemove, onDuplicate, onMoveUp, onMoveDown, first }: {
+    kind: Kind; comps: Comp[]; node: Node; onChange: (n: Node) => void; onRemove?: () => void;
+    onDuplicate?: () => void; onMoveUp?: () => void; onMoveDown?: () => void; first?: boolean;
 }) {
     const meta = KIND[kind];
     const Icon = meta.icon;
@@ -80,7 +81,12 @@ function ActionBlock({ kind, comps, node, onChange, onRemove, first }: {
                             </div>
                         )}
                     </div>
-                    {onRemove && <button onClick={onRemove} className="text-gray-300 hover:text-red-500 mt-1"><X size={16} /></button>}
+                    <div className="flex items-center gap-0.5 mt-0.5">
+                        {onMoveUp && <button onClick={onMoveUp} title="Move up" className="text-gray-300 hover:text-gray-600 p-0.5"><ChevronUp size={15} /></button>}
+                        {onMoveDown && <button onClick={onMoveDown} title="Move down" className="text-gray-300 hover:text-gray-600 p-0.5"><ChevronDown size={15} /></button>}
+                        {onDuplicate && <button onClick={onDuplicate} title="Duplicate" className="text-gray-300 hover:text-blue-500 p-0.5"><Copy size={14} /></button>}
+                        {onRemove && <button onClick={onRemove} title="Remove" className="text-gray-300 hover:text-red-500 p-0.5"><X size={16} /></button>}
+                    </div>
                 </div>
             </div>
         </div>
@@ -92,7 +98,8 @@ export default function StrategyBuilderPage() {
     const [registry, setRegistry] = useState<Registry | null>(null);
     const [strategy, setStrategy] = useState<any>(null);
     const [spec, setSpec] = useState<Spec>({ version: 1, alpha: null, regime: [], stop: null, exit: [], rr: null });
-    const [preview, setPreview] = useState<{ valid: boolean; code: string; error: string | null }>({ valid: false, code: '', error: null });
+    const [preview, setPreview] = useState<{ valid: boolean; code: string; sentence?: string; error: string | null }>({ valid: false, code: '', error: null });
+    const [name, setName] = useState('');
     const [symbol, setSymbol] = useState('NABIL');
     const [running, setRunning] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -103,7 +110,7 @@ export default function StrategyBuilderPage() {
         Promise.all([api.get('/api/stocks/strategies/components/'), api.get(`/api/stocks/strategies/${id}/`)])
             .then(([reg, strat]) => {
                 const registry: Registry = reg.data;
-                setRegistry(registry); setStrategy(strat.data);
+                setRegistry(registry); setStrategy(strat.data); setName(strat.data.name || '');
                 // Fill default params for nodes that omit them (auto-converted specs are minimal).
                 const all: Comp[] = [...registry.alpha, ...registry.regime, ...registry.stop, ...registry.exit];
                 const norm = (n: any): Node | null => {
@@ -132,10 +139,32 @@ export default function StrategyBuilderPage() {
                     : { ...s, exit: [...s.exit, node] });
     }, []);
 
+    // Reorder / duplicate helpers for the regime & exit lists.
+    const reorder = (key: 'regime' | 'exit', i: number, dir: -1 | 1) => setSpec((s) => {
+        const arr = [...(s[key] as Node[])]; const j = i + dir;
+        if (j < 0 || j >= arr.length) return s;
+        [arr[i], arr[j]] = [arr[j], arr[i]]; return { ...s, [key]: arr };
+    });
+    const duplicate = (key: 'regime' | 'exit', i: number) => setSpec((s) => {
+        const arr = [...(s[key] as Node[])]; arr.splice(i + 1, 0, { type: arr[i].type, params: { ...arr[i].params } });
+        return { ...s, [key]: arr };
+    });
+
+    const TEMPLATES = useMemo(() => {
+        const bn = (kind: Kind, type: string): Node => ({ type, params: defaultParams((registry?.[kind] || []).find((c) => c.type === type)) });
+        if (!registry) return [];
+        return [
+            { name: 'Trend Rider', build: () => ({ alpha: bn('alpha', 'SupertrendFlip'), regime: [bn('regime', 'AboveEMA')], stop: bn('stop', 'AtrTrail'), exit: [], rr: null }) },
+            { name: 'Dip Buyer', build: () => ({ alpha: bn('alpha', 'RsiOversold'), regime: [bn('regime', 'AboveEMA')], stop: bn('stop', 'FixedAtr'), exit: [], rr: null }) },
+            { name: 'Breakout', build: () => ({ alpha: bn('alpha', 'DonchianBreakout'), regime: [bn('regime', 'AboveEMA')], stop: bn('stop', 'AtrTrail'), exit: [bn('exit', 'TrendBreak')], rr: null }) },
+            { name: 'Smart Money', build: () => ({ alpha: bn('alpha', 'AccumulationAboveMA'), regime: [bn('regime', 'AboveEMA')], stop: bn('stop', 'AtrTrail'), exit: [], rr: null }) },
+        ];
+    }, [registry]);
+
     const save = async () => {
         if (!preview.valid) return toast.error('Fix the strategy before saving');
         setSaving(true);
-        try { await api.patch(`/api/stocks/strategies/${id}/`, { spec }); toast.success('Strategy saved'); }
+        try { await api.patch(`/api/stocks/strategies/${id}/`, { name, spec }); toast.success('Strategy saved'); }
         catch (e: any) { toast.error(e?.response?.data?.spec || 'Save failed'); } finally { setSaving(false); }
     };
 
@@ -157,10 +186,20 @@ export default function StrategyBuilderPage() {
 
     return (
         <WorkspaceShell strategyId={id}>
-            <div className="flex items-center justify-between mb-3">
-                <div className="text-base font-semibold text-gray-500">Visual Builder</div>
-                <Button onClick={save} disabled={saving || !preview.valid} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"><Save size={16} /> {saving ? 'Saving…' : 'Save'}</Button>
+            <div className="flex items-center justify-between mb-1 gap-3">
+                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Strategy name"
+                    className="text-xl font-bold bg-transparent outline-none border-b border-transparent focus:border-blue-300 flex-1 min-w-0 py-0.5" />
+                <Button onClick={save} disabled={saving || !preview.valid} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 shrink-0"><Save size={16} /> {saving ? 'Saving…' : 'Save'}</Button>
             </div>
+            {spec.alpha && preview.sentence
+                ? <div className="text-sm text-gray-500 mb-3 flex items-start gap-1.5"><Wand2 size={14} className="mt-0.5 text-blue-500 shrink-0" /> {preview.sentence}</div>
+                : <div className="flex items-center gap-2 flex-wrap mb-3">
+                    <span className="text-xs text-gray-400 inline-flex items-center gap-1"><Wand2 size={13} /> Start from a template:</span>
+                    {TEMPLATES.map((t) => (
+                        <button key={t.name} onClick={() => setSpec((s) => ({ version: 1, name: s.name, ...t.build() }))}
+                            className="px-2.5 py-1 text-xs rounded-full border border-gray-200 dark:border-slate-700 hover:border-blue-300 hover:text-blue-600">{t.name}</button>
+                    ))}
+                </div>}
 
             <div className="grid grid-cols-1 xl:grid-cols-[300px_1fr] gap-4 items-start">
                 {/* Palette */}
@@ -208,7 +247,10 @@ export default function StrategyBuilderPage() {
                     {spec.regime.map((n, i) => (
                         <ActionBlock key={`r${i}`} kind="regime" comps={registry.regime} node={n}
                             onChange={(nn) => setSpec((s) => { const r = [...s.regime]; r[i] = nn; return { ...s, regime: r }; })}
-                            onRemove={() => setSpec((s) => ({ ...s, regime: s.regime.filter((_, j) => j !== i) }))} />
+                            onRemove={() => setSpec((s) => ({ ...s, regime: s.regime.filter((_, j) => j !== i) }))}
+                            onDuplicate={() => duplicate('regime', i)}
+                            onMoveUp={i > 0 ? () => reorder('regime', i, -1) : undefined}
+                            onMoveDown={i < spec.regime.length - 1 ? () => reorder('regime', i, 1) : undefined} />
                     ))}
                     {spec.stop && (
                         <ActionBlock kind="stop" comps={registry.stop} node={spec.stop}
@@ -217,7 +259,10 @@ export default function StrategyBuilderPage() {
                     {spec.exit.map((n, i) => (
                         <ActionBlock key={`e${i}`} kind="exit" comps={registry.exit} node={n}
                             onChange={(nn) => setSpec((s) => { const e = [...s.exit]; e[i] = nn; return { ...s, exit: e }; })}
-                            onRemove={() => setSpec((s) => ({ ...s, exit: s.exit.filter((_, j) => j !== i) }))} />
+                            onRemove={() => setSpec((s) => ({ ...s, exit: s.exit.filter((_, j) => j !== i) }))}
+                            onDuplicate={() => duplicate('exit', i)}
+                            onMoveUp={i > 0 ? () => reorder('exit', i, -1) : undefined}
+                            onMoveDown={i < spec.exit.length - 1 ? () => reorder('exit', i, 1) : undefined} />
                     ))}
 
                     {spec.alpha && (
