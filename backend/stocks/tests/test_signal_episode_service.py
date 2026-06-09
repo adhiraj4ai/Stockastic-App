@@ -131,3 +131,17 @@ def test_days_held_counts_trading_days_only():
             high=Decimal("1"), low=Decimal("1"), close=Decimal("1"), volume=Decimal("1"),
         )
     assert ep.days_held() == 3
+
+
+from stocks.serializers.signal import SignalEpisodeSerializer
+
+
+@pytest.mark.django_db
+def test_serializer_exposes_compat_keys():
+    ep = _open_episode()
+    data = SignalEpisodeSerializer(ep).data
+    for key in ("symbol", "source", "signal", "status", "generated_date", "ltp",
+                "target_price", "stop_loss_price", "days_held", "start_date"):
+        assert key in data
+    assert data["signal"] == "BUY"           # direction surfaced as `signal`
+    assert data["generated_date"] == "2026-01-01"   # start_date surfaced as `generated_date`
