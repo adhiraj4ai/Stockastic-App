@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import type { AxiosError } from 'axios';
 import api from '@/lib/api';
 
 interface ProposalLine {
@@ -32,7 +33,7 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 const ProposalCard: React.FC<ProposalCardProps> = ({ draft_id, kind, title, status: initialStatus, preview }) => {
-    const [status, setStatus] = useState(initialStatus || 'PENDING');
+    const [status, setStatus] = useState(initialStatus ?? 'PENDING');
     const [busy, setBusy] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -44,14 +45,23 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ draft_id, kind, title, stat
             const res = await api.post(`/api/stocks/portfolio-action-drafts/${draft_id}/${verb}/`);
             setStatus(res.data.status);
             if (res.data.result?.message) setMessage(res.data.result.message);
-        } catch (e: any) {
-            setError(e?.response?.data?.error || 'Action failed.');
+        } catch (e) {
+            const err = e as AxiosError<{ error?: string }>;
+            setError(err?.response?.data?.error || 'Action failed.');
         } finally {
             setBusy(false);
         }
     };
 
     const terminal = status === 'CONFIRMED' || status === 'CANCELLED' || status === 'EXPIRED';
+
+    const lines = preview.lines || [];
+    const totalFees = lines.reduce(
+        (sum, l) => (l.fees ? sum + l.fees.commission + l.fees.sebon_fee + l.fees.dp_charge : sum),
+        0,
+    );
+    const totalCgt = lines.reduce((sum, l) => sum + (l.fees?.cgt ?? 0), 0);
+    const hasFees = lines.some((l) => l.fees);
 
     return (
         <div className="rounded-lg border border-border bg-card p-4 text-sm">
@@ -63,7 +73,7 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ draft_id, kind, title, stat
             </div>
 
             <div className="space-y-1">
-                {preview.lines?.map((l, i) => (
+                {lines.map((l, i) => (
                     <div key={i} className="flex justify-between text-xs">
                         <span>
                             {l.label ?? `${l.action ?? ''} ${l.quantity ?? ''} ${l.ticker ?? ''}`.trim()}
@@ -74,19 +84,17 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ draft_id, kind, title, stat
                 ))}
             </div>
 
-            {preview.lines?.[0]?.fees && (
+            {hasFees && (
                 <div className="mt-2 text-[11px] text-muted-foreground">
-                    Fees Rs {Math.round(
-                        preview.lines[0].fees.commission + preview.lines[0].fees.sebon_fee + preview.lines[0].fees.dp_charge
-                    ).toLocaleString()} · CGT Rs {Math.round(preview.lines[0].fees.cgt).toLocaleString()}
+                    Fees Rs {Math.round(totalFees).toLocaleString()} · CGT Rs {Math.round(totalCgt).toLocaleString()}
                 </div>
             )}
 
             {preview.warnings?.length ? (
-                <div className="mt-2 text-[11px] text-amber-600">⚠️ {preview.warnings.join('; ')}</div>
+                <div className="mt-2 text-[11px] text-amber-600 dark:text-amber-400">⚠️ {preview.warnings.join('; ')}</div>
             ) : null}
 
-            {error && <div className="mt-2 text-[11px] text-red-600">{error}</div>}
+            {error && <div className="mt-2 text-[11px] text-red-600 dark:text-rose-400">{error}</div>}
 
             <div className="mt-3 flex gap-2">
                 {!terminal ? (
@@ -107,7 +115,7 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ draft_id, kind, title, stat
                         </button>
                     </>
                 ) : (
-                    <span className={`text-xs font-medium ${status === 'CONFIRMED' ? 'text-green-600' : 'text-muted-foreground'}`}>
+                    <span className={`text-xs font-medium ${status === 'CONFIRMED' ? 'text-green-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
                         {status === 'CONFIRMED' ? `✓ ${message || 'Confirmed'}` : status === 'CANCELLED' ? 'Cancelled' : 'Expired'}
                     </span>
                 )}
