@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -24,11 +24,12 @@ import Cookies from 'js-cookie';
 import { SettingsDialog } from './SettingsDialog';
 
 const navItems = [
-    { name: 'Home', href: '/', icon: Home, permission: 'home' },
-    { name: 'Ticker Intelligence', href: '/ticker', icon: Search, permission: 'home' },
+    { name: 'Home', href: '/', icon: Home, permission: 'home', color: 'text-blue-500' },
+    { name: 'Ticker Intelligence', href: '/ticker', icon: Search, permission: 'home', color: 'text-indigo-500' },
     {
         name: 'Market',
         icon: Building2,
+        color: 'text-emerald-500',
         subItems: [
             { name: 'Terminal', href: '/market', icon: LayoutDashboard, permission: 'market_overview' },
             { name: 'Movers & Shakers', href: '/market/movers', icon: Zap, permission: 'market_movers' },
@@ -41,6 +42,7 @@ const navItems = [
     {
         name: 'Floorsheet',
         icon: FileText,
+        color: 'text-amber-500',
         subItems: [
             { name: 'Floorsheet', href: '/floorsheet', icon: FileText, permission: 'market_floorsheet' },
             { name: 'Bulk Transactions', href: '/market/bulk', icon: Layers, permission: 'market_bulk' },
@@ -54,6 +56,7 @@ const navItems = [
     {
         name: 'Finfolio',
         icon: Wallet,
+        color: 'text-violet-500',
         subItems: [
             { name: 'My Portfolio', href: '/portfolio', icon: Briefcase, permission: 'portfolio_main' },
             { name: 'Performance', href: '/portfolio/performance', icon: TrendingUp, permission: 'portfolio_performance' },
@@ -67,6 +70,7 @@ const navItems = [
     {
         name: 'Accumulation',
         icon: Activity,
+        color: 'text-rose-500',
         subItems: [
             { name: 'Command Center', href: '/accumulation/dashboard', icon: Layers, permission: 'accumulation_dash' },
             { name: 'Smart Money', href: '/accumulation/smart-money', icon: Brain, permission: 'smart_money' },
@@ -81,6 +85,7 @@ const navItems = [
     {
         name: 'Strategic Hub',
         icon: Layers,
+        color: 'text-cyan-500',
         subItems: [
             { name: 'Intel Hub', href: '/signals', icon: Radar, permission: 'intel_hub' },
             { name: 'Strategies', href: '/strategies', icon: Lightbulb, permission: 'strategies' },
@@ -90,6 +95,7 @@ const navItems = [
     {
         name: 'Stockastic AI',
         icon: Brain,
+        color: 'text-fuchsia-500',
         subItems: [
             { name: 'Chat', href: '/chat', icon: MessageSquare, permission: 'chat' },
             { name: 'Notebooks', href: '/notebook', icon: NotebookPen, permission: 'chat' },
@@ -98,6 +104,7 @@ const navItems = [
     {
         name: 'Administration',
         icon: Shield,
+        color: 'text-slate-500 dark:text-slate-400',
         subItems: [
             { name: 'User Management', href: '/admin/users', icon: Users, permission: 'admin_user_mgmt' },
             { name: 'Financials', href: '/admin/financials', icon: FileText, permission: 'admin_financials' },
@@ -326,33 +333,41 @@ function DashboardContent({
         setIsSidebarCollapsed(isChatPinned || isFullWidthPage);
     }, [isChatPinned, isFullWidthPage]);
 
-    // Auto-expand menus that contain the active sub-item
-    useEffect(() => {
-        navItems.forEach(item => {
-            if ('subItems' in item && item.subItems) {
-                const hasActiveSubItem = item.subItems.some(subItem => {
-                    const subPath = subItem.href.split('?')[0];
-                    const subTab = new URLSearchParams(subItem.href.split('?')[1]).get('tab');
-                    const currentTab = searchParams.get('tab');
-                    return pathname === subPath && (subTab ? currentTab === subTab : true);
-                });
-
-                if (hasActiveSubItem && !expandedMenus.includes(item.name)) {
-                    setExpandedMenus(prev => [...prev, item.name]);
-                }
-            }
+    // Resolve the single active nav link by GLOBAL longest-prefix match. This avoids the
+    // "Home is active everywhere" bug (every path startsWith '/') and the cross-group
+    // double-match (e.g. /market/bulk under Floorsheet also matching /market under Market):
+    // the most specific (longest) matching href wins across the entire nav.
+    const activeHref = useMemo(() => {
+        const leaves: string[] = [];
+        navItems.forEach((item: any) => {
+            if (item.subItems) item.subItems.forEach((s: any) => leaves.push(s.href));
+            else if (item.href) leaves.push(item.href);
         });
+        const currentTab = searchParams.get('tab');
+        const score = (href: string) => {
+            const [p, q] = href.split('?');
+            const tab = q ? new URLSearchParams(q).get('tab') : null;
+            const pathOk = p === pathname || (p !== '/' && pathname.startsWith(p + '/'));
+            if (!pathOk) return -1;
+            if (tab && currentTab !== tab) return -1;
+            return p.length + (tab ? 1000 : 0); // tab-specific links outrank a plain path match
+        };
+        let bestHref: string | null = null, best = 0;
+        leaves.forEach((h) => { const s = score(h); if (s > best) { best = s; bestHref = h; } });
+        return bestHref;
     }, [pathname, searchParams]);
 
-    const isMenuHoverActive = (item: any) => {
-        if (!('subItems' in item && item.subItems)) return false;
-        return item.subItems.some((subItem: any) => {
-            const subPath = subItem.href.split('?')[0];
-            const subTab = new URLSearchParams(subItem.href.split('?')[1]).get('tab');
-            const currentTab = searchParams.get('tab');
-            return pathname === subPath && (subTab ? currentTab === subTab : true);
+    const isParentActive = (item: any) =>
+        'subItems' in item && Array.isArray(item.subItems) && item.subItems.some((s: any) => s.href === activeHref);
+
+    // Auto-expand the menu that contains the active sub-item.
+    useEffect(() => {
+        navItems.forEach((item: any) => {
+            if (item.subItems && item.subItems.some((s: any) => s.href === activeHref)) {
+                setExpandedMenus(prev => prev.includes(item.name) ? prev : [...prev, item.name]);
+            }
         });
-    };
+    }, [activeHref]);
 
     const toggleSidebar = () => {
         setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -378,7 +393,7 @@ function DashboardContent({
     };
 
     const closeMenu = (item: any) => {
-        const isCurrentlyActive = isMenuHoverActive(item);
+        const isCurrentlyActive = isParentActive(item);
         if (!isSidebarCollapsed && expandedMenus.includes(item.name) && !isCurrentlyActive) {
             setExpandedMenus(prev => prev.filter(i => i !== item.name));
         }
@@ -439,18 +454,19 @@ function DashboardContent({
                     {filteredNavItems.map((item) => {
                         const hasSubItems = 'subItems' in item && item.subItems && item.subItems.length > 0;
                         const isExpanded = expandedMenus.includes(item.name);
-                        const isActive = 'href' in item && item.href ? (pathname.startsWith(item.href) && item.href !== '/market' || pathname === item.href) : false;
+                        const isActive = 'href' in item && item.href ? item.href === activeHref : false;
+                        const parentActive = hasSubItems && isParentActive(item);
 
                         return (
                             <div key={item.name}>
                                 {hasSubItems ? (
                                     <button
                                         onClick={() => toggleMenu(item.name)}
-                                        className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md transition-colors text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}
+                                        className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md transition-colors ${isSidebarCollapsed ? 'justify-center' : 'justify-between'} ${parentActive ? 'bg-sidebar-accent text-sidebar-foreground font-medium' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'}`}
                                         title={isSidebarCollapsed ? item.name : ''}
                                     >
                                         <div className="flex items-center gap-2.5">
-                                            <item.icon size={16} className="text-muted-foreground" />
+                                            <item.icon size={16} className={item.color || "text-muted-foreground"} />
                                             {!isSidebarCollapsed && <span className="text-[13px] font-medium">{item.name}</span>}
                                         </div>
                                         {!isSidebarCollapsed && (
@@ -466,7 +482,7 @@ function DashboardContent({
                                             } ${isSidebarCollapsed ? 'justify-center' : ''}`}
                                         title={isSidebarCollapsed ? item.name : ''}
                                     >
-                                        <item.icon size={16} className={isActive ? 'text-foreground' : 'text-muted-foreground'} />
+                                        <item.icon size={16} className={isActive ? 'text-foreground' : (item.color || 'text-muted-foreground')} />
                                         {!isSidebarCollapsed && <span className="text-[13px]">{item.name}</span>}
                                     </Link>
                                 )}
@@ -475,10 +491,7 @@ function DashboardContent({
                                 {hasSubItems && isExpanded && !isSidebarCollapsed && (
                                     <div className="ml-[22px] mt-0.5 mb-1 space-y-0.5 border-l border-sidebar-border pl-2">
                                         {(item as any).subItems.map((subItem: any) => {
-                                            const subPath = subItem.href.split('?')[0];
-                                            const subTab = new URLSearchParams(subItem.href.split('?')[1]).get('tab');
-                                            const currentTab = searchParams.get('tab');
-                                            const isActiveLink = pathname === subPath && (subTab ? currentTab === subTab : true);
+                                            const isActiveLink = subItem.href === activeHref;
 
                                             return (
                                                 <Link
