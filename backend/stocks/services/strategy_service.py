@@ -7,7 +7,7 @@ from backtesting import Backtest, Strategy
 from backtesting.lib import crossover
 from backtesting.test import SMA
 import talib
-from ..models.strategy import Strategy as StrategyModel, StrategySignal, StrategyExperiment, ScopeType
+from ..models.strategy import Strategy as StrategyModel, StrategyExperiment, ScopeType
 from ..models.portfolio import PortfolioItem
 from ..models.market import DailyStockPrice, Company
 from .optimization_service import SafeTa
@@ -124,9 +124,14 @@ class StrategyService:
                     'experiment_id': exp.id if exp else None
                 }
 
-                StrategySignal.objects.update_or_create(
-                    strategy=s, symbol=symbol, date=last_date,
-                    defaults={'signal': final_signal, 'last_close': last_close, 'metadata': meta}
+                from .signal_episode.service import ingest_reading
+                from .signal_episode.adapters import strategy_reading
+                from ..models.signal import USER_STRATEGY
+
+                ingest_reading(
+                    source=USER_STRATEGY, strategy=s, symbol=symbol,
+                    reading=strategy_reading(d=last_date, signal=final_signal,
+                                             last_close=last_close, metadata=meta),
                 )
                 saved_count += 1
                 
