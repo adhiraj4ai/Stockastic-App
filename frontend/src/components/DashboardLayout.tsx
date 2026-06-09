@@ -60,6 +60,7 @@ const navItems = [
             { name: 'Income', href: '/portfolio/income', icon: DollarSign, permission: 'portfolio_income' },
             { name: 'Transactions', href: '/portfolio/transactions', icon: History, permission: 'portfolio_transactions' },
             { name: 'Watchlist', href: '/portfolio/watchlist', icon: Eye, permission: 'portfolio_watchlist' },
+            { name: 'Trade Plans', href: '/portfolio/plans', icon: Layers, permission: 'portfolio_trade_plans' },
             { name: 'Paper Trading', href: '/paper-trading', icon: LayoutDashboard, permission: 'paper_trading' },
         ]
     },
