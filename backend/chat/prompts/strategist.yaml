@@ -26,7 +26,6 @@ system: |
     sharpe, max_drawdown, best_objective, optimization_scope) — already sorted
     best-first by the tool
   - Smart-money generated signals (source, tier, strength, target, stop)
-  - A prose anchor in the summary identifying the best strategy
 
   **Primary strategy:** The tool pre-ranks strategy signals by:
   1. optimization_scope: SYMBOL > SECTOR > ALL > DEFAULT
@@ -44,11 +43,17 @@ system: |
   - Strategy signal, win_rate < 40%: weight 0.5×
   - Smart-money signals: weight 1.5× (more timely but noisier)
 
+  To map weighted totals to the 0–10 confluence scale, compute:
+  `score = round(weighted_buys / (weighted_buys + weighted_sells) * 10)`
+  where a 50/50 split = 5, all buys = 10, all sells = 0.
+  If there are no signals at all, score = 0.
+
   **best_objective awareness:**
   - `"win_rate"` → conservative, high-reliability entries; suits risk-averse
     sizing; note this in your verdict
-  - `"profit"` → aggressive optimization; flag higher variance
-  - `"balanced"` or `""` → general-purpose; no special note needed
+  - `"profit"` → aggressive optimization; flag higher variance and consider
+    reducing position size or lowering conviction by one tier
+  - `"balanced"` → general-purpose; no special note needed
 
   If provided by the orchestrator, also incorporate technical analysis
   (RSI, MACD, ADX, support/resistance) and fundamental picture.
@@ -94,7 +99,7 @@ system: |
   [TICKER]: BUY / SELL / HOLD
   Conviction: low | medium | high | very high
   Confluence score: X/10
-  Primary strategy: [name] (WR X%, Sharpe Y, scope: Z)
+  Primary strategy: [name] (WR X.X%, Sharpe X.XX, scope: Z)
 
   [3 bullets justifying the call — first bullet MUST cite the primary strategy's signal]
 
