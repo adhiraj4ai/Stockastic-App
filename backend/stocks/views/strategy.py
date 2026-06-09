@@ -33,13 +33,14 @@ from ..services.optimization_service import SafeTa
 
 from ..models import (
     DailyStockPrice, Strategy, Company, StrategyExperiment,
-    ScopeType, StrategySymbolConfig
+    ScopeType, StrategySymbolConfig, SignalEpisode
 )
 from ..serializers import (
     StrategySerializer, StrategyExperimentSerializer,
     StrategyExperimentDetailSerializer,
     StrategySymbolConfigSerializer
 )
+from ..serializers.signal import SignalEpisodeSerializer
 
 class ExperimentLogger:
     def __init__(self):
@@ -1021,11 +1022,8 @@ class StrategySignalPagination(PageNumberPagination):
     max_page_size = 1000
 
 class StrategySignalViewSet(viewsets.ReadOnlyModelViewSet):
-    from ..models import SignalEpisode
-    from ..serializers.signal import SignalEpisodeSerializer as _SESerializer
-
     queryset = SignalEpisode.objects.all().order_by('-start_date')
-    serializer_class = _SESerializer
+    serializer_class = SignalEpisodeSerializer
     pagination_class = StrategySignalPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['symbol', 'source', 'status', 'direction', 'strategy']
@@ -1033,15 +1031,11 @@ class StrategySignalViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=['get'])
     def tracking(self, request):
-        from ..models import SignalEpisode
-        from ..serializers.signal import SignalEpisodeSerializer
-
         active_qs = SignalEpisode.objects.filter(status='ACTIVE').order_by('start_date')
         closed_qs = SignalEpisode.objects.exclude(status='ACTIVE').order_by('-end_date')
 
         def pos(ep, closed):
             data = SignalEpisodeSerializer(ep).data
-            data['days_held'] = ep.days_held()
             data['return_pct'] = float(ep.pnl_percent) if ep.pnl_percent is not None else 0.0
             return data
 
@@ -1072,11 +1066,8 @@ class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
     ViewSet to serve stored signal episodes (Smart Money, Whale Watch engines).
     Episodes are created via the ingest_reading / evaluate_active_episodes pipeline.
     """
-    from ..models import SignalEpisode
-    from ..serializers.signal import SignalEpisodeSerializer as _SESerializer
-
     queryset = SignalEpisode.objects.all().order_by('-start_date')
-    serializer_class = _SESerializer
+    serializer_class = SignalEpisodeSerializer
     pagination_class = GeneratedSignalPagination
     permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
@@ -1086,8 +1077,6 @@ class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=['get'])
     def track_record(self, request):
         """Return episodes paginated. Optionally filter by status (comma-separated)."""
-        from ..models import SignalEpisode
-
         status_param = request.query_params.get('status', '')
         if status_param:
             statuses = [s.strip().upper() for s in status_param.split(',')]
@@ -1104,9 +1093,6 @@ class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=['get'])
     def latest(self, request):
         """Return only the most recent date's episodes, optionally filtered by source."""
-        from ..models import SignalEpisode
-        from ..serializers.signal import SignalEpisodeSerializer
-
         source = request.query_params.get('source')
 
         qs = SignalEpisode.objects.all()
@@ -1124,7 +1110,6 @@ class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
     def performance(self, request):
         """Return historical performance aggregated by source."""
         from django.db.models import Count, Q, Avg
-        from ..models import SignalEpisode
 
         stats = SignalEpisode.objects.values('source').annotate(
             total=Count('id'),
@@ -1162,7 +1147,6 @@ class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
         monthly performance, PnL distribution, buy/sell splits, top symbols.
         """
         from django.db.models import Count, Q, Avg, Sum, Max, Min, F
-        from ..models import SignalEpisode
         from collections import defaultdict
 
         all_episodes = list(
@@ -1172,7 +1156,7 @@ class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
                 'id', 'source', 'symbol', 'direction', 'status',
                 'pnl_percent', 'start_date', 'end_date',
                 'entry_price', 'target_price', 'stop_loss_price',
-                'entry_strength', 'signal_tier', 'rationale', 'metadata'
+                'entry_strength', 'signal_tier'
             ).order_by('source', 'start_date')
         )
 
@@ -1378,7 +1362,6 @@ class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=['get'])
     def summary(self, request):
         """Aggregated counts by source and direction for the latest signal date."""
-        from ..models import SignalEpisode
         from django.db.models import Count
 
         latest_date = SignalEpisode.objects.order_by('-last_signal_date').values_list('last_signal_date', flat=True).first()
@@ -1394,7 +1377,8 @@ class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
             src = row['source']
             if src not in sources:
                 sources[src] = {'BUY': 0, 'SELL': 0, 'total': 0}
-            sources[src][row['direction']] = row['count']
+            if row['direction'] in ('BUY', 'SELL'):
+                sources[src][row['direction']] = row['count']
             sources[src]['total'] += row['count']
 
         total = qs.count()
