@@ -210,3 +210,19 @@ class TradePlanViewSetTests(TestCase):
         unauth_client = APIClient()
         res = unauth_client.get('/api/stocks/trade-plans/')
         assert res.status_code == 401
+
+    def test_other_user_cannot_access_plans(self):
+        other_user = User.objects.create_user('otheruser', password='pass')
+        other_client = APIClient()
+        other_client.force_authenticate(user=other_user)
+        # list: other user sees 0 plans
+        res = other_client.get('/api/stocks/trade-plans/')
+        assert res.status_code == 200
+        assert len(res.data) == 0
+        # execute_leg on another user's plan returns 404
+        res = other_client.post(
+            f'/api/stocks/trade-plans/{self.plan.id}/execute_leg/',
+            {'leg_id': self.leg1.id, 'rate': '1200.00', 'quantity': 50},
+            format='json',
+        )
+        assert res.status_code == 404

@@ -2,7 +2,8 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
+from django.db import transaction
 from django.db.models import Q, Max, Sum
 from django.utils import timezone
 from datetime import timedelta, date
@@ -1034,7 +1035,7 @@ class PortfolioPerformanceView(viewsets.ViewSet):
 
 def _check_and_close_plan(plan):
     """Auto-close the plan if all legs are EXECUTED or SKIPPED."""
-    if plan.legs.filter(status=TradePlanLeg.LegStatus.PENDING).count() == 0:
+    if plan.status == TradePlan.PlanStatus.OPEN and plan.legs.filter(status=TradePlanLeg.LegStatus.PENDING).count() == 0:
         plan.status = TradePlan.PlanStatus.CLOSED
         plan.save()
 
@@ -1071,7 +1072,7 @@ class TradePlanViewSet(viewsets.ModelViewSet):
         rate = request.data.get('rate')
         quantity = request.data.get('quantity')
 
-        if not all([leg_id, rate, quantity]):
+        if leg_id is None or rate is None or quantity is None:
             return Response(
                 {'error': 'leg_id, rate, and quantity are required.'},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -1089,36 +1090,35 @@ class TradePlanViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            metrics = PortfolioService.process_transaction(
-                user=request.user,
-                ticker=plan.ticker,
-                txn_type=TransactionType.BUY,
-                quantity=int(quantity),
-                rate=Decimal(str(rate)),
-                account=plan.account,
-            )
-        except ValueError as e:
+            with transaction.atomic():
+                metrics = PortfolioService.process_transaction(
+                    user=request.user,
+                    ticker=plan.ticker,
+                    txn_type=TransactionType.BUY,
+                    quantity=int(quantity),
+                    rate=Decimal(str(rate)),
+                    account=plan.account,
+                )
+                txn = PortfolioTransaction.objects.create(
+                    user=request.user,
+                    account=plan.account,
+                    ticker=plan.ticker,
+                    transaction_type=TransactionType.BUY,
+                    quantity=int(quantity),
+                    rate=Decimal(str(rate)),
+                    transaction_date=timezone.now(),
+                    amount=metrics['amount'],
+                    commission=metrics['commission'],
+                    sebon_fee=metrics['sebon_fee'],
+                    dp_charge=metrics['dp_charge'],
+                    cgt=metrics['cgt'],
+                    receivable_amount=metrics['receivable_amount'],
+                )
+                leg.transaction = txn
+                leg.status = TradePlanLeg.LegStatus.EXECUTED
+                leg.save()
+        except (ValueError, InvalidOperation) as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-        txn = PortfolioTransaction.objects.create(
-            user=request.user,
-            account=plan.account,
-            ticker=plan.ticker,
-            transaction_type=TransactionType.BUY,
-            quantity=int(quantity),
-            rate=Decimal(str(rate)),
-            transaction_date=timezone.now(),
-            amount=metrics['amount'],
-            commission=metrics['commission'],
-            sebon_fee=metrics['sebon_fee'],
-            dp_charge=metrics['dp_charge'],
-            cgt=metrics['cgt'],
-            receivable_amount=metrics['receivable_amount'],
-        )
-
-        leg.transaction = txn
-        leg.status = TradePlanLeg.LegStatus.EXECUTED
-        leg.save()
 
         _check_and_close_plan(plan)
 
