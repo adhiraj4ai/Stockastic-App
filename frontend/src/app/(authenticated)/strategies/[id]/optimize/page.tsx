@@ -4,8 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { useRouter, useParams } from 'next/navigation';
-import DashboardLayout from '@/components/DashboardLayout';
-import { StrategyWorkspaceNav } from '../../components/StrategyWorkspaceNav';
+import { WorkspaceShell } from '../../components/WorkspaceShell';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Zap, TrendingUp, Activity, CheckCircle, Play, ChevronDown, AlertTriangle, ExternalLink, Code } from 'lucide-react';
@@ -178,26 +177,11 @@ export default function OptimizePage() {
         router.push(`/strategies/${strategyId}/backtest?params=${encodedParams}${symbol ? `&symbol=${symbol}` : ''}`);
     };
 
-    if (loading) return <DashboardLayout><div>Loading...</div></DashboardLayout>;
+    if (loading) return <WorkspaceShell strategyId={strategyId}><div>Loading...</div></WorkspaceShell>;
 
     return (
-        <DashboardLayout
-            showBack={true}
-            title={
-                <div className="flex items-center gap-3">
-                    <span className="truncate">Optimize - {strategy?.name || 'Strategy'}</span>
-                    <Link
-                        href={`/strategies/${strategyId}/editor`}
-                        className="p-1 w-7 h-7 flex items-center justify-center rounded-md border border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-card text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-200 dark:hover:border-blue-900/50 transition-all shadow-sm group"
-                        title="Edit Strategy code"
-                    >
-                        <Code size={14} className="group-hover:scale-110 transition-transform" />
-                    </Link>
-                </div>
-            }
-        >
+        <WorkspaceShell strategyId={strategyId}>
             <div className="space-y-6">
-                <StrategyWorkspaceNav strategyId={strategyId} />
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Configuration Panel */}
                     <div className="lg:col-span-4 xl:col-span-3">
@@ -530,6 +514,6 @@ export default function OptimizePage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
+        </WorkspaceShell>
     );
 }

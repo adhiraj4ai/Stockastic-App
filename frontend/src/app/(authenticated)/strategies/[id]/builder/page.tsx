@@ -4,13 +4,12 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { useParams } from 'next/navigation';
-import DashboardLayout from '@/components/DashboardLayout';
+import { WorkspaceShell } from '../../components/WorkspaceShell';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CompanySelect } from '@/components/CompanySelect';
 import { PageLoader } from '@/components/ui/StockLoader';
 import { MetricsDisplay } from '../../components/MetricsDisplay';
-import { StrategyWorkspaceNav } from '../../components/StrategyWorkspaceNav';
 import { toast } from 'sonner';
 import { Play, Save, Code, Blocks, AlertTriangle, Check, ExternalLink, X, Plus, Target } from 'lucide-react';
 
@@ -181,12 +180,11 @@ export default function StrategyBuilderPage() {
         finally { setRunning(false); }
     };
 
-    if (!registry || !strategy) return <DashboardLayout><PageLoader text="Loading builder…" /></DashboardLayout>;
+    if (!registry || !strategy) return <WorkspaceShell strategyId={id}><PageLoader text="Loading builder…" /></WorkspaceShell>;
 
     return (
-        <DashboardLayout>
-            <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-                <StrategyWorkspaceNav strategyId={id} active="build" />
+        <WorkspaceShell strategyId={id}>
+            <div className="space-y-6">
                 <div className="flex items-center justify-between flex-wrap gap-3">
                     <div className="flex items-center gap-2 text-lg font-bold"><Blocks className="text-blue-600" size={20} /> Visual Builder</div>
                     <Button onClick={save} disabled={saving || !preview.valid} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"><Save size={16} /> {saving ? 'Saving…' : 'Save'}</Button>
@@ -248,6 +246,6 @@ export default function StrategyBuilderPage() {
                     </CardContent></Card>
                 ) : null}
             </div>
-        </DashboardLayout>
+        </WorkspaceShell>
     );
 }

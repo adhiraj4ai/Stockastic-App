@@ -36,13 +36,40 @@ class StrategySerializer(serializers.ModelSerializer):
     win_rate = serializers.SerializerMethodField()
     kind = serializers.SerializerMethodField()
     summary = serializers.SerializerMethodField()
+    metrics_summary = serializers.SerializerMethodField()
 
     class Meta:
         model = Strategy
-        fields = ['id', 'name', 'description', 'code', 'spec', 'kind', 'summary', 'optimization_config', 'created_at', 'is_public',
+        fields = ['id', 'name', 'description', 'code', 'spec', 'kind', 'summary', 'metrics_summary', 'optimization_config', 'created_at', 'is_public',
                   'pnl_amount', 'pnl_percent', 'max_drawdown', 'sharpe_ratio', 'win_rate', 'icon', 'icon_color', 'default_parameters',
                   'published_experiments']
-        read_only_fields = ['id', 'created_at', 'published_experiments', 'kind', 'summary']
+        read_only_fields = ['id', 'created_at', 'published_experiments', 'kind', 'summary', 'metrics_summary']
+
+    def get_metrics_summary(self, obj):
+        """Headline metrics from the best published experiment (for the library views)."""
+        exp = self._get_best_published_exp(obj)
+        m = (exp.metrics if exp else None) or {}
+
+        def pick(*keys):
+            for k in keys:
+                v = m.get(k)
+                if v not in (None, ''):
+                    try:
+                        return round(float(v), 2)
+                    except (TypeError, ValueError):
+                        return v
+            return None
+
+        return {
+            'return_pct': pick('pnl_percent', 'return_pct', 'Return [%]'),
+            'sharpe': pick('sharpe_ratio', 'Sharpe Ratio'),
+            'sortino': pick('sortino', 'Sortino Ratio'),
+            'win_rate': pick('win_rate', 'Win Rate [%]'),
+            'max_drawdown': pick('max_drawdown', 'Max. Drawdown [%]'),
+            'num_trades': pick('total_trades', 'num_trades', '# Trades'),
+            'profit_factor': pick('profit_factor', 'Profit Factor'),
+            'exposure': pick('exposure_pct', 'Exposure Time [%]'),
+        }
 
     def get_kind(self, obj):
         return 'composed' if obj.spec else 'custom'

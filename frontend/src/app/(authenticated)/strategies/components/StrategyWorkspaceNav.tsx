@@ -4,20 +4,18 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import api from '@/lib/api';
-import { Blocks, Code, Play, Activity, LayoutDashboard, GitCompare } from 'lucide-react';
+import { Blocks, Code, Play, Activity, GitCompare } from 'lucide-react';
 
-type Tab = 'overview' | 'build' | 'code' | 'backtest' | 'optimize';
+type Tab = 'build' | 'code' | 'backtest' | 'optimize';
 
 function tabFromPath(pathname: string): Tab {
-    if (pathname.endsWith('/builder')) return 'build';
     if (pathname.endsWith('/editor')) return 'code';
     if (pathname.includes('/backtest')) return 'backtest';
     if (pathname.includes('/optimize')) return 'optimize';
-    return 'overview';
+    return 'build';
 }
 
 const TABS: { key: Tab; label: string; icon: any; href: (id: string) => string }[] = [
-    { key: 'overview', label: 'Overview', icon: LayoutDashboard, href: (id) => `/strategies/${id}` },
     { key: 'build', label: 'Build', icon: Blocks, href: (id) => `/strategies/${id}/builder` },
     { key: 'code', label: 'Code', icon: Code, href: (id) => `/strategies/${id}/editor` },
     { key: 'backtest', label: 'Backtest', icon: Play, href: (id) => `/strategies/${id}/backtest` },

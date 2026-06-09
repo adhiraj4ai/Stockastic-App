@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { useRouter, useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import DashboardLayout from '@/components/DashboardLayout';
-import { StrategyWorkspaceNav } from '../../components/StrategyWorkspaceNav';
+import { WorkspaceShell } from '../../components/WorkspaceShell';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Play, Save, Sun, Moon, AlertTriangle, XOctagon, ShieldAlert, Zap, Activity, RotateCcw } from 'lucide-react';
@@ -186,12 +185,8 @@ export default function EditStrategyPage() {
     if (loading) return <FullPageLoader />;
 
     return (
-        <DashboardLayout
-            showBack={true}
-            title={`Edit — ${strategy?.name || 'Strategy'}`}
-        >
+        <WorkspaceShell strategyId={String(strategyId)}>
             <div className="flex flex-col h-[calc(100vh-100px)] -mt-4">
-                <StrategyWorkspaceNav strategyId={String(strategyId)} />
 
                 {/* Published warning */}
                 {isPublished && (
@@ -413,6 +408,6 @@ export default function EditStrategyPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </DashboardLayout>
+        </WorkspaceShell>
     );
 }
