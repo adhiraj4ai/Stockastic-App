@@ -77,9 +77,9 @@ export function TradePlanDrawer({ plan, onClose, onUpdated }: Props) {
     }
   };
 
-  const totalCommitted = plan.legs
+  const executedAllocationPct = plan.legs
     .filter(l => l.status === 'EXECUTED')
-    .reduce((sum, l) => sum + parseFloat(l.price_target) * (parseFloat(l.allocation_pct) / 100), 0);
+    .reduce((sum, l) => sum + parseFloat(l.allocation_pct), 0);
 
   return (
     <>
@@ -153,8 +153,8 @@ export function TradePlanDrawer({ plan, onClose, onUpdated }: Props) {
 
           <div className="mt-4 p-4 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm flex gap-6">
             <div>
-              <p className="text-xs text-slate-500 uppercase tracking-wide">Committed value</p>
-              <p className="font-bold text-slate-800 dark:text-slate-200">Rs. {totalCommitted.toLocaleString()}</p>
+              <p className="text-xs text-slate-500 uppercase tracking-wide">Executed allocation</p>
+              <p className="font-bold text-slate-800 dark:text-slate-200">{executedAllocationPct.toFixed(1)}%</p>
             </div>
             <div>
               <p className="text-xs text-slate-500 uppercase tracking-wide">Remaining legs</p>
