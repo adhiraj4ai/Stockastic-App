@@ -131,10 +131,14 @@ export default function StrategyScanPage() {
                                         <tr key={r.id} onClick={() => router.push(`/strategies/${r.id}/${r.kind === 'custom' ? 'editor' : 'builder'}`)}
                                             className={`border-t border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-900/60 cursor-pointer ${r.beats_bh ? '' : 'opacity-70'}`}>
                                             <td className="px-3 py-2 text-gray-400">{i + 1}</td>
-                                            <td className="px-2"><div className="flex items-center gap-2"><span className="font-medium">{r.name}</span><KindBadge kind={r.kind} />{r.tuned_params && <span className="text-[10px] text-purple-600" title="parameters tuned">tuned</span>}</div></td>
+                                            <td className="px-2"><div className="flex items-center gap-2"><span className="font-medium">{r.name}</span><KindBadge kind={r.kind} />{r.tuned && <span className="text-[10px] text-purple-600" title="parameters tuned">tuned</span>}</div></td>
                                             <td className="text-center px-2 uppercase text-xs text-gray-500">{r.timeframe}</td>
                                             {COLS.map((c) => { const v = c.get(r); return <td key={c.label} className={`text-right px-3 font-mono ${c.color ? c.color(v) : 'text-gray-600 dark:text-slate-300'}`}>{c.fmt(v)}</td>; })}
-                                            <td className="px-2 text-center" onClick={(e) => { e.stopPropagation(); router.push(`/strategies/${r.id}/backtest?symbol=${res.symbol}&period=${r.timeframe}`); }}>
+                                            <td className="px-2 text-center" onClick={(e) => {
+                                                e.stopPropagation();
+                                                const tuned = r.tuned_spec ? `&spec=${encodeURIComponent(JSON.stringify(r.tuned_spec))}` : '';
+                                                router.push(`/strategies/${r.id}/backtest?symbol=${res.symbol}&period=${r.timeframe}${tuned}`);
+                                            }}>
                                                 <Play size={14} className="text-blue-600 inline" />
                                             </td>
                                         </tr>

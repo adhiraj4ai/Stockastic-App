@@ -153,8 +153,11 @@ function BacktestContent() {
         try {
             const response = await api.get(`/api/stocks/strategies/${strategyId}/`);
             setStrategy(response.data);
-            if (response.data.spec) {
-                const sp = response.data.spec;
+            // A tuned spec passed from the scan overrides the saved spec.
+            let sp = response.data.spec;
+            const urlSpec = searchParams.get('spec');
+            if (urlSpec) { try { sp = JSON.parse(decodeURIComponent(urlSpec)); } catch { /* ignore */ } }
+            if (sp) {
                 setSpecState({
                     version: 1, alpha: sp.alpha ?? null,
                     regime: Array.isArray(sp.regime) ? sp.regime : sp.regime ? [sp.regime] : [],

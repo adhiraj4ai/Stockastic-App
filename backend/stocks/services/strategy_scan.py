@@ -24,7 +24,7 @@ def _tf_start(tf):
     return None if days is None else (date.today() - timedelta(days=days)).isoformat()
 
 
-def _row(s, m, tf, tuned=None):
+def _row(s, m, tf, tuned_spec=None):
     row = {
         "id": s.id, "name": s.name, "kind": "composed" if s.spec else "custom", "ok": True,
         "timeframe": tf,
@@ -38,8 +38,9 @@ def _row(s, m, tf, tuned=None):
         "num_trades": int(m["num_trades"]),
         "beats_bh": m["return_pct"] > m["buy_hold_return_pct"],
     }
-    if tuned is not None:
-        row["tuned_params"] = tuned
+    if tuned_spec is not None:
+        row["tuned"] = True
+        row["tuned_spec"] = tuned_spec
     return row
 
 
@@ -61,7 +62,7 @@ def _sample_node(node):
 
 def _optimize_composed(spec, symbol, start, trials):
     """Bounded random search of a composed spec's parameter ranges; returns the best
-    {metrics, params(alpha node only, for brevity)} or None."""
+    {metrics, spec(the full tuned spec)} or None."""
     from .strategy_framework import spec_to_code
     best = None
     for _ in range(trials):
@@ -78,7 +79,7 @@ def _optimize_composed(spec, symbol, start, trials):
         except Exception:  # noqa: BLE001
             continue
         if r.ok and (best is None or r.metrics["return_pct"] > best["metrics"]["return_pct"]):
-            best = {"metrics": r.metrics, "params": cand["alpha"].get("params", {})}
+            best = {"metrics": r.metrics, "spec": cand}
     return best
 
 
@@ -112,7 +113,7 @@ def scan_symbol(symbol, strategies=None, timeframes=DEFAULT_TIMEFRAMES, optimize
         if optimize and s.spec:
             opt = _optimize_composed(s.spec, symbol, _tf_start(tf), trials)
             if opt and opt["metrics"]["return_pct"] > m["return_pct"]:
-                m, tuned = opt["metrics"], opt["params"]
+                m, tuned = opt["metrics"], opt["spec"]
         rows.append(_row(s, m, tf, tuned))
 
     ranked = sorted(rows, key=lambda r: r["return_pct"], reverse=True)
