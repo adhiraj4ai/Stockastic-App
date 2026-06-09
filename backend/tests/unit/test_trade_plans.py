@@ -226,3 +226,62 @@ class TradePlanViewSetTests(TestCase):
             format='json',
         )
         assert res.status_code == 404
+
+
+class TradePlanSignalTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user('siguser', password='pass')
+        self.account = PortfolioAccount.objects.create(
+            user=self.user, name='Paper', account_type=AccountType.PAPER,
+            balance=Decimal('2000000'),
+        )
+        self.plan = TradePlan.objects.create(
+            user=self.user, account=self.account, ticker='NABIL',
+            risk_budget_pct=Decimal('2.00'), status=TradePlan.PlanStatus.OPEN,
+        )
+        self.leg = TradePlanLeg.objects.create(
+            plan=self.plan, leg_number=1,
+            price_target=Decimal('1200.00'), allocation_pct=Decimal('100.00'),
+            stop_loss_price=Decimal('1140.00'),
+        )
+
+    def _make_transaction(self):
+        from django.utils import timezone
+        from stocks.models.portfolio import TransactionType
+        return PortfolioTransaction.objects.create(
+            user=self.user,
+            account=self.account,
+            ticker='NABIL',
+            transaction_type=TransactionType.BUY,
+            quantity=50,
+            rate=Decimal('1200.00'),
+            amount=Decimal('60000.00'),
+            commission=Decimal('0.00'),
+            sebon_fee=Decimal('0.00'),
+            dp_charge=Decimal('0.00'),
+            cgt=Decimal('0.00'),
+            receivable_amount=Decimal('60000.00'),
+            transaction_date=timezone.now(),
+        )
+
+    def test_deleting_transaction_resets_leg_to_pending(self):
+        txn = self._make_transaction()
+        self.leg.transaction = txn
+        self.leg.status = TradePlanLeg.LegStatus.EXECUTED
+        self.leg.save()
+
+        txn.delete()
+
+        self.leg.refresh_from_db()
+        assert self.leg.status == TradePlanLeg.LegStatus.PENDING
+        assert self.leg.transaction is None
+
+    def test_deleting_unlinked_transaction_does_not_affect_leg(self):
+        txn = self._make_transaction()
+        # leg is not linked to this transaction
+        assert self.leg.status == TradePlanLeg.LegStatus.PENDING
+
+        txn.delete()
+
+        self.leg.refresh_from_db()
+        assert self.leg.status == TradePlanLeg.LegStatus.PENDING
