@@ -38,6 +38,16 @@ export function StrategyWorkspaceNav({ strategyId, active }: { strategyId: strin
     const composed = s?.kind === 'composed';
     const published = (s?.published_experiments?.length || 0) > 0;
 
+    // A strategy is edited in EITHER Build mode (composed) OR Code mode (custom) — never both.
+    // Until the kind loads, infer the mode from the current page so the right tab shows without flicker.
+    const onEditor = (pathname || '').endsWith('/editor');
+    const onBuilder = (pathname || '').includes('/builder');
+    const showBuild = s ? composed : onBuilder;
+    const showCode = s ? !composed : onEditor;
+    const visibleTabs = TABS.filter((t) =>
+        t.key === 'build' ? showBuild : t.key === 'code' ? showCode : true
+    );
+
     return (
         <div className="mb-5 border-b border-gray-100 dark:border-slate-800 pb-2">
             <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
@@ -60,15 +70,13 @@ export function StrategyWorkspaceNav({ strategyId, active }: { strategyId: strin
                 </Link>
             </div>
             <div className="flex gap-1 overflow-x-auto">
-                {TABS.map((t) => {
+                {visibleTabs.map((t) => {
                     const isActive = t.key === activeTab;
-                    // Code tab is the natural home for Custom strategies; Build for Composed.
-                    const dimmed = (t.key === 'build' && s && !composed);
                     return (
                         <Link key={t.key} href={t.href(strategyId)}
                             className={`px-3 py-2 text-sm font-medium rounded-t-lg flex items-center gap-1.5 whitespace-nowrap border-b-2 transition-colors ${isActive
                                 ? 'border-blue-600 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'} ${dimmed ? 'opacity-60' : ''}`}>
+                                : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}>
                             <t.icon size={15} /> {t.label}
                         </Link>
                     );

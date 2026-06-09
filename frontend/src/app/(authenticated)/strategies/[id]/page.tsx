@@ -19,6 +19,8 @@ interface Strategy {
     name: string;
     description: string;
     code: string;
+    kind?: 'composed' | 'custom';
+    spec?: any;
     created_at: string;
     updated_at: string;
     published_experiments: {
@@ -114,22 +116,26 @@ export default function StrategyDetailPage() {
             <div className="space-y-6">
                 {/* Action Toolbar */}
                 <div className="flex justify-end items-center gap-3">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2 h-9 text-xs font-bold bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 shadow-sm transition-all"
-                        onClick={() => router.push(`/strategies/${id}/builder`)}
-                    >
-                        <Blocks size={14} /> Builder
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2 h-9 text-xs font-bold border-slate-200 hover:bg-slate-50 shadow-sm"
-                        onClick={() => router.push(`/strategies/${id}/editor`)}
-                    >
-                        <Edit size={14} className="text-slate-500" /> Edit Code
-                    </Button>
+                    {/* A strategy is edited in EITHER Build mode (composed) OR Code mode (custom). */}
+                    {strategy.kind === 'composed' ? (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2 h-9 text-xs font-bold bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 shadow-sm transition-all"
+                            onClick={() => router.push(`/strategies/${id}/builder`)}
+                        >
+                            <Blocks size={14} /> Builder
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2 h-9 text-xs font-bold border-slate-200 hover:bg-slate-50 shadow-sm"
+                            onClick={() => router.push(`/strategies/${id}/editor`)}
+                        >
+                            <Edit size={14} className="text-slate-500" /> Edit Code
+                        </Button>
+                    )}
                     <Button
                         variant="outline"
                         size="sm"
@@ -279,9 +285,10 @@ export default function StrategyDetailPage() {
                                 />
                             </div>
                             <div className="bg-gray-50 p-3 text-xs text-gray-500 flex justify-between items-center">
-                                <span>Read-only view</span>
-                                <Button variant="link" className="h-auto p-0 text-blue-600" onClick={() => router.push(`/strategies/${id}/editor`)}>
-                                    Edit Code &rarr;
+                                <span>Read-only view{strategy.kind === 'composed' ? ' · generated from builder' : ''}</span>
+                                <Button variant="link" className="h-auto p-0 text-blue-600"
+                                    onClick={() => router.push(`/strategies/${id}/${strategy.kind === 'composed' ? 'builder' : 'editor'}`)}>
+                                    {strategy.kind === 'composed' ? 'Open Builder' : 'Edit Code'} &rarr;
                                 </Button>
                             </div>
                         </Card>
