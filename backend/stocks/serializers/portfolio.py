@@ -1,3 +1,5 @@
+from decimal import Decimal
+from django.db import transaction
 from rest_framework import serializers
 from ..models.portfolio import (
     PortfolioAccount, PortfolioItem, PortfolioTransaction,
@@ -89,9 +91,9 @@ class TradePlanLegSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'status', 'transaction']
 
     def validate(self, data):
-        price = data.get('price_target') or (self.instance.price_target if self.instance else None)
-        stop = data.get('stop_loss_price') or (self.instance.stop_loss_price if self.instance else None)
-        if price and stop and stop >= price:
+        price = data['price_target'] if 'price_target' in data else (self.instance.price_target if self.instance else None)
+        stop = data['stop_loss_price'] if 'stop_loss_price' in data else (self.instance.stop_loss_price if self.instance else None)
+        if price is not None and stop is not None and stop >= price:
             raise serializers.ValidationError(
                 {'stop_loss_price': 'stop_loss_price must be less than price_target.'}
             )
@@ -131,8 +133,8 @@ class TradePlanSerializer(serializers.ModelSerializer):
         legs_data = data.get('legs', [])
         if not legs_data:
             raise serializers.ValidationError({'legs': 'At least one leg is required.'})
-        total_pct = sum(float(leg['allocation_pct']) for leg in legs_data)
-        if round(total_pct, 2) != 100.00:
+        total_pct = sum(leg['allocation_pct'] for leg in legs_data)
+        if total_pct != Decimal('100.00'):
             raise serializers.ValidationError(
                 {'legs': f'Leg allocation_pct must sum to 100. Got {total_pct:.2f}.'}
             )
@@ -140,7 +142,12 @@ class TradePlanSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         legs_data = validated_data.pop('legs')
-        plan = TradePlan.objects.create(**validated_data)
-        for leg_data in legs_data:
-            TradePlanLeg.objects.create(plan=plan, **leg_data)
+        with transaction.atomic():
+            plan = TradePlan.objects.create(**validated_data)
+            for leg_data in legs_data:
+                TradePlanLeg.objects.create(plan=plan, **leg_data)
         return plan
+
+    def update(self, instance, validated_data):
+        validated_data.pop('legs', None)
+        return super().update(instance, validated_data)
