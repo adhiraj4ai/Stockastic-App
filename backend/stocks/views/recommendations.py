@@ -600,36 +600,34 @@ class BrokerAccumulationRecommendationEngine:
             }
         )
 
-    def execute_history(self, symbol: str, days: int = 90) -> List[Dict]:
-        """
-        Generate signal history for a specific symbol and save to DB (Backfill).
-        Returns the history from DB.
-        """
+    def _build_history_market_signals(self, symbol: str, days: int = 90) -> pd.DataFrame:
+        """Build the per-date market_signals DataFrame for `symbol` over `days`
+        (filtered to the cutoff window). Returns an empty DataFrame if no data."""
         end_date = DailyStockPrice.objects.filter(ticker=symbol).order_by('-date').values_list('date', flat=True).first()
         if not end_date:
-            return []
-            
+            return pd.DataFrame()
+
         end_date_dt = end_date
         start_date_dt = end_date_dt - timedelta(days=days + self.params.lookback_period)
-        
+
         start_date_str = start_date_dt.strftime("%Y-%m-%d")
         end_date_str = end_date_dt.strftime("%Y-%m-%d")
-        
+
         self.daily_data = self._load_daily_data(start_date_str, end_date_str, [symbol])
         if self.daily_data.empty:
-            return []
-            
+            return pd.DataFrame()
+
         acc_start_dt = start_date_dt - timedelta(days=self.params.window_days * 2)
-        
+
         acc_queryset = DailyCumulativeAccumulation.objects.filter(
             transaction_date__gte=acc_start_dt,
             transaction_date__lte=end_date_dt,
             symbol=symbol
         ).values('transaction_date', 'cumulative_net')
-        
+
         acc_df = pd.DataFrame(list(acc_queryset))
         if acc_df.empty:
-             self.accumulation_data = pd.DataFrame()
+            self.accumulation_data = pd.DataFrame()
         else:
             acc_df['cumulative_net'] = pd.to_numeric(acc_df['cumulative_net'], errors='coerce')
             acc_df = acc_df.groupby('transaction_date')['cumulative_net'].sum().reset_index()
@@ -638,12 +636,12 @@ class BrokerAccumulationRecommendationEngine:
             self.accumulation_data = acc_df
 
         self._compute_indicators()
-        
+
         if self.daily_data.empty:
-            return []
+            return pd.DataFrame()
 
         df = self.daily_data.copy()
-        
+
         if not self.accumulation_data.empty:
             rolling_acc = self.accumulation_data['cumulative_net_volume'].rolling(
                 window=self.params.window_days, min_periods=1
@@ -656,13 +654,10 @@ class BrokerAccumulationRecommendationEngine:
         momentum_data = self._confirm_momentum(df)
         trend_data = self._confirm_advanced_trend(momentum_data)
         market_signals = self._generate_signals(trend_data)
-        
+
         if market_signals.empty:
-            return []
-        
-        if market_signals.empty:
-            return []
-        
+            return pd.DataFrame()
+
         # Ensure index is DatetimeIndex
         try:
             market_signals.index = pd.to_datetime(market_signals.index)
@@ -671,12 +666,23 @@ class BrokerAccumulationRecommendationEngine:
             if 'date' in market_signals.columns:
                 market_signals['date'] = pd.to_datetime(market_signals['date'])
                 market_signals.set_index('date', inplace=True)
-            
+
         # Sort by date descending
         market_signals = market_signals.sort_index(ascending=False)
-        
+
         cutoff_date = end_date_dt - timedelta(days=days)
         market_signals = market_signals[market_signals.index.date >= cutoff_date]
+
+        return market_signals
+
+    def execute_history(self, symbol: str, days: int = 90) -> List[Dict]:
+        """
+        Generate signal history for a specific symbol and save to DB (Backfill).
+        Returns the history from DB.
+        """
+        market_signals = self._build_history_market_signals(symbol, days)
+        if market_signals.empty:
+            return []
 
         for date, row in market_signals.iterrows():
             is_accumulated = (
@@ -684,17 +690,17 @@ class BrokerAccumulationRecommendationEngine:
                 (row.get('ad_line', 0) > 0) and
                 (row.get('obv', 0) > 0)
             )
-            
+
             signal_type = row['signal_type']
             if signal_type == 'NEUTRAL':
                 continue
-                
+
             # If we want to strictly enforce accumulation for BUYs even in history:
             # if 'BUY' in signal_type and not is_accumulated: continue
-            
+
             strength = abs(row['confidence_score'])
             reason = self._generate_reason(row)
-            
+
             self._save_signal(
                 symbol=symbol,
                 date=date.date(),
@@ -704,9 +710,37 @@ class BrokerAccumulationRecommendationEngine:
                 close=float(row['close']),
                 metadata={'is_accumulated': bool(is_accumulated)}
             )
-            
+
         # Now fetch from DB to return consistent format
         return self.get_history_from_db(symbol, days)
+
+    def compute_history_rows(self, symbol: str, days: int = 365) -> List[Dict]:
+        """Return per-date signal dicts (NO DB writes) for episode backfill."""
+        market_signals = self._build_history_market_signals(symbol, days)
+        rows = []
+        if market_signals.empty:
+            return rows
+        for dt, row in market_signals.iterrows():
+            signal_type = row['signal_type']
+            if signal_type == 'NEUTRAL':
+                continue
+            is_accumulated = (
+                (row.get('rolling_net_volume', 0) > self.params.min_net_volume) and
+                (row.get('ad_line', 0) > 0) and
+                (row.get('obv', 0) > 0)
+            )
+            rows.append({
+                "date": dt.date(),
+                "signal": "BUY" if "BUY" in signal_type else "SELL",
+                "close": float(row['close']),
+                "strength": abs(row['confidence_score']),
+                "reason": self._generate_reason(row),
+                "trend_direction": row.get('trend_direction', ''),
+                "target": None, "stop": None,
+                "metadata": {"is_accumulated": bool(is_accumulated),
+                             "rsi": row.get('rsi_14'), "macd": row.get('macd')},
+            })
+        return rows
 
     def get_history_from_db(self, symbol: str, days: int = 90) -> List[Dict]:
         from ..models import StrategySignal
