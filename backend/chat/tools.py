@@ -17,6 +17,7 @@ from typing import Any
 from asgiref.sync import sync_to_async
 from claude_agent_sdk import create_sdk_mcp_server, tool
 from django.db.models import Avg, Count, Max, Min, Q, Sum
+from django.db.utils import OperationalError, ProgrammingError
 
 from stocks.models.fundamentals import Dividend, FinancialReport, StockFundamental
 from stocks.models.market import (
@@ -2402,7 +2403,7 @@ async def propose_rebalance(args: dict) -> dict:
             try:
                 px = DailyStockPrice.objects.filter(ticker=it.ticker).order_by("-date").first()
                 price = float(px.close) if px and px.close else fallback_price
-            except Exception:
+            except (OperationalError, ProgrammingError):
                 price = fallback_price
             h = holdings.setdefault(it.ticker, {"quantity": 0, "price": price})
             h["quantity"] += int(it.quantity)
