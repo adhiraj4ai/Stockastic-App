@@ -29,9 +29,10 @@ def _make_signal(
 
     sig = Mock()
     sig.strategy = strat
-    sig.signal = signal
-    sig.date = date(2026, 6, 9)
-    sig.last_close = Decimal(str(last_close)) if last_close is not None else None
+    # New field names (SignalEpisode migration):
+    sig.direction = signal          # was sig.signal
+    sig.start_date = date(2026, 6, 9)  # was sig.date
+    sig.entry_price = Decimal(str(last_close)) if last_close is not None else None  # was sig.last_close
     sig.metadata = {"optimization_scope": optimization_scope}
     return sig
 
