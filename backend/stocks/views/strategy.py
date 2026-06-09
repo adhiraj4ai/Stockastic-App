@@ -215,8 +215,10 @@ class StrategyViewSet(viewsets.ModelViewSet):
         code = request.data.get('code', strategy.code)
         symbol = request.data.get('symbol', 'NABIL')
         sector = request.data.get('sector', None)
-        start_date = request.data.get('start_date', None)
-        end_date = request.data.get('end_date', None)
+        # Empty strings (the 'All' period) must become a concrete full range — a blank
+        # date string crashes experiment persistence with a date ValidationError.
+        start_date = request.data.get('start_date') or '2000-01-01'
+        end_date = request.data.get('end_date') or timezone.now().date().isoformat()
         strategy_params = request.data.get('parameters', {})
         initial_balance = float(request.data.get('initial_balance', request.data.get('cash', 1000000)))
 
