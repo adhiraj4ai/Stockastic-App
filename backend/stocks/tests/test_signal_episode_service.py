@@ -117,3 +117,17 @@ def test_episode_without_plan_is_skipped():
     _price(2, high="500", low="1", close="250")
     evaluate_active_episodes()
     assert SignalEpisode.objects.get(symbol="NABIL").status == "ACTIVE"
+
+
+@pytest.mark.django_db
+def test_days_held_counts_trading_days_only():
+    ep = _open_episode(symbol="HELD")
+    ep.last_signal_date = date(2026, 1, 9)
+    ep.save()
+    # Only 3 trading rows in the window despite the 9-day calendar span.
+    for d in (1, 5, 9):
+        DailyStockPrice.objects.create(
+            ticker="HELD", date=date(2026, 1, d), open=Decimal("1"),
+            high=Decimal("1"), low=Decimal("1"), close=Decimal("1"), volume=Decimal("1"),
+        )
+    assert ep.days_held() == 3

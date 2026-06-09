@@ -1,4 +1,5 @@
 # backend/stocks/models/signal.py
+from datetime import date as date_cls
 from django.db import models
 from django.db.models import Q
 from .strategy import Strategy
@@ -58,6 +59,13 @@ class SignalEpisode(models.Model):
             models.Index(fields=["producer_key", "symbol"]),
             models.Index(fields=["status"]),
         ]
+
+    def days_held(self):
+        from .market import DailyStockPrice
+        end = self.end_date or date_cls.today()
+        return DailyStockPrice.objects.filter(
+            ticker=self.symbol, date__gte=self.start_date, date__lte=end
+        ).count()
 
     @staticmethod
     def make_producer_key(source, strategy_id=None):
