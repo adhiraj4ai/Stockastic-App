@@ -5,6 +5,7 @@ from decimal import Decimal
 from stocks.models import SignalEpisode, DailyStockPrice
 from stocks.services.signal_episode.reading import SignalReading
 from stocks.services.signal_episode.backfill import replay_producer_symbol
+from stocks.services.signal_episode.adapters import strategy_reading, engine_reading
 
 
 def _reading(d, direction, close="100", target=None, stop=None):
@@ -13,6 +14,20 @@ def _reading(d, direction, close="100", target=None, stop=None):
         target_price=Decimal(target) if target else None,
         stop_loss_price=Decimal(stop) if stop else None,
     )
+
+
+def test_strategy_reading_maps_hold_short_to_hold():
+    r = strategy_reading(d=date(2026, 1, 1), signal="HOLD_SHORT", last_close=100,
+                         metadata={"orders": 0})
+    assert r.direction == "HOLD" and r.target_price is None
+
+
+def test_engine_reading_carries_plan_and_tier():
+    r = engine_reading(d=date(2026, 1, 1), signal="BUY", ltp=100, strength=42,
+                       tier="Strong Bullish", rationale="x",
+                       target=110, stop=95, metadata={"rsi": 55})
+    assert r.direction == "BUY" and r.target_price == Decimal("110")
+    assert r.stop_loss_price == Decimal("95") and r.signal_tier == "Strong Bullish"
 
 
 @pytest.mark.django_db
