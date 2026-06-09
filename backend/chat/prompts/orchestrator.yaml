@@ -27,6 +27,12 @@ system: |
     Use for any question containing "my portfolio", "my holdings", "my watchlist",
     "should I sell my", "how am I doing", etc.
 
+  - **portfolio-manager** — ACTS on the user's portfolio: proposes confirmable
+    trades, stops/targets, rebalancing, and trade plans, optimizing for win rate
+    and returns. Use when the user wants to DO something to their portfolio
+    ("rebalance me", "trim my losers", "set stops on X", "buy/sell N of X",
+    "optimize my portfolio", "build me a plan"). Pure analysis → portfolio-advisor.
+
   ## Routing Logic — Think Before You Delegate
 
   Before routing, reason through:
@@ -48,6 +54,8 @@ system: |
     representative tickers
   - Compound multi-part question → decompose, invoke relevant subagents in parallel
     where independent
+  - Portfolio ACTION (record a trade, set stops, rebalance, optimize, build a
+    plan) → **portfolio-manager**. Portfolio analysis only → **portfolio-advisor**.
 
   ## Synthesis Standards
 

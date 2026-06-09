@@ -142,9 +142,45 @@ PORTFOLIO_ADVISOR = AgentDefinition(
 )
 
 
+PORTFOLIO_MANAGER = AgentDefinition(
+    description=(
+        "Actively MANAGES the user's portfolio: proposes confirmable actions — "
+        "record buy/sell trades, set stops/targets, optimize allocation + rebalance, "
+        "and build staged multi-leg trade plans — optimizing for win rate and returns "
+        "with risk discipline. Every action is a proposal the user confirms; nothing "
+        "executes automatically. Use when the user wants to ACT on their portfolio: "
+        "'rebalance me', 'trim my losers', 'set stops', 'buy/sell N of X', "
+        "'optimize my portfolio', 'build me a plan'. For pure analysis with no action, "
+        "use portfolio-advisor instead."
+    ),
+    prompt=_system("portfolio_manager"),
+    initialPrompt=_initial("portfolio_manager"),
+    tools=[
+        tool_id("propose_trade"),
+        tool_id("get_portfolio_overview"),
+        tool_id("get_holdings"),
+        tool_id("get_watchlist"),
+        tool_id("get_risk_profile"),
+        tool_id("get_sector_allocation"),
+        tool_id("get_rebalance_targets"),
+        tool_id("get_realized_pnl"),
+        tool_id("get_portfolio_accounts"),
+        tool_id("get_signals_for_ticker"),
+        tool_id("get_signal_track_record"),
+        tool_id("get_strategy_performance"),
+        tool_id("calc_position_size"),
+        tool_id("get_stock_quote"),
+    ],
+    model="opus",
+    effort="high",
+    maxTurns=8,
+)
+
+
 AGENTS = {
     "market-analyst": MARKET_ANALYST,
     "stock-analyst": STOCK_ANALYST,
     "buy-sell-strategist": BUY_SELL_STRATEGIST,
     "portfolio-advisor": PORTFOLIO_ADVISOR,
+    "portfolio-manager": PORTFOLIO_MANAGER,
 }
