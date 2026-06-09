@@ -46,8 +46,12 @@ class StrategySerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'published_experiments', 'kind', 'summary', 'metrics_summary']
 
     def get_metrics_summary(self, obj):
-        """Headline metrics from the best published experiment (for the library views)."""
+        """Headline metrics for the library views — from the best published experiment,
+        falling back to the most recent successful run so unpublished strategies still
+        show numbers."""
         exp = self._get_best_published_exp(obj)
+        if exp is None:
+            exp = obj.experiments.filter(status='SUCCESS').exclude(metrics={}).order_by('-created_at').first()
         m = (exp.metrics if exp else None) or {}
 
         def pick(*keys):
