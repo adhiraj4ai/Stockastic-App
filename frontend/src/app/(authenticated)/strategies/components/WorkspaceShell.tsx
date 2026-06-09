@@ -9,12 +9,12 @@ import { StrategyWorkspaceNav } from './StrategyWorkspaceNav';
  * content container. Each tab renders ONLY its own content inside this, so switching tabs
  * keeps the same frame instead of showing a different page header each time.
  */
-export function WorkspaceShell({ strategyId, children, wide = false }: {
-    strategyId: string; children: React.ReactNode; wide?: boolean;
+export function WorkspaceShell({ strategyId, children }: {
+    strategyId: string; children: React.ReactNode;
 }) {
     return (
         <DashboardLayout showBack>
-            <div className={`${wide ? 'max-w-[1600px]' : 'max-w-7xl'} mx-auto px-4 py-4 space-y-4`}>
+            <div className="w-full px-4 sm:px-6 py-4 space-y-4">
                 <StrategyWorkspaceNav strategyId={strategyId} />
                 {children}
             </div>
