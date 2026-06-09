@@ -8,7 +8,7 @@ class Command(BaseCommand):
     help = 'Backtest whale watch strategies over historical data for the last 2 years.'
 
     def handle(self, *args, **options):
-        from stocks.models import GeneratedSignal
+        from stocks.models import SignalEpisode
         self.stdout.write("Fetching historical trading dates...")
         
         query = """
@@ -46,7 +46,7 @@ class Command(BaseCommand):
             day_signals = 0
             for source_key, generator_fn in engines:
                 # Cache check: if signals already exist for this date and source, skip
-                if GeneratedSignal.objects.filter(source=source_key, generated_date=target_date).exists():
+                if SignalEpisode.objects.filter(source=source_key, start_date=target_date).exists():
                     continue
 
                 try:
