@@ -544,15 +544,7 @@ async def get_signals_for_ticker(args: dict) -> dict:
         if not strat_signals and not gen_signals:
             return _result(f"No signals found for {ticker}.", is_error=True)
 
-        strat_data = [
-            {
-                "strategy": s.strategy.name,
-                "signal": s.signal,
-                "date": s.date.isoformat(),
-                "last_close": float(s.last_close) if s.last_close else None,
-            }
-            for s in strat_signals
-        ]
+        strat_data, best_strategy = _rank_strategy_signals(strat_signals)
         gen_data = [
             {
                 "source": g.source,
@@ -570,7 +562,17 @@ async def get_signals_for_ticker(args: dict) -> dict:
         buys = sum(1 for s in strat_data if s["signal"] == "BUY") + sum(1 for g in gen_data if g["signal"] == "BUY")
         sells = sum(1 for s in strat_data if s["signal"] == "SELL") + sum(1 for g in gen_data if g["signal"] == "SELL")
         verdict = "BUY" if buys > sells else "SELL" if sells > buys else "HOLD"
-        prose = f"{ticker}: {buys} buy / {sells} sell signals · verdict {verdict}."
+
+        if best_strategy and strat_data:
+            best = strat_data[0]
+            anchor = (
+                f"best strategy: {best['strategy']} "
+                f"(WR {best['win_rate']:.1f}%, Sharpe {best['sharpe']:.2f}, "
+                f"scope: {best['optimization_scope']}) · "
+            )
+        else:
+            anchor = ""
+        prose = f"{anchor}{ticker}: {buys} buy / {sells} sell signals · verdict {verdict}."
 
         return _result(prose, card={"type": "signal", "data": {
             "symbol": ticker,
