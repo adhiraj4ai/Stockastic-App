@@ -72,6 +72,19 @@ class StrategyViewSet(viewsets.ModelViewSet):
         from ..services.strategy_framework import registry_schema
         return Response(registry_schema())
 
+    @action(detail=False, methods=['get'], url_path='scan')
+    def scan(self, request):
+        """Scan all strategies on a symbol across timeframes (and optional parameter
+        ranges) and rank them to find the best. ?symbol=NABIL&optimize=1&timeframes=3y,max"""
+        from ..services.strategy_scan import scan_symbol, DEFAULT_TIMEFRAMES
+        symbol = (request.query_params.get('symbol') or '').upper()
+        if not symbol:
+            return Response({'error': 'symbol query param required'}, status=status.HTTP_400_BAD_REQUEST)
+        optimize = request.query_params.get('optimize') in ('1', 'true', 'True')
+        tfs = request.query_params.get('timeframes')
+        timeframes = tuple(t.strip() for t in tfs.split(',')) if tfs else DEFAULT_TIMEFRAMES
+        return Response(scan_symbol(symbol, timeframes=timeframes, optimize=optimize))
+
     @action(detail=False, methods=['post'], url_path='render_spec')
     def render_spec(self, request):
         """Validate a composition spec and render the equivalent code + plain-English

@@ -2181,6 +2181,36 @@ async def draft_strategy(args: dict) -> dict:
     return await _run()
 
 
+@tool(
+    "scan_strategies_for_symbol",
+    "Backtest ALL strategies on one symbol across multiple timeframes (1y/3y/5y/max) and "
+    "rank them to find the best strategy for THAT stock. Use for 'which strategy works best "
+    "on X' or as part of an in-depth symbol analysis. Provide symbol.",
+    {"symbol": str},
+)
+async def scan_strategies_for_symbol(args: dict) -> dict:
+    symbol = (args.get("symbol") or "").upper()
+
+    @sync_to_async
+    def _run():
+        from stocks.services.strategy_scan import scan_symbol
+        res = scan_symbol(symbol, timeframes=("1y", "3y", "5y", "max"))
+        if not res["results"]:
+            return _result(f"No strategies could be backtested on {symbol}.", is_error=True)
+        b, ra = res["best"], res["best_risk_adjusted"]
+        lines = [f"Scanned {res['count']} strategies on {symbol} across 1y/3y/5y/max — "
+                 f"{res['beating_bh']} beat buy-and-hold on their best timeframe."]
+        if b:
+            lines.append(f"Best by return: {b['name']} {b['return_pct']:+.0f}% on {b['timeframe']} "
+                         f"(buy&hold {b['buy_hold_return_pct']:+.0f}%, Sharpe {b['sharpe']}, {b['num_trades']} trades).")
+        if ra:
+            lines.append(f"Best risk-adjusted: {ra['name']} (Sortino {ra['sortino']}, "
+                         f"{ra['return_pct']:+.0f}% on {ra['timeframe']}).")
+        lines.append("Top: " + "; ".join(f"{r['name']} {r['return_pct']:+.0f}% ({r['timeframe']})" for r in res["results"][:5]))
+        return _result("\n".join(lines), card={"type": "strategy_scan", "data": res})
+    return await _run()
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # MCP server registration
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2221,6 +2251,7 @@ ALL_TOOLS = [
     backtest_strategy,
     strategy_signal_today,
     draft_strategy,
+    scan_strategies_for_symbol,
     # Portfolio Advisor
     get_portfolio_overview,
     get_holdings,
