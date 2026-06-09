@@ -3,8 +3,6 @@ from datetime import date
 from decimal import Decimal
 from unittest.mock import Mock
 
-import pytest
-
 from chat.tools import _rank_strategy_signals
 
 
