@@ -1,4 +1,4 @@
-"""Unit tests for TradePlan + TradePlanLeg models and serializer validation."""
+"""Unit tests for TradePlan + TradePlanLeg: models, serializers, views, and signals."""
 from decimal import Decimal
 from django.test import TestCase
 from django.contrib.auth.models import User
