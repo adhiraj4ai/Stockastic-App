@@ -457,6 +457,81 @@ class StrategyViewSet(viewsets.ModelViewSet):
             traceback.print_exc()
             return Response({'error': f'Optimization failed: {str(e)}'}, status=500)
 
+    @action(detail=True, methods=['post'], url_path='optimize_spec')
+    def optimize_spec(self, request, pk=None):
+        """Optimize a COMPOSED strategy by searching its spec's registry parameter ranges.
+
+        Unlike `optimize_multi_period` (regex/class-attr param injection — only works for raw
+        custom code), this tunes the same spec parameters the builder and backtest pages show,
+        so backtest, optimize, and code stay consistent. Recompiles the spec per trial.
+
+        Body: {symbol, spec?, param_ranges?, n_trials?, timeframes?, objective?, publish?}.
+        With publish=true, replaces the strategy's spec with the best one and re-renders code.
+        """
+        from ..services.strategy_scan import optimize_spec as run_optimize_spec
+        from ..services.strategy_framework import spec_to_code, SpecError
+
+        strategy = self.get_object()
+        spec = request.data.get('spec') or strategy.spec
+        if not spec:
+            return Response({'error': 'This strategy has no spec; use optimize_multi_period for custom code.'}, status=400)
+
+        symbol = (request.data.get('symbol') or strategy.ticker or '').upper()
+        if not symbol:
+            return Response({'error': 'symbol is required'}, status=400)
+
+        # Publish-only: a tuned spec is handed back to be saved without re-optimizing.
+        if request.data.get('publish') and request.data.get('spec') and int(request.data.get('n_trials', 1)) == 0:
+            try:
+                strategy.code = spec_to_code(spec)
+            except SpecError as e:
+                return Response({'error': f'Tuned spec failed to render: {e}'}, status=500)
+            strategy.spec = spec
+            strategy.save(update_fields=['code', 'spec'])
+            return Response({'published': True, 'code': strategy.code, 'spec': spec})
+
+        objective = request.data.get('objective', 'balanced')
+        n_trials = int(request.data.get('n_trials', 40))
+        param_ranges = request.data.get('param_ranges') or None
+        tfs = request.data.get('timeframes')
+        timeframes = tuple(tfs) if tfs else ('3y', 'max')
+
+        try:
+            result = run_optimize_spec(
+                spec, symbol, param_ranges=param_ranges, n_trials=n_trials,
+                timeframes=timeframes, objective=objective,
+            )
+        except Exception as e:  # noqa: BLE001
+            import traceback
+            traceback.print_exc()
+            return Response({'error': f'Optimization failed: {e}'}, status=500)
+
+        if not result.get('best'):
+            return Response({**result, 'published': False,
+                             'message': 'No trial produced a tradable result.'})
+
+        # Record the best result on the strategy for at-a-glance display.
+        strategy.best_params = result['best']['params']
+        strategy.best_score = result['best']['score']
+        strategy.best_objective = objective
+
+        # Optionally publish the tuned spec as the strategy's new source of truth.
+        if request.data.get('publish'):
+            best_spec = result['best']['spec']
+            try:
+                strategy.code = spec_to_code(best_spec)
+            except SpecError as e:
+                return Response({'error': f'Tuned spec failed to render: {e}'}, status=500)
+            strategy.spec = best_spec
+            strategy.save(update_fields=['code', 'spec', 'best_params', 'best_score', 'best_objective'])
+            result['published'] = True
+            result['code'] = strategy.code
+        else:
+            strategy.save(update_fields=['best_params', 'best_score', 'best_objective'])
+            result['published'] = False
+
+        return Response(result)
+
     @action(detail=True, methods=['post'])
     def publish_optimized(self, request, pk=None):
         """

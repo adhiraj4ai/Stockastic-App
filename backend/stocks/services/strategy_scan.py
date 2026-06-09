@@ -10,6 +10,7 @@ single best strategy + timeframe (+ tuned params) for that stock.
   its best timeframe (bounded by `trials`) — heavier; use for a deliberate "deep scan".
 """
 
+import copy
 import random
 from datetime import date, timedelta
 
@@ -133,4 +134,133 @@ def scan_symbol(symbol, strategies=None, timeframes=DEFAULT_TIMEFRAMES, optimize
         "best_risk_adjusted": best_ra,
         "results": ranked,
         "errors": errors,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Spec-based optimization (composed strategies)
+#
+# Composed strategies can't be tuned by the regex/class-attr optimizer because their
+# parameters live inside spec components. This searches the spec's registry parameter
+# ranges directly (recompiling the spec each trial) so backtest, optimize, and code all
+# stay consistent — and publishing simply replaces the strategy's spec with the best one.
+# ─────────────────────────────────────────────────────────────────────────────
+def _as_node_list(v):
+    return v if isinstance(v, list) else ([v] if v else [])
+
+
+def _normalize_spec(spec):
+    spec = copy.deepcopy(spec)
+    spec["regime"] = _as_node_list(spec.get("regime"))
+    spec["exit"] = _as_node_list(spec.get("exit"))
+    return spec
+
+
+def spec_param_space(spec):
+    """{path -> {type, min, max, default}} for every tunable param in the spec.
+
+    Path = 'alpha.<p>' | 'regime{i}.<p>' | 'stop.<p>' | 'exit{i}.<p>'.
+    """
+    from .strategy_framework import REGISTRY
+    spec = _normalize_spec(spec)
+    space = {}
+
+    def add(node, prefix):
+        meta = REGISTRY.get(node["type"])
+        if not meta:
+            return
+        for p in meta["params"]:
+            if "min" in p and "max" in p:
+                space[f"{prefix}.{p['name']}"] = {
+                    "type": p["type"], "min": p["min"], "max": p["max"], "label": p.get("label", p["name"]),
+                    "default": (node.get("params") or {}).get(p["name"], p["default"]),
+                }
+
+    if spec.get("alpha"):
+        add(spec["alpha"], "alpha")
+    for i, n in enumerate(spec["regime"]):
+        add(n, f"regime{i}")
+    if spec.get("stop"):
+        add(spec["stop"], "stop")
+    for i, n in enumerate(spec["exit"]):
+        add(n, f"exit{i}")
+    return space
+
+
+def _node_at(spec, path):
+    kind = path.split(".")[0]
+    if kind == "alpha":
+        return spec.get("alpha")
+    if kind == "stop":
+        return spec.get("stop")
+    if kind.startswith("regime"):
+        return spec["regime"][int(kind[len("regime"):])]
+    if kind.startswith("exit"):
+        return spec["exit"][int(kind[len("exit"):])]
+    return None
+
+
+def _apply_path(spec, path, value):
+    node = _node_at(spec, path)
+    if node is not None:
+        node.setdefault("params", {})[path.split(".", 1)[1]] = value
+
+
+def _score(m, objective):
+    if objective == "win_rate":
+        return m["win_rate_pct"]
+    if objective == "profit":
+        return m["return_pct"]
+    return m["win_rate_pct"] * 2 + m["return_pct"] / 10.0  # balanced
+
+
+def optimize_spec(spec, symbol, param_ranges=None, n_trials=40,
+                  timeframes=("3y", "max"), objective="balanced", min_trades=2):
+    """Random-search a composed spec's parameter ranges on `symbol` across timeframes.
+
+    Returns {best:{params(path->value), spec, metrics, score}, baseline_metrics, space, ...}.
+    `param_ranges` (optional) overrides registry ranges, keyed by the same paths.
+    """
+    from .strategy_framework import spec_to_code
+    spec = _normalize_spec(spec)
+    space = spec_param_space(spec)
+    ranges = param_ranges or {}
+    starts = [_tf_start(tf) for tf in timeframes]
+
+    def sample(path, info):
+        lo, hi = ranges.get(path, [info["min"], info["max"]])[:2]
+        return random.randint(int(lo), int(hi)) if info["type"] == "int" else round(random.uniform(float(lo), float(hi)), 3)
+
+    def evaluate(code):
+        out = []
+        for st in starts:
+            try:
+                r = run_backtest(code, symbol, start=st)
+            except Exception:  # noqa: BLE001
+                continue
+            if r.ok and r.metrics["num_trades"] >= min_trades:
+                out.append(r.metrics)
+        return out
+
+    base = evaluate(spec_to_code(spec))
+    best = None
+    for _ in range(n_trials):
+        cand = copy.deepcopy(spec)
+        for path, info in space.items():
+            _apply_path(cand, path, sample(path, info))
+        mets = evaluate(spec_to_code(cand))
+        if not mets:
+            continue
+        avg = sum(_score(m, objective) for m in mets) / len(mets)
+        if best is None or avg > best["score"]:
+            best = {
+                "score": round(avg, 2), "spec": cand,
+                "params": {p: (_node_at(cand, p).get("params") or {}).get(p.split(".", 1)[1]) for p in space},
+                "metrics": mets[-1],  # representative (longest timeframe)
+            }
+    return {
+        "symbol": symbol, "objective": objective, "timeframes": list(timeframes),
+        "space": {k: {"min": v["min"], "max": v["max"], "type": v["type"], "label": v["label"], "default": v["default"]} for k, v in space.items()},
+        "baseline_metrics": base[-1] if base else None,
+        "best": best,
     }
