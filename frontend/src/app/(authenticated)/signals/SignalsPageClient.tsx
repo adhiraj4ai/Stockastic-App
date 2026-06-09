@@ -28,28 +28,48 @@ interface StrategySignal {
 }
 
 interface ActivePosition {
+    // New shape: SignalEpisodeSerializer + return_pct
     symbol: string;
-    buy_signal: StrategySignal;
-    buy_date: string;
-    buy_price: string;
-    current_price?: string;
+    // New fields (SignalEpisode-based)
+    entry_price?: string;
+    ltp?: string;
+    start_date?: string;
+    end_date?: string;
+    exit_price?: string;
+    exit_reason?: string;
     return_pct?: number;
     days_held: number;
-    strategies: string[];
+    strategy_name?: string;
+    // Legacy aliases kept for backward compat (backend now provides these via serializer)
+    buy_price?: string;
+    buy_date?: string;
+    current_price?: string;
+    strategies?: string[];
+    buy_signal?: StrategySignal;
 }
 
 interface ClosedPosition {
+    // New shape: SignalEpisodeSerializer + return_pct
     symbol: string;
-    buy_signal: StrategySignal;
-    sell_signal: StrategySignal;
-    buy_date: string;
-    sell_date: string;
-    buy_price: string;
-    sell_price: string;
+    // New fields (SignalEpisode-based)
+    entry_price?: string;
+    ltp?: string;
+    start_date?: string;
+    end_date?: string;
+    exit_price?: string;
+    exit_reason?: string;
     return_pct: number;
     days_held: number;
-    buy_strategy: string;
-    sell_strategy: string;
+    strategy_name?: string;
+    // Legacy aliases kept for backward compat
+    buy_price?: string;
+    sell_price?: string;
+    buy_date?: string;
+    sell_date?: string;
+    buy_strategy?: string;
+    sell_strategy?: string;
+    buy_signal?: StrategySignal;
+    sell_signal?: StrategySignal;
 }
 
 interface TrackingData {
@@ -931,12 +951,16 @@ export default function SignalsPage() {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/20 dark:bg-card">
-                                                    {(trackingData.active_positions || []).map((pos, idx) => (
+                                                    {(trackingData.active_positions || []).map((pos, idx) => {
+                                                        const entryPrice = pos.buy_price ?? pos.ltp ?? pos.entry_price ?? '—';
+                                                        const entryDate = pos.buy_date ?? pos.start_date;
+                                                        const strategyLabel = pos.strategies ? pos.strategies.join(', ') : (pos.strategy_name ?? '—');
+                                                        return (
                                                         <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                                                             <td className="px-4 py-3 font-bold">{pos.symbol}</td>
-                                                            <td className="px-4 py-3 font-mono">Rs. {pos.buy_price}</td>
+                                                            <td className="px-4 py-3 font-mono">Rs. {entryPrice}</td>
                                                             <td className="px-4 py-3 font-mono">
-                                                                {pos.current_price && pos.current_price !== 'N/A' ? `Rs. ${pos.current_price}` : (pos.current_price || 'Loading...')}
+                                                                {pos.current_price && pos.current_price !== 'N/A' ? `Rs. ${pos.current_price}` : '—'}
                                                             </td>
                                                             <td className="px-4 py-3">
                                                                 {pos.return_pct !== undefined ? (
@@ -951,13 +975,14 @@ export default function SignalsPage() {
                                                                     <span className="text-slate-400">---</span>
                                                                 )}
                                                             </td>
-                                                            <td className="px-4 py-3">{new Date(pos.buy_date).toLocaleDateString()}</td>
+                                                            <td className="px-4 py-3">{entryDate ? new Date(entryDate).toLocaleDateString() : '—'}</td>
                                                             <td className="px-4 py-3">{pos.days_held} days</td>
                                                             <td className="px-4 py-3 text-xs text-slate-500">
-                                                                {pos.strategies.join(', ')}
+                                                                {strategyLabel}
                                                             </td>
                                                         </tr>
-                                                    ))}
+                                                        );
+                                                    })}
                                                     {(trackingData.active_positions || []).length === 0 && (
                                                         <tr>
                                                             <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
@@ -992,11 +1017,18 @@ export default function SignalsPage() {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/20 dark:bg-card">
-                                                    {(trackingData.closed_positions || []).map((pos, idx) => (
+                                                    {(trackingData.closed_positions || []).map((pos, idx) => {
+                                                        const entryPrice = pos.buy_price ?? pos.ltp ?? pos.entry_price ?? '—';
+                                                        const exitPrice = pos.sell_price ?? pos.exit_price ?? '—';
+                                                        const entryDate = pos.buy_date ?? pos.start_date;
+                                                        const exitDate = pos.sell_date ?? pos.end_date;
+                                                        const inStrategy = pos.buy_strategy ?? pos.strategy_name ?? '—';
+                                                        const outStrategy = pos.sell_strategy ?? pos.exit_reason ?? '—';
+                                                        return (
                                                         <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                                                             <td className="px-4 py-3 font-bold">{pos.symbol}</td>
-                                                            <td className="px-4 py-3 font-mono">Rs. {pos.buy_price}</td>
-                                                            <td className="px-4 py-3 font-mono">Rs. {pos.sell_price}</td>
+                                                            <td className="px-4 py-3 font-mono">Rs. {entryPrice}</td>
+                                                            <td className="px-4 py-3 font-mono">Rs. {exitPrice}</td>
                                                             <td className="px-4 py-3">
                                                                 <Badge className={cn(
                                                                     pos.return_pct >= 0
@@ -1006,14 +1038,15 @@ export default function SignalsPage() {
                                                                     {num(pos.return_pct) >= 0 ? "+" : ""}{fixed(pos.return_pct, 2)}%
                                                                 </Badge>
                                                             </td>
-                                                            <td className="px-4 py-3 text-xs">{new Date(pos.buy_date).toLocaleDateString()}</td>
-                                                            <td className="px-4 py-3 text-xs">{new Date(pos.sell_date).toLocaleDateString()}</td>
+                                                            <td className="px-4 py-3 text-xs">{entryDate ? new Date(entryDate).toLocaleDateString() : '—'}</td>
+                                                            <td className="px-4 py-3 text-xs">{exitDate ? new Date(exitDate).toLocaleDateString() : '—'}</td>
                                                             <td className="px-4 py-3 text-xs">{pos.days_held} days</td>
                                                             <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
-                                                                In: {pos.buy_strategy}<br />Out: {pos.sell_strategy}
+                                                                In: {inStrategy}<br />Out: {outStrategy}
                                                             </td>
                                                         </tr>
-                                                    ))}
+                                                        );
+                                                    })}
                                                     {(trackingData.closed_positions || []).length === 0 && (
                                                         <tr>
                                                             <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
