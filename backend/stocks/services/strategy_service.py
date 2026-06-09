@@ -11,6 +11,7 @@ from ..models.strategy import Strategy as StrategyModel, StrategyExperiment, Sco
 from ..models.portfolio import PortfolioItem
 from ..models.market import DailyStockPrice, Company
 from .optimization_service import SafeTa
+from .backtest_harness import build_strategy_scope, extract_strategy_class, resolve_code
 
 logger = logging.getLogger(__name__)
 
@@ -78,17 +79,15 @@ class StrategyService:
                 exp = StrategyService._get_latest_optimized_experiment(s, symbol, sector)
                 best_params = exp.parameters if exp else {}
 
-                # 2. Prepare Code
-                code = StrategyService._inject_params_into_code(s.code, best_params)
+                # 2. Prepare Code (resolve special tokens to source, then inject params)
+                code = StrategyService._inject_params_into_code(resolve_code(s.code), best_params)
 
-                # 3. Execution & Wrapper
-                local_scope = {
-                    'Backtest': Backtest, 'Strategy': Strategy, 'crossover': crossover, 
-                    'SMA': SMA, 'pd': pd, 'np': np, 'ta': SafeTa(talib), 'talib': talib, 'symbol': symbol
-                }
+                # 3. Execution & Wrapper — shared scope so live signals and the
+                #    backtest API/harness run strategy code identically.
+                local_scope = build_strategy_scope(symbol)
                 exec(code, local_scope)
-                
-                strat_class = next((obj for obj in local_scope.values() if inspect.isclass(obj) and issubclass(obj, Strategy) and obj is not Strategy), None)
+
+                strat_class = extract_strategy_class(local_scope)
                 if not strat_class: continue
 
                 # 4. Instrumented Backtest

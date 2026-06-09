@@ -30,6 +30,7 @@ import os
 os.environ.setdefault('NUMBA_CACHE_DIR', '/tmp/numba_cache')
 
 from ..services.optimization_service import SafeTa
+from ..services.backtest_harness import build_strategy_scope, resolve_code
 
 from ..models import (
     DailyStockPrice, Strategy, Company, StrategyExperiment,
@@ -756,131 +757,17 @@ class StrategyViewSet(viewsets.ModelViewSet):
         return None # Placeholder, implement based on full _get_signal if needed
 
     def _get_bt_local_scope(self, symbol, params=None):
-        """Build the execution scope for strategy code."""
-        import sys
-        ta_adapter = SafeTa(talib)
-        # Register our talib-based adapter as 'pandas_ta' so that
-        # strategy code with `import pandas_ta as ta` uses talib under the hood.
-        sys.modules['pandas_ta'] = ta_adapter  # type: ignore[assignment]
+        """Build the execution scope for strategy code.
 
-        scope = {
-            # backtesting.py core
-            'Strategy': BTStrategy,
-            'Backtest': Backtest,
-            'crossover': crossover,
-            'resample_apply': resample_apply,
-            'SMA': SMA,
-            # TA — single `ta` variable covers both old pandas_ta and talib usage
-            'ta': ta_adapter,
-            'talib': talib,
-            # Data science
-            'np': np,
-            'pd': pd,
-            # Context
-            'symbol': symbol,
-        }
-        if params:
-            scope.update(params)
-        return scope
+        Delegates to the shared backtest harness so the backtest API and live
+        signal generation cannot drift apart.
+        """
+        return build_strategy_scope(symbol, params=params)
 
     def _run_single_backtest(self, code, symbol, start_date, end_date, params=None, cash=1000000):
-        if code == 'broker_accumulation_v1':
-            code = """
-from backtesting import Strategy
-import numpy as np
-import pandas as pd
-from stocks.models import DailyCumulativeAccumulation
-
-class BrokerAccumulationStrategy(Strategy):
-    def init(self):
-        ticker = symbol
-        qs = DailyCumulativeAccumulation.objects.filter(symbol=ticker).values('transaction_date', 'cumulative_net')
-        if not qs:
-            self.acc = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            return
-        df = pd.DataFrame(list(qs))
-        df['transaction_date'] = pd.to_datetime(df['transaction_date'])
-        daily = df.groupby('transaction_date')['cumulative_net'].sum()
-        self.acc = self.I(lambda x: daily.reindex(pd.Series(x).index).ffill().fillna(0).values, self.data.Close)
-
-    def next(self):
-        if len(self.acc) < 2: return
-        if self.acc[-1] > 0 and self.acc[-2] <= 0:
-            if not self.position: self.buy()
-        elif self.acc[-1] < 0 and self.acc[-2] >= 0:
-            if self.position: self.position.close()
-"""
-        elif code == 'ichimoku_accumulation_v1' or (isinstance(code, str) and code.startswith('ichimoku_accumulation_v1')):
-            code = """
-from backtesting import Strategy
-import pandas as pd
-import numpy as np
-import pandas_ta as ta
-from stocks.models import DailyCumulativeAccumulation
-
-class IchimokuAccumulation(Strategy):
-    def init(self):
-        close = pd.Series(self.data.Close)
-        high = pd.Series(self.data.High)
-        low = pd.Series(self.data.Low)
-        # Ichimoku
-        ichimoku_df = ta.ichimoku(high, low, close)[0]
-        self.span_a = self.I(lambda: ichimoku_df.iloc[:, 2].values)
-        self.span_b = self.I(lambda: ichimoku_df.iloc[:, 3].values)
-        
-        # Accumulation
-        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values('transaction_date', 'cumulative_net')
-        if not qs:
-            self.acc = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            return
-        df = pd.DataFrame(list(qs))
-        df['transaction_date'] = pd.to_datetime(df['transaction_date'])
-        daily = df.groupby('transaction_date')['cumulative_net'].sum()
-        self.acc = self.I(lambda x: daily.reindex(pd.Series(x).index).ffill().fillna(0).values, self.data.Close)
-
-    def next(self):
-        price = self.data.Close[-1]
-        above_cloud = price > self.span_a[-1] and price > self.span_b[-1]
-        accumulating = self.acc[-1] > 0
-        if above_cloud and accumulating:
-            if not self.position: self.buy()
-        elif price < self.span_a[-1] or price < self.span_b[-1]:
-            if self.position: self.position.close()
-"""
-        elif code == 'smart_accumulated_crossover_v1':
-            code = """
-from backtesting import Strategy
-from backtesting.lib import crossover
-import pandas as pd
-import numpy as np
-import pandas_ta as ta
-from stocks.models import DailyCumulativeAccumulation
-
-class SmartAccumulatedCrossover(Strategy):
-    fast = 10
-    slow = 50
-
-    def init(self):
-        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values('transaction_date', 'entity_id', 'cumulative_net')
-        if not qs:
-            self.fast_ma = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            self.slow_ma = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            return
-        df = pd.DataFrame(list(qs))
-        df['transaction_date'] = pd.to_datetime(df['transaction_date'])
-        pivot = df.pivot_table(index='transaction_date', columns='entity_id', values='cumulative_net', aggfunc='last').ffill().fillna(0)
-        top = pivot.iloc[-1].sort_values(ascending=False).head(5).index
-        flow = pivot[top].sum(axis=1)
-        line = self.I(lambda x: flow.reindex(pd.Series(x).index).ffill().fillna(0).values, self.data.Close)
-        self.fast_ma = self.I(lambda x: pd.Series(x).rolling(self.fast).mean().values, line)
-        self.slow_ma = self.I(lambda x: pd.Series(x).rolling(self.slow).mean().values, line)
-
-    def next(self):
-        if crossover(self.fast_ma, self.slow_ma):
-            if not self.position: self.buy()
-        elif crossover(self.slow_ma, self.fast_ma):
-            if self.position: self.position.close()
-"""
+        # Special tokens (e.g. broker_accumulation_v1) map to fixed source in the
+        # shared harness — single source of truth for these definitions.
+        code = resolve_code(code)
         try:
             # Data Fetching
             queryset = DailyStockPrice.objects.filter(ticker=symbol)
