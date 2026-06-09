@@ -551,55 +551,6 @@ class BrokerAccumulationRecommendationEngine:
         logger.info(f"Generated {len(recommendations)} recommendations for {max_date}.")
         return recommendations
 
-    def _get_or_create_strategy(self) -> 'Strategy':
-        from ..models import Strategy
-        from django.contrib.auth.models import User
-        
-        # We need a user to own the strategy
-        user = User.objects.first()
-        if not user:
-             # Should not happen in normal usage, but handle gracefully
-             # In dev, maybe create one? But let's assume one exists.
-             raise Exception("No user found to assign strategy to.")
-
-        strategy, _ = Strategy.objects.get_or_create(
-            name='Broker Accumulation (Institutional)',
-            defaults={
-                'code': 'broker_accumulation_v1',
-                'user': user
-            }
-        )
-        return strategy
-
-    def _save_signal(self, symbol: str, date: datetime.date, signal_type: str, strength: float, reason: str, close: float, metadata: Dict = None):
-        from ..models import StrategySignal
-        
-        strategy = self._get_or_create_strategy()
-        
-        # Map signal type to model choices
-        model_signal = 'NEUTRAL'
-        if 'BUY' in signal_type:
-            model_signal = 'BUY'
-        elif 'SELL' in signal_type:
-            model_signal = 'SELL'
-            
-        meta = metadata or {}
-        meta.update({
-            'strength': strength,
-            'reason': reason,
-        })
-
-        StrategySignal.objects.update_or_create(
-            strategy=strategy,
-            symbol=symbol,
-            date=date,
-            defaults={
-                'signal': model_signal,
-                'last_close': close,
-                'metadata': meta
-            }
-        )
-
     def _build_history_market_signals(self, symbol: str, days: int = 90) -> pd.DataFrame:
         """Build the per-date market_signals DataFrame for `symbol` over `days`
         (filtered to the cutoff window). Returns an empty DataFrame if no data."""
@@ -677,41 +628,26 @@ class BrokerAccumulationRecommendationEngine:
 
     def execute_history(self, symbol: str, days: int = 90) -> List[Dict]:
         """
-        Generate signal history for a specific symbol and save to DB (Backfill).
+        Generate signal history for a specific symbol and save to SignalEpisode (Backfill).
         Returns the history from DB.
         """
-        market_signals = self._build_history_market_signals(symbol, days)
-        if market_signals.empty:
-            return []
+        from stocks.services.signal_episode.backfill import replay_producer_symbol
+        from stocks.services.signal_episode.adapters import engine_reading
 
-        for date, row in market_signals.iterrows():
-            is_accumulated = (
-                (row.get('rolling_net_volume', 0) > self.params.min_net_volume) and
-                (row.get('ad_line', 0) > 0) and
-                (row.get('obv', 0) > 0)
+        rows = self.compute_history_rows(symbol, days)
+        readings = [
+            engine_reading(
+                d=r["date"], signal=r["signal"], ltp=r["close"],
+                strength=r.get("strength", 0),
+                tier=r.get("trend_direction", ""),
+                rationale=r.get("reason", ""),
+                target=r.get("target"),
+                stop=r.get("stop"),
+                metadata=r.get("metadata", {}),
             )
-
-            signal_type = row['signal_type']
-            if signal_type == 'NEUTRAL':
-                continue
-
-            # If we want to strictly enforce accumulation for BUYs even in history:
-            # if 'BUY' in signal_type and not is_accumulated: continue
-
-            strength = abs(row['confidence_score'])
-            reason = self._generate_reason(row)
-
-            self._save_signal(
-                symbol=symbol,
-                date=date.date(),
-                signal_type=signal_type,
-                strength=strength,
-                reason=reason,
-                close=float(row['close']),
-                metadata={'is_accumulated': bool(is_accumulated)}
-            )
-
-        # Now fetch from DB to return consistent format
+            for r in rows
+        ]
+        replay_producer_symbol(source="BROKER_ACCUMULATION", strategy=None, symbol=symbol, readings=readings)
         return self.get_history_from_db(symbol, days)
 
     def compute_history_rows(self, symbol: str, days: int = 365) -> List[Dict]:
@@ -743,26 +679,21 @@ class BrokerAccumulationRecommendationEngine:
         return rows
 
     def get_history_from_db(self, symbol: str, days: int = 90) -> List[Dict]:
-        from ..models import StrategySignal
-        strategy = self._get_or_create_strategy()
-        
-        cutoff_date = datetime.now().date() - timedelta(days=days)
-        
-        signals = StrategySignal.objects.filter(
-            strategy=strategy,
-            symbol=symbol,
-            date__gte=cutoff_date
-        ).order_by('-date')
-        
+        from ..models import SignalEpisode
+
+        episodes = SignalEpisode.objects.filter(
+            source="BROKER_ACCUMULATION", symbol=symbol
+        ).order_by("-start_date")[: max(days, 1)]
+
         history = []
-        for s in signals:
+        for ep in episodes:
             history.append({
-                'date': s.date.strftime("%Y-%m-%d"),
-                'signal': s.signal,
-                'strength': round(s.metadata.get('strength', 0), 1),
-                'price': float(s.last_close) if s.last_close else 0,
-                'reason': s.metadata.get('reason', ''),
-                'is_accumulated': s.metadata.get('is_accumulated', False)
+                'date': ep.start_date.strftime("%Y-%m-%d"),
+                'signal': ep.direction,
+                'strength': round(ep.entry_strength or 0, 1),
+                'price': float(ep.entry_price) if ep.entry_price else 0,
+                'reason': ep.rationale or '',
+                'is_accumulated': ep.metadata.get('is_accumulated', False),
             })
         return history
 
@@ -780,22 +711,21 @@ def get_broker_accumulation_history(request):
         
     try:
         engine = BrokerAccumulationRecommendationEngine()
-        
-        # Check if we have recent signals
-        from ..models import StrategySignal
-        strategy = engine._get_or_create_strategy()
-        recent_signal = StrategySignal.objects.filter(
-            strategy=strategy, 
-            symbol=symbol
-        ).order_by('-date').first()
-        
-        # If no signals or last signal is old (> 5 days), trigger backfill
+
+        # Check if we have recent episodes
+        from ..models import SignalEpisode
+        recent_episode = SignalEpisode.objects.filter(
+            source="BROKER_ACCUMULATION",
+            symbol=symbol,
+        ).order_by("-start_date").first()
+
+        # If no episodes or last episode is old (> 5 days), trigger backfill
         should_backfill = True
-        if recent_signal:
+        if recent_episode:
             latest_price_date = DailyStockPrice.objects.filter(ticker=symbol).order_by('-date').values_list('date', flat=True).first()
-            if latest_price_date and recent_signal.date >= (latest_price_date - timedelta(days=5)):
+            if latest_price_date and recent_episode.start_date >= (latest_price_date - timedelta(days=5)):
                 should_backfill = False
-        
+
         if should_backfill:
             raw_history = engine.execute_history(symbol)
         else:
@@ -867,20 +797,6 @@ class SmartAccumulatedCrossoverRecommendationEngine:
         BUY: MACD Hist > 0 AND 20 <= RSI <= 75 AND EMA_9 > EMA_26
         SELL: MACD Hist < 0 AND EMA_9 < EMA_26 AND Close < BB_Lower
     """
-
-    def _get_or_create_strategy(self) -> 'Strategy':
-        from ..models import Strategy
-        from django.contrib.auth.models import User
-        
-        user = User.objects.first()
-        strategy, _ = Strategy.objects.get_or_create(
-            name='Smart Accumulated Crossover',
-            defaults={
-                'code': 'smart_accumulated_crossover_v1',
-                'user': user
-            }
-        )
-        return strategy
 
     def _compute_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
         if df.empty:
@@ -1123,54 +1039,33 @@ class SmartAccumulatedCrossoverRecommendationEngine:
                 
         return sorted(recommendations, key=lambda x: x['strength'], reverse=True)
 
-    def _save_signal(self, symbol, date, signal, strength, reason, close, metadata=None):
-        from ..models import StrategySignal
-        strategy = self._get_or_create_strategy()
-        
-        StrategySignal.objects.update_or_create(
-            strategy=strategy,
-            symbol=symbol,
-            date=date,
-            defaults={
-                'signal': signal,
-                'last_close': close, 
-                'metadata': {
-                    'strength': strength,
-                    'reason': reason,
-                    **(metadata or {})
-                }
-            }
-        )
-
-    def execute_history(self, symbol: str, days: int = 90) -> List[Dict]:
-        """Generate and save history for a symbol."""
-        # 1. Load Data
+    def _build_history_market_signals(self, symbol: str, days: int = 90) -> pd.DataFrame:
+        """Build the per-date indicator DataFrame for `symbol` over `days`.
+        Returns an empty DataFrame if no data or insufficient rows."""
         end_date = datetime.now().date()
-        start_date = end_date - timedelta(days=days + 60) # Buffer for indicators
-        
+        start_date = end_date - timedelta(days=days + 60)  # Buffer for indicators
+
         qs = DailyStockPrice.objects.filter(
-            ticker=symbol, 
+            ticker=symbol,
             date__gte=start_date,
-            date__lte=end_date
+            date__lte=end_date,
         ).order_by('date').values('date', 'close', 'high', 'low', 'volume')
-        
+
         df = pd.DataFrame(list(qs))
         if df.empty or len(df) < 30:
-            return []
-            
+            return pd.DataFrame()
+
         df['date'] = pd.to_datetime(df['date'])
         df.set_index('date', inplace=True)
-        
-        # 2. Indicators
         df = self._compute_indicators(df)
-        
-        # 3. Generate Signals Loop
-        # We only want signals within 'days' window, but indicators computed on full range
+
         cutoff_dt = pd.Timestamp(end_date - timedelta(days=days))
-        valid_df = df[df.index >= cutoff_dt]
-        
-        generated_signals = []
-        
+        return df[df.index >= cutoff_dt]
+
+    def compute_history_rows(self, symbol: str, days: int = 365) -> List[Dict]:
+        """Return per-date signal dicts (NO DB writes) for episode backfill."""
+        valid_df = self._build_history_market_signals(symbol, days)
+        rows = []
         for date_idx, row in valid_df.iterrows():
             macd_hist = row.get('macd_hist', 0) or 0
             rsi = row.get('rsi', 50) or 50
@@ -1178,10 +1073,7 @@ class SmartAccumulatedCrossoverRecommendationEngine:
             ema_26 = row.get('ema_26', 0) or 0
             close = row.get('close', 0)
             bb_lower = row.get('bb_lower', 0) or 0
-            
-            signal_type = None
-            reason = ""
-            
+
             if (macd_hist > 0) and (20 <= rsi <= 75) and (ema_9 > ema_26):
                 signal_type = 'BUY'
                 reason = "Bullish MACD, RSI healthy, EMA Golden Cross"
@@ -1189,59 +1081,62 @@ class SmartAccumulatedCrossoverRecommendationEngine:
                 signal_type = 'SELL'
                 reason = "Bearish MACD, EMA Death Cross, Price below BB Lower"
             else:
-                 signal_type = 'NEUTRAL' # Or just skip? User code explicitly returns neutral.
-                 # But frontend usually shows only Buy/Sell signals or history?
-                 # History modal usually shows all points? No, usually just significant ones.
-                 # Let's support BUY/SELL only to save space, or all? 
-                 # User code `save_signals` saves ALL.
-                 # But our StrategySignal model is better for sparse signals?
-                 # Let's stick to relevant signals (Buy/Sell). Neutral clutters.
-                 continue
+                continue
 
             raw_score = self._calculate_signal_strength(row, signal_type)
             strength = min(100, (raw_score / 8) * 100)
-            
-            self._save_signal(
-                symbol=symbol,
-                date=date_idx.date(),
-                signal=signal_type,
-                strength=strength,
-                reason=reason,
-                close=float(close),
-                metadata={'rsi': float(rsi), 'macd_hist': float(macd_hist)}
-            )
-            
-            generated_signals.append({
-                 'date': date_idx.strftime('%Y-%m-%d'),
-                 'signal': signal_type,
-                 'strength': round(strength, 1),
-                 'price': float(close),
-                 'reason': reason
+
+            rows.append({
+                "date": date_idx.date(),
+                "signal": signal_type,
+                "close": float(close),
+                "strength": strength,
+                "reason": reason,
+                "trend_direction": "",
+                "target": None,
+                "stop": None,
+                "metadata": {"rsi": float(rsi), "macd_hist": float(macd_hist)},
             })
-            
-        return generated_signals # Return strictly what we generated, but endpoint usually fetches from DB
-            
+        return rows
+
+    def execute_history(self, symbol: str, days: int = 90) -> List[Dict]:
+        """Generate signal history for a symbol and save to SignalEpisode (Backfill)."""
+        from stocks.services.signal_episode.backfill import replay_producer_symbol
+        from stocks.services.signal_episode.adapters import engine_reading
+
+        rows = self.compute_history_rows(symbol, days)
+        readings = [
+            engine_reading(
+                d=r["date"], signal=r["signal"], ltp=r["close"],
+                strength=r.get("strength", 0),
+                tier=r.get("trend_direction", ""),
+                rationale=r.get("reason", ""),
+                target=r.get("target"),
+                stop=r.get("stop"),
+                metadata=r.get("metadata", {}),
+            )
+            for r in rows
+        ]
+        replay_producer_symbol(source="SMART_CROSSOVER", strategy=None, symbol=symbol, readings=readings)
+        return self.get_history_from_db(symbol, days)
+
     def get_history_from_db(self, symbol: str, days: int = 90) -> List[Dict]:
-        from ..models import StrategySignal
-        strategy = self._get_or_create_strategy()
-        cutoff_date = datetime.now().date() - timedelta(days=days)
-        
-        signals = StrategySignal.objects.filter(
-            strategy=strategy,
-            symbol=symbol,
-            date__gte=cutoff_date
-        ).order_by('-date')
-        
+        from ..models import SignalEpisode
+
+        episodes = SignalEpisode.objects.filter(
+            source="SMART_CROSSOVER", symbol=symbol
+        ).order_by("-start_date")[: max(days, 1)]
+
         history = []
-        for s in signals:
+        for ep in episodes:
             history.append({
-                'date': s.date.strftime("%Y-%m-%d"),
-                'signal': s.signal,
-                'strength': round(s.metadata.get('strength', 0), 1),
-                'price': float(s.last_close) if s.last_close else 0,
-                'reason': s.metadata.get('reason', ''),
-                'rsi': round(s.metadata.get('rsi', 0), 1),
-                'macd_hist': round(s.metadata.get('macd_hist', 0), 2)
+                'date': ep.start_date.strftime("%Y-%m-%d"),
+                'signal': ep.direction,
+                'strength': round(ep.entry_strength or 0, 1),
+                'price': float(ep.entry_price) if ep.entry_price else 0,
+                'reason': ep.rationale or '',
+                'rsi': round(ep.metadata.get('rsi', 0), 1),
+                'macd_hist': round(ep.metadata.get('macd_hist', 0), 2),
             })
         return history
 
@@ -1291,21 +1186,20 @@ def get_smart_accumulated_crossover_history(request):
         
     try:
         engine = SmartAccumulatedCrossoverRecommendationEngine()
-        
-        # Check if we have recent signals
-        from ..models import StrategySignal
-        strategy = engine._get_or_create_strategy()
-        recent_signal = StrategySignal.objects.filter(
-            strategy=strategy, 
-            symbol=symbol
-        ).order_by('-date').first()
-        
+
+        # Check if we have recent episodes
+        from ..models import SignalEpisode
+        recent_episode = SignalEpisode.objects.filter(
+            source="SMART_CROSSOVER",
+            symbol=symbol,
+        ).order_by("-start_date").first()
+
         should_backfill = True
-        if recent_signal:
+        if recent_episode:
             latest_price_date = DailyStockPrice.objects.filter(ticker=symbol).order_by('-date').values_list('date', flat=True).first()
-            if latest_price_date and recent_signal.date >= (latest_price_date - timedelta(days=5)):
+            if latest_price_date and recent_episode.start_date >= (latest_price_date - timedelta(days=5)):
                 should_backfill = False
-        
+
         if should_backfill:
             raw_history = engine.execute_history(symbol)
         else:
@@ -1377,20 +1271,6 @@ class IchimokuAccumulationRecommendationEngine:
         SELL: Price BELOW Cloud (close < Span A OR close < Span B)
               AND Tenkan-sen < Kijun-sen (bearish)
     """
-
-    def _get_or_create_strategy(self) -> 'Strategy':
-        from ..models import Strategy
-        from django.contrib.auth.models import User
-        
-        user = User.objects.first()
-        strategy, _ = Strategy.objects.get_or_create(
-            name='Ichimoku Cloud + Accumulation',
-            defaults={
-                'code': 'ichimoku_accumulation_v1',
-                'user': user
-            }
-        )
-        return strategy
 
     def _compute_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
         if df.empty:
@@ -1701,50 +1581,33 @@ class IchimokuAccumulationRecommendationEngine:
                 
         return sorted(recommendations, key=lambda x: x['strength'], reverse=True)
 
-    def _save_signal(self, symbol, date, signal, strength, reason, close, metadata=None):
-        from ..models import StrategySignal
-        strategy = self._get_or_create_strategy()
-        
-        StrategySignal.objects.update_or_create(
-            strategy=strategy,
-            symbol=symbol,
-            date=date,
-            defaults={
-                'signal': signal,
-                'last_close': close, 
-                'metadata': {
-                    'strength': strength,
-                    'reason': reason,
-                    **(metadata or {})
-                }
-            }
-        )
-
-    def execute_history(self, symbol: str, days: int = 90) -> List[Dict]:
-        """Generate and save history for a symbol."""
+    def _build_history_market_signals(self, symbol: str, days: int = 90) -> pd.DataFrame:
+        """Build the per-date indicator DataFrame for `symbol` over `days`.
+        Returns an empty DataFrame if no data or insufficient rows."""
         end_date = datetime.now().date()
         start_date = end_date - timedelta(days=days + 120)  # Buffer for Ichimoku
-        
+
         qs = DailyStockPrice.objects.filter(
-            ticker=symbol, 
+            ticker=symbol,
             date__gte=start_date,
-            date__lte=end_date
+            date__lte=end_date,
         ).order_by('date').values('date', 'close', 'high', 'low', 'volume')
-        
+
         df = pd.DataFrame(list(qs))
         if df.empty or len(df) < 60:
-            return []
-            
+            return pd.DataFrame()
+
         df['date'] = pd.to_datetime(df['date'])
         df.set_index('date', inplace=True)
-        
         df = self._compute_indicators(df)
-        
+
         cutoff_dt = pd.Timestamp(end_date - timedelta(days=days))
-        valid_df = df[df.index >= cutoff_dt]
-        
-        generated_signals = []
-        
+        return df[df.index >= cutoff_dt]
+
+    def compute_history_rows(self, symbol: str, days: int = 365) -> List[Dict]:
+        """Return per-date signal dicts (NO DB writes) for episode backfill."""
+        valid_df = self._build_history_market_signals(symbol, days)
+        rows = []
         for date_idx, row in valid_df.iterrows():
             close = row.get('close', 0) or 0
             span_a = row.get('span_a')
@@ -1752,23 +1615,20 @@ class IchimokuAccumulationRecommendationEngine:
             tenkan = row.get('tenkan')
             kijun = row.get('kijun')
             rsi = row.get('rsi', 50) or 50
-            
+
             if pd.isna(span_a) or pd.isna(span_b):
                 continue
-                
+
             span_a = float(span_a)
             span_b = float(span_b)
             tenkan = float(tenkan) if not pd.isna(tenkan) else 0
             kijun = float(kijun) if not pd.isna(kijun) else 0
-            
-            signal_type = None
-            reason = ""
-            
+
             above_cloud = close > span_a and close > span_b
             below_cloud = close < span_a or close < span_b
             tk_bullish = tenkan > kijun
             tk_bearish = tenkan < kijun
-            
+
             if above_cloud and tk_bullish and (30 <= rsi <= 70):
                 signal_type = 'BUY'
                 reason = "Price above Cloud; Bullish TK Cross"
@@ -1779,48 +1639,58 @@ class IchimokuAccumulationRecommendationEngine:
                 continue
 
             strength = self._calculate_signal_strength(row, signal_type)
-            
-            self._save_signal(
-                symbol=symbol,
-                date=date_idx.date(),
-                signal=signal_type,
-                strength=strength,
-                reason=reason,
-                close=float(close),
-                metadata={'rsi': float(rsi), 'span_a': span_a, 'span_b': span_b}
-            )
-            
-            generated_signals.append({
-                 'date': date_idx.strftime('%Y-%m-%d'),
-                 'signal': signal_type,
-                 'strength': round(strength, 1),
-                 'price': float(close),
-                 'reason': reason
+
+            rows.append({
+                "date": date_idx.date(),
+                "signal": signal_type,
+                "close": float(close),
+                "strength": strength,
+                "reason": reason,
+                "trend_direction": "",
+                "target": None,
+                "stop": None,
+                "metadata": {"rsi": float(rsi), "span_a": span_a, "span_b": span_b},
             })
-            
-        return generated_signals
-            
+        return rows
+
+    def execute_history(self, symbol: str, days: int = 90) -> List[Dict]:
+        """Generate signal history for a symbol and save to SignalEpisode (Backfill)."""
+        from stocks.services.signal_episode.backfill import replay_producer_symbol
+        from stocks.services.signal_episode.adapters import engine_reading
+
+        rows = self.compute_history_rows(symbol, days)
+        readings = [
+            engine_reading(
+                d=r["date"], signal=r["signal"], ltp=r["close"],
+                strength=r.get("strength", 0),
+                tier=r.get("trend_direction", ""),
+                rationale=r.get("reason", ""),
+                target=r.get("target"),
+                stop=r.get("stop"),
+                metadata=r.get("metadata", {}),
+            )
+            for r in rows
+        ]
+        replay_producer_symbol(source="ICHIMOKU", strategy=None, symbol=symbol, readings=readings)
+        return self.get_history_from_db(symbol, days)
+
     def get_history_from_db(self, symbol: str, days: int = 90) -> List[Dict]:
-        from ..models import StrategySignal
-        strategy = self._get_or_create_strategy()
-        cutoff_date = datetime.now().date() - timedelta(days=days)
-        
-        signals = StrategySignal.objects.filter(
-            strategy=strategy,
-            symbol=symbol,
-            date__gte=cutoff_date
-        ).order_by('-date')
-        
+        from ..models import SignalEpisode
+
+        episodes = SignalEpisode.objects.filter(
+            source="ICHIMOKU", symbol=symbol
+        ).order_by("-start_date")[: max(days, 1)]
+
         history = []
-        for s in signals:
+        for ep in episodes:
             history.append({
-                'date': s.date.strftime("%Y-%m-%d"),
-                'signal': s.signal,
-                'strength': round(s.metadata.get('strength', 0), 1),
-                'price': float(s.last_close) if s.last_close else 0,
-                'reason': s.metadata.get('reason', ''),
-                'rsi': round(s.metadata.get('rsi', 0), 1),
-                'macd_hist': 0  # Not applicable for Ichimoku
+                'date': ep.start_date.strftime("%Y-%m-%d"),
+                'signal': ep.direction,
+                'strength': round(ep.entry_strength or 0, 1),
+                'price': float(ep.entry_price) if ep.entry_price else 0,
+                'reason': ep.rationale or '',
+                'rsi': round(ep.metadata.get('rsi', 0), 1),
+                'macd_hist': 0,  # Not applicable for Ichimoku
             })
         return history
 
@@ -1855,21 +1725,20 @@ def get_ichimoku_accumulation_history(request):
         
     try:
         engine = IchimokuAccumulationRecommendationEngine()
-        
-        # Check if we have recent signals
-        from ..models import StrategySignal
-        strategy = engine._get_or_create_strategy()
-        recent_signal = StrategySignal.objects.filter(
-            strategy=strategy, 
-            symbol=symbol
-        ).order_by('-date').first()
-        
+
+        # Check if we have recent episodes
+        from ..models import SignalEpisode
+        recent_episode = SignalEpisode.objects.filter(
+            source="ICHIMOKU",
+            symbol=symbol,
+        ).order_by("-start_date").first()
+
         should_backfill = True
-        if recent_signal:
+        if recent_episode:
             latest_price_date = DailyStockPrice.objects.filter(ticker=symbol).order_by('-date').values_list('date', flat=True).first()
-            if latest_price_date and recent_signal.date >= (latest_price_date - timedelta(days=5)):
+            if latest_price_date and recent_episode.start_date >= (latest_price_date - timedelta(days=5)):
                 should_backfill = False
-        
+
         if should_backfill:
             raw_history = engine.execute_history(symbol)
         else:
