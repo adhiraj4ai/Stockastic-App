@@ -134,7 +134,7 @@ export default function StrategyScanPage() {
                                             <td className="px-2"><div className="flex items-center gap-2"><span className="font-medium">{r.name}</span><KindBadge kind={r.kind} />{r.tuned_params && <span className="text-[10px] text-purple-600" title="parameters tuned">tuned</span>}</div></td>
                                             <td className="text-center px-2 uppercase text-xs text-gray-500">{r.timeframe}</td>
                                             {COLS.map((c) => { const v = c.get(r); return <td key={c.label} className={`text-right px-3 font-mono ${c.color ? c.color(v) : 'text-gray-600 dark:text-slate-300'}`}>{c.fmt(v)}</td>; })}
-                                            <td className="px-2 text-center" onClick={(e) => { e.stopPropagation(); router.push(`/strategies/${r.id}/backtest?symbol=${res.symbol}`); }}>
+                                            <td className="px-2 text-center" onClick={(e) => { e.stopPropagation(); router.push(`/strategies/${r.id}/backtest?symbol=${res.symbol}&period=${r.timeframe}`); }}>
                                                 <Play size={14} className="text-blue-600 inline" />
                                             </td>
                                         </tr>

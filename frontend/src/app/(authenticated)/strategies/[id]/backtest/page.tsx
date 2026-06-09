@@ -80,6 +80,9 @@ function BacktestContent() {
 
     // Parameters form state: Record<name, value>
     const [parameters, setParameters] = useState<Record<string, number>>({});
+    // Composed strategies edit params via their spec + the component registry.
+    const [specState, setSpecState] = useState<any>(null);
+    const [registry, setRegistry] = useState<any>(null);
 
     // Period state
     const [startDate, setStartDate] = useState('');
@@ -138,18 +141,57 @@ function BacktestContent() {
         }
         const symbolParam = searchParams.get('symbol');
         if (symbolParam) setSymbol(symbolParam);
+        // Apply a timeframe passed from the scan (max -> 'all').
+        const periodParam = searchParams.get('period');
+        if (periodParam) {
+            const map: Record<string, any> = { '1y': '1y', '2y': '3y', '3y': '3y', '5y': '5y', 'max': 'all', 'all': 'all' };
+            if (map[periodParam]) setRangeType(map[periodParam]);
+        }
     }, [strategyId]);
 
     const fetchStrategy = async () => {
         try {
             const response = await api.get(`/api/stocks/strategies/${strategyId}/`);
             setStrategy(response.data);
+            if (response.data.spec) {
+                const sp = response.data.spec;
+                setSpecState({
+                    version: 1, alpha: sp.alpha ?? null,
+                    regime: Array.isArray(sp.regime) ? sp.regime : sp.regime ? [sp.regime] : [],
+                    stop: sp.stop ?? null,
+                    exit: Array.isArray(sp.exit) ? sp.exit : sp.exit ? [sp.exit] : [],
+                    rr: sp.rr ?? null, name: sp.name,
+                });
+                api.get('/api/stocks/strategies/components/').then((r) => setRegistry(r.data)).catch(() => { });
+            }
         } catch {
             toast.error('Failed to load strategy');
         } finally {
             setLoading(false);
         }
     };
+
+    // Flatten the spec into editable parameters (composed strategies).
+    const specParams = useMemo(() => {
+        if (!specState || !registry) return null;
+        const all = [...registry.alpha, ...registry.regime, ...registry.stop, ...registry.exit];
+        const meta = (t: string) => all.find((c: any) => c.type === t);
+        const out: any[] = [];
+        const pushNode = (node: any, group: string, setNode: (n: any) => void) => {
+            const m = meta(node.type); if (!m) return;
+            out.push({ header: `${group}: ${m.label}` });
+            (m.params || []).forEach((p: any) => out.push({
+                id: `${group}-${node.type}-${p.name}`, label: p.label || p.name, type: p.type,
+                step: p.step, value: node.params?.[p.name] ?? p.default,
+                set: (v: number) => setNode({ ...node, params: { ...(node.params || {}), [p.name]: v } }),
+            }));
+        };
+        if (specState.alpha) pushNode(specState.alpha, 'Signal', (n) => setSpecState((s: any) => ({ ...s, alpha: n })));
+        (specState.regime || []).forEach((n: any, i: number) => pushNode(n, 'Filter', (nn) => setSpecState((s: any) => { const r = [...s.regime]; r[i] = nn; return { ...s, regime: r }; })));
+        if (specState.stop) pushNode(specState.stop, 'Stop', (n) => setSpecState((s: any) => ({ ...s, stop: n })));
+        (specState.exit || []).forEach((n: any, i: number) => pushNode(n, 'Exit', (nn) => setSpecState((s: any) => { const e = [...s.exit]; e[i] = nn; return { ...s, exit: e }; })));
+        return out;
+    }, [specState, registry]);
 
     const fetchSectors = async () => {
         try {
@@ -208,8 +250,15 @@ function BacktestContent() {
         setSavedExperimentId(null);
 
         try {
+            // Composed strategies: recompile the (possibly edited) spec into code.
+            let code = strategy.code;
+            if (specState) {
+                const rr = await api.post('/api/stocks/strategies/render_spec/', { spec: specState });
+                if (!rr.data.valid) { toast.error(rr.data.error || 'Invalid strategy spec'); setRunning(false); return; }
+                code = rr.data.code;
+            }
             const requestData: any = {
-                code: strategy.code,
+                code,
                 start_date: startDate,
                 end_date: endDate,
                 parameters,
@@ -350,7 +399,20 @@ function BacktestContent() {
                                         )}
                                     </div>
 
-                                    {paramEntries.length === 0 ? (
+                                    {specParams ? (
+                                        <div className="relative max-h-[44vh] overflow-y-auto pr-1 space-y-2">
+                                            {specParams.map((p: any, idx: number) => p.header ? (
+                                                <div key={`h${idx}`} className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-slate-500 pt-2">{p.header}</div>
+                                            ) : (
+                                                <div key={p.id} className="flex items-center justify-between gap-2">
+                                                    <span className="text-xs text-gray-600 dark:text-slate-400 truncate" title={p.label}>{p.label}</span>
+                                                    <input type="number" value={p.value} step={p.type === 'float' ? (p.step ?? 0.1) : (p.step ?? 1)}
+                                                        onChange={(e) => { const n = p.type === 'float' ? parseFloat(e.target.value) : parseInt(e.target.value, 10); if (!isNaN(n)) p.set(n); }}
+                                                        className="w-24 h-8 px-2 text-xs text-center border rounded-md border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 dark:text-slate-100 font-mono outline-none focus:ring-1 focus:ring-blue-500" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : paramEntries.length === 0 ? (
                                         <p className="text-[10px] text-gray-400 dark:text-slate-500 italic text-center py-4">
                                             No parameters found
                                         </p>
