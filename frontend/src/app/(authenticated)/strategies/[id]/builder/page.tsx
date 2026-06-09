@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { CompanySelect } from '@/components/CompanySelect';
 import { PageLoader } from '@/components/ui/StockLoader';
 import { MetricsDisplay } from '../../components/MetricsDisplay';
+import { StrategyWorkspaceNav } from '../../components/StrategyWorkspaceNav';
 import { toast } from 'sonner';
 import { Play, Save, Code, Blocks, AlertTriangle, Check, ExternalLink, X, Plus, Target } from 'lucide-react';
 
@@ -185,15 +186,10 @@ export default function StrategyBuilderPage() {
     return (
         <DashboardLayout>
             <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+                <StrategyWorkspaceNav strategyId={id} active="build" />
                 <div className="flex items-center justify-between flex-wrap gap-3">
-                    <div>
-                        <div className="flex items-center gap-2 text-2xl font-bold"><Blocks className="text-blue-600" /> Strategy Builder</div>
-                        <p className="text-sm text-gray-500">{strategy.name} — compose from building blocks, no code required.</p>
-                    </div>
-                    <div className="flex gap-2">
-                        <Link href={`/strategies/${id}/editor`}><Button variant="outline" className="gap-1.5"><Code size={16} /> Code view</Button></Link>
-                        <Button onClick={save} disabled={saving || !preview.valid} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"><Save size={16} /> {saving ? 'Saving…' : 'Save'}</Button>
-                    </div>
+                    <div className="flex items-center gap-2 text-lg font-bold"><Blocks className="text-blue-600" size={20} /> Visual Builder</div>
+                    <Button onClick={save} disabled={saving || !preview.valid} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"><Save size={16} /> {saving ? 'Saving…' : 'Save'}</Button>
                 </div>
 
                 {strategy.code && !strategy.spec && (
