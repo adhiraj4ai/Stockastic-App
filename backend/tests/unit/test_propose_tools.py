@@ -10,7 +10,7 @@ from unittest.mock import patch
 import pytest
 
 from chat import _user_context
-from chat.tools import propose_trade, propose_exits, propose_rebalance
+from chat.tools import propose_trade, propose_exits, propose_rebalance, propose_trade_plan
 from stocks.models.portfolio import (
     PortfolioActionDraft, PortfolioAccount, PortfolioItem, PortfolioTransaction,
 )
@@ -83,3 +83,30 @@ class TestProposeRebalance:
         assert "trades" in draft.payload
         # Nothing executed at propose time:
         assert PortfolioItem.objects.get(user=user, ticker="NABIL").quantity == 20
+
+
+@pytest.mark.django_db(transaction=True)
+class TestProposeTradePlan:
+    def test_creates_trade_plan_draft(self, create_user):
+        user = create_user(username="ptp1", password="p")
+        acct = PortfolioAccount.objects.create(user=user, name="Paper", account_type="PAPER", balance=Decimal("1000000"))
+        res = _call(propose_trade_plan, {
+            "ticker": "NABIL", "account_id": acct.id, "thesis": "Recovery",
+            "risk_budget_pct": 2.0, "target_price": 1350.0,
+            "legs": [
+                {"leg_number": 1, "price_target": 1200.0, "allocation_pct": 60.0, "stop_loss_price": 1140.0},
+                {"leg_number": 2, "price_target": 1150.0, "allocation_pct": 40.0, "stop_loss_price": 1095.0},
+            ],
+        }, user)
+        assert res["is_error"] is False
+        draft = PortfolioActionDraft.objects.get(user=user, kind=PortfolioActionDraft.Kind.TRADE_PLAN)
+        assert draft.payload["ticker"] == "NABIL"
+        assert len(draft.payload["legs"]) == 2
+
+    def test_rejects_legs_not_summing_100(self, create_user):
+        user = create_user(username="ptp2", password="p")
+        res = _call(propose_trade_plan, {
+            "ticker": "NABIL", "risk_budget_pct": 2.0,
+            "legs": [{"leg_number": 1, "price_target": 1200.0, "allocation_pct": 50.0, "stop_loss_price": 1140.0}],
+        }, user)
+        assert res["is_error"] is True

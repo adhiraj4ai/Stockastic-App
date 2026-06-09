@@ -164,3 +164,41 @@ class TestConfirmRebalance:
         assert len(result["transaction_ids"]) == 1
         assert PortfolioTarget.objects.filter(user=user, category_name="Banking").exists()
         assert PortfolioItem.objects.get(user=user, ticker="NABIL", account=acct).quantity == 15
+
+
+@pytest.mark.django_db
+class TestConfirmTradePlan:
+    def test_creates_trade_plan_with_legs(self, create_user):
+        from stocks.models.portfolio import TradePlan
+        user = create_user(username="tp1", password="p")
+        acct = _paper_account(user)
+        draft = create_draft(
+            user=user, account=acct, kind=PortfolioActionDraft.Kind.TRADE_PLAN,
+            title="Plan: NABIL",
+            payload={
+                "ticker": "NABIL", "account": acct.id, "thesis": "Banking recovery",
+                "risk_budget_pct": "2.00", "target_price": "1350.00",
+                "legs": [
+                    {"leg_number": 1, "price_target": "1200.00", "allocation_pct": "60.00", "stop_loss_price": "1140.00"},
+                    {"leg_number": 2, "price_target": "1150.00", "allocation_pct": "40.00", "stop_loss_price": "1095.00"},
+                ],
+            },
+            preview={},
+        )
+        result = confirm_draft(draft)
+        plan = TradePlan.objects.get(id=result["trade_plan_id"])
+        assert plan.ticker == "NABIL"
+        assert plan.legs.count() == 2
+
+    def test_invalid_legs_sum_rejected(self, create_user):
+        from rest_framework.exceptions import ValidationError
+        user = create_user(username="tp2", password="p")
+        draft = create_draft(
+            user=user, account=None, kind=PortfolioActionDraft.Kind.TRADE_PLAN,
+            title="bad",
+            payload={"ticker": "NABIL", "risk_budget_pct": "2.00",
+                     "legs": [{"leg_number": 1, "price_target": "1200.00", "allocation_pct": "50.00", "stop_loss_price": "1140.00"}]},
+            preview={},
+        )
+        with pytest.raises(ValidationError):
+            confirm_draft(draft)

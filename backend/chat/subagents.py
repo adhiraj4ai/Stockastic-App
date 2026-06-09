@@ -159,6 +159,7 @@ PORTFOLIO_MANAGER = AgentDefinition(
         tool_id("propose_trade"),
         tool_id("propose_exits"),
         tool_id("propose_rebalance"),
+        tool_id("propose_trade_plan"),
         tool_id("get_portfolio_overview"),
         tool_id("get_holdings"),
         tool_id("get_watchlist"),

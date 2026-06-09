@@ -2459,6 +2459,71 @@ async def propose_rebalance(args: dict) -> dict:
     return await _run()
 
 
+@tool(
+    "propose_trade_plan",
+    "Draft a staged multi-leg trade plan (up to 5 legs) for the user to CONFIRM. legs is a "
+    "list of {leg_number, price_target, allocation_pct, stop_loss_price}; allocation_pct must "
+    "sum to 100 and each stop_loss_price must be below its price_target. Pass ticker, "
+    "risk_budget_pct, optional account_id, thesis, target_price. Does NOT execute — on confirm "
+    "it creates a TradePlan the user works through over time.",
+    {"ticker": str, "legs": list, "risk_budget_pct": float, "target_price": float,
+     "thesis": str, "account_id": str},
+)
+async def propose_trade_plan(args: dict) -> dict:
+    ticker = (args.get("ticker") or "").upper().strip()
+    legs = args.get("legs") or []
+    risk_budget_pct = args.get("risk_budget_pct")
+    if not ticker or not legs or risk_budget_pct is None:
+        return _result("Provide ticker, risk_budget_pct, and at least one leg.", is_error=True)
+
+    total_alloc = sum(float(l.get("allocation_pct") or 0) for l in legs)
+    if round(total_alloc, 2) != 100.0:
+        return _result(f"Leg allocation_pct must sum to 100 (got {total_alloc:.2f}).", is_error=True)
+    for l in legs:
+        if float(l.get("stop_loss_price") or 0) >= float(l.get("price_target") or 0):
+            return _result(f"Leg {l.get('leg_number')}: stop_loss_price must be below price_target.", is_error=True)
+
+    account_id = args.get("account_id")
+    thesis = args.get("thesis") or ""
+    target_price = args.get("target_price")
+    user = get_user()
+
+    @sync_to_async
+    def _run():
+        account = _resolve_account(user, account_id)
+        # Build the payload in the exact shape TradePlanSerializer expects.
+        payload = {
+            "ticker": ticker,
+            "account": account.id if account else None,
+            "thesis": thesis,
+            "risk_budget_pct": f"{float(risk_budget_pct):.2f}",
+            "target_price": f"{float(target_price):.2f}" if target_price is not None else None,
+            "legs": [{
+                "leg_number": int(l["leg_number"]),
+                "price_target": f"{float(l['price_target']):.2f}",
+                "allocation_pct": f"{float(l['allocation_pct']):.2f}",
+                "stop_loss_price": f"{float(l['stop_loss_price']):.2f}",
+            } for l in legs],
+        }
+        title = f"Trade plan: {ticker} — {len(legs)} legs"
+        lines = [{"label": f"Leg {l['leg_number']}: {float(l['allocation_pct']):.0f}% @ Rs {float(l['price_target']):,.2f}",
+                  "ticker": ticker} for l in legs]
+        card_preview = {"title": title, "lines": lines, "warnings": []}
+        draft = create_draft(
+            user=user, account=account, kind=PortfolioActionDraft.Kind.TRADE_PLAN,
+            title=title, payload=payload, preview=card_preview,
+        )
+        return _result(
+            f"Drafted a {len(legs)}-leg trade plan for {ticker} (risk budget {float(risk_budget_pct):.1f}%). "
+            f"Awaiting your confirmation.",
+            card={"type": "proposal",
+                  "data": {"draft_id": draft.id, "kind": "TRADE_PLAN", "title": title,
+                           "status": "PENDING", "preview": card_preview}},
+            _tool_name="propose_trade_plan")
+
+    return await _run()
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # MCP server registration
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2517,6 +2582,7 @@ ALL_TOOLS = [
     propose_trade,
     propose_exits,
     propose_rebalance,
+    propose_trade_plan,
 ]
 
 
