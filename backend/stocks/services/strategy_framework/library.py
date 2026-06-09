@@ -16,6 +16,10 @@ __all__ = [
     "AccumulationAboveMA", "AccumulationMaCross", "StochRsiCross", "MfiOversold",
     "VwapReclaim", "VolumeBreakout", "ParabolicSarFlip", "IchimokuCloud",
     "KeltnerReclaim", "AdxDi", "ZScoreReversion",
+    "WilliamsROversold", "AroonCross", "CoppockTurn", "CmfCross", "ForceIndexZero",
+    "ObvAboveMA", "SmaPullback", "Rsi2Connors", "ThreeWhiteSoldiers", "DualThrust",
+    "AlligatorBreakout", "Nr7Breakout", "InsideBarBreakout", "FibGoldenZone",
+    "TurtleSoupReversal", "AccumulationDivergence",
     # regimes
     "AboveEMA", "AdxAbove",
     # stops
@@ -364,6 +368,296 @@ class ZScoreReversion(Alpha):
 
     def exit(self, strat):
         return self._get(strat, "z")[-1] > self.z_exit
+
+
+class WilliamsROversold(Alpha):
+    def __init__(self, period=14, lower=-80, upper=-20):
+        self.period, self.lower, self.upper = period, lower, upper
+
+    def register(self, strat):
+        h, l, c = _hlc(strat)
+        self._put(strat, wr=strat.I(lambda: ta.willr(h, l, c, length=self.period).values))
+
+    def entry(self, strat):
+        return self._get(strat, "wr")[-1] < self.lower
+
+    def exit(self, strat):
+        return self._get(strat, "wr")[-1] > self.upper
+
+
+class AroonCross(Alpha):
+    def __init__(self, period=14, strong=70):
+        self.period, self.strong = period, strong
+
+    def register(self, strat):
+        h, l, _ = _hlc(strat)
+        ar = ta.aroon(h, l, length=self.period)
+        self._put(strat, down=strat.I(lambda: ar.iloc[:, 0].values),
+                  up=strat.I(lambda: ar.iloc[:, 1].values))
+
+    def entry(self, strat):
+        u, d = self._get(strat, "up"), self._get(strat, "down")
+        return u[-2] < d[-2] and u[-1] > d[-1] and u[-1] > self.strong
+
+    def exit(self, strat):
+        return self._get(strat, "down")[-1] > self._get(strat, "up")[-1]
+
+
+class CoppockTurn(Alpha):
+    def __init__(self, length=10, fast=11, slow=14):
+        self.length, self.fast, self.slow = length, fast, slow
+
+    def register(self, strat):
+        c = _close(strat)
+        self._put(strat, cop=strat.I(
+            lambda: ta.coppock(c, length=self.length, fast=self.fast, slow=self.slow).values))
+
+    def entry(self, strat):
+        cop = self._get(strat, "cop")
+        return cop[-2] < 0 and cop[-1] > 0
+
+    def exit(self, strat):
+        return self._get(strat, "cop")[-1] < 0
+
+
+class CmfCross(Alpha):
+    def __init__(self, period=20, entry=0.05):
+        self.period, self.entry_thr = period, entry
+
+    def register(self, strat):
+        h, l, c = _hlc(strat)
+        v = pd.Series(strat.data.Volume)
+        self._put(strat, cmf=strat.I(lambda: ta.cmf(h, l, c, v, length=self.period).values))
+
+    def entry(self, strat):
+        cmf = self._get(strat, "cmf")
+        return cmf[-2] < self.entry_thr and cmf[-1] >= self.entry_thr
+
+    def exit(self, strat):
+        return self._get(strat, "cmf")[-1] < 0
+
+
+class ForceIndexZero(Alpha):
+    def __init__(self, period=13):
+        self.period = period
+
+    def register(self, strat):
+        c = _close(strat)
+        v = pd.Series(strat.data.Volume)
+        self._put(strat, efi=strat.I(lambda: ta.efi(c, v, length=self.period).values))
+
+    def entry(self, strat):
+        efi = self._get(strat, "efi")
+        return efi[-2] < 0 and efi[-1] > 0
+
+
+class ObvAboveMA(Alpha):
+    def __init__(self, ma=20):
+        self.ma = ma
+
+    def register(self, strat):
+        c = _close(strat)
+        v = pd.Series(strat.data.Volume)
+        obv = ta.obv(c, v)
+        self._put(strat, obv=strat.I(lambda: obv.values),
+                  obvma=strat.I(lambda: obv.rolling(self.ma).mean().values))
+
+    def entry(self, strat):
+        return self._get(strat, "obv")[-1] > self._get(strat, "obvma")[-1]
+
+
+class SmaPullback(Alpha):
+    """Buy a pullback to the fast SMA inside a golden-cross uptrend."""
+
+    def __init__(self, fast=50, slow=200, near=0.02):
+        self.fast, self.slow, self.near = fast, slow, near
+
+    def register(self, strat):
+        c = _close(strat)
+        self._put(strat, f=strat.I(lambda: ta.sma(c, self.fast).values),
+                  s=strat.I(lambda: ta.sma(c, self.slow).values))
+
+    def entry(self, strat):
+        price = strat.data.Close[-1]
+        f, s = self._get(strat, "f"), self._get(strat, "s")
+        return f[-1] > s[-1] and abs(price - f[-1]) / price < self.near and price > f[-1]
+
+    def exit(self, strat):
+        return strat.data.Close[-1] < self._get(strat, "s")[-1]
+
+
+class Rsi2Connors(Alpha):
+    """Larry Connors RSI-2: aggressive dip-buy above a long SMA, exit above a short SMA."""
+
+    def __init__(self, rsi_len=2, lower=10, sma_long=200, sma_exit=5):
+        self.rsi_len, self.lower, self.sma_long, self.sma_exit = rsi_len, lower, sma_long, sma_exit
+
+    def register(self, strat):
+        c = _close(strat)
+        self._put(strat, rsi=strat.I(lambda: ta.rsi(c, self.rsi_len).values),
+                  long=strat.I(lambda: ta.sma(c, self.sma_long).values),
+                  short=strat.I(lambda: ta.sma(c, self.sma_exit).values))
+
+    def entry(self, strat):
+        return strat.data.Close[-1] > self._get(strat, "long")[-1] and self._get(strat, "rsi")[-1] < self.lower
+
+    def exit(self, strat):
+        return strat.data.Close[-1] > self._get(strat, "short")[-1]
+
+
+class ThreeWhiteSoldiers(Alpha):
+    """Three consecutive higher closes with green candles; exit on a red candle."""
+
+    def __init__(self, n=3):
+        self.n = n
+
+    def entry(self, strat):
+        if len(strat.data.Close) < self.n + 1:
+            return False
+        C, O = strat.data.Close, strat.data.Open
+        return all(C[-i] > C[-i - 1] and C[-i] > O[-i] for i in range(1, self.n + 1))
+
+    def exit(self, strat):
+        return strat.data.Close[-1] < strat.data.Open[-1]
+
+
+class DualThrust(Alpha):
+    def __init__(self, n=4, k1=0.5, k2=0.5):
+        self.n, self.k1, self.k2 = n, k1, k2
+
+    def register(self, strat):
+        h, l, c = _hlc(strat)
+        hh = h.rolling(self.n).max()
+        lc = c.rolling(self.n).min()
+        hc = c.rolling(self.n).max()
+        ll = l.rolling(self.n).min()
+        rng = pd.concat([hh - lc, hc - ll], axis=1).max(axis=1)
+        self._put(strat, rng=strat.I(lambda: rng.values))
+
+    def entry(self, strat):
+        rng = self._get(strat, "rng")[-1]
+        if np.isnan(rng):
+            return False
+        return strat.data.Close[-1] > strat.data.Open[-1] + self.k1 * rng
+
+    def exit(self, strat):
+        rng = self._get(strat, "rng")[-1]
+        if np.isnan(rng):
+            return False
+        return strat.data.Close[-1] < strat.data.Open[-1] - self.k2 * rng
+
+
+class AlligatorBreakout(Alpha):
+    def __init__(self, jaw=13, teeth=8, lips=5, jaw_s=8, teeth_s=5, lips_s=3, frac=5):
+        self.jaw, self.teeth, self.lips = jaw, teeth, lips
+        self.jaw_s, self.teeth_s, self.lips_s, self.frac = jaw_s, teeth_s, lips_s, frac
+
+    def register(self, strat):
+        c = _close(strat)
+        h, _, _ = _hlc(strat)
+        self._put(strat,
+                  jaw=strat.I(lambda: ta.ema(c, self.jaw).shift(self.jaw_s).bfill().values),
+                  teeth=strat.I(lambda: ta.ema(c, self.teeth).shift(self.teeth_s).bfill().values),
+                  lips=strat.I(lambda: ta.ema(c, self.lips).shift(self.lips_s).bfill().values),
+                  hi=strat.I(lambda: h.rolling(self.frac).max().shift(1).values))
+
+    def entry(self, strat):
+        j, t, lp = self._get(strat, "jaw"), self._get(strat, "teeth"), self._get(strat, "lips")
+        return lp[-1] > t[-1] > j[-1] and strat.data.Close[-1] > self._get(strat, "hi")[-1]
+
+    def exit(self, strat):
+        return self._get(strat, "lips")[-1] < self._get(strat, "teeth")[-1]
+
+
+class Nr7Breakout(Alpha):
+    def register(self, strat):
+        h, l, _ = _hlc(strat)
+        self._put(strat, rng=strat.I(lambda: (h - l).values))
+
+    def entry(self, strat):
+        r = self._get(strat, "rng")
+        if len(r) < 8:
+            return False
+        return r[-2] < min(r[-8:-2]) and strat.data.Close[-1] > strat.data.High[-2]
+
+
+class InsideBarBreakout(Alpha):
+    def entry(self, strat):
+        if len(strat.data.Close) < 4:
+            return False
+        H, L = strat.data.High, strat.data.Low
+        is_inside = H[-2] < H[-3] and L[-2] > L[-3]
+        return is_inside and strat.data.Close[-1] > H[-3]
+
+
+class FibGoldenZone(Alpha):
+    def __init__(self, lookback=50):
+        self.lookback = lookback
+
+    def register(self, strat):
+        h, l, _ = _hlc(strat)
+        self._put(strat, hi=strat.I(lambda: h.rolling(self.lookback).max().values),
+                  lo=strat.I(lambda: l.rolling(self.lookback).min().values))
+
+    def entry(self, strat):
+        hi, lo = self._get(strat, "hi")[-1], self._get(strat, "lo")[-1]
+        diff = hi - lo
+        if diff <= 0:
+            return False
+        price = strat.data.Close[-1]
+        return (lo + 0.5 * diff) <= price <= (lo + 0.618 * diff)
+
+    def exit(self, strat):
+        return strat.data.Close[-1] > self._get(strat, "hi")[-1]
+
+
+class TurtleSoupReversal(Alpha):
+    """False-breakout reversal: undercut the prior N-day low then reclaim it."""
+
+    def __init__(self, lookback=20):
+        self.lookback = lookback
+
+    def register(self, strat):
+        _, l, _ = _hlc(strat)
+        self._put(strat, lo=strat.I(lambda: l.rolling(self.lookback).min().shift(1).values))
+
+    def entry(self, strat):
+        lo = self._get(strat, "lo")[-1]
+        if np.isnan(lo):
+            return False
+        return strat.data.Low[-1] < lo and strat.data.Close[-1] > lo
+
+
+class AccumulationDivergence(Alpha):
+    """Contrarian: price falling while broker accumulation rises (absorption)."""
+
+    def __init__(self, symbol, lookback=10):
+        self.symbol, self.lookback = symbol, lookback
+
+    def register(self, strat):
+        from stocks.models import DailyCumulativeAccumulation
+        dates = strat.data.index
+        qs = DailyCumulativeAccumulation.objects.filter(symbol=self.symbol).values(
+            'transaction_date', 'cumulative_net')
+        if not qs:
+            self._put(strat, acc=strat.I(lambda: np.zeros(len(dates))))
+            return
+        df = pd.DataFrame(list(qs))
+        df['transaction_date'] = pd.to_datetime(df['transaction_date'])
+        daily = df.groupby('transaction_date')['cumulative_net'].sum().reindex(dates).ffill().fillna(0).astype(float)
+        self._put(strat, acc=strat.I(lambda: daily.values))
+
+    def entry(self, strat):
+        n = self.lookback
+        if len(strat.data.Close) < n:
+            return False
+        acc = self._get(strat, "acc")
+        return strat.data.Close[-1] < strat.data.Close[-n] and acc[-1] > acc[-n]
+
+    def exit(self, strat):
+        n = self.lookback
+        acc = self._get(strat, "acc")
+        return strat.data.Close[-1] > strat.data.Close[-n] and acc[-1] < acc[-n]
 
 
 # --------------------------------------------------------------------------- #

@@ -94,15 +94,18 @@ class ExitRule(Component):
         return False
 
 
-def build_strategy(alpha, regime=None, stop=None, exit=None, name="ComposedStrategy", **params):
+def build_strategy(alpha, regime=None, stop=None, exit=None, rr=None,
+                   name="ComposedStrategy", **params):
     """Compile components into a backtesting.py Strategy subclass.
 
     `exit` may be an ExitRule or a list of them; if omitted, the alpha's own
-    reverse-signal exit is used. `params` become class attributes (so the existing
+    reverse-signal exit is used. `rr`, if set, attaches a fixed reward:risk take-profit
+    at entry (target = entry + rr * (entry - stop)) — for reversal strategies that bank
+    a fixed multiple of risk. `params` become class attributes (so the existing
     regex-based optimizer can still tune them).
     """
     exits = list(exit) if isinstance(exit, (list, tuple)) else ([exit] if exit else [])
-    _alpha, _regime, _stop = alpha, regime, stop
+    _alpha, _regime, _stop, _rr = alpha, regime, stop, rr
 
     class _Composed(_BTStrategy):
         def init(self):
@@ -122,7 +125,8 @@ def build_strategy(alpha, regime=None, stop=None, exit=None, name="ComposedStrat
                     # A wide ATR stop can fall below zero on low-priced / high-vol names;
                     # only attach the stop when it's a valid (0, price) level.
                     if sl is not None and 0 < sl < price:
-                        self.buy(sl=sl)
+                        tp = price + _rr * (price - sl) if _rr else None
+                        self.buy(sl=sl, tp=tp)
                     else:
                         self.buy()
             else:

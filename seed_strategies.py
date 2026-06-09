@@ -1983,6 +1983,45 @@ strategies = [
     },
 ]
 
+# -----------------------------------------------------------------------------
+# Composition ports (stocks.services.strategy_framework). Each entry below was
+# validated to match-or-beat its hand-written version on the 24-symbol basket
+# (parity-gated — strategies where the hand version was better, incl. the big
+# winners like Dual Thrust / Three White Soldiers, are intentionally NOT ported).
+# Applied as a post-pass over `strategies` so seeding persists the ported form.
+# -----------------------------------------------------------------------------
+def _FW(body):
+    return ("from stocks.services.strategy_framework import build_strategy, alphas, regimes, stops, exits\n"
+            "Strategy = " + body)
+
+PORTED = {
+ "Supertrend Follower": _FW("build_strategy(alpha=alphas.SupertrendFlip(10,3.0), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='Supertrend')"),
+ "Turtle Trading (Channel Breakout)": _FW("build_strategy(alpha=alphas.DonchianBreakout(20,10), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='Turtle')"),
+ "Parabolic SAR (Momentum)": _FW("build_strategy(alpha=alphas.ParabolicSarFlip(), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='ParabolicSar')"),
+ "Ichimoku Cloud Trend": _FW("build_strategy(alpha=alphas.IchimokuCloud(), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='IchimokuTrend')"),
+ "ADX Trend Strength": _FW("build_strategy(alpha=alphas.AdxDi(14,25), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='AdxTrend')"),
+ "Keltner Channel Breakout": _FW("build_strategy(alpha=alphas.KeltnerReclaim(), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), exit=exits.TrendBreak(200), name='Keltner')"),
+ "Aroon Trend Strength": _FW("build_strategy(alpha=alphas.AroonCross(14,70), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='Aroon')"),
+ "Coppock Curve (Long Term)": _FW("build_strategy(alpha=alphas.CoppockTurn(), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='Coppock')"),
+ "Chaikin Money Flow Divergence": _FW("build_strategy(alpha=alphas.CmfCross(20,0.05), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='Cmf')"),
+ "On-Balance Volume (OBV) Trend": _FW("build_strategy(alpha=alphas.ObvAboveMA(20), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), exit=exits.TrendBreak(200), name='Obv')"),
+ "Williams Alligator v2": _FW("build_strategy(alpha=alphas.AlligatorBreakout(), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='Alligator')"),
+ "Inside Bar Momentum": _FW("build_strategy(alpha=alphas.InsideBarBreakout(), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(2.5), exit=exits.TrendBreak(200), name='InsideBar')"),
+ "RSI & Bollinger Mean Reversion": _FW("build_strategy(alpha=alphas.RsiOversold(14,40,70), regime=regimes.AboveEMA(200), stop=stops.FixedAtr(6), name='RsiDip')"),
+ "RSI-2 Mean Reversion": _FW("build_strategy(alpha=alphas.Rsi2Connors(2,10,200,5), stop=stops.FixedAtr(6), name='Rsi2')"),
+ "Money Flow Index Reversal": _FW("build_strategy(alpha=alphas.MfiOversold(14), stop=stops.FixedAtr(6), name='Mfi')"),
+ "Fibonacci Golden Zone": _FW("build_strategy(alpha=alphas.FibGoldenZone(50), regime=regimes.AboveEMA(200), stop=stops.FixedAtr(6), name='Fib')"),
+ "Turtle Soup Reversal": _FW("build_strategy(alpha=alphas.TurtleSoupReversal(20), stop=stops.FixedAtr(1.0), rr=2.0, name='TurtleSoup')"),
+ "Smart Money Accumulation": _FW("build_strategy(alpha=alphas.AccumulationAboveMA(symbol=symbol, top_n=5, ma=20), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='SmartMoney')"),
+ "Accumulation Divergence": _FW("build_strategy(alpha=alphas.AccumulationDivergence(symbol=symbol, lookback=10), stop=stops.FixedAtr(6), name='AccDiv')"),
+ "Broker Accumulation (Institutional)": _FW("build_strategy(alpha=alphas.AccumulationAboveMA(symbol=symbol, top_n=20, ma=20), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='BrokerAcc')"),
+}
+
+for _s in strategies:
+    if _s["name"] in PORTED:
+        _s["code"] = PORTED[_s["name"]]
+
+
 def seed():
     # Get a default user (usually superuser or first user)
     user = User.objects.first()
