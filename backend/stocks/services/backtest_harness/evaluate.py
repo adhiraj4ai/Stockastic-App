@@ -19,7 +19,10 @@ from .runner import run_backtest, load_price_df, BacktestResult
 __all__ = ["evaluate_over_basket", "score_results", "ScoreCard"]
 
 MIN_TRADE_SYMBOL_FRACTION = 0.60
-MIN_MEDIAN_TRADES = 5
+# A "not degenerate" floor: slow trend strategies (e.g. a 50/200 golden cross) may
+# legitimately trade only a handful of times over a multi-year window. 3 still rejects
+# the truly inactive (e.g. a 1-trade run) without penalizing sound slow strategies.
+MIN_MEDIAN_TRADES = 3
 
 
 def _ret_over_dd(metrics):
