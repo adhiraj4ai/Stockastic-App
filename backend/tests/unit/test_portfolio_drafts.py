@@ -111,3 +111,33 @@ class TestConfirmTrade:
             confirm_draft(draft)
         draft.refresh_from_db()
         assert draft.status == PortfolioActionDraft.Status.PENDING  # rolled back, still pending
+
+
+@pytest.mark.django_db
+class TestConfirmExits:
+    def test_sets_stop_and_target_on_owned_item(self, create_user):
+        user = create_user(username="ex1", password="p")
+        item = PortfolioItem.objects.create(user=user, ticker="SHL", quantity=20, buy_price=Decimal("500"), wacc=Decimal("500"))
+        draft = create_draft(
+            user=user, account=None, kind=PortfolioActionDraft.Kind.EXITS,
+            title="Set exits on SHL",
+            payload={"items": [{"item_id": item.id, "ticker": "SHL", "stop_loss_price": 480.0, "target_price": 560.0}]},
+            preview={},
+        )
+        confirm_draft(draft)
+        item.refresh_from_db()
+        assert float(item.stop_loss_price) == 480.0
+        assert float(item.target_price) == 560.0
+
+    def test_ignores_item_not_owned_by_user(self, create_user):
+        user = create_user(username="ex2", password="p")
+        other = create_user(username="ex2b", password="p")
+        foreign = PortfolioItem.objects.create(user=other, ticker="SHL", quantity=20, buy_price=Decimal("500"), wacc=Decimal("500"))
+        draft = create_draft(
+            user=user, account=None, kind=PortfolioActionDraft.Kind.EXITS,
+            title="x", payload={"items": [{"item_id": foreign.id, "stop_loss_price": 1.0}]}, preview={},
+        )
+        result = confirm_draft(draft)
+        foreign.refresh_from_db()
+        assert foreign.stop_loss_price is None
+        assert result["updated_tickers"] == []

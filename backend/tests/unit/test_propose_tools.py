@@ -9,7 +9,7 @@ from decimal import Decimal
 import pytest
 
 from chat import _user_context
-from chat.tools import propose_trade
+from chat.tools import propose_trade, propose_exits
 from stocks.models.portfolio import (
     PortfolioActionDraft, PortfolioAccount, PortfolioItem, PortfolioTransaction,
 )
@@ -46,3 +46,16 @@ class TestProposeTrade:
         assert len(cards) == 1
         assert cards[0]["type"] == "proposal"
         assert "draft_id" in cards[0]["data"]
+
+
+@pytest.mark.django_db(transaction=True)
+class TestProposeExits:
+    def test_creates_exits_draft_for_holding(self, create_user):
+        user = create_user(username="pe1", password="p")
+        item = PortfolioItem.objects.create(user=user, ticker="SHL", quantity=20, buy_price=Decimal("500"), wacc=Decimal("500"))
+        res = _call(propose_exits, {"ticker": "SHL", "stop_loss_price": 480.0, "target_price": 560.0}, user)
+        assert res["is_error"] is False
+        draft = PortfolioActionDraft.objects.get(user=user, kind=PortfolioActionDraft.Kind.EXITS)
+        assert draft.payload["items"][0]["item_id"] == item.id
+        item.refresh_from_db()
+        assert item.stop_loss_price is None  # not executed at propose time

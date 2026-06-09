@@ -2317,6 +2317,59 @@ async def propose_trade(args: dict) -> dict:
     return await _run()
 
 
+@tool(
+    "propose_exits",
+    "Draft a stop-loss and/or target price for one of the user's holdings, for them to "
+    "CONFIRM. Pass ticker and at least one of stop_loss_price / target_price. Optional "
+    "account_id to disambiguate which account's holding. Does NOT execute.",
+    {"ticker": str, "stop_loss_price": float, "target_price": float, "account_id": str},
+)
+async def propose_exits(args: dict) -> dict:
+    ticker = (args.get("ticker") or "").upper().strip()
+    stop = args.get("stop_loss_price")
+    target = args.get("target_price")
+    account_id = args.get("account_id")
+    if not ticker or (stop is None and target is None):
+        return _result("Provide ticker and at least one of stop_loss_price / target_price.", is_error=True)
+
+    user = get_user()
+
+    @sync_to_async
+    def _run():
+        account = _resolve_account(user, account_id)
+        qs = PortfolioItem.objects.filter(user=user, ticker=ticker)
+        if account:
+            qs = qs.filter(account=account)
+        item = qs.first()
+        if not item:
+            return _result(f"You don't hold {ticker}{' in that account' if account else ''}.", is_error=True)
+        title = f"Set exits on {ticker}" + (
+            f" — stop Rs {float(stop):,.2f}" if stop is not None else "") + (
+            f", target Rs {float(target):,.2f}" if target is not None else "")
+        line = {"label": ticker, "ticker": ticker}
+        if stop is not None:
+            line["stop_loss_price"] = float(stop)
+        if target is not None:
+            line["target_price"] = float(target)
+        payload = {"items": [{
+            "item_id": item.id, "ticker": ticker,
+            "stop_loss_price": float(stop) if stop is not None else None,
+            "target_price": float(target) if target is not None else None,
+        }]}
+        card_preview = {"title": title, "lines": [line], "warnings": []}
+        draft = create_draft(
+            user=user, account=account, kind=PortfolioActionDraft.Kind.EXITS,
+            title=title, payload=payload, preview=card_preview,
+        )
+        return _result(f"Drafted: {title}. Awaiting your confirmation.", card={
+            "type": "proposal",
+            "data": {"draft_id": draft.id, "kind": "EXITS", "title": title,
+                     "status": "PENDING", "preview": card_preview},
+        }, _tool_name="propose_exits")
+
+    return await _run()
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # MCP server registration
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2373,6 +2426,7 @@ ALL_TOOLS = [
     get_rebalance_targets,
     # Portfolio Manager (propose-then-confirm)
     propose_trade,
+    propose_exits,
 ]
 
 

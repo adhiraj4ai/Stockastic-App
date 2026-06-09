@@ -157,6 +157,7 @@ PORTFOLIO_MANAGER = AgentDefinition(
     initialPrompt=_initial("portfolio_manager"),
     tools=[
         tool_id("propose_trade"),
+        tool_id("propose_exits"),
         tool_id("get_portfolio_overview"),
         tool_id("get_holdings"),
         tool_id("get_watchlist"),
