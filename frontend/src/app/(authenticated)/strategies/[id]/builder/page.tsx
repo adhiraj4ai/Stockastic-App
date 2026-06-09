@@ -162,7 +162,7 @@ export default function StrategyBuilderPage() {
                 <Button onClick={save} disabled={saving || !preview.valid} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"><Save size={16} /> {saving ? 'Saving…' : 'Save'}</Button>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-[290px_1fr_380px] gap-4 items-start">
+            <div className="grid grid-cols-1 xl:grid-cols-[300px_1fr] gap-4 items-start">
                 {/* Palette */}
                 <div className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-gray-50/60 dark:bg-slate-900/40 p-3 xl:sticky xl:top-4 max-h-[80vh] overflow-y-auto">
                     <div className="relative mb-3">
@@ -234,25 +234,17 @@ export default function StrategyBuilderPage() {
                     )}
                 </div>
 
-                {/* Right: code + run */}
-                <div className="space-y-3 xl:sticky xl:top-4">
-                    <div className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-card p-3">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="font-semibold text-sm flex items-center gap-2"><Code size={15} /> Generated code</div>
-                            {spec.alpha && (preview.valid ? <span className="text-xs text-emerald-600 flex items-center gap-1"><Check size={13} /> valid</span> : <span className="text-xs text-red-500 flex items-center gap-1"><AlertTriangle size={13} /> invalid</span>)}
-                        </div>
-                        {preview.error && <div className="text-xs text-red-500 mb-1">{preview.error}</div>}
-                        <pre className="text-[11px] font-mono bg-gray-50 dark:bg-slate-950 border border-gray-100 dark:border-slate-800 rounded-lg p-2.5 overflow-x-auto whitespace-pre-wrap min-h-[100px]">{preview.code || '# add a signal'}</pre>
-                    </div>
-                    <div className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-card p-3 space-y-2">
-                        <div className="font-semibold text-sm">Quick backtest</div>
-                        <div className="flex items-end gap-2">
-                            <div className="flex-1"><label className="text-[11px] text-gray-500 block mb-1">Symbol (3y)</label><CompanySelect value={symbol} onChange={setSymbol} /></div>
-                            <Button onClick={runBacktest} disabled={running || !preview.valid} className="gap-1.5"><Play size={16} /> {running ? '…' : 'Run'}</Button>
-                        </div>
-                        <Link href={`/strategies/${id}/backtest`} className="text-xs text-blue-600 inline-flex items-center gap-1">Full backtest & robustness <ExternalLink size={12} /></Link>
-                    </div>
+            </div>
+
+            {/* Quick backtest — full width, below the flow */}
+            <div className="rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-card p-4 mt-4 flex flex-wrap items-end gap-3">
+                <div className="w-64">
+                    <label className="text-[11px] text-gray-500 block mb-1">Symbol — 3-year quick backtest</label>
+                    <CompanySelect value={symbol} onChange={setSymbol} />
                 </div>
+                <Button onClick={runBacktest} disabled={running || !preview.valid} className="gap-1.5"><Play size={16} /> {running ? 'Running…' : 'Run backtest'}</Button>
+                {spec.alpha && !preview.valid && <span className="text-xs text-red-500 flex items-center gap-1"><AlertTriangle size={13} /> {preview.error || 'invalid'}</span>}
+                <Link href={`/strategies/${id}/backtest`} className="text-xs text-blue-600 inline-flex items-center gap-1 ml-auto">Full backtest &amp; robustness <ExternalLink size={12} /></Link>
             </div>
 
             {running ? <PageLoader text="Running backtest…" /> : results ? (
