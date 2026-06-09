@@ -71,8 +71,12 @@ export default function TradePlansPage() {
 
   const handleCancel = async (plan: TradePlan) => {
     if (!confirm(`Cancel the plan for ${plan.ticker}?`)) return;
-    await api.delete(`/api/stocks/trade-plans/${plan.id}/`);
-    fetchPlans();
+    try {
+      await api.delete(`/api/stocks/trade-plans/${plan.id}/`);
+      fetchPlans();
+    } catch (err) {
+      console.error('Failed to cancel plan:', err);
+    }
   };
 
   const handlePlanUpdated = (updated: TradePlan) => {
