@@ -1160,7 +1160,7 @@ class GeneratedSignalViewSet(viewsets.ReadOnlyModelViewSet):
             ).order_by('source', 'start_date')
         )
 
-        # Normalise field names to match old GeneratedSignal shape used below:
+        # Normalise field names for the response shape used below:
         # signal → direction, generated_date → start_date, closed_date → end_date,
         # ltp → entry_price, strength → entry_strength
         for ep in all_episodes:

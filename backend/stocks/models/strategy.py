@@ -90,26 +90,3 @@ class StrategySymbolConfig(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.strategy.name} ({self.symbol})"
 
-class StrategySignal(models.Model):
-    SIGNAL_CHOICES = (
-        ('BUY', 'Buy'),
-        ('SELL', 'Sell'),
-        ('HOLD', 'Hold'),
-        ('NEUTRAL', 'Neutral'),
-    )
-
-    strategy = models.ForeignKey(Strategy, on_delete=models.CASCADE)
-    symbol = models.CharField(max_length=20)
-    date = models.DateField()
-    signal = models.CharField(max_length=10, choices=SIGNAL_CHOICES)
-    last_close = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    metadata = models.JSONField(default=dict, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        unique_together = ('strategy', 'symbol', 'date')
-        ordering = ['-date', 'strategy__name']
-
-    def __str__(self):
-        return f"{self.symbol} - {self.strategy.name}: {self.signal}"

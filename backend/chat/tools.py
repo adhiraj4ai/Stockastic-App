@@ -35,8 +35,9 @@ from stocks.models.portfolio import (
     TransactionType,
     WatchlistItem,
 )
-from stocks.models.strategy import Strategy, StrategyExperiment, StrategySignal
-from stocks.models.system import GeneratedSignal, Notification
+from stocks.models.strategy import Strategy, StrategyExperiment
+from stocks.models.signal import SignalEpisode, USER_STRATEGY
+from stocks.models.system import Notification
 from stocks.services.fundamental_service import FundamentalService
 from stocks.services.portfolio_service import PortfolioService
 from stocks.services.position_sizing import PositionSizingService
@@ -97,7 +98,7 @@ _SCOPE_RANK: dict[str, int] = {"SYMBOL": 3, "SECTOR": 2, "ALL": 1, "DEFAULT": 0}
 
 
 def _rank_strategy_signals(strat_signals: list) -> tuple[list[dict], str | None]:
-    """Enrich StrategySignal objects with strategy performance metrics and rank them.
+    """Enrich SignalEpisode (USER_STRATEGY) objects with strategy performance metrics and rank them.
 
     Ranking order (descending priority):
         1. optimization_scope: SYMBOL > SECTOR > ALL > DEFAULT
@@ -113,16 +114,16 @@ def _rank_strategy_signals(strat_signals: list) -> tuple[list[dict], str | None]
     for s in strat_signals:
         scope = (s.metadata or {}).get("optimization_scope", "DEFAULT")
         enriched.append({
-            "strategy": s.strategy.name,
-            "strategy_id": s.strategy.id,
-            "signal": s.signal,
-            "date": s.date.isoformat(),
-            "last_close": float(s.last_close) if s.last_close else None,
-            "pnl_pct": float(s.strategy.pnl_percent or 0),
-            "win_rate": float(s.strategy.win_rate or 0),  # strategy-level aggregate, not per-symbol
-            "sharpe": float(s.strategy.sharpe_ratio or 0),
-            "max_drawdown": float(s.strategy.max_drawdown or 0),
-            "best_objective": s.strategy.best_objective or "balanced",
+            "strategy": s.strategy.name if s.strategy else "",
+            "strategy_id": s.strategy.id if s.strategy else None,
+            "signal": s.direction,
+            "date": s.start_date.isoformat(),
+            "last_close": float(s.entry_price) if s.entry_price else None,
+            "pnl_pct": float(s.strategy.pnl_percent or 0) if s.strategy else 0,
+            "win_rate": float(s.strategy.win_rate or 0) if s.strategy else 0,
+            "sharpe": float(s.strategy.sharpe_ratio or 0) if s.strategy else 0,
+            "max_drawdown": float(s.strategy.max_drawdown or 0) if s.strategy else 0,
+            "best_objective": (s.strategy.best_objective or "balanced") if s.strategy else "balanced",
             "optimization_scope": scope,
         })
 
@@ -534,12 +535,12 @@ async def get_signals_for_ticker(args: dict) -> dict:
     @sync_to_async
     def _run():
         strat_signals = list(
-            StrategySignal.objects.filter(symbol=ticker)
+            SignalEpisode.objects.filter(symbol=ticker, source=USER_STRATEGY)
             .select_related("strategy")
-            .order_by("-date")[:10]
+            .order_by("-start_date")[:10]
         )
         gen_signals = list(
-            GeneratedSignal.objects.filter(symbol=ticker).order_by("-generated_date")[:10]
+            SignalEpisode.objects.filter(symbol=ticker).exclude(source=USER_STRATEGY).order_by("-start_date")[:10]
         )
         if not strat_signals and not gen_signals:
             return _result(f"No signals found for {ticker}.", is_error=True)
@@ -548,14 +549,14 @@ async def get_signals_for_ticker(args: dict) -> dict:
         gen_data = [
             {
                 "source": g.source,
-                "signal": g.signal,
+                "signal": g.direction,
                 "tier": g.signal_tier,
-                "strength": float(g.strength),
+                "strength": float(g.entry_strength),
                 "status": g.status,
-                "ltp": float(g.ltp),
+                "ltp": float(g.entry_price),
                 "target": float(g.target_price) if g.target_price else None,
                 "stop": float(g.stop_loss_price) if g.stop_loss_price else None,
-                "date": g.generated_date.isoformat(),
+                "date": g.start_date.isoformat(),
             }
             for g in gen_signals
         ]
@@ -596,7 +597,7 @@ async def get_signal_track_record(args: dict) -> dict:
 
     @sync_to_async
     def _run():
-        qs = GeneratedSignal.objects.all()
+        qs = SignalEpisode.objects.all()
         if source:
             qs = qs.filter(source=source)
         total = qs.count()
@@ -1318,27 +1319,27 @@ async def get_active_signals(args: dict) -> dict:
 
     @sync_to_async
     def _run():
-        qs = GeneratedSignal.objects.filter(status="ACTIVE")
+        qs = SignalEpisode.objects.filter(status="ACTIVE")
         if signal_filter in ("BUY", "SELL"):
-            qs = qs.filter(signal=signal_filter)
+            qs = qs.filter(direction=signal_filter)
         if source_filter:
             qs = qs.filter(source__icontains=source_filter)
-        signals = list(qs.order_by("-strength", "-generated_date")[:limit])
+        signals = list(qs.order_by("-entry_strength", "-start_date")[:limit])
         if not signals:
             return _result("No active signals found.", is_error=True)
 
         data = [
             {
                 "symbol": s.symbol,
-                "signal": s.signal,
+                "signal": s.direction,
                 "source": s.source,
                 "tier": s.signal_tier,
-                "strength": float(s.strength),
-                "ltp": float(s.ltp),
+                "strength": float(s.entry_strength),
+                "ltp": float(s.entry_price),
                 "target": float(s.target_price) if s.target_price else None,
                 "stop": float(s.stop_loss_price) if s.stop_loss_price else None,
                 "rationale": s.rationale[:120] if s.rationale else None,
-                "date": s.generated_date.isoformat(),
+                "date": s.start_date.isoformat(),
             }
             for s in signals
         ]
@@ -1450,12 +1451,12 @@ async def screen_stocks(args: dict) -> dict:
         # Filter by active signal if requested
         signal_map: dict[str, dict] = {}
         if has_signal in ("BUY", "SELL"):
-            active = GeneratedSignal.objects.filter(
-                status="ACTIVE", signal=has_signal, symbol__in=[f.ticker for f in funds]
-            ).values("symbol", "strength", "source").order_by("symbol", "-strength")
+            active = SignalEpisode.objects.filter(
+                status="ACTIVE", direction=has_signal, symbol__in=[f.ticker for f in funds]
+            ).values("symbol", "entry_strength", "source").order_by("symbol", "-entry_strength")
             for s in active:
                 if s["symbol"] not in signal_map:
-                    signal_map[s["symbol"]] = s
+                    signal_map[s["symbol"]] = {"symbol": s["symbol"], "strength": s["entry_strength"], "source": s["source"], "signal": has_signal}
             funds = [f for f in funds if f.ticker in signal_map]
 
         # Pull latest prices
@@ -1530,30 +1531,30 @@ async def get_closed_signals(args: dict) -> dict:
 
     @sync_to_async
     def _run():
-        qs = GeneratedSignal.objects.filter(status__in=["WON", "LOST"])
+        qs = SignalEpisode.objects.filter(status__in=["WON", "LOST"])
         if symbol:
             qs = qs.filter(symbol=symbol)
         if source:
             qs = qs.filter(source__icontains=source)
         if outcome in ("WON", "LOST"):
             qs = qs.filter(status=outcome)
-        signals = list(qs.order_by("-closed_date")[:limit])
+        signals = list(qs.order_by("-end_date")[:limit])
         if not signals:
             return _result("No closed signals found.", is_error=True)
 
         data = [
             {
                 "symbol": s.symbol,
-                "signal": s.signal,
+                "signal": s.direction,
                 "source": s.source,
                 "tier": s.signal_tier,
                 "status": s.status,
-                "ltp": float(s.ltp),
+                "ltp": float(s.entry_price),
                 "target": float(s.target_price) if s.target_price else None,
                 "stop": float(s.stop_loss_price) if s.stop_loss_price else None,
                 "pnl_pct": float(s.pnl_percent) if s.pnl_percent else None,
-                "generated_date": s.generated_date.isoformat(),
-                "closed_date": s.closed_date.isoformat() if s.closed_date else None,
+                "generated_date": s.start_date.isoformat(),
+                "closed_date": s.end_date.isoformat() if s.end_date else None,
                 "rationale": s.rationale[:120] if s.rationale else None,
             }
             for s in signals

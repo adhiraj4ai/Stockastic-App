@@ -10,8 +10,8 @@ from .portfolio import (
     TradePlan, TradePlanLeg,
 )
 from .strategy import (
-    ScopeType, Strategy, StrategyExperiment, 
-    StrategySymbolConfig, StrategySignal
+    ScopeType, Strategy, StrategyExperiment,
+    StrategySymbolConfig
 )
-from .system import DataUploadLog, Notification, GeneratedSignal
+from .system import DataUploadLog, Notification
 from .signal import SignalEpisode, USER_STRATEGY

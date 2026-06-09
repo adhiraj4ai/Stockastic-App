@@ -8,7 +8,6 @@ from .portfolio import (
 from .strategy import (
     StrategySerializer, StrategyExperimentSerializer,
     StrategyExperimentDetailSerializer, StrategySymbolConfigSerializer,
-    StrategySignalSerializer
 )
-from .system import NotificationSerializer, GeneratedSignalSerializer
+from .system import NotificationSerializer
 from .signal import SignalEpisodeSerializer

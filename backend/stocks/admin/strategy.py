@@ -1,5 +1,6 @@
 from django.contrib import admin
-from ..models.strategy import Strategy, StrategyExperiment, StrategySymbolConfig, StrategySignal
+from ..models.strategy import Strategy, StrategyExperiment, StrategySymbolConfig
+from ..models import SignalEpisode
 
 @admin.register(Strategy)
 class StrategyAdmin(admin.ModelAdmin):
@@ -17,8 +18,8 @@ class StrategySymbolConfigAdmin(admin.ModelAdmin):
     list_display = ('strategy', 'symbol', 'preferred_objective')
     search_fields = ('symbol', 'strategy__name')
 
-@admin.register(StrategySignal)
-class StrategySignalAdmin(admin.ModelAdmin):
-    list_display = ('strategy', 'symbol', 'date', 'signal', 'last_close')
-    list_filter = ('signal', 'date')
+@admin.register(SignalEpisode)
+class SignalEpisodeAdmin(admin.ModelAdmin):
+    list_display = ('symbol', 'source', 'direction', 'status', 'start_date', 'end_date', 'pnl_percent')
+    list_filter = ('source', 'status', 'direction')
     search_fields = ('symbol', 'strategy__name')

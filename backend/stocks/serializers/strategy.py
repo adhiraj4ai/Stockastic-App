@@ -1,14 +1,6 @@
 import ast
 from rest_framework import serializers
-from ..models.strategy import Strategy, StrategyExperiment, StrategySymbolConfig, StrategySignal
-
-class StrategySignalSerializer(serializers.ModelSerializer):
-    strategy_name = serializers.CharField(source='strategy.name', read_only=True)
-    strategy_description = serializers.CharField(source='strategy.description', read_only=True)
-
-    class Meta:
-        model = StrategySignal
-        fields = ['id', 'strategy', 'strategy_name', 'strategy_description', 'symbol', 'date', 'signal', 'last_close', 'metadata', 'created_at']
+from ..models.strategy import Strategy, StrategyExperiment, StrategySymbolConfig
 
 class StrategyExperimentSerializer(serializers.ModelSerializer):
     strategy_name = serializers.CharField(source='strategy.name', read_only=True)

@@ -1,7 +1,7 @@
 """
 Signal Generation Service
 
-Orchestrates generation of all signal types and persists them to GeneratedSignal model.
+Orchestrates generation of all signal types and persists them to SignalEpisode via ingest_reading.
 Called by the `generate_all_signals` management command, which is triggered via pipeline.
 """
 
@@ -18,8 +18,6 @@ class SignalGenerationService:
     @staticmethod
     def generate_all(progress_callback=None):
         """Run all signal generators and persist results."""
-        from ..models import GeneratedSignal
-
         total_saved = 0
         sources = [
             ('SMART_MONEY', SignalGenerationService._generate_smart_money_signals),
@@ -56,9 +54,7 @@ class SignalGenerationService:
 
     @staticmethod
     def _persist_signals(source, signals):
-        """Persist a list of signal dicts to GeneratedSignal model."""
-        from ..models import GeneratedSignal
-
+        """Persist a list of signal dicts to SignalEpisode via ingest_reading."""
         if not signals:
             return 0
 
