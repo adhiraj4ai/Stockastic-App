@@ -37,10 +37,30 @@ class StrategySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Strategy
-        fields = ['id', 'name', 'description', 'code', 'optimization_config', 'created_at', 'is_public', 
+        fields = ['id', 'name', 'description', 'code', 'spec', 'optimization_config', 'created_at', 'is_public',
                   'pnl_amount', 'pnl_percent', 'max_drawdown', 'sharpe_ratio', 'win_rate', 'icon', 'icon_color', 'default_parameters',
                   'published_experiments']
         read_only_fields = ['id', 'created_at', 'published_experiments']
+
+    def _apply_spec(self, validated_data):
+        """Keep `spec` and `code` consistent: when a spec is provided, it is the source of
+        truth and `code` is rendered from it; if raw `code` is edited without a spec, the
+        spec is detached (set null) so the two never silently disagree."""
+        from ..services.strategy_framework import spec_to_code, SpecError
+        if 'spec' in validated_data and validated_data['spec']:
+            try:
+                validated_data['code'] = spec_to_code(validated_data['spec'])
+            except SpecError as e:
+                raise serializers.ValidationError({'spec': str(e)})
+        elif 'code' in validated_data:
+            validated_data['spec'] = None
+        return validated_data
+
+    def create(self, validated_data):
+        return super().create(self._apply_spec(validated_data))
+
+    def update(self, instance, validated_data):
+        return super().update(instance, self._apply_spec(validated_data))
 
     def _get_best_published_exp(self, obj):
         if hasattr(obj, '_best_published_exp'):

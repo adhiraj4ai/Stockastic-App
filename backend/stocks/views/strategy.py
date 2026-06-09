@@ -66,6 +66,12 @@ class StrategyViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    @action(detail=False, methods=['get'], url_path='components')
+    def components(self, request):
+        """Catalog of composable strategy components (param schemas) for the builder."""
+        from ..services.strategy_framework import registry_schema
+        return Response(registry_schema())
+
     @action(detail=True, methods=['post'])
     def publish(self, request, pk=None):
         strategy = self.get_object()

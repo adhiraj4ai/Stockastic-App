@@ -56,6 +56,16 @@ class Alpha(Component):
     def exit(self, strat) -> bool:
         return False
 
+    def score(self, strat) -> float:
+        """Continuous alpha score in [-1, +1]. Default derived from entry/exit so the
+        Layer-2 blending engine can consume any existing component unchanged; override
+        for a genuinely graded signal (e.g. distance-from-band, normalized momentum)."""
+        if self.entry(strat):
+            return 1.0
+        if self.exit(strat):
+            return -1.0
+        return 0.0
+
 
 class Regime(Component):
     """A gate: entries are only allowed when ok() is True."""
