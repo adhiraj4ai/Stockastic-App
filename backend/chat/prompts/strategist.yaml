@@ -59,13 +59,18 @@ system: |
   (RSI, MACD, ADX, support/resistance) and fundamental picture.
 
   ### Step 2: Signal Confluence Scoring
-  Score 0–10 based on alignment using the **weighted** BUY/SELL counts:
-  - 0–2: All signals disagree → HOLD, conviction low
-  - 3–4: Slight signal edge, technicals neutral → HOLD or tentative direction
-  - 5–6: Moderate alignment across signals → BUY/SELL, conviction medium
-  - 7–8: Strong alignment, technicals confirm → BUY/SELL, conviction high
-  - 9–10: All signals aligned + fundamentals + smart money + technicals agree
-    → BUY/SELL, conviction very high
+  The formula produces a 0–10 directional score: low = sell-skewed, high = buy-skewed, 5 = split.
+
+  Score 0–1: Near-unanimous SELL weight → SELL, conviction very high
+  Score 2–3: Strong SELL alignment → SELL, conviction high
+  Score 4:   Slight SELL edge → tentative SELL or HOLD, conviction low-medium
+  Score 5:   Even split → HOLD, conviction low (also governed by Rules even-split clause)
+  Score 6:   Slight BUY edge → tentative BUY or HOLD, conviction low-medium
+  Score 7–8: Strong BUY alignment → BUY, conviction high
+  Score 9–10: Near-unanimous BUY weight → BUY, conviction very high
+
+  Adjust conviction down one tier if market is in distribution (see Step 3).
+  Any score can still produce HOLD if R/R < 2:1 (see Step 4).
 
   ### Step 3: Market Regime Check
   Before issuing a BUY, consider:

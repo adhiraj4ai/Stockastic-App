@@ -119,7 +119,7 @@ def _rank_strategy_signals(strat_signals: list) -> tuple[list[dict], str | None]
             "date": s.date.isoformat(),
             "last_close": float(s.last_close) if s.last_close else None,
             "pnl_pct": float(s.strategy.pnl_percent or 0),
-            "win_rate": float(s.strategy.win_rate or 0),
+            "win_rate": float(s.strategy.win_rate or 0),  # strategy-level aggregate, not per-symbol
             "sharpe": float(s.strategy.sharpe_ratio or 0),
             "max_drawdown": float(s.strategy.max_drawdown or 0),
             "best_objective": s.strategy.best_objective or "balanced",
