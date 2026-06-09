@@ -2441,6 +2441,7 @@ async def propose_rebalance(args: dict) -> dict:
 
         trades = []
         lines = []
+        all_warnings = []
         for t in tickers:
             price = float(prices.get(t, holdings[t]["price"]) or 0)
             if price <= 0:
@@ -2451,9 +2452,17 @@ async def propose_rebalance(args: dict) -> dict:
             if delta == 0:
                 continue
             txn_type = "BUY" if delta > 0 else "SELL"
-            trades.append({"ticker": t, "txn_type": txn_type, "quantity": abs(delta), "rate": price})
-            lines.append({"label": f"{txn_type} {abs(delta)} {t}", "ticker": t,
-                          "action": txn_type, "quantity": abs(delta), "rate": price})
+            qty = abs(delta)
+            pv = _trade_preview(user, account, t, txn_type, qty, price)
+            all_warnings.extend(pv["warnings"])
+            trades.append({"ticker": t, "txn_type": txn_type, "quantity": qty, "rate": price})
+            lines.append({
+                "label": f"{txn_type} {qty} {t}", "ticker": t,
+                "action": txn_type, "quantity": qty, "rate": price,
+                "fees": {"commission": pv["commission"], "sebon_fee": pv["sebon_fee"],
+                         "dp_charge": pv["dp_charge"], "cgt": pv["cgt"]},
+                "net": pv["net"],
+            })
 
         if not trades:
             return _result("Your portfolio is already at the optimal allocation — no trades needed.", is_error=True)
@@ -2465,7 +2474,7 @@ async def propose_rebalance(args: dict) -> dict:
             "targets": [],  # sector/tag targets left to a separate propose; weights are per-ticker here
             "trades": trades,
         }
-        card_preview = {"title": title, "lines": lines, "warnings": []}
+        card_preview = {"title": title, "lines": lines, "warnings": all_warnings}
         draft = create_draft(
             user=user, account=account, kind=PortfolioActionDraft.Kind.REBALANCE,
             title=title, payload=payload, preview=card_preview,

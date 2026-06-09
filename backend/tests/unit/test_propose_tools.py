@@ -84,6 +84,28 @@ class TestProposeRebalance:
         # Nothing executed at propose time:
         assert PortfolioItem.objects.get(user=user, ticker="NABIL").quantity == 20
 
+    def test_rebalance_lines_carry_fees(self, create_user):
+        from unittest.mock import patch
+        user = create_user(username="prf1", password="p")
+        acct = PortfolioAccount.objects.create(user=user, name="Paper", account_type="PAPER", balance=Decimal("1000000"))
+        PortfolioItem.objects.create(user=user, account=acct, ticker="NABIL", quantity=20, buy_price=Decimal("500"), wacc=Decimal("500"))
+        PortfolioItem.objects.create(user=user, account=acct, ticker="SHL", quantity=10, buy_price=Decimal("400"), wacc=Decimal("400"))
+        fake_opt = {
+            "success": True, "method": "max_sharpe",
+            "optimal_weights": {"NABIL": 0.5, "SHL": 0.5},
+            "latest_prices": {"NABIL": 520.0, "SHL": 410.0},
+        }
+        with patch("chat.tools.perform_portfolio_optimization", return_value=fake_opt):
+            res = _call(propose_rebalance, {"account_id": acct.id, "method": "max_sharpe"}, user)
+        assert res["is_error"] is False
+        draft = PortfolioActionDraft.objects.get(user=user, kind=PortfolioActionDraft.Kind.REBALANCE)
+        lines = draft.preview["lines"]
+        assert len(lines) >= 1
+        # every rebalance line must carry a fees breakdown and a net amount
+        for l in lines:
+            assert "fees" in l and all(k in l["fees"] for k in ("commission", "sebon_fee", "dp_charge", "cgt"))
+            assert "net" in l
+
 
 @pytest.mark.django_db(transaction=True)
 class TestProposeTradePlan:
