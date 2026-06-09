@@ -4,6 +4,7 @@ from .portfolio import (
     PortfolioAccountSerializer, PortfolioItemSerializer,
     PortfolioTransactionSerializer, WatchlistItemSerializer,
     PortfolioTargetSerializer, TradePlanSerializer,
+    PortfolioActionDraftSerializer,
 )
 from .strategy import (
     StrategySerializer, StrategyExperimentSerializer,
