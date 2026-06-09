@@ -136,3 +136,56 @@ class PortfolioTarget(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.category_name} ({self.target_percentage}%)"
+
+
+class TradePlan(models.Model):
+    class PlanStatus(models.TextChoices):
+        OPEN = 'OPEN', 'Open'
+        CLOSED = 'CLOSED', 'Closed'
+        CANCELLED = 'CANCELLED', 'Cancelled'
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    account = models.ForeignKey(
+        PortfolioAccount, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    ticker = models.CharField(max_length=10)
+    thesis = models.TextField(blank=True, null=True)
+    risk_budget_pct = models.DecimalField(max_digits=4, decimal_places=2, default=2.00)
+    target_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    status = models.CharField(
+        max_length=10, choices=PlanStatus.choices, default=PlanStatus.OPEN
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.ticker} ({self.status})"
+
+
+class TradePlanLeg(models.Model):
+    class LegStatus(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        EXECUTED = 'EXECUTED', 'Executed'
+        SKIPPED = 'SKIPPED', 'Skipped'
+
+    plan = models.ForeignKey(TradePlan, on_delete=models.CASCADE, related_name='legs')
+    leg_number = models.IntegerField()
+    price_target = models.DecimalField(max_digits=10, decimal_places=2)
+    allocation_pct = models.DecimalField(max_digits=5, decimal_places=2)
+    stop_loss_price = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(
+        max_length=10, choices=LegStatus.choices, default=LegStatus.PENDING
+    )
+    transaction = models.OneToOneField(
+        PortfolioTransaction, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ('plan', 'leg_number')
+        ordering = ['leg_number']
+
+    def __str__(self):
+        return f"Plan {self.plan_id} Leg {self.leg_number} ({self.status})"
