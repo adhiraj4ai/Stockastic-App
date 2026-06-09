@@ -45,6 +45,7 @@ from stocks.services.portfolio_service import PortfolioService
 from stocks.services.position_sizing import PositionSizingService
 from stocks.services.risk_service import RiskAnalysisService
 from stocks.services.watchlist_service import WatchlistService
+from stocks.optimization import perform_portfolio_optimization
 from stocks.technical import get_technical_indicators
 from stocks.utils import (
     calculate_broker_commission, calculate_sebon_fee, calculate_dp_charge, calculate_cgt,
@@ -2370,6 +2371,93 @@ async def propose_exits(args: dict) -> dict:
     return await _run()
 
 
+@tool(
+    "propose_rebalance",
+    "Draft a rebalance toward an optimized allocation for the user to CONFIRM. Runs the "
+    "portfolio optimizer (method='max_sharpe'|'min_volatility'|'max_return', default "
+    "max_sharpe), compares to current holdings, and drafts the BUY/SELL legs to move "
+    "toward the optimal weights. Pass account_id to scope. Does NOT execute.",
+    {"account_id": str, "method": str},
+)
+async def propose_rebalance(args: dict) -> dict:
+    account_id = args.get("account_id")
+    method = (args.get("method") or "max_sharpe").strip()
+    user = get_user()
+
+    @sync_to_async
+    def _run():
+        account = _resolve_account(user, account_id)
+        qs = PortfolioItem.objects.filter(user=user)
+        if account:
+            qs = qs.filter(account=account)
+        items = list(qs)
+        if not items:
+            return _result("Your portfolio is empty — nothing to rebalance.", is_error=True)
+
+        # Build current holdings map {ticker: {quantity, price}} like the /optimize view.
+        # Use WACC as initial price; the optimizer will return latest_prices for trade sizing.
+        holdings = {}
+        for it in items:
+            fallback_price = float(it.wacc or 0)
+            try:
+                px = DailyStockPrice.objects.filter(ticker=it.ticker).order_by("-date").first()
+                price = float(px.close) if px and px.close else fallback_price
+            except Exception:
+                price = fallback_price
+            h = holdings.setdefault(it.ticker, {"quantity": 0, "price": price})
+            h["quantity"] += int(it.quantity)
+
+        tickers = list(holdings.keys())
+        opt = perform_portfolio_optimization(tickers, current_holdings=holdings, method=method)
+        if not opt.get("success"):
+            return _result(f"Optimizer could not produce a result: {opt.get('error', 'unknown')}.", is_error=True)
+
+        weights = opt.get("optimal_weights") or {}
+        prices = opt.get("latest_prices") or {t: holdings[t]["price"] for t in tickers}
+        total_value = sum(holdings[t]["quantity"] * float(prices.get(t, holdings[t]["price"])) for t in tickers)
+
+        trades = []
+        lines = []
+        for t in tickers:
+            price = float(prices.get(t, holdings[t]["price"]) or 0)
+            if price <= 0:
+                continue
+            target_value = total_value * float(weights.get(t, 0))
+            target_qty = int(target_value // price)
+            delta = target_qty - holdings[t]["quantity"]
+            if delta == 0:
+                continue
+            txn_type = "BUY" if delta > 0 else "SELL"
+            trades.append({"ticker": t, "txn_type": txn_type, "quantity": abs(delta), "rate": price})
+            lines.append({"label": f"{txn_type} {abs(delta)} {t}", "ticker": t,
+                          "action": txn_type, "quantity": abs(delta), "rate": price})
+
+        if not trades:
+            return _result("Your portfolio is already at the optimal allocation — no trades needed.", is_error=True)
+
+        title = f"Rebalance ({method}) — {len(trades)} trade(s)"
+        payload = {
+            "account_id": account.id if account else None,
+            "method": method,
+            "targets": [],  # sector/tag targets left to a separate propose; weights are per-ticker here
+            "trades": trades,
+        }
+        card_preview = {"title": title, "lines": lines, "warnings": []}
+        draft = create_draft(
+            user=user, account=account, kind=PortfolioActionDraft.Kind.REBALANCE,
+            title=title, payload=payload, preview=card_preview,
+        )
+        return _result(
+            f"Drafted a {method} rebalance: {len(trades)} trade(s) to reach the optimal allocation. "
+            f"Awaiting your confirmation.",
+            card={"type": "proposal",
+                  "data": {"draft_id": draft.id, "kind": "REBALANCE", "title": title,
+                           "status": "PENDING", "preview": card_preview}},
+            _tool_name="propose_rebalance")
+
+    return await _run()
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # MCP server registration
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2427,6 +2515,7 @@ ALL_TOOLS = [
     # Portfolio Manager (propose-then-confirm)
     propose_trade,
     propose_exits,
+    propose_rebalance,
 ]
 
 

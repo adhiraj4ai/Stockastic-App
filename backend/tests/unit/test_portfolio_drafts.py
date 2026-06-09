@@ -141,3 +141,26 @@ class TestConfirmExits:
         foreign.refresh_from_db()
         assert foreign.stop_loss_price is None
         assert result["updated_tickers"] == []
+
+
+@pytest.mark.django_db
+class TestConfirmRebalance:
+    def test_sets_targets_and_executes_trades(self, create_user):
+        user = create_user(username="rb1", password="p")
+        acct = _paper_account(user)
+        # Seed a holding so a SELL leg is executable.
+        PortfolioItem.objects.create(user=user, account=acct, ticker="NABIL", quantity=20, buy_price=Decimal("500"), wacc=Decimal("500"))
+        draft = create_draft(
+            user=user, account=acct, kind=PortfolioActionDraft.Kind.REBALANCE,
+            title="Rebalance",
+            payload={
+                "targets": [{"target_type": "SECTOR", "category_name": "Banking", "target_percentage": 40.0}],
+                "trades": [{"ticker": "NABIL", "txn_type": "SELL", "quantity": 5, "rate": 520.0}],
+            },
+            preview={},
+        )
+        result = confirm_draft(draft)
+        assert result["targets_set"] == 1
+        assert len(result["transaction_ids"]) == 1
+        assert PortfolioTarget.objects.filter(user=user, category_name="Banking").exists()
+        assert PortfolioItem.objects.get(user=user, ticker="NABIL", account=acct).quantity == 15
