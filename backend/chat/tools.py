@@ -26,8 +26,10 @@ from stocks.models.market import (
     DailyMarketSummary,
     DailyStockPrice,
 )
+from django.utils import timezone
 from stocks.models.portfolio import (
     PortfolioAccount,
+    PortfolioActionDraft,
     PortfolioItem,
     PortfolioSnapshot,
     PortfolioTarget,
@@ -39,11 +41,15 @@ from stocks.models.strategy import Strategy, StrategyExperiment
 from stocks.models.signal import SignalEpisode, USER_STRATEGY
 from stocks.models.system import Notification
 from stocks.services.fundamental_service import FundamentalService
+from stocks.services.portfolio_drafts import create_draft
 from stocks.services.portfolio_service import PortfolioService
 from stocks.services.position_sizing import PositionSizingService
 from stocks.services.risk_service import RiskAnalysisService
 from stocks.services.watchlist_service import WatchlistService
 from stocks.technical import get_technical_indicators
+from stocks.utils import (
+    calculate_broker_commission, calculate_sebon_fee, calculate_dp_charge, calculate_cgt,
+)
 
 from ._user_context import get_user, push_card
 
@@ -2212,6 +2218,106 @@ async def scan_strategies_for_symbol(args: dict) -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Portfolio Manager (propose-then-confirm) tools
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _trade_preview(user, account, ticker, txn_type, quantity, rate):
+    """Estimate fees/CGT/net for a single trade WITHOUT mutating anything.
+
+    Uses the same stocks.utils fee helpers as PortfolioService.process_transaction.
+    CGT on SELL is estimated against the holding's current WACC.
+    """
+    quantity = int(quantity)
+    rate = Decimal(str(rate))
+    amount = Decimal(quantity) * rate
+    commission = calculate_broker_commission(amount)
+    sebon_fee = calculate_sebon_fee(amount)
+    dp_charge = calculate_dp_charge()
+    cgt = Decimal("0.00")
+    warnings = []
+    if txn_type == "SELL":
+        item = PortfolioItem.objects.filter(user=user, ticker=ticker, account=account).first()
+        wacc = Decimal(str(item.wacc)) if item and item.wacc else None
+        if item is None:
+            warnings.append(f"No {ticker} holding found in this account.")
+        elif item.quantity < quantity:
+            warnings.append(f"Only {item.quantity} {ticker} held; cannot sell {quantity}.")
+        if wacc is not None:
+            profit = (rate - wacc) * Decimal(quantity)
+            if profit > 0:
+                cgt = calculate_cgt(profit, is_long_term=False)
+        net = amount - commission - sebon_fee - dp_charge - cgt
+    else:  # BUY
+        net = amount + commission + sebon_fee + dp_charge
+        if account and getattr(account, "account_type", None) == "PAPER" and account.balance < net:
+            warnings.append(f"Insufficient paper balance (need Rs {float(net):,.0f}, have Rs {float(account.balance):,.0f}).")
+    return {
+        "amount": float(amount),
+        "commission": float(commission),
+        "sebon_fee": float(sebon_fee),
+        "dp_charge": float(dp_charge),
+        "cgt": float(cgt),
+        "net": float(net),
+        "warnings": warnings,
+    }
+
+
+@tool(
+    "propose_trade",
+    "Draft a BUY or SELL of a NEPSE ticker for the user to CONFIRM before it is recorded. "
+    "Computes fees + CGT and creates a pending proposal card. Does NOT execute — the user "
+    "confirms it. action='BUY'|'SELL'. Pass account_id to scope to one account.",
+    {"ticker": str, "action": str, "quantity": int, "rate": float, "account_id": str},
+)
+async def propose_trade(args: dict) -> dict:
+    ticker = (args.get("ticker") or "").upper().strip()
+    action = (args.get("action") or "").upper().strip()
+    quantity = int(args.get("quantity") or 0)
+    rate = args.get("rate")
+    account_id = args.get("account_id")
+    if not ticker or action not in ("BUY", "SELL") or quantity <= 0 or rate is None:
+        return _result("Provide ticker, action (BUY/SELL), positive quantity, and rate.", is_error=True)
+
+    user = get_user()
+
+    @sync_to_async
+    def _run():
+        account = _resolve_account(user, account_id)
+        preview = _trade_preview(user, account, ticker, action, quantity, float(rate))
+        title = f"{action} {quantity} {ticker} @ Rs {float(rate):,.2f}"
+        payload = {
+            "account_id": account.id if account else None,
+            "trades": [{"ticker": ticker, "txn_type": action, "quantity": quantity, "rate": float(rate)}],
+        }
+        card_preview = {
+            "title": title,
+            "lines": [{
+                "ticker": ticker, "action": action, "quantity": quantity, "rate": float(rate),
+                "fees": {"commission": preview["commission"], "sebon_fee": preview["sebon_fee"],
+                         "dp_charge": preview["dp_charge"], "cgt": preview["cgt"]},
+                "net": preview["net"],
+            }],
+            "warnings": preview["warnings"],
+        }
+        draft = create_draft(
+            user=user, account=account, kind=PortfolioActionDraft.Kind.TRADE,
+            title=title, payload=payload, preview=card_preview,
+        )
+        warn = f" ⚠️ {'; '.join(preview['warnings'])}" if preview["warnings"] else ""
+        prose = (f"Drafted: {title}. Net Rs {preview['net']:,.0f} "
+                 f"(fees Rs {preview['commission'] + preview['sebon_fee'] + preview['dp_charge']:,.0f}, "
+                 f"CGT Rs {preview['cgt']:,.0f}). Awaiting your confirmation.{warn}")
+        return _result(prose, card={
+            "type": "proposal",
+            "data": {"draft_id": draft.id, "kind": "TRADE", "title": title,
+                     "status": "PENDING", "preview": card_preview},
+        }, _tool_name="propose_trade")
+
+    return await _run()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # MCP server registration
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -2265,6 +2371,8 @@ ALL_TOOLS = [
     get_recent_alerts,
     get_watchlist_item,
     get_rebalance_targets,
+    # Portfolio Manager (propose-then-confirm)
+    propose_trade,
 ]
 
 
