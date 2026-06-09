@@ -90,6 +90,57 @@ def _resolve_account(user, account_id: str | int | None) -> PortfolioAccount | N
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Strategy signal ranking
+# ─────────────────────────────────────────────────────────────────────────────
+
+_SCOPE_RANK: dict[str, int] = {"SYMBOL": 3, "SECTOR": 2, "ALL": 1, "DEFAULT": 0}
+
+
+def _rank_strategy_signals(strat_signals: list) -> tuple[list[dict], str | None]:
+    """Enrich StrategySignal objects with strategy performance metrics and rank them.
+
+    Ranking order (descending priority):
+        1. optimization_scope: SYMBOL > SECTOR > ALL > DEFAULT
+        2. win_rate
+        3. sharpe_ratio
+        4. pnl_percent (tiebreaker)
+
+    Returns:
+        (enriched_list, best_strategy_name)
+        best_strategy_name is None when strat_signals is empty.
+    """
+    enriched = []
+    for s in strat_signals:
+        scope = (s.metadata or {}).get("optimization_scope", "DEFAULT")
+        enriched.append({
+            "strategy": s.strategy.name,
+            "strategy_id": s.strategy.id,
+            "signal": s.signal,
+            "date": s.date.isoformat(),
+            "last_close": float(s.last_close) if s.last_close else None,
+            "pnl_pct": float(s.strategy.pnl_percent or 0),
+            "win_rate": float(s.strategy.win_rate or 0),
+            "sharpe": float(s.strategy.sharpe_ratio or 0),
+            "max_drawdown": float(s.strategy.max_drawdown or 0),
+            "best_objective": s.strategy.best_objective or "balanced",
+            "optimization_scope": scope,
+        })
+
+    enriched.sort(
+        key=lambda x: (
+            _SCOPE_RANK.get(x["optimization_scope"], 0),
+            x["win_rate"],
+            x["sharpe"],
+            x["pnl_pct"],
+        ),
+        reverse=True,
+    )
+
+    best = enriched[0]["strategy"] if enriched else None
+    return enriched, best
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Market Analyst tools
 # ─────────────────────────────────────────────────────────────────────────────
 
