@@ -563,7 +563,7 @@ async def get_signals_for_ticker(args: dict) -> dict:
         sells = sum(1 for s in strat_data if s["signal"] == "SELL") + sum(1 for g in gen_data if g["signal"] == "SELL")
         verdict = "BUY" if buys > sells else "SELL" if sells > buys else "HOLD"
 
-        if best_strategy and strat_data:
+        if best_strategy:
             best = strat_data[0]
             anchor = (
                 f"best strategy: {best['strategy']} "
