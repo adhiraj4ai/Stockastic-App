@@ -91,22 +91,17 @@ class SignalGenerationService:
                         sl = round(ltp * 1.05, 2)
                         metadata.update({'tp1': tp1, 'tp2': tp2, 'tp3': tp3, 'sl': sl})
 
-                obj, created = GeneratedSignal.objects.update_or_create(
-                    source=source,
-                    symbol=sig['symbol'],
-                    generated_date=sig.get('generated_date', today),
-                    defaults={
-                        'signal': sig['signal'],
-                        'signal_tier': sig.get('signal_tier', ''),
-                        'strength': sig.get('strength', 0),
-                        'ltp': ltp,
-                        'rationale': sig.get('rationale', ''),
-                        'metadata': metadata,
-                        'target_price': tp2,
-                        'stop_loss_price': sl,
-                    }
+                from .signal_episode.service import ingest_reading
+                from .signal_episode.adapters import engine_reading
+
+                ingest_reading(
+                    source=source, strategy=None, symbol=sig['symbol'],
+                    reading=engine_reading(
+                        d=sig.get('generated_date', today), signal=sig['signal'], ltp=ltp,
+                        strength=sig.get('strength', 0), tier=sig.get('signal_tier', ''),
+                        rationale=sig.get('rationale', ''), target=tp2, stop=sl, metadata=metadata,
+                    ),
                 )
-                
                 saved += 1
             except Exception as e:
                 logger.error(f"Failed to save signal for {sig.get('symbol')}: {e}")
