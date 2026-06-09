@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { PeriodSelector } from '../../components/PeriodSelector';
 import { MetricsDisplay } from '../../components/MetricsDisplay';
+import { StrategyWorkspaceNav } from '../../components/StrategyWorkspaceNav';
 import ParameterObjectiveSelector from '../../components/ParameterObjectiveSelector';
 
 interface Strategy {
@@ -285,6 +286,7 @@ function BacktestContent() {
             }
         >
             <div className="space-y-6">
+                <StrategyWorkspaceNav strategyId={strategyId} />
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
                     {/* ── Configuration Panel ── */}

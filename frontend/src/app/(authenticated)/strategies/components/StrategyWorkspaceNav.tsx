@@ -2,10 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import api from '@/lib/api';
 import { Blocks, Code, Play, Activity, LayoutDashboard, GitCompare } from 'lucide-react';
 
 type Tab = 'overview' | 'build' | 'code' | 'backtest' | 'optimize';
+
+function tabFromPath(pathname: string): Tab {
+    if (pathname.endsWith('/builder')) return 'build';
+    if (pathname.endsWith('/editor')) return 'code';
+    if (pathname.includes('/backtest')) return 'backtest';
+    if (pathname.includes('/optimize')) return 'optimize';
+    return 'overview';
+}
 
 const TABS: { key: Tab; label: string; icon: any; href: (id: string) => string }[] = [
     { key: 'overview', label: 'Overview', icon: LayoutDashboard, href: (id) => `/strategies/${id}` },
@@ -20,7 +29,9 @@ const TABS: { key: Tab; label: string; icon: any; href: (id: string) => string }
  * Build / Code / Backtest / Optimize feel like one workspace. Fetches the strategy's
  * lightweight identity (name, kind, summary, published) itself.
  */
-export function StrategyWorkspaceNav({ strategyId, active }: { strategyId: string; active: Tab }) {
+export function StrategyWorkspaceNav({ strategyId, active }: { strategyId: string; active?: Tab }) {
+    const pathname = usePathname();
+    const activeTab: Tab = active || tabFromPath(pathname || '');
     const [s, setS] = useState<any>(null);
     useEffect(() => {
         api.get(`/api/stocks/strategies/${strategyId}/`).then((r) => setS(r.data)).catch(() => { });
@@ -52,7 +63,7 @@ export function StrategyWorkspaceNav({ strategyId, active }: { strategyId: strin
             </div>
             <div className="flex gap-1 overflow-x-auto">
                 {TABS.map((t) => {
-                    const isActive = t.key === active;
+                    const isActive = t.key === activeTab;
                     // Code tab is the natural home for Custom strategies; Build for Composed.
                     const dimmed = (t.key === 'build' && s && !composed);
                     return (

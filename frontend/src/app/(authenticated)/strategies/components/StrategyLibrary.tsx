@@ -2,13 +2,27 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Table2, LayoutGrid, Columns2, Search, Play, Activity, Settings2, Plus, ArrowUpDown } from 'lucide-react';
+import { Table2, LayoutGrid, Columns2, Search, Play, Activity, Settings2, Plus, ArrowUpDown,
+    Lightbulb, TrendingUp, Zap, Target, Shield, BarChart3, PieChart, Flame, Rocket, Cpu, Layers } from 'lucide-react';
+
+const ICONS: Record<string, any> = { Lightbulb, TrendingUp, Zap, Target, Activity, Shield, BarChart3, PieChart, Flame, Rocket, Cpu, Layers };
 
 type Strategy = {
     id: number; name: string; kind?: 'composed' | 'custom'; summary?: string;
-    pnl_percent?: any; sharpe_ratio?: any; win_rate?: any; icon_color?: string;
+    pnl_percent?: any; sharpe_ratio?: any; win_rate?: any; icon?: string; icon_color?: string;
     published_experiments?: any[];
 };
+
+function StratIcon({ s, size = 18 }: { s: Strategy; size?: number }) {
+    const Icon = ICONS[s.icon || 'Lightbulb'] || Lightbulb;
+    const color = s.icon_color && s.icon_color !== '#000000' ? s.icon_color : '#3b82f6';
+    return (
+        <span className="inline-flex items-center justify-center rounded-lg shrink-0"
+            style={{ width: size + 14, height: size + 14, background: `${color}1a`, color }}>
+            <Icon size={size} />
+        </span>
+    );
+}
 type View = 'table' | 'cards' | 'split';
 type Filter = 'all' | 'composed' | 'custom' | 'published';
 type SortKey = 'name' | 'pnl_percent' | 'sharpe_ratio' | 'win_rate';
@@ -104,7 +118,7 @@ export function StrategyLibrary({ strategies, onCreate }: { strategies: Strategy
                             {rows.map((s) => (
                                 <tr key={s.id} onClick={() => router.push(`/strategies/${s.id}`)}
                                     className="border-t border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-900/60 cursor-pointer">
-                                    <td className="px-4 py-2.5"><div className="font-medium">{s.name}</div><div className="text-xs text-gray-400 truncate max-w-md">{s.summary}</div></td>
+                                    <td className="px-4 py-2.5"><div className="flex items-center gap-2.5"><StratIcon s={s} size={15} /><div className="min-w-0"><div className="font-medium">{s.name}</div><div className="text-xs text-gray-400 truncate max-w-md">{s.summary}</div></div></div></td>
                                     <td className="text-center"><KindBadge kind={s.kind} /></td>
                                     <td className={`text-right px-3 font-mono ${(num(s.pnl_percent) ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{pct(s.pnl_percent)}</td>
                                     <td className="text-right px-3 font-mono text-gray-600 dark:text-slate-300">{num(s.sharpe_ratio)?.toFixed(2) ?? '—'}</td>
@@ -122,7 +136,7 @@ export function StrategyLibrary({ strategies, onCreate }: { strategies: Strategy
                         <div key={s.id} onClick={() => router.push(`/strategies/${s.id}`)}
                             className="cursor-pointer rounded-2xl border border-gray-100 dark:border-slate-800 p-4 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800 transition-all bg-white dark:bg-card">
                             <div className="flex items-center justify-between mb-2">
-                                <span className="w-2.5 h-2.5 rounded-full" style={{ background: s.icon_color || '#3b82f6' }} />
+                                <StratIcon s={s} />
                                 <div className="flex items-center gap-1.5">{isPublished(s) && <span className="w-2 h-2 rounded-full bg-emerald-500" />}<KindBadge kind={s.kind} /></div>
                             </div>
                             <div className="font-semibold mb-1">{s.name}</div>
@@ -140,18 +154,18 @@ export function StrategyLibrary({ strategies, onCreate }: { strategies: Strategy
                         {rows.map((s) => (
                             <button key={s.id} onClick={() => setSel(s.id)}
                                 className={`w-full text-left px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-900/60 ${selected?.id === s.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
-                                <div className="flex items-center justify-between">
-                                    <span className="font-medium text-sm truncate">{s.name}</span>
-                                    <span className={`text-xs font-mono ${(num(s.pnl_percent) ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{pct(s.pnl_percent)}</span>
+                                <div className="flex items-center justify-between gap-2">
+                                    <span className="flex items-center gap-2 min-w-0"><StratIcon s={s} size={14} /><span className="font-medium text-sm truncate">{s.name}</span></span>
+                                    <span className={`text-xs font-mono shrink-0 ${(num(s.pnl_percent) ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{pct(s.pnl_percent)}</span>
                                 </div>
-                                <div className="flex items-center gap-1.5 mt-1"><KindBadge kind={s.kind} />{isPublished(s) && <span className="text-[10px] text-emerald-600">published</span>}</div>
+                                <div className="flex items-center gap-1.5 mt-1 pl-9"><KindBadge kind={s.kind} />{isPublished(s) && <span className="text-[10px] text-emerald-600">published</span>}</div>
                             </button>
                         ))}
                     </div>
                     {selected && (
                         <div className="rounded-xl border border-gray-100 dark:border-slate-800 p-5">
                             <div className="flex items-center justify-between flex-wrap gap-2">
-                                <div className="text-xl font-bold">{selected.name}</div>
+                                <div className="flex items-center gap-3"><StratIcon s={selected} size={22} /><div className="text-xl font-bold">{selected.name}</div></div>
                                 <div className="flex items-center gap-2"><KindBadge kind={selected.kind} /><Actions id={selected.id} router={router} /></div>
                             </div>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-2xl">{selected.summary}</p>

@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import { useRouter, useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import DashboardLayout from '@/components/DashboardLayout';
+import { StrategyWorkspaceNav } from '../../components/StrategyWorkspaceNav';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Play, Save, Sun, Moon, AlertTriangle, XOctagon, ShieldAlert, Zap, Activity, RotateCcw } from 'lucide-react';
@@ -190,6 +191,7 @@ export default function EditStrategyPage() {
             title={`Edit — ${strategy?.name || 'Strategy'}`}
         >
             <div className="flex flex-col h-[calc(100vh-100px)] -mt-4">
+                <StrategyWorkspaceNav strategyId={String(strategyId)} />
 
                 {/* Published warning */}
                 {isPublished && (

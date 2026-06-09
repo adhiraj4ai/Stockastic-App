@@ -5,6 +5,7 @@ import Link from 'next/link';
 import api from '@/lib/api';
 import { useRouter, useParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
+import { StrategyWorkspaceNav } from '../../components/StrategyWorkspaceNav';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Zap, TrendingUp, Activity, CheckCircle, Play, ChevronDown, AlertTriangle, ExternalLink, Code } from 'lucide-react';
@@ -196,6 +197,7 @@ export default function OptimizePage() {
             }
         >
             <div className="space-y-6">
+                <StrategyWorkspaceNav strategyId={strategyId} />
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Configuration Panel */}
                     <div className="lg:col-span-4 xl:col-span-3">
