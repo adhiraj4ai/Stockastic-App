@@ -10,7 +10,7 @@ import { CompanySelect } from '@/components/CompanySelect';
 
 interface LegInput {
   leg_number: number;
-  price_target: string;
+  entry_price: string;
   allocation_pct: string;
   stop_loss_price: string;
 }
@@ -27,7 +27,7 @@ export function CreateTradePlanForm({ onClose, onCreated }: Props) {
   const [targetPrice, setTargetPrice] = useState('');
   const [thesis, setThesis] = useState('');
   const [legs, setLegs] = useState<LegInput[]>([
-    { leg_number: 1, price_target: '', allocation_pct: '', stop_loss_price: '' },
+    { leg_number: 1, entry_price: '', allocation_pct: '', stop_loss_price: '' },
   ]);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -42,7 +42,7 @@ export function CreateTradePlanForm({ onClose, onCreated }: Props) {
 
   const addLeg = () => {
     if (legs.length >= 5) return;
-    setLegs(prev => [...prev, { leg_number: prev.length + 1, price_target: '', allocation_pct: '', stop_loss_price: '' }]);
+    setLegs(prev => [...prev, { leg_number: prev.length + 1, entry_price: '', allocation_pct: '', stop_loss_price: '' }]);
   };
 
   const removeLeg = (index: number) => {
@@ -58,9 +58,11 @@ export function CreateTradePlanForm({ onClose, onCreated }: Props) {
     if (!ticker) { setError('Ticker is required.'); return; }
     if (!allocationValid) { setError(`Leg allocations must sum to 100%. Current total: ${totalAllocation.toFixed(2)}%`); return; }
 
-    const hasInvalidStopLoss = legs.some(l =>
-      l.stop_loss_price && l.price_target && parseFloat(l.stop_loss_price) >= parseFloat(l.price_target)
-    );
+    const hasInvalidStopLoss = legs.some(l => {
+      if (!l.entry_price && l.stop_loss_price) return true; // stop set but no entry
+      if (l.stop_loss_price && l.entry_price && parseFloat(l.stop_loss_price) >= parseFloat(l.entry_price)) return true;
+      return false;
+    });
     if (hasInvalidStopLoss) { setError('Stop loss must be below entry price for each leg.'); return; }
 
     setLoading(true);
@@ -73,7 +75,7 @@ export function CreateTradePlanForm({ onClose, onCreated }: Props) {
         thesis: thesis || null,
         legs: legs.map(l => ({
           leg_number: l.leg_number,
-          price_target: l.price_target,
+          price_target: l.entry_price,
           allocation_pct: l.allocation_pct,
           stop_loss_price: l.stop_loss_price,
         })),
@@ -81,9 +83,22 @@ export function CreateTradePlanForm({ onClose, onCreated }: Props) {
       onCreated();
     } catch (err: any) {
       const data = err.response?.data;
-      if (data?.legs) setError(Array.isArray(data.legs) ? data.legs[0] : JSON.stringify(data.legs));
-      else if (data?.error) setError(data.error);
-      else setError('Failed to create plan. Please check your inputs.');
+      if (data) {
+        if (data.legs) {
+          setError(Array.isArray(data.legs) ? data.legs[0] : JSON.stringify(data.legs));
+        } else if (data.error) {
+          setError(data.error);
+        } else if (data.detail) {
+          setError(data.detail);
+        } else if (data.non_field_errors) {
+          setError(Array.isArray(data.non_field_errors) ? data.non_field_errors[0] : data.non_field_errors);
+        } else {
+          const firstValue = Object.values(data)[0];
+          setError(Array.isArray(firstValue) ? (firstValue as string[])[0] : String(firstValue || 'Failed to create plan.'));
+        }
+      } else {
+        setError('Failed to create plan. Please check your inputs.');
+      }
     } finally {
       setLoading(false);
     }
@@ -142,7 +157,7 @@ export function CreateTradePlanForm({ onClose, onCreated }: Props) {
               <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
                 Legs
                 <span className={`ml-2 text-xs font-bold ${allocationValid ? 'text-emerald-600' : 'text-amber-600'}`}>
-                  {totalAllocation.toFixed(1)}% / 100%
+                  {totalAllocation.toFixed(2)}% / 100%
                 </span>
               </label>
               {legs.length < 5 && (
@@ -157,9 +172,9 @@ export function CreateTradePlanForm({ onClose, onCreated }: Props) {
                 <span>#</span><span>Entry price</span><span>Allocation %</span><span>Stop loss</span><span />
               </div>
               {legs.map((leg, i) => (
-                <div key={i} className="grid grid-cols-[32px_1fr_1fr_1fr_32px] gap-2 items-center">
+                <div key={leg.leg_number} className="grid grid-cols-[32px_1fr_1fr_1fr_32px] gap-2 items-center">
                   <span className="text-xs text-slate-500 font-bold text-center">{leg.leg_number}</span>
-                  <Input type="number" value={leg.price_target} onChange={e => updateLeg(i, 'price_target', e.target.value)} placeholder="1200.00" />
+                  <Input type="number" value={leg.entry_price} onChange={e => updateLeg(i, 'entry_price', e.target.value)} placeholder="1200.00" />
                   <Input type="number" value={leg.allocation_pct} onChange={e => updateLeg(i, 'allocation_pct', e.target.value)} placeholder="40" />
                   <Input type="number" value={leg.stop_loss_price} onChange={e => updateLeg(i, 'stop_loss_price', e.target.value)} placeholder="1140.00" />
                   <button onClick={() => removeLeg(i)} disabled={legs.length === 1} className="text-slate-400 hover:text-red-500 disabled:opacity-20">
