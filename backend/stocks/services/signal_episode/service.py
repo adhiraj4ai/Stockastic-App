@@ -1,7 +1,8 @@
 # backend/stocks/services/signal_episode/service.py
 import logging
+from decimal import Decimal
 from django.db import transaction
-from ...models import SignalEpisode
+from ...models import SignalEpisode, DailyStockPrice
 from .reading import SignalReading
 from .state_machine import decide, EpisodeSnapshot, OPEN, EXTEND, FLIP, SUPPRESS, NOOP
 
@@ -57,3 +58,50 @@ def ingest_reading(source, strategy, symbol, reading: SignalReading):
         _open(source, strategy, producer_key, symbol, reading)
     # SUPPRESS / NOOP: nothing
     return action
+
+
+def _check_hit(direction, target, stop, high, low):
+    """Return (status, reason, exit_price) for first TP/SL hit, else None."""
+    if direction == "BUY":
+        if target is not None and high >= target:
+            return "WON", "TARGET", target
+        if stop is not None and low <= stop:
+            return "LOST", "STOP", stop
+    else:  # SELL
+        if target is not None and low <= target:
+            return "WON", "TARGET", target
+        if stop is not None and high >= stop:
+            return "LOST", "STOP", stop
+    return None
+
+
+def evaluate_active_episodes():
+    """Spec §4B. Walk prices AFTER start_date; first TP/SL hit closes the episode.
+    Episodes without a target AND stop are skipped. Returns count closed."""
+    closed = 0
+    actives = SignalEpisode.objects.filter(status="ACTIVE")
+    for ep in actives:
+        if ep.target_price is None and ep.stop_loss_price is None:
+            continue
+        prices = (DailyStockPrice.objects
+                  .filter(ticker=ep.symbol, date__gt=ep.start_date)
+                  .order_by("date")
+                  .values("date", "high", "low"))
+        for p in prices:
+            high, low = Decimal(str(p["high"])), Decimal(str(p["low"]))
+            hit = _check_hit(ep.direction, ep.target_price, ep.stop_loss_price, high, low)
+            if hit:
+                status, reason, exit_price = hit
+                ep.end_date = p["date"]
+                ep.exit_price = exit_price
+                ep.exit_reason = reason
+                ep.status = status
+                if ep.entry_price:
+                    if ep.direction == "BUY":
+                        ep.pnl_percent = (exit_price - ep.entry_price) / ep.entry_price * 100
+                    else:
+                        ep.pnl_percent = (ep.entry_price - exit_price) / ep.entry_price * 100
+                ep.save()
+                closed += 1
+                break
+    return closed
