@@ -9,6 +9,9 @@ from stocks.models.portfolio import (
     PortfolioActionDraft, PortfolioAccount, PortfolioItem,
     PortfolioTransaction, PortfolioTarget, TransactionType,
 )
+from stocks.services.portfolio_drafts import (
+    confirm_draft, create_draft, default_expiry, DraftError,
+)
 
 
 @pytest.mark.django_db
@@ -31,11 +34,6 @@ class TestPortfolioActionDraftModel:
             expires_at=timezone.now() - timedelta(seconds=1),
         )
         assert d.is_expired is True
-
-
-from stocks.services.portfolio_drafts import (
-    confirm_draft, create_draft, default_expiry, DraftError,
-)
 
 
 def _paper_account(user):

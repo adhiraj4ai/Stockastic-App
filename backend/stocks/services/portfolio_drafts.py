@@ -55,12 +55,14 @@ def _execute_trades(user, account, trades):
     txn_ids = []
     messages = []
     for t in trades:
+        qty = int(t["quantity"])
+        rate = Decimal(str(t["rate"]))
         metrics = PortfolioService.process_transaction(
             user=user,
             ticker=t["ticker"],
             txn_type=t["txn_type"],
-            quantity=int(t["quantity"]),
-            rate=Decimal(str(t["rate"])),
+            quantity=qty,
+            rate=rate,
             account=account,
         )
         txn = PortfolioTransaction.objects.create(
@@ -68,8 +70,8 @@ def _execute_trades(user, account, trades):
             account=account,
             ticker=t["ticker"],
             transaction_type=t["txn_type"],
-            quantity=int(t["quantity"]),
-            rate=Decimal(str(t["rate"])),
+            quantity=qty,
+            rate=rate,
             amount=metrics["amount"],
             commission=metrics["commission"],
             sebon_fee=metrics["sebon_fee"],
@@ -79,15 +81,17 @@ def _execute_trades(user, account, trades):
             transaction_date=timezone.now(),
         )
         txn_ids.append(txn.id)
-        messages.append(f"{t['txn_type']} {int(t['quantity'])} {t['ticker']} @ Rs {float(t['rate']):,.2f}")
+        messages.append(f"{t['txn_type']} {qty} {t['ticker']} @ Rs {rate:,.2f}")
     return txn_ids, messages
 
 
 def _execute_exits(user, payload):
     updated = []
+    skipped = []
     for it in payload.get("items", []):
         item = PortfolioItem.objects.filter(user=user, id=it["item_id"]).first()
         if not item:
+            skipped.append(it["item_id"])
             continue
         fields = []
         if it.get("stop_loss_price") is not None:
@@ -99,8 +103,10 @@ def _execute_exits(user, payload):
         if fields:
             item.save(update_fields=fields)
             updated.append(item.ticker)
-    return {"updated_tickers": updated,
-            "message": f"Set exits on {', '.join(updated) or 'no holdings'}."}
+    message = f"Set exits on {', '.join(updated) or 'no holdings'}."
+    if skipped:
+        message += f" Skipped {len(skipped)} holding(s) no longer found."
+    return {"updated_tickers": updated, "skipped_item_ids": skipped, "message": message}
 
 
 def _execute_rebalance(user, account, payload):
@@ -128,7 +134,14 @@ def _execute_trade_plan(user, payload):
 
 
 def confirm_draft(draft):
-    """Execute a PENDING draft. Idempotent on CONFIRMED. Raises DraftError otherwise."""
+    """Execute a PENDING draft. Idempotent on CONFIRMED. Raises DraftError otherwise.
+
+    The PENDING→CONFIRMED execution path takes a row lock (select_for_update) and
+    re-checks status under the lock, so concurrent/double confirms cannot
+    double-execute: the second caller blocks, then sees CONFIRMED and returns the
+    same result. Terminal-state and expiry checks happen before the lock (an
+    expired draft is marked EXPIRED in its own committed save, then rejected).
+    """
     if draft.status == PortfolioActionDraft.Status.CONFIRMED:
         return draft.result
     if draft.status != PortfolioActionDraft.Status.PENDING:
@@ -138,9 +151,16 @@ def confirm_draft(draft):
         draft.save(update_fields=["status"])
         raise DraftError("Draft has expired — ask the manager to re-draft at current prices.")
 
-    user, account, payload, kind = draft.user, draft.account, draft.payload, draft.kind
-
     with transaction.atomic():
+        locked = PortfolioActionDraft.objects.select_for_update().get(pk=draft.pk)
+        # Re-check under the lock to close the double-confirm race.
+        if locked.status == PortfolioActionDraft.Status.CONFIRMED:
+            return locked.result
+        if locked.status != PortfolioActionDraft.Status.PENDING:
+            raise DraftError(f"Draft is {locked.status} and cannot be confirmed.")
+
+        user, account, payload, kind = locked.user, locked.account, locked.payload, locked.kind
+
         if kind == PortfolioActionDraft.Kind.TRADE:
             txn_ids, messages = _execute_trades(user, account, payload["trades"])
             result = {"transaction_ids": txn_ids, "message": "; ".join(messages)}
@@ -153,9 +173,13 @@ def confirm_draft(draft):
         else:
             raise DraftError(f"Unknown draft kind {kind}")
 
-        draft.status = PortfolioActionDraft.Status.CONFIRMED
-        draft.confirmed_at = timezone.now()
-        draft.result = result
-        draft.save(update_fields=["status", "confirmed_at", "result"])
+        locked.status = PortfolioActionDraft.Status.CONFIRMED
+        locked.confirmed_at = timezone.now()
+        locked.result = result
+        locked.save(update_fields=["status", "confirmed_at", "result"])
+        # Keep the passed-in instance consistent for callers that reuse it.
+        draft.status = locked.status
+        draft.confirmed_at = locked.confirmed_at
+        draft.result = locked.result
 
     return result
