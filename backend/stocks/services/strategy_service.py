@@ -141,6 +141,52 @@ class StrategyService:
         return saved_count, skipped_count
 
     @staticmethod
+    def infer_current_signal(strategy, symbol):
+        """Run a strategy to the latest bar and return its current signal WITHOUT persisting.
+
+        Used for on-demand inference ("what is strategy X saying about Y today?").
+        Returns {signal, position, close, date, symbol}.
+        """
+        ticks = list(DailyStockPrice.objects.filter(ticker=symbol).order_by('date')
+                     .values('date', 'open', 'high', 'low', 'close', 'volume'))
+        if not ticks or len(ticks) < 30:
+            return {'signal': 'NO_DATA', 'symbol': symbol}
+        df = pd.DataFrame(ticks).rename(columns={'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'volume': 'Volume'})
+        df[['Open', 'High', 'Low', 'Close', 'Volume']] = df[['Open', 'High', 'Low', 'Close', 'Volume']].astype(float)
+        df['date'] = pd.to_datetime(df['date'])
+        df = df.set_index('date')
+        try:
+            exp = StrategyService._get_latest_optimized_experiment(strategy, symbol, None)
+            code = StrategyService._inject_params_into_code(resolve_code(strategy.code), exp.parameters if exp else {})
+            local_scope = build_strategy_scope(symbol)
+            exec(code, local_scope)
+            strat_class = extract_strategy_class(local_scope)
+            if not strat_class:
+                return {'signal': 'ERROR', 'symbol': symbol, 'error': 'no strategy class'}
+
+            class _Capture(strat_class):
+                def next(self):
+                    super().next()
+                    orders = self.orders
+                    sig = 'NEUTRAL'
+                    if any(o.size > 0 for o in orders):
+                        sig = 'BUY'
+                    elif any(o.size < 0 for o in orders):
+                        sig = 'SELL'
+                    elif self.position.size != 0:
+                        sig = 'HOLD' if self.position.size > 0 else 'HOLD_SHORT'
+                    CAPTURE_CONTEXT['last_signal'] = sig
+                    CAPTURE_CONTEXT['position'] = self.position.size
+
+            CAPTURE_CONTEXT.clear()
+            Backtest(df, _Capture, cash=100_000, commission=.002, finalize_trades=True).run()
+            return {'signal': CAPTURE_CONTEXT.get('last_signal', 'NEUTRAL'),
+                    'position': CAPTURE_CONTEXT.get('position', 0),
+                    'close': float(df.iloc[-1]['Close']), 'date': str(df.index[-1].date()), 'symbol': symbol}
+        except Exception as e:  # noqa: BLE001
+            return {'signal': 'ERROR', 'symbol': symbol, 'error': str(e)[:120]}
+
+    @staticmethod
     def _get_latest_optimized_experiment(strategy, symbol, sector):
         """Hierarchy: Symbol > Sector > Market (ALL)"""
         # Symbol
