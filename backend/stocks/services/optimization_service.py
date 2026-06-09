@@ -248,6 +248,116 @@ class SafeTa:
         return df, span_df
 
     # ------------------------------------------------------------------ #
+    #  Composite indicators with no single talib function                 #
+    #  (column order mirrors pandas_ta so .iloc[:, n] access is correct)  #
+    # ------------------------------------------------------------------ #
+
+    def supertrend(self, high, low, close, length=10, multiplier=3.0, **_):
+        """Supertrend. Columns [SUPERT, SUPERTd, SUPERTl, SUPERTs] (iloc 0/1/2/3).
+
+        SUPERTd is direction: 1 = uptrend, -1 = downtrend (matches pandas_ta).
+        """
+        h, l, c = _to_arr(high), _to_arr(low), _to_arr(close)
+        n = len(c)
+        period, mult = int(length), float(multiplier)
+        atr = talib.ATR(h, l, c, timeperiod=period)
+        hl2 = (h + l) / 2.0
+        upper = hl2 + mult * atr
+        lower = hl2 - mult * atr
+
+        final_upper = np.full(n, np.nan)
+        final_lower = np.full(n, np.nan)
+        trend = np.full(n, np.nan)        # the supertrend line
+        direction = np.full(n, np.nan)    # 1 up, -1 down
+
+        for i in range(n):
+            if np.isnan(atr[i]):
+                continue
+            if i == 0 or np.isnan(final_upper[i - 1]):
+                final_upper[i] = upper[i]
+                final_lower[i] = lower[i]
+                direction[i] = 1
+                trend[i] = final_lower[i]
+                continue
+            final_upper[i] = (upper[i] if (upper[i] < final_upper[i - 1] or c[i - 1] > final_upper[i - 1])
+                              else final_upper[i - 1])
+            final_lower[i] = (lower[i] if (lower[i] > final_lower[i - 1] or c[i - 1] < final_lower[i - 1])
+                              else final_lower[i - 1])
+            # Determine direction from previous trend line
+            if c[i] > final_upper[i - 1]:
+                direction[i] = 1
+            elif c[i] < final_lower[i - 1]:
+                direction[i] = -1
+            else:
+                direction[i] = direction[i - 1]
+            trend[i] = final_lower[i] if direction[i] == 1 else final_upper[i]
+
+        long_line = np.where(direction == 1, trend, np.nan)
+        short_line = np.where(direction == -1, trend, np.nan)
+        idx = _idx(close)
+        return pd.DataFrame(
+            {f'SUPERT_{period}_{mult}': trend, f'SUPERTd_{period}_{mult}': direction,
+             f'SUPERTl_{period}_{mult}': long_line, f'SUPERTs_{period}_{mult}': short_line},
+            index=idx,
+        )
+
+    def kc(self, high, low, close, length=20, scalar=2.0, mamode=None, **_):
+        """Keltner Channels. Columns [KCLe, KCBe, KCUe] = lower, basis, upper (iloc 0/1/2)."""
+        h, l, c = _to_arr(high), _to_arr(low), _to_arr(close)
+        period, scale = int(length), float(scalar)
+        basis = talib.EMA(c, timeperiod=period)
+        rng = talib.ATR(h, l, c, timeperiod=period)
+        upper = basis + scale * rng
+        lower = basis - scale * rng
+        idx = _idx(close)
+        return pd.DataFrame(
+            {f'KCLe_{period}_{scale}': lower, f'KCBe_{period}_{scale}': basis, f'KCUe_{period}_{scale}': upper},
+            index=idx,
+        )
+
+    def cmf(self, high, low, close, volume, length=20, **_):
+        """Chaikin Money Flow (single Series)."""
+        h, l, c, v = _to_arr(high), _to_arr(low), _to_arr(close), _to_arr(volume)
+        hl = h - l
+        mfm = np.where(hl > 0, ((c - l) - (h - c)) / hl, 0.0)
+        mfv = mfm * v
+        period = int(length)
+        mfv_s = pd.Series(mfv).rolling(period).sum()
+        v_s = pd.Series(v).rolling(period).sum()
+        cmf = (mfv_s / v_s).to_numpy()
+        return pd.Series(cmf, index=_idx(close))
+
+    def efi(self, close, volume, length=13, **_):
+        """Elder Force Index (single Series): EMA(diff(close) * volume, length)."""
+        c, v = _to_arr(close), _to_arr(volume)
+        raw = np.empty(len(c))
+        raw[0] = np.nan
+        raw[1:] = (c[1:] - c[:-1]) * v[1:]
+        ema = talib.EMA(np.nan_to_num(raw, nan=0.0), timeperiod=int(length))
+        return pd.Series(ema, index=_idx(close))
+
+    def coppock(self, close, length=10, fast=11, slow=14, **_):
+        """Coppock Curve (single Series): WMA(ROC(slow) + ROC(fast), length)."""
+        c = _to_arr(close)
+        roc_fast = talib.ROC(c, timeperiod=int(fast))
+        roc_slow = talib.ROC(c, timeperiod=int(slow))
+        combined = np.nan_to_num(roc_fast, nan=0.0) + np.nan_to_num(roc_slow, nan=0.0)
+        cop = talib.WMA(combined, timeperiod=int(length))
+        return pd.Series(cop, index=_idx(close))
+
+    def aroon(self, high, low, length=14, **_):
+        """Aroon. Columns [AROOND, AROONU, AROONOSC] = down, up, osc (iloc 0/1/2)."""
+        h, l = _to_arr(high), _to_arr(low)
+        period = int(length)
+        down, up = talib.AROON(h, l, timeperiod=period)
+        osc = up - down
+        idx = _idx(high)
+        return pd.DataFrame(
+            {f'AROOND_{period}': down, f'AROONU_{period}': up, f'AROONOSC_{period}': osc},
+            index=idx,
+        )
+
+    # ------------------------------------------------------------------ #
     #  Generic passthrough for any other talib function                   #
     # ------------------------------------------------------------------ #
 
