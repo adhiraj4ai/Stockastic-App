@@ -72,6 +72,18 @@ class StrategyViewSet(viewsets.ModelViewSet):
         from ..services.strategy_framework import registry_schema
         return Response(registry_schema())
 
+    @action(detail=False, methods=['post'], url_path='render_spec')
+    def render_spec(self, request):
+        """Validate a composition spec and render the equivalent code (live builder preview)."""
+        from ..services.strategy_framework import spec_to_code, SpecError
+        spec = request.data.get('spec')
+        try:
+            return Response({'valid': True, 'code': spec_to_code(spec), 'error': None})
+        except SpecError as e:
+            return Response({'valid': False, 'code': '', 'error': str(e)})
+        except Exception as e:  # noqa: BLE001
+            return Response({'valid': False, 'code': '', 'error': f'{type(e).__name__}: {e}'})
+
     @action(detail=True, methods=['post'])
     def publish(self, request, pk=None):
         strategy = self.get_object()

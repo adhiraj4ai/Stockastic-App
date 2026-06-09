@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Play, Edit, Calendar, Activity, TrendingUp, TrendingDown, Clock, Code, FileJson, History, Target } from 'lucide-react';
+import { ArrowLeft, Play, Edit, Calendar, Activity, TrendingUp, TrendingDown, Clock, Code, FileJson, History, Target, Blocks } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import ExperimentsTab from './tabs/ExperimentsTab'; // Import the existing ExperimentsTab
 import { toast } from 'sonner';
@@ -114,6 +114,14 @@ export default function StrategyDetailPage() {
             <div className="space-y-6">
                 {/* Action Toolbar */}
                 <div className="flex justify-end items-center gap-3">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 h-9 text-xs font-bold bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 shadow-sm transition-all"
+                        onClick={() => router.push(`/strategies/${id}/builder`)}
+                    >
+                        <Blocks size={14} /> Builder
+                    </Button>
                     <Button
                         variant="outline"
                         size="sm"
