@@ -85,8 +85,9 @@ export default function PipelinePage() {
 
     // NepseAPI Ingest State
     const [apiIngestStatus, setApiIngestStatus] = useState<'idle' | 'running' | 'completed' | 'error'>('idle');
-    const [apiIngestLogs, setApiIngestLogs] = useState<{ type: string; message: string; timestamp: Date }[]>([]);
+    const [apiIngestLogs, setApiIngestLogs] = useState<LogEntry[]>([]);
     const [showApiIngestLogs, setShowApiIngestLogs] = useState(false);
+    const [apiIngestLogId, setApiIngestLogId] = useState<number | null>(null);
     const [apiDate, setApiDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
     const [apiDatasets, setApiDatasets] = useState<Record<string, boolean>>({
         prices: true, floorsheet: true, summary: true, companies: true, indices: true,
@@ -698,11 +699,14 @@ export default function PipelinePage() {
                     if (!t || !t.startsWith('data: ')) continue;
                     try {
                         const data = JSON.parse(t.substring(6));
-                        if (data.type === 'init') continue;
+                        if (data.type === 'init') {
+                            setApiIngestLogId(data.log_id);
+                            continue;
+                        }
                         if (data.type === 'done') { setApiIngestStatus('completed'); toast.success('Market data ingested!'); fetchHistory(); return; }
                         if (data.type === 'error') { setApiIngestStatus('error'); toast.error(data.message || 'Ingestion error'); return; }
                         if (data.type === 'log' || data.type === 'status') {
-                            setApiIngestLogs(prev => [...prev, { type: data.type, message: data.message, timestamp: new Date() }]);
+                            setApiIngestLogs(prev => [...prev, { type: data.type as any, message: data.message, timestamp: new Date() }]);
                         }
                     } catch (e) { console.error('Error parsing stream line:', t, e); }
                 }
@@ -850,6 +854,24 @@ export default function PipelinePage() {
                 }
             }
             toast.info("Stopped signal evaluation");
+        }
+    };
+
+    const handleStopApiIngest = async () => {
+        if (apiIngestAbortController.current) {
+            apiIngestAbortController.current.abort();
+            apiIngestAbortController.current = null;
+            setApiIngestStatus('idle');
+
+            if (apiIngestLogId) {
+                try {
+                    await api.post('/api/stocks/pipeline/abort_log/', { log_id: apiIngestLogId });
+                    fetchHistory();
+                } catch (err) {
+                    console.error('Failed to mark log as aborted:', err);
+                }
+            }
+            toast.info("Stopped NepseAPI ingest");
         }
     };
 
@@ -1042,9 +1064,15 @@ export default function PipelinePage() {
                                     </label>
                                 ))}
                             </div>
-                            <Button onClick={handleRunApiIngest} disabled={apiIngestStatus === 'running'} className="w-full">
-                                {apiIngestStatus === 'running' ? 'Fetching…' : 'Fetch from NepseAPI'}
-                            </Button>
+                            {apiIngestStatus === 'running' ? (
+                                <Button onClick={handleStopApiIngest} variant="destructive" className="w-full">
+                                    Stop
+                                </Button>
+                            ) : (
+                                <Button onClick={handleRunApiIngest} className="w-full">
+                                    Fetch from NepseAPI
+                                </Button>
+                            )}
                             {showApiIngestLogs && (
                                 <div className="max-h-48 overflow-y-auto rounded-md bg-muted/40 p-3 font-mono text-[11px] space-y-0.5">
                                     {apiIngestLogs.map((l, i) => (<div key={i} className="text-muted-foreground">{l.message}</div>))}
