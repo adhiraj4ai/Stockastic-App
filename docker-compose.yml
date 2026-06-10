@@ -73,7 +73,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: stockastic-celery
-    command: celery -A stockastic worker --loglevel=info
+    command: celery -A stockastic worker -B --loglevel=info
     volumes:
       - ./backend:/app
     env_file:

@@ -387,6 +387,40 @@ docker network inspect stockastic_stockastic-network | grep Name
 > 6. Use secrets management
 > 7. Regular security updates
 
+## Backups
+
+The NEPSE price and floorsheet history is the product's core data asset — it cannot be
+refetched from any API. Nightly backups are mandatory.
+
+### Automated Nightly Backup
+
+The script `scripts/backup_db.sh` dumps the `stockastic` database, gzips it, writes it to
+`backups/`, and prunes files older than 14 days.
+
+**Host crontab (run at 02:00 every night):**
+
+```
+0 2 * * * cd /path/to/Stockastic && ./scripts/backup_db.sh >> backups/backup.log 2>&1
+```
+
+**Manual run:**
+
+```bash
+./scripts/backup_db.sh
+```
+
+### Restore from Backup
+
+```bash
+gunzip -c backups/<file>.sql.gz | docker-compose exec -T postgres psql -U postgres stockastic
+```
+
+Example:
+
+```bash
+gunzip -c backups/stockastic-20260610-020001.sql.gz | docker-compose exec -T postgres psql -U postgres stockastic
+```
+
 ## Support
 
 For issues or questions:

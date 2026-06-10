@@ -6,11 +6,33 @@ import asyncio
 import logging
 
 from asgiref.sync import async_to_sync
-from django.http import StreamingHttpResponse
+from django.core.cache import cache
+from django.http import JsonResponse, StreamingHttpResponse
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.renderers import BaseRenderer
 from rest_framework.response import Response
+
+
+# ---------------------------------------------------------------------------
+# Rate limiting helper
+# ---------------------------------------------------------------------------
+# django-ratelimit's decorator does not support async or DRF action views
+# reliably, so we use a lightweight cache-based counter instead.
+# Django defaults to LocMemCache (per-process in-memory) when no CACHES is
+# configured; this deployment runs a single backend container so per-process
+# is sufficient — for multi-process deployments swap CACHES to Redis/Memcache.
+def _rate_limited(user_id, limit: int = 10, window_seconds: int = 60) -> bool:
+    """Sliding-window-ish counter: True if the user exceeded `limit` sends per window."""
+    key = f"chat_send_rl:{user_id}"
+    current = cache.get_or_set(key, 0, timeout=window_seconds)
+    if current >= limit:
+        return True
+    try:
+        cache.incr(key)
+    except ValueError:  # key expired between get_or_set and incr
+        cache.set(key, 1, timeout=window_seconds)
+    return False
 
 
 class ServerSentEventRenderer(BaseRenderer):
@@ -69,6 +91,13 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
         prompt = (request.data.get("prompt") or "").strip()
         if not prompt:
             return Response({"detail": "prompt is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Rate limit: 10 messages per minute per user.
+        if _rate_limited(request.user.id):
+            return JsonResponse(
+                {"error": "Rate limit exceeded. Try again in a minute."},
+                status=429,
+            )
 
         # Persist the user turn before streaming so it survives client disconnects.
         ChatMessage.objects.create(
