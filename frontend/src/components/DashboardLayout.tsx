@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { LayoutDashboard, TrendingUp, TrendingDown, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, NotebookPen, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Users, BarChart3, History, Star, Brain, Radar, Building2, ScanLine, Zap, Share2, Crosshair, DollarSign, Layers, GitMerge, Shield, Search } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, TrendingDown, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, NotebookPen, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Users, BarChart3, History, Star, Brain, Radar, Building2, ScanLine, Zap, Share2, Crosshair, DollarSign, Layers, GitMerge, Shield } from 'lucide-react';
 import { FullPageLoader } from '@/components/ui/StockLoader';
 import { SearchBar } from './SearchBar';
 import { AlertsDropdown } from './AlertsDropdown';
@@ -25,12 +25,12 @@ import { SettingsDialog } from './SettingsDialog';
 
 const navItems = [
     { name: 'Home', href: '/', icon: Home, permission: 'home', color: 'text-blue-500' },
-    { name: 'Ticker Intelligence', href: '/ticker', icon: Search, permission: 'home', color: 'text-indigo-500' },
     {
         name: 'Market',
         icon: Building2,
         color: 'text-emerald-500',
         subItems: [
+            { name: 'Live Market', href: '/market/live', icon: Activity, permission: 'home' },
             { name: 'Terminal', href: '/market', icon: LayoutDashboard, permission: 'market_overview' },
             { name: 'Movers & Shakers', href: '/market/movers', icon: Zap, permission: 'market_movers' },
             { name: 'Deep Dive', href: '/market/activity', icon: Activity, permission: 'market_activity' },
@@ -318,13 +318,13 @@ function DashboardContent({
         if (!checkPathAllowed(pathname)) {
             // Special cases for Chat and partial paths
             if (pathname === '/chat' && !perms['chat']) {
-                router.push('/ticker');
+                router.push('/');
                 return;
             }
 
-            // For general restricted paths, push to home or market
-            if (pathname !== '/ticker' && pathname !== '/market') {
-                router.push('/ticker');
+            // For general restricted paths, push to home (Ticker Intelligence) or market
+            if (pathname !== '/' && pathname !== '/market') {
+                router.push('/');
             }
         }
     }, [pathname, currentUser, router]);
@@ -435,9 +435,9 @@ function DashboardContent({
                             <Image
                                 src={logoSrc}
                                 alt="Stockastic Logo"
-                                width={104}
-                                height={28}
-                                className="object-contain"
+                                width={120}
+                                height={45}
+                                className="h-9 w-auto object-contain"
                                 priority
                             />
                         </Link>
