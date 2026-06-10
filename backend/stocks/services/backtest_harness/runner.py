@@ -8,7 +8,7 @@ import pandas as pd
 from backtesting import Backtest
 
 from .scope import build_strategy_scope, extract_strategy_class, resolve_code
-from .fees import nepse_commission, DEFAULT_SPREAD
+from .fees import nepse_commission, total_cost_rate, DEFAULT_SPREAD
 from .adjustments import apply_adjustments
 
 __all__ = ["load_price_df", "run_backtest", "normalize_metrics", "BacktestResult"]
@@ -113,6 +113,23 @@ def normalize_metrics(stats):
     }
 
 
+def _buy_hold_cost_pct(cash, resolved_commission, resolved_spread):
+    """Round-trip transaction cost (in % points) a buy & hold investor also pays.
+
+    backtesting.py reports Buy & Hold Return gross of fees, but a passive holder
+    still pays one entry + one exit. To compare strategy-vs-B&H fairly (and not
+    dock only the active strategy its cost drag), we net the same round-trip cost
+    out of the B&H leg: per-side = the NEPSE cost rate when the real model is in
+    effect, else the flat commission fraction; plus spread on each side.
+    """
+    if callable(resolved_commission):
+        per_side_commission = total_cost_rate(cash)
+    else:
+        per_side_commission = float(resolved_commission)
+    per_side = per_side_commission + (resolved_spread or 0.0)
+    return 2.0 * per_side * 100.0
+
+
 def run_backtest(strategy_or_code, ticker, params=None, start=None, end=None,
                  cash=1_000_000, commission=None, spread=None, df=None):
     """Execute a strategy over one symbol and return a BacktestResult.
@@ -145,17 +162,24 @@ def run_backtest(strategy_or_code, ticker, params=None, start=None, end=None,
         if strategy_class is None:
             return BacktestResult(symbol=ticker, ok=False, error="No Strategy subclass found in code")
 
+        resolved_commission = nepse_commission if commission is None else commission
+        resolved_spread = DEFAULT_SPREAD if spread is None else spread
         bt = Backtest(
             df,
             strategy_class,
             cash=cash,
-            commission=nepse_commission if commission is None else commission,
-            spread=DEFAULT_SPREAD if spread is None else spread,
+            commission=resolved_commission,
+            spread=resolved_spread,
             exclusive_orders=True,
         )
         run_params = {k: v for k, v in (params or {}).items() if hasattr(strategy_class, k)}
         stats = bt.run(**run_params)
-        return BacktestResult(symbol=ticker, ok=True, metrics=normalize_metrics(stats))
+        metrics = normalize_metrics(stats)
+        # Charge buy & hold the same round-trip cost so the comparison is net-vs-net.
+        metrics["buy_hold_return_pct"] -= _buy_hold_cost_pct(
+            cash, resolved_commission, resolved_spread
+        )
+        return BacktestResult(symbol=ticker, ok=True, metrics=metrics)
     except Exception as e:  # noqa: BLE001 — any strategy error becomes a recorded failure
         msg = str(e)
         if len(msg) > 200:

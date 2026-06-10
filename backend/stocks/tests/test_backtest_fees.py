@@ -96,3 +96,17 @@ def test_runner_accepts_float_commission_override():
     res = run_backtest(_BH_CODE, "TEST", df=_flat_df(), commission=0.0, spread=0.0)
     assert res.ok, res.error
     assert abs(res.metrics["return_pct"]) < 1e-6
+    # With zero costs, the B&H leg gets no cost deduction either (net == gross).
+    assert abs(res.metrics["buy_hold_return_pct"]) < 1e-6
+
+
+def test_buy_hold_is_charged_round_trip_cost():
+    # Fair comparison: B&H is reported net of one round trip, not gross. On a
+    # rising flat-to-step series B&H is positive gross; under the real NEPSE
+    # model the reported B&H must be LOWER than the raw price return by ~2x the
+    # per-side cost (entry + exit), and the frictionless run must be higher.
+    honest = run_backtest(_BH_CODE, "TEST", df=_flat_df())
+    frictionless = run_backtest(_BH_CODE, "TEST", df=_flat_df(), commission=0.0, spread=0.0)
+    # Flat series → gross B&H 0%; honest nets a positive round-trip cost out of it.
+    assert honest.metrics["buy_hold_return_pct"] < frictionless.metrics["buy_hold_return_pct"]
+    assert honest.metrics["buy_hold_return_pct"] < 0  # 0 gross − round-trip cost

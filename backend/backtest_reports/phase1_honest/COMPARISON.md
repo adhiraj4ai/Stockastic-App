@@ -44,13 +44,23 @@ directions (net zero):
 - *Turtle Trading (Channel Breakout)*: FAIL → PASS (median excess 16.58% → 24.77%)
 - *Smart Money Accumulation*: PASS → FAIL (boundary flip on the risk-adjusted verdict)
 
+### Fair comparison: buy & hold is charged the same round-trip cost
+
+backtesting.py reports `Buy & Hold Return [%]` **gross of fees**, while the strategy return is
+net of full NEPSE costs. Comparing the two directly would dock only the active strategy its
+transaction drag and give passive holding a free pass — biasing every strategy-vs-B&H verdict
+(and Plan 3's net-expectancy ranking) against active strategies. So `run_backtest` now nets a
+matching round-trip cost (one entry + one exit) out of the B&H leg via `_buy_hold_cost_pct`,
+making the scorecard a true **net-vs-net** comparison. (This corrected a real asymmetry caught
+in final review; it did not move the headline — 21/41 before and after.)
+
 ### Why net-neutral, and why that's still correct
 
 - **Fees are immaterial to multi-year pass/fail at the current scorecard thresholds.** A
-  ~0.3% per-side cost is noise against multi-year returns, and the scorecard compares
-  strategy-vs-buy&hold where both sides bear entry cost. Real fee impact surfaces where it
-  should — when **ranking by net expectancy** (Plan 3) and for **high-frequency** strategies
-  (Turtle Soup ~47 trades, Parabolic SAR ~25) whose per-trade drag compounds.
+  ~0.3% per-side cost (now applied symmetrically to both the strategy and the B&H leg) is
+  noise against multi-year returns. Real fee impact surfaces where it should — when **ranking
+  by net expectancy** (Plan 3) and for **high-frequency** strategies (Turtle Soup ~47 trades,
+  Parabolic SAR ~25) whose per-trade drag compounds.
 - **Adjustment touches almost nothing yet:** only 1 corporate action exists in the DB
   (NABIL). The adjustment math is correct (verified: NABIL pre-bonus closes scale ×1/1.1)
   but starved of data. See **Task 11** — ingesting historical bonus/rights history for the

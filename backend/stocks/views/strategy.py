@@ -901,8 +901,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
 
             # Real NEPSE costs (tiered commission + SEBON + DP) + spread, matching
             # the shared harness so the UI backtest endpoint reports honest numbers.
-            # NOTE: this method still loads RAW (unadjusted) prices; corporate-action
-            # adjustment converges with the harness in a later task.
+            # Prices come from the adjusted harness loader (load_price_df) above.
             bt = Backtest(df, strategy_class, cash=cash, commission=nepse_commission,
                           spread=DEFAULT_SPREAD, exclusive_orders=True)
             
