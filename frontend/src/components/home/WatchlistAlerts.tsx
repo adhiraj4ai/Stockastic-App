@@ -45,7 +45,11 @@ export function WatchlistAlerts() {
             setLoading(false);
         };
         load();
-        return () => { cancelled = true; };
+        const interval = setInterval(load, 15000); // Keep watchlist prices and alerts live
+        return () => {
+            cancelled = true;
+            clearInterval(interval);
+        };
     }, []);
 
     return (
