@@ -7,6 +7,7 @@ from rest_framework import status
 
 from ..models import DailyTradingPlan
 from ..services.daily_plan import user_overlay
+from ..services.position_sizing import sizing_map_for_user
 
 
 def _serialize(plan):
@@ -30,6 +31,8 @@ class PlanTodayView(APIView):
                             status=status.HTTP_404_NOT_FOUND)
         data = _serialize(plan)
         data["overlay"] = user_overlay(request.user)
+        data["overlay"]["sizing"] = sizing_map_for_user(
+            request.user, plan.payload.get("picks", []))
         return Response(data)
 
 

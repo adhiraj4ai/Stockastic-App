@@ -1,5 +1,6 @@
 import pytest
 from datetime import date
+from decimal import Decimal
 
 
 @pytest.mark.django_db
@@ -21,7 +22,7 @@ class TestPlanAPI:
         assert data["regime"] == "RISK_ON"
         assert data["payload"]["picks"][0]["symbol"] == "NABIL"
         assert set(data["overlay"].keys()) == {
-            "positions_near_action", "signal_flips", "watchlist_triggers"}
+            "positions_near_action", "signal_flips", "watchlist_triggers", "sizing"}
 
     def test_today_404_when_no_plan(self, auth_client):
         resp = auth_client.get("/api/stocks/plan/today/")
@@ -43,3 +44,23 @@ class TestPlanAPI:
     def test_requires_auth(self, api_client):
         resp = api_client.get("/api/stocks/plan/today/")
         assert resp.status_code in (401, 403)
+
+    def test_today_overlay_includes_sizing_for_picks(self, auth_client):
+        from django.contrib.auth.models import User
+        from stocks.models import DailyTradingPlan, PortfolioAccount
+        user = User.objects.get(username="testuser")
+        PortfolioAccount.objects.create(user=user, name="Live", account_type="LIVE",
+                                        balance=Decimal("1000000"),
+                                        default_risk_percentage=Decimal("1.00"))
+        DailyTradingPlan.objects.create(
+            date=date(2026, 6, 12), regime="RISK_ON",
+            payload={"picks": [{"symbol": "NABIL",
+                                "entry": {"latest_close": 101.0, "status": "IN_ZONE",
+                                          "price": 100.0},
+                                "targets": {"tp1": 120.0, "sl": 90.0}}],
+                     "watch": [], "exits": [], "catalysts": [], "market_context": {}},
+        )
+        resp = auth_client.get("/api/stocks/plan/today/")
+        assert resp.status_code == 200
+        sizing = resp.json()["overlay"]["sizing"]
+        assert sizing["NABIL"]["shares"] == 909  # 10000 / (101 - 90)
