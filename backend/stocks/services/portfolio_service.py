@@ -115,14 +115,25 @@ class PortfolioService:
         elif txn_type == TransactionType.SELL:
             if portfolio_item.quantity < quantity:
                 raise ValueError("Insufficient quantity to sell.")
-            
+
             profit_per_share = Decimal(rate) - Decimal(portfolio_item.wacc)
             total_profit = profit_per_share * Decimal(quantity)
-            
+
+            # Holding-period-aware CGT (WACC-weighted acquisition age; NEPSE >=1yr = 5%).
+            from stocks.services.finance import weighted_acquisition_date, is_long_term_holding
+            _prior = PortfolioTransaction.objects.filter(
+                user=user, ticker=ticker,
+                transaction_type__in=[TransactionType.BUY, TransactionType.BONUS],
+            )
+            if account:
+                _prior = _prior.filter(account=account)
+            _lots = [(t.quantity, t.transaction_date.date()) for t in _prior if t.quantity]
+            _sell_date = timezone.now().date()
+            _long_term = is_long_term_holding(weighted_acquisition_date(_lots), _sell_date)
             if total_profit > 0:
-                cgt = calculate_cgt(total_profit, is_long_term=False) 
-                
-            receivable_amount = amount - commission - sebon_fee - dp_charge - cgt 
+                cgt = calculate_cgt(total_profit, is_long_term=_long_term)
+
+            receivable_amount = amount - commission - sebon_fee - dp_charge - cgt
             
             if account and account.account_type == AccountType.PAPER:
                 account.balance += receivable_amount

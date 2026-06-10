@@ -2269,7 +2269,16 @@ def _trade_preview(user, account, ticker, txn_type, quantity, rate):
         if wacc is not None:
             profit = (rate - wacc) * Decimal(quantity)
             if profit > 0:
-                cgt = calculate_cgt(profit, is_long_term=False)
+                from stocks.services.finance import weighted_acquisition_date, is_long_term_holding
+                _prior = PortfolioTransaction.objects.filter(
+                    user=user, ticker=ticker,
+                    transaction_type__in=[TransactionType.BUY, TransactionType.BONUS],
+                )
+                if account:
+                    _prior = _prior.filter(account=account)
+                _lots = [(t.quantity, t.transaction_date.date()) for t in _prior if t.quantity]
+                _long_term = is_long_term_holding(weighted_acquisition_date(_lots), date.today())
+                cgt = calculate_cgt(profit, is_long_term=_long_term)
         net = amount - commission - sebon_fee - dp_charge - cgt
     else:  # BUY
         net = amount + commission + sebon_fee + dp_charge
