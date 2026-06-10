@@ -27,5 +27,7 @@ def test_live_company_list_maps_cleanly():
 def test_live_prices_map_cleanly():
     prov = get_provider()
     prices = prov.fetch_daily_prices(date.today())
-    assert prices and isinstance(prices[0], PriceRecord)
+    if not prices:
+        pytest.skip("No price data for today (weekend/NEPSE holiday?)")
+    assert isinstance(prices[0], PriceRecord)
     assert all(p.close and p.close > 0 for p in prices)
