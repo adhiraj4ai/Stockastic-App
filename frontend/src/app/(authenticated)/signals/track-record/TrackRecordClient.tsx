@@ -492,7 +492,7 @@ export default function TrackRecordClient() {
     if (loading) return <PageLoader />;
 
     return (
-        <div className="space-y-8 max-w-[1600px] mx-auto">
+        <div className="space-y-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                 <StatCard label="Signal Accuracy" value={metrics.winRate != null ? `${metrics.winRate}%` : '—'} sub={`${metrics.won}W / ${metrics.lost}L`} accent={metrics.winRate != null && metrics.winRate >= 50 ? 'green' : 'red'} icon={Target} tooltip="Probability of reaching target before stop loss." />
                 <StatCard label="Avg Capture" value={metrics.avgWinPnl != null ? `+${fixed(metrics.avgWinPnl, 1)}%` : '—'} sub="per win" accent="green" icon={TrendingUp} tooltip="Average percentage gain per successful signal." />

@@ -37,7 +37,7 @@ export function TerminalHeader({
         <div className={cn(
             "sticky top-0 z-50 border-b glass-card-light dark:bg-card/95 rounded-none border-border dark:border-slate-800/50 py-3",
         )}>
-            <div className="max-w-[1700px] mx-auto px-8 flex items-center justify-center gap-6">
+            <div className="px-8 flex items-center justify-center gap-6">
                 {/* Unified Identity & Price Area */}
                 <div className="flex items-center gap-6">
                     {/* Symbol & Signal */}

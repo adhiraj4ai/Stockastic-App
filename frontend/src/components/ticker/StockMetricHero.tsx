@@ -36,7 +36,7 @@ export function StockMetricHero({
 
     return (
         <div className="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
-            <div className="max-w-[1600px] mx-auto px-6 py-4">
+            <div className="px-6 py-4">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     {/* Left: Price Action */}
                     <div className="flex items-center gap-8">

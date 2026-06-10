@@ -220,7 +220,7 @@ export default function ExperimentDetailPage() {
             subtitle={`Run ${experiment.id} • ${new Date(experiment.created_at).toLocaleDateString()}`}
             showBack={true}
         >
-            <div className="max-w-[1800px] mx-auto space-y-6 p-4 md:p-6">
+            <div className="space-y-6 p-4 md:p-6">
                 {/* 1. Command Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-card p-4 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm">
                     <div className="flex items-center gap-4">

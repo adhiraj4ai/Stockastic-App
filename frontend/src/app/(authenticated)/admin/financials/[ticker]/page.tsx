@@ -107,7 +107,7 @@ export default function AdminTickerPage({ params }: { params: Promise<{ ticker: 
             }
             subtitle={null}
         >
-            <div className="max-w-[1600px] mx-auto space-y-6">
+            <div className="space-y-6">
 
                 {/* Vertical Stack Layout */}
                 <div className="space-y-6">
