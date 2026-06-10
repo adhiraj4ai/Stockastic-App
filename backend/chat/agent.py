@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from datetime import date
 from pathlib import Path
 from typing import AsyncIterator
@@ -23,11 +24,23 @@ _ORCHESTRATOR_SYSTEM: str = _ORCHESTRATOR_YAML["system"]
 _ORCHESTRATOR_USER_TEMPLATE: str = _ORCHESTRATOR_YAML.get("user", "{message}")
 
 
+def _safe_prompt_value(value, max_len: int = 64) -> str:
+    """Strip prompt-control characters from user-derived prompt values.
+
+    Removes any character that is not alphanumeric, underscore, space,
+    period, hyphen, or at-sign — reducing the prompt-injection surface for
+    values that flow into the system/user-turn template.  The message
+    content itself must NOT be altered (it is the user's free-form input).
+    """
+    return re.sub(r"[^A-Za-z0-9_ .\-@]", "", str(value or ""))[:max_len]
+
+
 def _format_prompt(user, message: str) -> str:
     """Render the orchestrator user-turn template with live context."""
+    safe_username = _safe_prompt_value(getattr(user, "username", ""))
     return _ORCHESTRATOR_USER_TEMPLATE.format(
         date=date.today().isoformat(),
-        username=getattr(user, "username", ""),
+        username=safe_username,
         message=message,
     )
 
@@ -59,6 +72,7 @@ def _build_options(sdk_session_id: str = "") -> ClaudeAgentOptions:
         max_turns=16,
         thinking={"type": "adaptive"},
         effort="high",
+        include_partial_messages=True,  # token-level streaming via StreamEvent deltas
         env=_sdk_env(),
         resume=sdk_session_id or None,
     )
