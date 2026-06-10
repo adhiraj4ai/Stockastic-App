@@ -11,6 +11,7 @@ import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import TradingSignalAlerts from '@/components/market/TradingSignalAlerts';
+import { MarketTabs } from '@/components/MarketTabs';
 
 export default function PriceActionScreener() {
     const router = useRouter();
@@ -67,6 +68,7 @@ export default function PriceActionScreener() {
             subtitle="Real-time scanning of all active tickers for Smart Money Concepts and Institutional Algorithms."
             noPadding
         >
+            <div className="px-6 lg:px-10 pt-4"><MarketTabs className="mb-0" /></div>
             <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 
                 {/* Trading Signal Alerts Summary */}

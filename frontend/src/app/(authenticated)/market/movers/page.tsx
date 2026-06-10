@@ -12,6 +12,7 @@ import { PageLoader } from '@/components/ui/StockLoader';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
 import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
+import { MarketTabs } from '@/components/MarketTabs';
 
 interface StockData {
     ticker: string;
@@ -349,6 +350,7 @@ export default function MoversShakersPage() {
 
     return (
         <DashboardLayout title="Movers & Shakers" subtitle="SCANNERS">
+            <MarketTabs />
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
