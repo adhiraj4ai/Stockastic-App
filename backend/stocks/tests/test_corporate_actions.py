@@ -69,3 +69,11 @@ def test_apply_adjustments_no_actions_is_identity():
     df = _df()
     out = apply_adjustments(df.copy(), [])
     pd.testing.assert_frame_equal(out, df)
+
+
+def test_apply_adjustments_does_not_mutate_input():
+    # The caller's frame must survive unchanged even when actions apply.
+    df = _df()
+    before = df.copy()
+    apply_adjustments(df, [(pd.Timestamp("2025-01-03").date(), 1 / 1.2)])
+    pd.testing.assert_frame_equal(df, before)

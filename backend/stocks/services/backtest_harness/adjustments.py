@@ -29,13 +29,15 @@ def rights_adjustment_factor(rights_percent, issue_price, cum_close):
 
 
 def apply_adjustments(df, actions):
-    """Scale OHLC (and inversely Volume) for each (ex_date, factor) action.
+    """Return a new frame with OHLC (and inversely Volume) scaled per action.
 
     ``df`` must have a DatetimeIndex and Open/High/Low/Close/Volume columns.
-    Factors compound when multiple actions apply to the same bar.
+    Factors compound when multiple actions apply to the same bar. The input
+    frame is never mutated — the adjusted bars are returned in a fresh copy.
     """
     if df is None or len(df) == 0 or not actions:
         return df
+    df = df.copy()
     factor = pd.Series(1.0, index=df.index)
     for ex_date, f in actions:
         factor[df.index < pd.Timestamp(ex_date)] *= float(f)
