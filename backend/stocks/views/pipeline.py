@@ -15,6 +15,7 @@ import re
 
 from ..models import DataUploadLog, DailyStockPrice, DailyFloorsheet
 from ..serializers import DailyStockPriceSerializer
+from stocks.services.ingest_validation import validate_price_rows
 
 class PipelineViewSet(viewsets.ViewSet):
     """
@@ -288,10 +289,18 @@ class PipelineViewSet(viewsets.ViewSet):
                     weeks_52_low=p(nrow.get('52 Weeks Low') or nrow.get('weeks_52_low')),
                 ))
             
-            DailyStockPrice.objects.bulk_create(items, ignore_conflicts=True)
-            log.status, log.records_count = 'SUCCESS', len(items)
+            valid, rejected = validate_price_rows(items)
+            DailyStockPrice.objects.bulk_create(valid, ignore_conflicts=True)
+            log.status, log.records_count = 'SUCCESS', len(valid)
+            if rejected:
+                log.error_message = f"rejected {len(rejected)}: " + "; ".join(
+                    f"{t} ({r})" for t, r in rejected[:20]
+                )
             log.save()
-            return Response({'message': f'Successfully loaded {len(items)} price records'})
+            return Response({
+                'message': f'Loaded {len(valid)} price records',
+                'rejected': [{'ticker': t, 'reason': r} for t, r in rejected],
+            })
         except Exception as e:
             if 'log' in locals(): log.status, log.error_message = 'FAILED', str(e); log.save()
             return Response({'error': str(e)}, status=500)
@@ -348,10 +357,18 @@ class PipelineViewSet(viewsets.ViewSet):
                     weeks_52_low=p(nrow.get('52 Weeks Low') or nrow.get('weeks_52_low')),
                 ))
             
-            DailyStockPrice.objects.bulk_create(items, ignore_conflicts=True)
-            log.status, log.records_count = 'SUCCESS', len(items)
+            valid, rejected = validate_price_rows(items)
+            DailyStockPrice.objects.bulk_create(valid, ignore_conflicts=True)
+            log.status, log.records_count = 'SUCCESS', len(valid)
+            if rejected:
+                log.error_message = f"rejected {len(rejected)}: " + "; ".join(
+                    f"{t} ({r})" for t, r in rejected[:20]
+                )
             log.save()
-            return Response({'message': f'Successfully synced {len(items)} github price records'})
+            return Response({
+                'message': f'Synced {len(valid)} github price records',
+                'rejected': [{'ticker': t, 'reason': r} for t, r in rejected],
+            })
         except Exception as e:
             if 'log' in locals(): log.status, log.error_message = 'FAILED', str(e); log.save()
             return Response({'error': str(e)}, status=500)

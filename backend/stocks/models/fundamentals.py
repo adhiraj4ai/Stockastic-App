@@ -60,6 +60,37 @@ class Dividend(models.Model):
     def __str__(self):
         return f"{self.ticker} - {self.fiscal_year}"
 
+
+class CorporateAction(models.Model):
+    """A price-affecting corporate action, used to adjust historical OHLCV.
+
+    ``adjustment_factor`` is the multiplier applied to all prices strictly
+    BEFORE ``ex_date`` (NEPSE adjusts on the trading day after book closure;
+    we use the book-close date as the boundary — one daily bar of tolerance).
+    """
+
+    class ActionType(models.TextChoices):
+        BONUS = 'BONUS', 'Bonus Share'
+        RIGHTS = 'RIGHTS', 'Rights Issue'
+        SPLIT = 'SPLIT', 'Stock Split'
+
+    ticker = models.CharField(max_length=20, db_index=True)
+    action_type = models.CharField(max_length=10, choices=ActionType.choices)
+    ex_date = models.DateField(db_index=True)
+    ratio_percent = models.DecimalField(max_digits=8, decimal_places=2)
+    rights_issue_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    adjustment_factor = models.FloatField()
+    source = models.CharField(max_length=30, default='DIVIDEND_BACKFILL')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('ticker', 'ex_date', 'action_type')
+        ordering = ['ticker', 'ex_date']
+
+    def __str__(self):
+        return f"{self.ticker} {self.action_type} {self.ratio_percent}% @ {self.ex_date}"
+
+
 class FinancialReport(models.Model):
     class ReportType(models.TextChoices):
         ANNUAL = 'ANNUAL', 'Annual'

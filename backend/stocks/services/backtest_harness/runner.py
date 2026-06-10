@@ -8,18 +8,16 @@ import pandas as pd
 from backtesting import Backtest
 
 from .scope import build_strategy_scope, extract_strategy_class, resolve_code
+from .fees import nepse_commission, total_cost_rate, DEFAULT_SPREAD
+from .adjustments import apply_adjustments
 
 __all__ = ["load_price_df", "run_backtest", "normalize_metrics", "BacktestResult"]
 
 MIN_BARS = 20
 
 
-def load_price_df(ticker, start=None, end=None):
-    """Load OHLCV for a ticker as a backtesting.py-ready DataFrame.
-
-    Same shape/columns the existing call sites build: a DatetimeIndex and float
-    ``Open/High/Low/Close/Volume`` columns. Returns an empty DataFrame if no data.
-    """
+def _fetch_price_rows(ticker, start=None, end=None):
+    """Raw OHLCV rows for a ticker (separated for testability)."""
     from stocks.models import DailyStockPrice
 
     qs = DailyStockPrice.objects.filter(ticker=ticker)
@@ -27,7 +25,27 @@ def load_price_df(ticker, start=None, end=None):
         qs = qs.filter(date__gte=start)
     if end:
         qs = qs.filter(date__lte=end)
-    ticks = list(qs.order_by("date").values("date", "open", "high", "low", "close", "volume"))
+    return list(qs.order_by("date").values("date", "open", "high", "low", "close", "volume"))
+
+
+def _fetch_actions(ticker):
+    from stocks.models import CorporateAction
+
+    return list(
+        CorporateAction.objects.filter(ticker=ticker)
+        .values_list("ex_date", "adjustment_factor")
+    )
+
+
+def load_price_df(ticker, start=None, end=None, adjust=True, actions=None):
+    """Load OHLCV for a ticker as a backtesting.py-ready DataFrame.
+
+    ``adjust=True`` (default) applies corporate-action factors so the series
+    is continuous across bonus/rights events — required for honest backtests.
+    ``actions`` lets callers inject prefetched ``(ex_date, factor)`` pairs.
+    Returns an empty DataFrame if no data.
+    """
+    ticks = _fetch_price_rows(ticker, start=start, end=end)
     if not ticks:
         return pd.DataFrame()
 
@@ -41,6 +59,9 @@ def load_price_df(ticker, start=None, end=None):
     df[["Open", "High", "Low", "Close", "Volume"]] = df[
         ["Open", "High", "Low", "Close", "Volume"]
     ].astype(float)
+
+    if adjust:
+        df = apply_adjustments(df, _fetch_actions(ticker) if actions is None else actions)
     return df
 
 
@@ -92,13 +113,38 @@ def normalize_metrics(stats):
     }
 
 
+def _buy_hold_cost_pct(cash, resolved_commission, resolved_spread):
+    """Round-trip transaction cost (in % points) a buy & hold investor also pays.
+
+    backtesting.py reports Buy & Hold Return gross of fees, but a passive holder
+    still pays one entry + one exit. To compare strategy-vs-B&H fairly (and not
+    dock only the active strategy its cost drag), we net the same round-trip cost
+    out of the B&H leg: per-side = the NEPSE cost rate when the real model is in
+    effect, else the flat commission fraction; plus spread on each side.
+    """
+    if callable(resolved_commission):
+        per_side_commission = total_cost_rate(cash)
+    else:
+        per_side_commission = float(resolved_commission)
+    per_side = per_side_commission + (resolved_spread or 0.0)
+    return 2.0 * per_side * 100.0
+
+
 def run_backtest(strategy_or_code, ticker, params=None, start=None, end=None,
-                 cash=1_000_000, commission=0.002, df=None):
+                 cash=1_000_000, commission=None, spread=None, df=None):
     """Execute a strategy over one symbol and return a BacktestResult.
 
     ``strategy_or_code`` may be a Strategy model instance, a raw code string, or
     a special token (see scope.resolve_code). Exceptions are captured into the
     result rather than raised, so a broken strategy is a recorded failure.
+
+    ``commission=None`` (default) applies the real NEPSE cost model: tiered
+    broker commission + 0.015% SEBON + Rs 25 DP charge per side, implemented
+    as a callable in ``fees.nepse_commission``. Pass a float (e.g. ``0.0``) to
+    override with a flat per-trade fraction for frictionless or custom runs.
+
+    ``spread=None`` (default) uses ``fees.DEFAULT_SPREAD`` (10 bps) to model
+    NEPSE bid-ask/illiquidity costs. Pass ``0.0`` to disable spread entirely.
     """
     code = getattr(strategy_or_code, "code", strategy_or_code)
     code = resolve_code(code)
@@ -116,10 +162,24 @@ def run_backtest(strategy_or_code, ticker, params=None, start=None, end=None,
         if strategy_class is None:
             return BacktestResult(symbol=ticker, ok=False, error="No Strategy subclass found in code")
 
-        bt = Backtest(df, strategy_class, cash=cash, commission=commission, exclusive_orders=True)
+        resolved_commission = nepse_commission if commission is None else commission
+        resolved_spread = DEFAULT_SPREAD if spread is None else spread
+        bt = Backtest(
+            df,
+            strategy_class,
+            cash=cash,
+            commission=resolved_commission,
+            spread=resolved_spread,
+            exclusive_orders=True,
+        )
         run_params = {k: v for k, v in (params or {}).items() if hasattr(strategy_class, k)}
         stats = bt.run(**run_params)
-        return BacktestResult(symbol=ticker, ok=True, metrics=normalize_metrics(stats))
+        metrics = normalize_metrics(stats)
+        # Charge buy & hold the same round-trip cost so the comparison is net-vs-net.
+        metrics["buy_hold_return_pct"] -= _buy_hold_cost_pct(
+            cash, resolved_commission, resolved_spread
+        )
+        return BacktestResult(symbol=ticker, ok=True, metrics=metrics)
     except Exception as e:  # noqa: BLE001 — any strategy error becomes a recorded failure
         msg = str(e)
         if len(msg) > 200:

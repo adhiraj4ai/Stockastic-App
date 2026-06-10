@@ -40,6 +40,22 @@ class Company(models.Model):
     def __str__(self):
         return f"{self.symbol} - {self.name}"
 
+class DelistingRecord(models.Model):
+    """Manually maintained registry of delisted/suspended symbols.
+
+    The external ``companies`` table only knows current status, which makes
+    research queries survivorship-biased. This side-table preserves history:
+    a symbol delisted on D is still part of the research universe for any
+    as-of date before D.
+    """
+    symbol = models.CharField(max_length=20, unique=True, db_index=True)
+    delisted_date = models.DateField()
+    reason = models.CharField(max_length=200, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.symbol} delisted {self.delisted_date}"
+
 class DailyStockPrice(models.Model):
     id = models.AutoField(primary_key=True)
     ticker = models.CharField(max_length=20, db_index=True, db_column='symbol')
