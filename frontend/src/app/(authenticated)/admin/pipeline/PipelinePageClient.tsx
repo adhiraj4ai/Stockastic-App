@@ -877,13 +877,13 @@ export default function PipelinePage() {
                                         <TabsList className="h-7 p-0.5 bg-gray-100 dark:bg-slate-800 rounded-lg">
                                             <TabsTrigger
                                                 value="delta"
-                                                className="h-6 px-3 text-[10px] font-bold rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-indigo-400"
+                                                className="h-6 px-3 text-[10px] font-bold rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-orange-500"
                                             >
                                                 Partial
                                             </TabsTrigger>
                                             <TabsTrigger
                                                 value="full"
-                                                className="h-6 px-3 text-[10px] font-bold rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-600 dark:data-[state=active]:text-indigo-400"
+                                                className="h-6 px-3 text-[10px] font-bold rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-orange-500"
                                             >
                                                 Full
                                             </TabsTrigger>

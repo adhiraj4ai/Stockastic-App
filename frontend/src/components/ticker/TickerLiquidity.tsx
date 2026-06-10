@@ -271,8 +271,8 @@ export const TickerLiquidity: React.FC<TickerLiquidityProps> = ({ symbol, histor
             </div>
 
             {/* Volume Profile Chart */}
-            <div className="bg-white/80 dark:bg-card/80 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-                <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800">
+            <div className="bg-white dark:bg-card border border-slate-200 dark:border-border rounded-2xl overflow-hidden shadow-sm">
+                <div className="px-5 py-4 border-b border-slate-200 dark:border-border">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         Institutional Volume Profile
                         <InfoTooltip content="Visualizes the total volume traded at specific price levels over the timeframe." />

@@ -491,23 +491,23 @@ export default function UsersManagementClient() {
             <Tabs defaultValue="directory" className="space-y-6 animate-in fade-in duration-500">
                 <div className="flex items-center justify-between">
                     <TabsList className="bg-slate-100/50 dark:bg-muted border border-border dark:border-border p-1 rounded-xl h-11">
-                        <TabsTrigger 
-                            value="directory" 
-                            className="rounded-lg px-6 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all h-9"
+                        <TabsTrigger
+                            value="directory"
+                            className="rounded-lg px-6 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all h-9"
                         >
                             <Users size={14} className="mr-2" />
                             User Directory
                         </TabsTrigger>
-                        <TabsTrigger 
-                            value="permissions" 
-                            className="rounded-lg px-6 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-amber-600 dark:data-[state=active]:text-amber-400 data-[state=active]:shadow-sm transition-all h-9"
+                        <TabsTrigger
+                            value="permissions"
+                            className="rounded-lg px-6 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all h-9"
                         >
                             <Shield size={14} className="mr-2" />
                             Permissions & Tiers
                         </TabsTrigger>
-                        <TabsTrigger 
-                            value="roles" 
-                            className="rounded-lg px-6 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all h-9"
+                        <TabsTrigger
+                            value="roles"
+                            className="rounded-lg px-6 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all h-9"
                         >
                             <Settings2 size={14} className="mr-2" />
                             Role Management

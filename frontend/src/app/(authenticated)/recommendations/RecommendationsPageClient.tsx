@@ -381,14 +381,14 @@ export default function RecommendationsPage() {
                                 <TabsList className="grid w-full grid-cols-2 max-w-[400px] h-9 bg-slate-200/50 dark:bg-slate-800/50 p-1 rounded-lg">
                                     <TabsTrigger
                                         value="performance"
-                                        className="text-xs font-semibold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:shadow-sm rounded-md transition-all"
+                                        className="text-xs font-semibold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-orange-500 data-[state=active]:shadow-sm rounded-md transition-all"
                                     >
                                         <TrendingUp size={14} className="mr-2" />
                                         Analysis & Performance
                                     </TabsTrigger>
                                     <TabsTrigger
                                         value="history"
-                                        className="text-xs font-semibold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:shadow-sm rounded-md transition-all"
+                                        className="text-xs font-semibold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-orange-500 data-[state=active]:shadow-sm rounded-md transition-all"
                                     >
                                         <Target size={14} className="mr-2" />
                                         Complete Signal Log

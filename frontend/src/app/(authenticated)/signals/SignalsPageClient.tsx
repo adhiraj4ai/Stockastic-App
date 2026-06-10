@@ -531,7 +531,7 @@ export default function SignalsPage() {
         <DashboardLayout>
             <div className="min-h-screen bg-background pt-2 px-4 pb-4">
                 {/* Filters and View Controls */}
-                <Card className="mb-6 overflow-hidden border-none shadow-xl glass-card-light">
+                <Card className="mb-6 overflow-hidden bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border shadow-sm">
                     <CardContent className="p-0">
                         {/* Integrated Header and Controls */}
                         <div className="p-6 pb-4 flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between border-b border-border dark:border-slate-800">
@@ -587,7 +587,7 @@ export default function SignalsPage() {
                                         onClick={() => setViewMode('by-symbol')}
                                         className={cn(
                                             "h-8 rounded-lg px-3 text-xs font-bold transition-all",
-                                            viewMode === 'by-symbol' ? "bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-300" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                                            viewMode === 'by-symbol' ? "bg-white dark:bg-slate-700 shadow-sm text-orange-500" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                                         )}
                                     >
                                         <Grid3x3 className="w-3.5 h-3.5 mr-1.5" />
@@ -599,7 +599,7 @@ export default function SignalsPage() {
                                         onClick={() => setViewMode('all')}
                                         className={cn(
                                             "h-8 rounded-lg px-3 text-xs font-bold transition-all",
-                                            viewMode === 'all' ? "bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-300" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                                            viewMode === 'all' ? "bg-white dark:bg-slate-700 shadow-sm text-orange-500" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                                         )}
                                     >
                                         <List className="w-3.5 h-3.5 mr-1.5" />
@@ -615,13 +615,13 @@ export default function SignalsPage() {
                                 <TabsList className="bg-slate-200/50 dark:bg-slate-800/50 p-1 h-10 rounded-xl">
                                     <TabsTrigger
                                         value="signals"
-                                        className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-300 px-6 font-bold text-xs text-slate-600 dark:text-slate-400"
+                                        className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 px-6 font-bold text-xs text-slate-600 dark:text-slate-400"
                                     >
                                         All opportunities
                                     </TabsTrigger>
                                     <TabsTrigger
                                         value="tracking"
-                                        className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-300 px-6 font-bold text-xs text-slate-600 dark:text-slate-400"
+                                        className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 px-6 font-bold text-xs text-slate-600 dark:text-slate-400"
                                     >
                                         Active tracking
                                     </TabsTrigger>
@@ -645,7 +645,7 @@ export default function SignalsPage() {
                                                 signalFilter === type && type === 'BUY' && 'bg-emerald-500 hover:bg-emerald-600 border-emerald-500 shadow-lg shadow-emerald-100 dark:shadow-none text-white',
                                                 signalFilter === type && type === 'SELL' && 'bg-rose-500 hover:bg-rose-600 border-rose-500 shadow-lg shadow-rose-100 dark:shadow-none text-white',
                                                 signalFilter === type && type === 'HOLD' && 'bg-amber-500 hover:bg-amber-600 border-amber-500 shadow-lg shadow-amber-100 dark:shadow-none text-white',
-                                                signalFilter === type && type === 'ALL' && 'bg-slate-800 hover:bg-slate-900 border-slate-800 shadow-lg shadow-slate-200 dark:shadow-none text-white',
+                                                signalFilter === type && type === 'ALL' && 'bg-orange-500 hover:bg-orange-600 border-orange-500 shadow text-white',
                                                 signalFilter !== type && 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                                             )}
                                         >

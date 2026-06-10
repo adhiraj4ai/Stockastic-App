@@ -250,13 +250,13 @@ export default function ForecastsPage() {
                             <TabsList className="bg-gray-100 p-1 rounded-lg w-fit gap-1 border-none">
                                 <TabsTrigger
                                     value="models"
-                                    className="rounded-md px-6 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all font-medium text-sm text-gray-600 data-[state=active]:text-gray-900"
+                                    className="rounded-md px-6 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all font-medium text-sm text-gray-600 data-[state=active]:text-orange-500"
                                 >
                                     Published Models
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="monitoring"
-                                    className="rounded-md px-6 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all font-medium text-sm text-gray-600 data-[state=active]:text-gray-900 flex items-center gap-2"
+                                    className="rounded-md px-6 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all font-medium text-sm text-gray-600 data-[state=active]:text-orange-500 flex items-center gap-2"
                                 >
                                     Monitoring
                                     {allJobs.filter(j => j.status === 'RUNNING' || j.status === 'PENDING').length > 0 && (

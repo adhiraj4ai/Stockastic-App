@@ -247,7 +247,7 @@ function StrategiesContent() {
                         <TabsList className="bg-gray-200/50 dark:bg-slate-800/50 p-1 gap-1 rounded-lg h-auto">
                             <TabsTrigger
                                 value="my-strategies"
-                                className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
+                                className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-orange-500 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                             >
                                 <Zap className="w-4 h-4 mr-2" />
                                 All Strategies
@@ -255,7 +255,7 @@ function StrategiesContent() {
                             </TabsTrigger>
                             <TabsTrigger
                                 value="published"
-                                className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
+                                className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-orange-500 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                             >
                                 <FileCheck className="w-4 h-4 mr-2" />
                                 Published
@@ -263,7 +263,7 @@ function StrategiesContent() {
                             </TabsTrigger>
                             <TabsTrigger
                                 value="experiment-logs"
-                                className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
+                                className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-orange-500 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                             >
                                 <Beaker className="w-4 h-4 mr-2" />
                                 Experiment Logs
@@ -272,7 +272,7 @@ function StrategiesContent() {
 
                             <TabsTrigger
                                 value="recommendations"
-                                className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
+                                className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-orange-500 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
                             >
                                 <Target className="w-4 h-4 mr-2" />
                                 Recommendations

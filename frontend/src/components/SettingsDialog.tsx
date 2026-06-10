@@ -359,7 +359,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                             <TabsList className="flex flex-col h-auto bg-transparent gap-1 w-full justify-start items-stretch p-0">
                                 <TabsTrigger
                                     value="general"
-                                    className="w-full justify-start rounded-md px-3 py-2.5 text-sm font-medium transition-all data-[state=active]:bg-indigo-50 dark:data-[state=active]:bg-indigo-950/30 data-[state=active]:text-indigo-700 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-none hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 group"
+                                    className="w-full justify-start rounded-md px-3 py-2.5 text-sm font-medium transition-all data-[state=active]:bg-orange-50 dark:data-[state=active]:bg-orange-950/20 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 data-[state=active]:shadow-none hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 group"
                                 >
                                     <div className="flex items-center gap-3">
                                         <User size={18} className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400" />
@@ -368,7 +368,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="appearance"
-                                    className="w-full justify-start rounded-md px-3 py-2.5 text-sm font-medium transition-all data-[state=active]:bg-indigo-50 dark:data-[state=active]:bg-indigo-950/30 data-[state=active]:text-indigo-700 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-none hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 group"
+                                    className="w-full justify-start rounded-md px-3 py-2.5 text-sm font-medium transition-all data-[state=active]:bg-orange-50 dark:data-[state=active]:bg-orange-950/20 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 data-[state=active]:shadow-none hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 group"
                                 >
                                     <div className="flex items-center gap-3">
                                         <Palette size={18} className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400" />
@@ -377,7 +377,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="security"
-                                    className="w-full justify-start rounded-md px-3 py-2.5 text-sm font-medium transition-all data-[state=active]:bg-indigo-50 dark:data-[state=active]:bg-indigo-950/30 data-[state=active]:text-indigo-700 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-none hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 group"
+                                    className="w-full justify-start rounded-md px-3 py-2.5 text-sm font-medium transition-all data-[state=active]:bg-orange-50 dark:data-[state=active]:bg-orange-950/20 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 data-[state=active]:shadow-none hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 group"
                                 >
                                     <div className="flex items-center gap-3">
                                         <Lock size={18} className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400" />

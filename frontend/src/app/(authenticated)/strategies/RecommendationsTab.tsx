@@ -42,7 +42,7 @@ export default function RecommendationsTab() {
     };
 
     return (
-        <Card className="border-none shadow-sm bg-white/50 dark:bg-card p-6">
+        <Card className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border shadow-sm p-6">
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 flex items-center">

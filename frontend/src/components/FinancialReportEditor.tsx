@@ -483,19 +483,19 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                 {/* Granular Data Tabs - Compact */}
                 <Tabs defaultValue="bs" className="w-full">
                     <TabsList className="bg-white dark:bg-card p-1 rounded-xl h-10 border dark:border-slate-800 inline-flex shadow-sm mb-2">
-                        <TabsTrigger value="bs" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
+                        <TabsTrigger value="bs" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
                             Balance Sheet
                         </TabsTrigger>
-                        <TabsTrigger value="pl" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
+                        <TabsTrigger value="pl" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
                             Profit & Loss
                         </TabsTrigger>
                         {template.sections.cash_flow && (
-                            <TabsTrigger value="cf" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
+                            <TabsTrigger value="cf" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
                                 Cash Flow
                             </TabsTrigger>
                         )}
                         {reportType === 'ANNUAL' && (
-                            <TabsTrigger value="dividend" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
+                            <TabsTrigger value="dividend" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
                                 Dividend
                             </TabsTrigger>
                         )}

@@ -26,7 +26,7 @@ export const TechnicalDivergence: React.FC<TechnicalDivergenceProps> = ({ techni
                             <TabsTrigger
                                 key={cat}
                                 value={cat}
-                                className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-primary dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all duration-200 text-[10px] sm:text-xs"
+                                className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all duration-200 text-[10px] sm:text-xs"
                             >
                                 {cat}
                             </TabsTrigger>

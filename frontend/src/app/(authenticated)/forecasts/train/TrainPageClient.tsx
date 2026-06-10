@@ -370,8 +370,8 @@ export default function TrainModelPage() {
                                         <Label className="text-[10px] font-bold uppercase text-gray-500">Training Scope</Label>
                                         <Tabs value={trainMode} onValueChange={(v) => setTrainMode(v as any)} className="w-full">
                                             <TabsList className="grid grid-cols-2 w-full h-8 bg-gray-100">
-                                                <TabsTrigger value="SYMBOL" className="text-[10px] uppercase font-bold data-[state=active]:bg-white data-[state=active]:text-blue-600 h-7">Single Symbol</TabsTrigger>
-                                                <TabsTrigger value="SECTOR" className="text-[10px] uppercase font-bold data-[state=active]:bg-white data-[state=active]:text-blue-600 h-7">By Sector</TabsTrigger>
+                                                <TabsTrigger value="SYMBOL" className="text-[10px] uppercase font-bold data-[state=active]:bg-white data-[state=active]:text-orange-500 h-7">Single Symbol</TabsTrigger>
+                                                <TabsTrigger value="SECTOR" className="text-[10px] uppercase font-bold data-[state=active]:bg-white data-[state=active]:text-orange-500 h-7">By Sector</TabsTrigger>
                                             </TabsList>
                                         </Tabs>
                                     </div>

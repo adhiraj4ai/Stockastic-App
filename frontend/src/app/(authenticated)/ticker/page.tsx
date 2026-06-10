@@ -109,13 +109,10 @@ export default function TickerLandingPage() {
     const displayLabel = portfolioSymbols.length > 0 ? 'Your Portfolio' : 'Discover';
 
     return (
-        <DashboardLayout hideHeader>
+        <DashboardLayout hideHeader subtitle="Ticker Search">
             <div className="min-h-screen flex flex-col items-center justify-center px-4">
                 {/* Wordmark & Greeting */}
                 <div className="mb-14 text-center">
-                    <h1 className="text-4xl font-semibold tracking-tight text-slate-900 dark:text-white">
-                        Ticker <span className="text-emerald-500">Search</span>
-                    </h1>
                 </div>
 
                 {/* Search */}

@@ -133,7 +133,7 @@ export default function TrendsPage() {
                                     className={cn(
                                         "px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 tracking-tighter whitespace-nowrap",
                                         range === t.value
-                                            ? "bg-slate-900 dark:bg-indigo-600 text-white shadow-lg"
+                                            ? "bg-orange-500 text-white shadow"
                                             : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                                     )}
                                 >
@@ -147,7 +147,7 @@ export default function TrendsPage() {
                                 className={cn(
                                     "px-4 py-1.5 rounded-lg text-[10px] font-semibold transition-all duration-300 tracking-tighter whitespace-nowrap",
                                     selectedSector === 'All'
-                                        ? "bg-slate-900 dark:bg-indigo-600 text-white shadow-lg"
+                                        ? "bg-orange-500 text-white shadow"
                                         : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                                 )}
                             >
@@ -160,7 +160,7 @@ export default function TrendsPage() {
                                     className={cn(
                                         "px-4 py-1.5 rounded-lg text-[10px] font-semibold transition-all duration-300 tracking-tighter whitespace-nowrap",
                                         selectedSector === s.name
-                                            ? "bg-slate-900 dark:bg-indigo-600 text-white shadow-lg"
+                                            ? "bg-orange-500 text-white shadow"
                                             : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                                     )}
                                 >

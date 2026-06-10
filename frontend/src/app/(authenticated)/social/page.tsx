@@ -70,8 +70,8 @@ export default function SocialPage() {
                                         key={type.id}
                                         onClick={() => setSelectedType(type.id as any)}
                                         className={`group flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300 text-left ${selectedType === type.id
-                                                ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-500/20 scale-[1.02]'
-                                                : 'bg-white dark:bg-card border-slate-200 dark:border-border text-slate-600 dark:text-slate-400 hover:border-blue-500/30'
+                                                ? 'bg-orange-500 border-orange-500 text-white shadow-xl shadow-orange-500/20 scale-[1.02]'
+                                                : 'bg-white dark:bg-card border-slate-200 dark:border-border text-slate-600 dark:text-slate-400 hover:border-orange-500/30'
                                             }`}
                                     >
                                         <div className={`p-3 rounded-xl transition-colors ${selectedType === type.id ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-muted text-slate-500'
@@ -87,7 +87,7 @@ export default function SocialPage() {
                             </div>
                         </div>
 
-                        <div className="p-6 rounded-[2rem] bg-slate-950 border border-white/5 relative overflow-hidden group">
+                        <div className="p-6 rounded-2xl bg-slate-950 border border-white/5 relative overflow-hidden group">
                             <div className="absolute inset-0 bg-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                             <h3 className="text-white font-bold text-sm mb-4 flex items-center gap-2 relative z-10">
                                 <Sparkles size={14} className="text-blue-500" />

@@ -241,7 +241,7 @@ export default function FocusRankingPage() {
                                             className={cn(
                                                 'px-4 py-1.5 text-[10px] font-semibold rounded-lg transition-all duration-300 tracking-wider uppercase',
                                                 range === r
-                                                    ? 'bg-white dark:bg-slate-800 text-orange-500 shadow-sm'
+                                                    ? 'bg-orange-500 text-white shadow'
                                                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200',
                                             )}>
                                             {r}

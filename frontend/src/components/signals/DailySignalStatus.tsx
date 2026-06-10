@@ -438,7 +438,7 @@ export function DailySignalStatus({
                         className={cn(
                             'flex items-center gap-2 px-4 py-2.5 text-xs font-bold tracking-tight border-b-2 transition-all whitespace-nowrap',
                             activeTab === tab.key
-                                ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                                ? 'border-orange-500 text-orange-500'
                                 : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
                         )}>
                         {tab.icon}{tab.label}
@@ -1128,7 +1128,7 @@ export function DailySignalStatus({
                         
                         {/* ── Intelligence Hero: Health Diagnosis ── */}
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-                            <div className="md:col-span-8 p-6 rounded-[2rem] bg-indigo-600 dark:bg-indigo-500 text-white relative overflow-hidden shadow-sm shadow-indigo-200/50 dark:shadow-none">
+                            <div className="md:col-span-8 p-6 rounded-2xl bg-indigo-600 dark:bg-indigo-500 text-white relative overflow-hidden shadow-sm shadow-indigo-200/50 dark:shadow-none">
                                 <div className="relative z-10">
                                     <div className="flex items-center gap-2 mb-6 opacity-80">
                                         <Sparkles size={14} fill="currentColor" />
@@ -1166,7 +1166,7 @@ export function DailySignalStatus({
                                 <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
                             </div>
 
-                            <div className="md:col-span-4 p-6 rounded-[2rem] bg-white dark:bg-card border border-border dark:border-slate-800 flex flex-col justify-between">
+                            <div className="md:col-span-4 p-6 rounded-2xl bg-white dark:bg-card border border-border dark:border-slate-800 flex flex-col justify-between">
                                 <div className="flex items-center justify-between mb-4">
                                     <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Financial Health</span>
                                     <Shield size={14} className="text-emerald-500" />
@@ -1191,7 +1191,7 @@ export function DailySignalStatus({
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             
                             {/* Card 1: Valuation Intelligence */}
-                            <div className="bg-white dark:bg-card rounded-[2rem] border border-border dark:border-slate-800/60 overflow-hidden">
+                            <div className="bg-white dark:bg-card rounded-2xl border border-border dark:border-slate-800/60 overflow-hidden">
                                 <div className="p-6 border-b border-border dark:border-slate-800">
                                     <div className="flex items-center gap-2 mb-1">
                                         <Building2 size={14} className="text-indigo-500" />
@@ -1218,7 +1218,7 @@ export function DailySignalStatus({
                             </div>
 
                             {/* Card 2: Strategic Efficiency */}
-                            <div className="bg-white dark:bg-card rounded-[2rem] border border-border dark:border-slate-800/60 overflow-hidden">
+                            <div className="bg-white dark:bg-card rounded-2xl border border-border dark:border-slate-800/60 overflow-hidden">
                                 <div className="p-6 border-b border-border dark:border-slate-800">
                                     <div className="flex items-center gap-2 mb-1">
                                         <Zap size={14} className="text-amber-500" />
@@ -1247,7 +1247,7 @@ export function DailySignalStatus({
                             {/* Card 3: Sector & Health Diagnostic */}
                             <div className="flex flex-col gap-6">
                                 {/* Sector Progress */}
-                                <div className="flex-1 bg-white dark:bg-card rounded-[2rem] border border-border dark:border-slate-800/60 p-6">
+                                <div className="flex-1 bg-white dark:bg-card rounded-2xl border border-border dark:border-slate-800/60 p-6">
                                     <div className="flex items-center gap-2 mb-4">
                                         <BarChart3 size={14} className="text-indigo-500" />
                                         <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-800 dark:text-slate-100">Market Benchmarking</h3>
@@ -1280,7 +1280,7 @@ export function DailySignalStatus({
                                 </div>
 
                                 {/* Health Checks */}
-                                <div className="bg-slate-900 rounded-[2rem] p-6 text-white overflow-hidden relative">
+                                <div className="bg-slate-900 rounded-2xl p-6 text-white overflow-hidden relative">
                                     <div className="flex items-center gap-2 mb-4 relative z-10">
                                         <Shield size={14} className="text-emerald-400" />
                                         <h3 className="text-xs font-semibold uppercase tracking-wider text-white/60">Risk Audit</h3>

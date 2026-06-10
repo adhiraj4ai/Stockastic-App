@@ -222,7 +222,7 @@ export default function ExperimentDetailPage() {
         >
             <div className="space-y-6 p-4 md:p-6">
                 {/* 1. Command Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-card p-4 rounded-2xl border border-gray-200 dark:border-slate-800 shadow-sm">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-card p-4 rounded-2xl border border-slate-200 dark:border-border shadow-sm">
                     <div className="flex items-center gap-4">
                         <div className="h-12 w-12 bg-gray-100 dark:bg-slate-800 rounded-xl flex items-center justify-center text-gray-700 dark:text-slate-300 font-bold text-xl border border-gray-200 dark:border-slate-700">
                             {experiment.scope_value.slice(0, 2)}

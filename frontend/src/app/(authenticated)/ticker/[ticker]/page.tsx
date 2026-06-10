@@ -696,19 +696,19 @@ export default function StockDetailPage() {
                                 <div className="flex items-center gap-6">
                                     <TabsList className="bg-slate-100 dark:bg-card border border-slate-200 dark:border-slate-800 p-1 h-10 rounded-xl shadow-smCondensed">
                                         {(currentUser?.permissions === 'all' || currentUser?.permissions?.['ticker_pa']) && (
-                                            <TabsTrigger value="price_action" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 data-[state=active]:shadow-sm transition-all">Price Action</TabsTrigger>
+                                            <TabsTrigger value="price_action" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all">Price Action</TabsTrigger>
                                         )}
                                         {(currentUser?.permissions === 'all' || currentUser?.permissions?.['ticker_signals']) && (
-                                            <TabsTrigger value="signals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all">Signals</TabsTrigger>
+                                            <TabsTrigger value="signals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all">Signals</TabsTrigger>
                                         )}
                                         {(currentUser?.permissions === 'all' || currentUser?.permissions?.['ticker_accumulation']) && (
-                                            <TabsTrigger value="accumulation" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 data-[state=active]:shadow-sm transition-all">Accumulation</TabsTrigger>
+                                            <TabsTrigger value="accumulation" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all">Accumulation</TabsTrigger>
                                         )}
                                         {(currentUser?.permissions === 'all' || currentUser?.permissions?.['ticker_tech']) && (
-                                            <TabsTrigger value="technical" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Technical Analysis</TabsTrigger>
+                                            <TabsTrigger value="technical" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all">Technical Analysis</TabsTrigger>
                                         )}
                                         {(currentUser?.permissions === 'all' || currentUser?.permissions?.['ticker_funds']) && (
-                                            <TabsTrigger value="fundamentals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm transition-all">Fundamentals</TabsTrigger>
+                                            <TabsTrigger value="fundamentals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all">Fundamentals</TabsTrigger>
                                         )}
                                     </TabsList>
                                 </div>
@@ -735,7 +735,7 @@ export default function StockDetailPage() {
                                                     className={cn(
                                                         "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200",
                                                         timeRange === r
-                                                            ? "bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm"
+                                                            ? "bg-white dark:bg-slate-800 text-orange-500 shadow-sm"
                                                             : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
                                                     )}
                                                 >
@@ -899,7 +899,7 @@ export default function StockDetailPage() {
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => setReportType('ANNUAL')}
-                                                    className={cn("rounded-lg px-4 font-bold text-[10px] transition-all", reportType === 'ANNUAL' ? "bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm" : "text-slate-400 dark:text-slate-500")}
+                                                    className={cn("rounded-lg px-4 font-bold text-[10px] transition-all", reportType === 'ANNUAL' ? "bg-white dark:bg-slate-700 text-orange-500 shadow-sm" : "text-slate-400 dark:text-slate-500")}
                                                 >
                                                     Annual
                                                 </Button>
@@ -907,7 +907,7 @@ export default function StockDetailPage() {
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => setReportType('QUARTERLY')}
-                                                    className={cn("rounded-lg px-4 font-bold text-[10px] transition-all", reportType === 'QUARTERLY' ? "bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm" : "text-slate-400 dark:text-slate-500")}
+                                                    className={cn("rounded-lg px-4 font-bold text-[10px] transition-all", reportType === 'QUARTERLY' ? "bg-white dark:bg-slate-700 text-orange-500 shadow-sm" : "text-slate-400 dark:text-slate-500")}
                                                 >
                                                     Quarterly
                                                 </Button>

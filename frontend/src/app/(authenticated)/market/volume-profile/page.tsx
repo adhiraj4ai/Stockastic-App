@@ -196,8 +196,8 @@ export default function VolumeProfilePage() {
                                         onClick={() => setRange(r.value)}
                                         className={cn(
                                             "px-4 py-1.5 rounded-lg text-xs font-semibold transition-all",
-                                            range === r.value 
-                                                ? "bg-slate-900 dark:bg-indigo-600 text-white shadow-sm" 
+                                            range === r.value
+                                                ? "bg-orange-500 text-white shadow"
                                                 : "text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-white/5"
                                         )}
                                     >

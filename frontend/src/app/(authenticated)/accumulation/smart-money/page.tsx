@@ -409,7 +409,7 @@ export default function SmartMoneyPage() {
                             className={cn(
                                 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 tracking-tight whitespace-nowrap',
                                 range === r
-                                    ? 'bg-slate-900 dark:bg-indigo-600 text-white shadow'
+                                    ? 'bg-orange-500 text-white shadow'
                                     : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200',
                             )}>
                             {r}

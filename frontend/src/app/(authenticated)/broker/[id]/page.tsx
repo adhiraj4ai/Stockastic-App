@@ -425,7 +425,7 @@ export default function BrokerPage() {
                                     className={cn(
                                         "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all border",
                                         selectedSectors.includes(sector)
-                                            ? "bg-blue-500 text-white border-blue-500 shadow-[0_4px_12px_rgba(59,130,246,0.3)]"
+                                            ? "bg-orange-500 text-white border-orange-500 shadow-[0_4px_12px_rgba(249,115,22,0.3)]"
                                             : "bg-white dark:bg-card border-slate-200 dark:border-slate-800 text-slate-500 hover:border-slate-300 dark:hover:border-slate-700"
                                     )}
                                 >

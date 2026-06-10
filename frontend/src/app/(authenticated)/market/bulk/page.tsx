@@ -6,7 +6,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import api from '@/lib/api';
-import { Activity, Filter, Layers, ChevronLeft, ChevronRight, AlertTriangle, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Activity, Filter, ChevronLeft, ChevronRight, AlertTriangle, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { PageLoader } from '@/components/ui/StockLoader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -131,21 +131,11 @@ function BulkTradesContent() {
     };
 
     return (
-        <DashboardLayout title="Bulk Transactions">
+        <DashboardLayout title="Bulk Transactions" subtitle="Tracking massive market shifts (Qty ≥ 5,000 or Amount ≥ 50 Lakhs)">
             <div className="p-4 md:p-6 space-y-6">
 
                 {/* Header & Controls */}
                 <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                            <Layers className="w-6 h-6 text-amber-500" />
-                            Bulk Transactions
-                        </h1>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                            Tracking massive market shifts (Qty &ge; 5,000 or Amount &ge; 50 Lakhs)
-                        </p>
-                    </div>
-
                     <div className="flex flex-wrap gap-2 items-center bg-white dark:bg-card p-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
                         <Filter className="w-4 h-4 text-slate-400 ml-2" />
                         <Input

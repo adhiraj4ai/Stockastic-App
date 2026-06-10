@@ -310,7 +310,7 @@ function FilterPill({ active, onClick, children }: {
             className={cn(
                 'px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 relative',
                 active
-                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg'
+                    ? 'bg-orange-500 text-white shadow'
                     : 'bg-white dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
             )}
         >
@@ -504,7 +504,7 @@ export default function TrackRecordClient() {
 
             {/* ── Engine Leaderboard ──────────────────────────────────────── */}
             {detailedEngines.length > 0 && (
-                <div className="bg-white/60 dark:bg-card border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+                <div className="bg-white dark:bg-card border border-slate-200 dark:border-border rounded-2xl overflow-hidden shadow-sm">
                     <div className="px-6 py-4 border-b border-border dark:border-slate-800/50 flex items-center justify-between">
                         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Engine Leaderboard</h3>
                         <span className="text-[10px] text-slate-400 font-semibold">Ranked by Profit Factor</span>
@@ -646,7 +646,7 @@ export default function TrackRecordClient() {
                                 className={cn(
                                     "px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-tight border transition-all",
                                     statusFilter === s
-                                        ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent shadow-md"
+                                        ? "bg-orange-500 text-white border-transparent shadow"
                                         : "bg-transparent text-slate-400 border-slate-200 dark:border-slate-800 hover:border-slate-400"
                                 )}
                             >

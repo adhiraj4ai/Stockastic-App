@@ -166,7 +166,7 @@ export default function MarketActivityPage() {
                             <TabsList className="inline-flex h-auto bg-slate-100 dark:bg-slate-800 p-1 rounded-lg sm:mb-0 mb-2 border sm:border-none border-slate-200 dark:border-border">
                             <TabsTrigger
                                 value="gainers"
-                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-emerald-600 data-[state=active]:shadow-sm transition-all"
+                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all"
                             >
                                 <div className="flex items-center justify-center gap-2">
                                     <Zap size={14} /> Top Gainers
@@ -174,7 +174,7 @@ export default function MarketActivityPage() {
                             </TabsTrigger>
                             <TabsTrigger
                                 value="turnover"
-                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all"
+                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all"
                             >
                                 <div className="flex items-center justify-center gap-2">
                                     <Magnet size={14} /> High Turnover
@@ -182,7 +182,7 @@ export default function MarketActivityPage() {
                             </TabsTrigger>
                             <TabsTrigger
                                 value="volume"
-                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-cyan-600 data-[state=active]:shadow-sm transition-all"
+                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all"
                             >
                                 <div className="flex items-center justify-center gap-2">
                                     <Droplets size={14} /> High Volume
@@ -190,7 +190,7 @@ export default function MarketActivityPage() {
                             </TabsTrigger>
                             <TabsTrigger
                                 value="roc"
-                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-rose-600 data-[state=active]:shadow-sm transition-all"
+                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all"
                             >
                                 <div className="flex items-center justify-center gap-2">
                                     <Activity size={14} /> ROC Watchlist

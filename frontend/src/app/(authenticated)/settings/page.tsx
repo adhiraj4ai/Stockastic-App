@@ -337,15 +337,9 @@ export default function SettingsPage() {
     }
 
     return (
-        <DashboardLayout>
+        <DashboardLayout title="Settings" subtitle="Refine your trading identity and security.">
             <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-8 transition-colors duration-500">
                 <div className="max-w-5xl mx-auto space-y-8">
-                    <div className="flex justify-between items-end">
-                        <div>
-                            <h1 className="text-4xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 italic">Settings</h1>
-                            <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Refine your trading identity and security.</p>
-                        </div>
-                    </div>
 
                     <Tabs defaultValue="general" className="w-full">
                         <TabsList className="bg-white dark:bg-card p-1 rounded-2xl border border-border dark:border-slate-800 shadow-sm mb-8 h-auto flex flex-wrap">
