@@ -30,7 +30,7 @@ import os
 os.environ.setdefault('NUMBA_CACHE_DIR', '/tmp/numba_cache')
 
 from ..services.optimization_service import SafeTa
-from ..services.backtest_harness import build_strategy_scope, resolve_code
+from ..services.backtest_harness import build_strategy_scope, resolve_code, load_price_df
 from ..services.backtest_harness.fees import nepse_commission, DEFAULT_SPREAD
 
 from ..models import (
@@ -880,21 +880,11 @@ class StrategyViewSet(viewsets.ModelViewSet):
         # shared harness — single source of truth for these definitions.
         code = resolve_code(code)
         try:
-            # Data Fetching
-            queryset = DailyStockPrice.objects.filter(ticker=symbol)
-            if start_date: queryset = queryset.filter(date__gte=start_date)
-            if end_date: queryset = queryset.filter(date__lte=end_date)
-            queryset = queryset.order_by('date')
-            
-            ticks = list(queryset.values('date', 'open', 'high', 'low', 'close', 'volume'))
-            if not ticks or len(ticks) < 20:
+            # Data Fetching — via the shared harness loader so the UI backtest
+            # uses corporate-action-adjusted prices, matching run_backtest.
+            df = load_price_df(symbol, start=start_date, end=end_date)
+            if df is None or len(df) < 20:
                 return {}, "Insufficient data (need at least 20 data points)", {}
-
-            df = pd.DataFrame(ticks)
-            df.rename(columns={'open':'Open','high':'High','low':'Low','close':'Close','volume':'Volume'}, inplace=True)
-            df['date'] = pd.to_datetime(df['date'])
-            df.set_index('date', inplace=True)
-            df = df.astype(float)
 
             # Execution
             local_scope = self._get_bt_local_scope(symbol, params=params)
