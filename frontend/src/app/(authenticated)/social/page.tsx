@@ -107,7 +107,7 @@ export default function SocialPage() {
                         )}
                     </SocialCardFrame>
 
-                    <ExportToolbar captureRef={captureRef} templateId={template.id} data={data} theme={theme} />
+                    <ExportToolbar captureRef={captureRef} templateId={template.id} data={data} theme={theme} disabled={isLoading} />
                 </div>
             </div>
         </DashboardLayout>

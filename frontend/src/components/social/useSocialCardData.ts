@@ -24,13 +24,14 @@ export function useSocialCardData(need: DataNeed) {
     });
 
     useEffect(() => {
-        let cancelled = false;
         if (startedRef.current[need]) return;
         startedRef.current[need] = true;
         setLoading(prev => ({ ...prev, [need]: true }));
 
+        // startedRef one-shots each need, so this closure is the only fetch for it.
+        // finish must always land (even if the effect re-ran or StrictMode replayed
+        // it) or the loading flag strands at true with no refetch possible.
         const finish = (patch: Partial<SocialCardData>) => {
-            if (cancelled) return;
             setData(prev => ({ ...prev, ...patch }));
             setLoading(prev => ({ ...prev, [need]: false }));
         };
@@ -76,20 +77,16 @@ export function useSocialCardData(need: DataNeed) {
                 });
             });
         }
-
-        return () => { cancelled = true; };
     }, [need]);
 
     // Always kick off summary on mount (six templates depend on it).
     useEffect(() => {
         if (startedRef.current.summary) return;
         startedRef.current.summary = true;
-        let cancelled = false;
         api.get('/api/stocks/summary/')
-            .then(res => { if (!cancelled) setData(prev => ({ ...prev, summary: res.data })); })
+            .then(res => setData(prev => ({ ...prev, summary: res.data })))
             .catch(() => undefined)
-            .finally(() => { if (!cancelled) setLoading(prev => ({ ...prev, summary: false })); });
-        return () => { cancelled = true; };
+            .finally(() => setLoading(prev => ({ ...prev, summary: false })));
     }, []);
 
     return { data, loading };

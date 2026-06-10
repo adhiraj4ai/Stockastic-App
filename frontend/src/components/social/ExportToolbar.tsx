@@ -4,7 +4,8 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Copy, ClipboardCopy, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
-import html2canvas from 'html2canvas';
+// html2canvas-pro: drop-in fork that parses Tailwind v4's oklch() colors.
+import html2canvas from 'html2canvas-pro';
 import { formatCardText, type SocialCardData, type SocialTemplateId } from '@/lib/socialCardText';
 import { THEMES, type CardTheme } from './SocialCardFrame';
 
@@ -13,9 +14,10 @@ interface ExportToolbarProps {
     templateId: SocialTemplateId;
     data: SocialCardData;
     theme: CardTheme;
+    disabled?: boolean;
 }
 
-export function ExportToolbar({ captureRef, templateId, data, theme }: ExportToolbarProps) {
+export function ExportToolbar({ captureRef, templateId, data, theme, disabled = false }: ExportToolbarProps) {
     const text = formatCardText(templateId, data);
 
     const renderCanvas = async () => {
@@ -30,6 +32,13 @@ export function ExportToolbar({ captureRef, templateId, data, theme }: ExportToo
             logging: false,
         });
     };
+
+    const renderBlob = () =>
+        renderCanvas().then(canvas =>
+            new Promise<Blob>((resolve, reject) =>
+                canvas.toBlob(blob => (blob ? resolve(blob) : reject(new Error('toBlob failed'))), 'image/png')
+            )
+        );
 
     const handleSave = async () => {
         const toastId = toast.loading('Generating image…');
@@ -54,19 +63,22 @@ export function ExportToolbar({ captureRef, templateId, data, theme }: ExportToo
         }
         const toastId = toast.loading('Copying image…');
         try {
-            const canvas = await renderCanvas();
-            const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-            if (!blob) throw new Error('toBlob failed');
-            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+            // Construct the ClipboardItem synchronously with a promise payload so
+            // Safari's user-activation window doesn't expire during rendering.
+            await navigator.clipboard.write([new ClipboardItem({ 'image/png': renderBlob() })]);
             toast.success('Image copied — paste it into your post.', { id: toastId });
         } catch {
             toast.error('Failed to copy image.', { id: toastId });
         }
     };
 
-    const handleCopyText = () => {
-        navigator.clipboard.writeText(text);
-        toast.success('Post text copied.');
+    const handleCopyText = async () => {
+        try {
+            await navigator.clipboard.writeText(text);
+            toast.success('Post text copied.');
+        } catch {
+            toast.error('Failed to copy text.');
+        }
     };
 
     const openIntent = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');
@@ -74,26 +86,26 @@ export function ExportToolbar({ captureRef, templateId, data, theme }: ExportToo
     return (
         <div className="w-full max-w-md mx-auto space-y-3">
             <div className="grid grid-cols-2 gap-3">
-                <Button onClick={handleSave} className="gap-2 h-11 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-semibold">
+                <Button onClick={handleSave} disabled={disabled} className="gap-2 h-11 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-semibold">
                     <Download size={15} /> Save image
                 </Button>
-                <Button onClick={handleCopyImage} variant="outline" className="gap-2 h-11 rounded-xl font-semibold">
+                <Button onClick={handleCopyImage} disabled={disabled} variant="outline" className="gap-2 h-11 rounded-xl font-semibold">
                     <ClipboardCopy size={15} /> Copy image
                 </Button>
             </div>
             <div className="grid grid-cols-3 gap-3">
-                <Button onClick={handleCopyText} disabled={!text} variant="outline" className="gap-2 h-10 rounded-xl text-xs font-semibold">
+                <Button onClick={handleCopyText} disabled={disabled || !text} variant="outline" className="gap-2 h-10 rounded-xl text-xs font-semibold">
                     <Copy size={13} /> Copy text
                 </Button>
                 <Button
                     onClick={() => openIntent(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`)}
-                    disabled={!text} variant="outline" className="gap-2 h-10 rounded-xl text-xs font-semibold"
+                    disabled={disabled || !text} variant="outline" className="gap-2 h-10 rounded-xl text-xs font-semibold"
                 >
                     <ExternalLink size={13} /> Post on X
                 </Button>
                 <Button
                     onClick={() => openIntent(`https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text)}`)}
-                    disabled={!text} variant="outline" className="gap-2 h-10 rounded-xl text-xs font-semibold"
+                    disabled={disabled || !text} variant="outline" className="gap-2 h-10 rounded-xl text-xs font-semibold"
                 >
                     <ExternalLink size={13} /> LinkedIn
                 </Button>

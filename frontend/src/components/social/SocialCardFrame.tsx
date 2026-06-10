@@ -63,8 +63,11 @@ export function SocialCardFrame({ theme, ratio, captureRef, children }: SocialCa
                 t.cardBg, t.border, RATIO_CLASSES[ratio],
             )}
         >
-            {/* Brand accent glow */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 blur-[100px] -mr-32 -mt-32 pointer-events-none" />
+            {/* Brand accent glow — a gradient (not CSS blur) so html2canvas exports it faithfully */}
+            <div
+                className="absolute inset-0 pointer-events-none"
+                style={{ background: 'radial-gradient(circle at top right, rgba(249,115,22,0.12), transparent 55%)' }}
+            />
             {theme === 'dark' && (
                 <div
                     className="absolute inset-0 opacity-[0.03] pointer-events-none"
