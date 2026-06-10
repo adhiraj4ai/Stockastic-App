@@ -399,7 +399,7 @@ export default function SmartMoneyPage() {
     // ─── Render ───────────────────────────────────────────────────────────────
 
     return (
-        <div className="space-y-6 max-w-[1400px] mx-auto px-1">
+        <div className="space-y-6 px-1">
 
             {/* ── Header ─────────────────────────────────────────────────────── */}
             <div className="flex flex-col sm:flex-row sm:items-start gap-4 justify-between">
