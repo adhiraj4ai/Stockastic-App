@@ -51,13 +51,15 @@ class BrokerViewSet(viewsets.ViewSet):
             WHERE rank <= 15 -- Top 15 Holders
         ),
         fs_target AS (
-             SELECT (transaction_date - INTERVAL '{days} days') as start_date 
-             FROM daily_floorsheet 
-             WHERE transaction_date = (
-                 SELECT transaction_date FROM daily_floorsheet 
-                 GROUP BY transaction_date HAVING COUNT(*) > 100 
+             -- Must reduce to a SINGLE row. Selecting straight from daily_floorsheet
+             -- returned one (identical) row per trade on the latest day (~75k), which
+             -- then cross-joined the 78M-row floorsheet below and blew up cardinality.
+             SELECT (max_date - INTERVAL '{days} days') as start_date
+             FROM (
+                 SELECT transaction_date AS max_date FROM daily_floorsheet
+                 GROUP BY transaction_date HAVING COUNT(*) > 100
                  ORDER BY transaction_date DESC LIMIT 1
-             )
+             ) latest
         ),
         floorsheet_activity AS (
             SELECT 
