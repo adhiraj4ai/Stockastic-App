@@ -5,9 +5,6 @@ venv_ml312
 
 __pycache__
 
-# django migrations
-migrations
-
 # django logs
 logs
 
