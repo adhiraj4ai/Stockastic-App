@@ -74,4 +74,9 @@ describe('buildActionItems', () => {
         const items = buildActionItems([episode({ source: 'NEW_ENGINE' })], []);
         expect(items[0].source).toBe('NEW_ENGINE');
     });
+
+    it('nulls out non-numeric entry prices instead of propagating NaN', () => {
+        const items = buildActionItems([episode({ entry_price: 'not-a-number' })], []);
+        expect(items[0].price).toBeNull();
+    });
 });
