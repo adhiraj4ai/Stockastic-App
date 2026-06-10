@@ -242,11 +242,17 @@ function SectorFilter({ sectors, value, onChange }: {
 
 // ─── Signal Card ─────────────────────────────────────────────────────────────
 
+const CANONICAL_BADGE: Record<string, { label: string; color: string }> = {
+    IN_ZONE:  { label: 'In Zone',  color: 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/40' },
+    EXTENDED: { label: 'Extended', color: 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/40' },
+    STALE:    { label: 'Stale',    color: 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700' },
+};
+
 function UnifiedSignalCard({
     symbol, direction, ltp, currentPrice, indicators, date,
     strength, reason, tagline, conviction,
     targetPrice, stopLoss, tp1, tp2, tp3, status,
-    smartMoneyMetadata, onSelect
+    smartMoneyMetadata, canonicalStatus, onSelect
 }: {
     symbol: string; direction: 'BUY' | 'SELL'; ltp: number;
     currentPrice?: number; indicators?: BatchIndicatorData; date?: string;
@@ -254,6 +260,7 @@ function UnifiedSignalCard({
     targetPrice?: number; stopLoss?: number; tp1?: number; tp2?: number; tp3?: number;
     status?: 'ACTIVE' | 'WON' | 'LOST' | 'CLOSED_MANUAL';
     smartMoneyMetadata?: any;
+    canonicalStatus?: string;
     onSelect: (s: any) => void;
 }) {
     const freshness = getFreshness(date);
@@ -266,7 +273,9 @@ function UnifiedSignalCard({
             ? { label: 'Stopped Out', color: 'bg-rose-500 text-white border-transparent' }
             : action;
 
-    const dimmed = (status === 'LOST' || (action && action.status !== 'valid' && status !== 'WON'));
+    const isTerminal = status === 'WON' || status === 'LOST';
+    const dimmed = (status === 'LOST' || (action && action.status !== 'valid' && status !== 'WON'))
+        && !(canonicalStatus === 'IN_ZONE' && !isTerminal);
 
     return (
         <div
@@ -380,11 +389,14 @@ function UnifiedSignalCard({
 
                     {/* Right side: status + arrow */}
                     <div className="flex items-center gap-2 shrink-0">
-                        {resolvedAction && (
-                            <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-md border', resolvedAction?.color || 'bg-slate-500/10 text-slate-500')}>
-                                {resolvedAction.label}
-                            </span>
-                        )}
+                        {(() => {
+                            const badge = (!isTerminal && canonicalStatus && CANONICAL_BADGE[canonicalStatus]) || resolvedAction;
+                            return badge ? (
+                                <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-md border', badge.color || 'bg-slate-500/10 text-slate-500')}>
+                                    {badge.label}
+                                </span>
+                            ) : null;
+                        })()}
                         <div className={cn(
                             'p-2 rounded-xl transition-all',
                             'bg-slate-100 dark:bg-slate-800 text-slate-400',
@@ -420,6 +432,7 @@ function AllSourcesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
     const [minConviction, setMinConviction] = useState(1);
     const [sectorFilter, setSectorFilter] = useState('ALL');
     const [generatedDate, setGeneratedDate] = useState<string | null>(null);
+    const [entryStatuses, setEntryStatuses] = useState<Record<string, string>>({});
 
     useEffect(() => {
         const fetchData = async () => {
@@ -430,10 +443,12 @@ function AllSourcesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
                 return map.get(symbol)!;
             };
             try {
-                const [genRes, stRes] = await Promise.all([
+                const [genRes, stRes, statusRes] = await Promise.all([
                     api.get('/api/stocks/generated-signals/latest/').catch(() => null),
                     api.get('/api/stocks/signals/', { params: { page_size: 500 } }).catch(() => null),
+                    api.get('/api/stocks/entry-statuses/').catch(() => null),
                 ]);
+                setEntryStatuses(statusRes?.data?.statuses ?? {});
                 if (genRes?.data) {
                     for (const sig of genRes.data as GeneratedSignal[]) {
                         const ltp = parseFloat(sig.ltp) || 0;
@@ -634,6 +649,7 @@ function AllSourcesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
                             status={u.status}
                             indicators={batchIndicators[u.symbol]}
                             smartMoneyMetadata={u.smartMoney}
+                            canonicalStatus={entryStatuses[u.symbol]}
                             onSelect={onSelect}
                         />
                     ))}
