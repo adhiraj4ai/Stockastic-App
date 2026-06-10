@@ -147,7 +147,8 @@ def build_daily_plan(as_of=None):
     others = [c for c in candidates if c not in picks]
 
     catalysts = upcoming_catalysts(as_of=as_of)
-    catalyst_by_symbol = {c["symbol"]: c for c in catalysts}
+    # reversed: catalysts are date-ascending, so the nearest one wins per symbol
+    catalyst_by_symbol = {c["symbol"]: c for c in reversed(catalysts)}
     for pick in picks:
         pick["analog"] = analog_stats(pick["symbol"], as_of=as_of)
         pick["catalyst"] = catalyst_by_symbol.get(pick["symbol"])
@@ -158,6 +159,8 @@ def build_daily_plan(as_of=None):
     ]
 
     plan_date = next_trading_date(as_of)
+    existing = DailyTradingPlan.objects.filter(date=plan_date).first()
+    regenerated = existing is None or existing.payload.get("as_of") != as_of.isoformat()
     plan, _created = DailyTradingPlan.objects.update_or_create(
         date=plan_date,
         defaults={
@@ -173,6 +176,7 @@ def build_daily_plan(as_of=None):
             },
         },
     )
+    plan.was_regenerated = regenerated  # transient flag for the nightly task (holiday guard)
     return plan
 
 

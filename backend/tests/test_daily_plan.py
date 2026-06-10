@@ -153,10 +153,12 @@ class TestBuildDailyPlan:
         any_df = _make_price_df([100.0] * 30)
 
         with patch("stocks.services.daily_plan._load_price_df", return_value=any_df):
-            build_daily_plan(as_of=date_cls(2026, 6, 10))
-            build_daily_plan(as_of=date_cls(2026, 6, 10))
+            first = build_daily_plan(as_of=date_cls(2026, 6, 10))
+            second = build_daily_plan(as_of=date_cls(2026, 6, 10))
 
         assert DailyTradingPlan.objects.count() == 1
+        assert first.was_regenerated is True
+        assert second.was_regenerated is False  # same as_of: holiday guard flag
 
 
 @pytest.mark.django_db
@@ -250,3 +252,27 @@ class TestGenerateDailyPlanTask:
         log = DataUploadLog.objects.latest("created_at")
         assert log.upload_type == "PLAN"
         assert log.status == "FAILED"
+
+    @patch("stocks.services.daily_plan.build_daily_plan")
+    def test_task_skips_when_not_regenerated(self, mock_build, create_user):
+        from stocks.models import DailyTradingPlan, DataUploadLog, Notification
+        from stocks.tasks import generate_daily_plan_task
+        from users.models import TierPermission
+
+        user = create_user(username="planuser2", password="x")
+        user.profile.subscription_tier = "PRO"
+        user.profile.save()
+        TierPermission.objects.create(tier="PRO", module_key="daily_plan", is_enabled=True)
+
+        plan = DailyTradingPlan.objects.create(
+            date=date_cls(2026, 6, 11), regime="RISK_ON",
+            payload={"picks": [{"symbol": "NABIL"}], "catalysts": []},
+        )
+        plan.was_regenerated = False  # holiday / no new data
+        mock_build.return_value = plan
+
+        result = generate_daily_plan_task()
+
+        assert result == {"status": "SKIPPED", "plan_date": "2026-06-11"}
+        assert Notification.objects.count() == 0
+        assert not DataUploadLog.objects.filter(upload_type="PLAN", status="SUCCESS").exists()

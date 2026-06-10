@@ -43,6 +43,26 @@ export default function PlanPage() {
     const [plan, setPlan] = useState<Plan | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [historyDate, setHistoryDate] = useState('');
+    const [historyPlan, setHistoryPlan] = useState<Plan | null>(null);
+    const [historyError, setHistoryError] = useState<string | null>(null);
+
+    const handleHistoryDateChange = (value: string) => {
+        setHistoryDate(value);
+        setHistoryError(null);
+        if (!value) {
+            setHistoryPlan(null);
+            return;
+        }
+        api.get(`/api/stocks/plan/?date=${value}`)
+            .then(res => setHistoryPlan(res.data))
+            .catch(err => {
+                setHistoryPlan(null);
+                setHistoryError(err?.response?.status === 404
+                    ? 'No plan for that date.'
+                    : 'Could not load that plan.');
+            });
+    };
 
     useEffect(() => {
         api.get('/api/stocks/plan/today/')
@@ -75,6 +95,7 @@ export default function PlanPage() {
 
     const { payload, overlay } = plan;
     const picks = payload.picks ?? [];
+    const watch = payload.watch ?? [];
     const breadthPct = plan.breadth != null ? Math.round(plan.breadth * 100) : null;
     const hasUserActions = overlay && (
         overlay.positions_near_action.length > 0 ||
@@ -114,6 +135,18 @@ export default function PlanPage() {
                         </Card>
                     )}
                 </section>
+
+                {/* Watch list */}
+                {watch.length > 0 && (
+                    <section>
+                        <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">
+                            Watch — not actionable yet
+                        </h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                            {watch.map(p => <PickCard key={p.symbol} pick={p} />)}
+                        </div>
+                    </section>
+                )}
 
                 {/* Your actions */}
                 {hasUserActions && overlay && (
@@ -179,6 +212,37 @@ export default function PlanPage() {
                         </div>
                     </section>
                 )}
+
+                {/* Past plans */}
+                <section>
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">
+                        Past plans
+                    </h2>
+                    <input
+                        type="date"
+                        value={historyDate}
+                        max={format(new Date(), 'yyyy-MM-dd')}
+                        onChange={e => handleHistoryDateChange(e.target.value)}
+                        className="bg-transparent border rounded-lg px-3 py-1.5 text-xs"
+                    />
+                    {historyError && (
+                        <p className="mt-2 text-xs text-muted-foreground">{historyError}</p>
+                    )}
+                    {historyPlan && (
+                        <div className="mt-4 space-y-3">
+                            <h3 className="text-xs font-semibold text-muted-foreground">
+                                {historyPlan.regime.replace(/_/g, ' ')} — {format(parseISO(historyPlan.date), 'eeee, MMM dd')}
+                            </h3>
+                            {(historyPlan.payload.picks ?? []).length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                    {(historyPlan.payload.picks ?? []).map(p => <PickCard key={p.symbol} pick={p} />)}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-muted-foreground">No picks in that plan.</p>
+                            )}
+                        </div>
+                    )}
+                </section>
             </div>
         </DashboardLayout>
     );

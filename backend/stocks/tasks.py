@@ -139,6 +139,10 @@ def generate_daily_plan_task():
         )
         return {"status": "FAILED", "error": str(exc)}
 
+    if not getattr(plan, "was_regenerated", True):
+        # Same source session as the existing plan (holiday / no new data): don't re-log or re-notify.
+        return {"status": "SKIPPED", "plan_date": plan.date.isoformat()}
+
     pick_count = len(plan.payload.get("picks", []))
     DataUploadLog.objects.create(
         file_name=f"daily_plan_{plan.date.isoformat()}", upload_type="PLAN",
