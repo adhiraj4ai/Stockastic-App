@@ -1,8 +1,11 @@
 import pytest
+import pandas as pd
+import numpy as np
 from stocks.services.confluence import (
     engine_component, opportunity_component, accumulation_component,
     sector_component, confluence_score,
 )
+from stocks.services.confluence import compute_atr, entry_status
 
 
 class TestEngineComponent:
@@ -76,3 +79,49 @@ class TestConfluenceScore:
         assert components["opportunity"]["score"] == 100.0
         assert components["accumulation"]["score"] == 100.0
         assert components["sector"]["score"] == 100.0
+
+
+def _price_df(closes, spread=2.0):
+    n = len(closes)
+    idx = pd.bdate_range("2026-05-01", periods=n)  # weekday spacing is irrelevant here
+    closes = pd.Series(closes, index=idx, dtype=float)
+    return pd.DataFrame({
+        "Open": closes, "High": closes + spread, "Low": closes - spread,
+        "Close": closes, "Volume": np.full(n, 1000.0),
+    }, index=idx)
+
+
+class TestComputeAtr:
+    def test_constant_range_atr(self):
+        df = _price_df([100.0] * 20, spread=2.0)
+        # TR is high-low = 4.0 every bar → ATR(14) = 4.0
+        assert compute_atr(df, period=14) == pytest.approx(4.0)
+
+    def test_insufficient_history_returns_none(self):
+        assert compute_atr(_price_df([100.0] * 5), period=14) is None
+
+
+class TestEntryStatus:
+    def test_in_zone(self):
+        df = _price_df([100.0] * 30)
+        status, lo, hi = entry_status(entry_price=101.0, signal_age_days=1, price_df=df)
+        assert status == "IN_ZONE"
+        assert lo == pytest.approx(97.0)   # 101 - 4
+        assert hi == pytest.approx(105.0)  # 101 + 4
+
+    def test_extended_when_price_left_zone(self):
+        df = _price_df([100.0] * 29 + [120.0])
+        status, _, _ = entry_status(entry_price=100.0, signal_age_days=1, price_df=df)
+        assert status == "EXTENDED"
+
+    def test_stale_when_signal_old(self):
+        df = _price_df([100.0] * 30)
+        status, _, _ = entry_status(entry_price=100.0, signal_age_days=9, price_df=df)
+        assert status == "STALE"
+
+    def test_no_atr_falls_back_to_pct_zone(self):
+        df = _price_df([100.0] * 5)  # too short for ATR
+        status, lo, hi = entry_status(entry_price=100.0, signal_age_days=1, price_df=df)
+        assert status == "IN_ZONE"
+        assert lo == pytest.approx(97.0)   # fallback ±3%
+        assert hi == pytest.approx(103.0)
