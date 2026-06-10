@@ -40,3 +40,11 @@ def test_total_cost_rate_for_reporting():
     # Effective per-side rate on a Rs 100,000 trade: 0.33% + 0.015% + 25/100000
     rate = total_cost_rate(100_000)
     assert abs(rate - (0.0033 + 0.00015 + 0.00025)) < 1e-9
+
+
+def test_non_positive_amount_is_zero_cost():
+    # A zero or degenerate order must not invent a Rs 25 DP charge out of nothing.
+    assert nepse_commission(0, 100.0) == 0.0
+    assert nepse_commission(100, 0.0) == 0.0
+    assert total_cost_rate(0) == 0.0
+    assert total_cost_rate(-5) == 0.0

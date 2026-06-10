@@ -14,17 +14,22 @@ Public surface:
     write_report                                                  (report)
 """
 
+# The heavy backtest surface depends on native libraries (talib, backtesting,
+# pandas_ta) that may be absent in lightweight environments running only the
+# pure fee/math tests. We tolerate ONLY those modules being missing — any other
+# ImportError (a real bug, a renamed symbol) must propagate, not be swallowed.
+_OPTIONAL_NATIVE_DEPS = {"talib", "backtesting", "pandas_ta"}
+
 try:
     from .scope import build_strategy_scope, extract_strategy_class, resolve_code
     from .runner import load_price_df, run_backtest, normalize_metrics, BacktestResult
     from .basket import DEFAULT_BASKET, load_basket
     from .evaluate import evaluate_over_basket, score_results, ScoreCard
     from .report import write_report
-except ImportError:
-    # talib and backtesting.py may not be installed in all environments (e.g.
-    # lightweight CI that only runs fee/math tests). Sub-modules that do not
-    # depend on those heavy libraries (e.g. fees.py) remain importable.
-    pass
+except ModuleNotFoundError as exc:
+    if exc.name not in _OPTIONAL_NATIVE_DEPS:
+        raise
+    # fees.py and other pure submodules remain importable.
 
 __all__ = [
     "build_strategy_scope",
