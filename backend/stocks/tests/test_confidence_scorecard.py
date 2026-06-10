@@ -51,3 +51,58 @@ def test_zero_trade_run_has_empty_trade_fields():
     assert res.ok, res.error
     assert res.metrics["wins"] == 0 and res.metrics["losses"] == 0
     assert res.metrics["trade_returns"] == []
+
+
+# ---------------------------------------------------------------------------
+# Task 3: confidence block + per-symbol verdicts
+# ---------------------------------------------------------------------------
+from stocks.services.backtest_harness.evaluate import score_results
+from stocks.services.backtest_harness.runner import BacktestResult
+
+
+def _result(symbol, ret, bh, sortino, dd, trades, wins=None, trade_returns=None):
+    wins = trades // 2 if wins is None else wins
+    if trade_returns is None:
+        trade_returns = [0.02] * wins + [-0.02] * (trades - wins)
+    return BacktestResult(symbol=symbol, ok=True, metrics={
+        "return_pct": ret, "buy_hold_return_pct": bh, "sortino": sortino,
+        "max_drawdown_pct": dd, "num_trades": trades,
+        "win_rate_pct": 100.0 * wins / trades if trades else 0.0,
+        "wins": wins, "losses": trades - wins, "trade_returns": trade_returns,
+    })
+
+
+def test_confidence_block_present_and_pooled():
+    results = [_result(f"S{i}", ret=40, bh=20, sortino=1.5, dd=-10, trades=20) for i in range(10)]
+    card = score_results("edge", results)
+    c = card.confidence
+    assert "win_rate_ci" in c and len(c["win_rate_ci"]) == 2
+    assert "win_rate_reportable" in c
+    assert c["win_rate_reportable"] is True       # 10*20 = 200 pooled trades
+    assert "excess_pvalue" in c and 0.0 <= c["excess_pvalue"] <= 1.0
+    assert "total_trades" in c and c["total_trades"] == 200
+
+
+def test_low_sample_flagged_not_reportable():
+    results = [_result(f"S{i}", ret=40, bh=20, sortino=1.5, dd=-10, trades=2) for i in range(5)]
+    card = score_results("thin", results)
+    assert card.confidence["total_trades"] == 10
+    assert card.confidence["win_rate_reportable"] is False
+
+
+def test_passed_still_only_depends_on_economic_verdicts():
+    results = [_result(f"S{i}", ret=40, bh=20, sortino=1.5, dd=-10, trades=20) for i in range(10)]
+    card = score_results("edge", results)
+    assert card.passed is True
+    assert set(card.verdicts.keys()) == {
+        "runs_clean", "active", "beats_bh_return",
+        "positive_risk_adjusted", "beats_bh_drawdown_adjusted",
+    }
+
+
+def test_per_symbol_verdicts_recorded():
+    results = [_result(f"S{i}", ret=40, bh=20, sortino=1.5, dd=-10, trades=20) for i in range(10)]
+    card = score_results("edge", results)
+    d = card.to_dict()
+    assert "symbols" in d and len(d["symbols"]) == 10
+    assert "beats_bh" in d["symbols"][0]

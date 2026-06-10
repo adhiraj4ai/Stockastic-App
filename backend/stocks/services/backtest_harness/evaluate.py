@@ -15,6 +15,7 @@ from statistics import median
 from typing import List, Optional
 
 from .runner import run_backtest, load_price_df, BacktestResult
+from .statistics import wilson_interval, bootstrap_pvalue, winrate_is_reportable
 
 __all__ = ["evaluate_over_basket", "score_results", "ScoreCard"]
 
@@ -41,6 +42,7 @@ class ScoreCard:
     passed: bool = False
     verdicts: dict = field(default_factory=dict)
     aggregates: dict = field(default_factory=dict)
+    confidence: dict = field(default_factory=dict)
 
     @property
     def ok_results(self):
@@ -56,8 +58,11 @@ class ScoreCard:
             "passed": self.passed,
             "verdicts": self.verdicts,
             "aggregates": self.aggregates,
+            "confidence": self.confidence,
             "symbols": [
-                {"symbol": r.symbol, "ok": r.ok, "error": r.error, **r.metrics}
+                {"symbol": r.symbol, "ok": r.ok, "error": r.error,
+                 "beats_bh": (r.metrics.get("return_pct", 0.0) > r.metrics.get("buy_hold_return_pct", 0.0)),
+                 **r.metrics}
                 for r in self.results
             ],
         }
@@ -144,4 +149,19 @@ def score_results(strategy_name, results):
         "median_buyhold_return_over_dd": round(med_bh_rdd, 3),
         "median_trades": med_trades,
     }
+
+    # --- Statistical confidence (reported; does NOT gate card.passed) ---
+    total_wins = sum(int(r.metrics.get("wins", 0)) for r in ok)
+    total_trades = sum(int(r.metrics.get("num_trades", 0)) for r in ok)
+    pooled_returns = [x for r in ok for x in r.metrics.get("trade_returns", [])]
+    ci_lo, ci_hi = wilson_interval(total_wins, total_trades)
+    card.confidence = {
+        "total_trades": total_trades,
+        "total_wins": total_wins,
+        "pooled_win_rate": round(100.0 * total_wins / total_trades, 2) if total_trades else 0.0,
+        "win_rate_ci": [round(ci_lo, 4), round(ci_hi, 4)],
+        "win_rate_reportable": winrate_is_reportable(total_trades),
+        "excess_pvalue": round(bootstrap_pvalue(pooled_returns), 4),
+    }
+
     return card
