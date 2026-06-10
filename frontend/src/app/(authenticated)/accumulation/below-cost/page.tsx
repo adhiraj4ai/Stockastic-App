@@ -121,10 +121,10 @@ export default function BelowCostPage() {
     };
 
     return (
-        <div className="space-y-6 max-w-full mx-auto px-4 pb-20">
+        <div className="space-y-6">
             
             {/* Control Bar: Filters & Search */}
-            <div className="bg-white/80 dark:bg-card rounded-xl border border-border dark:border-border shadow-sm px-6 py-4 flex flex-col xl:flex-row items-center justify-between gap-6 overflow-hidden">
+            <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border shadow-sm px-4 py-3 flex flex-col xl:flex-row items-center justify-between gap-6 overflow-hidden">
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto">
                     {/* Search */}
                     <div className="relative w-full sm:w-80 group">
@@ -174,7 +174,7 @@ export default function BelowCostPage() {
             </div>
 
             {/* Terminal Table */}
-            <div className="bg-white/80 dark:bg-card rounded-[2rem] border border-border dark:border-border shadow-sm overflow-hidden min-h-[500px] flex flex-col">
+            <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border shadow-sm overflow-hidden min-h-[500px] flex flex-col">
                 {loading ? <PageLoader text="Scanning institutional footprints..." /> : (
                     <>
                         <div className="overflow-x-auto flex-1 custom-scrollbar">
@@ -274,7 +274,7 @@ export default function BelowCostPage() {
                         </div>
 
                         {/* Pagination Footer */}
-                        <div className="px-8 py-6 border-t border-border dark:border-border bg-slate-50/40 dark:bg-white/[0.01] flex flex-col sm:flex-row items-center justify-between gap-6 mt-auto">
+                        <div className="px-5 py-4 border-t border-border dark:border-border bg-slate-50/40 dark:bg-white/[0.01] flex flex-col sm:flex-row items-center justify-between gap-6 mt-auto">
                             <div className="flex items-center gap-3">
                                 <div className="h-2 w-2 rounded-full bg-orange-500 pulse-glow" />
                                 <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{sortedAndFilteredData.length} strategic positions tracked</span>

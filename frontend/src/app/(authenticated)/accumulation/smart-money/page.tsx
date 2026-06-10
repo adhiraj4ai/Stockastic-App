@@ -401,31 +401,29 @@ export default function SmartMoneyPage() {
     return (
         <div className="space-y-6 px-1">
 
-            {/* ── Header ─────────────────────────────────────────────────────── */}
-            <div className="flex flex-col sm:flex-row sm:items-start gap-4 justify-between">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                        <Brain className="w-4 h-4 text-amber-500" />
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                            Institutional Intelligence · {range} Window
-                        </span>
-                    </div>
-                    <p className="text-xs text-slate-400 max-w-lg">
-                        Track the top institutional brokers, their whale-sized accumulations, and which stocks are attracting the most smart money.
-                    </p>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+            {/* ═══ Global Controls Bar ════════════════════════════════════════ */}
+            <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border shadow-lg px-4 py-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-wrap">
+                <div className="bg-slate-50 dark:bg-card p-1 rounded-xl border border-border dark:border-border flex overflow-x-auto no-scrollbar shrink-0">
                     {RANGES.map(r => (
                         <button key={r} onClick={() => setRange(r)}
                             className={cn(
-                                'px-3 py-1.5 text-[11px] font-semibold rounded-lg border transition-all',
+                                'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 tracking-tight whitespace-nowrap',
                                 range === r
-                                    ? 'bg-slate-800 dark:bg-slate-100 border-slate-800 dark:border-border text-white dark:text-slate-900 shadow-sm'
-                                    : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500',
+                                    ? 'bg-slate-900 dark:bg-indigo-600 text-white shadow'
+                                    : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200',
                             )}>
                             {r}
                         </button>
                     ))}
+                </div>
+
+                <div className="h-4 w-px bg-slate-200 dark:bg-white/10 hidden sm:block" />
+
+                <div className="flex items-center gap-2 min-w-0">
+                    <Brain className="w-4 h-4 text-amber-500 shrink-0" />
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">
+                        Top institutional brokers, whale-sized accumulations, and the stocks attracting the most smart money · {range} window
+                    </span>
                 </div>
             </div>
 
