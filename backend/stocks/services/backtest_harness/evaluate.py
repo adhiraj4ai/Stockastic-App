@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from statistics import median
 from typing import List, Optional
 
+from .expectancy import expectancy_stats
 from .runner import run_backtest, load_price_df, BacktestResult
 from .statistics import wilson_interval, bootstrap_pvalue, winrate_is_reportable
 
@@ -167,5 +168,12 @@ def score_results(strategy_name, results):
         "win_rate_reportable": winrate_is_reportable(total_trades),
         "excess_pvalue": round(bootstrap_pvalue(excess), 4),
     }
+
+    pooled_trade_returns = [x for r in ok for x in r.metrics.get("trade_returns", [])]
+    _exp = expectancy_stats(pooled_trade_returns)
+    card.confidence["expectancy"] = round(_exp["expectancy"], 5)
+    card.confidence["avg_win"] = round(_exp["avg_win"], 5)
+    card.confidence["avg_loss"] = round(_exp["avg_loss"], 5)
+    card.confidence["payoff_ratio"] = round(_exp["payoff_ratio"], 3)
 
     return card
