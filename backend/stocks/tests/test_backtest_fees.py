@@ -48,3 +48,48 @@ def test_non_positive_amount_is_zero_cost():
     assert nepse_commission(100, 0.0) == 0.0
     assert total_cost_rate(0) == 0.0
     assert total_cost_rate(-5) == 0.0
+
+
+import numpy as np
+import pandas as pd
+
+from stocks.services.backtest_harness.runner import run_backtest
+
+_BH_CODE = """
+from backtesting import Strategy
+
+class HoldStrategy(Strategy):
+    def init(self):
+        pass
+
+    def next(self):
+        if not self.position:
+            self.buy()
+"""
+
+
+def _flat_df(n=30, price=100.0):
+    idx = pd.date_range("2025-01-01", periods=n, freq="D")
+    return pd.DataFrame(
+        {"Open": price, "High": price, "Low": price, "Close": price,
+         "Volume": 10_000.0},
+        index=idx,
+    )
+
+
+def test_runner_applies_real_fees_by_default():
+    # Flat price: a buy-and-hold strategy's loss == round-trip cost... but the
+    # position is still open at the end, so loss == entry-side cost + spread.
+    # With the old flat commission=0.002 the loss would be ~0.2%; with the
+    # NEPSE model on a ~Rs 1M position it must exceed 0.27% + 0.015%.
+    res = run_backtest(_BH_CODE, "TEST", df=_flat_df())
+    assert res.ok, res.error
+    assert res.metrics["num_trades"] >= 0
+    # Equity loss from costs must be at least 0.28% (tiered 0.27% + SEBON).
+    assert res.metrics["return_pct"] <= -0.28
+
+
+def test_runner_accepts_float_commission_override():
+    res = run_backtest(_BH_CODE, "TEST", df=_flat_df(), commission=0.0, spread=0.0)
+    assert res.ok, res.error
+    assert abs(res.metrics["return_pct"]) < 1e-6

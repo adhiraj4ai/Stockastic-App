@@ -8,6 +8,7 @@ import pandas as pd
 from backtesting import Backtest
 
 from .scope import build_strategy_scope, extract_strategy_class, resolve_code
+from .fees import nepse_commission, DEFAULT_SPREAD
 
 __all__ = ["load_price_df", "run_backtest", "normalize_metrics", "BacktestResult"]
 
@@ -93,12 +94,20 @@ def normalize_metrics(stats):
 
 
 def run_backtest(strategy_or_code, ticker, params=None, start=None, end=None,
-                 cash=1_000_000, commission=0.002, df=None):
+                 cash=1_000_000, commission=None, spread=None, df=None):
     """Execute a strategy over one symbol and return a BacktestResult.
 
     ``strategy_or_code`` may be a Strategy model instance, a raw code string, or
     a special token (see scope.resolve_code). Exceptions are captured into the
     result rather than raised, so a broken strategy is a recorded failure.
+
+    ``commission=None`` (default) applies the real NEPSE cost model: tiered
+    broker commission + 0.015% SEBON + Rs 25 DP charge per side, implemented
+    as a callable in ``fees.nepse_commission``. Pass a float (e.g. ``0.0``) to
+    override with a flat per-trade fraction for frictionless or custom runs.
+
+    ``spread=None`` (default) uses ``fees.DEFAULT_SPREAD`` (10 bps) to model
+    NEPSE bid-ask/illiquidity costs. Pass ``0.0`` to disable spread entirely.
     """
     code = getattr(strategy_or_code, "code", strategy_or_code)
     code = resolve_code(code)
@@ -116,7 +125,14 @@ def run_backtest(strategy_or_code, ticker, params=None, start=None, end=None,
         if strategy_class is None:
             return BacktestResult(symbol=ticker, ok=False, error="No Strategy subclass found in code")
 
-        bt = Backtest(df, strategy_class, cash=cash, commission=commission, exclusive_orders=True)
+        bt = Backtest(
+            df,
+            strategy_class,
+            cash=cash,
+            commission=nepse_commission if commission is None else commission,
+            spread=DEFAULT_SPREAD if spread is None else spread,
+            exclusive_orders=True,
+        )
         run_params = {k: v for k, v in (params or {}).items() if hasattr(strategy_class, k)}
         stats = bt.run(**run_params)
         return BacktestResult(symbol=ticker, ok=True, metrics=normalize_metrics(stats))
