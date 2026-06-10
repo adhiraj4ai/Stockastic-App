@@ -252,6 +252,10 @@ class DividendService:
                 "total_bonus_shares": float(total_bonus_shares),
                 "yield_on_cost": float(round(yield_on_cost, 2)),
                 "historical_cost_basis": float(round(historical_cost_basis, 2)),
+                # Backward-compatible alias: the frontend (DividendIncome.tsx) reads
+                # `current_invested`. The value is now the historical cost basis
+                # (cost of the shares that earned the dividends), not current holdings.
+                "current_invested": float(round(historical_cost_basis, 2)),
                 "total_realized_pnl": float(round(total_realized_pnl, 2)),
             },
             "history": sorted(history, key=lambda x: x['book_close_date'], reverse=True),
