@@ -356,3 +356,9 @@ LOGGING = {
         },
     },
 }
+
+# ── External market-data provider (NepseAPI etc.) ──────────────────────────
+# Default to the free public instance; override to a self-hosted container in prod.
+NEPSE_API_BASE_URL = os.getenv("NEPSE_API_BASE_URL", "https://nepseapi.surajrimal.dev")
+NEPSE_API_PROVIDER = os.getenv("NEPSE_API_PROVIDER", "nepseapi")
+NEPSE_API_TIMEOUT = float(os.getenv("NEPSE_API_TIMEOUT", "30"))
