@@ -52,6 +52,9 @@ services:
       - "8000:8000"
     env_file:
       - .env.docker
+    environment:
+      - NEPSE_API_BASE_URL=${NEPSE_API_BASE_URL:-https://nepseapi.surajrimal.dev}
+      - NEPSE_API_PROVIDER=${NEPSE_API_PROVIDER:-nepseapi}
     depends_on:
       postgres:
         condition: service_healthy
@@ -116,6 +119,15 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  # Optional self-hosted NepseAPI. Uncomment and set NEPSE_API_BASE_URL=http://nepseapi:8000
+  # in the backend service to use it instead of the public instance.
+  # nepseapi:
+  #   image: surajrimal/nepseapi:latest
+  #   container_name: stockastic-nepseapi
+  #   ports:
+  #     - "8001:8000"   # host 8001 -> container 8000 (avoids Django's 8000)
+  #   restart: unless-stopped
 
 volumes:
   postgres_data:
