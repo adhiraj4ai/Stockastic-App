@@ -643,7 +643,15 @@ class SmartAccumulatedCrossover(Strategy):
                 "best_value": study.best_value,
                 "oos_value": oos_value,
                 "oos_fraction": OOS_FRACTION,
-                "oos_accepted": bool(oos_value is not None and oos_value >= 0.5 * study.best_value),
+                # Accept only when there was a positive in-sample edge AND the OOS
+                # run retained >= 50% of it. Guarding on best_value > 0 keeps the
+                # flag coherent for the 'return' objective, whose best_value can be
+                # negative (where a 0.5x multiplier would invert the threshold).
+                "oos_accepted": bool(
+                    oos_value is not None
+                    and study.best_value > 0
+                    and oos_value >= 0.5 * study.best_value
+                ),
                 "n_trials": len(study.trials),
             },
             batch_id=batch_id,
