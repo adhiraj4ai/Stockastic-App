@@ -215,7 +215,7 @@ export default function FocusRankingPage() {
     // ─── Render ───────────────────────────────────────────────────────────────
 
     return (
-        <div className="space-y-8 max-w-full mx-auto px-4 pb-20">
+        <div className="space-y-6">
 
             {loading ? <PageLoader text="Syncing institutional datasets..." /> : !data?.series?.length ? (
                 <div className="flex flex-col items-center justify-center p-32 space-y-4">
@@ -223,11 +223,11 @@ export default function FocusRankingPage() {
                     <p className="text-slate-500 font-semibold uppercase tracking-wider">No data matching range</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 gap-8">
+                <div className="grid grid-cols-1 gap-6">
 
                     {/* Bump Chart Terminal */}
-                    <div className="bg-white/80 dark:bg-card rounded-[2.5rem] border border-border dark:border-border shadow-sm overflow-hidden flex flex-col">
-                        <div className="px-8 py-6 border-b border-border dark:border-border bg-slate-50/20 dark:bg-muted flex items-center justify-between">
+                    <div className="bg-white dark:bg-card rounded-2xl border border-border dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+                        <div className="px-5 py-4 border-b border-border dark:border-border bg-slate-50/20 dark:bg-muted flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <Activity className="w-5 h-5 text-indigo-500" />
                                 <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
@@ -254,7 +254,7 @@ export default function FocusRankingPage() {
                             </div>
                         </div>
 
-                        <div className="p-4 sm:p-8">
+                        <div className="p-5">
                             <ReactECharts
                                 option={chartOption}
                                 style={{ height: '500px', width: '100%' }}
@@ -263,7 +263,7 @@ export default function FocusRankingPage() {
                         </div>
 
                         {/* Legend Grid */}
-                        <div className="px-8 pb-8 flex flex-wrap gap-4">
+                        <div className="px-5 pb-5 flex flex-wrap gap-3">
                             {data.series.map(s => (
                                 <Link href={`/ticker/${s.symbol}`} key={s.symbol}>
                                     <div className="group flex items-center gap-3 px-4 py-2 bg-slate-50/50 dark:bg-muted border border-border dark:border-border rounded-2xl hover:bg-white dark:hover:bg-slate-800 transition-all hover:scale-105 cursor-pointer">
@@ -285,10 +285,10 @@ export default function FocusRankingPage() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-8">
+                    <div className="grid grid-cols-1 gap-6">
                         {/* Latest session spotlight (Full width) */}
-                        <div className="bg-white/80 dark:bg-card rounded-[2.5rem] border border-border dark:border-border shadow-sm overflow-hidden">
-                            <div className="px-8 py-6 border-b border-border dark:border-border bg-slate-50/20 dark:bg-muted flex items-center justify-between">
+                        <div className="bg-white dark:bg-card rounded-2xl border border-border dark:border-slate-800 shadow-sm overflow-hidden">
+                            <div className="px-5 py-4 border-b border-border dark:border-border bg-slate-50/20 dark:bg-muted flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <Zap className="w-5 h-5 text-yellow-500" />
                                     <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
@@ -301,7 +301,7 @@ export default function FocusRankingPage() {
                                     <thead>
                                         <tr className="bg-slate-50/50 dark:bg-white/[0.01]">
                                             {['Rank', 'Symbol', 'LTP', 'Buy Price', 'Net Vol', 'Top 5 Sellers', 'Momentum'].map(h => (
-                                                <th key={h} className="px-8 py-5 text-left font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[10px] border-b border-border dark:border-border">{h}</th>
+                                                <th key={h} className="px-5 py-3 text-left font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[10px] border-b border-border dark:border-border">{h}</th>
                                             ))}
                                         </tr>
                                     </thead>
@@ -313,7 +313,7 @@ export default function FocusRankingPage() {
 
                                             return (
                                                 <tr key={entry.symbol} className="group hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition-all duration-300">
-                                                    <td className="px-8 py-5">
+                                                    <td className="px-5 py-3.5">
                                                         <div
                                                             className="w-9 h-9 rounded-2xl flex items-center justify-center text-xs font-semibold text-white shadow-lg shadow-inner"
                                                             style={{ backgroundColor: color, boxShadow: `0 8px 16px ${color}33` }}
@@ -321,26 +321,26 @@ export default function FocusRankingPage() {
                                                             {entry.rank}
                                                         </div>
                                                     </td>
-                                                    <td className="px-8 py-5">
+                                                    <td className="px-5 py-3.5">
                                                         <Link href={`/ticker/${entry.symbol}`}>
                                                             <div className="font-semibold text-sm text-slate-900 dark:text-white group-hover:text-orange-500 transition-colors tracking-tight">
                                                                 {entry.symbol}
                                                             </div>
                                                         </Link>
                                                     </td>
-                                                    <td className="px-8 py-5 font-semibold text-slate-900 dark:text-white">
+                                                    <td className="px-5 py-3.5 font-semibold text-slate-900 dark:text-white">
                                                         {entry.ltp ? `Rs. ${entry.ltp.toLocaleString()}` : <Minus className="w-3 h-3 text-slate-300" />}
                                                     </td>
-                                                    <td className="px-8 py-5 text-slate-500 dark:text-slate-400 font-bold">
+                                                    <td className="px-5 py-3.5 text-slate-500 dark:text-slate-400 font-bold">
                                                         {entry.buy_price ? `Rs. ${entry.buy_price.toLocaleString()}` : <Minus className="w-3 h-3 text-slate-300" />}
                                                     </td>
                                                     <td className={cn(
-                                                        "px-8 py-5 font-mono font-semibold tabular-nums",
+                                                        "px-5 py-3.5 font-mono font-semibold tabular-nums",
                                                         isAccumulation ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
                                                     )}>
                                                         {isAccumulation ? '+' : ''}{formatNepaliNumber(entry.volume)}
                                                     </td>
-                                                    <td className="px-8 py-5">
+                                                    <td className="px-5 py-3.5">
                                                         <div className="flex gap-1.5 flex-wrap max-w-[200px]">
                                                             {entry.top_sellers?.slice(0, 5).map(b => (
                                                                 <span key={b} className="px-2 py-1 rounded-lg text-[9px] font-semibold bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/50 hover:scale-110 transition-transform cursor-default">
@@ -349,7 +349,7 @@ export default function FocusRankingPage() {
                                                             ))}
                                                         </div>
                                                     </td>
-                                                    <td className="px-8 py-5">
+                                                    <td className="px-5 py-3.5">
                                                         {rankChange === null ? (
                                                             <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-100/50 dark:bg-slate-800/50 px-3 py-1.5 rounded-full w-fit">
                                                                 <Zap className="w-3 h-3 text-orange-500" />
@@ -382,14 +382,14 @@ export default function FocusRankingPage() {
                     </div>
 
                     {/* Daily Breakdown Grid */}
-                    <div className="bg-white/80 dark:bg-card rounded-[2.5rem] border border-border dark:border-border shadow-sm overflow-hidden">
-                        <div className="px-8 py-6 border-b border-border dark:border-border bg-slate-50/20 dark:bg-muted">
+                    <div className="bg-white dark:bg-card rounded-2xl border border-border dark:border-slate-800 shadow-sm overflow-hidden">
+                        <div className="px-5 py-4 border-b border-border dark:border-border bg-slate-50/20 dark:bg-muted">
                             <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-3">
                                 <Activity className="w-5 h-5 text-emerald-500" />
                                 Daily Displacement Matrix
                             </h2>
                         </div>
-                        <div className="p-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                             {[...data.dates].reverse().map(date => {
                                 const entries = data.daily_rankings[date] ?? [];
                                 return (
