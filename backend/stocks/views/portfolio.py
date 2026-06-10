@@ -867,7 +867,14 @@ class PortfolioPerformanceView(viewsets.ViewSet):
         ).order_by('date')
         
         if account_id != 'all':
-            snapshots = snapshots.filter(account_id=account_id)
+            # Select dict rows (not model objects) so the DataFrame has 'date'/
+            # 'total_value' columns. We intentionally omit 'nepse_index' (like the
+            # 'all' branch) because per-snapshot nepse_index is sparsely populated;
+            # the benchmark is sourced consistently from the DailyStockPrice NEPSE
+            # fallback below instead.
+            snapshots = snapshots.filter(account_id=account_id).values(
+                'date', 'total_value', 'invested_value', 'cash_balance'
+            ).order_by('date')
         else:
             # If 'all', we might need to aggregate snapshots by date if we stored them per account
             # Currently model has account, so we need to sum up total_value per date
@@ -884,7 +891,13 @@ class PortfolioPerformanceView(viewsets.ViewSet):
         df_port = pd.DataFrame(list(snapshots))
         df_port['date'] = pd.to_datetime(df_port['date'])
         df_port.set_index('date', inplace=True)
-        
+
+        # total_value comes from a Decimal Sum() (DecimalField), so the column is
+        # object-dtype Python Decimals. Cast to float once here, otherwise the
+        # downstream numpy stats (np.cov / .std()) raise
+        # "'float' object has no attribute 'shape'" on object-dtype input.
+        df_port['total_value'] = df_port['total_value'].astype(float)
+
         # Calculate daily returns
         df_port['return'] = df_port['total_value'].pct_change().fillna(0)
         
@@ -927,8 +940,10 @@ class PortfolioPerformanceView(viewsets.ViewSet):
         chart_data = []
         
         if has_benchmark:
-            df_bench['date'] = pd.to_datetime(df_bench['date'])
-            df_bench.set_index('date', inplace=True)
+            # df_bench is already indexed by 'date' in BOTH branches above: the
+            # snapshot path inherits df_port's date index, and the fallback path
+            # calls set_index('date') itself. Re-indexing here raised
+            # KeyError: 'date' (no 'date' column exists at this point).
             df_bench['close'] = df_bench['close'].astype(float)
             df_bench['benchmark_return'] = df_bench['close'].pct_change().fillna(0)
             
@@ -952,40 +967,39 @@ class PortfolioPerformanceView(viewsets.ViewSet):
                     df_combined['bench_cum_return'] = ((df_combined['close'] - initial_bench_val) / initial_bench_val) * 100
                 
                 # Metrics Calculation
-                # Beta
-                covariance = np.cov(df_combined['return'], df_combined['benchmark_return'])[0][1]
-                benchmark_variance = np.var(df_combined['benchmark_return'])
-                beta = covariance / benchmark_variance if benchmark_variance != 0 else 0
-                
-                # Total Return
+                # Total Return & Max Drawdown are well-defined with a single data point.
                 total_return = df_combined['port_cum_return'].iloc[-1]
                 benchmark_total_return = df_combined['bench_cum_return'].iloc[-1]
-                
-                # Alpha (Jensen's Alpha roughly: Rp - (Rf + B * (Rm - Rf)))
-                # Assuming Risk Free Rate (Rf) = 6% annualized approx = 0.06/252 daily
-                rf_daily = 0.06 / 252
-                avg_port_ret = df_combined['return'].mean()
-                avg_bench_ret = df_combined['benchmark_return'].mean()
-                
-                alpha = (avg_port_ret - rf_daily) - (beta * (avg_bench_ret - rf_daily))
-                alpha = alpha * 252 # Annualized
-                
-                # Sharpe Ratio
-                sharpe = (df_combined['return'].mean() - rf_daily) / df_combined['return'].std()
-                sharpe = sharpe * (252 ** 0.5) # Annualized
-                
-                # Max Drawdown
+
                 roll_max = df_port['total_value'].cummax()
                 drawdown = (df_port['total_value'] - roll_max) / roll_max
                 max_drawdown = drawdown.min() * 100
-                
+
+                # Risk metrics (Beta/Alpha/Sharpe) need >= 2 aligned observations:
+                # np.cov / .std() on a single point raise or produce NaN. Leave them
+                # at 0 when there isn't enough history rather than 500 / emit NaN JSON.
+                beta = alpha = sharpe = 0.0
+                rf_daily = 0.06 / 252  # ~6% annualized risk-free, daily
+                if len(df_combined) >= 2:
+                    covariance = np.cov(df_combined['return'], df_combined['benchmark_return'])[0][1]
+                    benchmark_variance = np.var(df_combined['benchmark_return'])
+                    beta = covariance / benchmark_variance if benchmark_variance != 0 else 0.0
+
+                    avg_port_ret = df_combined['return'].mean()
+                    avg_bench_ret = df_combined['benchmark_return'].mean()
+                    alpha = ((avg_port_ret - rf_daily) - (beta * (avg_bench_ret - rf_daily))) * 252
+
+                    std = df_combined['return'].std()
+                    if std and not pd.isna(std) and std != 0:
+                        sharpe = ((df_combined['return'].mean() - rf_daily) / std) * (252 ** 0.5)
+
                 metrics = {
-                    "alpha": round(alpha, 4),
-                    "beta": round(beta, 4),
-                    "sharpe_ratio": round(sharpe, 4),
-                    "total_return": round(total_return, 2),
-                    "max_drawdown": round(max_drawdown, 2),
-                    "benchmark_return": round(benchmark_total_return, 2)
+                    "alpha": round(float(alpha), 4),
+                    "beta": round(float(beta), 4),
+                    "sharpe_ratio": round(float(sharpe), 4),
+                    "total_return": round(float(total_return), 2),
+                    "max_drawdown": round(float(max_drawdown), 2),
+                    "benchmark_return": round(float(benchmark_total_return), 2)
                 }
                 
                 # Prepare Chart Data
@@ -1028,6 +1042,25 @@ class PortfolioPerformanceView(viewsets.ViewSet):
                     "benchmark_pct": None
                 })
         
+        # Defense-in-depth: NaN/inf are not JSON-compliant — they make DRF fail to
+        # render (500) and break the client parser. Sparse/zero-laden snapshot data
+        # can produce them upstream, so scrub before returning: non-finite metric
+        # values -> 0.0, non-finite chart values -> None.
+        import math
+
+        def _finite(v, default=0.0):
+            try:
+                f = float(v)
+            except (TypeError, ValueError):
+                return default
+            return f if math.isfinite(f) else default
+
+        metrics = {k: _finite(v) for k, v in metrics.items()}
+        for _row in chart_data:
+            for _k, _v in list(_row.items()):
+                if isinstance(_v, float) and not math.isfinite(_v):
+                    _row[_k] = None
+
         return Response({
             "metrics": metrics,
             "chart_data": chart_data,
