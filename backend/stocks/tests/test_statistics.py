@@ -40,6 +40,19 @@ def test_bootstrap_pvalue_noise_is_not_significant():
     assert p > 0.10
 
 
+def test_bootstrap_pvalue_left_skewed_zero_mean_not_significant():
+    # Mean-reversion-style P&L: many small wins, rare large losses, mean ~0.
+    # A sign-flip (symmetry-assuming) null is anti-conservative here; the
+    # one-sample mean bootstrap must NOT flag this near-zero edge as real.
+    import numpy as np
+    rng = np.random.default_rng(7)
+    small_wins = [0.01] * 90
+    big_losses = list(-0.09 + rng.normal(0, 0.001, 10))  # ~10 rare big losses
+    rets = small_wins + big_losses  # mean ≈ +0.9% - 0.9% ≈ 0
+    p = bootstrap_pvalue(rets, n_resamples=4000, seed=2)
+    assert p > 0.10, f"left-skewed zero-edge wrongly significant (p={p})"
+
+
 def test_bootstrap_pvalue_empty_is_one():
     assert bootstrap_pvalue([], n_resamples=100, seed=1) == 1.0
 

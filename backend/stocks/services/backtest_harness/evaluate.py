@@ -151,17 +151,21 @@ def score_results(strategy_name, results):
     }
 
     # --- Statistical confidence (reported; does NOT gate card.passed) ---
+    # Win rate: pooled proportion + Wilson interval, behind a sample-size gate.
     total_wins = sum(int(r.metrics.get("wins", 0)) for r in ok)
     total_trades = sum(int(r.metrics.get("num_trades", 0)) for r in ok)
-    pooled_returns = [x for r in ok for x in r.metrics.get("trade_returns", [])]
     ci_lo, ci_hi = wilson_interval(total_wins, total_trades)
+    # Significance of the EDGE over buy & hold: bootstrap the mean of the
+    # per-symbol excess returns (the natural independent unit — NOT pooled
+    # correlated trades, which would understate variance and inflate
+    # significance). `excess` is strategy% - buyhold% per symbol, computed above.
     card.confidence = {
         "total_trades": total_trades,
         "total_wins": total_wins,
         "pooled_win_rate": round(100.0 * total_wins / total_trades, 2) if total_trades else 0.0,
-        "win_rate_ci": [round(ci_lo, 4), round(ci_hi, 4)],
+        "win_rate_ci": [float(round(ci_lo, 4)), float(round(ci_hi, 4))],
         "win_rate_reportable": winrate_is_reportable(total_trades),
-        "excess_pvalue": round(bootstrap_pvalue(pooled_returns), 4),
+        "excess_pvalue": round(bootstrap_pvalue(excess), 4),
     }
 
     return card

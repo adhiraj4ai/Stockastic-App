@@ -36,22 +36,29 @@ def wilson_interval(wins, n, z=_Z95):
     return max(0.0, center - margin), min(1.0, center + margin)
 
 
-def bootstrap_pvalue(returns, n_resamples=5000, seed=0):
-    """One-sided p-value for H0: mean(returns) <= 0 via a sign-flip permutation.
+def bootstrap_pvalue(values, n_resamples=5000, seed=0):
+    """One-sided bootstrap p-value for H0: mean(values) <= 0.
 
-    Each resample randomly flips the sign of each return (the null of a
-    zero-edge, symmetric P&L) and counts how often the resampled mean meets or
-    exceeds the observed mean. Empty input → 1.0 (no evidence of an edge).
+    Uses a one-sample bootstrap of the MEAN against a mean-shifted null
+    (Efron): resample the zero-centered values with replacement and count how
+    often a resampled mean reaches the observed mean. Unlike a sign-flip
+    permutation, this makes NO symmetry assumption, so it stays calibrated for
+    the asymmetric, bounded-below distributions typical of trade/excess returns
+    (a sign-flip null is anti-conservative for left-skewed P&L). Pass the
+    natural independent unit (e.g. per-symbol excess returns), not pooled
+    correlated trades. Empty input → 1.0 (no evidence of an edge).
     """
-    r = np.asarray(returns, dtype=float)
-    if r.size == 0:
+    x = np.asarray(values, dtype=float)
+    if x.size == 0:
         return 1.0
-    observed = r.mean()
+    observed = x.mean()
     if observed <= 0:
         return 1.0
     rng = np.random.default_rng(seed)
-    signs = rng.choice([-1.0, 1.0], size=(n_resamples, r.size))
-    resampled_means = (signs * r).mean(axis=1)
+    shifted = x - observed  # null distribution: mean 0, original shape/skew preserved
+    idx = rng.integers(0, x.size, size=(n_resamples, x.size))
+    resampled_means = shifted[idx].mean(axis=1)
+    # +1 smoothing so a p-value is never exactly 0.
     return float((np.sum(resampled_means >= observed) + 1) / (n_resamples + 1))
 
 
