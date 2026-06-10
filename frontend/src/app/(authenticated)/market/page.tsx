@@ -86,7 +86,7 @@ export default function MarketTerminalPage() {
 
     if (!mounted) return null;
 
-    if (error) {
+    if (error && !data) {
         return (
             <DashboardLayout>
                 <MarketTabs />
@@ -105,7 +105,7 @@ export default function MarketTerminalPage() {
         );
     }
 
-    if (loading) {
+    if (loading && !data) {
         return (
             <DashboardLayout>
                 <MarketTabs />
@@ -372,7 +372,7 @@ export default function MarketTerminalPage() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-5">
-                                <BrokerFlowChart data={(data as any).whale_watch || []} height={350} />
+                                <BrokerFlowChart data={data.whale_watch || []} height={350} />
                             </CardContent>
                         </Card>
 

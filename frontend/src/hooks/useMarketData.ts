@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import api from '@/lib/api';
 
 export interface StockData {
@@ -51,6 +51,7 @@ export function useMarketData(refreshInterval = 10000, closedRefreshInterval = 1
     const [error, setError] = useState<string | null>(null);
     const [indexHistory, setIndexHistory] = useState<{ date: string, value: number, volume: number, turnover: number }[]>([]);
     const [marketStatus, setMarketStatus] = useState<'OPEN' | 'CLOSED' | null>(null);
+    const hasLoadedRef = useRef(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -72,9 +73,11 @@ export function useMarketData(refreshInterval = 10000, closedRefreshInterval = 1
     useEffect(() => {
         const fetchData = async () => {
             try {
-                if (!data) setLoading(true); // Only show loader on initial fetch
+                if (!hasLoadedRef.current) setLoading(true); // Only show loader on initial fetch
                 const summaryResponse = await api.get('/api/stocks/summary/');
+                hasLoadedRef.current = true;
                 setData(summaryResponse.data);
+                setError(null); // A successful poll clears any transient failure
 
                 try {
                     const historyResponse = await api.get('/api/stocks/sector-history/NEPSE/');

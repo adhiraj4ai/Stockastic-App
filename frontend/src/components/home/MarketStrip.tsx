@@ -20,10 +20,9 @@ interface MarketStripProps {
     summary: MarketStripSummary | null | undefined;
     status: 'OPEN' | 'CLOSED' | null;
     loading: boolean;
-    error: string | null;
 }
 
-export function MarketStrip({ summary, status, loading, error }: MarketStripProps) {
+export function MarketStrip({ summary, status, loading }: MarketStripProps) {
     if (loading && !summary) {
         return <div className="surface p-4 text-sm text-muted-foreground animate-pulse">Loading market data…</div>;
     }

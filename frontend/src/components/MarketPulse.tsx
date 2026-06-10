@@ -8,7 +8,7 @@ import { SmartMoneyHighlights } from './home/SmartMoneyHighlights';
 import { WatchlistAlerts } from './home/WatchlistAlerts';
 
 export function MarketPulse() {
-    const { data, loading, error, marketStatus } = useMarketData(10000);
+    const { data, loading, marketStatus } = useMarketData(10000);
 
     return (
         <DashboardLayout
@@ -21,7 +21,6 @@ export function MarketPulse() {
                     summary={data?.market_summary}
                     status={marketStatus}
                     loading={loading}
-                    error={error}
                 />
                 <TodaysSignals />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
