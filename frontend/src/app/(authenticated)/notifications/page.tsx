@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import {
     Bell, TrendingUp, TrendingDown, AlertCircle, Target, Eye, Fish,
     CheckCircle, Info, RefreshCw, Trash2, CheckCheck, Filter, Loader2,
-    LayoutGrid, ExternalLink
+    LayoutGrid, ExternalLink, CalendarClock
 } from 'lucide-react';
 
 type NotificationType =
@@ -20,7 +20,8 @@ type NotificationType =
     | 'VOLUME_SPIKE' | 'RSI_OVERSOLD' | 'RSI_OVERBOUGHT' 
     | 'MACD_BULLISH' | 'MACD_BEARISH' | 'GOLDEN_CROSS' | 'DEATH_CROSS'
     | 'CONSISTENT_BUYING' | 'CONSISTENT_SELLING' | 'WHALE_ENTRY'
-    | 'SECTOR_PUMP' | 'MARKET_BREADTH_SHIFT' | 'PORTFOLIO_DIVERSITY' | 'TAKE_PROFIT';
+    | 'SECTOR_PUMP' | 'MARKET_BREADTH_SHIFT' | 'PORTFOLIO_DIVERSITY' | 'TAKE_PROFIT'
+    | 'DAILY_PLAN_READY';
 
 interface Notification {
     id: number;
@@ -86,6 +87,8 @@ function getCategory(type: NotificationType): Category {
         case 'SECTOR_PUMP':
         case 'MARKET_BREADTH_SHIFT':
             return 'market';
+        case 'DAILY_PLAN_READY':
+            return 'system';
         default:
             return 'system';
     }
@@ -118,6 +121,7 @@ function getSeverity(type: NotificationType): Severity {
         case 'SECTOR_PUMP':
         case 'PORTFOLIO_DIVERSITY':
         case 'TAKE_PROFIT':
+        case 'DAILY_PLAN_READY':
             return 'medium';
         default:
             return 'low';
@@ -145,6 +149,7 @@ function getIcon(type: NotificationType) {
         case 'WHALE_ENTRY': return <Fish size={15} />;
         case 'SECTOR_PUMP': return <TrendingUp size={15} />;
         case 'PORTFOLIO_DIVERSITY': return <Filter size={15} />;
+        case 'DAILY_PLAN_READY': return <CalendarClock size={15} />;
         default: return <Info size={15} />;
     }
 }
@@ -167,6 +172,7 @@ function getIconClass(type: NotificationType): string {
         case 'TREND_BUY_5D': return 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400';
         case 'VOLUME_SPIKE': return 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400';
         case 'GOLDEN_CROSS': return 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400';
+        case 'DAILY_PLAN_READY': return 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400';
         default: return 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400';
     }
 }
@@ -193,6 +199,8 @@ function getBorderClass(type: NotificationType): string {
             return 'border-l-violet-400 dark:border-l-violet-500';
         case 'TREND_BUY_5D':
             return 'border-l-blue-400 dark:border-l-blue-600';
+        case 'DAILY_PLAN_READY':
+            return 'border-l-orange-400 dark:border-l-orange-500';
         default:
             return 'border-l-slate-300 dark:border-l-slate-600';
     }

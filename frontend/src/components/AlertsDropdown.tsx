@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Bell, Info, TrendingUp, TrendingDown, AlertCircle, Target, Eye, Fish, ExternalLink, RefreshCw, Filter, LayoutGrid, ChevronRight, Zap, ShieldAlert } from 'lucide-react';
+import { Bell, Info, TrendingUp, TrendingDown, AlertCircle, Target, Eye, Fish, ExternalLink, RefreshCw, Filter, LayoutGrid, ChevronRight, Zap, ShieldAlert, CalendarClock } from 'lucide-react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -40,7 +40,7 @@ const CATEGORIES = {
         'BELOW_WACC', 'PORTFOLIO_DIVERSITY', 'TAKE_PROFIT'
     ],
     signals: [
-        'SIGNAL_BUY', 'SIGNAL_SELL', 'SIGNAL_STRONG_BUY', 'SIGNAL_STRONG_SELL'
+        'SIGNAL_BUY', 'SIGNAL_SELL', 'SIGNAL_STRONG_BUY', 'SIGNAL_STRONG_SELL', 'DAILY_PLAN_READY'
     ],
     market: [
         'WHALE_BUY', 'WHALE_SELL', 'TREND_BUY_5D', 'VOLUME_SPIKE', 'RSI_OVERSOLD', 
@@ -52,7 +52,7 @@ const CATEGORIES = {
 function getToastVariant(type: string): 'success' | 'error' | 'warning' | 'info' {
     if (['TARGET_REACHED', 'SIGNIFICANT_GAIN', 'SIGNAL_BUY', 'SIGNAL_STRONG_BUY', 'WHALE_BUY', 'TREND_BUY_5D', 'GOLDEN_CROSS', 'WHALE_ENTRY', 'VOLUME_SPIKE'].includes(type)) return 'success';
     if (['STOP_LOSS_HIT', 'SIGNIFICANT_LOSS', 'SIGNAL_SELL', 'SIGNAL_STRONG_SELL', 'WHALE_SELL', 'DEATH_CROSS'].includes(type)) return 'error';
-    if (['WARNING', 'BELOW_WACC', 'PORTFOLIO_DIVERSITY'].includes(type)) return 'warning';
+    if (['WARNING', 'BELOW_WACC', 'PORTFOLIO_DIVERSITY', 'DAILY_PLAN_READY'].includes(type)) return 'warning';
     return 'info';
 }
 
@@ -151,6 +151,7 @@ export function AlertsDropdown() {
         if (type === 'PORTFOLIO_DIVERSITY') return <Filter size={14} className="stroke-[2.5]" />;
         if (type === 'STOP_LOSS_HIT') return <ShieldAlert size={14} className="stroke-[2.5]" />;
         if (type === 'TARGET_REACHED') return <Target size={14} className="stroke-[2.5]" />;
+        if (type === 'DAILY_PLAN_READY') return <CalendarClock size={14} className="stroke-[2.5]" />;
         return <Info size={14} className="stroke-[2.5]" />;
     };
 
