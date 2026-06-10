@@ -114,3 +114,59 @@ def evaluate_episodes_task():
     """Resolve ACTIVE SignalEpisodes against latest prices (TP/SL hits)."""
     from stocks.services.signal_episode.service import evaluate_active_episodes
     return {"episodes_closed": evaluate_active_episodes()}
+
+
+@shared_task
+def generate_daily_plan_task():
+    """Nightly: build tomorrow's trading plan, then notify entitled users.
+
+    Runs after generate_all_signals_task (which already evaluates episodes).
+    On failure the previous plan keeps serving; we log to DataUploadLog.
+    """
+    from django.contrib.auth.models import User
+    from django.db.models import Q
+    from stocks.models import DataUploadLog
+    from stocks.services import daily_plan as daily_plan_service
+    from stocks.services.notification_service import create_notification
+    from users.models import TierPermission
+
+    try:
+        plan = daily_plan_service.build_daily_plan()
+    except Exception as exc:
+        DataUploadLog.objects.create(
+            file_name="daily_plan", upload_type="PLAN", status="FAILED",
+            error_message=str(exc),
+        )
+        return {"status": "FAILED", "error": str(exc)}
+
+    pick_count = len(plan.payload.get("picks", []))
+    DataUploadLog.objects.create(
+        file_name=f"daily_plan_{plan.date.isoformat()}", upload_type="PLAN",
+        status="SUCCESS", records_count=pick_count,
+    )
+
+    enabled_tiers = list(
+        TierPermission.objects.filter(module_key="daily_plan", is_enabled=True)
+        .values_list("tier", flat=True)
+    )
+    users = User.objects.filter(is_active=True).filter(
+        Q(profile__subscription_tier__in=enabled_tiers) | Q(is_superuser=True)
+    ).distinct()
+    notified = 0
+    for user in users:
+        create_notification(
+            user=user,
+            notification_type="DAILY_PLAN_READY",
+            title=f"Tomorrow's Plan ready — {plan.date.isoformat()}",
+            message=(
+                f"{pick_count} high-confluence setup(s) for {plan.date.isoformat()} "
+                f"(regime: {plan.regime})."
+                if pick_count
+                else f"No qualifying setups for {plan.date.isoformat()} (regime: {plan.regime})."
+            ),
+            ticker="SUMMARY",
+            redirect_url="/plan",
+            metadata={"plan_date": plan.date.isoformat(), "picks": pick_count},
+        )
+        notified += 1
+    return {"plan_date": plan.date.isoformat(), "picks": pick_count, "notified": notified}

@@ -29,7 +29,7 @@ def seed_permissions():
             'broker_favorites', 'navigator', 'below_cost'
         ],
         'Strategic Hub': [
-            'intel_hub', 'strategies', 'track_record'
+            'intel_hub', 'strategies', 'track_record', 'daily_plan'
         ],
         'Ticker Intelligence': [
             'ticker_pa', 'ticker_signals', 'ticker_accumulation', 
@@ -42,13 +42,13 @@ def seed_permissions():
     
     # Define tier logic
     # BASIC: Home, Market Overview, Main Portfolio, Ticker PA/Accumulation
-    # PRO: All except Strategic Hub, Chat, and some advanced Ticker insights
+    # PRO: All except Strategic Hub (other than daily_plan), Chat, and some advanced Ticker insights
     # ULTRA: All
     
     TIER_RULES = {
         'BASIC': [
             'home', 'chat', 'market_overview', 'portfolio_main', 'portfolio_watchlist',
-            'ticker_pa', 'ticker_accumulation'
+            'ticker_pa', 'ticker_accumulation', 'daily_plan'
         ],
         'PRO': [
             'home', 'chat', 'market_overview', 'market_movers', 'market_activity',
@@ -56,7 +56,7 @@ def seed_permissions():
             'portfolio_main', 'portfolio_performance', 'portfolio_income',
             'portfolio_transactions', 'portfolio_watchlist', 'paper_trading',
             'accumulation_dash', 'smart_money', 'broker_trends', 'accumulation_history', 'below_cost',
-            'ticker_pa', 'ticker_accumulation', 'ticker_tech', 'ticker_signals'
+            'ticker_pa', 'ticker_accumulation', 'ticker_tech', 'ticker_signals', 'daily_plan'
         ],
         'ULTRA': ALL_MODULES
     }

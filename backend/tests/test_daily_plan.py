@@ -213,3 +213,40 @@ class TestUserOverlay:
         user = create_user(username="u4", password="x")
         overlay = user_overlay(user)
         assert overlay == {"positions_near_action": [], "signal_flips": [], "watchlist_triggers": []}
+
+
+@pytest.mark.django_db
+class TestGenerateDailyPlanTask:
+    @patch("stocks.services.daily_plan.build_daily_plan")
+    def test_task_builds_plan_and_notifies(self, mock_build, create_user):
+        from stocks.models import DailyTradingPlan, Notification
+        from stocks.tasks import generate_daily_plan_task
+        from users.models import TierPermission
+
+        user = create_user(username="planuser", password="x")
+        user.profile.subscription_tier = "PRO"
+        user.profile.save()
+        TierPermission.objects.create(tier="PRO", module_key="daily_plan", is_enabled=True)
+
+        plan = DailyTradingPlan.objects.create(
+            date=date_cls(2026, 6, 11), regime="RISK_ON",
+            payload={"picks": [{"symbol": "NABIL"}], "catalysts": []},
+        )
+        mock_build.return_value = plan
+
+        result = generate_daily_plan_task()
+
+        assert result["plan_date"] == "2026-06-11"
+        notif = Notification.objects.get(user=user)
+        assert notif.type == "DAILY_PLAN_READY"
+        assert notif.redirect_url == "/plan"
+
+    @patch("stocks.services.daily_plan.build_daily_plan", side_effect=ValueError("no price data"))
+    def test_task_failure_logged_not_raised(self, mock_build):
+        from stocks.models import DataUploadLog
+        from stocks.tasks import generate_daily_plan_task
+        result = generate_daily_plan_task()
+        assert result["status"] == "FAILED"
+        log = DataUploadLog.objects.latest("created_at")
+        assert log.upload_type == "PLAN"
+        assert log.status == "FAILED"

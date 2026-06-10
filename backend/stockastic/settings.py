@@ -299,6 +299,11 @@ CELERY_BEAT_SCHEDULE = {
         "task": "stocks.tasks.generate_all_signals_task",
         "schedule": crontab(hour=17, minute=0),
     },
+    # Plan generation 30 min after signals so episodes/evaluation have landed.
+    "generate-daily-plan": {
+        "task": "stocks.tasks.generate_daily_plan_task",
+        "schedule": crontab(hour=17, minute=30),
+    },
     # Second resolution pass late evening (in case data landed late).
     "evaluate-episodes-nightly": {
         "task": "stocks.tasks.evaluate_episodes_task",
