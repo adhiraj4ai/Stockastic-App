@@ -149,6 +149,7 @@ def build_daily_plan(as_of=None):
         })
 
     candidates.sort(key=lambda c: -c["confluence_score"])
+    entry_statuses = {c["symbol"]: c["entry"]["status"] for c in candidates}
     in_zone = [c for c in candidates if c["entry"]["status"] == "IN_ZONE"]
     picks = in_zone[:MAX_PICKS]
     others = [c for c in candidates if c not in picks]
@@ -180,6 +181,7 @@ def build_daily_plan(as_of=None):
                 "exits": exits,
                 "catalysts": catalysts,
                 "market_context": _market_context(as_of),
+                "entry_statuses": entry_statuses,
             },
         },
     )

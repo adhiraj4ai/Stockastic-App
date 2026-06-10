@@ -64,3 +64,22 @@ class TestPlanAPI:
         assert resp.status_code == 200
         sizing = resp.json()["overlay"]["sizing"]
         assert sizing["NABIL"]["shares"] == 909  # 10000 / (101 - 90)
+
+    def test_entry_statuses_from_latest_plan(self, auth_client):
+        from stocks.models import DailyTradingPlan
+        DailyTradingPlan.objects.create(
+            date=date(2026, 6, 12), regime="RISK_ON",
+            payload={"as_of": "2026-06-11", "picks": [], "watch": [], "exits": [],
+                     "catalysts": [], "market_context": {},
+                     "entry_statuses": {"NABIL": "IN_ZONE", "SCB": "STALE"}},
+        )
+        resp = auth_client.get("/api/stocks/entry-statuses/")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["statuses"] == {"NABIL": "IN_ZONE", "SCB": "STALE"}
+        assert body["as_of"] == "2026-06-11"
+
+    def test_entry_statuses_empty_without_plan(self, auth_client):
+        resp = auth_client.get("/api/stocks/entry-statuses/")
+        assert resp.status_code == 200
+        assert resp.json() == {"statuses": {}, "as_of": None}

@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations, chart, fibonacci, floorsheet, dividends, risk, sector_rotation, price_forecast, price_action, volume_profile, signal_alerts, opportunity, plan, ticker_verdict
+    market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations, chart, fibonacci, floorsheet, dividends, risk, sector_rotation, price_forecast, price_action, volume_profile, signal_alerts, opportunity, plan, ticker_verdict, entry_statuses
 )
 
 
@@ -101,6 +101,9 @@ urlpatterns = [
     # Daily trading plan
     path('plan/today/', plan.PlanTodayView.as_view(), name='plan_today'),
     path('plan/', plan.PlanHistoryView.as_view(), name='plan_history'),
+
+    # Entry Statuses
+    path('entry-statuses/', entry_statuses.EntryStatusesView.as_view(), name='entry_statuses'),
 
     # Ticker Verdict
     path('ticker-verdict/<str:symbol>/', ticker_verdict.TickerVerdictView.as_view(), name='ticker_verdict'),

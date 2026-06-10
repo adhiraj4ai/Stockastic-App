@@ -139,6 +139,10 @@ class TestBuildDailyPlan:
         assert badco is not None
         assert badco["components"]["opportunity"]["trust"] is None  # DIVERGENT row filtered out
 
+        statuses = plan.payload["entry_statuses"]
+        assert statuses["NABIL"] == "IN_ZONE"
+        assert set(statuses.keys()) == {"NABIL", "WEAK", "BADCO"}
+
     @patch("stocks.services.daily_plan.analog_stats", return_value=None)
     @patch("stocks.services.daily_plan.upcoming_catalysts", return_value=[])
     @patch("stocks.services.daily_plan._sector_intensities", return_value={})
