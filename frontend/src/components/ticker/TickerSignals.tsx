@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { fetchVerdict } from '@/lib/verdictFetch';
 import { formatRupees } from '@/lib/formatters';
 import { fixed } from '@/lib/numbers';
 import {
@@ -325,7 +326,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                     api.get('/api/stocks/strategies/').catch(() => null),
                     api.get('/api/stocks/signals/', { params: { symbol, page_size: 100 } }).catch(() => null),
                     api.get('/api/stocks/generated-signals/', { params: { symbol, page_size: 100 } }).catch(() => null),
-                    api.get(`/api/stocks/ticker-verdict/${symbol}/`).catch(() => null),
+                    fetchVerdict(symbol).catch(() => null),
                 ]);
 
                 setAllStrategies(stratRes?.data?.results || stratRes?.data || []);
@@ -334,7 +335,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
 
                 setStrategySignals(Array.isArray(sData) ? sData : sData?.results ?? []);
                 setIntelSignals(Array.isArray(iData) ? iData : iData?.results ?? []);
-                const eps = verdictRes?.data?.episodes ?? [];
+                const eps = (verdictRes as any)?.episodes ?? [];
                 setZoneBySource(Object.fromEntries(eps.map((e: any) => [e.source, e.status])));
             } catch (_) { }
             setLoading(false);

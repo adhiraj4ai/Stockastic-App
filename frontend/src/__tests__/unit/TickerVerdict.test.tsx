@@ -43,10 +43,11 @@ describe('TickerVerdict', () => {
 
     it('renders empty state without active setups and no draft button without sizing', async () => {
         vi.mocked(api.get).mockResolvedValue({
-            data: { ...verdict, confluence_score: 5, entry: null, sizing: null, analog: null, catalyst: null },
+            data: { ...verdict, confluence_score: 5, entry: null, sizing: null, analog: { n: 14, fwd_1d_median_pct: 0.8, fwd_3d_median_pct: 2.1, fwd_5d_median_pct: 2.9, win_rate_3d: 0.64 }, catalyst: null },
         });
         render(<TickerVerdict symbol="EMPTY" />);
         expect(await screen.findByText(/no active setups/i)).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /draft trade plan/i })).not.toBeInTheDocument();
+        expect(screen.getByText(/n=14/)).toBeInTheDocument();
     });
 });

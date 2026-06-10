@@ -14,11 +14,20 @@ class TestSizePosition:
             "risk_pct": 1.0,
             "entry": 612.0,
             "stop": 562.0,
+            "capped": False,
         }
 
     def test_floors_to_whole_shares(self):
         out = size_position(balance=100_000, risk_pct=2.0, entry=613.0, stop=600.0)
         assert out["shares"] == 153  # 2000 / 13 = 153.8 → 153
+
+    def test_caps_at_affordability(self):
+        # 1M balance, 1% risk, entry 612, stop 610 → risk math says 5000 shares,
+        # but only 1633 are affordable (1,000,000 / 612)
+        out = size_position(balance=1_000_000, risk_pct=1.0, entry=612.0, stop=610.0)
+        assert out["shares"] == 1633
+        assert out["capped"] is True
+        assert out["position_value"] == pytest.approx(1633 * 612.0)
 
     def test_unsizeable_cases(self):
         assert size_position(100_000, 2.0, entry=600.0, stop=600.0) is None  # zero risk/share

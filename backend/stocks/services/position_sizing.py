@@ -261,6 +261,10 @@ def size_position(balance, risk_pct, entry, stop):
         return None
     risk_amount = balance * risk_pct / 100.0
     shares = math.floor(risk_amount / per_share_risk)
+    max_affordable = math.floor(balance / entry)
+    capped = shares > max_affordable
+    if capped:
+        shares = max_affordable
     if shares < 1:
         return None
     return {
@@ -270,6 +274,7 @@ def size_position(balance, risk_pct, entry, stop):
         "risk_pct": risk_pct,
         "entry": entry,
         "stop": stop,
+        "capped": capped,
     }
 
 

@@ -6,8 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Layers, CalendarClock, TrendingUp, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
-import api from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { fetchVerdict } from '@/lib/verdictFetch';
 import { draftTradePlan } from '@/lib/draftTradePlan';
 import { formatRupees } from '@/lib/formatters';
 
@@ -52,8 +52,8 @@ export default function TickerVerdict({ symbol }: { symbol: string }) {
     useEffect(() => {
         let cancelled = false;
         setLoading(true);
-        api.get(`/api/stocks/ticker-verdict/${symbol}/`)
-            .then(res => { if (!cancelled) setVerdict(res.data); })
+        fetchVerdict(symbol)
+            .then(data => { if (!cancelled) setVerdict(data as Verdict); })
             .catch(() => { if (!cancelled) setVerdict(null); })
             .finally(() => { if (!cancelled) setLoading(false); });
         return () => { cancelled = true; };
@@ -92,6 +92,9 @@ export default function TickerVerdict({ symbol }: { symbol: string }) {
                 <CardContent className="py-6 text-center text-sm text-muted-foreground">
                     No active setups on {verdict.symbol}.
                     {catalyst && <span> Upcoming: {catalyst.type.replace(/_/g, ' ').toLowerCase()} in {catalyst.days_away}d.</span>}
+                    {analog && (
+                        <span> Similar setups (n={analog.n}): {analog.fwd_3d_median_pct >= 0 ? '+' : ''}{analog.fwd_3d_median_pct.toFixed(1)}% median over 3d.</span>
+                    )}
                 </CardContent>
             </Card>
         );
