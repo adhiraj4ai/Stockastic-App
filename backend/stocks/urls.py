@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations, chart, fibonacci, floorsheet, dividends, risk, sector_rotation, price_forecast, price_action, volume_profile, signal_alerts, opportunity
+    market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations, chart, fibonacci, floorsheet, dividends, risk, sector_rotation, price_forecast, price_action, volume_profile, signal_alerts, opportunity, plan
 )
 
 
@@ -97,4 +97,8 @@ urlpatterns = [
 
     # Opportunity Engine
     path('opportunities/', opportunity.opportunities, name='opportunities'),
+
+    # Daily trading plan
+    path('plan/today/', plan.PlanTodayView.as_view(), name='plan_today'),
+    path('plan/', plan.PlanHistoryView.as_view(), name='plan_history'),
 ]
