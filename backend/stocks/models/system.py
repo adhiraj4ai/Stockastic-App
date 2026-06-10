@@ -11,6 +11,7 @@ class DataUploadLog(models.Model):
         ('SIGNALS', 'Signal Generation'),
         ('BROKER_ANALYSIS', 'Broker Analysis'),
         ('EVALUATION', 'Signal Evaluation'),
+        ('API_INGEST', 'API Ingestion'),
     )
     STATUS_CHOICES = (
         ('PENDING', 'Pending'),
