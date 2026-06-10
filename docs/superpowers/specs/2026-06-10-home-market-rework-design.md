@@ -58,7 +58,7 @@ Client-side parallel fetches per zone (~7 calls on load), matching existing app 
 
 ### Tab bar (`MarketTabs`)
 - New shared component: `Overview | Movers | Activity | Bulk | Rotation | Volume Profile | Screener | Matching`.
-- Rendered from a new `frontend/src/app/(authenticated)/market/layout.tsx` so every subroute inherits it. Active tab derived from pathname. URLs unchanged.
+- **Amended during planning:** every page wraps itself in `DashboardLayout` (sidebar + chrome), so a nested `market/layout.tsx` would render the tab bar outside the chrome. Instead, each market page renders `<MarketTabs />` as the first child inside its `DashboardLayout`. Active tab derived from pathname. URLs unchanged.
 - Subroute pages otherwise untouched, except removing local headers/back-links that clash with the tab bar.
 
 ### Overview tab (`market/page.tsx`) — full-width rows, top-down
@@ -89,7 +89,7 @@ Every zone/card fetches and renders independently. A failed fetch shows a compac
 |---|---|
 | `MarketPulse.tsx` | Rewritten as Morning Briefing; zones as subcomponents `MarketStrip`, `TodaysSignals`, `SmartMoneyHighlights`, `WatchlistAlerts` |
 | `MarketTabs` | New; pathname-driven active state |
-| `market/layout.tsx` | New; renders `MarketTabs` |
+| Market subroute pages (×7) | Render `<MarketTabs />` as first child inside `DashboardLayout` |
 | `market/page.tsx` | Restructured to storyline rows; existing widgets (SectorTreemap, BrokerFlowChart, MarketBubbleMap, MarketHealthRadar, VolumeShockers, BreakoutWatchlist, InstitutionalInterest) reused as-is |
 | `useMarketData` | Gains market-hours-aware polling interval |
 
