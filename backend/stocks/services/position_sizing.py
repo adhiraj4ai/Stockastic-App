@@ -239,3 +239,77 @@ class PositionSizingService:
                 'max_position_size': 50.0
             }
         }
+
+
+# ---------------------------------------------------------------------------
+# Module-level functional API (NEPSE whole-share risk sizing)
+# ---------------------------------------------------------------------------
+
+def size_position(balance, risk_pct, entry, stop):
+    """Risk-budget sizing → dict or None when unsizeable.
+
+    shares = floor(balance * risk_pct% / (entry - stop)); None if < 1 share,
+    missing/inverted stop, or non-positive balance/risk.
+    """
+    if not balance or not risk_pct or entry is None or stop is None:
+        return None
+    balance, risk_pct, entry, stop = float(balance), float(risk_pct), float(entry), float(stop)
+    if balance <= 0 or risk_pct <= 0:
+        return None
+    per_share_risk = entry - stop
+    if per_share_risk <= 0:
+        return None
+    risk_amount = balance * risk_pct / 100.0
+    shares = math.floor(risk_amount / per_share_risk)
+    if shares < 1:
+        return None
+    return {
+        "shares": shares,
+        "risk_amount": round(risk_amount, 2),
+        "position_value": round(shares * entry, 2),
+        "risk_pct": risk_pct,
+        "entry": entry,
+        "stop": stop,
+    }
+
+
+def default_account_for(user):
+    """The user's sizing account: first LIVE account, else first account, else None."""
+    from stocks.models import PortfolioAccount
+    qs = PortfolioAccount.objects.filter(user=user).order_by("id")
+    return qs.filter(account_type="LIVE").first() or qs.first()
+
+
+def _sizing_entry(entry_block):
+    """Spec: size at current close when IN_ZONE, else at the signal entry price."""
+    if not entry_block:
+        return None
+    if entry_block.get("status") == "IN_ZONE":
+        return entry_block.get("latest_close")
+    return entry_block.get("price")
+
+
+def sizing_block_for(account, entry_block, stop):
+    """One pick/verdict sizing dict (adds account fields) or None."""
+    if account is None:
+        return None
+    sized = size_position(account.balance, account.default_risk_percentage,
+                          _sizing_entry(entry_block), stop)
+    if sized is None:
+        return None
+    sized["account_id"] = account.id
+    sized["account_name"] = account.name
+    return sized
+
+
+def sizing_map_for_user(user, picks):
+    """{symbol: sizing block} for plan picks that are sizeable for this user."""
+    account = default_account_for(user)
+    if account is None:
+        return {}
+    out = {}
+    for pick in picks:
+        block = sizing_block_for(account, pick.get("entry"), (pick.get("targets") or {}).get("sl"))
+        if block:
+            out[pick["symbol"]] = block
+    return out
