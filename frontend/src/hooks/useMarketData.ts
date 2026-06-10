@@ -44,12 +44,30 @@ export interface MarketSummaryData {
     whale_watch?: any[]; // For Smart Money Flow
 }
 
-export function useMarketData(refreshInterval = 10000) {
+export function useMarketData(refreshInterval = 10000, closedRefreshInterval = 120000) {
     const [data, setData] = useState<MarketSummaryData | null>(null);
     const [allStocks, setAllStocks] = useState<StockData[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [indexHistory, setIndexHistory] = useState<{ date: string, value: number, volume: number, turnover: number }[]>([]);
+    const [marketStatus, setMarketStatus] = useState<'OPEN' | 'CLOSED' | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        api.get('/api/stocks/summary/', { params: { mode: 'status' } })
+            .then(res => {
+                if (!cancelled) setMarketStatus(res.data?.status === 'OPEN' ? 'OPEN' : 'CLOSED');
+            })
+            .catch(() => {
+                // Fail open: keep the fast refresh if status can't be determined
+                if (!cancelled) setMarketStatus('OPEN');
+            });
+        return () => { cancelled = true; };
+    }, []);
+
+    const effectiveInterval = marketStatus === 'CLOSED'
+        ? Math.max(refreshInterval, closedRefreshInterval)
+        : refreshInterval;
 
     useEffect(() => {
         const fetchData = async () => {
@@ -92,16 +110,16 @@ export function useMarketData(refreshInterval = 10000) {
         };
 
         fetchData();
-        
+
         let interval: NodeJS.Timeout | null = null;
-        if (refreshInterval > 0) {
-            interval = setInterval(fetchData, refreshInterval);
+        if (effectiveInterval > 0) {
+            interval = setInterval(fetchData, effectiveInterval);
         }
-        
+
         return () => {
             if (interval) clearInterval(interval);
         };
-    }, [refreshInterval]);
+    }, [effectiveInterval]);
 
     const marketSentiment = useMemo(() => {
         if (!data || !data.market_summary) return 50;
@@ -164,6 +182,7 @@ export function useMarketData(refreshInterval = 10000) {
         loading,
         error,
         indexHistory,
+        marketStatus,
         marketSentiment,
         marketHealth,
         indexSparkData
