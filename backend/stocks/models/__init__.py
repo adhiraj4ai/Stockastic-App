@@ -3,7 +3,7 @@ from .market import (
     DailyMarketSummary, DailyBuyerFloorsheet, 
     DailySellerFloorsheet, DailyCumulativeAccumulation
 )
-from .fundamentals import StockFundamental, Dividend, FinancialReport
+from .fundamentals import StockFundamental, Dividend, CorporateAction, FinancialReport
 from .portfolio import (
     PortfolioAccount, PortfolioItem, TransactionType,
     PortfolioTransaction, WatchlistItem, PortfolioSnapshot, PortfolioTarget,

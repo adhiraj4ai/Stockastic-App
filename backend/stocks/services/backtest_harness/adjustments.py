@@ -1,0 +1,44 @@
+# backend/stocks/services/backtest_harness/adjustments.py
+"""Corporate-action price adjustment for backtest-ready OHLCV frames.
+
+NEPSE convention: ``ex_date`` is the first date trading at the adjusted
+price (approximated by the dividend book-close date — at most one daily bar
+of imprecision). All bars strictly BEFORE ex_date are multiplied by the
+action's factor; volume is divided so turnover is conserved.
+"""
+import pandas as pd
+
+__all__ = ["bonus_adjustment_factor", "rights_adjustment_factor", "apply_adjustments"]
+
+_PRICE_COLS = ["Open", "High", "Low", "Close"]
+
+
+def bonus_adjustment_factor(bonus_percent):
+    """Factor for a bonus issue: 20 (%) -> 1/1.2."""
+    return 1.0 / (1.0 + float(bonus_percent) / 100.0)
+
+
+def rights_adjustment_factor(rights_percent, issue_price, cum_close):
+    """Theoretical ex-rights factor; identity if the cum close is unusable."""
+    cum_close = float(cum_close)
+    if cum_close <= 0:
+        return 1.0
+    r = float(rights_percent) / 100.0
+    terp = (cum_close + r * float(issue_price)) / (1.0 + r)
+    return terp / cum_close
+
+
+def apply_adjustments(df, actions):
+    """Scale OHLC (and inversely Volume) for each (ex_date, factor) action.
+
+    ``df`` must have a DatetimeIndex and Open/High/Low/Close/Volume columns.
+    Factors compound when multiple actions apply to the same bar.
+    """
+    if df is None or len(df) == 0 or not actions:
+        return df
+    factor = pd.Series(1.0, index=df.index)
+    for ex_date, f in actions:
+        factor[df.index < pd.Timestamp(ex_date)] *= float(f)
+    df[_PRICE_COLS] = df[_PRICE_COLS].mul(factor, axis=0)
+    df["Volume"] = df["Volume"].div(factor)
+    return df
