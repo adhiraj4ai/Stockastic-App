@@ -97,3 +97,20 @@ def capture_portfolio_snapshots(self):
         created_count += 1
         
     return f"Captured {created_count} snapshots for {today}."
+
+
+@shared_task
+def generate_all_signals_task():
+    """Daily: run every signal engine, then resolve ACTIVE episodes on TP/SL."""
+    from stocks.services.signal_generation_service import SignalGenerationService
+    from stocks.services.signal_episode.service import evaluate_active_episodes
+    saved = SignalGenerationService.generate_all(None)
+    closed = evaluate_active_episodes()
+    return {"signals_saved": saved, "episodes_closed": closed}
+
+
+@shared_task
+def evaluate_episodes_task():
+    """Resolve ACTIVE SignalEpisodes against latest prices (TP/SL hits)."""
+    from stocks.services.signal_episode.service import evaluate_active_episodes
+    return {"episodes_closed": evaluate_active_episodes()}

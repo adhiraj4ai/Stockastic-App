@@ -281,9 +281,32 @@ CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localho
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC'
+CELERY_TIMEZONE = "Asia/Kathmandu"
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes max per task
+
+from celery.schedules import crontab  # noqa: E402
+
+CELERY_BEAT_SCHEDULE = {
+    # Signals: after manual EOD data lands (NEPSE closes 15:00 NPT).
+    "generate-signals-daily": {
+        "task": "stocks.tasks.generate_all_signals_task",
+        "schedule": crontab(hour=17, minute=0),
+    },
+    # Second resolution pass late evening (in case data landed late).
+    "evaluate-episodes-nightly": {
+        "task": "stocks.tasks.evaluate_episodes_task",
+        "schedule": crontab(hour=21, minute=0),
+    },
+    "portfolio-snapshots-daily": {
+        "task": "stocks.capture_portfolio_snapshots",
+        "schedule": crontab(hour=16, minute=0),
+    },
+    "user-notifications-hourly": {
+        "task": "stocks.check_notifications",
+        "schedule": crontab(minute=30),
+    },
+}
 
 # Email Backend
 # Console backend for development (prints emails to terminal)
