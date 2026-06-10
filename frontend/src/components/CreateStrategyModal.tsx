@@ -7,7 +7,30 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
-import { X, Lightbulb, TrendingUp, Zap, Target, Activity, Shield, BarChart3, PieChart, Flame, Rocket, Cpu, Layers } from 'lucide-react';
+import { X, Lightbulb, TrendingUp, Zap, Target, Activity, Shield, BarChart3, PieChart, Flame, Rocket, Cpu, Layers, Blocks, Code, Check } from 'lucide-react';
+
+type AuthorMode = 'builder' | 'code';
+
+// Builder mode → a minimal valid spec so the strategy is "composed" from creation
+// (a signal + a stop); the user fleshes it out in the visual builder.
+const STARTER_SPEC = { version: 1, alpha: { type: 'RsiOversold' }, regime: [], stop: { type: 'FixedAtr' }, exit: [], rr: null };
+
+// Code mode → a runnable backtesting.py skeleton the user edits in the code editor.
+const STARTER_CODE = `class MyStrategy(Strategy):
+    n1 = 10
+    n2 = 30
+
+    def init(self):
+        close = self.data.Close
+        self.sma1 = self.I(SMA, close, self.n1)
+        self.sma2 = self.I(SMA, close, self.n2)
+
+    def next(self):
+        if crossover(self.sma1, self.sma2):
+            self.buy()
+        elif crossover(self.sma2, self.sma1):
+            self.position.close()
+`;
 
 const availableIcons = [
     { name: 'Lightbulb', icon: Lightbulb },
@@ -45,6 +68,7 @@ export default function CreateStrategyModal({ isOpen, onClose, onSuccess }: Crea
     const router = useRouter();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
+    const [mode, setMode] = useState<AuthorMode>('builder');
     const [selectedIconColor, setSelectedIconColor] = useState("#000000");
     const [selectedIcon, setSelectedIcon] = useState('Lightbulb');
     const [loading, setLoading] = useState(false);
@@ -61,23 +85,29 @@ export default function CreateStrategyModal({ isOpen, onClose, onSuccess }: Crea
             const token = localStorage.getItem('access_token');
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+            // Builder mode is composed (spec-driven); Code mode is custom (raw code).
+            const payload: Record<string, unknown> = { name, description, icon: selectedIcon, icon_color: selectedIconColor };
+            if (mode === 'builder') payload.spec = STARTER_SPEC;
+            else payload.code = STARTER_CODE;
+
             const response = await axios.post(
                 `${apiUrl}/api/stocks/strategies/`,
-                { name, description, icon: selectedIcon, icon_color: selectedIconColor },
+                payload,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
             // Reset and close
             setName('');
             setDescription('');
+            setMode('builder');
             setSelectedIcon('Lightbulb');
             setSelectedIconColor("#000000");
             onSuccess();
             onClose();
 
-            // Navigate to the visual builder (primary authoring; Code view is one click away)
+            // Land in the mode the user chose.
             if (response.data && response.data.id) {
-                router.push(`/strategies/${response.data.id}/builder`);
+                router.push(`/strategies/${response.data.id}/${mode === 'builder' ? 'builder' : 'editor'}`);
             }
         } catch (err: any) {
             console.error('Failed to create strategy', err);
@@ -107,6 +137,36 @@ export default function CreateStrategyModal({ isOpen, onClose, onSuccess }: Crea
                             onChange={(e) => setName(e.target.value)}
                             required
                         />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Authoring Mode</Label>
+                        <div className="grid grid-cols-2 gap-3">
+                            {([
+                                { key: 'builder' as AuthorMode, icon: Blocks, title: 'Builder', desc: 'Compose visually from blocks. No code.' },
+                                { key: 'code' as AuthorMode, icon: Code, title: 'Code', desc: 'Write a backtesting.py strategy yourself.' },
+                            ]).map((m) => {
+                                const Icon = m.icon;
+                                const active = mode === m.key;
+                                return (
+                                    <button
+                                        key={m.key}
+                                        type="button"
+                                        onClick={() => setMode(m.key)}
+                                        className={`relative text-left p-3 rounded-xl border-2 transition-all ${active
+                                            ? 'border-blue-500 bg-blue-50 shadow-sm'
+                                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
+                                    >
+                                        {active && (
+                                            <span className="absolute top-2 right-2 text-blue-600"><Check size={15} /></span>
+                                        )}
+                                        <Icon size={18} className={active ? 'text-blue-600' : 'text-slate-500'} />
+                                        <div className={`mt-2 text-sm font-semibold ${active ? 'text-blue-700' : 'text-slate-700'}`}>{m.title}</div>
+                                        <div className="text-[11px] text-slate-500 leading-snug mt-0.5">{m.desc}</div>
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
 
                     <div className="space-y-4">

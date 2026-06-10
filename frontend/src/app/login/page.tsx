@@ -73,7 +73,7 @@ export default function LoginPage() {
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 font-sans transition-colors duration-500">
             <Card className="w-full max-w-md shadow-xl border-none ring-0 bg-white dark:bg-slate-900 overflow-hidden">
                 <CardHeader className="space-y-2 text-center pb-2 border-b border-slate-50 dark:border-slate-800 flex flex-col items-center pt-8">
-                    <div className="relative w-44 h-28 mb-2">
+                    <div className="relative w-28 h-14 mb-2">
                         <Image
                             src={logoSrc}
                             alt="Stockastic Logo"

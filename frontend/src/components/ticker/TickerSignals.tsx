@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { formatRupees } from '@/lib/formatters';
+import { fixed } from '@/lib/numbers';
 import {
     Radar, Zap, Activity, TrendingUp, TrendingDown,
     ArrowUpRight, ArrowDownRight, BarChart3, Layers,
@@ -615,9 +616,9 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
 
                             <div className="md:col-span-3 grid grid-cols-3 gap-4">
                                 {[
-                                    { label: 'P/E ratio', value: fundamental?.pe_ratio ? fundamental.pe_ratio.toFixed(2) : 'N/A', sub: 'Price/Earnings' },
+                                    { label: 'P/E ratio', value: fundamental?.pe_ratio ? fixed(fundamental.pe_ratio, 2, 'N/A') : 'N/A', sub: 'Price/Earnings' },
                                     { label: 'ROE', value: fundamental?.fundamental_indicators?.find((i: any) => i.name.includes('ROE'))?.value || 'N/A', sub: 'Return on Equity' },
-                                    { label: 'Div yield', value: fundamental?.dividend_yield ? fundamental.dividend_yield.toFixed(2) + '%' : 'N/A', sub: 'Sector comparison' }
+                                    { label: 'Div yield', value: fundamental?.dividend_yield ? fixed(fundamental.dividend_yield, 2, 'N/A') + '%' : 'N/A', sub: 'Sector comparison' }
                                 ].map((m, idx) => (
                                     <div key={idx} className="rounded-xl border border-border dark:border-slate-800 p-4 bg-slate-50/30 dark:bg-slate-800/20">
                                         <span className="text-[8px] font-medium text-slate-400 tracking-tight">{m.label}</span>

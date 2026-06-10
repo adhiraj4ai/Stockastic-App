@@ -1032,9 +1032,10 @@ class CompanyViewSet(AccumulationMixin, viewsets.ReadOnlyModelViewSet):
     serializer_class = CompanySerializer
     permission_classes = [AllowAny]
     search_fields = ['symbol', 'name']
-    
+    lookup_field = 'symbol'
+
     @action(detail=True, methods=['post'], permission_classes=[AllowAny])
-    def refresh_fundamentals(self, request, pk=None):
+    def refresh_fundamentals(self, request, symbol=None):
         """Recalculate ALL fundamental metrics dynamically from latest financial reports"""
         from rest_framework import status
         from decimal import Decimal

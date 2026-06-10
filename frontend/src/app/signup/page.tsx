@@ -90,7 +90,7 @@ export default function SignupPage() {
             <Card className="w-full max-w-md shadow-xl border-none bg-white dark:bg-slate-900 overflow-hidden">
                 <CardHeader className="space-y-2 text-center pb-2 pt-8">
                     <div className="flex justify-center mb-4">
-                        <div className="relative w-32 h-16">
+                        <div className="relative w-28 h-14">
                             <Image
                                 src="/stockastic-logo-v3.png"
                                 alt="Stockastic"
