@@ -157,3 +157,59 @@ class TestBuildDailyPlan:
             build_daily_plan(as_of=date_cls(2026, 6, 10))
 
         assert DailyTradingPlan.objects.count() == 1
+
+
+@pytest.mark.django_db
+class TestUserOverlay:
+    def test_position_near_stop_and_target(self, create_user):
+        from stocks.models import PortfolioItem
+        from stocks.services.daily_plan import user_overlay
+        user = create_user(username="u1", password="x")
+        PortfolioItem.objects.create(user=user, ticker="NABIL", quantity=10,
+                                     buy_price=Decimal("110"),
+                                     stop_loss_price=Decimal("100"),
+                                     target_price=Decimal("130"))
+        PortfolioItem.objects.create(user=user, ticker="SAFE", quantity=10,
+                                     buy_price=Decimal("100"),
+                                     stop_loss_price=Decimal("80"),
+                                     target_price=Decimal("200"))
+        with patch("stocks.services.daily_plan._latest_closes",
+                   return_value={"NABIL": 101.0, "SAFE": 150.0}):
+            overlay = user_overlay(user)
+        tickers = [p["ticker"] for p in overlay["positions_near_action"]]
+        assert "NABIL" in tickers and "SAFE" not in tickers
+        nabil = next(p for p in overlay["positions_near_action"] if p["ticker"] == "NABIL")
+        assert nabil["near"] == "STOP_LOSS"
+
+    def test_signal_flip_against_holding(self, create_user):
+        from stocks.models import PortfolioItem, SignalEpisode
+        from stocks.services.daily_plan import user_overlay
+        user = create_user(username="u2", password="x")
+        PortfolioItem.objects.create(user=user, ticker="NICA", quantity=5,
+                                     buy_price=Decimal("450"))
+        SignalEpisode.objects.create(source="DISTRIBUTION_ALERT", producer_key="DISTRIBUTION_ALERT",
+                                     symbol="NICA", direction="SELL",
+                                     start_date=date_cls(2026, 6, 10),
+                                     last_signal_date=date_cls(2026, 6, 10),
+                                     entry_price=Decimal("500"))
+        with patch("stocks.services.daily_plan._latest_closes",
+                   return_value={"NICA": 500.0}):
+            overlay = user_overlay(user)
+        assert overlay["signal_flips"][0]["symbol"] == "NICA"
+        assert overlay["signal_flips"][0]["source"] == "DISTRIBUTION_ALERT"
+
+    def test_watchlist_trigger(self, create_user):
+        from stocks.models import WatchlistItem
+        from stocks.services.daily_plan import user_overlay
+        user = create_user(username="u3", password="x")
+        WatchlistItem.objects.create(user=user, ticker="SCB", target_price=Decimal("100"))
+        with patch("stocks.services.daily_plan._latest_closes",
+                   return_value={"SCB": 99.0}):
+            overlay = user_overlay(user)
+        assert overlay["watchlist_triggers"][0]["ticker"] == "SCB"
+
+    def test_empty_for_user_with_nothing(self, create_user):
+        from stocks.services.daily_plan import user_overlay
+        user = create_user(username="u4", password="x")
+        overlay = user_overlay(user)
+        assert overlay == {"positions_near_action": [], "signal_flips": [], "watchlist_triggers": []}
