@@ -27,6 +27,7 @@ class TestSizePosition:
         assert size_position(0, 2.0, entry=600.0, stop=590.0) is None
         assert size_position(100_000, 0, entry=600.0, stop=590.0) is None
         assert size_position(1_000, 1.0, entry=600.0, stop=400.0) is None    # < 1 share
+        assert size_position(100_000, 2.0, entry=0.0, stop=-10.0) is None  # impossible price
 
 
 @pytest.mark.django_db

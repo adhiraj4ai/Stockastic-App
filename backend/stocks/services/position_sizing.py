@@ -254,7 +254,7 @@ def size_position(balance, risk_pct, entry, stop):
     if not balance or not risk_pct or entry is None or stop is None:
         return None
     balance, risk_pct, entry, stop = float(balance), float(risk_pct), float(entry), float(stop)
-    if balance <= 0 or risk_pct <= 0:
+    if balance <= 0 or risk_pct <= 0 or entry <= 0:
         return None
     per_share_risk = entry - stop
     if per_share_risk <= 0:
@@ -311,5 +311,7 @@ def sizing_map_for_user(user, picks):
     for pick in picks:
         block = sizing_block_for(account, pick.get("entry"), (pick.get("targets") or {}).get("sl"))
         if block:
-            out[pick["symbol"]] = block
+            symbol = pick.get("symbol")
+            if symbol:
+                out[symbol] = block
     return out
