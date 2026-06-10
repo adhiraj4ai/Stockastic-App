@@ -50,7 +50,6 @@ def test_non_positive_amount_is_zero_cost():
     assert total_cost_rate(-5) == 0.0
 
 
-import numpy as np
 import pandas as pd
 
 from stocks.services.backtest_harness.runner import run_backtest
@@ -84,8 +83,12 @@ def test_runner_applies_real_fees_by_default():
     # NEPSE model on a ~Rs 1M position it must exceed 0.27% + 0.015%.
     res = run_backtest(_BH_CODE, "TEST", df=_flat_df())
     assert res.ok, res.error
-    assert res.metrics["num_trades"] >= 0
-    # Equity loss from costs must be at least 0.28% (tiered 0.27% + SEBON).
+    # On a perfectly flat series, buy & hold returns 0% before costs, so any
+    # non-trivial loss is the fee-bearing entry itself. The old flat 0.002
+    # commission loses ~0.2%; the NEPSE model (≈0.31% tier + 0.015% SEBON +
+    # 10bps spread on a ~Rs 1M position) must exceed 0.28%. This single check
+    # proves the real cost model is wired in. (num_trades/exposure read 0 here
+    # because the position never closes — backtesting.py counts closed trades.)
     assert res.metrics["return_pct"] <= -0.28
 
 

@@ -31,6 +31,7 @@ os.environ.setdefault('NUMBA_CACHE_DIR', '/tmp/numba_cache')
 
 from ..services.optimization_service import SafeTa
 from ..services.backtest_harness import build_strategy_scope, resolve_code
+from ..services.backtest_harness.fees import nepse_commission, DEFAULT_SPREAD
 
 from ..models import (
     DailyStockPrice, Strategy, Company, StrategyExperiment,
@@ -908,7 +909,12 @@ class StrategyViewSet(viewsets.ModelViewSet):
             if not strategy_class:
                 return {}, "No Strategy class found. Please ensure your code defines a class inheriting from 'Strategy'.", {}
 
-            bt = Backtest(df, strategy_class, cash=cash, commission=.002, exclusive_orders=True)
+            # Real NEPSE costs (tiered commission + SEBON + DP) + spread, matching
+            # the shared harness so the UI backtest endpoint reports honest numbers.
+            # NOTE: this method still loads RAW (unadjusted) prices; corporate-action
+            # adjustment converges with the harness in a later task.
+            bt = Backtest(df, strategy_class, cash=cash, commission=nepse_commission,
+                          spread=DEFAULT_SPREAD, exclusive_orders=True)
             
             # Inject parameters into bt.run()
             # Only include parameters that are present in the strategy class
