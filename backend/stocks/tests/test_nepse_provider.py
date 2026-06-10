@@ -85,3 +85,11 @@ def test_map_prices_raises_schema_error_on_missing_key():
     prov = _provider_returning([{"symbol": "NABIL", "openPrice": 1.0}])
     with pytest.raises(ProviderSchemaError):
         prov.fetch_daily_prices(date(2026, 6, 10))
+
+
+def test_map_prices_raises_schema_error_on_dash_close():
+    # NEPSE sends "-" for no-trade rows; a required close that can't be parsed
+    # must raise ProviderSchemaError, not produce a None close.
+    prov = _provider_returning([{"symbol": "NABIL", "closePrice": "-"}])
+    with pytest.raises(ProviderSchemaError):
+        prov.fetch_daily_prices(date(2026, 6, 10))

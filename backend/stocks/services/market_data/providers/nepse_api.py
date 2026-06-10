@@ -88,7 +88,13 @@ class NepseApiProvider:
         out: List[PriceRecord] = []
         for row in rows:
             symbol = _pick(row, self.PRICE_MAP["symbol"], required=True, ctx="PriceVolume.symbol")
+            # NEPSE uses "-" for no-trade rows; _pick sees it as "present" but _num() yields None.
+            # A required price that cannot be parsed is treated as schema drift, not silently dropped.
             close = _num(_pick(row, self.PRICE_MAP["close"], required=True, ctx="PriceVolume.close"))
+            if close is None:
+                raise ProviderSchemaError(
+                    f"PriceVolume.close: unparseable/sentinel value for {symbol!r}; row keys={sorted(row.keys())}"
+                )
             out.append(PriceRecord(
                 symbol=str(symbol),
                 date=on,
