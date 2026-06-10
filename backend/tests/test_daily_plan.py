@@ -276,3 +276,21 @@ class TestGenerateDailyPlanTask:
         assert result == {"status": "SKIPPED", "plan_date": "2026-06-11"}
         assert Notification.objects.count() == 0
         assert not DataUploadLog.objects.filter(upload_type="PLAN", status="SUCCESS").exists()
+
+
+@pytest.mark.django_db
+class TestSectorIntensities:
+    @patch("stocks.views.sector_rotation._compute_current_acc_signals")
+    def test_passes_symbol_keyed_mapping(self, mock_compute):
+        from stocks.services.daily_plan import _sector_intensities
+
+        mock_compute.return_value = {"Banking": {"acc_intensity": 5.2}}
+        with patch("stocks.services.daily_plan._company_sector_pairs",
+                   return_value=[("NABIL", "Banking")]):
+            out = _sector_intensities()
+
+        called_mapping = mock_compute.call_args[0][0]
+        # Regression: the helper used to pass {sector: [symbols]}, which the
+        # downstream function reads as symbol keys → empty frames → {}.
+        assert called_mapping == {"NABIL": "Banking"}
+        assert out == {"NABIL": 5.2}

@@ -35,23 +35,30 @@ def _load_price_df(symbol):
     return load_price_df(symbol)
 
 
-def _sector_intensities():
-    """symbol -> sector acc_intensity, via the sector-rotation helper."""
+def _company_sector_pairs():
+    """Return (symbol, sector) pairs for all companies with a known sector."""
     from stocks.models import Company
+    return Company.objects.exclude(sector="").values_list("symbol", "sector")
+
+
+def _sector_intensities():
+    """symbol → sector acc_intensity, via the sector-rotation helper."""
     from stocks.views.sector_rotation import _compute_current_acc_signals
-    mapping = defaultdict(list)
-    for symbol, sector in Company.objects.exclude(sector="").values_list("symbol", "sector"):
-        mapping[sector].append(symbol)
+    symbol_to_sector = {
+        symbol: sector
+        for symbol, sector in _company_sector_pairs()
+    }
+    if not symbol_to_sector:
+        return {}
     try:
-        per_sector = _compute_current_acc_signals(dict(mapping))
+        per_sector = _compute_current_acc_signals(symbol_to_sector)
     except Exception:
         logger.exception("sector intensity computation failed; using neutral")
         return {}
-    out = {}
-    for sector, info in per_sector.items():
-        for symbol in mapping.get(sector, []):
-            out[symbol] = info.get("acc_intensity")
-    return out
+    return {
+        symbol: (per_sector.get(sector) or {}).get("acc_intensity")
+        for symbol, sector in symbol_to_sector.items()
+    }
 
 
 def _signal_age_trading_days(price_df, last_signal_date):
