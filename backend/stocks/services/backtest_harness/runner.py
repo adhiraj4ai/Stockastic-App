@@ -9,18 +9,15 @@ from backtesting import Backtest
 
 from .scope import build_strategy_scope, extract_strategy_class, resolve_code
 from .fees import nepse_commission, DEFAULT_SPREAD
+from .adjustments import apply_adjustments
 
 __all__ = ["load_price_df", "run_backtest", "normalize_metrics", "BacktestResult"]
 
 MIN_BARS = 20
 
 
-def load_price_df(ticker, start=None, end=None):
-    """Load OHLCV for a ticker as a backtesting.py-ready DataFrame.
-
-    Same shape/columns the existing call sites build: a DatetimeIndex and float
-    ``Open/High/Low/Close/Volume`` columns. Returns an empty DataFrame if no data.
-    """
+def _fetch_price_rows(ticker, start=None, end=None):
+    """Raw OHLCV rows for a ticker (separated for testability)."""
     from stocks.models import DailyStockPrice
 
     qs = DailyStockPrice.objects.filter(ticker=ticker)
@@ -28,7 +25,27 @@ def load_price_df(ticker, start=None, end=None):
         qs = qs.filter(date__gte=start)
     if end:
         qs = qs.filter(date__lte=end)
-    ticks = list(qs.order_by("date").values("date", "open", "high", "low", "close", "volume"))
+    return list(qs.order_by("date").values("date", "open", "high", "low", "close", "volume"))
+
+
+def _fetch_actions(ticker):
+    from stocks.models import CorporateAction
+
+    return list(
+        CorporateAction.objects.filter(ticker=ticker)
+        .values_list("ex_date", "adjustment_factor")
+    )
+
+
+def load_price_df(ticker, start=None, end=None, adjust=True, actions=None):
+    """Load OHLCV for a ticker as a backtesting.py-ready DataFrame.
+
+    ``adjust=True`` (default) applies corporate-action factors so the series
+    is continuous across bonus/rights events — required for honest backtests.
+    ``actions`` lets callers inject prefetched ``(ex_date, factor)`` pairs.
+    Returns an empty DataFrame if no data.
+    """
+    ticks = _fetch_price_rows(ticker, start=start, end=end)
     if not ticks:
         return pd.DataFrame()
 
@@ -42,6 +59,9 @@ def load_price_df(ticker, start=None, end=None):
     df[["Open", "High", "Low", "Close", "Volume"]] = df[
         ["Open", "High", "Low", "Close", "Volume"]
     ].astype(float)
+
+    if adjust:
+        df = apply_adjustments(df, _fetch_actions(ticker) if actions is None else actions)
     return df
 
 

@@ -77,3 +77,35 @@ def test_apply_adjustments_does_not_mutate_input():
     before = df.copy()
     apply_adjustments(df, [(pd.Timestamp("2025-01-03").date(), 1 / 1.2)])
     pd.testing.assert_frame_equal(df, before)
+
+
+import datetime as dt
+from unittest import mock
+
+from stocks.services.backtest_harness import runner
+
+
+def _fake_ticks():
+    return [
+        {"date": dt.date(2025, 1, 1), "open": 120, "high": 121, "low": 119,
+         "close": 120, "volume": 1000},
+        {"date": dt.date(2025, 1, 2), "open": 100, "high": 101, "low": 99,
+         "close": 100, "volume": 1200},
+    ]
+
+
+def test_load_price_df_applies_injected_actions():
+    with mock.patch.object(runner, "_fetch_price_rows", return_value=_fake_ticks()):
+        df = runner.load_price_df(
+            "FAKE", actions=[(dt.date(2025, 1, 2), 1 / 1.2)]
+        )
+    assert df["Close"].iloc[0] == pytest.approx(100.0)   # 120 / 1.2
+    assert df["Close"].iloc[1] == pytest.approx(100.0)   # after ex-date, raw
+
+
+def test_load_price_df_adjust_false_returns_raw():
+    with mock.patch.object(runner, "_fetch_price_rows", return_value=_fake_ticks()):
+        df = runner.load_price_df(
+            "FAKE", adjust=False, actions=[(dt.date(2025, 1, 2), 1 / 1.2)]
+        )
+    assert df["Close"].iloc[0] == pytest.approx(120.0)
