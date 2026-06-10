@@ -11,7 +11,6 @@ from datetime import date, datetime
 
 from django.core.management.base import BaseCommand
 
-from stocks.services.market_data.contracts import ProviderError
 from stocks.services.market_data.factory import get_provider
 from stocks.services.market_data.ingestion import IngestionService
 
@@ -59,9 +58,7 @@ class Command(BaseCommand):
                     f"  {ds}: OK — inserted={res.inserted} updated={res.updated} "
                     f"rejected={res.rejected}"
                 )
-            except ProviderError as e:
-                self.stdout.write(f"  {ds}: FAILED — {type(e).__name__}: {e}")
-            except Exception as e:  # noqa: BLE001 — isolate unexpected per-dataset errors
+            except Exception as e:  # noqa: BLE001 — isolate per-dataset failures (transport, schema drift, or unexpected); the type name in the message distinguishes them
                 self.stdout.write(f"  {ds}: FAILED — {type(e).__name__}: {e}")
 
         self.stdout.write(f"Total records saved: {total_saved}")
