@@ -52,6 +52,7 @@ class TransactionType(models.TextChoices):
     BUY_TO_COVER = 'BUY_TO_COVER', 'Buy to Cover'
     BONUS = 'BONUS', 'Bonus Share'
     DIVIDEND = 'DIVIDEND', 'Cash Dividend'
+    RIGHTS = 'RIGHTS', 'Rights Share'
 
 class TransactionReason(models.TextChoices):
     STOP_LOSS = 'STOP_LOSS', 'Stop Loss'

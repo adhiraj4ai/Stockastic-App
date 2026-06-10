@@ -1035,6 +1035,103 @@ class PortfolioPerformanceView(viewsets.ViewSet):
             "has_benchmark": has_benchmark
         })
 
+    @action(detail=False, methods=['get'])
+    def twr_xirr(self, request):
+        """Time-weighted return (TWR) and money-weighted return (XIRR) for the portfolio.
+
+        Query Params:
+        - account: account_id or 'all' (default: 'all')
+
+        Sign conventions used internally:
+          TWR external_flow: +amount when cash enters the portfolio (BUY injects
+            invested capital), -amount when cash leaves (SELL/dividend withdraws it).
+          XIRR cashflows: outflows are negative (investor pays out cash), inflows
+            are positive (investor receives cash back). BUY is negative, SELL and
+            DIVIDEND received are positive. Final terminal flow = current portfolio
+            market value (positive).
+
+        Returns:
+          {"twr_pct": <float|null>, "xirr_pct": <float|null>}
+          Both values are percentages (fraction * 100). None when no data or
+          the solver cannot converge.
+        """
+        from ..services.finance import xirr as _xirr, time_weighted_return as _twr
+        import datetime as dt
+
+        user = request.user
+        account_id = request.query_params.get('account', 'all')
+
+        # ── 1. Fetch all-time snapshots for TWR ──────────────────────────────
+        snapshots_qs = PortfolioSnapshot.objects.filter(user=user).order_by('date')
+        if account_id != 'all':
+            snapshots_qs = snapshots_qs.filter(account_id=account_id)
+
+        # Aggregate per date if 'all' (multiple accounts on same day)
+        if account_id == 'all':
+            snapshot_rows = list(
+                snapshots_qs.values('date').annotate(total_value=Sum('total_value')).order_by('date')
+            )
+        else:
+            snapshot_rows = list(snapshots_qs.values('date', 'total_value').order_by('date'))
+
+        # ── 2. Fetch transactions for external-flow mapping ──────────────────
+        txns_qs = PortfolioTransaction.objects.filter(user=user).order_by('transaction_date')
+        if account_id != 'all':
+            txns_qs = txns_qs.filter(account_id=account_id)
+
+        # Build date → net external flow for TWR (cash entering the portfolio base)
+        # BUY / RIGHTS: investor commits cash → +amount (capital base grows)
+        # SELL: investor withdraws proceeds → -receivable_amount
+        # DIVIDEND: cash received but paid out of investable base → -amount
+        # BONUS: non-cash share issuance, no cash flow impact → skip
+        from collections import defaultdict
+        flow_by_date = defaultdict(float)
+        xirr_flows = []
+
+        for txn in txns_qs:
+            d = txn.transaction_date.date() if hasattr(txn.transaction_date, 'date') else txn.transaction_date
+            txn_type = txn.transaction_type
+            amount = float(txn.amount)
+            receivable = float(txn.receivable_amount)
+
+            if txn_type in (TransactionType.BUY, TransactionType.RIGHTS):
+                flow_by_date[d] += amount          # capital deposited into portfolio
+                xirr_flows.append((d, -amount))    # investor pays out (negative)
+            elif txn_type == TransactionType.SELL:
+                flow_by_date[d] -= receivable      # proceeds leave investable base
+                xirr_flows.append((d, receivable)) # investor receives cash (positive)
+            elif txn_type == TransactionType.DIVIDEND:
+                flow_by_date[d] -= amount          # dividend cash out of portfolio base
+                xirr_flows.append((d, amount))     # investor receives dividend (positive)
+            # BONUS / SHORT_SELL / BUY_TO_COVER: no external cash flow for XIRR/TWR
+
+        # ── 3. Build TWR points ──────────────────────────────────────────────
+        twr_result = None
+        if len(snapshot_rows) >= 2:
+            twr_points = []
+            for row in snapshot_rows:
+                snap_date = row['date']
+                snap_val = float(row['total_value'])
+                ext_flow = flow_by_date.get(snap_date, 0.0)
+                twr_points.append((snap_date, snap_val, ext_flow))
+            twr_raw = _twr(twr_points)
+            if twr_raw is not None:
+                twr_result = round(twr_raw * 100, 4)
+
+        # ── 4. Build XIRR cashflows (add terminal value = current portfolio) ─
+        xirr_result = None
+        if xirr_flows:
+            # Current portfolio market value = latest snapshot total_value
+            today = timezone.now().date()
+            if snapshot_rows:
+                latest_val = float(snapshot_rows[-1]['total_value'])
+                xirr_flows_with_terminal = list(xirr_flows) + [(today, latest_val)]
+                xirr_raw = _xirr(xirr_flows_with_terminal)
+                if xirr_raw is not None:
+                    xirr_result = round(xirr_raw * 100, 4)
+
+        return Response({"twr_pct": twr_result, "xirr_pct": xirr_result})
+
 
 def _check_and_close_plan(plan):
     """Auto-close the plan if all legs are EXECUTED or SKIPPED."""
