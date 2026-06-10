@@ -37,6 +37,25 @@ def _fetch_actions(ticker):
     )
 
 
+def fetch_actions_map(tickers=None):
+    """{ticker: [(ex_date, factor), ...]} for many tickers in one query.
+
+    Used by long-format analytics loaders (apply_adjustments_long) so views
+    see the same corporate-action-adjusted prices as the backtest harness.
+    """
+    from collections import defaultdict
+
+    from stocks.models import CorporateAction
+
+    qs = CorporateAction.objects.all()
+    if tickers:
+        qs = qs.filter(ticker__in=list(tickers))
+    out = defaultdict(list)
+    for ticker, ex_date, factor in qs.values_list("ticker", "ex_date", "adjustment_factor"):
+        out[ticker].append((ex_date, factor))
+    return dict(out)
+
+
 def load_price_df(ticker, start=None, end=None, adjust=True, actions=None):
     """Load OHLCV for a ticker as a backtesting.py-ready DataFrame.
 

@@ -5,9 +5,28 @@ import pytest
 
 from stocks.services.backtest_harness.adjustments import (
     apply_adjustments,
+    apply_adjustments_long,
     bonus_adjustment_factor,
     rights_adjustment_factor,
 )
+
+
+def test_apply_adjustments_long_per_ticker():
+    # Long-format frame with two tickers; only AAA has an action.
+    df = pd.DataFrame({
+        "ticker": ["AAA", "AAA", "BBB", "BBB"],
+        "date": pd.to_datetime(["2025-01-01", "2025-01-03", "2025-01-01", "2025-01-03"]),
+        "close": [120.0, 100.0, 200.0, 210.0],
+        "volume": [1000.0, 1200.0, 500.0, 500.0],
+    })
+    out = apply_adjustments_long(df, {"AAA": [(pd.Timestamp("2025-01-02").date(), 1 / 1.2)]},
+                                 price_cols=("close",))
+    assert out.loc[0, "close"] == pytest.approx(100.0)   # AAA pre-ex scaled
+    assert out.loc[1, "close"] == pytest.approx(100.0)   # AAA post-ex untouched
+    assert out.loc[2, "close"] == pytest.approx(200.0)   # BBB untouched
+    assert out.loc[0, "volume"] == pytest.approx(1200.0)  # inverse-scaled
+    # input not mutated
+    assert df.loc[0, "close"] == pytest.approx(120.0)
 
 
 def test_bonus_factor_20_percent():

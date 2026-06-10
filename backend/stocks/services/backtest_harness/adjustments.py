@@ -8,7 +8,10 @@ action's factor; volume is divided so turnover is conserved.
 """
 import pandas as pd
 
-__all__ = ["bonus_adjustment_factor", "rights_adjustment_factor", "apply_adjustments"]
+__all__ = [
+    "bonus_adjustment_factor", "rights_adjustment_factor",
+    "apply_adjustments", "apply_adjustments_long",
+]
 
 _PRICE_COLS = ["Open", "High", "Low", "Close"]
 
@@ -43,4 +46,32 @@ def apply_adjustments(df, actions):
         factor[df.index < pd.Timestamp(ex_date)] *= float(f)
     df[_PRICE_COLS] = df[_PRICE_COLS].mul(factor, axis=0)
     df["Volume"] = df["Volume"].div(factor)
+    return df
+
+
+def apply_adjustments_long(df, actions_by_ticker, ticker_col="ticker",
+                           date_col="date", price_cols=("open", "high", "low", "close"),
+                           volume_col="volume"):
+    """Adjust a LONG-format multi-symbol frame (ticker/date columns, not indexed).
+
+    ``actions_by_ticker``: {ticker: [(ex_date, factor), ...]}. Same convention as
+    ``apply_adjustments``: bars strictly before ex_date are scaled; volume divided.
+    Returns a new frame; the input is never mutated.
+    """
+    if df is None or len(df) == 0 or not actions_by_ticker:
+        return df
+    df = df.copy()
+    factor = pd.Series(1.0, index=df.index)
+    dates = pd.to_datetime(df[date_col])
+    for ticker, actions in actions_by_ticker.items():
+        tmask = df[ticker_col] == ticker
+        if not tmask.any():
+            continue
+        for ex_date, f in actions:
+            factor[tmask & (dates < pd.Timestamp(ex_date))] *= float(f)
+    for col in price_cols:
+        if col in df.columns:
+            df[col] = df[col] * factor
+    if volume_col and volume_col in df.columns:
+        df[volume_col] = df[volume_col] / factor
     return df

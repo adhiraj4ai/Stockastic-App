@@ -23,9 +23,14 @@ STUDY_YEARS = 2
 
 def _load_price_df(symbols=None, start_date=None):
     """
-    Load DailyStockPrice into a DataFrame.
+    Load DailyStockPrice into a DataFrame, corporate-action ADJUSTED so the
+    event study sees continuous prices across bonus/rights ex-dates (matching
+    the backtest harness) instead of phantom drops.
     Returns columns: ticker, date, open, high, low, close, volume, turnover, trans
     """
+    from stocks.services.backtest_harness.adjustments import apply_adjustments_long
+    from stocks.services.backtest_harness.runner import fetch_actions_map
+
     qs = DailyStockPrice.objects.filter(date__gte=start_date)
     if symbols:
         qs = qs.filter(ticker__in=symbols)
@@ -37,6 +42,7 @@ def _load_price_df(symbols=None, start_date=None):
         df[col] = pd.to_numeric(df[col], errors='coerce')
     df['trans'] = pd.to_numeric(df['trans'], errors='coerce')
     df['date'] = pd.to_datetime(df['date'])
+    df = apply_adjustments_long(df, fetch_actions_map(df['ticker'].unique()))
     df.sort_values(['ticker', 'date'], inplace=True)
     df.reset_index(drop=True, inplace=True)
     return df

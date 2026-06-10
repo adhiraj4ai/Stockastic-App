@@ -35,10 +35,21 @@ def test_inconsistent_ohlc_rejected():
     assert valid == [] and rejected[0][1] == "OHLC inconsistent"
 
 
-def test_missing_ohl_tolerated_when_close_valid():
-    # Source files use 0 for absent open/high/low ('-' in the CSV).
-    valid, rejected = validate_price_rows([_row(open=0, high=0, low=0)])
+def test_missing_ohl_backfilled_to_close():
+    # Source files use 0 for absent open/high/low ('-' in the CSV). Instead of
+    # storing an incoherent bar (High=0 < Close), the legs are back-filled.
+    valid, rejected = validate_price_rows([_row(open=0, high=0, low=0, close=102)])
     assert len(valid) == 1 and rejected == []
+    bar = valid[0]
+    assert float(bar.open) == 102 and float(bar.high) == 102 and float(bar.low) == 102
+
+
+def test_partial_missing_legs_forced_coherent():
+    # Non-zero open above the close with missing H/L: H/L must span open & close.
+    valid, rejected = validate_price_rows([_row(open=110, high=0, low=0, close=102)])
+    assert len(valid) == 1 and rejected == []
+    bar = valid[0]
+    assert float(bar.high) == 110 and float(bar.low) == 102
 
 
 def test_mixed_batch_partitions():
