@@ -47,6 +47,18 @@ def _pick(row: dict, keys: tuple[str, ...], *, required: bool, ctx: str):
     return None
 
 
+def _req_num(row: dict, keys: tuple[str, ...], ctx: str) -> float:
+    """Resolve a REQUIRED numeric field. A present-but-unparseable value (e.g. the
+    NEPSE "-" sentinel) is treated as schema drift and raises ProviderSchemaError —
+    never silently degraded to 0/None. Same philosophy as the price-close guard."""
+    val = _num(_pick(row, keys, required=True, ctx=ctx))
+    if val is None:
+        raise ProviderSchemaError(
+            f"{ctx}: unparseable required numeric; row keys={sorted(row.keys())}"
+        )
+    return val
+
+
 class NepseApiProvider:
     name = "nepseapi"
 
@@ -73,9 +85,8 @@ class NepseApiProvider:
         "quantity": ("contractQuantity", "quantity"),
         "rate": ("contractRate", "rate"),
         "amount": ("contractAmount", "amount"),
-        "date": ("businessDate", "date"),
         "datetime": ("tradeTime", "transactionTime", "tradeDateTime"),
-        "book_id": ("tradeBookId", "contractId"),
+        "book_id": ("tradeBookId",),
         "stock_id": ("stockId",),
         "buyer_name": ("buyerBrokerName", "buyerMemberName"),
         "seller_name": ("sellerBrokerName", "sellerMemberName"),
@@ -93,7 +104,7 @@ class NepseApiProvider:
         "total_transactions": ("Total Transactions", "totalTransactions"),
     }
     INDEX_FIELDS = {
-        "value": ("currentValue", "index", "value", "close"),
+        "value": ("currentValue", "value", "close"),
         "change": ("change", "pointChange"),
         "change_percent": ("perChange", "percentageChange", "percentChange"),
         "turnover": ("turnover",),
@@ -148,8 +159,10 @@ class NepseApiProvider:
     def fetch_floorsheet(self, on: _date) -> Iterator[FloorsheetRecord]:
         payload = self.client.get_json("/Floorsheet")
         rows = self._rows(payload, "Floorsheet")
+        # Generator: _rows() validates the envelope eagerly, but per-row schema
+        # errors below are raised lazily as the caller iterates.
         for row in rows:
-            tid = _pick(row, self.FLOOR_MAP["transaction_id"], required=True, ctx="Floorsheet.id")
+            tid = _req_num(row, self.FLOOR_MAP["transaction_id"], "Floorsheet.id")
             dt_raw = _pick(row, self.FLOOR_MAP["datetime"], required=False, ctx="")
             try:
                 dt = datetime.fromisoformat(str(dt_raw)) if dt_raw else datetime.combine(on, datetime.min.time())
@@ -158,10 +171,10 @@ class NepseApiProvider:
             yield FloorsheetRecord(
                 transaction_id=int(tid),
                 symbol=str(_pick(row, self.FLOOR_MAP["symbol"], required=True, ctx="Floorsheet.symbol")),
-                buyer_id=int(_num(_pick(row, self.FLOOR_MAP["buyer_id"], required=True, ctx="Floorsheet.buyer")) or 0),
-                seller_id=int(_num(_pick(row, self.FLOOR_MAP["seller_id"], required=True, ctx="Floorsheet.seller")) or 0),
-                quantity=int(_num(_pick(row, self.FLOOR_MAP["quantity"], required=True, ctx="Floorsheet.qty")) or 0),
-                rate=_num(_pick(row, self.FLOOR_MAP["rate"], required=True, ctx="Floorsheet.rate")) or 0.0,
+                buyer_id=int(_req_num(row, self.FLOOR_MAP["buyer_id"], "Floorsheet.buyer")),
+                seller_id=int(_req_num(row, self.FLOOR_MAP["seller_id"], "Floorsheet.seller")),
+                quantity=int(_req_num(row, self.FLOOR_MAP["quantity"], "Floorsheet.qty")),
+                rate=_req_num(row, self.FLOOR_MAP["rate"], "Floorsheet.rate"),
                 amount=_num(_pick(row, self.FLOOR_MAP["amount"], required=False, ctx="")) or 0.0,
                 date=on,
                 datetime=dt,
@@ -176,9 +189,9 @@ class NepseApiProvider:
         summary = self.client.get_json("/Summary")
         if not isinstance(summary, dict):
             raise ProviderSchemaError(f"Summary: expected dict, got {type(summary).__name__}")
-        turnover = _num(_pick(summary, self.SUMMARY_FIELDS["total_turnover"], required=True, ctx="Summary.turnover"))
-        volume = _num(_pick(summary, self.SUMMARY_FIELDS["total_volume"], required=True, ctx="Summary.volume"))
-        txns = _num(_pick(summary, self.SUMMARY_FIELDS["total_transactions"], required=True, ctx="Summary.txns"))
+        turnover = _req_num(summary, self.SUMMARY_FIELDS["total_turnover"], "Summary.turnover")
+        volume = _req_num(summary, self.SUMMARY_FIELDS["total_volume"], "Summary.volume")
+        txns = _req_num(summary, self.SUMMARY_FIELDS["total_transactions"], "Summary.txns")
         gainers = self._rows(self.client.get_json("/TopGainers"), "TopGainers")
         losers = self._rows(self.client.get_json("/TopLosers"), "TopLosers")
         return MarketSummaryRecord(

@@ -128,6 +128,7 @@ def test_map_market_summary_merges_gainers_losers():
     assert isinstance(rec, MarketSummaryRecord)
     assert rec.total_turnover == 4489236458.2
     assert rec.total_transactions == 85879
+    assert rec.total_volume == 12540423
     assert rec.top_gainers and rec.top_gainers[0]["symbol"] == "ABC"
     assert rec.top_losers and rec.top_losers[0]["symbol"] == "XYZ"
 
@@ -148,3 +149,21 @@ def test_map_indices_from_dict():
     assert isinstance(by_name["Banking"], IndexRecord)
     assert by_name["NEPSE Index"].value == 2650.5
     assert by_name["Banking"].change == -3.1
+
+
+def test_map_floorsheet_raises_on_unparseable_required():
+    # NEPSE "-" sentinel on a required numeric (rate) must raise, not store 0.
+    bad = [{"contractId": 1, "stockSymbol": "NABIL", "buyerMemberId": 58,
+            "sellerMemberId": 12, "contractQuantity": 100, "contractRate": "-"}]
+    prov = _provider_returning(bad)
+    with pytest.raises(ProviderSchemaError):
+        list(prov.fetch_floorsheet(_d(2026, 6, 10)))  # consume the generator
+
+
+def test_map_indices_from_list():
+    payload = [{"index": "NEPSE Index", "currentValue": 2650.5, "change": 12.3, "perChange": 0.47}]
+    prov = _provider_returning(payload)
+    recs = prov.fetch_indices(_d(2026, 6, 10))
+    assert len(recs) == 1
+    assert recs[0].index_name == "NEPSE Index"
+    assert recs[0].value == 2650.5
