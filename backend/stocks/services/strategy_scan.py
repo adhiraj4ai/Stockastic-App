@@ -15,6 +15,7 @@ import random
 from datetime import date, timedelta
 
 from .backtest_harness import run_backtest
+from .backtest_harness.statistics import wilson_interval, winrate_is_reportable
 
 TF_DAYS = {"1y": 365, "2y": 730, "3y": 1095, "5y": 1825, "max": None}
 DEFAULT_TIMEFRAMES = ("1y", "3y", "5y", "max")
@@ -23,6 +24,14 @@ DEFAULT_TIMEFRAMES = ("1y", "3y", "5y", "max")
 def _tf_start(tf):
     days = TF_DAYS.get(tf)
     return None if days is None else (date.today() - timedelta(days=days)).isoformat()
+
+
+def _row_confidence(win_rate_pct, wins, num_trades):
+    lo, hi = wilson_interval(wins, num_trades)
+    return {
+        "win_rate_ci": [float(round(lo, 4)), float(round(hi, 4))],
+        "win_rate_reportable": winrate_is_reportable(num_trades),
+    }
 
 
 def _row(s, m, tf, tuned_spec=None):
@@ -38,6 +47,7 @@ def _row(s, m, tf, tuned_spec=None):
         "win_rate_pct": round(m["win_rate_pct"], 0),
         "num_trades": int(m["num_trades"]),
         "beats_bh": m["return_pct"] > m["buy_hold_return_pct"],
+        **_row_confidence(m["win_rate_pct"], m.get("wins", 0), m["num_trades"]),
     }
     if tuned_spec is not None:
         row["tuned"] = True
@@ -121,7 +131,8 @@ def scan_symbol(symbol, strategies=None, timeframes=DEFAULT_TIMEFRAMES, optimize
     active = [r for r in rows if r["num_trades"] >= min_trades]
     qualified = [r for r in active if r["beats_bh"]]
     best = (sorted(qualified, key=lambda r: r["return_pct"], reverse=True) or ranked or [None])[0]
-    best_ra = max(active, key=lambda r: r["sortino"], default=None)
+    reportable_active = [r for r in active if r["win_rate_reportable"]]
+    best_ra = max(reportable_active or active, key=lambda r: r["sortino"], default=None)
 
     return {
         "symbol": symbol,
