@@ -9,7 +9,6 @@ import { FullPageLoader } from '@/components/ui/StockLoader';
 import { cn } from '@/lib/utils';
 import { SectorWinRateChart, SectorAvgReturnChart, SectorScatterChart, SectorLagAnalysisChart } from './SectorStudyComponents';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
-import { MarketTabs } from '@/components/MarketTabs';
 
 // --- Types ---
 
@@ -127,7 +126,6 @@ export default function SectorRotationPage() {
             subtitle="Analyze how aggregate broker accumulation predicts sector outperformance against the broad market."
             headerContent={<Compass className="text-blue-500 dark:text-indigo-400" size={32} />}
         >
-            <MarketTabs />
             <div className="max-w-[1200px] mx-auto space-y-10 pb-12">
                 
                 {studyData ? (

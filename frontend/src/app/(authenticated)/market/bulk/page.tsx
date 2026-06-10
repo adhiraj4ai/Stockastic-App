@@ -10,7 +10,6 @@ import { Activity, Filter, Layers, ChevronLeft, ChevronRight, AlertTriangle, Arr
 import { PageLoader } from '@/components/ui/StockLoader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MarketTabs } from '@/components/MarketTabs';
 
 interface FloorsheetEntry {
     id: number;
@@ -133,7 +132,6 @@ function BulkTradesContent() {
 
     return (
         <DashboardLayout title="Bulk Transactions">
-            <MarketTabs />
             <div className="p-4 md:p-6 max-w-[1600px] mx-auto space-y-6">
 
                 {/* Header & Controls */}

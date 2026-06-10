@@ -21,7 +21,6 @@ import {
 } from 'lucide-react';
 import ReactECharts from 'echarts-for-react';
 import { cn } from '@/lib/utils';
-import { MarketTabs } from '@/components/MarketTabs';
 
 interface ProfileBar {
     price: number;
@@ -173,7 +172,6 @@ export default function VolumeProfilePage() {
             title="Volume Profile Intelligence"
             subtitle="Analyze the most significant price levels where institutional volume is concentrated."
         >
-            <MarketTabs />
             <div className="space-y-6">
                 
                 {/* Controls Card */}

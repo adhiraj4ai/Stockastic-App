@@ -16,7 +16,6 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { TopGainersChart } from '@/components/TopGainersChart';
-import { MarketTabs } from '@/components/MarketTabs';
 
 interface BrokerData {
     broker_id: string;
@@ -150,7 +149,6 @@ export default function MarketActivityPage() {
 
     return (
         <DashboardLayout title="Market Activity Analysis" subtitle="Multi-timeframe breakdown of top stocks">
-            <MarketTabs />
             <div className="space-y-6 pb-12">
 
 
