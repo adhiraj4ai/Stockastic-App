@@ -126,7 +126,7 @@ export default function SectorRotationPage() {
             subtitle="Analyze how aggregate broker accumulation predicts sector outperformance against the broad market."
             headerContent={<Compass className="text-blue-500 dark:text-indigo-400" size={32} />}
         >
-            <div className="max-w-[1200px] mx-auto space-y-10 pb-12">
+            <div className="space-y-10 pb-12">
                 
                 {studyData ? (
                     <>
