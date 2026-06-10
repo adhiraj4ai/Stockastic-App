@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { type PlanPick } from '@/components/plan/PickCard';
+import { type PlanPick, type PickSizing } from '@/components/plan/PickCard';
 import { Button } from '@/components/ui/button';
 import { PageLoader } from '@/components/ui/StockLoader';
 import api from '@/lib/api';
+import { draftTradePlan } from '@/lib/draftTradePlan';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import Link from 'next/link';
@@ -13,13 +15,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     ShieldAlert, Eye, CalendarClock, TrendingDown, TrendingUp, Activity,
     Layers, ChevronUp, ChevronDown, ChevronRight, X, ExternalLink,
-    CalendarDays, Zap,
+    CalendarDays, Zap, Wallet,
 } from 'lucide-react';
 
 interface Overlay {
     positions_near_action: { ticker: string; near: string; close: number; stop_loss_price: number | null; target_price: number | null }[];
     signal_flips: { symbol: string; source: string; since: string; strength: number }[];
     watchlist_triggers: { ticker: string; close: number; target_price: number | null; stop_loss_price: number | null }[];
+    sizing?: Record<string, PickSizing>;
 }
 
 interface Plan {
@@ -70,6 +73,7 @@ function SortIcon({ col, sortConfig }: { col: SortKey; sortConfig: { key: SortKe
         ? <ChevronUp className="w-3 h-3 text-indigo-400" />
         : <ChevronDown className="w-3 h-3 text-indigo-400" />;
 }
+
 
 function WatchCard({ pick, onSelect }: { pick: PlanPick; onSelect: () => void }) {
     const { entry, targets, components } = pick;
@@ -132,6 +136,24 @@ export default function PlanPage() {
     const [selectedPick, setSelectedPick] = useState<PlanPick | null>(null);
     const [activeTab, setActiveTab] = useState<BottomTab>('watch');
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' }>({ key: 'score', direction: 'desc' });
+    const [drafting, setDrafting] = useState(false);
+
+    const onDraft = async (pick: PlanPick, s: PickSizing) => {
+        if (pick.targets.sl == null) return;
+        setDrafting(true);
+        try {
+            await draftTradePlan({
+                ticker: pick.symbol, accountId: s.account_id, riskPct: s.risk_pct,
+                entry: s.entry, stop: s.stop, target: pick.targets.tp1,
+                thesis: `Plan pick ${pick.confluence_score}/100`,
+            });
+            toast.success('Trade plan drafted — review it in Portfolio → Trade Plans.');
+        } catch {
+            toast.error('Could not draft the trade plan.');
+        } finally {
+            setDrafting(false);
+        }
+    };
 
     const handleHistoryDateChange = (value: string) => {
         setHistoryDate(value);
@@ -547,6 +569,24 @@ export default function PlanPage() {
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Sizing / Draft */}
+                                {overlay?.sizing?.[selectedPick.symbol] && selectedPick.targets.sl != null && (() => {
+                                    const s = overlay.sizing![selectedPick.symbol];
+                                    return (
+                                        <div className="px-5 py-4 border-t border-border">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                                    <Wallet className="w-3.5 h-3.5 shrink-0" />
+                                                    <span>≈ <span className="font-bold text-slate-900 dark:text-slate-100">{s.shares} shares</span> · risks {s.risk_pct}% of {s.account_name}</span>
+                                                </div>
+                                                <Button size="sm" variant="outline" disabled={drafting} onClick={() => onDraft(selectedPick, s)}>
+                                                    {drafting ? 'Drafting…' : 'Draft trade plan'}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
 
                                 {/* Quick Actions */}
                                 <div className="px-5 py-4 mt-auto flex gap-2 flex-wrap">

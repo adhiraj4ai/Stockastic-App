@@ -1,10 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, CalendarClock, Layers } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TrendingUp, CalendarClock, Layers, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { draftTradePlan } from '@/lib/draftTradePlan';
 
 export interface PlanPick {
     symbol: string;
@@ -22,6 +26,11 @@ export interface PlanPick {
     catalyst: { type: string; date: string; days_away: number; detail: string } | null;
 }
 
+export interface PickSizing {
+    shares: number; risk_amount: number; position_value: number; risk_pct: number;
+    entry: number; stop: number; account_id: number; account_name: string;
+}
+
 const STATUS_STYLES: Record<string, string> = {
     IN_ZONE: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
     EXTENDED: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
@@ -30,8 +39,25 @@ const STATUS_STYLES: Record<string, string> = {
 
 const fmtPct = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
 
-export function PickCard({ pick }: { pick: PlanPick }) {
+export function PickCard({ pick, sizing }: { pick: PlanPick; sizing?: PickSizing | null }) {
     const { components, entry, targets, analog, catalyst } = pick;
+    const [drafting, setDrafting] = useState(false);
+    const onDraft = async () => {
+        if (!sizing || targets.sl == null) return;
+        setDrafting(true);
+        try {
+            await draftTradePlan({
+                ticker: pick.symbol, accountId: sizing.account_id, riskPct: sizing.risk_pct,
+                entry: sizing.entry, stop: sizing.stop, target: targets.tp1,
+                thesis: `Plan pick ${pick.confluence_score}/100`,
+            });
+            toast.success('Trade plan drafted — review it in Portfolio → Trade Plans.');
+        } catch {
+            toast.error('Could not draft the trade plan.');
+        } finally {
+            setDrafting(false);
+        }
+    };
     return (
         <Card className="overflow-hidden">
             <CardContent className="p-4 space-y-3">
@@ -85,6 +111,18 @@ export function PickCard({ pick }: { pick: PlanPick }) {
                             Similar setups (n={analog.n}): {fmtPct(analog.fwd_3d_median_pct)} median over 3d,{' '}
                             {Math.round(analog.win_rate_3d * 100)}% win rate
                         </span>
+                    </div>
+                )}
+
+                {sizing && targets.sl != null && (
+                    <div className="flex items-center justify-between border-t pt-2 text-xs">
+                        <span className="text-muted-foreground flex items-center gap-1.5">
+                            <Wallet size={12} className="shrink-0" />
+                            <span>≈ <span className="font-bold text-foreground">{sizing.shares} shares</span> · risks {sizing.risk_pct}% of {sizing.account_name}</span>
+                        </span>
+                        <Button size="sm" variant="outline" disabled={drafting} onClick={onDraft}>
+                            {drafting ? 'Drafting…' : 'Draft trade plan'}
+                        </Button>
                     </div>
                 )}
             </CardContent>

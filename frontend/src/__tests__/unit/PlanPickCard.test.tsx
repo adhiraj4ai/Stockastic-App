@@ -1,6 +1,12 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 import { PickCard, type PlanPick } from '@/components/plan/PickCard';
+import api from '@/lib/api';
+
+vi.mock('@/lib/api', () => ({
+    default: { get: vi.fn(), post: vi.fn() },
+}));
 
 const basePick: PlanPick = {
     symbol: 'NABIL',
@@ -40,5 +46,24 @@ describe('PickCard', () => {
         render(<PickCard pick={basePick} />);
         const link = screen.getByRole('link');
         expect(link).toHaveAttribute('href', '/ticker/NABIL');
+    });
+});
+
+const sizing = { shares: 200, risk_amount: 10000, position_value: 122400, risk_pct: 1.0,
+                 entry: 610, stop: 585, account_id: 3, account_name: 'Live' };
+
+describe('PickCard sizing', () => {
+    it('shows sizing line and drafts a plan', async () => {
+        vi.mocked(api.post).mockResolvedValue({ data: { id: 5 } });
+        render(<PickCard pick={basePick} sizing={sizing} />);
+        expect(screen.getByText(/200 shares/i)).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: /draft trade plan/i }));
+        await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    });
+
+    it('renders without sizing exactly as before', () => {
+        render(<PickCard pick={basePick} />);
+        expect(screen.queryByText(/shares/i)).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /draft trade plan/i })).not.toBeInTheDocument();
     });
 });
