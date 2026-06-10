@@ -37,6 +37,7 @@ import TechnicalAnalysis from '@/components/ticker/TechnicalAnalysis';
 import IndicatorTooltip from '@/components/ticker/IndicatorTooltip';
 import TickerAccumulation from '@/components/ticker/TickerAccumulation';
 import TickerSignals from '@/components/ticker/TickerSignals';
+import TickerVerdict from '@/components/ticker/TickerVerdict';
 
 import PriceActionTerminal from '@/components/ticker/PriceActionTerminal';
 import TickerLiquidity from '@/components/ticker/TickerLiquidity';
@@ -721,7 +722,10 @@ export default function StockDetailPage() {
 
 
                                 <TabsContent value="signals" forceMount className="mt-0 data-[state=inactive]:hidden">
-                                    <TickerSignals symbol={ticker} currentPrice={data.price.close} intelligence={intelligence} fundamental={data.fundamental} />
+                                    <div className="space-y-6">
+                                        <TickerVerdict symbol={ticker} />
+                                        <TickerSignals symbol={ticker} currentPrice={data.price.close} intelligence={intelligence} fundamental={data.fundamental} />
+                                    </div>
                                 </TabsContent>
 
                                 <TabsContent value="price_action" forceMount className="mt-0 space-y-8 data-[state=inactive]:hidden">

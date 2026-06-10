@@ -315,15 +315,17 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
     const [loading, setLoading] = useState(true);
     const [showHistoricalStrats, setShowHistoricalStrats] = useState(false);
     const [showHistoricalIntel, setShowHistoricalIntel] = useState(false);
+    const [zoneBySource, setZoneBySource] = useState<Record<string, string>>({});
 
     useEffect(() => {
         const fetchAll = async () => {
             setLoading(true);
             try {
-                const [stratRes, signalRes, intelRes] = await Promise.all([
+                const [stratRes, signalRes, intelRes, verdictRes] = await Promise.all([
                     api.get('/api/stocks/strategies/').catch(() => null),
                     api.get('/api/stocks/signals/', { params: { symbol, page_size: 100 } }).catch(() => null),
                     api.get('/api/stocks/generated-signals/', { params: { symbol, page_size: 100 } }).catch(() => null),
+                    api.get(`/api/stocks/ticker-verdict/${symbol}/`).catch(() => null),
                 ]);
 
                 setAllStrategies(stratRes?.data?.results || stratRes?.data || []);
@@ -332,6 +334,8 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
 
                 setStrategySignals(Array.isArray(sData) ? sData : sData?.results ?? []);
                 setIntelSignals(Array.isArray(iData) ? iData : iData?.results ?? []);
+                const eps = verdictRes?.data?.episodes ?? [];
+                setZoneBySource(Object.fromEntries(eps.map((e: any) => [e.source, e.status])));
             } catch (_) { }
             setLoading(false);
         };
@@ -648,7 +652,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                         {institutionalAlerts.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {institutionalAlerts.map(([source, signals]) => (
-                                    <IntelCard key={source} source={source} signals={signals} currentPrice={currentPrice} intelligence={intelligence} />
+                                    <IntelCard key={source} source={source} signals={signals} currentPrice={currentPrice} intelligence={intelligence} zoneStatus={zoneBySource[source]} />
                                 ))}
                             </div>
                         ) : (
@@ -674,7 +678,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                         {buySellSignals.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {buySellSignals.map(([source, signals]) => (
-                                    <IntelCard key={source} source={source} signals={signals} currentPrice={currentPrice} intelligence={intelligence} />
+                                    <IntelCard key={source} source={source} signals={signals} currentPrice={currentPrice} intelligence={intelligence} zoneStatus={zoneBySource[source]} />
                                 ))}
                             </div>
                         ) : (
@@ -700,7 +704,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                         {accumulationSignals.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {accumulationSignals.map(([source, signals]) => (
-                                    <IntelCard key={source} source={source} signals={signals} currentPrice={currentPrice} intelligence={intelligence} />
+                                    <IntelCard key={source} source={source} signals={signals} currentPrice={currentPrice} intelligence={intelligence} zoneStatus={zoneBySource[source]} />
                                 ))}
                             </div>
                         ) : (
@@ -715,7 +719,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
 
 // ─── Helper Component: IntelCard ──────────────────────────────────────────
 
-function IntelCard({ source, signals, currentPrice, intelligence }: { source: string; signals: GeneratedSignal[]; currentPrice?: number; intelligence?: any }) {
+function IntelCard({ source, signals, currentPrice, intelligence, zoneStatus }: { source: string; signals: GeneratedSignal[]; currentPrice?: number; intelligence?: any; zoneStatus?: string }) {
     const SourceIcon = SOURCE_ICONS[source] || Activity;
     const colors = SOURCE_COLORS[source] || SOURCE_COLORS['SMART_MONEY'];
     const latestSignal = [...signals].sort((a, b) => b.generated_date.localeCompare(a.generated_date))[0];
@@ -746,8 +750,18 @@ function IntelCard({ source, signals, currentPrice, intelligence }: { source: st
                                 {isPlatinum && <span className="text-[8px] font-semibold uppercase px-1.5 py-0.5 rounded bg-slate-900 dark:bg-white text-white dark:text-black tracking-wider border border-slate-700 dark:border-slate-200">Platinum</span>}
                                 {isGold && <span className="text-[8px] font-semibold uppercase px-1.5 py-0.5 rounded bg-amber-500 text-white tracking-wider border border-amber-600">Gold</span>}
                             </div>
-                            <div className={cn("inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border tracking-tight", freshness?.color || 'text-slate-400 border-border')}>
-                                <freshness.icon size={8} />{freshness?.label || 'Steady'}
+                            <div className="flex items-center gap-1 flex-wrap">
+                                <div className={cn("inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[8px] font-bold border tracking-tight", freshness?.color || 'text-slate-400 border-border')}>
+                                    <freshness.icon size={8} />{freshness?.label || 'Steady'}
+                                </div>
+                                {zoneStatus && (
+                                    <span className={cn('mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase border',
+                                        zoneStatus === 'IN_ZONE' && 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
+                                        zoneStatus === 'EXTENDED' && 'text-amber-500 bg-amber-500/10 border-amber-500/20',
+                                        zoneStatus === 'STALE' && 'text-slate-400 bg-slate-400/10 border-slate-400/20')}>
+                                        {zoneStatus.replace(/_/g, ' ')}
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>
