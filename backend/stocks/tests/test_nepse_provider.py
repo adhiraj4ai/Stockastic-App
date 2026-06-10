@@ -93,3 +93,58 @@ def test_map_prices_raises_schema_error_on_dash_close():
     prov = _provider_returning([{"symbol": "NABIL", "closePrice": "-"}])
     with pytest.raises(ProviderSchemaError):
         prov.fetch_daily_prices(date(2026, 6, 10))
+
+
+# ── Task 5: NepseApiProvider floorsheet/summary/company/index tests ────────
+
+from datetime import date as _d
+
+from stocks.services.market_data.contracts import (
+    CompanyRecord, FloorsheetRecord, IndexRecord, MarketSummaryRecord,
+)
+
+
+def test_map_floorsheet():
+    prov = _provider_returning(_load("floorsheet.json"))
+    recs = list(prov.fetch_floorsheet(_d(2026, 6, 10)))
+    assert len(recs) == 1
+    r = recs[0]
+    assert isinstance(r, FloorsheetRecord)
+    assert r.transaction_id == 202606100001
+    assert r.symbol == "NABIL"
+    assert r.quantity == 100 and r.rate == 510.0
+    assert r.buyer_id == 58 and r.seller_id == 12
+
+
+def test_map_market_summary_merges_gainers_losers():
+    prov = NepseApiProvider(base_url="https://example.test")
+    payloads = {
+        "/Summary": _load("summary.json"),
+        "/TopGainers": _load("top_gainers.json"),
+        "/TopLosers": _load("top_losers.json"),
+    }
+    prov.client.get_json = lambda path, params=None: payloads[path]  # type: ignore
+    rec = prov.fetch_market_summary(_d(2026, 6, 10))
+    assert isinstance(rec, MarketSummaryRecord)
+    assert rec.total_turnover == 4489236458.2
+    assert rec.total_transactions == 85879
+    assert rec.top_gainers and rec.top_gainers[0]["symbol"] == "ABC"
+    assert rec.top_losers and rec.top_losers[0]["symbol"] == "XYZ"
+
+
+def test_map_company_list():
+    prov = _provider_returning(_load("company_list.json"))
+    recs = prov.fetch_company_list()
+    assert recs[0] == CompanyRecord(
+        symbol="NABIL", name="Nabil Bank Limited",
+        sector="Commercial Banks", status="Active",
+    )
+
+
+def test_map_indices_from_dict():
+    prov = _provider_returning(_load("nepse_index.json"))
+    recs = prov.fetch_indices(_d(2026, 6, 10))
+    by_name = {r.index_name: r for r in recs}
+    assert isinstance(by_name["Banking"], IndexRecord)
+    assert by_name["NEPSE Index"].value == 2650.5
+    assert by_name["Banking"].change == -3.1
