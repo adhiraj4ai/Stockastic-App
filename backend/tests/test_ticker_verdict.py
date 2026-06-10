@@ -89,3 +89,61 @@ class TestBuildVerdict:
         _episode(symbol="NOPX", producer_key="SMART_MONEY")
         v = build_verdict("NOPX")
         assert v["entry"] is None and v["episodes"] == []
+
+
+@pytest.mark.django_db
+class TestTickerVerdictAPI:
+    def _fake_verdict(self, symbol="NABIL"):
+        return {"symbol": symbol, "as_of": "2026-06-10", "confluence_score": 81,
+                "components": {}, "episodes": [],
+                "entry": {"price": 100.0, "zone_low": 96.0, "zone_high": 104.0,
+                          "status": "IN_ZONE", "last_signal_age_days": 1,
+                          "latest_close": 101.0},
+                "targets": {"tp1": 120.0, "sl": 90.0}, "analog": None, "catalyst": None}
+
+    def test_returns_verdict_with_sizing(self, auth_client):
+        from decimal import Decimal as D
+        from django.contrib.auth.models import User
+        from django.core.cache import cache
+        from stocks.models import PortfolioAccount
+        cache.clear()
+        user = User.objects.get(username="testuser")
+        PortfolioAccount.objects.create(user=user, name="Live", account_type="LIVE",
+                                        balance=D("1000000"),
+                                        default_risk_percentage=D("1.00"))
+        with patch("stocks.views.ticker_verdict.build_verdict",
+                   return_value=self._fake_verdict()) as mock_build:
+            resp = auth_client.get("/api/stocks/ticker-verdict/NABIL/")
+            assert resp.status_code == 200
+            data = resp.json()
+            assert data["confluence_score"] == 81
+            # entry IN_ZONE → sized at latest_close 101; 10000 / (101-90) = 909
+            assert data["sizing"]["shares"] == 909
+            assert data["sizing"]["account_name"] == "Live"
+            resp_lower = auth_client.get("/api/stocks/ticker-verdict/nabil/")
+        assert resp_lower.status_code == 200
+        assert resp_lower.json()["confluence_score"] == 81
+        mock_build.assert_called_once()  # lowercase hit the SAME cache entry
+
+    def test_cache_hit_skips_recompute_but_not_sizing(self, auth_client):
+        from decimal import Decimal as D
+        from django.contrib.auth.models import User
+        from django.core.cache import cache
+        from stocks.models import PortfolioAccount
+        cache.clear()
+        user = User.objects.get(username="testuser")
+        account = PortfolioAccount.objects.create(
+            user=user, name="Live", account_type="LIVE",
+            balance=D("1000000"), default_risk_percentage=D("1.00"))
+        with patch("stocks.views.ticker_verdict.build_verdict",
+                   return_value=self._fake_verdict()) as mock_build:
+            resp1 = auth_client.get("/api/stocks/ticker-verdict/NABIL/")
+            account.delete()
+            resp2 = auth_client.get("/api/stocks/ticker-verdict/NABIL/")
+        assert mock_build.call_count == 1          # second call served from cache
+        assert resp1.json()["sizing"]["shares"] == 909
+        assert resp2.json()["sizing"] is None       # sizing per-request, never cached
+
+    def test_requires_auth(self, api_client):
+        resp = api_client.get("/api/stocks/ticker-verdict/NABIL/")
+        assert resp.status_code in (401, 403)
