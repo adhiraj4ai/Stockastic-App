@@ -2564,6 +2564,86 @@ async def propose_trade_plan(args: dict) -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Opportunity Engine tools
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@tool(
+    "get_top_opportunities",
+    "Today's best NEPSE BUY opportunities, ranked by validated, regime-aware, fee-net edge with live-track-record trust. Use when the user asks what to buy / best trades / opportunities right now.",
+    {"limit": int, "symbols": str},
+)
+async def get_top_opportunities(args: dict) -> dict:
+    limit = args.get("limit") or 15
+    symbols_arg = (args.get("symbols") or "").strip()
+    symbols = [s.strip() for s in symbols_arg.split(",")] if symbols_arg else None
+
+    @sync_to_async
+    def _run():
+        from stocks.services.opportunity_engine import rank_opportunities
+        res = rank_opportunities(symbols=symbols, limit=int(limit))
+        reg = res["regime"]
+        opps = res["opportunities"]
+        if not opps:
+            return _result(
+                f"No ranked BUY entries right now (market regime: {reg['regime']}, "
+                f"breadth {reg['breadth']}). {len(res.get('exits', []))} exit signals today.",
+            )
+        lines = [
+            f"{i+1}. {o['symbol']} via {o['strategy_name']} — "
+            f"annualized edge {o['edge']*100:.1f}%, trust {o['trust']}"
+            + (f", live win {o['live_win_rate']*100:.0f}% (n={o['live_resolved']})" if o['live_resolved'] else "")
+            for i, o in enumerate(opps[:int(limit)])
+        ]
+        prose = (f"Top opportunities in a {reg['regime']} market (breadth {reg['breadth']}):\n"
+                 + "\n".join(lines)
+                 + "\n\nEdge is annualized, fee-net, per-symbol. CONFIRMED = backtest agrees with the "
+                   "live signal record; UNCONFIRMED = not enough resolved live signals yet.")
+        return _result(prose, card={"type": "opportunities", "data": res})
+
+    return await _run()
+
+
+@tool(
+    "explain_opportunity",
+    "Full breakdown of one opportunity: backtest edge, significance, live track record, trust tier, regime. Args: producer (e.g. 'USER_STRATEGY:15') and symbol.",
+    {"producer": str, "symbol": str},
+)
+async def explain_opportunity(args: dict) -> dict:
+    producer = (args.get("producer") or "").strip()
+    symbol = (args.get("symbol") or "").strip().upper()
+    if not producer or not symbol:
+        return _result("Both 'producer' and 'symbol' are required.", is_error=True)
+
+    @sync_to_async
+    def _run():
+        from stocks.services.opportunity_engine import rank_opportunities
+        from stocks.services.live_validation import producer_track_record
+        res = rank_opportunities(symbols=[symbol], limit=100)
+        match = next((o for o in res["opportunities"] if o["producer"] == producer and o["symbol"] == symbol), None)
+        live = producer_track_record(producer)
+        reg = res["regime"]
+        if not match:
+            return _result(
+                f"{producer} is not signalling a BUY on {symbol} today (regime {reg['regime']}). "
+                f"Live record: {live['won']}W/{live['lost']}L/{live['active']}A, "
+                f"avg P&L {live['avg_pnl_pct']:.1f}%.",
+            )
+        prose = (
+            f"{symbol} via {match['strategy_name']} ({producer}) — {reg['regime']} market.\n"
+            f"- Annualized fee-net edge (this symbol): {match['edge']*100:.1f}%\n"
+            f"- Backtest significance p-value: {match['pvalue']:.3f}"
+            f" ({'significant' if match['pvalue']<=0.05 else 'not significant'})\n"
+            f"- Trust: {match['trust']} — live record {live['won']}W/{live['lost']}L "
+            f"(avg P&L {live['avg_pnl_pct']:.1f}%, {live['resolved']} resolved)\n"
+            f"- Composite score: {match['score']:.4f}"
+        )
+        return _result(prose, card={"type": "opportunity_detail", "data": {"opportunity": match, "live": live, "regime": reg}})
+
+    return await _run()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # MCP server registration
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -2597,6 +2677,9 @@ ALL_TOOLS = [
     screen_stocks,
     get_closed_signals,
     get_strategy_experiments,
+    # Opportunity Engine
+    get_top_opportunities,
+    explain_opportunity,
     # Strategy builder / inference
     list_strategy_components,
     describe_strategy,

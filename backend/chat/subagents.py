@@ -106,6 +106,8 @@ BUY_SELL_STRATEGIST = AgentDefinition(
         tool_id("scan_strategies_for_symbol"),
         tool_id("screen_stocks"),
         tool_id("search_stocks"),
+        tool_id("get_top_opportunities"),
+        tool_id("explain_opportunity"),
     ],
     model="opus",
     effort="high",
