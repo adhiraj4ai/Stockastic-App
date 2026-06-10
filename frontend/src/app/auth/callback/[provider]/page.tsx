@@ -30,11 +30,7 @@ export default function SocialCallbackPage() {
                     code: code
                 });
 
-                const { access, refresh, user } = response.data;
-
-                // Handle token storage (same as LoginPage)
-                localStorage.setItem('access_token', access);
-                localStorage.setItem('refresh_token', refresh);
+                const { access, refresh } = response.data;
 
                 const isSecure = window.location.protocol === 'https:';
                 Cookies.set('access_token', access, { expires: 1, secure: isSecure, sameSite: 'lax' });

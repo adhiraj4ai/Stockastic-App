@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/lib/api';
 import {
     X, Save, Trash2, AlertTriangle, Wallet,
     ShieldAlert, Calculator
@@ -54,17 +54,13 @@ export function AccountSettingsDialog({
         if (!account) return;
         setLoading(true);
         try {
-            const token = localStorage.getItem('access_token');
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
-            await axios.patch(
-                `${apiUrl}/api/stocks/accounts/${account.id}/`,
+            await api.patch(
+                `/api/stocks/accounts/${account.id}/`,
                 {
                     name,
                     balance: parseFloat(balance),
                     default_risk_percentage: parseFloat(riskPercentage)
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
+                }
             );
 
             onUpdate();
@@ -83,13 +79,7 @@ export function AccountSettingsDialog({
 
         setLoading(true);
         try {
-            const token = localStorage.getItem('access_token');
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
-            await axios.delete(
-                `${apiUrl}/api/stocks/accounts/${account.id}/`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            await api.delete(`/api/stocks/accounts/${account.id}/`);
 
             onDelete();
             onOpenChange(false);

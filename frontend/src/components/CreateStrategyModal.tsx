@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import axios from 'axios';
+import api from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { X, Lightbulb, TrendingUp, Zap, Target, Activity, Shield, BarChart3, PieChart, Flame, Rocket, Cpu, Layers, Blocks, Code, Check } from 'lucide-react';
 
@@ -82,19 +82,12 @@ export default function CreateStrategyModal({ isOpen, onClose, onSuccess }: Crea
         setError('');
 
         try {
-            const token = localStorage.getItem('access_token');
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
             // Builder mode is composed (spec-driven); Code mode is custom (raw code).
             const payload: Record<string, unknown> = { name, description, icon: selectedIcon, icon_color: selectedIconColor };
             if (mode === 'builder') payload.spec = STARTER_SPEC;
             else payload.code = STARTER_CODE;
 
-            const response = await axios.post(
-                `${apiUrl}/api/stocks/strategies/`,
-                payload,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await api.post('/api/stocks/strategies/', payload);
 
             // Reset and close
             setName('');

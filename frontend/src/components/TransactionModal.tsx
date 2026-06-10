@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Calculator, ShieldAlert, Calendar } from 'lucide-react';
-import axios from 'axios';
+import api from '@/lib/api';
 import { CompanySelect } from './CompanySelect';
 import { formatRupees } from '@/lib/formatters';
 import {
@@ -63,18 +63,12 @@ export default function TransactionModal({
     useEffect(() => {
         const checkUser = async () => {
             try {
-                const token = localStorage.getItem('access_token');
-                if (token) {
-                    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                    const res = await axios.get(`${apiUrl}/api/users/me/`, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    if (res.data.username === 'ashmi') {
-                        setIsAshmi(true);
-                        // Auto-select first account ONLY if not explicitly provided by props
-                        if (accounts.length > 0 && !formData.account && !defaultAccount) {
-                            setFormData(prev => ({ ...prev, account: accounts[0].id.toString() }));
-                        }
+                const res = await api.get('/api/users/me/');
+                if (res.data.username === 'ashmi') {
+                    setIsAshmi(true);
+                    // Auto-select first account ONLY if not explicitly provided by props
+                    if (accounts.length > 0 && !formData.account && !defaultAccount) {
+                        setFormData(prev => ({ ...prev, account: accounts[0].id.toString() }));
                     }
                 }
             } catch (error) {
@@ -171,9 +165,6 @@ export default function TransactionModal({
         e.preventDefault();
         setLoading(true);
         try {
-            const token = localStorage.getItem('access_token');
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
             const payload: any = {
                 ...formData,
                 transaction_type: activeTab,
@@ -186,13 +177,9 @@ export default function TransactionModal({
             }
 
             if (transactionToEdit) {
-                await axios.put(`${apiUrl}/api/stocks/transactions/${transactionToEdit.id}/`, payload, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                await api.put(`/api/stocks/transactions/${transactionToEdit.id}/`, payload);
             } else {
-                await axios.post(`${apiUrl}/api/stocks/transactions/`, payload, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                await api.post('/api/stocks/transactions/', payload);
             }
 
             onSuccess();

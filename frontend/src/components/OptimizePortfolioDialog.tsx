@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/lib/api';
 import { X, Sparkles, TrendingUp, ShieldAlert, BarChart3, Info } from 'lucide-react';
 import {
     BarChart,
@@ -50,18 +50,13 @@ export function OptimizePortfolioDialog({ isOpen, onClose, currentHoldings, acco
         setLoading(true);
         setError(null);
         try {
-            const token = localStorage.getItem('access_token');
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
             // Add cache-busting timestamp
-            let url = `${apiUrl}/api/stocks/portfolio/optimize/?method=${method}&_t=${Date.now()}`;
+            let url = `/api/stocks/portfolio/optimize/?method=${method}&_t=${Date.now()}`;
             if (accountId !== 'all') {
                 url += `&account=${accountId}`;
             }
 
-            const response = await axios.get(url, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await api.get(url);
             setResult(response.data);
         } catch (err: any) {
             console.error('Optimization failed', err);

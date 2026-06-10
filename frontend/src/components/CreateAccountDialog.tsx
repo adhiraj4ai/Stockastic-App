@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import axios from 'axios';
+import api from '@/lib/api';
 import { X } from 'lucide-react';
 
 interface CreateAccountDialogProps {
@@ -22,16 +22,12 @@ export function CreateAccountDialog({ isOpen, onOpenChange, onSuccess }: CreateA
 
         setLoading(true);
         try {
-            const token = localStorage.getItem('access_token');
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
             const payload = {
                 name,
                 account_type: accountType,
                 ...(accountType === 'PAPER' ? { balance: parseFloat(balance) } : {})
             };
-            await axios.post(`${apiUrl}/api/stocks/accounts/`, payload, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.post('/api/stocks/accounts/', payload);
             setName('');
             setAccountType('LIVE');
             setBalance('1000000');

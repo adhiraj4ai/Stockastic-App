@@ -49,8 +49,6 @@ export default function LoginPage() {
             }
 
             const { access, refresh } = response.data;
-            localStorage.setItem('access_token', access);
-            localStorage.setItem('refresh_token', refresh);
 
             const isSecure = window.location.protocol === 'https:';
             Cookies.set('access_token', access, { expires: 1, secure: isSecure, sameSite: 'lax' });
