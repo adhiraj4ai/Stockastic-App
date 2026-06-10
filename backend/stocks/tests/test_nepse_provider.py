@@ -177,3 +177,10 @@ def test_company_status_normalized_to_canonical_code():
     recs = {c.symbol: c for c in prov.fetch_company_list()}
     assert recs["NABIL"].status == "A"
     assert recs["XYZ"].status == "S"
+
+
+def test_map_indices_raises_on_unparseable_value():
+    # A "-" sentinel for a required index value must raise, not yield value=None.
+    prov = _provider_returning({"Banking": {"index": "Banking", "currentValue": "-"}})
+    with pytest.raises(ProviderSchemaError):
+        prov.fetch_indices(_d(2026, 6, 10))

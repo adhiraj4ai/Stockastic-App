@@ -255,7 +255,7 @@ class NepseApiProvider:
             out.append(IndexRecord(
                 index_name=str(name),
                 date=on,
-                value=_num(_pick(row, self.INDEX_FIELDS["value"], required=True, ctx=f"NepseIndex[{name}].value")),
+                value=_req_num(row, self.INDEX_FIELDS["value"], f"NepseIndex[{name}].value"),
                 change=_num(_pick(row, self.INDEX_FIELDS["change"], required=False, ctx="")),
                 change_percent=_num(_pick(row, self.INDEX_FIELDS["change_percent"], required=False, ctx="")),
                 turnover=_num(_pick(row, self.INDEX_FIELDS["turnover"], required=False, ctx="")),
