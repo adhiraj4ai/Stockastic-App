@@ -618,31 +618,8 @@ function DashboardContent({
                         )}
 
 
-                        {/* Center Section: Navigation Links & Ticker Pulse */}
+                        {/* Center Section: Ticker Pulse */}
                         <div className="flex-1 flex justify-center items-center gap-1">
-                            {[
-                                { name: 'Home', href: '/', icon: Home },
-                                { name: 'Dashboard', href: '/market', icon: LayoutDashboard },
-                                { name: 'Portfolio', href: '/portfolio', icon: Briefcase }
-                            ].map((link) => {
-                                const isActive = pathname === link.href || (link.href === '/market' && pathname.startsWith('/market'));
-                                return (
-                                    <Link
-                                        key={link.href}
-                                        href={link.href}
-                                        className={cn(
-                                            "px-2.5 py-1.5 rounded-md text-[13px] font-medium transition-colors flex items-center gap-2",
-                                            isActive
-                                                ? "bg-accent text-foreground"
-                                                : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                                        )}
-                                    >
-                                        <link.icon size={14} />
-                                        <span className="hidden lg:inline">{link.name}</span>
-                                    </Link>
-                                );
-                            })}
-
                             {pathname.startsWith('/ticker/') && (
                                 <div className="flex items-center bg-card border border-border rounded-md overflow-hidden ml-3">
                                     <SymbolSelector
