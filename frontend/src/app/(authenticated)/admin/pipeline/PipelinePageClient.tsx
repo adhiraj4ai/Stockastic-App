@@ -83,6 +83,16 @@ export default function PipelinePage() {
     const [evaluationLogs, setEvaluationLogs] = useState<LogEntry[]>([]);
     const [showEvaluationLogs, setShowEvaluationLogs] = useState(false);
 
+    // NepseAPI Ingest State
+    const [apiIngestStatus, setApiIngestStatus] = useState<'idle' | 'running' | 'completed' | 'error'>('idle');
+    const [apiIngestLogs, setApiIngestLogs] = useState<{ type: string; message: string; timestamp: Date }[]>([]);
+    const [showApiIngestLogs, setShowApiIngestLogs] = useState(false);
+    const [apiDate, setApiDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+    const [apiDatasets, setApiDatasets] = useState<Record<string, boolean>>({
+        prices: true, floorsheet: true, summary: true, companies: true, indices: true,
+    });
+    const apiIngestAbortController = useRef<AbortController | null>(null);
+
     // Abort controllers for stopping processes
     const indicatorAbortController = useRef<AbortController | null>(null);
     const optimizationAbortController = useRef<AbortController | null>(null);
@@ -651,6 +661,60 @@ export default function PipelinePage() {
         }
     };
 
+    const handleRunApiIngest = async () => {
+        if (apiIngestStatus === 'running') return;
+        const selected = Object.entries(apiDatasets).filter(([, v]) => v).map(([k]) => k);
+        if (selected.length === 0) { toast.error('Select at least one dataset'); return; }
+
+        setApiIngestStatus('running');
+        setApiIngestLogs([]);
+        setShowApiIngestLogs(true);
+
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const qs = new URLSearchParams({ datasets: selected.join(','), date: apiDate });
+        const url = `${apiUrl}/api/stocks/pipeline/ingest_market_data_stream/?${qs.toString()}`;
+        apiIngestAbortController.current = new AbortController();
+
+        try {
+            const response = await fetch(url, { credentials: 'include', signal: apiIngestAbortController.current.signal });
+            if (!response.ok) {
+                toast.error(response.status === 401 ? 'Session expired. Please login again.' : `Connection failed: ${response.statusText}`);
+                setApiIngestStatus('error');
+                return;
+            }
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+            if (!reader) { toast.error('Failed to initialize stream reader'); setApiIngestStatus('error'); return; }
+
+            let buffer = '';
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+                for (const line of lines) {
+                    const t = line.trim();
+                    if (!t || !t.startsWith('data: ')) continue;
+                    try {
+                        const data = JSON.parse(t.substring(6));
+                        if (data.type === 'init') continue;
+                        if (data.type === 'done') { setApiIngestStatus('completed'); toast.success('Market data ingested!'); fetchHistory(); return; }
+                        if (data.type === 'error') { setApiIngestStatus('error'); toast.error(data.message || 'Ingestion error'); return; }
+                        if (data.type === 'log' || data.type === 'status') {
+                            setApiIngestLogs(prev => [...prev, { type: data.type, message: data.message, timestamp: new Date() }]);
+                        }
+                    } catch (e) { console.error('Error parsing stream line:', t, e); }
+                }
+            }
+        } catch (error: any) {
+            if (error.name === 'AbortError') return;
+            console.error('Stream fetch failed:', error);
+            setApiIngestStatus('error');
+            toast.error('Connection to log stream lost');
+        }
+    };
+
     const handleStopIntelSignals = async () => {
         if (intelAbortController.current) {
             intelAbortController.current.abort();
@@ -957,6 +1021,36 @@ export default function PipelinePage() {
                             showLogs={showEvaluationLogs}
                             onToggleLogs={() => setShowEvaluationLogs(!showEvaluationLogs)}
                         />
+
+                        {/* Fetch from NepseAPI */}
+                        <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+                            <div>
+                                <h3 className="text-sm font-bold text-foreground">Fetch from NepseAPI</h3>
+                                <p className="text-xs text-muted-foreground">Pull EOD data directly from the live API.</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <label className="text-xs text-muted-foreground">Date</label>
+                                <input type="date" value={apiDate} onChange={e => setApiDate(e.target.value)}
+                                       className="rounded-md border border-border bg-background px-2 py-1 text-xs" />
+                            </div>
+                            <div className="flex flex-wrap gap-3">
+                                {Object.keys(apiDatasets).map(ds => (
+                                    <label key={ds} className="flex items-center gap-1.5 text-xs capitalize">
+                                        <input type="checkbox" checked={apiDatasets[ds]}
+                                               onChange={e => setApiDatasets(prev => ({ ...prev, [ds]: e.target.checked }))} />
+                                        {ds}
+                                    </label>
+                                ))}
+                            </div>
+                            <Button onClick={handleRunApiIngest} disabled={apiIngestStatus === 'running'} className="w-full">
+                                {apiIngestStatus === 'running' ? 'Fetching…' : 'Fetch from NepseAPI'}
+                            </Button>
+                            {showApiIngestLogs && (
+                                <div className="max-h-48 overflow-y-auto rounded-md bg-muted/40 p-3 font-mono text-[11px] space-y-0.5">
+                                    {apiIngestLogs.map((l, i) => (<div key={i} className="text-muted-foreground">{l.message}</div>))}
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Upload History */}
