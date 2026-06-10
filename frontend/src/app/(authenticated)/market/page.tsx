@@ -30,7 +30,6 @@ import { VolumeShockers } from '@/components/VolumeShockers';
 import { BreakoutWatchlist } from '@/components/BreakoutWatchlist';
 import { MarketBreadthTrend } from '@/components/MarketBreadthTrend';
 import { InstitutionalInterest } from '@/components/InstitutionalInterest';
-import { MarketTabs } from '@/components/MarketTabs';
 import { useMarketData, type StockData } from '@/hooks/useMarketData';
 import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
@@ -89,7 +88,6 @@ export default function MarketTerminalPage() {
     if (error && !data) {
         return (
             <DashboardLayout>
-                <MarketTabs />
                 <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8">
                     <ShieldAlert className="h-10 w-10 text-destructive mb-4" />
                     <div className="text-foreground text-base font-semibold mb-2">Error loading market data</div>
@@ -108,7 +106,6 @@ export default function MarketTerminalPage() {
     if (loading && !data) {
         return (
             <DashboardLayout>
-                <MarketTabs />
                 <div className="flex items-center justify-center min-h-[50vh]">
                     <PageLoader text="Initializing data stream..." />
                 </div>
@@ -119,7 +116,6 @@ export default function MarketTerminalPage() {
     if (!data || !data.market_summary) {
         return (
             <DashboardLayout>
-                <MarketTabs />
                 <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8">
                     <span className="text-gray-500 dark:text-gray-400">No market data available yet. Please run data ingestion.</span>
                 </div>
@@ -197,7 +193,6 @@ export default function MarketTerminalPage() {
             </div>
 
             <div className="px-6 lg:px-10 py-6 space-y-6 min-h-screen">
-                <MarketTabs />
 
                 <motion.div
                     variants={containerVariants}
