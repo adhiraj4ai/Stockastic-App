@@ -5,3 +5,4 @@ scripts/seed_strategies.py
 
 # Database backups (nightly pg_dump, never commit)
 backups/
+.superpowers/
