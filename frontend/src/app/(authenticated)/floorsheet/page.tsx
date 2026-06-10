@@ -200,22 +200,12 @@ function FloorsheetContent() {
     };
 
     return (
-        <DashboardLayout title="Floorsheet Analytics">
+        <DashboardLayout title="Floorsheet Analytics" subtitle="Real-time transaction analysis and broker tracking">
             <div className="p-4 md:p-6 space-y-6">
 
-                {/* Header & Controls */}
-                <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                            <Activity className="w-6 h-6 text-blue-600" />
-                            Floorsheet Analytics
-                        </h1>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                            Real-time transaction analysis and broker tracking
-                        </p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 items-center bg-white dark:bg-card p-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                {/* Controls Bar */}
+                <div className="flex flex-col md:flex-row gap-4 justify-end items-start md:items-center">
+                    <div className="flex flex-wrap gap-2 items-center bg-white dark:bg-card px-4 py-3 rounded-2xl border border-slate-200 dark:border-border shadow-sm w-full md:w-auto">
                         <Filter className="w-4 h-4 text-slate-400 ml-2" />
                         <Input
                             placeholder="Symbol"
@@ -259,7 +249,7 @@ function FloorsheetContent() {
                     <>
                         {/* Summary Cards */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <Card className="bg-muted/40 dark:from-slate-900 dark:to-slate-900 border-blue-100 dark:border-slate-800">
+                            <Card className="bg-white dark:bg-card border-slate-200 dark:border-slate-800">
                                 <CardContent className="p-4 flex items-center gap-4">
                                     <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                                         <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -270,7 +260,7 @@ function FloorsheetContent() {
                                     </div>
                                 </CardContent>
                             </Card>
-                            <Card className="bg-muted/40 dark:from-slate-900 dark:to-slate-900 border-indigo-100 dark:border-slate-800">
+                            <Card className="bg-white dark:bg-card border-slate-200 dark:border-slate-800">
                                 <CardContent className="p-4 flex items-center gap-4">
                                     <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
                                         <Users className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -281,7 +271,7 @@ function FloorsheetContent() {
                                     </div>
                                 </CardContent>
                             </Card>
-                            <Card className="bg-muted/40 dark:from-slate-900 dark:to-slate-900 border-emerald-100 dark:border-slate-800">
+                            <Card className="bg-white dark:bg-card border-slate-200 dark:border-slate-800">
                                 <CardContent className="p-4 flex items-center gap-4">
                                     <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
                                         <Activity className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
