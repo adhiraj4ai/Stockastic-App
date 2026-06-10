@@ -95,10 +95,11 @@ def _safe(stats, key, default=0.0):
 def normalize_metrics(stats):
     """Flatten a backtesting.py stats Series into a JSON-serializable dict.
 
-    NaN/inf (which backtesting.py emits for zero-trade runs) are coerced to 0.0
-    so downstream aggregation and JSON serialization stay clean.
+    NaN/inf (which backtesting.py emits for zero-trade runs) are coerced to 0.0.
+    Per-trade outcomes are captured from ``stats['_trades']`` when present so the
+    statistics layer can compute win-rate intervals and bootstrap significance.
     """
-    return {
+    metrics = {
         "return_pct": _safe(stats, "Return [%]"),
         "buy_hold_return_pct": _safe(stats, "Buy & Hold Return [%]"),
         "sharpe": _safe(stats, "Sharpe Ratio"),
@@ -111,6 +112,21 @@ def normalize_metrics(stats):
         "profit_factor": _safe(stats, "Profit Factor"),
         "ann_return_pct": _safe(stats, "Return (Ann.) [%]"),
     }
+    trades = None
+    try:
+        trades = stats["_trades"]
+    except (KeyError, TypeError):
+        trades = None
+    if trades is not None and len(trades) and "ReturnPct" in trades:
+        rets = [float(x) for x in trades["ReturnPct"].tolist()]
+        metrics["trade_returns"] = rets
+        metrics["wins"] = int(sum(1 for r in rets if r > 0))
+        metrics["losses"] = int(len(rets) - metrics["wins"])
+    else:
+        metrics["trade_returns"] = []
+        metrics["wins"] = 0
+        metrics["losses"] = 0
+    return metrics
 
 
 def _buy_hold_cost_pct(cash, resolved_commission, resolved_spread):
