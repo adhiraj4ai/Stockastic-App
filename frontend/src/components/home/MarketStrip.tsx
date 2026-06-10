@@ -24,10 +24,10 @@ interface MarketStripProps {
 }
 
 export function MarketStrip({ summary, status, loading, error }: MarketStripProps) {
-    if (loading) {
+    if (loading && !summary) {
         return <div className="surface p-4 text-sm text-muted-foreground animate-pulse">Loading market data…</div>;
     }
-    if (error || !summary) {
+    if (!summary) {
         return (
             <div className="surface p-4 text-sm text-muted-foreground">
                 Market data unavailable right now.{' '}

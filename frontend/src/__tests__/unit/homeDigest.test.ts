@@ -8,7 +8,7 @@ const episode = (over: Partial<SignalEpisodeItem> = {}): SignalEpisodeItem => ({
     entry_price: '512.5',
     target_price: 560,
     stop_loss_price: 490,
-    entry_strength: 80,
+    strength: 80,
     signal_tier: 'Gold Signal',
     start_date: '2026-06-09',
     ...over,
@@ -42,9 +42,14 @@ describe('buildActionItems', () => {
         expect(shivm.price).toBe(645);
     });
 
+    it('reads conviction from the strength alias the API actually sends', () => {
+        const items = buildActionItems([episode({ strength: 42, entry_strength: undefined })], []);
+        expect(items[0].conviction).toBe(42);
+    });
+
     it('dedupes same symbol+action keeping the highest conviction', () => {
         const items = buildActionItems(
-            [episode({ symbol: 'NABIL', entry_strength: 60 })],
+            [episode({ symbol: 'NABIL', strength: 60, entry_strength: undefined })],
             [{ label: 'Ichimoku', items: [rec({ symbol: 'NABIL', strength: 90, reason: 'Cloud breakout' })] }]
         );
         expect(items).toHaveLength(1);

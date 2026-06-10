@@ -26,8 +26,8 @@ interface BelowCostRow {
     symbol: string;
     broker: string;
     wac: number;
-    current_ltp: number;
-    discount_pct: number;
+    ltp: number;
+    roc: number;
 }
 
 export function SmartMoneyHighlights() {
@@ -49,7 +49,7 @@ export function SmartMoneyHighlights() {
             const acc: AccumulationRow[] = accRes.status === 'fulfilled' && Array.isArray(accRes.value.data) ? accRes.value.data : [];
             const agg: AggressiveRow[] = aggRes.status === 'fulfilled' && Array.isArray(aggRes.value.data?.accumulators) ? aggRes.value.data.accumulators : [];
             const bc: BelowCostRow[] = bcRes.status === 'fulfilled' && Array.isArray(bcRes.value.data) ? bcRes.value.data : [];
-            setAccumulation([...acc].sort((a, b) => (b.net_qty ?? 0) - (a.net_qty ?? 0)).slice(0, 5));
+            setAccumulation(acc.filter(r => (r.net_qty ?? 0) > 0).sort((a, b) => (b.net_qty ?? 0) - (a.net_qty ?? 0)).slice(0, 5));
             setAggressive([...agg].sort((a, b) => (b.intensity ?? 0) - (a.intensity ?? 0)).slice(0, 3));
             setBelowCost(bc.slice(0, 3));
             setFailed([accRes, aggRes, bcRes].every(r => r.status === 'rejected'));
@@ -132,7 +132,7 @@ export function SmartMoneyHighlights() {
                                     href={`/ticker/${row.symbol}`}
                                     left={row.symbol}
                                     sub={`Broker ${row.broker}`}
-                                    right={<span className="text-muted-foreground">LTP {formatNepaliNumber(row.current_ltp)} vs WAC {formatNepaliNumber(row.wac)}</span>}
+                                    right={<span className="text-muted-foreground">LTP {formatNepaliNumber(row.ltp)} vs WAC {formatNepaliNumber(row.wac)}</span>}
                                 />
                             ))}
                         </div>

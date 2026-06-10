@@ -5,7 +5,8 @@ export interface SignalEpisodeItem {
     entry_price: string | number;
     target_price?: number | null;
     stop_loss_price?: number | null;
-    entry_strength: number;
+    entry_strength?: number;
+    strength?: number;
     signal_tier?: string | null;
     start_date: string;
 }
@@ -51,7 +52,7 @@ export function buildActionItems(
             symbol: ep.symbol,
             action: ep.signal,
             source: SOURCE_LABELS[ep.source] ?? ep.source,
-            conviction: ep.entry_strength,
+            conviction: ep.entry_strength ?? ep.strength ?? 0,
             price: Number.isFinite(price) ? price : null,
             detail: ep.signal_tier ?? '',
             target: ep.target_price ?? null,
