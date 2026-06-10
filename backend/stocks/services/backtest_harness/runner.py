@@ -48,7 +48,9 @@ def fetch_actions_map(tickers=None):
     from stocks.models import CorporateAction
 
     qs = CorporateAction.objects.all()
-    if tickers:
+    # `tickers` may be a numpy array (e.g. df['ticker'].unique()), whose bare
+    # truthiness raises ValueError — test length explicitly.
+    if tickers is not None and len(tickers) > 0:
         qs = qs.filter(ticker__in=list(tickers))
     out = defaultdict(list)
     for ticker, ex_date, factor in qs.values_list("ticker", "ex_date", "adjustment_factor"):

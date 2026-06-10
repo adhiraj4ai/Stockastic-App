@@ -298,3 +298,15 @@ class TestSectorIntensities:
         # downstream function reads as symbol keys → empty frames → {}.
         assert called_mapping == {"NABIL": "Banking"}
         assert out == {"NABIL": 5.2}
+
+
+@pytest.mark.django_db
+class TestFetchActionsMapArraySafety:
+    def test_accepts_numpy_array_of_tickers(self):
+        # Regression: _load_price_df_sector passes df['ticker'].unique() (ndarray);
+        # bare `if tickers:` raised "truth value of an array is ambiguous".
+        import numpy as np
+        from stocks.services.backtest_harness.runner import fetch_actions_map
+        assert fetch_actions_map(np.array(["NABIL", "NICA"])) == {}
+        assert fetch_actions_map(np.array([])) == {}
+        assert fetch_actions_map(None) == {}
