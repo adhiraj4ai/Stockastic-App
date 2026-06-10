@@ -47,6 +47,28 @@ def _pick(row: dict, keys: tuple[str, ...], *, required: bool, ctx: str):
     return None
 
 
+def _norm_company_status(raw) -> Optional[str]:
+    """Translate the external status vocabulary into the app's canonical codes.
+
+    Company.objects (EquityManager) filters status == 'A', so active/listed
+    companies MUST normalize to 'A' or they become invisible app-wide.
+    NOTE (operator): confirm the full vocabulary against live /CompanyList data
+    via `manage.py capture_nepse_fixtures` and extend this mapping if NEPSE uses
+    other tokens. Unknown values are passed through unchanged (fail-safe, visible
+    in data rather than silently mislabeled active).
+    """
+    if raw is None:
+        return None
+    s = str(raw).strip().lower()
+    if s in ("a", "active", "listed", "open", "trading"):
+        return "A"
+    if s.startswith("susp"):
+        return "S"
+    if s.startswith("delist") or s in ("d", "inactive", "i", "closed"):
+        return "D"
+    return str(raw)
+
+
 def _req_num(row: dict, keys: tuple[str, ...], ctx: str) -> float:
     """Resolve a REQUIRED numeric field. A present-but-unparseable value (e.g. the
     NEPSE "-" sentinel) is treated as schema drift and raises ProviderSchemaError —
@@ -211,7 +233,7 @@ class NepseApiProvider:
                 symbol=str(_pick(row, self.COMPANY_MAP["symbol"], required=True, ctx="CompanyList.symbol")),
                 name=str(_pick(row, self.COMPANY_MAP["name"], required=True, ctx="CompanyList.name")),
                 sector=_pick(row, self.COMPANY_MAP["sector"], required=False, ctx=""),
-                status=_pick(row, self.COMPANY_MAP["status"], required=False, ctx=""),
+                status=_norm_company_status(_pick(row, self.COMPANY_MAP["status"], required=False, ctx="")),
             ))
         return out
 

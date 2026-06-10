@@ -138,7 +138,7 @@ def test_map_company_list():
     recs = prov.fetch_company_list()
     assert recs[0] == CompanyRecord(
         symbol="NABIL", name="Nabil Bank Limited",
-        sector="Commercial Banks", status="Active",
+        sector="Commercial Banks", status="A",
     )
 
 
@@ -167,3 +167,13 @@ def test_map_indices_from_list():
     assert len(recs) == 1
     assert recs[0].index_name == "NEPSE Index"
     assert recs[0].value == 2650.5
+
+
+def test_company_status_normalized_to_canonical_code():
+    prov = _provider_returning([
+        {"symbol": "NABIL", "companyName": "Nabil", "sectorName": "Banks", "status": "Active"},
+        {"symbol": "XYZ", "companyName": "Xyz", "sectorName": "Hydropower", "status": "Suspended"},
+    ])
+    recs = {c.symbol: c for c in prov.fetch_company_list()}
+    assert recs["NABIL"].status == "A"
+    assert recs["XYZ"].status == "S"
