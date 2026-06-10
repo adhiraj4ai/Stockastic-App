@@ -1,7 +1,8 @@
 from .market import (
     Company, DelistingRecord, DailyStockPrice, DailyFloorsheet,
     DailyMarketSummary, DailyBuyerFloorsheet,
-    DailySellerFloorsheet, DailyCumulativeAccumulation
+    DailySellerFloorsheet, DailyCumulativeAccumulation,
+    DailyIndexValue
 )
 from .fundamentals import StockFundamental, Dividend, CorporateAction, FinancialReport
 from .portfolio import (

@@ -200,3 +200,23 @@ class DailyCumulativeAccumulation(models.Model):
 
     def __str__(self):
         return f"{self.symbol} - {self.entity_id} - {self.transaction_date}"
+
+class DailyIndexValue(models.Model):
+    index_name = models.CharField(max_length=64, db_index=True)
+    date = models.DateField(db_index=True)
+    value = models.DecimalField(max_digits=14, decimal_places=2)
+    open = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    high = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    low = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    change = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    change_percent = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    turnover = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+
+    class Meta:
+        db_table = 'daily_index_value'
+        unique_together = ('index_name', 'date')
+        ordering = ['-date', 'index_name']
+        indexes = [models.Index(fields=['index_name', 'date'])]
+
+    def __str__(self):
+        return f"{self.index_name} {self.date}: {self.value}"
