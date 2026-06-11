@@ -297,135 +297,10 @@ class BrokerViewSet(viewsets.ViewSet):
     def signals(self, request):
         """
         Identify high-potential signals using Institutional Clustering and Divergence.
+        Thin wrapper — logic lives in broker_research.navigator_signals().
         """
-        query = """
-        WITH accumulation_ref AS (
-            SELECT transaction_date as latest_acc_date 
-            FROM daily_cumulative_accumulation 
-            GROUP BY transaction_date 
-            HAVING COUNT(*) > 100 
-            ORDER BY transaction_date DESC 
-            LIMIT 1
-        ),
-        ranked_holders AS (
-            SELECT 
-                symbol, entity_id, cumulative_net,
-                ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY cumulative_net DESC) as rank
-            FROM daily_cumulative_accumulation, accumulation_ref
-            WHERE transaction_date = accumulation_ref.latest_acc_date
-            AND cumulative_net > 0 
-        ),
-        smart_money AS (
-            SELECT symbol, entity_id as broker 
-            FROM ranked_holders 
-            WHERE rank <= 15
-        ),
-        broker_delta AS (
-            SELECT 
-                ca.symbol, ca.entity_id as broker,
-                ca.cumulative_net as current_net,
-                (ca.cumulative_net - LAG(ca.cumulative_net, 5) OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date)) as net_5d,
-                (ca.cumulative_net - LAG(ca.cumulative_net, 20) OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date)) as net_20d,
-                ROUND(ca.cumulative_buy_amount / NULLIF(ca.cumulative_buy, 0), 2) as wac,
-                ca.transaction_date
-            FROM daily_cumulative_accumulation ca
-        ),
-        latest_broker_delta AS (
-            SELECT bd.* FROM broker_delta bd, accumulation_ref
-            WHERE bd.transaction_date = accumulation_ref.latest_acc_date
-        ),
-        symbol_clustering AS (
-            SELECT 
-                bd.symbol,
-                COUNT(DISTINCT bd.broker) FILTER (WHERE sm.broker IS NOT NULL AND bd.net_5d > 0) as cluster_count,
-                SUM(CASE WHEN sm.broker IS NOT NULL THEN bd.net_5d ELSE 0 END) as inst_net_5d,
-                SUM(CASE WHEN sm.broker IS NOT NULL THEN bd.net_20d ELSE 0 END) as inst_net_20d,
-                MAX(bd.wac) as top_broker_wac
-            FROM latest_broker_delta bd
-            LEFT JOIN smart_money sm ON bd.symbol = sm.symbol AND bd.broker = sm.broker
-            GROUP BY bd.symbol
-        ),
-        price_ref AS (
-            SELECT 
-                symbol, close, 
-                LAG(close, 5) OVER (PARTITION BY symbol ORDER BY transaction_date) as close_5d,
-                transaction_date,
-                ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY transaction_date DESC) as rn
-            FROM daily_stock_price
-        ),
-        latest_price AS (
-            SELECT * FROM price_ref WHERE rn = 1
-        )
-        SELECT 
-            sc.symbol, c."companyName" as name, c."sectorName" as sector,
-            sc.cluster_count, sc.inst_net_5d, sc.inst_net_20d, sc.top_broker_wac,
-            lp.close as ltp, lp.close_5d
-        FROM symbol_clustering sc
-        INNER JOIN companies c ON sc.symbol = c.symbol
-        INNER JOIN latest_price lp ON sc.symbol = lp.symbol
-        WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
-        AND (sc.cluster_count >= 1 OR sc.inst_net_5d > 50000)
-        ORDER BY sc.cluster_count DESC, sc.inst_net_5d DESC;
-        """
-        
-        with connections['default'].cursor() as cursor:
-            cursor.execute(query)
-            columns = [col[0] for col in cursor.description]
-            raw_results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-
-        signals = []
-        for row in raw_results:
-            ltp = float(row['ltp'] or 0)
-            wac = float(row['top_broker_wac'] or 0)
-            net_5d = float(row['inst_net_5d'] or 0)
-            clusters = row['cluster_count']
-            price_5d = float(row['close_5d'] or ltp)
-            
-            price_change = ((ltp - price_5d) / price_5d) * 100 if price_5d > 0 else 0
-            markup = ((ltp - wac) / wac) * 100 if wac > 0 else 0
-            
-            signal_type = None
-            rationale = ""
-            strength = "Low"
-
-            # 1. Platinum (Optimal Entry)
-            if clusters >= 2 and -5 <= markup <= 5:
-                signal_type = "Platinum Buy"
-                rationale = f"Institutional Clustering ({clusters} brokers) near average cost (WAC)."
-                strength = "Exceptional"
-            
-            # 2. Gold (Strong Momentum or Heavy Cluster)
-            elif clusters >= 4 or (net_5d > 200000 and price_change > 2):
-                signal_type = "Gold Signal"
-                if clusters >= 4:
-                    rationale = f"High Institutional Clustering ({clusters} brokers) identified."
-                else:
-                    rationale = f"Aggressive institutional accumulation with price momentum."
-                strength = "High"
-
-            # 3. Silver (Early Entry)
-            elif clusters >= 2:
-                signal_type = "Silver Signal"
-                rationale = f"Early institutional interest detected from {clusters} smart-money brokers."
-                strength = "Medium"
-
-            # 4. Divergence (Contrarian)
-            elif price_change < -3 and net_5d > 100000:
-                signal_type = "Bullish Divergence"
-                rationale = "Institutional accumulation increasing despite price correction."
-                strength = "High"
-
-            if signal_type:
-                row.update({
-                    'signal_type': signal_type,
-                    'rationale': rationale,
-                    'strength': strength,
-                    'markup_percent': round(markup, 2),
-                    'price_change_5d': round(price_change, 2)
-                })
-                signals.append(row)
-
-        return Response(signals)
+        from stocks.services import broker_research
+        return Response(broker_research.navigator_signals())
 
     @action(detail=False, methods=['get'])
     def favorites(self, request):
@@ -517,129 +392,22 @@ class BrokerViewSet(viewsets.ViewSet):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_broker_portfolio(request):
+    """Thin wrapper — logic lives in broker_research.broker_portfolio()."""
+    from stocks.services import broker_research
     broker_id = request.query_params.get('broker_id')
     if not broker_id:
         return Response({'error': 'broker_id is required'}, status=400)
-    
-    query = """
-    WITH ref_dates AS (
-        SELECT 
-            MAX(transaction_date) as t0,
-            MAX(transaction_date) - INTERVAL '5 days' as t5,
-            MAX(transaction_date) - INTERVAL '10 days' as t10,
-            MAX(transaction_date) - INTERVAL '15 days' as t15,
-            MAX(transaction_date) - INTERVAL '30 days' as t30,
-            MAX(transaction_date) - INTERVAL '90 days' as t90
-        FROM daily_cumulative_accumulation
-        WHERE entity_id = %s
-    ),
-    latest_positions AS (
-        SELECT
-            ca.symbol, ca.entity_id, ca.cumulative_net,
-            ca.cumulative_buy, ca.cumulative_buy_amount,
-            ROW_NUMBER() OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date DESC) as rn
-        FROM daily_cumulative_accumulation ca
-        WHERE ca.entity_id = %s
-    ),
-    historical_data AS (
-        SELECT 
-            pos.symbol,
-            (SELECT cumulative_net FROM daily_cumulative_accumulation h 
-             WHERE h.symbol = pos.symbol AND h.entity_id = pos.entity_id AND h.transaction_date <= rd.t5 
-             ORDER BY h.transaction_date DESC LIMIT 1) as net_5d,
-            (SELECT cumulative_net FROM daily_cumulative_accumulation h 
-             WHERE h.symbol = pos.symbol AND h.entity_id = pos.entity_id AND h.transaction_date <= rd.t10 
-             ORDER BY h.transaction_date DESC LIMIT 1) as net_10d,
-            (SELECT cumulative_net FROM daily_cumulative_accumulation h 
-             WHERE h.symbol = pos.symbol AND h.entity_id = pos.entity_id AND h.transaction_date <= rd.t15 
-             ORDER BY h.transaction_date DESC LIMIT 1) as net_15d,
-            (SELECT cumulative_net FROM daily_cumulative_accumulation h 
-             WHERE h.symbol = pos.symbol AND h.entity_id = pos.entity_id AND h.transaction_date <= rd.t30 
-             ORDER BY h.transaction_date DESC LIMIT 1) as net_30d,
-            (SELECT cumulative_net FROM daily_cumulative_accumulation h 
-             WHERE h.symbol = pos.symbol AND h.entity_id = pos.entity_id AND h.transaction_date <= rd.t90 
-             ORDER BY h.transaction_date DESC LIMIT 1) as net_90d
-        FROM latest_positions pos, ref_dates rd
-        WHERE pos.rn = 1
-    )
-    SELECT
-        pos.symbol, c."companyName" as name, c."sectorName" as sector,
-        pos.cumulative_net as quantity, dsp.close as current_price,
-        COALESCE(pos.cumulative_net * dsp.close, 0) as value,
-        COALESCE(pos.cumulative_buy_amount / NULLIF(pos.cumulative_buy, 0), 0) as wac,
-        (pos.cumulative_net - COALESCE(hd.net_5d, 0)) as trend_5d,
-        (pos.cumulative_net - COALESCE(hd.net_10d, 0)) as trend_10d,
-        (pos.cumulative_net - COALESCE(hd.net_15d, 0)) as trend_15d,
-        (pos.cumulative_net - COALESCE(hd.net_30d, 0)) as trend_1m,
-        (pos.cumulative_net - COALESCE(hd.net_90d, 0)) as trend_3m
-    FROM latest_positions pos
-    INNER JOIN companies c ON pos.symbol = c.symbol
-    LEFT JOIN historical_data hd ON pos.symbol = hd.symbol
-    LEFT JOIN (
-        SELECT DISTINCT ON (symbol) symbol, close FROM daily_stock_price ORDER BY symbol, transaction_date DESC
-    ) dsp ON pos.symbol = dsp.symbol
-    WHERE pos.rn = 1 AND pos.cumulative_net > 0
-    ORDER BY value DESC;
-    """
-    with connections['default'].cursor() as cursor:
-        cursor.execute(query, [broker_id, broker_id])
-        columns = [col[0] for col in cursor.description]
-        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-    total_value = sum(h['value'] for h in results if h['value'])
-    return Response({'broker_id': broker_id, 'total_value': total_value, 'holdings': results})
+    return Response(broker_research.broker_portfolio(broker_id=broker_id))
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def accumulation_history(request):
+    """Thin wrapper — logic lives in broker_research.accumulation_history()."""
+    from stocks.services import broker_research
     broker = request.query_params.get('broker')
     symbol = request.query_params.get('symbol')
-    page = int(request.query_params.get('page', 1))
-    page_size = int(request.query_params.get('page_size', 250))
-
     if not broker or not symbol:
         return Response({'error': 'Params required'}, status=400)
-
-    # Fetch history
-    history = DailyCumulativeAccumulation.objects.filter(entity_id=broker, symbol=symbol).order_by('transaction_date')
-    
-    # Calculate all deltas
-    results = []
-    prev_h = None
-    
-    for h in history:
-        if prev_h:
-            buy_qty = float(h.cumulative_buy - prev_h.cumulative_buy)
-            buy_amt = float(h.cumulative_buy_amount - prev_h.cumulative_buy_amount)
-            sell_qty = float(h.cumulative_sell - prev_h.cumulative_sell)
-            sell_amt = float(h.cumulative_sell_amount - prev_h.cumulative_sell_amount)
-            net_qty = float(h.cumulative_net - prev_h.cumulative_net)
-        else:
-            # First day in history (start state)
-            buy_qty = float(h.cumulative_buy)
-            buy_amt = float(h.cumulative_buy_amount)
-            sell_qty = float(h.cumulative_sell)
-            sell_amt = float(h.cumulative_sell_amount)
-            net_qty = float(h.cumulative_net)
-            
-        results.append({
-            'date': h.transaction_date.strftime('%Y-%m-%d'),
-            'buy_qty': buy_qty,
-            'buy_rate': buy_amt / buy_qty if buy_qty > 0 else 0,
-            'buy_amount': buy_amt,
-            'sell_qty': sell_qty,
-            'sell_rate': sell_amt / sell_qty if sell_qty > 0 else 0,
-            'sell_amount': sell_amt,
-            'net_quantity': net_qty,
-            'cumulative_qty': float(h.cumulative_net),
-            'wac': float(h.cumulative_buy_amount / h.cumulative_buy) if h.cumulative_buy > 0 else 0
-        })
-        prev_h = h
-    
-    # Reverse to show newest first for the table
-    results.reverse()
-    
-    # Paginate
-    start = (page - 1) * page_size
-    end = start + page_size
-    
-    return Response(results[start:end])
+    page = int(request.query_params.get('page', 1))
+    page_size = int(request.query_params.get('page_size', 250))
+    return Response(broker_research.accumulation_history(broker_id=broker, symbol=symbol, page=page, page_size=page_size))

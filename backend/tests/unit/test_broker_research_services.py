@@ -83,3 +83,43 @@ class TestFloorsheetExtraction:
         resp = auth_client.get("/api/stocks/floorsheet/broker_transfer/?symbol=NABIL&broker1=1&broker2=2&range=1M")
         assert resp.status_code == 200
         assert resp.json() == broker_research.share_transfers(symbol="NABIL", broker1=1, broker2=2, range_key="1M")
+
+
+class TestBrokerViewExtraction:
+    def test_navigator_signals_matches_endpoint(self, auth_client, raw_tables_exist):
+        if not raw_tables_exist:
+            pytest.skip("Raw SQL tables not present in test DB")
+        resp = auth_client.get("/api/stocks/broker-analysis/signals/")
+        assert resp.status_code == 200
+        assert resp.json() == broker_research.navigator_signals()
+
+    def test_broker_portfolio_matches_endpoint(self, auth_client, raw_tables_exist):
+        if not raw_tables_exist:
+            pytest.skip("Raw SQL tables not present in test DB")
+        resp = auth_client.get("/api/stocks/broker_portfolio/?broker_id=1")
+        assert resp.status_code == 200
+        assert resp.json() == broker_research.broker_portfolio(broker_id=1)
+
+    def test_accumulation_history_matches_endpoint(self, auth_client, raw_tables_exist):
+        if not raw_tables_exist:
+            pytest.skip("Raw SQL tables not present in test DB")
+        resp = auth_client.get("/api/stocks/accumulation_history/?broker=1&symbol=NABIL&page=1&page_size=50")
+        assert resp.status_code == 200
+        assert resp.json() == broker_research.accumulation_history(broker_id=1, symbol="NABIL", page=1, page_size=50)
+
+
+class TestForecastService:
+    def test_forecast_returns_projection_shape_or_none(self, raw_tables_exist):
+        if not raw_tables_exist:
+            pytest.skip("Raw SQL tables not present in test DB")
+        result = broker_research.accumulation_forecast(symbol="NABIL", min_intensity=3.0)
+        assert result is None or {"symbol", "current"} <= set(result.keys())
+
+    def test_forecast_is_cached(self, raw_tables_exist):
+        if not raw_tables_exist:
+            pytest.skip("Raw SQL tables not present in test DB")
+        from django.core.cache import cache
+        cache.delete("broker_research:forecast:NABIL:3.0")
+        first = broker_research.accumulation_forecast(symbol="NABIL", min_intensity=3.0)
+        if first is not None:
+            assert cache.get("broker_research:forecast:NABIL:3.0") is not None

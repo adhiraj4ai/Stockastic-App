@@ -1,9 +1,16 @@
 """Broker Research analytics service layer.
 
-Extracted behavior-identical from AccumulationMixin and FloorsheetViewSet so
-the chat tools and the REST API share one implementation (and one cache).
-broker.py extractions to follow. Functions return the exact structures the
+Extracted behavior-identical from AccumulationMixin, FloorsheetViewSet, and
+BrokerViewSet so the chat tools and the REST API share one implementation (and
+one cache). All extractions complete. Functions return the exact structures the
 views serialize.
+
+Extractions:
+  AccumulationMixin  → accumulation_flows, broker_trends, below_cost, broker_favorites
+  FloorsheetViewSet  → smart_money, focus_ranking, share_transfers
+  BrokerViewSet      → navigator_signals
+  broker.py views    → broker_portfolio, accumulation_history
+  price_forecast.py  → accumulation_forecast (new, cached 4h)
 """
 import hashlib
 from collections import defaultdict
@@ -827,6 +834,394 @@ def focus_ranking(range_key="1W"):
             'raw_sells_count': len(raw_sells)
         }
     }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BrokerViewSet / broker.py function-view extractions
+# ─────────────────────────────────────────────────────────────────────────────
+
+def navigator_signals():
+    """
+    Identify high-potential signals using Institutional Clustering and Divergence.
+    Extracted verbatim from BrokerViewSet.signals.
+
+    Returns the list of signal dicts exactly as the REST endpoint serialises them.
+    Param parsing (none required for this action) stays in the view.
+    """
+    query = """
+    WITH accumulation_ref AS (
+        SELECT transaction_date as latest_acc_date
+        FROM daily_cumulative_accumulation
+        GROUP BY transaction_date
+        HAVING COUNT(*) > 100
+        ORDER BY transaction_date DESC
+        LIMIT 1
+    ),
+    ranked_holders AS (
+        SELECT
+            symbol, entity_id, cumulative_net,
+            ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY cumulative_net DESC) as rank
+        FROM daily_cumulative_accumulation, accumulation_ref
+        WHERE transaction_date = accumulation_ref.latest_acc_date
+        AND cumulative_net > 0
+    ),
+    smart_money AS (
+        SELECT symbol, entity_id as broker
+        FROM ranked_holders
+        WHERE rank <= 15
+    ),
+    broker_delta AS (
+        SELECT
+            ca.symbol, ca.entity_id as broker,
+            ca.cumulative_net as current_net,
+            (ca.cumulative_net - LAG(ca.cumulative_net, 5) OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date)) as net_5d,
+            (ca.cumulative_net - LAG(ca.cumulative_net, 20) OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date)) as net_20d,
+            ROUND(ca.cumulative_buy_amount / NULLIF(ca.cumulative_buy, 0), 2) as wac,
+            ca.transaction_date
+        FROM daily_cumulative_accumulation ca
+    ),
+    latest_broker_delta AS (
+        SELECT bd.* FROM broker_delta bd, accumulation_ref
+        WHERE bd.transaction_date = accumulation_ref.latest_acc_date
+    ),
+    symbol_clustering AS (
+        SELECT
+            bd.symbol,
+            COUNT(DISTINCT bd.broker) FILTER (WHERE sm.broker IS NOT NULL AND bd.net_5d > 0) as cluster_count,
+            SUM(CASE WHEN sm.broker IS NOT NULL THEN bd.net_5d ELSE 0 END) as inst_net_5d,
+            SUM(CASE WHEN sm.broker IS NOT NULL THEN bd.net_20d ELSE 0 END) as inst_net_20d,
+            MAX(bd.wac) as top_broker_wac
+        FROM latest_broker_delta bd
+        LEFT JOIN smart_money sm ON bd.symbol = sm.symbol AND bd.broker = sm.broker
+        GROUP BY bd.symbol
+    ),
+    price_ref AS (
+        SELECT
+            symbol, close,
+            LAG(close, 5) OVER (PARTITION BY symbol ORDER BY transaction_date) as close_5d,
+            transaction_date,
+            ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY transaction_date DESC) as rn
+        FROM daily_stock_price
+    ),
+    latest_price AS (
+        SELECT * FROM price_ref WHERE rn = 1
+    )
+    SELECT
+        sc.symbol, c."companyName" as name, c."sectorName" as sector,
+        sc.cluster_count, sc.inst_net_5d, sc.inst_net_20d, sc.top_broker_wac,
+        lp.close as ltp, lp.close_5d
+    FROM symbol_clustering sc
+    INNER JOIN companies c ON sc.symbol = c.symbol
+    INNER JOIN latest_price lp ON sc.symbol = lp.symbol
+    WHERE c."instrumentType" NOT IN ('Mutual Funds', 'Non-Convertible Debentures')
+    AND (sc.cluster_count >= 1 OR sc.inst_net_5d > 50000)
+    ORDER BY sc.cluster_count DESC, sc.inst_net_5d DESC;
+    """
+
+    with connections['default'].cursor() as cursor:
+        cursor.execute(query)
+        columns = [col[0] for col in cursor.description]
+        raw_results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+    signals = []
+    for row in raw_results:
+        ltp = float(row['ltp'] or 0)
+        wac = float(row['top_broker_wac'] or 0)
+        net_5d = float(row['inst_net_5d'] or 0)
+        clusters = row['cluster_count']
+        price_5d = float(row['close_5d'] or ltp)
+
+        price_change = ((ltp - price_5d) / price_5d) * 100 if price_5d > 0 else 0
+        markup = ((ltp - wac) / wac) * 100 if wac > 0 else 0
+
+        signal_type = None
+        rationale = ""
+        strength = "Low"
+
+        # 1. Platinum (Optimal Entry)
+        if clusters >= 2 and -5 <= markup <= 5:
+            signal_type = "Platinum Buy"
+            rationale = f"Institutional Clustering ({clusters} brokers) near average cost (WAC)."
+            strength = "Exceptional"
+
+        # 2. Gold (Strong Momentum or Heavy Cluster)
+        elif clusters >= 4 or (net_5d > 200000 and price_change > 2):
+            signal_type = "Gold Signal"
+            if clusters >= 4:
+                rationale = f"High Institutional Clustering ({clusters} brokers) identified."
+            else:
+                rationale = f"Aggressive institutional accumulation with price momentum."
+            strength = "High"
+
+        # 3. Silver (Early Entry)
+        elif clusters >= 2:
+            signal_type = "Silver Signal"
+            rationale = f"Early institutional interest detected from {clusters} smart-money brokers."
+            strength = "Medium"
+
+        # 4. Divergence (Contrarian)
+        elif price_change < -3 and net_5d > 100000:
+            signal_type = "Bullish Divergence"
+            rationale = "Institutional accumulation increasing despite price correction."
+            strength = "High"
+
+        if signal_type:
+            row.update({
+                'signal_type': signal_type,
+                'rationale': rationale,
+                'strength': strength,
+                'markup_percent': round(markup, 2),
+                'price_change_5d': round(price_change, 2)
+            })
+            signals.append(row)
+
+    return signals
+
+
+def broker_portfolio(broker_id):
+    """
+    Return a broker's full portfolio: holdings with multi-period trend deltas.
+    Extracted verbatim from get_broker_portfolio function view.
+
+    broker_id: int or str broker ID (mirrors query param parsing in the view).
+    entity_id column is varchar — broker_id is coerced to str before binding.
+    400/missing-param guard stays in the view.
+    """
+    broker_id = str(broker_id)
+    query = """
+    WITH ref_dates AS (
+        SELECT
+            MAX(transaction_date) as t0,
+            MAX(transaction_date) - INTERVAL '5 days' as t5,
+            MAX(transaction_date) - INTERVAL '10 days' as t10,
+            MAX(transaction_date) - INTERVAL '15 days' as t15,
+            MAX(transaction_date) - INTERVAL '30 days' as t30,
+            MAX(transaction_date) - INTERVAL '90 days' as t90
+        FROM daily_cumulative_accumulation
+        WHERE entity_id = %s
+    ),
+    latest_positions AS (
+        SELECT
+            ca.symbol, ca.entity_id, ca.cumulative_net,
+            ca.cumulative_buy, ca.cumulative_buy_amount,
+            ROW_NUMBER() OVER (PARTITION BY ca.symbol, ca.entity_id ORDER BY ca.transaction_date DESC) as rn
+        FROM daily_cumulative_accumulation ca
+        WHERE ca.entity_id = %s
+    ),
+    historical_data AS (
+        SELECT
+            pos.symbol,
+            (SELECT cumulative_net FROM daily_cumulative_accumulation h
+             WHERE h.symbol = pos.symbol AND h.entity_id = pos.entity_id AND h.transaction_date <= rd.t5
+             ORDER BY h.transaction_date DESC LIMIT 1) as net_5d,
+            (SELECT cumulative_net FROM daily_cumulative_accumulation h
+             WHERE h.symbol = pos.symbol AND h.entity_id = pos.entity_id AND h.transaction_date <= rd.t10
+             ORDER BY h.transaction_date DESC LIMIT 1) as net_10d,
+            (SELECT cumulative_net FROM daily_cumulative_accumulation h
+             WHERE h.symbol = pos.symbol AND h.entity_id = pos.entity_id AND h.transaction_date <= rd.t15
+             ORDER BY h.transaction_date DESC LIMIT 1) as net_15d,
+            (SELECT cumulative_net FROM daily_cumulative_accumulation h
+             WHERE h.symbol = pos.symbol AND h.entity_id = pos.entity_id AND h.transaction_date <= rd.t30
+             ORDER BY h.transaction_date DESC LIMIT 1) as net_30d,
+            (SELECT cumulative_net FROM daily_cumulative_accumulation h
+             WHERE h.symbol = pos.symbol AND h.entity_id = pos.entity_id AND h.transaction_date <= rd.t90
+             ORDER BY h.transaction_date DESC LIMIT 1) as net_90d
+        FROM latest_positions pos, ref_dates rd
+        WHERE pos.rn = 1
+    )
+    SELECT
+        pos.symbol, c."companyName" as name, c."sectorName" as sector,
+        pos.cumulative_net as quantity, dsp.close as current_price,
+        COALESCE(pos.cumulative_net * dsp.close, 0) as value,
+        COALESCE(pos.cumulative_buy_amount / NULLIF(pos.cumulative_buy, 0), 0) as wac,
+        (pos.cumulative_net - COALESCE(hd.net_5d, 0)) as trend_5d,
+        (pos.cumulative_net - COALESCE(hd.net_10d, 0)) as trend_10d,
+        (pos.cumulative_net - COALESCE(hd.net_15d, 0)) as trend_15d,
+        (pos.cumulative_net - COALESCE(hd.net_30d, 0)) as trend_1m,
+        (pos.cumulative_net - COALESCE(hd.net_90d, 0)) as trend_3m
+    FROM latest_positions pos
+    INNER JOIN companies c ON pos.symbol = c.symbol
+    LEFT JOIN historical_data hd ON pos.symbol = hd.symbol
+    LEFT JOIN (
+        SELECT DISTINCT ON (symbol) symbol, close FROM daily_stock_price ORDER BY symbol, transaction_date DESC
+    ) dsp ON pos.symbol = dsp.symbol
+    WHERE pos.rn = 1 AND pos.cumulative_net > 0
+    ORDER BY value DESC;
+    """
+    with connections['default'].cursor() as cursor:
+        cursor.execute(query, [broker_id, broker_id])
+        columns = [col[0] for col in cursor.description]
+        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+    total_value = sum(h['value'] for h in results if h['value'])
+    return {'broker_id': broker_id, 'total_value': total_value, 'holdings': results}
+
+
+def accumulation_history(broker_id, symbol, page=1, page_size=250):
+    """
+    Return paginated daily accumulation delta history for a broker/symbol pair.
+    Extracted verbatim from accumulation_history function view.
+
+    broker_id: broker entity_id (str or int — coerced to str to match varchar column).
+    symbol: ticker string.
+    400/missing-param guard stays in the view.
+    """
+    from ..models import DailyCumulativeAccumulation
+
+    # Fetch history
+    history = DailyCumulativeAccumulation.objects.filter(entity_id=str(broker_id), symbol=symbol).order_by('transaction_date')
+
+    # Calculate all deltas
+    results = []
+    prev_h = None
+
+    for h in history:
+        if prev_h:
+            buy_qty = float(h.cumulative_buy - prev_h.cumulative_buy)
+            buy_amt = float(h.cumulative_buy_amount - prev_h.cumulative_buy_amount)
+            sell_qty = float(h.cumulative_sell - prev_h.cumulative_sell)
+            sell_amt = float(h.cumulative_sell_amount - prev_h.cumulative_sell_amount)
+            net_qty = float(h.cumulative_net - prev_h.cumulative_net)
+        else:
+            # First day in history (start state)
+            buy_qty = float(h.cumulative_buy)
+            buy_amt = float(h.cumulative_buy_amount)
+            sell_qty = float(h.cumulative_sell)
+            sell_amt = float(h.cumulative_sell_amount)
+            net_qty = float(h.cumulative_net)
+
+        results.append({
+            'date': h.transaction_date.strftime('%Y-%m-%d'),
+            'buy_qty': buy_qty,
+            'buy_rate': buy_amt / buy_qty if buy_qty > 0 else 0,
+            'buy_amount': buy_amt,
+            'sell_qty': sell_qty,
+            'sell_rate': sell_amt / sell_qty if sell_qty > 0 else 0,
+            'sell_amount': sell_amt,
+            'net_quantity': net_qty,
+            'cumulative_qty': float(h.cumulative_net),
+            'wac': float(h.cumulative_buy_amount / h.cumulative_buy) if h.cumulative_buy > 0 else 0
+        })
+        prev_h = h
+
+    # Reverse to show newest first for the table
+    results.reverse()
+
+    # Paginate
+    start = (page - 1) * page_size
+    end = start + page_size
+
+    return results[start:end]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Per-symbol accumulation forecast (NEW — wraps price_forecast helpers)
+# ─────────────────────────────────────────────────────────────────────────────
+
+FORECAST_CACHE_TTL = 4 * 60 * 60  # mirrors the view's @cache_page TTL
+
+
+def _compute_forecast(symbol: str, min_intensity: float) -> dict | None:
+    """
+    Core per-symbol forecast computation extracted from AccumulationForecastView.get.
+    Returns the response dict on success, or None when data is absent/insufficient.
+    HTTP handling and param parsing remain in the view.
+
+    Imports helpers lazily to avoid circular imports: price_forecast imports
+    backtest_harness which does not import broker_research, but broker_research
+    importing price_forecast at module level would create a mutual dependency
+    if price_forecast ever imports broker_research (e.g. for chat tools).
+    """
+    from datetime import date, timedelta
+    import pandas as pd
+    from stocks.views.price_forecast import (
+        STUDY_YEARS, LAG_ANALYSIS_LAGS,
+        _load_price_df, _load_acc_df, _build_daily_acc, _compute_features,
+        _identify_events, _compute_forward_returns, _add_extra_lags_for_analysis,
+        _compute_study_stats, _build_projection, _build_history, _build_price_series,
+    )
+
+    start_date = date.today() - timedelta(days=STUDY_YEARS * 365)
+
+    price_df = _load_price_df(symbols=[symbol], start_date=start_date)
+    if price_df.empty:
+        return None
+
+    acc_df = _load_acc_df(symbols=[symbol], start_date=start_date)
+    if acc_df.empty:
+        return None
+
+    daily_acc = _build_daily_acc(acc_df)
+    features = _compute_features(price_df, daily_acc)
+    if features.empty:
+        return None
+
+    # Current state (most recent row with valid intensity)
+    latest = features[features['ticker'] == symbol].sort_values('date')
+    latest_valid = latest[latest['intensity'].notna()]
+    if latest_valid.empty:
+        return None
+
+    current_row = latest_valid.iloc[-1]
+    current_price = float(current_row['close']) if not pd.isna(current_row['close']) else None
+    current_date = current_row['date'].strftime('%Y-%m-%d')
+    current_intensity = float(current_row['intensity']) if not pd.isna(current_row['intensity']) else 0.0
+    current_vol_spike = float(current_row['volume_spike']) if not pd.isna(current_row['volume_spike']) else None
+    current_turn_spike = float(current_row['turnover_spike']) if not pd.isna(current_row['turnover_spike']) else None
+    current_net_acc_10d = float(current_row['net_acc_10d']) if not pd.isna(current_row['net_acc_10d']) else 0.0
+    current_avg_vol = float(current_row['avg_daily_volume_20d']) if not pd.isna(current_row['avg_daily_volume_20d']) else None
+
+    current_state = {
+        'ltp': round(current_price, 2) if current_price else None,
+        'date': current_date,
+        'intensity': round(current_intensity, 4),
+        'volume_spike': round(current_vol_spike, 4) if current_vol_spike else None,
+        'turnover_spike': round(current_turn_spike, 4) if current_turn_spike else None,
+        'net_acc_10d': round(current_net_acc_10d, 2),
+        'avg_daily_volume_20d': round(current_avg_vol, 2) if current_avg_vol else None,
+    }
+
+    # Study — all historical events for this symbol
+    events = _identify_events(features, min_intensity)
+    events_with_returns = _compute_forward_returns(events, features) if not events.empty else pd.DataFrame()
+    if not events_with_returns.empty:
+        events_with_returns = _add_extra_lags_for_analysis(events_with_returns, features, LAG_ANALYSIS_LAGS)
+        stats = _compute_study_stats(events_with_returns)
+        study = {
+            'total_events': len(events_with_returns),
+            **stats,
+        }
+    else:
+        study = {
+            'total_events': 0,
+            'win_rates': {}, 'avg_returns': {}, 'median_returns': {},
+            'p25_returns': {}, 'p75_returns': {}, 'correlation': {},
+            'scatter_data': [], 'lag_analysis': [],
+        }
+
+    projection = _build_projection(events_with_returns, current_intensity, current_price, current_date)
+    history = _build_history(events_with_returns)
+    price_series = _build_price_series(features, events, symbol)
+
+    return {
+        'symbol': symbol,
+        'current': current_state,
+        'study': study,
+        'projection': projection,
+        'history': history,
+        'price_series': price_series,
+    }
+
+
+def accumulation_forecast(symbol: str, min_intensity: float = 3.0) -> dict | None:
+    """Per-symbol accumulation price-study projection. Cached 4h. NEVER market-wide."""
+    key = f"broker_research:forecast:{symbol.upper()}:{min_intensity}"
+    cached = cache.get(key)
+    if cached is not None:
+        return cached
+    result = _compute_forecast(symbol.upper(), min_intensity)
+    if result is not None:
+        cache.set(key, result, FORECAST_CACHE_TTL)
+    return result
 
 
 def share_transfers(symbol, broker1, broker2, range_key="1M", start_date=None, end_date=None):
