@@ -560,6 +560,7 @@ def smart_money(range_key="1D"):
     """
     from ..models.market import DailyFloorsheet, Company
 
+    # Local to this feature — '1D': 0 means today-only; intentionally differs from RANGE_MAP
     range_days = {
         '1D': 0, '2D': 1, '3D': 2, '1W': 6,
         '1M': 29, '3M': 89, '6M': 179,
@@ -694,6 +695,7 @@ def focus_ranking(range_key="1W"):
     """
     from ..models.market import DailyBuyerFloorsheet, DailySellerFloorsheet
 
+    # Local to this feature — uses trading-session counts, not calendar days; intentionally differs from RANGE_MAP
     range_days = {'1W': 6, '2W': 13, '1M': 29}
     days = range_days.get(range_key, 6)
 
@@ -838,6 +840,9 @@ def share_transfers(symbol, broker1, broker2, range_key="1M", start_date=None, e
       - broker1, broker2: int
       - range_key: str key into local range_map, or None to use start_date/end_date
       - start_date, end_date: str 'YYYY-MM-DD' (used when range_key is None/not given)
+
+    If range_key, start_date, AND end_date are all None, the query runs unbounded over
+    full history (verbatim-preserved view behavior); callers should pass a range.
     """
     from ..models.market import DailyFloorsheet, DailyCumulativeAccumulation
 
@@ -846,6 +851,7 @@ def share_transfers(symbol, broker1, broker2, range_key="1M", start_date=None, e
 
     # If range_key provided, override start/end dates (same logic as view)
     if range_key:
+        # Local to this feature — 'ALL': 3650 (10yr cap) vs RANGE_MAP's 36500; intentionally differs from RANGE_MAP
         range_map = {
             '1D': 0, '1W': 7, '2W': 14, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, 'ALL': 3650
         }

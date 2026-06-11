@@ -2,10 +2,9 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Sum, Count, F, Avg, Q
-from django.db.models.functions import TruncDate
-from stocks.models.market import DailyFloorsheet, DailyBuyerFloorsheet, DailySellerFloorsheet, DailyCumulativeAccumulation, DailyStockPrice
+from stocks.models.market import DailyFloorsheet, DailyStockPrice
 from django.utils import timezone
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 class FloorsheetViewSet(viewsets.ViewSet):
     """
