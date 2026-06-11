@@ -9,6 +9,8 @@ import { MessageBubble } from './MessageBubble';
 import { WorkbenchContext, type WorkbenchTool } from './WorkbenchContext';
 import { WorkbenchPanel } from './WorkbenchPanel';
 import type { ChatBlock, ChatMessage } from './types';
+import { filterCommands } from '@/lib/chat-commands';
+import { CommandHintMenu } from './CommandHintMenu';
 
 interface ChatInterfaceProps {
     sessionId: string;
@@ -391,7 +393,42 @@ function Composer({
     streaming: boolean;
 }) {
     const taRef = useRef<HTMLTextAreaElement | null>(null);
-    // Auto-grow.
+    const [selectedIndex, setSelectedIndex] = useState(0);
+
+    /**
+     * Dismissal tracking (two-mechanism approach):
+     *
+     * 1. `dismissed` state: set true by Escape; reset to false whenever the
+     *    user types a new character (onChange with a changed value). State
+     *    ensures a re-render happens immediately when Escape is pressed.
+     *
+     * 2. `lastAppliedRef` ref: records the prompt string that was set when
+     *    the user applied a command (Enter/Tab on a hint). When the current
+     *    prompt equals this value the menu stays closed even though `dismissed`
+     *    is false (applying already called onChange which reset dismissed).
+     *    This is the key guard for the "type /help → Enter applies → Enter
+     *    sends" flow: after applying, prompt === '/help ' === lastApplied, so
+     *    menuOpen is false, and the next Enter hits the normal send branch.
+     *
+     * Typing any character resets both: dismissed → false (via onChange),
+     * lastAppliedRef → null (via onChange).
+     */
+    const [dismissed, setDismissed] = useState(false);
+    const lastAppliedRef = useRef<string | null>(null);
+
+    const hints = filterCommands(prompt);
+    const menuOpen =
+        hints.length > 0 &&
+        !streaming &&
+        !dismissed &&
+        prompt !== lastAppliedRef.current;
+
+    // Reset selectedIndex to 0 whenever the prompt changes (typing narrows the list).
+    useEffect(() => {
+        setSelectedIndex(0);
+    }, [prompt]);
+
+    // Auto-grow textarea.
     useEffect(() => {
         const ta = taRef.current;
         if (!ta) return;
@@ -399,28 +436,75 @@ function Composer({
         ta.style.height = Math.min(200, ta.scrollHeight) + 'px';
     }, [prompt]);
 
+    const applyCommand = useCallback((item: { command: string }) => {
+        const newVal = item.command + ' ';
+        // Track what was applied; menu won't reopen for this exact string.
+        lastAppliedRef.current = newVal;
+        onChange(newVal);
+        taRef.current?.focus();
+    }, [onChange]);
+
     return (
         <div className="border-t border-border bg-background p-4">
             <div className="max-w-5xl mx-auto flex items-end gap-2">
-                <textarea
-                    ref={taRef}
-                    value={prompt}
-                    onChange={(e) => onChange(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            onSend();
-                        }
-                    }}
-                    placeholder="Ask about a ticker, the market, or your portfolio. Shift+Enter for newline."
-                    rows={1}
-                    disabled={streaming}
-                    className={cn(
-                        'flex-1 resize-none rounded-md border border-border bg-card px-3 py-2 text-sm',
-                        'placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring',
-                        'disabled:opacity-60',
+                {/* Relative wrapper so CommandHintMenu can position above the textarea */}
+                <div className="flex-1 relative">
+                    {menuOpen && (
+                        <CommandHintMenu
+                            items={hints}
+                            selectedIndex={selectedIndex}
+                            onSelect={applyCommand}
+                        />
                     )}
-                />
+                    <textarea
+                        ref={taRef}
+                        value={prompt}
+                        onChange={(e) => {
+                            // Typing resets both dismissal mechanisms.
+                            lastAppliedRef.current = null;
+                            setDismissed(false);
+                            onChange(e.target.value);
+                        }}
+                        onKeyDown={(e) => {
+                            if (menuOpen) {
+                                if (e.key === 'ArrowDown') {
+                                    e.preventDefault();
+                                    setSelectedIndex((i) => (i + 1) % hints.length);
+                                    return;
+                                }
+                                if (e.key === 'ArrowUp') {
+                                    e.preventDefault();
+                                    setSelectedIndex((i) => (i - 1 + hints.length) % hints.length);
+                                    return;
+                                }
+                                if (e.key === 'Enter' || e.key === 'Tab') {
+                                    e.preventDefault();
+                                    applyCommand(hints[selectedIndex]);
+                                    return;
+                                }
+                                if (e.key === 'Escape') {
+                                    e.preventDefault();
+                                    // Close menu without changing prompt; `dismissed` state
+                                    // triggers the re-render needed to hide the menu.
+                                    setDismissed(true);
+                                    return;
+                                }
+                            }
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                onSend();
+                            }
+                        }}
+                        placeholder="Ask about a ticker, the market, or your portfolio. Shift+Enter for newline."
+                        rows={1}
+                        disabled={streaming}
+                        className={cn(
+                            'w-full resize-none rounded-md border border-border bg-card px-3 py-2 text-sm',
+                            'placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring',
+                            'disabled:opacity-60',
+                        )}
+                    />
+                </div>
                 {streaming ? (
                     <button
                         onClick={onStop}
