@@ -470,8 +470,11 @@ def check_active_signal_alerts(user):
                     'price': price,
                     'symbol': sig.symbol,
                     'level': (float(sig.target_price) if hit_type == 'WON' and sig.target_price
-                              else float(sig.stop_loss_price) if sig.stop_loss_price else None),
-                    'level_type': 'target' if hit_type == 'WON' else 'stop',
+                              else float(sig.stop_loss_price) if hit_type == 'LOST' and sig.stop_loss_price
+                              else None),
+                    'level_type': ('target' if hit_type == 'WON' and sig.target_price
+                                   else 'stop' if hit_type == 'LOST' and sig.stop_loss_price
+                                   else None),
                 }
             )
             if notification: notifications_created += 1

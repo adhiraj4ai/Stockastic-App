@@ -263,3 +263,42 @@ class TestMetadataContract:
         assert md['price'] == 955.0
         assert md['level'] == 950.0
         assert md['level_type'] == 'target'
+
+    def test_active_signal_lost_metadata(self, create_user):
+        from unittest.mock import patch
+        from stocks.models import SignalEpisode
+        from stocks.services import notification_service
+        from datetime import date
+
+        user = create_user(username='meta_user7', password='password')
+        SignalEpisode.objects.create(
+            source='STRATEGY', producer_key='k2', symbol='UPPER', direction='BUY',
+            start_date=date(2026, 6, 1), last_signal_date=date(2026, 6, 1),
+            entry_price=900, target_price=950, stop_loss_price=870, status='ACTIVE',
+        )
+        with patch.object(notification_service, 'get_latest_price', return_value=860.0):
+            notification_service.check_active_signal_alerts(user)
+
+        n = Notification.objects.get(user=user, type='STOP_LOSS_HIT', ticker='UPPER')
+        assert n.metadata['level'] == 870.0
+        assert n.metadata['level_type'] == 'stop'
+
+    def test_active_signal_lost_without_stop_has_no_level(self, create_user):
+        """A LOST signal without a stop price must not emit level_type='stop' with level=None."""
+        from unittest.mock import patch
+        from stocks.models import SignalEpisode
+        from stocks.services import notification_service
+        from datetime import date
+
+        user = create_user(username='meta_user8', password='password')
+        SignalEpisode.objects.create(
+            source='STRATEGY', producer_key='k3', symbol='NOSL', direction='SELL',
+            start_date=date(2026, 6, 1), last_signal_date=date(2026, 6, 1),
+            entry_price=900, target_price=None, stop_loss_price=940, status='ACTIVE',
+        )
+        # SELL direction: price >= stop triggers LOST
+        with patch.object(notification_service, 'get_latest_price', return_value=945.0):
+            notification_service.check_active_signal_alerts(user)
+        n = Notification.objects.get(user=user, type='STOP_LOSS_HIT', ticker='NOSL')
+        assert n.metadata['level'] == 940.0
+        assert n.metadata['level_type'] == 'stop'
