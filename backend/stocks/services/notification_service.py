@@ -98,6 +98,15 @@ def get_latest_price(ticker):
         return None
 
 
+def get_latest_day_change(ticker):
+    """Latest session's day-change %, or None."""
+    try:
+        latest = DailyStockPrice.objects.filter(ticker=ticker).order_by('-date').first()
+        return float(latest.diff_percent) if latest and latest.diff_percent is not None else None
+    except Exception:
+        return None
+
+
 def check_portfolio_alerts(user):
     """
     Check all portfolio items for stop-loss hits, target achievements, and significant movements.
@@ -690,6 +699,7 @@ def check_signal_alerts(user):
                     'strategies': strategy_names,
                     'date': str(today),
                     'price': get_latest_price(symbol),
+                    'change_pct': get_latest_day_change(symbol),
                     'symbol': symbol
                 }
             )

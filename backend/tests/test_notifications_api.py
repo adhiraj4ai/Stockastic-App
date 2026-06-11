@@ -302,3 +302,26 @@ class TestMetadataContract:
         n = Notification.objects.get(user=user, type='STOP_LOSS_HIT', ticker='NOSL')
         assert n.metadata['level'] == 940.0
         assert n.metadata['level_type'] == 'stop'
+
+    def test_signal_alert_metadata_has_change_pct(self, create_user):
+        from unittest.mock import patch
+        from stocks.models import PortfolioItem, SignalEpisode
+        from stocks.services import notification_service
+        from datetime import date
+
+        user = create_user(username='meta_user9', password='password')
+        PortfolioItem.objects.create(user=user, ticker='SBL', quantity=10, buy_price=400, wacc=400)
+        SignalEpisode.objects.create(
+            source='STRATEGY', producer_key='k9', symbol='SBL', direction='BUY',
+            start_date=date.today(), last_signal_date=date.today(),
+            entry_price=400, status='ACTIVE',
+        )
+        with patch.object(notification_service, 'get_latest_price', return_value=412.0), \
+             patch.object(notification_service, 'get_latest_day_change', return_value=1.8):
+            created = notification_service.check_signal_alerts(user)
+
+        assert created == 1
+        n = Notification.objects.get(user=user, type='SIGNAL_BUY', ticker='SBL')
+        assert n.metadata['price'] == 412.0
+        assert n.metadata['change_pct'] == 1.8
+        assert n.metadata['strategies'] == []
