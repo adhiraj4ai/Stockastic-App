@@ -46,11 +46,11 @@ export function BrokerTableCard({ data }: { data: BrokerTableData }) {
                 <div className="max-h-80 overflow-auto">
                     <table className="w-full text-xs">
                         <thead>
-                            <tr className="bg-muted/40 sticky top-0">
+                            <tr>
                                 {columns.map((c) => (
                                     <th
                                         key={c.key}
-                                        className={`px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground ${ALIGN[c.align ?? 'left']}`}
+                                        className={`sticky top-0 bg-muted px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground ${ALIGN[c.align ?? 'left']}`}
                                     >
                                         {c.label}
                                     </th>
