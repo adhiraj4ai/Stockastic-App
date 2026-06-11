@@ -2870,6 +2870,81 @@ async def get_upcoming_catalysts(args: dict) -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Watchlist actions
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@tool(
+    "add_to_watchlist",
+    "Add a stock to the user's watchlist or update its levels (upsert). Optional entry "
+    "target_price, stop_loss_price, notes. Alerts are enabled by default — the user gets "
+    "notified on level hits and when the symbol enters its canonical entry zone. "
+    "Args: symbol, target_price?, stop_loss_price?, notes?, alerts?.",
+    {"symbol": str, "target_price": float, "stop_loss_price": float, "notes": str, "alerts": bool},
+)
+async def add_to_watchlist(args: dict) -> dict:
+    symbol = (args.get("symbol") or "").strip().upper()
+    if not symbol:
+        return _result("'symbol' is required.", is_error=True)
+
+    @sync_to_async
+    def _run():
+        from stocks.models import Company, WatchlistItem
+        user = get_user()
+        try:
+            known = Company.objects.filter(symbol=symbol).exists()
+        except (OperationalError, ProgrammingError):
+            known = True  # company table unavailable — don't block the add
+        updates = {}
+        if args.get("target_price") is not None:
+            updates["target_price"] = args["target_price"]
+        if args.get("stop_loss_price") is not None:
+            updates["stop_loss_price"] = args["stop_loss_price"]
+        if args.get("notes"):
+            updates["notes"] = str(args["notes"])[:500]
+        if "alerts" in args and args["alerts"] is not None:
+            updates["alert_enabled"] = bool(args["alerts"])
+        item, created = WatchlistItem.objects.update_or_create(
+            user=user, ticker=symbol,
+            defaults=updates,
+            create_defaults={**updates, "alert_enabled": updates.get("alert_enabled", True)},
+        )
+        parts = [f"{'Added' if created else 'Updated'} {symbol} on the watchlist"]
+        if item.target_price is not None:
+            parts.append(f"entry target {float(item.target_price):.1f}")
+        if item.stop_loss_price is not None:
+            parts.append(f"stop {float(item.stop_loss_price):.1f}")
+        parts.append("alerts on" if item.alert_enabled else "alerts off")
+        prose = ", ".join(parts) + "."
+        if not known:
+            prose += f" (Note: '{symbol}' is not a listed equity I recognize — double-check the ticker.)"
+        return _result(prose)
+
+    return await _run()
+
+
+@tool(
+    "remove_from_watchlist",
+    "Remove a stock from the user's watchlist. Args: symbol.",
+    {"symbol": str},
+)
+async def remove_from_watchlist(args: dict) -> dict:
+    symbol = (args.get("symbol") or "").strip().upper()
+    if not symbol:
+        return _result("'symbol' is required.", is_error=True)
+
+    @sync_to_async
+    def _run():
+        from stocks.models import WatchlistItem
+        deleted, _ = WatchlistItem.objects.filter(user=get_user(), ticker=symbol).delete()
+        if deleted:
+            return _result(f"Removed {symbol} from the watchlist.")
+        return _result(f"{symbol} is not on the watchlist.")
+
+    return await _run()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # User memory
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -3002,6 +3077,9 @@ ALL_TOOLS = [
     propose_exits,
     propose_rebalance,
     propose_trade_plan,
+    # Watchlist actions
+    add_to_watchlist,
+    remove_from_watchlist,
     # User memory
     remember_about_user,
     forget_about_user,
