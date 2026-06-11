@@ -506,61 +506,47 @@ function PortfolioContent() {
                     )
                 )}
 
-                {activeTab === 'holdings' && (
-                    <div className="mt-8">
-                        <RiskRadar accountId={selectedAccount} />
-                    </div>
-                )}
-
-
                 {/* Holdings Table - MOVED UP - Only for Holdings */}
                 {activeTab === 'holdings' && (
-                    <Card className="shadow-lg border-blue-50/50 dark:border-slate-800 dark:bg-card">
-                        <CardHeader className="py-4 px-6 border-b border-gray-50 dark:border-slate-800">
-                            <CardTitle className="flex flex-col md:flex-row md:items-center justify-start gap-6">
-                                <div className="flex items-center gap-2 text-slate-800 dark:text-slate-100">
-                                    <Grid3X3 className="h-5 w-5 text-gray-400 dark:text-slate-500" />
-                                    <span className="font-bold">Strategic Holdings</span>
-                                    <InfoTooltip content="Real-time list of all active positions, tracking entry costs, current value, and profit metrics." />
-                                    <div className="flex items-center gap-1.5 ml-2">
-                                        <Badge className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800 hover:bg-emerald-50 text-[10px] px-2 py-0 h-5 font-semibold">
-                                            #{stats.profit} Profit
-                                        </Badge>
-                                        <Badge className="bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-100 dark:border-rose-800 hover:bg-rose-50 text-[10px] px-2 py-0 h-5 font-semibold">
-                                            #{stats.loss} Loss
-                                        </Badge>
-                                    </div>
+                    <FadeIn delay={0.05}>
+                    <SectionCard
+                        accent="emerald"
+                        icon={Grid3X3}
+                        title="Strategic Holdings"
+                        info="Real-time list of all active positions, tracking entry costs, current value, and profit metrics."
+                        badges={<>
+                            <SentimentBadge tone="up">#{stats.profit} Profit</SentimentBadge>
+                            <SentimentBadge tone="down">#{stats.loss} Loss</SentimentBadge>
+                        </>}
+                        actions={<>
+                            {selectedAccount !== 'all' && (
+                                <div className="flex items-center gap-3">
+                                    <span className="text-muted-foreground text-xs font-normal">
+                                        (Account: {accounts.find(a => a.id.toString() == selectedAccount)?.name}
+                                        {accounts.find(a => a.id.toString() == selectedAccount)?.account_type === 'PAPER' ? ' - Paper Trading' : ''})
+                                    </span>
+                                    <button
+                                        onClick={() => {
+                                            setDefaultModalAccount(selectedAccount);
+                                            setPromoteTicker('');
+                                            setIsModalOpen(true);
+                                        }}
+                                        className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg text-[10px] font-bold transition-all shadow-sm active:scale-95"
+                                    >
+                                        <Plus className="h-3 w-3" />
+                                        Add Transaction
+                                    </button>
                                 </div>
-
-                                <div className="flex flex-wrap items-center gap-4">
-                                    {selectedAccount !== 'all' && (
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-gray-400 dark:text-slate-500 text-sm font-normal">
-                                                (Account: {accounts.find(a => a.id.toString() == selectedAccount)?.name}
-                                                {accounts.find(a => a.id.toString() == selectedAccount)?.account_type === 'PAPER' ? ' - Paper Trading' : ''})
-                                            </span>
-                                            <button
-                                                onClick={() => {
-                                                    setDefaultModalAccount(selectedAccount);
-                                                    setPromoteTicker('');
-                                                    setIsModalOpen(true);
-                                                }}
-                                                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-[10px] font-bold transition-all shadow-sm active:scale-95"
-                                            >
-                                                <Plus className="h-3 w-3" />
-                                                Add Transaction
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 dark:border-border"></div>}
-                                </div>
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            {displayedItems.length === 0 && !loading ? (
-                                <div className="text-center py-10 text-gray-500 dark:text-gray-400 flex flex-col items-center gap-2">
-                                    <Wallet className="h-10 w-10 text-gray-200 dark:text-gray-700" />
+                            )}
+                            {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-foreground"></div>}
+                        </>}
+                        bodyClassName="p-0"
+                    >
+                            {loading && displayedItems.length === 0 ? (
+                                <div className="p-4"><CardSkeleton rows={8} /></div>
+                            ) : displayedItems.length === 0 && !loading ? (
+                                <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-2">
+                                    <Wallet className="h-10 w-10 text-muted" />
                                     <p>No stocks in portfolio. Add a transaction to get started.</p>
                                 </div>
                             ) : (
@@ -575,13 +561,13 @@ function PortfolioContent() {
 
                                             return (
                                                 <div key={acc.id} className="space-y-3">
-                                                    <div className="flex flex-wrap items-center justify-between gap-3 border-l-4 border-blue-500 pl-3 pr-2">
+                                                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-indigo-500/5 px-3 py-2">
                                                         <div className="flex items-center gap-3">
-                                                            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">{acc.name}</h3>
+                                                            <h3 className="text-[11px] font-bold uppercase tracking-wider text-indigo-500 dark:text-indigo-400">{acc.name}</h3>
                                                             <Badge variant="outline" className="text-xs font-mono">
                                                                 {formatRupees(accTotalValue)}
                                                             </Badge>
-                                                            <span className={`text-xs font-bold ${accTotalGain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                            <span className={`text-xs font-bold tabular-nums ${accTotalGain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                                                 {accTotalGain >= 0 ? '+' : ''}{formatRupees(accTotalGain)}
                                                             </span>
                                                         </div>
@@ -591,13 +577,13 @@ function PortfolioContent() {
                                                                 setPromoteTicker('');
                                                                 setIsModalOpen(true);
                                                             }}
-                                                            className="flex items-center gap-1.5 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white px-3 py-1 rounded-md text-[10px] font-bold transition-all shadow-sm active:scale-95"
+                                                            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-md text-[10px] font-bold transition-all shadow-sm active:scale-95"
                                                         >
                                                             <Plus className="h-3 w-3" />
                                                             Add Transaction
                                                         </button>
                                                     </div>
-                                                    <div className="rounded-xl border border-gray-100 dark:border-slate-800 overflow-hidden shadow-sm">
+                                                    <div className="rounded-xl border border-border overflow-hidden">
                                                         <PortfolioTable
                                                             items={accountItems}
                                                             currentPage={1} // Grouped view doesn't support pagination per table easily yet, showing all maybe better? Or just pass 1 for SN
@@ -669,15 +655,15 @@ function PortfolioContent() {
 
                             {/* Pagination Controls */}
                             {totalPages > 1 && (
-                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6 px-6 border-t border-gray-50">
-                                    <div className="text-xs font-semibold">
-                                        Displaying <span className="text-gray-900">{(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, sortedAndFilteredItems.length)}</span> of <span className="text-gray-900">{sortedAndFilteredItems.length}</span> holdings
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 px-6 border-t border-border">
+                                    <div className="text-xs text-muted-foreground">
+                                        Displaying <span className="text-foreground font-semibold">{(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, sortedAndFilteredItems.length)}</span> of <span className="text-foreground font-semibold">{sortedAndFilteredItems.length}</span> holdings
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                             disabled={currentPage === 1}
-                                            className="p-2 rounded-lg border border-gray-100 hover:bg-gray-50 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                                            className="p-2 rounded-lg border border-border hover:bg-muted disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                                         >
                                             <ChevronLeft size={16} />
                                         </button>
@@ -687,7 +673,7 @@ function PortfolioContent() {
                                                 <button
                                                     key={i}
                                                     onClick={() => setCurrentPage(i + 1)}
-                                                    className={`h-8 w-8 rounded-lg text-xs font-bold transition-all ${currentPage === i + 1 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-gray-500 hover:bg-gray-100'}`}
+                                                    className={`h-8 w-8 rounded-lg text-xs font-bold transition-all ${currentPage === i + 1 ? 'bg-indigo-600 text-white shadow-sm' : 'text-muted-foreground hover:bg-muted'}`}
                                                 >
                                                     {i + 1}
                                                 </button>
@@ -697,15 +683,15 @@ function PortfolioContent() {
                                         <button
                                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                             disabled={currentPage === totalPages}
-                                            className="p-2 rounded-lg border border-gray-100 hover:bg-gray-50 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                                            className="p-2 rounded-lg border border-border hover:bg-muted disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                                         >
                                             <ChevronRight size={16} />
                                         </button>
                                     </div>
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
+                    </SectionCard>
+                    </FadeIn>
                 )}
 
                 {/* Account Settings Dialog */}
