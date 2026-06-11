@@ -47,6 +47,11 @@ class NotificationViewSet(viewsets.ModelViewSet):
         if self.request.query_params.get('unread') == 'true':
             qs = qs.filter(read=False)
 
+        # ?severity=critical|high|normal|low
+        severity = self.request.query_params.get('severity')
+        if severity in {'critical', 'high', 'normal', 'low'}:
+            qs = qs.filter(severity=severity)
+
         return qs
 
     @action(detail=False, methods=['POST'])

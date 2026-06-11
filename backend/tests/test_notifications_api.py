@@ -28,6 +28,18 @@ class TestNotificationsAPI:
         assert response.status_code == status.HTTP_200_OK
         assert 'total_notifications' in response.data
 
+    def test_severity_filter(self, auth_client):
+        from django.contrib.auth.models import User
+        user = User.objects.get(username='testuser')
+        Notification.objects.create(user=user, title='c', message='m', type='STOP_LOSS_HIT', severity='critical')
+        Notification.objects.create(user=user, title='n', message='m', type='SIGNAL_BUY', severity='normal')
+
+        url = reverse('notifications-list')
+        response = auth_client.get(url, {'severity': 'critical'})
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data) == 1
+        assert response.data[0]['severity'] == 'critical'
+
 
 @pytest.mark.django_db
 class TestCheckAllUserNotificationsTask:
