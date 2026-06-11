@@ -51,6 +51,9 @@ class TestAccumulationMixinExtraction:
         assert resp.json() == direct
 
     def test_broker_favorites_matches_endpoint(self, auth_client, raw_tables_exist):
+        # Note: broker_params was previously [int] * 11; the 11th placeholder binds against
+        # varchar entity_id in the LATERAL join, causing ProgrammingError on real data.
+        # Fixed in this commit to [int] * 10 + [str] so the type matches the column.
         if not raw_tables_exist:
             pytest.skip("Raw SQL tables not present in test DB")
         resp = auth_client.get("/api/stocks/companies/broker_favorites/?broker=1&range=3M")

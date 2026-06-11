@@ -1,8 +1,9 @@
 """Broker Research analytics service layer.
 
-Extracted behavior-identical from AccumulationMixin / FloorsheetViewSet /
-broker.py views so the chat tools and the REST API share one implementation
-(and one cache). Functions return the exact structures the views serialize.
+Extracted behavior-identical from AccumulationMixin so the chat tools and the
+REST API share one implementation (and one cache). FloorsheetViewSet and
+broker.py extractions to follow. Functions return the exact structures the
+views serialize.
 """
 import hashlib
 from datetime import timedelta
@@ -197,12 +198,10 @@ def broker_trends(symbol=None, range_key="ALL"):
     days = RANGE_MAP.get(time_range, 36500)
 
     # Parameterised symbol filter
-    symbol_params = []
     if symbol_filter:
         symbol_sql_floorsheet = "AND symbol = %s"
         symbol_sql_accum = "WHERE symbol = %s"
         symbol_sql_where = "AND la.symbol = %s"
-        symbol_params = [symbol_filter]
         cumnet_where = ""
         limit_clause = ""
     else:
@@ -476,8 +475,9 @@ def broker_favorites(broker_id, range_key="3M"):
     ORDER BY ba.qty_accumulated DESC;
     """
 
-    # 10 broker params in main query + 1 for LATERAL
-    broker_params = [broker] * 11
+    # 10 broker params bind against integer buyer_id/seller_id columns;
+    # the 11th binds against varchar entity_id in the LATERAL join — must be str.
+    broker_params = [broker] * 10 + [str(broker)]
 
     with connections['default'].cursor() as cursor:
         cursor.execute(query, broker_params)
