@@ -59,3 +59,24 @@ def test_forecast_requires_symbol():
 def test_navigator_signals_runs_without_args():
     res = _call(chat_tools.get_navigator_signals, {})
     assert "content" in res
+
+
+def test_agent_registered_with_resolvable_tools():
+    from chat.subagents import AGENTS
+    agent = AGENTS.get("broker-intelligence")
+    assert agent is not None
+    assert agent.model == "sonnet"
+    names = {f"mcp__stockastic__{t.name}" for t in chat_tools.ALL_TOOLS}
+    assert set(agent.tools) <= names
+    for tool_name in NEW_TOOLS:
+        assert f"mcp__stockastic__{tool_name}" in agent.tools
+    # shared tools per spec
+    for shared in ("get_accumulation", "get_floorsheet_whales", "get_broker_trades_for_stock", "search_stocks"):
+        assert f"mcp__stockastic__{shared}" in agent.tools
+
+
+def test_orchestrator_prompt_mentions_agent():
+    from pathlib import Path
+    import chat
+    text = (Path(chat.__file__).parent / "prompts" / "orchestrator.yaml").read_text(encoding="utf-8")
+    assert "broker-intelligence" in text

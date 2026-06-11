@@ -1,4 +1,4 @@
-"""AgentDefinitions for the four Stockastic subagents, loaded from YAML prompts."""
+"""AgentDefinitions for the six Stockastic subagents, loaded from YAML prompts."""
 
 from __future__ import annotations
 
@@ -210,10 +210,46 @@ PORTFOLIO_MANAGER = AgentDefinition(
 )
 
 
+BROKER_INTELLIGENCE = AgentDefinition(
+    description=(
+        "Broker-flow intelligence specialist. Answers who is accumulating or distributing "
+        "a stock, smart-money broker activity, per-broker holdings/favorites/history, "
+        "institutional clustering signals (Navigator), positions held below broker cost, "
+        "broker-to-broker share transfers, and accumulation-based price projections. "
+        "Use for any question about brokers, 'who is buying/accumulating', smart money "
+        "positioning, or broker IDs."
+    ),
+    prompt=_system("broker_intelligence"),
+    initialPrompt=_initial("broker_intelligence"),
+    tools=[
+        tool_id("get_accumulation_flows"),
+        tool_id("get_smart_money_flows"),
+        tool_id("get_broker_trends"),
+        tool_id("get_broker_focus_ranking"),
+        tool_id("get_broker_favorites"),
+        tool_id("get_navigator_signals"),
+        tool_id("get_below_cost_positions"),
+        tool_id("get_accumulation_history"),
+        tool_id("get_share_transfers"),
+        tool_id("get_broker_portfolio"),
+        tool_id("get_accumulation_forecast"),
+        tool_id("get_accumulation"),
+        tool_id("get_floorsheet_whales"),
+        tool_id("get_broker_trades_for_stock"),
+        tool_id("search_stocks"),
+        tool_id("remember_about_user"),
+        tool_id("forget_about_user"),
+    ],
+    model="sonnet",
+    effort="medium",
+)
+
+
 AGENTS = {
     "market-analyst": MARKET_ANALYST,
     "stock-analyst": STOCK_ANALYST,
     "buy-sell-strategist": BUY_SELL_STRATEGIST,
     "portfolio-advisor": PORTFOLIO_ADVISOR,
     "portfolio-manager": PORTFOLIO_MANAGER,
+    "broker-intelligence": BROKER_INTELLIGENCE,
 }

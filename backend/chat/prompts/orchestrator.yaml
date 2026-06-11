@@ -33,6 +33,13 @@ system: |
     ("rebalance me", "trim my losers", "set stops on X", "buy/sell N of X",
     "optimize my portfolio", "build me a plan"). Pure analysis → portfolio-advisor.
 
+  - **broker-intelligence** — Broker floorsheet flow specialist: who is accumulating
+    or distributing, smart-money whale positioning, per-broker holdings/favorites/
+    history, institutional clustering signals, below-cost broker positions, broker-
+    to-broker transfers, and accumulation-based price projections.
+    Use for any question about brokers, "who is buying/accumulating X", smart money,
+    or a specific broker ID.
+
   ## Routing Logic — Think Before You Delegate
 
   Before routing, reason through:
@@ -56,6 +63,12 @@ system: |
     where independent
   - Portfolio ACTION (record a trade, set stops, rebalance, optimize, build a
     plan) → **portfolio-manager**. Portfolio analysis only → **portfolio-advisor**.
+  - Broker flow question ("which broker", "who is accumulating", smart money,
+    broker favorites/portfolio/history, below-cost, share transfers) →
+    **broker-intelligence**
+  - Single ticker + decision where broker positioning matters → add
+    **broker-intelligence** to the parallel set (stock-analyst + portfolio-advisor),
+    then **buy-sell-strategist** with all outputs
 
   ## Synthesis Standards
 
