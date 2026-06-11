@@ -7,6 +7,7 @@ import { formatDistanceToNow } from 'date-fns';
 import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatNepaliNumber } from '@/lib/formatters';
+import { useNotifications } from '@/components/notifications/NotificationProvider';
 
 interface WatchlistRow {
     id: number;
@@ -16,36 +17,29 @@ interface WatchlistRow {
     sector?: string | null;
 }
 
-interface NotificationRow {
-    id: number;
-    title: string;
-    message: string;
-    type: string;
-    ticker?: string | null;
-    created_at: string;
-}
-
 export function WatchlistAlerts() {
     const [watchlist, setWatchlist] = useState<WatchlistRow[]>([]);
-    const [alerts, setAlerts] = useState<NotificationRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [failed, setFailed] = useState(false);
+    const { notifications } = useNotifications();
+    const alerts = notifications.filter(n => !n.read).slice(0, 5);
 
     useEffect(() => {
         let cancelled = false;
         const load = async () => {
-            const [wlRes, ntRes] = await Promise.allSettled([
-                api.get('/api/stocks/watchlist/'),
-                api.get('/api/stocks/notifications/', { params: { unread: 'true' } }),
-            ]);
-            if (cancelled) return;
-            setWatchlist(wlRes.status === 'fulfilled' && Array.isArray(wlRes.value.data) ? wlRes.value.data.slice(0, 8) : []);
-            setAlerts(ntRes.status === 'fulfilled' && Array.isArray(ntRes.value.data) ? ntRes.value.data.slice(0, 5) : []);
-            setFailed(wlRes.status === 'rejected' && ntRes.status === 'rejected');
-            setLoading(false);
+            try {
+                const res = await api.get('/api/stocks/watchlist/');
+                if (cancelled) return;
+                setWatchlist(Array.isArray(res.data) ? res.data.slice(0, 8) : []);
+                setFailed(false);
+            } catch {
+                if (!cancelled) setFailed(true);
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
         };
         load();
-        const interval = setInterval(load, 15000); // Keep watchlist prices and alerts live
+        const interval = setInterval(load, 15000); // watchlist prices stay live
         return () => {
             cancelled = true;
             clearInterval(interval);
