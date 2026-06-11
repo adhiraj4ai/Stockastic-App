@@ -56,15 +56,15 @@ export function RiskRadar({ accountId }: { accountId?: string }) {
 
     if (loading) {
         return (
-            <Card className="h-[400px] flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+            <Card className="h-[400px] flex items-center justify-center rounded-2xl border border-border shadow-sm">
+                <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
             </Card>
         );
     }
 
     if (error || !data || data.radar_data.length === 0) {
         return (
-            <Card className="h-[400px] flex flex-col items-center justify-center text-center p-6">
+            <Card className="h-[400px] flex flex-col items-center justify-center text-center p-6 rounded-2xl border border-border shadow-sm">
                 <Info className="h-10 w-10 text-gray-400 mb-2" />
                 <p className="text-gray-500">Not enough data for risk analysis yet.</p>
             </Card>
@@ -80,16 +80,13 @@ export function RiskRadar({ accountId }: { accountId?: string }) {
     };
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
             <Card className="overflow-hidden rounded-2xl border border-border bg-white/50 dark:bg-card shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader className="p-0">
                     <div className="flex items-center justify-between gap-2 rounded-t-2xl bg-gradient-to-r from-amber-500/15 to-transparent px-4 py-2.5">
                         <div className="flex items-center gap-2">
                             <Activity className="h-4 w-4 text-amber-500" />
-                            <div>
-                                <CardTitle className="text-xs font-semibold text-foreground">Portfolio Risk Radar</CardTitle>
-                                <CardDescription>Multi-dimensional exposure analysis</CardDescription>
-                            </div>
+                            <CardTitle className="text-xs font-semibold text-foreground">Portfolio Risk Radar</CardTitle>
                         </div>
                         <Badge className={`${getRiskColor(data.summary.risk_level)} text-white`}>
                             {data.summary.risk_level} RISK
@@ -97,7 +94,8 @@ export function RiskRadar({ accountId }: { accountId?: string }) {
                     </div>
                 </CardHeader>
                 <CardContent className="pt-4">
-                    <div className="h-[300px] w-full mt-4">
+                    <CardDescription className="text-[11px] text-muted-foreground">Multi-dimensional exposure analysis</CardDescription>
+                    <div className="h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data.radar_data}>
                                 <PolarGrid stroke="#e2e8f0" />
@@ -124,10 +122,12 @@ export function RiskRadar({ accountId }: { accountId?: string }) {
 
             <div className="space-y-4">
                 <Card className="rounded-2xl border border-border bg-white/50 dark:bg-card shadow-sm hover:shadow-md transition-shadow h-full">
-                    <CardHeader>
-                        <CardTitle className="text-sm font-semibold tracking-tight text-slate-500">Risk diagnostics</CardTitle>
+                    <CardHeader className="p-0">
+                        <div className="flex items-center gap-2 rounded-t-2xl bg-gradient-to-r from-amber-500/15 to-transparent px-4 py-2.5">
+                            <CardTitle className="text-xs font-semibold text-foreground">Risk diagnostics</CardTitle>
+                        </div>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-4 pt-4">
                         {data.alerts.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-8 text-center bg-emerald-50 dark:bg-emerald-900/10 rounded-xl p-4 border border-emerald-100 dark:border-emerald-800">
                                 <ShieldCheck className="h-8 w-8 text-emerald-500 mb-2" />
