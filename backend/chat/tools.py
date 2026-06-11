@@ -2757,6 +2757,36 @@ async def get_tomorrows_plan(args: dict) -> dict:
 
 
 @tool(
+    "get_my_actions",
+    "The user's personal action list for the next session: their positions near "
+    "stop-loss/targets, active SELL signals against their holdings, watchlist entry "
+    "triggers, and risk-sized suggestions for tomorrow's plan picks. ALWAYS use this "
+    "for 'what should I do with my positions/portfolio tomorrow'. No args.",
+    {},
+)
+async def get_my_actions(args: dict) -> dict:
+    @sync_to_async
+    def _run():
+        from chat.briefing import render_my_actions
+        from stocks.models import DailyTradingPlan
+        from stocks.services.daily_plan import user_overlay
+        from stocks.services.position_sizing import sizing_map_for_user
+
+        user = get_user()
+        plan = DailyTradingPlan.objects.order_by("-date").first()
+        picks = plan.payload.get("picks", []) if plan else []
+        overlay = user_overlay(user)
+        sizing = sizing_map_for_user(user, picks)
+        prose = render_my_actions(overlay, sizing, picks)
+        if plan:
+            prose = f"Your actions for {plan.date} (plan as of {plan.payload.get('as_of')}):\n" + prose
+        return _result(prose, card={"type": "my_actions",
+                                    "data": {"overlay": overlay, "sizing": sizing}})
+
+    return await _run()
+
+
+@tool(
     "get_ticker_verdict",
     "Canonical per-symbol verdict: cross-engine confluence score (0-100) with component breakdown, ATR entry-zone status (IN_ZONE/EXTENDED/STALE), TP/SL, historical analog base rates, and upcoming catalyst. ALWAYS prefer this over raw signal lists when judging whether a setup is actionable now. Args: symbol.",
     {"symbol": str},
@@ -3016,6 +3046,7 @@ ALL_TOOLS = [
     explain_opportunity,
     # Next-day plan & verdict
     get_tomorrows_plan,
+    get_my_actions,
     get_ticker_verdict,
     get_upcoming_catalysts,
     # Strategy builder / inference
