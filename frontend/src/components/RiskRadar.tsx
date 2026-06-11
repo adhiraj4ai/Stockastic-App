@@ -81,21 +81,22 @@ export function RiskRadar({ accountId }: { accountId?: string }) {
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="overflow-hidden border-none bg-white/50 dark:bg-card shadow-xl">
-                <CardHeader className="pb-0">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                <Activity className="h-5 w-5 text-blue-500" /> Portfolio Risk Radar
-                            </CardTitle>
-                            <CardDescription>Multi-dimensional exposure analysis</CardDescription>
+            <Card className="overflow-hidden rounded-2xl border border-border bg-white/50 dark:bg-card shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="p-0">
+                    <div className="flex items-center justify-between gap-2 rounded-t-2xl bg-gradient-to-r from-amber-500/15 to-transparent px-4 py-2.5">
+                        <div className="flex items-center gap-2">
+                            <Activity className="h-4 w-4 text-amber-500" />
+                            <div>
+                                <CardTitle className="text-xs font-semibold text-foreground">Portfolio Risk Radar</CardTitle>
+                                <CardDescription>Multi-dimensional exposure analysis</CardDescription>
+                            </div>
                         </div>
                         <Badge className={`${getRiskColor(data.summary.risk_level)} text-white`}>
                             {data.summary.risk_level} RISK
                         </Badge>
                     </div>
                 </CardHeader>
-                <CardContent className="pt-0">
+                <CardContent className="pt-4">
                     <div className="h-[300px] w-full mt-4">
                         <ResponsiveContainer width="100%" height="100%">
                             <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data.radar_data}>
@@ -122,7 +123,7 @@ export function RiskRadar({ accountId }: { accountId?: string }) {
             </Card>
 
             <div className="space-y-4">
-                <Card className="border-none bg-white/50 dark:bg-card shadow-xl h-full">
+                <Card className="rounded-2xl border border-border bg-white/50 dark:bg-card shadow-sm hover:shadow-md transition-shadow h-full">
                     <CardHeader>
                         <CardTitle className="text-sm font-semibold tracking-tight text-slate-500">Risk diagnostics</CardTitle>
                     </CardHeader>
