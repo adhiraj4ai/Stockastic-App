@@ -3,7 +3,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import {
-    type AppNotification, getMetrics, getQuickActions, getSeverity, getTypeConfig,
+    type AppNotification, type Metric, getMetrics, getQuickActions, getSeverity, getTypeConfig,
     getVariant, buildRoute, SEVERITY_DOT, TONE_CLASSES,
 } from '@/lib/notifications/config';
 import { formatNepaliNumber } from '@/lib/formatters';
@@ -14,7 +14,7 @@ interface Props {
     onNavigate: (href: string) => void;
 }
 
-function MetricValue({ value, kind }: { value: number; kind: string }) {
+function MetricValue({ value, kind }: { value: number; kind: Metric['kind'] }) {
     if (kind === 'percent') {
         const positive = value >= 0;
         return (
@@ -49,7 +49,10 @@ export function NotificationToast({ notification: n, onDismiss, onNavigate }: Pr
         const key = metrics[0];
         return (
             <div
+                role="button"
+                tabIndex={0}
                 onClick={() => onNavigate(route)}
+                onKeyDown={(e) => { if (e.key === 'Enter') onNavigate(route); }}
                 className="relative w-[356px] cursor-pointer overflow-hidden rounded-lg border border-border bg-card px-3.5 py-2.5 text-card-foreground shadow-md"
             >
                 <span className={`absolute inset-y-0 left-0 w-[3px] ${SEVERITY_DOT[severity]}`} />
