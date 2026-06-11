@@ -20,6 +20,7 @@ export function CommandHintMenu({ items, selectedIndex, onSelect }: CommandHintM
         <div
             role="listbox"
             aria-label="Available commands"
+            aria-activedescendant={`cmd-hint-${selectedIndex}`}
             className={cn(
                 'absolute bottom-full left-0 right-0 mb-1 z-50',
                 'bg-popover border border-border rounded-md shadow-md overflow-hidden',
@@ -28,9 +29,10 @@ export function CommandHintMenu({ items, selectedIndex, onSelect }: CommandHintM
             {items.map((item, i) => (
                 <div
                     key={item.command}
+                    id={`cmd-hint-${i}`}
                     role="option"
                     aria-selected={i === selectedIndex}
-                    onClick={() => onSelect(item)}
+                    onMouseDown={(e) => { e.preventDefault(); onSelect(item); }}
                     className={cn(
                         'flex items-baseline gap-2 px-3 py-2 cursor-pointer select-none',
                         'text-sm',

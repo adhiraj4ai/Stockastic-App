@@ -47,13 +47,32 @@ describe('CommandHintMenu', () => {
         expect(rows[2].className).not.toMatch(/\bbg-accent\b(?!\/)/);
     });
 
-    it('calls onSelect with correct item when row is clicked', () => {
+    it('calls onSelect with correct item when row is mousedown-ed', () => {
         const onSelect = vi.fn();
         render(
             <CommandHintMenu items={items} selectedIndex={0} onSelect={onSelect} />,
         );
-        fireEvent.click(screen.getByText('/memory add').closest('[role="option"]')!);
+        // onMouseDown (not onClick) is used to avoid textarea blur flicker
+        fireEvent.mouseDown(screen.getByText('/memory add').closest('[role="option"]')!);
         expect(onSelect).toHaveBeenCalledWith(items[2]);
+    });
+
+    it('sets aria-activedescendant on listbox matching the selected index id', () => {
+        render(
+            <CommandHintMenu items={items} selectedIndex={1} onSelect={vi.fn()} />,
+        );
+        const listbox = screen.getByRole('listbox');
+        expect(listbox).toHaveAttribute('aria-activedescendant', 'cmd-hint-1');
+    });
+
+    it('each option row has an id matching cmd-hint-{index}', () => {
+        const { container } = render(
+            <CommandHintMenu items={items} selectedIndex={0} onSelect={vi.fn()} />,
+        );
+        const rows = container.querySelectorAll('[role="option"]');
+        rows.forEach((row, i) => {
+            expect(row).toHaveAttribute('id', `cmd-hint-${i}`);
+        });
     });
 
     it('has listbox role on container', () => {

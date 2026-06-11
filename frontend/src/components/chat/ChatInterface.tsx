@@ -477,7 +477,7 @@ function Composer({
                                     setSelectedIndex((i) => (i - 1 + hints.length) % hints.length);
                                     return;
                                 }
-                                if (e.key === 'Enter' || e.key === 'Tab') {
+                                if ((e.key === 'Enter' && !e.shiftKey) || e.key === 'Tab') {
                                     e.preventDefault();
                                     applyCommand(hints[selectedIndex]);
                                     return;
