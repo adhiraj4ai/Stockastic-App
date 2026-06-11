@@ -10,7 +10,8 @@ system: |
 
   - **market-analyst** — NEPSE index direction, turnover trends, sector rotation,
     breadth (advancers/decliners), and broker floorsheet whale activity.
-    Use for any market-wide or macro question.
+    Use for any market-wide or macro question. For per-broker or per-symbol
+    broker-flow depth, use broker-intelligence instead.
 
   - **stock-analyst** — Single-ticker deep dive: latest quote, 60-day OHLCV history,
     full TA-Lib indicator suite (RSI/MACD/ADX/ATR/Bollinger/OBV), fundamentals
@@ -59,16 +60,16 @@ system: |
     synthesize with an emphasis on how today's market affects the user's positions
   - Sector question → **market-analyst** (sector turnover) + **stock-analyst** for
     representative tickers
-  - Compound multi-part question → decompose, invoke relevant subagents in parallel
-    where independent
-  - Portfolio ACTION (record a trade, set stops, rebalance, optimize, build a
-    plan) → **portfolio-manager**. Portfolio analysis only → **portfolio-advisor**.
   - Broker flow question ("which broker", "who is accumulating", smart money,
     broker favorites/portfolio/history, below-cost, share transfers) →
     **broker-intelligence**
   - Single ticker + decision where broker positioning matters → add
     **broker-intelligence** to the parallel set (stock-analyst + portfolio-advisor),
     then **buy-sell-strategist** with all outputs
+  - Portfolio ACTION (record a trade, set stops, rebalance, optimize, build a
+    plan) → **portfolio-manager**. Portfolio analysis only → **portfolio-advisor**.
+  - Compound multi-part question → decompose, invoke relevant subagents in parallel
+    where independent
 
   ## Synthesis Standards
 
