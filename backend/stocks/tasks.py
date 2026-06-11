@@ -13,7 +13,7 @@ def check_all_user_notifications(self):
     from stocks.services.notification_service import (
         check_portfolio_alerts, check_watchlist_alerts,
         check_signal_alerts, check_whale_watch_alerts,
-        check_zone_entry_alerts,
+        check_zone_entry_alerts, check_active_signal_alerts,
     )
 
     total_portfolio = 0
@@ -21,6 +21,7 @@ def check_all_user_notifications(self):
     total_signals = 0
     total_whale = 0
     total_zone_entry = 0
+    total_active_signal = 0
 
     for user in User.objects.filter(is_active=True):
         try:
@@ -29,7 +30,7 @@ def check_all_user_notifications(self):
             total_signals += check_signal_alerts(user)
             total_whale += check_whale_watch_alerts(user)
             total_zone_entry += check_zone_entry_alerts(user)
-            check_active_signal_alerts(user)
+            total_active_signal += check_active_signal_alerts(user)
         except Exception as e:
             print(f"Error checking notifications for user {user.username}: {e}")
 
@@ -39,7 +40,8 @@ def check_all_user_notifications(self):
         'total_signal_notifications': total_signals,
         'total_whale_notifications': total_whale,
         'total_zone_entry_notifications': total_zone_entry,
-        'total_notifications': total_portfolio + total_watchlist + total_signals + total_whale + total_zone_entry,
+        'total_active_signal_notifications': total_active_signal,
+        'total_notifications': total_portfolio + total_watchlist + total_signals + total_whale + total_zone_entry + total_active_signal,
     }
 @shared_task(bind=True, name='stocks.capture_portfolio_snapshots')
 def capture_portfolio_snapshots(self):
