@@ -289,7 +289,7 @@ export default function UsersManagementClient() {
         market_bulk: 'Bulk Transactions',
         market_matching: 'Matching Transactions',
         market_social: 'Social Highlights',
-        market_pa_screener: 'Global PA Screener',
+        market_pa_screener: 'PA Screener',
         market_volume: 'Volume Profile',
         portfolio_main: 'My Portfolio',
         portfolio_performance: 'Performance Analysis',
@@ -324,9 +324,9 @@ export default function UsersManagementClient() {
         { name: 'Global', keys: ['home', 'chat'] },
         { name: 'Market Suite', keys: ['market_overview', 'market_movers', 'market_activity', 'market_rotation', 'market_pa_screener', 'market_social'] },
         { name: 'Floorsheet Suite', keys: ['market_floorsheet', 'market_bulk', 'market_matching', 'market_volume', 'accumulation_history', 'share_transfer'] },
-        { name: 'Finfolio Suite', keys: ['portfolio_main', 'portfolio_performance', 'portfolio_income', 'portfolio_transactions', 'portfolio_watchlist', 'portfolio_trade_plans', 'paper_trading', 'portfolio_optimization'] },
+        { name: 'Portfolio Suite', keys: ['portfolio_main', 'portfolio_performance', 'portfolio_income', 'portfolio_transactions', 'portfolio_watchlist', 'portfolio_trade_plans', 'paper_trading', 'portfolio_optimization'] },
         { name: 'Accumulation Suite', keys: ['accumulation_dash', 'smart_money', 'broker_trends', 'focus_ranking', 'price_study', 'broker_favorites', 'navigator', 'below_cost'] },
-        { name: 'Strategic Hub', keys: ['intel_hub', 'strategies', 'track_record'] },
+        { name: 'Signals', keys: ['intel_hub', 'strategies', 'track_record'] },
         { name: 'Ticker Intelligence', keys: ['ticker_pa', 'ticker_signals', 'ticker_accumulation', 'ticker_tech', 'ticker_funds'] }
     ];
 
@@ -1033,9 +1033,9 @@ export default function UsersManagementClient() {
                                                                         group.name === 'Global' ? "bg-blue-500/10 dark:bg-blue-500/5 text-blue-500" :
                                                                         group.name === 'Market Suite' ? "bg-slate-500/10 dark:bg-slate-500/5 text-slate-500" :
                                                                         group.name === 'Floorsheet Suite' ? "bg-indigo-500/10 dark:bg-indigo-500/5 text-indigo-500" :
-                                                                        group.name === 'Finfolio Suite' ? "bg-emerald-500/10 dark:bg-emerald-500/5 text-emerald-500" :
+                                                                        group.name === 'Portfolio Suite' ? "bg-emerald-500/10 dark:bg-emerald-500/5 text-emerald-500" :
                                                                         group.name === 'Accumulation Suite' ? "bg-orange-500/10 dark:bg-orange-500/5 text-orange-500" :
-                                                                        group.name === 'Strategic Hub' ? "bg-pink-500/10 dark:bg-pink-500/5 text-pink-500" :
+                                                                        group.name === 'Signals' ? "bg-pink-500/10 dark:bg-pink-500/5 text-pink-500" :
                                                                         group.name === 'Ticker Intelligence' ? "bg-blue-500/10 dark:bg-blue-500/5 text-blue-500" :
                                                                         "bg-slate-100 dark:bg-muted text-slate-500 dark:text-slate-400"
                                                                     )}>
