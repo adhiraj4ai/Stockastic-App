@@ -3083,7 +3083,7 @@ def _broker_table_card(title: str, columns: list[dict], rows: list[dict], meta: 
 
 @tool(
     "get_accumulation_flows",
-    "Market-wide smart-money accumulation: per-symbol buy/sell/net broker flow with RSI/ROC and top buyers/sellers. Optional sector or symbol filter.",
+    "Market-wide smart-money accumulation: per-symbol buy/sell/net broker flow with RSI/ROC and top buyers/sellers. Optional sector or symbol filter. Valid range values: 1D, 1W, 2W, 1M, 3M, 6M, 1Y, 2Y, ALL.",
     {"range": str, "sector": str, "symbol": str},
 )
 async def get_accumulation_flows(args: dict) -> dict:
@@ -3133,7 +3133,7 @@ async def get_accumulation_flows(args: dict) -> dict:
 
 @tool(
     "get_smart_money_flows",
-    "Top-10 whale brokers for a period: leaderboard, their per-symbol net buys, and aggregate whale volume KPIs.",
+    "Top-10 whale brokers for a period: leaderboard, their per-symbol net buys, and aggregate whale volume KPIs. Valid range values: 1D, 2D, 3D, 1W, 1M, 3M, 6M.",
     {"range": str},
 )
 async def get_smart_money_flows(args: dict) -> dict:
@@ -3191,7 +3191,7 @@ async def get_smart_money_flows(args: dict) -> dict:
 
 @tool(
     "get_broker_trends",
-    "Per-broker cumulative net position, weighted avg cost, and 5/10/20/50-day accumulation trends. Optionally for one symbol; otherwise top global positions.",
+    "Per-broker cumulative net position, weighted avg cost, and 5/10/20/50-day accumulation trends. Optionally for one symbol; otherwise top global positions. Valid range values: 1D, 1W, 2W, 1M, 3M, 6M, 1Y, 2Y, ALL.",
     {"symbol": str, "range": str},
 )
 async def get_broker_trends(args: dict) -> dict:
@@ -3240,7 +3240,7 @@ async def get_broker_trends(args: dict) -> dict:
 
 @tool(
     "get_broker_focus_ranking",
-    "Which symbols the top brokers focused their buying on each day (rank series over the period).",
+    "Which symbols the top brokers focused their buying on each day (rank series over the period). Valid range values: 1W, 2W, 1M.",
     {"range": str},
 )
 async def get_broker_focus_ranking(args: dict) -> dict:
@@ -3292,7 +3292,7 @@ async def get_broker_focus_ranking(args: dict) -> dict:
 
 @tool(
     "get_broker_favorites",
-    "A broker's accumulated stocks over a period: current net position, WAC, buy/sell qty, LTP, RSI/ROC. Requires broker_id.",
+    "A broker's accumulated stocks over a period: current net position, WAC, buy/sell qty, LTP, RSI/ROC. Requires broker_id. Valid range values: 1D, 1W, 2W, 1M, 3M, 6M, 1Y, 2Y, ALL.",
     {"broker_id": int, "range": str},
 )
 async def get_broker_favorites(args: dict) -> dict:
@@ -3389,7 +3389,7 @@ async def get_navigator_signals(args: dict) -> dict:
 
 @tool(
     "get_below_cost_positions",
-    "Broker positions currently priced below the broker's weighted average cost (underwater accumulations), most underwater first. Optional sector filter.",
+    "Broker positions currently priced below the broker's weighted average cost (underwater accumulations), most underwater first. Optional sector filter. Valid range values: 1D, 1W, 2W, 1M, 3M, 6M, 1Y, 2Y, ALL.",
     {"range": str, "sector": str, "limit": int},
 )
 async def get_below_cost_positions(args: dict) -> dict:
@@ -3496,7 +3496,7 @@ async def get_accumulation_history(args: dict) -> dict:
 
 @tool(
     "get_share_transfers",
-    "Share transfer analysis between two specific brokers in one symbol: volumes each direction, net accumulation, and daily stats.",
+    "Share transfer analysis between two specific brokers in one symbol: volumes each direction, net accumulation, and daily stats. Valid range values: 1D, 1W, 2W, 1M, 3M, 6M, 1Y, ALL.",
     {"symbol": str, "broker1": int, "broker2": int, "range": str},
 )
 async def get_share_transfers(args: dict) -> dict:
@@ -3523,6 +3523,11 @@ async def get_share_transfers(args: dict) -> dict:
         daily_stats = data.get("daily_stats") or []
         b1_to_b2 = summary.get("broker1_to_broker2") or {}
         b2_to_b1 = summary.get("broker2_to_broker1") or {}
+        if not b1_to_b2.get("total_volume") and not b2_to_b1.get("total_volume"):
+            return _result(
+                f"No transfers found between broker {broker1} and broker {broker2} for {symbol} in range {range_key}.",
+                is_error=True, _tool_name="get_share_transfers",
+            )
         lines = [
             f"Share transfers {symbol}: broker {broker1} ↔ broker {broker2} ({range_key})",
             f"- {broker1}→{broker2}: vol {int(b1_to_b2.get('total_volume') or 0):,}, "
