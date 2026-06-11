@@ -92,6 +92,36 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
         if not prompt:
             return Response({"detail": "prompt is required"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Deterministic slash commands (/memory, /help) are handled server-side
+        # without the LLM: persist the pair and stream the reply directly. This
+        # runs BEFORE the rate limiter (commands are cheap) and the SDK path, and
+        # persists its OWN user message (so the normal user-persist below is skipped).
+        from chat.commands import handle_command, parse_command
+
+        command = parse_command(prompt)
+        if command is not None:
+            reply = handle_command(request.user, command)
+            ChatMessage.objects.create(session=session, role=ChatMessage.ROLE_USER, text=prompt)
+            ChatMessage.objects.create(
+                session=session, role=ChatMessage.ROLE_ASSISTANT, text=reply,
+                blocks=[{"kind": "text", "subagent": None, "text": reply}],
+            )
+            session.save(update_fields=["updated_at"])
+
+            from chat.streaming import _sse
+
+            def command_frames():
+                yield _sse("assistant_start", {"session_id": str(session.id)})
+                yield _sse("text", {"kind": "text", "subagent": None, "text": reply})
+                yield _sse("assistant_end", {})
+                yield _sse("done", {"session_id": str(session.id),
+                                    "sdk_session_id": session.sdk_session_id or None})
+
+            response = StreamingHttpResponse(command_frames(), content_type="text/event-stream")
+            response["Cache-Control"] = "no-cache"
+            response["X-Accel-Buffering"] = "no"
+            return response
+
         # Rate limit: 10 messages per minute per user.
         if _rate_limited(request.user.id):
             return JsonResponse(
