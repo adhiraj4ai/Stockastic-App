@@ -41,6 +41,7 @@ import { Settings } from 'lucide-react';
 import { PortfolioTable, PortfolioItem } from '@/components/PortfolioTable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PortfolioPerformance } from '@/components/PortfolioPerformance';
+import { SectionCard, KpiCard, SentimentBadge, FadeIn, KpiSkeleton, CardSkeleton } from '@/components/portfolio/ui';
 
 interface WatchlistItem {
     id: number;
@@ -399,7 +400,7 @@ function PortfolioContent() {
                                 <select
                                     value={selectedAccount}
                                     onChange={(e) => setSelectedAccount(e.target.value)}
-                                    className="appearance-none bg-white dark:bg-card border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-300 py-2.5 pl-4 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium shadow-sm cursor-pointer"
+                                    className="appearance-none bg-card border border-border text-foreground py-2.5 pl-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium shadow-sm cursor-pointer"
                                 >
                                     <option value="all">All Accounts</option>
                                     <option disabled>──────────</option>
@@ -416,9 +417,9 @@ function PortfolioContent() {
                             <button
                                 onClick={() => setIsAccountSettingsOpen(true)}
                                 disabled={selectedAccount === 'all'}
-                                className={`p-2.5 bg-white dark:bg-card border border-gray-300 dark:border-slate-700 rounded-lg shadow-sm transition-all ${selectedAccount === 'all'
+                                className={`p-2.5 bg-card border border-border rounded-xl shadow-sm transition-all ${selectedAccount === 'all'
                                     ? 'opacity-50 cursor-not-allowed text-gray-400'
-                                    : 'hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400'
+                                    : 'hover:bg-muted text-muted-foreground hover:text-indigo-500'
                                     }`}
                                 title={selectedAccount === 'all' ? "Select an account to manage settings" : "Account Settings"}
                             >
@@ -427,7 +428,7 @@ function PortfolioContent() {
 
                             <button
                                 onClick={() => setIsCreateAccountOpen(true)}
-                                className="bg-white dark:bg-card border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300 p-2.5 rounded-lg shadow-sm transition-all"
+                                className="bg-card border border-border hover:bg-muted text-foreground p-2.5 rounded-xl shadow-sm transition-all"
                                 title="Create New Portfolio Account"
                             >
                                 <FolderPlus className="h-5 w-5" />
@@ -437,7 +438,7 @@ function PortfolioContent() {
                             <button
                                 onClick={() => router.push(`/portfolio/optimize?account=${selectedAccount}`)}
                                 disabled={displayedItems.length === 0}
-                                className="flex items-center gap-2 bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-800 text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Advanced Portfolio Optimization"
                             >
                                 <Wand2 className="h-5 w-5" />
@@ -450,86 +451,59 @@ function PortfolioContent() {
 
                 {/* Summary Cards - Only for Holdings */}
                 {activeTab === 'holdings' && (
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2 px-5 pt-4">
-                                <CardTitle className="text-[12px] font-medium text-muted-foreground flex items-center">
-                                    Capital deployed
-                                    <InfoTooltip content="Total initial investment across all active holdings in the selected account." />
-                                </CardTitle>
-                                <Wallet className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent className="px-5 pb-4">
-                                <div className="text-2xl font-semibold text-foreground tabular-nums">
-                                    {formatRupees(totalInvestment)}
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                    Across {displayedItems.length} holdings
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2 px-5 pt-4">
-                                <CardTitle className="text-[12px] font-medium text-muted-foreground flex items-center">
-                                    Portfolio value
-                                    <InfoTooltip content="Current market valuation of all holdings based on real-time price feeds." />
-                                </CardTitle>
-                                <DollarSign className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent className="px-5 pb-4">
-                                <div className="text-2xl font-semibold text-foreground tabular-nums">
-                                    {formatRupees(totalCurrentValue)}
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                    Real-time valuation
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2 px-5 pt-4">
-                                <CardTitle className="text-[12px] font-medium text-muted-foreground flex items-center">
-                                    Total returns
-                                    <InfoTooltip content="Net unrealized profit or loss since inception, including reinvested capital." />
-                                </CardTitle>
-                                {totalGainLoss >= 0 ? <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />}
-                            </CardHeader>
-                            <CardContent className="px-5 pb-4">
-                                <div className={`text-2xl font-semibold tabular-nums ${totalGainLoss >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                                    {formatRupees(Math.abs(totalGainLoss))}
-                                </div>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <span className={`text-xs font-medium tabular-nums ${totalGainLoss >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                                        {totalGainLoss >= 0 ? '+' : '-'}{Math.abs(totalGainLossPercent).toFixed(2)}%
+                    loading && displayedItems.length === 0 ? (
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            {[0, 1, 2, 3].map(i => <KpiSkeleton key={i} />)}
+                        </div>
+                    ) : (
+                        <FadeIn className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <KpiCard
+                                accent="blue"
+                                icon={Wallet}
+                                label="Capital Deployed"
+                                info="Total initial investment across all active holdings in the selected account."
+                                value={formatRupees(totalInvestment)}
+                                sub={<SentimentBadge tone="neutral">{displayedItems.length} holdings</SentimentBadge>}
+                            />
+                            <KpiCard
+                                accent="emerald"
+                                icon={DollarSign}
+                                label="Portfolio Value"
+                                info="Current market valuation of all holdings based on real-time price feeds."
+                                value={formatRupees(totalCurrentValue)}
+                                sub={<SentimentBadge tone="neutral">Real-time valuation</SentimentBadge>}
+                            />
+                            <KpiCard
+                                accent="emerald"
+                                icon={totalGainLoss >= 0 ? TrendingUp : TrendingDown}
+                                label="Total Returns"
+                                info="Net unrealized profit or loss since inception, including reinvested capital."
+                                value={formatRupees(Math.abs(totalGainLoss))}
+                                valueClassName={totalGainLoss >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}
+                                sub={
+                                    <span className="flex items-center gap-2">
+                                        <SentimentBadge tone={totalGainLoss >= 0 ? 'up' : 'down'}>
+                                            {totalGainLoss >= 0 ? '+' : '−'}{Math.abs(totalGainLossPercent).toFixed(2)}%
+                                        </SentimentBadge>
+                                        {bestPerformer && (
+                                            <span className="text-[11px] text-muted-foreground">
+                                                Top: <span className="text-foreground">{bestPerformer.ticker}</span>
+                                            </span>
+                                        )}
                                     </span>
-                                    {bestPerformer && (
-                                        <span className="text-[11px] text-muted-foreground">
-                                            Top: <span className="text-foreground">{bestPerformer.ticker}</span>
-                                        </span>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2 px-5 pt-4">
-                                <CardTitle className="text-[12px] font-medium text-muted-foreground flex items-center">
-                                    Session swing
-                                    <InfoTooltip content="Intraday profit or loss change for the current market session." />
-                                </CardTitle>
-                                <Zap className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent className="px-5 pb-4">
-                                <div className={`text-2xl font-semibold tabular-nums ${totalDayGainLoss >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                                    {formatRupees(Math.abs(totalDayGainLoss))}
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                    Intraday movement
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                                }
+                            />
+                            <KpiCard
+                                accent="amber"
+                                icon={Zap}
+                                label="Session Swing"
+                                info="Intraday profit or loss change for the current market session."
+                                value={formatRupees(Math.abs(totalDayGainLoss))}
+                                valueClassName={totalDayGainLoss >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}
+                                sub={<SentimentBadge tone={totalDayGainLoss >= 0 ? 'up' : 'down'}>Intraday movement</SentimentBadge>}
+                            />
+                        </FadeIn>
+                    )
                 )}
 
                 {activeTab === 'holdings' && (
