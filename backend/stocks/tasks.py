@@ -149,6 +149,18 @@ def generate_daily_plan_task():
         status="SUCCESS", records_count=pick_count,
     )
 
+    # Lazy cross-app imports (chat depends on the SDK; stocks services touch the
+    # unmanaged price table) — keep them inside the task so import-time stays cheap
+    # and tests can patch stocks.services.daily_plan.* on the module they import.
+    import logging
+    from django.db import transaction
+    from chat.briefing import render_my_actions, render_plan_briefing
+    from chat.models import ChatMessage, ChatSession
+    from stocks.services.daily_plan import user_overlay
+    from stocks.services.position_sizing import sizing_map_for_user
+
+    logger = logging.getLogger(__name__)
+
     enabled_tiers = list(
         TierPermission.objects.filter(module_key="daily_plan", is_enabled=True)
         .values_list("tier", flat=True)
@@ -156,20 +168,53 @@ def generate_daily_plan_task():
     users = User.objects.filter(is_active=True).filter(
         Q(profile__subscription_tier__in=enabled_tiers) | Q(is_superuser=True)
     ).distinct()
+
+    plan_prose = render_plan_briefing(plan)
+    picks = plan.payload.get("picks", [])
+    title = f"Morning Briefing — {plan.date.isoformat()}"
+    notification_message = (
+        f"{pick_count} high-confluence setup(s) for {plan.date.isoformat()} "
+        f"(regime: {plan.regime})."
+        if pick_count
+        else f"No qualifying setups for {plan.date.isoformat()} (regime: {plan.regime})."
+    )
     notified = 0
     for user in users:
+        # Per-user resilience: if one user's overlay/sizing build blows up (e.g. a bad
+        # holding row), log it and still notify them — falling back to /plan.
+        redirect_url = "/plan"
+        try:
+            session = ChatSession.objects.filter(user=user, title=title).first()
+            if session is None:
+                overlay = user_overlay(user)
+                sizing = sizing_map_for_user(user, picks)
+                briefing = (
+                    plan_prose
+                    + "\n\nYour actions:\n"
+                    + render_my_actions(overlay, sizing, picks)
+                )
+                with transaction.atomic():
+                    session = ChatSession.objects.create(user=user, title=title)
+                    ChatMessage.objects.create(
+                        session=session,
+                        role=ChatMessage.ROLE_ASSISTANT,
+                        text=briefing,
+                        # Frontend (MessageBubble.tsx) renders assistant `blocks` keyed on
+                        # `kind`; a single `{"kind": "text", "subagent": None, "text": ...}`
+                        # block is the exact shape streaming.py persists for plain assistant text.
+                        blocks=[{"kind": "text", "subagent": None, "text": briefing}],
+                    )
+            redirect_url = f"/chat?session={session.id}"
+        except Exception:
+            logger.exception("morning-briefing build failed for user %s", user.pk)
+
         create_notification(
             user=user,
             notification_type="DAILY_PLAN_READY",
             title=f"Tomorrow's Plan ready — {plan.date.isoformat()}",
-            message=(
-                f"{pick_count} high-confluence setup(s) for {plan.date.isoformat()} "
-                f"(regime: {plan.regime})."
-                if pick_count
-                else f"No qualifying setups for {plan.date.isoformat()} (regime: {plan.regime})."
-            ),
+            message=notification_message,
             ticker="SUMMARY",
-            redirect_url="/plan",
+            redirect_url=redirect_url,
             metadata={"plan_date": plan.date.isoformat(), "picks": pick_count},
         )
         notified += 1

@@ -245,7 +245,8 @@ class TestGenerateDailyPlanTask:
         assert result["plan_date"] == "2026-06-11"
         notif = Notification.objects.get(user=user)
         assert notif.type == "DAILY_PLAN_READY"
-        assert notif.redirect_url == "/plan"
+        # Notification now deep-links to the seeded morning-briefing chat session.
+        assert notif.redirect_url.startswith("/chat?session=")
 
     @patch("stocks.services.daily_plan.build_daily_plan", side_effect=ValueError("no price data"))
     def test_task_failure_logged_not_raised(self, mock_build):
@@ -280,6 +281,95 @@ class TestGenerateDailyPlanTask:
         assert result == {"status": "SKIPPED", "plan_date": "2026-06-11"}
         assert Notification.objects.count() == 0
         assert not DataUploadLog.objects.filter(upload_type="PLAN", status="SUCCESS").exists()
+
+
+@pytest.mark.django_db
+class TestMorningBriefing:
+    def _setup(self, create_user, username="briefuser"):
+        from users.models import TierPermission
+        user = create_user(username=username, password="x")
+        user.profile.subscription_tier = "PRO"
+        user.profile.save()
+        TierPermission.objects.get_or_create(
+            tier="PRO", module_key="daily_plan", defaults={"is_enabled": True}
+        )
+        return user
+
+    def _plan(self):
+        from stocks.models import DailyTradingPlan
+        plan = DailyTradingPlan.objects.create(
+            date=date_cls(2026, 6, 12), regime="RISK_ON",
+            payload={"as_of": "2026-06-11",
+                     "picks": [{"symbol": "SHL", "confluence_score": 81, "direction": "BUY",
+                                "entry": {"price": 600.0, "zone_low": 590.0, "zone_high": 612.0,
+                                          "status": "IN_ZONE", "last_signal_age_days": 1,
+                                          "latest_close": 601.0},
+                                "targets": {"tp1": 640.0, "sl": 585.0},
+                                "analog": None, "catalyst": None,
+                                "components": {"engine_agreement": {"active_buy_sources": ["A"], "conflicting_sources": []},
+                                                "opportunity": {"trust": None}, "accumulation": {}, "sector": {}}}],
+                     "watch": [], "exits": [], "catalysts": [], "market_context": {},
+                     "entry_statuses": {"SHL": "IN_ZONE"}},
+        )
+        plan.was_regenerated = True
+        return plan
+
+    @patch("stocks.services.daily_plan.user_overlay",
+           return_value={"positions_near_action": [], "signal_flips": [], "watchlist_triggers": []})
+    @patch("stocks.services.daily_plan.build_daily_plan")
+    def test_briefing_session_created_and_linked(self, mock_build, _overlay, create_user):
+        from chat.models import ChatMessage, ChatSession
+        from stocks.models import Notification
+        from stocks.tasks import generate_daily_plan_task
+        user = self._setup(create_user)
+        mock_build.return_value = self._plan()
+
+        generate_daily_plan_task()
+
+        session = ChatSession.objects.get(user=user, title="Morning Briefing — 2026-06-12")
+        msg = ChatMessage.objects.get(session=session)
+        assert msg.role == ChatMessage.ROLE_ASSISTANT
+        assert "SHL" in msg.text
+        # Frontend renders assistant blocks keyed on `kind` (see MessageBubble.tsx /
+        # streaming.py); a single text block is the fallback shape.
+        assert msg.blocks == [{"kind": "text", "subagent": None, "text": msg.text}]
+        notif = Notification.objects.get(user=user, type="DAILY_PLAN_READY")
+        assert notif.redirect_url == f"/chat?session={session.id}"
+
+    @patch("stocks.services.daily_plan.user_overlay",
+           return_value={"positions_near_action": [], "signal_flips": [], "watchlist_triggers": []})
+    @patch("stocks.services.daily_plan.build_daily_plan")
+    def test_idempotent_no_duplicate_session_or_message(self, mock_build, _overlay, create_user):
+        from chat.models import ChatMessage, ChatSession
+        from stocks.tasks import generate_daily_plan_task
+        user = self._setup(create_user)
+        # Same plan object (was_regenerated=True) returned on both runs.
+        mock_build.return_value = self._plan()
+
+        generate_daily_plan_task()
+        generate_daily_plan_task()
+
+        title = "Morning Briefing — 2026-06-12"
+        assert ChatSession.objects.filter(user=user, title=title).count() == 1
+        session = ChatSession.objects.get(user=user, title=title)
+        assert ChatMessage.objects.filter(session=session).count() == 1
+
+    @patch("stocks.services.daily_plan.user_overlay",
+           side_effect=RuntimeError("price table exploded"))
+    @patch("stocks.services.daily_plan.build_daily_plan")
+    def test_overlay_failure_isolated_falls_back_to_plan_url(self, mock_build, _overlay, create_user):
+        """If one user's briefing build raises, the loop still notifies with /plan."""
+        from chat.models import ChatSession
+        from stocks.models import Notification
+        from stocks.tasks import generate_daily_plan_task
+        user = self._setup(create_user)
+        mock_build.return_value = self._plan()
+
+        generate_daily_plan_task()
+
+        assert not ChatSession.objects.filter(user=user).exists()
+        notif = Notification.objects.get(user=user, type="DAILY_PLAN_READY")
+        assert notif.redirect_url == "/plan"
 
 
 @pytest.mark.django_db
