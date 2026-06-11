@@ -12,6 +12,7 @@ from typing import AsyncIterator
 log = logging.getLogger(__name__)
 
 import yaml
+from asgiref.sync import sync_to_async
 from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient
 
 from . import _user_context
@@ -35,12 +36,17 @@ def _safe_prompt_value(value, max_len: int = 64) -> str:
     return re.sub(r"[^A-Za-z0-9_ .\-@]", "", str(value or ""))[:max_len]
 
 
-def _format_prompt(user, message: str) -> str:
+def _format_prompt(user, message: str, memory: list[str] | None = None) -> str:
     """Render the orchestrator user-turn template with live context."""
     safe_username = _safe_prompt_value(getattr(user, "username", ""))
+    memory_block = (
+        "Known about this user:\n" + "\n".join(f"- {f}" for f in memory)
+        if memory else "(nothing recorded about this user yet)"
+    )
     return _ORCHESTRATOR_USER_TEMPLATE.format(
         date=date.today().isoformat(),
         username=safe_username,
+        memory=memory_block,
         message=message,
     )
 
@@ -101,7 +107,16 @@ async def run_chat_session(user, sdk_session_id: str, prompt: str) -> AsyncItera
     fresh session so the user gets a response instead of an error.
     """
     _user_context.set_user(user)
-    formatted_prompt = _format_prompt(user, prompt)
+
+    @sync_to_async
+    def _fetch_memory():
+        from chat.models import UserMemory
+        return list(
+            UserMemory.objects.filter(user=user).values_list("content", flat=True)
+        )
+
+    memory = await _fetch_memory()
+    formatted_prompt = _format_prompt(user, prompt, memory=memory)
 
     # Try with resumption first; fall back to a brand-new session if stale.
     session_ids = [sdk_session_id, ""] if sdk_session_id else [""]

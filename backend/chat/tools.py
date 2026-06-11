@@ -2912,6 +2912,72 @@ async def get_upcoming_catalysts(args: dict) -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# User memory
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _clean_fact(raw: str) -> str:
+    cleaned = " ".join(str(raw or "").split())  # collapse whitespace incl. newlines
+    return cleaned[:220]
+
+
+@tool(
+    "remember_about_user",
+    "Save a short durable fact about the user for ALL future conversations (risk appetite, "
+    "horizon, sector preferences/aversions, capital constraints, recurring goals). Use when the "
+    "user states a lasting preference — not for one-off questions. Never store secrets, "
+    "passwords, or account numbers. Args: fact.",
+    {"fact": str},
+)
+async def remember_about_user(args: dict) -> dict:
+    fact = _clean_fact(args.get("fact"))
+    if not fact:
+        return _result("A non-empty 'fact' is required.", is_error=True)
+
+    @sync_to_async
+    def _run():
+        from chat.models import UserMemory
+        user = get_user()
+        if UserMemory.objects.filter(user=user, content=fact).exists():
+            return _result(f"Already remembered: {fact}")
+        if UserMemory.objects.filter(user=user).count() >= UserMemory.MAX_FACTS_PER_USER:
+            return _result(
+                f"Memory is full ({UserMemory.MAX_FACTS_PER_USER} facts). "
+                "Use forget_about_user to remove an outdated fact first.",
+                is_error=True,
+            )
+        UserMemory.objects.create(user=user, content=fact)
+        return _result(f"Remembered: {fact}")
+
+    return await _run()
+
+
+@tool(
+    "forget_about_user",
+    "Delete remembered facts about the user whose text contains the given substring "
+    "(case-insensitive). Reports exactly what was removed. Args: match.",
+    {"match": str},
+)
+async def forget_about_user(args: dict) -> dict:
+    match = (args.get("match") or "").strip()
+    if not match:
+        return _result("A non-empty 'match' is required.", is_error=True)
+
+    @sync_to_async
+    def _run():
+        from chat.models import UserMemory
+        user = get_user()
+        hits = list(UserMemory.objects.filter(user=user, content__icontains=match))
+        if not hits:
+            return _result(f"No remembered facts match '{match}'.")
+        removed = [m.content for m in hits]
+        UserMemory.objects.filter(id__in=[m.id for m in hits]).delete()
+        return _result("Forgot:\n" + "\n".join(f"- {c}" for c in removed))
+
+    return await _run()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # MCP server registration
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -2977,6 +3043,9 @@ ALL_TOOLS = [
     propose_exits,
     propose_rebalance,
     propose_trade_plan,
+    # User memory
+    remember_about_user,
+    forget_about_user,
 ]
 
 
