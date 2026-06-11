@@ -406,12 +406,11 @@ class AccumulationPriceStudyView(APIView):
 class AccumulationForecastView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @method_decorator(cache_page(4 * 60 * 60))
     def get(self, request, symbol):
         """
         Per-symbol accumulation forecast. Thin wrapper around
-        broker_research.accumulation_forecast() which caches the heavy computation.
-        This view keeps @cache_page for HTTP-level caching and its own 404/422 guards.
+        broker_research.accumulation_forecast() which already caches the heavy
+        computation for 4h. No @cache_page here — it would cache 404 responses.
         """
         from stocks.services import broker_research
 

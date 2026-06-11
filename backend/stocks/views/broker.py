@@ -6,7 +6,7 @@ from django.db import connections
 from datetime import timedelta
 from django.utils import timezone
 from django.db.models import Max
-from ..models import DailyStockPrice, Company, DailyFloorsheet, StockFundamental, DailyCumulativeAccumulation
+from ..models import DailyStockPrice
 
 class BrokerViewSet(viewsets.ViewSet):
     """

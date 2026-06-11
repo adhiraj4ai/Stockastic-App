@@ -836,6 +836,162 @@ def focus_ranking(range_key="1W"):
     }
 
 
+def share_transfers(symbol, broker1, broker2, range_key="1M", start_date=None, end_date=None):
+    """
+    Analyze share transfers between two specific brokers for a symbol.
+    Extracted verbatim from FloorsheetViewSet.broker_transfer.
+
+    Param validation (400 responses) stays in the view layer.
+    This function accepts already-resolved, already-validated params:
+      - symbol: str
+      - broker1, broker2: int
+      - range_key: str key into local range_map, or None to use start_date/end_date
+      - start_date, end_date: str 'YYYY-MM-DD' (used when range_key is None/not given)
+
+    If range_key, start_date, AND end_date are all None, the query runs unbounded over
+    full history (verbatim-preserved view behavior); callers should pass a range.
+    """
+    from ..models.market import DailyFloorsheet, DailyCumulativeAccumulation
+
+    b1_id = int(broker1)
+    b2_id = int(broker2)
+
+    # If range_key provided, override start/end dates (same logic as view)
+    if range_key:
+        # Local to this feature — 'ALL': 3650 (10yr cap) vs RANGE_MAP's 36500; intentionally differs from RANGE_MAP
+        range_map = {
+            '1D': 0, '1W': 7, '2W': 14, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, 'ALL': 3650
+        }
+        days = range_map.get(range_key, 30)
+        now = timezone.now().date()
+        latest_price = DailyStockPrice.objects.order_by('-date').first()
+        today = latest_price.date if latest_price else now
+
+        end_date_obj = today
+        start_date_obj = today - timedelta(days=days)
+
+        start_date = start_date_obj.strftime('%Y-%m-%d')
+        end_date = end_date_obj.strftime('%Y-%m-%d')
+
+    # Base filters
+    filters = Q(symbol=symbol)
+
+    # Date range filter
+    if start_date and end_date:
+        filters &= Q(transaction_date__range=[start_date, end_date])
+    elif start_date:
+        filters &= Q(transaction_date__gte=start_date)
+    elif end_date:
+        filters &= Q(transaction_date__lte=end_date)
+
+    # Broker pair filter: (B1 buys from B2) OR (B2 buys from B1)
+    transfer_filter = (Q(buyer_id=b1_id, seller_id=b2_id) | Q(buyer_id=b2_id, seller_id=b1_id))
+
+    queryset = DailyFloorsheet.objects.filter(filters & transfer_filter)
+
+    # Get Smart Money (Top 15 holders) to calculate total net accumulation
+    top_15_brokers = list(DailyCumulativeAccumulation.objects.filter(
+        symbol=symbol
+    ).order_by('-transaction_date', '-cumulative_net').values_list('entity_id', flat=True)[:15])
+
+    # Subquery for symbol's total net accumulation (Smart Money flow)
+    symbol_daily_net = DailyFloorsheet.objects.filter(filters).values('transaction_date').annotate(
+        net_acc=Sum('transaction_quantity', filter=Q(buyer_id__in=top_15_brokers)) -
+                Sum('transaction_quantity', filter=Q(seller_id__in=top_15_brokers))
+    )
+    net_acc_map = {item['transaction_date']: item['net_acc'] for item in symbol_daily_net}
+
+    # Daily aggregation helper for broker-specific metrics and symbol totals
+    daily_meta = DailyFloorsheet.objects.filter(filters).values('transaction_date').annotate(
+        b1_net=Sum('transaction_quantity', filter=Q(buyer_id=b1_id)) - Sum('transaction_quantity', filter=Q(seller_id=b1_id)),
+        b2_net=Sum('transaction_quantity', filter=Q(buyer_id=b2_id)) - Sum('transaction_quantity', filter=Q(seller_id=b2_id)),
+        b1_buy=Sum('transaction_quantity', filter=Q(buyer_id=b1_id)),
+        b1_sell=Sum('transaction_quantity', filter=Q(seller_id=b1_id)),
+        b2_buy=Sum('transaction_quantity', filter=Q(buyer_id=b2_id)),
+        b2_sell=Sum('transaction_quantity', filter=Q(seller_id=b2_id)),
+        symbol_total_vol=Sum('transaction_quantity')  # Total market volume for the day
+    )
+    # Create lookup maps
+    meta_map = {item['transaction_date']: item for item in daily_meta}
+
+    # Overall summary aggregations for the transfer pair
+    stats = queryset.aggregate(
+        total_volume_1_to_2=Sum('transaction_quantity', filter=Q(buyer_id=b1_id, seller_id=b2_id)),
+        total_volume_2_to_1=Sum('transaction_quantity', filter=Q(buyer_id=b2_id, seller_id=b1_id)),
+        total_amount_1_to_2=Sum('transaction_amount', filter=Q(buyer_id=b1_id, seller_id=b2_id)),
+        total_amount_2_to_1=Sum('transaction_amount', filter=Q(buyer_id=b2_id, seller_id=b1_id)),
+        count_1_to_2=Count('transaction_id', filter=Q(buyer_id=b1_id, seller_id=b2_id)),
+        count_2_to_1=Count('transaction_id', filter=Q(buyer_id=b2_id, seller_id=b1_id)),
+        avg_rate_1_to_2=Avg('transaction_rate', filter=Q(buyer_id=b1_id, seller_id=b2_id)),
+        avg_rate_2_to_1=Avg('transaction_rate', filter=Q(buyer_id=b2_id, seller_id=b1_id))
+    )
+
+    # Daily aggregation for the chart and table
+    qs_daily = queryset.values('transaction_date').annotate(
+        volume_1_to_2=Sum('transaction_quantity', filter=Q(buyer_id=b1_id, seller_id=b2_id)),
+        volume_2_to_1=Sum('transaction_quantity', filter=Q(buyer_id=b2_id, seller_id=b1_id)),
+        amount_1_to_2=Sum('transaction_amount', filter=Q(buyer_id=b1_id, seller_id=b2_id)),
+        amount_2_to_1=Sum('transaction_amount', filter=Q(buyer_id=b2_id, seller_id=b1_id)),
+        avg_rate_1_to_2=Avg('transaction_rate', filter=Q(buyer_id=b1_id, seller_id=b2_id)),
+        avg_rate_2_to_1=Avg('transaction_rate', filter=Q(buyer_id=b2_id, seller_id=b1_id))
+    ).order_by('transaction_date')
+
+    # Get symbol price history for percentage change
+    prices = DailyStockPrice.objects.filter(ticker=symbol).order_by('date')
+    price_map = {p.date: float(p.close) for p in prices}
+    sorted_dates = sorted(price_map.keys())
+
+    daily_stats = []
+    for item in qs_daily:
+        dt = item['transaction_date']
+        meta = meta_map.get(dt, {})
+
+        # Calculate price change %
+        price_change = 0
+        try:
+            idx = sorted_dates.index(dt)
+            if idx > 0:
+                curr = price_map[dt]
+                prev = price_map[sorted_dates[idx - 1]]
+                if prev > 0:
+                    price_change = round(((curr - prev) / prev) * 100, 2)
+        except (ValueError, IndexError):
+            pass
+
+        item.update({
+            'net_accumulation': net_acc_map.get(dt, 0),
+            'b1_net': meta.get('b1_net', 0),
+            'b2_net': meta.get('b2_net', 0),
+            'b1_buy': meta.get('b1_buy', 0),
+            'b1_sell': meta.get('b1_sell', 0),
+            'b2_buy': meta.get('b2_buy', 0),
+            'b2_sell': meta.get('b2_sell', 0),
+            'symbol_total_vol': meta.get('symbol_total_vol', 0),
+            'price_change_pc': price_change,
+            'close_price': price_map.get(dt, 0)
+        })
+        daily_stats.append(item)
+
+    return {
+        "summary": {
+            "broker1_to_broker2": {
+                "total_volume": stats['total_volume_1_to_2'] or 0,
+                "total_amount": stats['total_amount_1_to_2'] or 0,
+                "total_transactions": stats['count_1_to_2'] or 0,
+                "avg_rate": round(stats['avg_rate_1_to_2'] or 0, 2)
+            },
+            "broker2_to_broker1": {
+                "total_volume": stats['total_volume_2_to_1'] or 0,
+                "total_amount": stats['total_amount_2_to_1'] or 0,
+                "total_transactions": stats['count_2_to_1'] or 0,
+                "avg_rate": round(stats['avg_rate_2_to_1'] or 0, 2)
+            }
+        },
+        "daily_stats": list(daily_stats),
+        "aggregated_transfers": list(daily_stats)[::-1]
+    }
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # BrokerViewSet / broker.py function-view extractions
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1117,7 +1273,7 @@ def accumulation_history(broker_id, symbol, page=1, page_size=250):
 # Per-symbol accumulation forecast (NEW — wraps price_forecast helpers)
 # ─────────────────────────────────────────────────────────────────────────────
 
-FORECAST_CACHE_TTL = 4 * 60 * 60  # mirrors the view's @cache_page TTL
+FORECAST_CACHE_TTL = 4 * 60 * 60  # 4h; matches the daily-ETL data cadence
 
 
 def _compute_forecast(symbol: str, min_intensity: float) -> dict | None:
@@ -1222,159 +1378,3 @@ def accumulation_forecast(symbol: str, min_intensity: float = 3.0) -> dict | Non
     if result is not None:
         cache.set(key, result, FORECAST_CACHE_TTL)
     return result
-
-
-def share_transfers(symbol, broker1, broker2, range_key="1M", start_date=None, end_date=None):
-    """
-    Analyze share transfers between two specific brokers for a symbol.
-    Extracted verbatim from FloorsheetViewSet.broker_transfer.
-
-    Param validation (400 responses) stays in the view layer.
-    This function accepts already-resolved, already-validated params:
-      - symbol: str
-      - broker1, broker2: int
-      - range_key: str key into local range_map, or None to use start_date/end_date
-      - start_date, end_date: str 'YYYY-MM-DD' (used when range_key is None/not given)
-
-    If range_key, start_date, AND end_date are all None, the query runs unbounded over
-    full history (verbatim-preserved view behavior); callers should pass a range.
-    """
-    from ..models.market import DailyFloorsheet, DailyCumulativeAccumulation
-
-    b1_id = int(broker1)
-    b2_id = int(broker2)
-
-    # If range_key provided, override start/end dates (same logic as view)
-    if range_key:
-        # Local to this feature — 'ALL': 3650 (10yr cap) vs RANGE_MAP's 36500; intentionally differs from RANGE_MAP
-        range_map = {
-            '1D': 0, '1W': 7, '2W': 14, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, 'ALL': 3650
-        }
-        days = range_map.get(range_key, 30)
-        now = timezone.now().date()
-        latest_price = DailyStockPrice.objects.order_by('-date').first()
-        today = latest_price.date if latest_price else now
-
-        end_date_obj = today
-        start_date_obj = today - timedelta(days=days)
-
-        start_date = start_date_obj.strftime('%Y-%m-%d')
-        end_date = end_date_obj.strftime('%Y-%m-%d')
-
-    # Base filters
-    filters = Q(symbol=symbol)
-
-    # Date range filter
-    if start_date and end_date:
-        filters &= Q(transaction_date__range=[start_date, end_date])
-    elif start_date:
-        filters &= Q(transaction_date__gte=start_date)
-    elif end_date:
-        filters &= Q(transaction_date__lte=end_date)
-
-    # Broker pair filter: (B1 buys from B2) OR (B2 buys from B1)
-    transfer_filter = (Q(buyer_id=b1_id, seller_id=b2_id) | Q(buyer_id=b2_id, seller_id=b1_id))
-
-    queryset = DailyFloorsheet.objects.filter(filters & transfer_filter)
-
-    # Get Smart Money (Top 15 holders) to calculate total net accumulation
-    top_15_brokers = list(DailyCumulativeAccumulation.objects.filter(
-        symbol=symbol
-    ).order_by('-transaction_date', '-cumulative_net').values_list('entity_id', flat=True)[:15])
-
-    # Subquery for symbol's total net accumulation (Smart Money flow)
-    symbol_daily_net = DailyFloorsheet.objects.filter(filters).values('transaction_date').annotate(
-        net_acc=Sum('transaction_quantity', filter=Q(buyer_id__in=top_15_brokers)) -
-                Sum('transaction_quantity', filter=Q(seller_id__in=top_15_brokers))
-    )
-    net_acc_map = {item['transaction_date']: item['net_acc'] for item in symbol_daily_net}
-
-    # Daily aggregation helper for broker-specific metrics and symbol totals
-    daily_meta = DailyFloorsheet.objects.filter(filters).values('transaction_date').annotate(
-        b1_net=Sum('transaction_quantity', filter=Q(buyer_id=b1_id)) - Sum('transaction_quantity', filter=Q(seller_id=b1_id)),
-        b2_net=Sum('transaction_quantity', filter=Q(buyer_id=b2_id)) - Sum('transaction_quantity', filter=Q(seller_id=b2_id)),
-        b1_buy=Sum('transaction_quantity', filter=Q(buyer_id=b1_id)),
-        b1_sell=Sum('transaction_quantity', filter=Q(seller_id=b1_id)),
-        b2_buy=Sum('transaction_quantity', filter=Q(buyer_id=b2_id)),
-        b2_sell=Sum('transaction_quantity', filter=Q(seller_id=b2_id)),
-        symbol_total_vol=Sum('transaction_quantity')  # Total market volume for the day
-    )
-    # Create lookup maps
-    meta_map = {item['transaction_date']: item for item in daily_meta}
-
-    # Overall summary aggregations for the transfer pair
-    stats = queryset.aggregate(
-        total_volume_1_to_2=Sum('transaction_quantity', filter=Q(buyer_id=b1_id, seller_id=b2_id)),
-        total_volume_2_to_1=Sum('transaction_quantity', filter=Q(buyer_id=b2_id, seller_id=b1_id)),
-        total_amount_1_to_2=Sum('transaction_amount', filter=Q(buyer_id=b1_id, seller_id=b2_id)),
-        total_amount_2_to_1=Sum('transaction_amount', filter=Q(buyer_id=b2_id, seller_id=b1_id)),
-        count_1_to_2=Count('transaction_id', filter=Q(buyer_id=b1_id, seller_id=b2_id)),
-        count_2_to_1=Count('transaction_id', filter=Q(buyer_id=b2_id, seller_id=b1_id)),
-        avg_rate_1_to_2=Avg('transaction_rate', filter=Q(buyer_id=b1_id, seller_id=b2_id)),
-        avg_rate_2_to_1=Avg('transaction_rate', filter=Q(buyer_id=b2_id, seller_id=b1_id))
-    )
-
-    # Daily aggregation for the chart and table
-    qs_daily = queryset.values('transaction_date').annotate(
-        volume_1_to_2=Sum('transaction_quantity', filter=Q(buyer_id=b1_id, seller_id=b2_id)),
-        volume_2_to_1=Sum('transaction_quantity', filter=Q(buyer_id=b2_id, seller_id=b1_id)),
-        amount_1_to_2=Sum('transaction_amount', filter=Q(buyer_id=b1_id, seller_id=b2_id)),
-        amount_2_to_1=Sum('transaction_amount', filter=Q(buyer_id=b2_id, seller_id=b1_id)),
-        avg_rate_1_to_2=Avg('transaction_rate', filter=Q(buyer_id=b1_id, seller_id=b2_id)),
-        avg_rate_2_to_1=Avg('transaction_rate', filter=Q(buyer_id=b2_id, seller_id=b1_id))
-    ).order_by('transaction_date')
-
-    # Get symbol price history for percentage change
-    prices = DailyStockPrice.objects.filter(ticker=symbol).order_by('date')
-    price_map = {p.date: float(p.close) for p in prices}
-    sorted_dates = sorted(price_map.keys())
-
-    daily_stats = []
-    for item in qs_daily:
-        dt = item['transaction_date']
-        meta = meta_map.get(dt, {})
-
-        # Calculate price change %
-        price_change = 0
-        try:
-            idx = sorted_dates.index(dt)
-            if idx > 0:
-                curr = price_map[dt]
-                prev = price_map[sorted_dates[idx - 1]]
-                if prev > 0:
-                    price_change = round(((curr - prev) / prev) * 100, 2)
-        except (ValueError, IndexError):
-            pass
-
-        item.update({
-            'net_accumulation': net_acc_map.get(dt, 0),
-            'b1_net': meta.get('b1_net', 0),
-            'b2_net': meta.get('b2_net', 0),
-            'b1_buy': meta.get('b1_buy', 0),
-            'b1_sell': meta.get('b1_sell', 0),
-            'b2_buy': meta.get('b2_buy', 0),
-            'b2_sell': meta.get('b2_sell', 0),
-            'symbol_total_vol': meta.get('symbol_total_vol', 0),
-            'price_change_pc': price_change,
-            'close_price': price_map.get(dt, 0)
-        })
-        daily_stats.append(item)
-
-    return {
-        "summary": {
-            "broker1_to_broker2": {
-                "total_volume": stats['total_volume_1_to_2'] or 0,
-                "total_amount": stats['total_amount_1_to_2'] or 0,
-                "total_transactions": stats['count_1_to_2'] or 0,
-                "avg_rate": round(stats['avg_rate_1_to_2'] or 0, 2)
-            },
-            "broker2_to_broker1": {
-                "total_volume": stats['total_volume_2_to_1'] or 0,
-                "total_amount": stats['total_amount_2_to_1'] or 0,
-                "total_transactions": stats['count_2_to_1'] or 0,
-                "avg_rate": round(stats['avg_rate_2_to_1'] or 0, 2)
-            }
-        },
-        "daily_stats": list(daily_stats),
-        "aggregated_transfers": list(daily_stats)[::-1]
-    }

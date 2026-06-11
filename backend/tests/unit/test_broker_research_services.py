@@ -115,7 +115,7 @@ class TestBrokerViewExtraction:
             pytest.skip("Raw SQL tables not present in test DB")
         resp = auth_client.get("/api/stocks/accumulation_history/?broker=1&symbol=NABIL&page=1&page_size=50")
         assert resp.status_code == 200
-        assert resp.json() == broker_research.accumulation_history(broker_id=1, symbol="NABIL", page=1, page_size=50)
+        assert resp.json() == broker_research.accumulation_history(broker_id=1, symbol="NABIL", page=1, page_size=50)  # No Decimals in output — all values coerced to float() in-line, so no _drf_roundtrip needed.
 
 
 class TestForecastService:
