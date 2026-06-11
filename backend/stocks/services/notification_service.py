@@ -455,6 +455,7 @@ def check_active_signal_alerts(user):
         if len(signals) == 1:
             # Single hit: stay specific
             sig = signals[0]
+            price = get_latest_price(sig.symbol)
             notification = create_notification(
                 user=user,
                 notification_type=notif_type,
@@ -463,13 +464,14 @@ def check_active_signal_alerts(user):
                 ticker=sig.symbol,
                 redirect_url='/recommendations',
                 metadata={
-                    'signal_id': sig.id, 
-                    'hit_type': hit_type, 
+                    'signal_id': sig.id,
+                    'hit_type': hit_type,
                     'source': sig.source,
                     'price': price,
                     'symbol': sig.symbol,
-                    'target': float(sig.target_price) if sig.target_price else None,
-                    'stop': float(sig.stop_loss_price) if sig.stop_loss_price else None
+                    'level': (float(sig.target_price) if hit_type == 'WON' and sig.target_price
+                              else float(sig.stop_loss_price) if sig.stop_loss_price else None),
+                    'level_type': 'target' if hit_type == 'WON' else 'stop',
                 }
             )
             if notification: notifications_created += 1
@@ -832,7 +834,7 @@ def check_accumulation_trend_alerts(user):
                     'brokers': [b['broker'] for b in brokers],
                     'top_broker': top_broker['broker'] if top_broker else "Unknown",
                     'net_5d': net_5d_val,
-                    'price': row.get('ltp'),
+                    'price': float(top_broker['ltp']) if top_broker and top_broker.get('ltp') is not None else None,
                     'symbol': symbol
                 }
             )
@@ -917,7 +919,10 @@ def check_technical_alerts(user):
             latest_vol = df['volume'].iloc[-1]
             latest_avg_vol = avg_vol_20.iloc[-1] if avg_vol_20 is not None else 0
             latest_close = df['close'].iloc[-1]
-            
+            prev_close = float(df['close'].iloc[-2]) if len(df) >= 2 else None
+            day_change_pct = (((float(latest_close) - prev_close) / prev_close) * 100
+                              if prev_close else None)
+
             # --- VOLUME SPIKE ---
             if latest_vol > (latest_avg_vol * 3) and latest_avg_vol > 0:
                 if not Notification.objects.filter(user=user, ticker=symbol, type=Notification.NotificationType.VOLUME_SPIKE, created_at__gte=one_day_ago).exists():
@@ -926,7 +931,7 @@ def check_technical_alerts(user):
                         title=f"{symbol} - Volume Spike",
                         message=f"Unusual volume detected: {latest_vol:,} which is {latest_vol/latest_avg_vol:.1f}x the 20-day average.",
                         redirect_url=f"/ticker/{symbol}",
-                        metadata={'price': latest_close, 'vol_multiplier': latest_vol/latest_avg_vol, 'symbol': symbol}
+                        metadata={'price': latest_close, 'vol_multiplier': latest_vol/latest_avg_vol, 'change_pct': day_change_pct, 'symbol': symbol}
                     )
                     notifications_created += 1
 
@@ -938,7 +943,7 @@ def check_technical_alerts(user):
                         title=f"{symbol} - RSI Oversold",
                         message=f"{symbol} is currently oversold with an RSI of {latest_rsi:.1f}. Potential reversal area.",
                         redirect_url=f"/ticker/{symbol}",
-                        metadata={'price': latest_close, 'rsi': latest_rsi, 'symbol': symbol}
+                        metadata={'price': latest_close, 'rsi': latest_rsi, 'change_pct': day_change_pct, 'symbol': symbol}
                     )
                     notifications_created += 1
 
@@ -950,7 +955,7 @@ def check_technical_alerts(user):
                         title=f"{symbol} - RSI Overbought",
                         message=f"{symbol} is currently overbought with an RSI of {latest_rsi:.1f}. Caution recommended.",
                         redirect_url=f"/ticker/{symbol}",
-                        metadata={'price': latest_close, 'rsi': latest_rsi, 'symbol': symbol}
+                        metadata={'price': latest_close, 'rsi': latest_rsi, 'change_pct': day_change_pct, 'symbol': symbol}
                     )
                     notifications_created += 1
 
@@ -960,7 +965,7 @@ def check_technical_alerts(user):
                 prev_sma200 = sma_200[-2]
                 curr_sma50 = sma_50[-1]
                 curr_sma200 = sma_200[-1]
-                
+
                 if prev_sma50 <= prev_sma200 and curr_sma50 > curr_sma200:
                     if not Notification.objects.filter(user=user, ticker=symbol, type=Notification.NotificationType.GOLDEN_CROSS, created_at__gte=one_day_ago).exists():
                         create_notification(
@@ -968,7 +973,7 @@ def check_technical_alerts(user):
                             title=f"{symbol} - Golden Cross",
                             message=f"Bullish 50-day SMA crossed above 200-day SMA for {symbol}.",
                             redirect_url=f"/ticker/{symbol}",
-                            metadata={'price': latest_close, 'symbol': symbol}
+                            metadata={'price': latest_close, 'change_pct': day_change_pct, 'symbol': symbol}
                         )
                         notifications_created += 1
 

@@ -242,3 +242,24 @@ class TestMetadataContract:
         assert n.metadata['symbol'] == 'BIG'
         assert 'weight' in n.metadata
         assert n.severity == 'low'
+
+    def test_active_signal_won_metadata(self, create_user):
+        from unittest.mock import patch
+        from stocks.models import SignalEpisode
+        from stocks.services import notification_service
+        from datetime import date
+
+        user = create_user(username='meta_user6', password='password')
+        SignalEpisode.objects.create(
+            source='STRATEGY', producer_key='k1', symbol='NLIC', direction='BUY',
+            start_date=date(2026, 6, 1), last_signal_date=date(2026, 6, 1),
+            entry_price=900, target_price=950, stop_loss_price=870, status='ACTIVE',
+        )
+        with patch.object(notification_service, 'get_latest_price', return_value=955.0):
+            notification_service.check_active_signal_alerts(user)
+
+        n = Notification.objects.get(user=user, type='TARGET_REACHED', ticker='NLIC')
+        md = n.metadata
+        assert md['price'] == 955.0
+        assert md['level'] == 950.0
+        assert md['level_type'] == 'target'
