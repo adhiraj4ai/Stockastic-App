@@ -120,7 +120,9 @@ class TestWatchlistTools:
 @pytest.mark.django_db
 class TestZoneEntryAlerts:
     def test_alert_created_when_in_zone(self, create_user):
+        from unittest.mock import patch
         from stocks.models import DailyTradingPlan, Notification, WatchlistItem
+        from stocks.services import notification_service
         from stocks.services.notification_service import check_zone_entry_alerts
         user = create_user(username="zone1", password="x")
         WatchlistItem.objects.create(user=user, ticker="SHL", alert_enabled=True)
@@ -130,7 +132,8 @@ class TestZoneEntryAlerts:
             date=date(2026, 6, 12), regime="RISK_ON",
             payload={"entry_statuses": {"SHL": "IN_ZONE", "GVL": "EXTENDED", "OFF": "IN_ZONE"},
                      "picks": [], "watch": [], "exits": [], "catalysts": [], "market_context": {}})
-        count = check_zone_entry_alerts(user)
+        with patch.object(notification_service, 'get_latest_price', return_value=None):
+            count = check_zone_entry_alerts(user)
         assert count == 1
         notif = Notification.objects.get(user=user, type="WATCHLIST_ENTRY")
         assert notif.ticker == "SHL"
