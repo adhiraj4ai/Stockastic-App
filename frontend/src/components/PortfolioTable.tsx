@@ -180,7 +180,7 @@ export function PortfolioTable({
                         return (
                             <React.Fragment key={`${item.ticker}-${idx}`}>
                                 <TableRow
-                                    className={`transition-colors duration-150 cursor-pointer border-l-4 border-border/50 even:bg-muted/20 ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-indigo-500/10 border-l-indigo-500' : isUnderwater ? 'border-l-rose-500/50 hover:bg-rose-500/5 hover:border-l-rose-500' : hasStrategy ? 'border-l-emerald-500/50 hover:bg-emerald-500/5 hover:border-l-emerald-500' : 'border-l-transparent hover:bg-muted/40 hover:border-l-indigo-400/50'}`}
+                                    className={`transition-colors duration-150 cursor-pointer border-l-4 border-border/50 even:bg-muted/20 ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-indigo-500/10 border-l-indigo-500' : isUnderwater ? 'border-l-rose-500/50 hover:bg-rose-500/15 hover:border-l-rose-500' : hasStrategy ? 'border-l-emerald-500/50 hover:bg-emerald-500/15 hover:border-l-emerald-500' : 'border-l-transparent hover:bg-muted/40 hover:border-l-indigo-400/50'}`}
                                     onClick={() => onStrategies(item)}
                                 >
                                     <TableCell className="text-center font-semibold text-muted-foreground text-xs py-4 px-6 tabular-nums">
@@ -289,7 +289,7 @@ export function PortfolioTable({
                                                             e.stopPropagation();
                                                             onBuy(item.ticker);
                                                         }}
-                                                        className="p-2 text-muted-foreground/40 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all"
+                                                        className="p-2 text-muted-foreground/70 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all"
                                                     >
                                                         <PlusCircle size={18} />
                                                     </button>
@@ -306,7 +306,7 @@ export function PortfolioTable({
                                                             e.stopPropagation();
                                                             onSell(item.ticker);
                                                         }}
-                                                        className="p-2 text-muted-foreground/40 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
+                                                        className="p-2 text-muted-foreground/70 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
                                                     >
                                                         <MinusCircle size={18} />
                                                     </button>
@@ -319,7 +319,7 @@ export function PortfolioTable({
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <button
-                                                        className={`p-2 rounded-lg transition-all ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-indigo-600 text-white shadow-sm rotate-0' : 'text-muted-foreground/40 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-500/10 rotate-[-45deg] hover:rotate-0'}`}
+                                                        className={`p-2 rounded-lg transition-all ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-indigo-600 text-white shadow-sm rotate-0' : 'text-muted-foreground/70 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-500/10 rotate-[-45deg] hover:rotate-0'}`}
                                                     >
                                                         <Target size={18} />
                                                     </button>
