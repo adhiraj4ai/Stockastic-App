@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import { SectionCard, KpiCard, SentimentBadge, KpiSkeleton, CardSkeleton } from '@/components/portfolio/ui';
+import { SectionCard, KpiCard, SentimentBadge, KpiSkeleton, CardSkeleton, FadeIn } from '@/components/portfolio/ui';
 import { Wallet } from 'lucide-react';
 
 describe('portfolio ui primitives', () => {
@@ -52,5 +52,14 @@ describe('portfolio ui primitives', () => {
             </>,
         );
         expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('FadeIn renders its children', () => {
+        render(
+            <FadeIn>
+                <p>animated content</p>
+            </FadeIn>,
+        );
+        expect(screen.getByText('animated content')).toBeInTheDocument();
     });
 });

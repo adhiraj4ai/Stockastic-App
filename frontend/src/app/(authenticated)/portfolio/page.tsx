@@ -4,7 +4,6 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import {
@@ -939,7 +938,7 @@ function PortfolioContent() {
                                                 .map(item => (
                                                     <div key={item.ticker} className="flex items-center gap-1.5 bg-muted/40 text-foreground px-3 py-1.5 rounded-full text-xs font-semibold border border-border">
                                                         <Activity className="h-3 w-3" />
-                                                        {item.ticker} <span className="text-slate-400 opacity-60">/</span> {item.volatility?.toFixed(1)}% VOL
+                                                        {item.ticker} <span className="text-muted-foreground opacity-60">/</span> {item.volatility?.toFixed(1)}% VOL
                                                     </div>
                                                 ))}
                                             {!displayedItems.some(i => (i.volatility || 0) > 40) && (
@@ -955,43 +954,45 @@ function PortfolioContent() {
 
                 {/* Strategic Watchlist Section - Only for Watchlist tab */}
                 {activeTab === 'watchlist' && (
-                    <Card className="shadow-lg border-blue-50/50 dark:border-slate-800 dark:bg-card">
-                        <CardHeader className="border-b border-gray-50 dark:border-slate-800 pb-2">
-                            <CardTitle className="text-xl font-semibold text-slate-900 dark:text-slate-100 tracking-tight flex items-center justify-between">
-                                <div className="flex items-center gap-3">
+                    <FadeIn>
+                    <SectionCard
+                        accent="indigo"
+                        icon={Eye}
+                        title="Strategic Watchlist"
+                        badges={<SentimentBadge tone="neutral">{sortedAndFilteredWatchlist.length} tickers</SentimentBadge>}
+                        actions={<>
                                     <button
                                         onClick={() => {
                                             setSelectedWatchlistItem(null);
                                             setWatchlistForm({ ticker: '', target_price: '', stop_loss_price: '', alert_enabled: false, notes: '' });
                                             setIsWatchlistModalOpen(true);
                                         }}
-                                        className="h-9 px-4 flex items-center gap-2 bg-gray-900 dark:bg-slate-800 text-white rounded-md text-[11px] font-semibold hover:bg-black dark:hover:bg-slate-700 transition-all uppercase tracking-wider shadow-md whitespace-nowrap"
+                                        className="h-9 px-4 flex items-center gap-2 bg-indigo-600 text-white rounded-md text-[11px] font-semibold hover:bg-indigo-700 transition-all uppercase tracking-wider shadow-md whitespace-nowrap"
                                     >
                                         <Plus size={14} /> Add
                                     </button>
-                                </div>
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-0 p-0">
+                        </>}
+                        bodyClassName="p-0"
+                    >
                             {paginatedWatchlist.length === 0 ? (
-                                <div className="text-center py-20 text-gray-500 dark:text-gray-400 flex flex-col items-center gap-2">
-                                    <Eye className="h-10 w-10 text-gray-200 dark:text-gray-800" />
+                                <div className="text-center py-20 text-muted-foreground flex flex-col items-center gap-2">
+                                    <Eye className="h-10 w-10 text-muted" />
                                     <p className="text-sm font-medium italic">Your watchlist is empty. Add tickers to monitor entry levels.</p>
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto">
                                     <Table>
                                         <TableHeader>
-                                            <TableRow className="bg-gray-50/50 dark:bg-slate-800/50 hover:bg-gray-50/50 dark:hover:bg-slate-800/50">
-                                                <TableHead className="font-bold text-gray-900 dark:text-slate-100 px-6">Ticker</TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">LTP (रू)</TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">Day Change</TableHead>
-                                                <TableHead className="text-center font-bold text-gray-900 dark:text-slate-100">Health</TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">Smart Money / RVOL</TableHead>
-                                                <TableHead className="text-center font-bold text-gray-900 dark:text-slate-100">52W Range</TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">Strategy Sync</TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">R:R / Upside</TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">Timeline</TableHead>
+                                            <TableRow className="bg-muted/40 hover:bg-muted/40 border-border">
+                                                <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-6">Ticker</TableHead>
+                                                <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">LTP (रू)</TableHead>
+                                                <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Day Change</TableHead>
+                                                <TableHead className="text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Health</TableHead>
+                                                <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Smart Money / RVOL</TableHead>
+                                                <TableHead className="text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">52W Range</TableHead>
+                                                <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Strategy Sync</TableHead>
+                                                <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">R:R / Upside</TableHead>
+                                                <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Timeline</TableHead>
                                                 <TableHead className="w-[80px] pr-6"></TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -1033,11 +1034,11 @@ function PortfolioContent() {
                                                         </TableCell>
                                                         <TableCell className="text-right py-4">
                                                             <div className={`flex flex-col items-end`}>
-                                                                <div className={`font-semibold flex items-center gap-1 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                <div className={`font-semibold flex items-center gap-1 ${isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                                                     {isPos ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                                                                     {isPos ? '+' : ''}{dayChange.toFixed(1)}
                                                                 </div>
-                                                                <div className={`text-[10px] font-semibold uppercase tracking-tighter px-1 rounded ${isPos ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
+                                                                <div className={`text-[10px] font-semibold uppercase tracking-tighter px-1 rounded ${isPos ? 'bg-emerald-500/10 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-rose-500/10 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400'}`}>
                                                                     {item.day_change_percent}%
                                                                 </div>
                                                             </div>
@@ -1050,7 +1051,7 @@ function PortfolioContent() {
                                                                             variant="secondary"
                                                                             className={`font-bold transition-all px-2 py-0.5 text-[10px] ${item.health_score >= 70 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' :
                                                                                 item.health_score >= 40 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' :
-                                                                                    'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
+                                                                                    'bg-rose-500/10 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'
                                                                                 }`}
                                                                         >
                                                                             {item.health_score}
@@ -1169,8 +1170,8 @@ function PortfolioContent() {
                                                                             <Badge
                                                                                 variant="outline"
                                                                                 className={`
-                                                                            ${item.signals.summary === 'BUY' ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' : ''}
-                                                                            ${item.signals.summary === 'SELL' ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800' : ''}
+                                                                            ${item.signals.summary === 'BUY' ? 'bg-emerald-500/10 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25 dark:border-emerald-500/25' : ''}
+                                                                            ${item.signals.summary === 'SELL' ? 'bg-rose-500/10 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/25 dark:border-rose-500/25' : ''}
                                                                             ${item.signals.summary === 'HOLD' ? 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-700' : ''}
                                                                             ${item.signals.summary === 'NEUTRAL' ? 'bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-700' : ''}
                                                                             ${item.signals.summary === 'MIXED' ? 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800' : ''}
@@ -1187,7 +1188,7 @@ function PortfolioContent() {
                                                         <TableCell className="text-right py-4">
                                                             <div className="flex flex-col items-end">
                                                                 {item.upside_percent !== undefined && (
-                                                                    <div className={`text-xs font-semibold ${item.upside_percent > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
+                                                                    <div className={`text-xs font-semibold ${item.upside_percent > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
                                                                         {item.upside_percent > 0 ? '+' : ''}{item.upside_percent.toFixed(1)}% Upside
                                                                     </div>
                                                                 )}
@@ -1234,7 +1235,7 @@ function PortfolioContent() {
                                                                 </button>
                                                                 <button
                                                                     onClick={() => removeWatchlistItem(item.id)}
-                                                                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-500/10 dark:hover:bg-rose-500/10 rounded-lg transition-colors"
                                                                     title="Remove surveillance"
                                                                 >
                                                                     <Trash2 size={16} />
@@ -1251,33 +1252,33 @@ function PortfolioContent() {
 
                             {/* Watchlist Pagination */}
                             {watchlistTotalPages > 1 && (
-                                <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-50 dark:border-slate-800 pb-4 px-6">
-                                    <div className="text-[10px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">
-                                        Monitoring <span className="text-gray-900 dark:text-slate-100">{sortedAndFilteredWatchlist.length}</span> key tickers
+                                <div className="flex items-center justify-between mt-8 pt-6 border-t border-border pb-4 px-6">
+                                    <div className="text-xs text-muted-foreground">
+                                        Monitoring <span className="text-foreground font-semibold">{sortedAndFilteredWatchlist.length}</span> key tickers
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => setWatchlistCurrentPage(p => Math.max(1, p - 1))}
                                             disabled={watchlistCurrentPage === 1}
-                                            className="p-2 rounded-lg border border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-20 transition-all font-semibold text-gray-600 dark:text-slate-400"
+                                            className="p-2 rounded-lg border border-border hover:bg-muted disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                                         >
                                             <ChevronLeft size={16} />
                                         </button>
-                                        <span className="text-xs font-semibold px-4 py-2 bg-gray-900 dark:bg-slate-800 text-white rounded-lg shadow-lg">
+                                        <span className="text-xs font-semibold px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-sm">
                                             {watchlistCurrentPage} / {watchlistTotalPages}
                                         </span>
                                         <button
                                             onClick={() => setWatchlistCurrentPage(p => Math.min(watchlistTotalPages, p + 1))}
                                             disabled={watchlistCurrentPage === watchlistTotalPages}
-                                            className="p-2 rounded-lg border border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-20 transition-all font-semibold text-gray-600 dark:text-slate-400"
+                                            className="p-2 rounded-lg border border-border hover:bg-muted disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                                         >
                                             <ChevronRight size={16} />
                                         </button>
                                     </div>
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
+                    </SectionCard>
+                    </FadeIn>
                 )}
 
                 {/* Account Creation Dialog */}

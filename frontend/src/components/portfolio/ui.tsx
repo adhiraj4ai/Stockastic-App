@@ -129,7 +129,7 @@ export function FadeIn({
 
 export function KpiSkeleton() {
     return (
-        <div className="animate-pulse rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <div aria-hidden="true" className="animate-pulse rounded-2xl border border-border bg-card p-4 shadow-sm">
             <div className="flex items-center gap-2">
                 <div className="h-7 w-7 rounded-lg bg-muted" />
                 <div className="h-2.5 w-24 rounded bg-muted" />
@@ -142,7 +142,7 @@ export function KpiSkeleton() {
 
 export function CardSkeleton({ rows = 6 }: { rows?: number }) {
     return (
-        <div className="animate-pulse rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <div aria-hidden="true" className="animate-pulse rounded-2xl border border-border bg-card p-4 shadow-sm">
             <div className="mb-4 h-4 w-40 rounded bg-muted" />
             <div className="space-y-3">
                 {Array.from({ length: rows }, (_, i) => (
