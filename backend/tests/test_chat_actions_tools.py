@@ -139,3 +139,37 @@ class TestZoneEntryAlerts:
     def test_no_plan_no_alerts(self, create_user):
         from stocks.services.notification_service import check_zone_entry_alerts
         assert check_zone_entry_alerts(create_user(username="zone2", password="x")) == 0
+
+
+@pytest.mark.django_db(transaction=True)
+class TestChatActionRecord:
+    def test_counts_and_honesty(self, create_user):
+        from datetime import timedelta
+        from decimal import Decimal as D
+        from django.utils import timezone
+        from stocks.models import TradePlan, TradePlanLeg
+        from stocks.models.portfolio import PortfolioActionDraft
+        from chat.tools import get_chat_action_record
+        user = create_user(username="rec1", password="x")
+        _user_context.set_user(user)
+        expires = timezone.now() + timedelta(days=1)
+        PortfolioActionDraft.objects.create(user=user, kind="TRADE", status="CONFIRMED",
+                                            title="Buy 10 NABIL", payload={}, expires_at=expires)
+        PortfolioActionDraft.objects.create(user=user, kind="TRADE", status="EXPIRED",
+                                            title="Buy 5 SCB", payload={}, expires_at=expires)
+        plan = TradePlan.objects.create(user=user, ticker="SHL", risk_budget_pct=D("1.00"))
+        TradePlanLeg.objects.create(plan=plan, leg_number=1, price_target=D("600"),
+                                    allocation_pct=D("100"), stop_loss_price=D("585"))
+        out = _call(get_chat_action_record, {})
+        text = out["content"][0]["text"]
+        assert "CONFIRMED" in text or "confirmed" in text
+        assert "TRADE" in text or "trade" in text
+        assert "SHL" in text
+        # honesty: realized-outcome attribution is explicitly not claimed
+        assert "not" in text.lower() and ("track" in text.lower() or "attribut" in text.lower() or "measur" in text.lower())
+
+    def test_empty_record(self, create_user):
+        from chat.tools import get_chat_action_record
+        _user_context.set_user(create_user(username="rec2", password="x"))
+        out = _call(get_chat_action_record, {})
+        assert "no " in out["content"][0]["text"].lower()

@@ -3011,6 +3011,66 @@ async def forget_about_user(args: dict) -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Accountability
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@tool(
+    "get_chat_action_record",
+    "Honest accounting of chat's own past proposals for THIS user (last 90 days): "
+    "action drafts by kind and status (proposed/confirmed/cancelled/expired), trade plans "
+    "with executed/skipped legs and recorded entry prices. Consult this before giving "
+    "high-conviction advice — it is your own track record. No args.",
+    {},
+)
+async def get_chat_action_record(args: dict) -> dict:
+    @sync_to_async
+    def _run():
+        from collections import Counter
+        from datetime import timedelta
+        from django.utils import timezone
+        from stocks.models import TradePlan
+        from stocks.models.portfolio import PortfolioActionDraft
+
+        user = get_user()
+        since = timezone.now() - timedelta(days=90)
+        drafts = PortfolioActionDraft.objects.filter(user=user, created_at__gte=since)
+        plans = TradePlan.objects.filter(user=user, created_at__gte=since).prefetch_related("legs")
+
+        if not drafts.exists() and not plans.exists():
+            return _result("No chat-proposed actions in the last 90 days.")
+
+        lines = ["Chat action record (last 90 days):"]
+        combo = Counter((d.kind, d.status) for d in drafts)
+        if combo:
+            lines.append("Proposals:")
+            for (kind, status), n in sorted(combo.items()):
+                lines.append(f"- {kind} {status}: {n}")
+        if plans.exists():
+            lines.append("Trade plans:")
+            for p in plans:
+                legs = list(p.legs.all())
+                executed = [l for l in legs if l.status == "EXECUTED"]
+                skipped = [l for l in legs if l.status == "SKIPPED"]
+                leg_bits = f"{len(executed)}/{len(legs)} legs executed"
+                if skipped:
+                    leg_bits += f", {len(skipped)} skipped"
+                entries = [f"{float(l.transaction.rate):.1f}" for l in executed
+                           if getattr(l, "transaction", None)]
+                entry_bits = f" (entries at {', '.join(entries)})" if entries else ""
+                lines.append(f"- {p.ticker} [{p.status}]: {leg_bits}{entry_bits}")
+        lines.append(
+            "Note: realized P&L attribution to chat proposals is not yet tracked — "
+            "executed entries are recorded, outcomes are not attributed."
+        )
+        return _result("\n".join(lines), card={"type": "chat_action_record", "data": {
+            "drafts": [{"kind": k, "status": s, "count": n} for (k, s), n in combo.items()],
+        }})
+
+    return await _run()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # MCP server registration
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -3083,6 +3143,8 @@ ALL_TOOLS = [
     # User memory
     remember_about_user,
     forget_about_user,
+    # Accountability
+    get_chat_action_record,
 ]
 
 
