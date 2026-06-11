@@ -7,22 +7,43 @@ import pandas as pd
 import talib
 import numpy as np
 from ..models import (
-    Notification, PortfolioItem, WatchlistItem, 
+    Notification, PortfolioItem, WatchlistItem,
     DailyStockPrice, Company, DailyCumulativeAccumulation,
     DailyFloorsheet
 )
 
+# Display priority per notification type. Anything not listed is NORMAL.
+# critical/high pop up in the UI; low never pops (bell badge only).
+SEVERITY_MAP = {
+    'STOP_LOSS_HIT': 'critical',
+    'TARGET_REACHED': 'high',
+    'TAKE_PROFIT': 'high',
+    'SIGNIFICANT_GAIN': 'high',
+    'SIGNIFICANT_LOSS': 'high',
+    'SIGNAL_STRONG_BUY': 'high',
+    'SIGNAL_STRONG_SELL': 'high',
+    'WATCHLIST_ENTRY': 'high',
+    'WATCHLIST_BREAKOUT': 'high',
+    'DAILY_PLAN_READY': 'high',
+    'WHALE_ENTRY': 'high',
+    'PRICE_ALERT': 'high',
+    'PORTFOLIO_DIVERSITY': 'low',
+    'BELOW_WACC': 'low',
+}
 
-def create_notification(user, notification_type, title, message, ticker=None, redirect_url=None, 
-                       portfolio_item_id=None, watchlist_item_id=None, metadata=None):
+
+def create_notification(user, notification_type, title, message, ticker=None, redirect_url=None,
+                       portfolio_item_id=None, watchlist_item_id=None, metadata=None, severity=None):
     """
     Helper function to create a notification.
-    If an unread notification of the same type and ticker already exists, 
+    If an unread notification of the same type and ticker already exists,
     updates it and moves it to the top (re-alert).
     """
     from django.utils import timezone
     from datetime import timedelta
-    
+
+    resolved_severity = severity or SEVERITY_MAP.get(str(notification_type), 'normal')
+
     # Identify existing UNREAD notification of same type/ticker
     existing_unread = Notification.objects.filter(
         user=user,
@@ -30,17 +51,18 @@ def create_notification(user, notification_type, title, message, ticker=None, re
         ticker=ticker,
         read=False
     ).first()
-    
+
     if existing_unread:
         # Re-alert: move to top, update content
         existing_unread.title = title
         existing_unread.message = message
         existing_unread.created_at = timezone.now()
+        existing_unread.severity = resolved_severity
         if metadata:
             existing_unread.metadata = metadata
         existing_unread.save()
         return existing_unread
-    
+
     # Check for duplicate READ notifications in the last hour (prevents annoyance after reading)
     one_hour_ago = timezone.now() - timedelta(hours=1)
     if Notification.objects.filter(
@@ -50,7 +72,7 @@ def create_notification(user, notification_type, title, message, ticker=None, re
         created_at__gte=one_hour_ago
     ).exists():
         return None
-    
+
     # Create new
     return Notification.objects.create(
         user=user,
@@ -61,7 +83,8 @@ def create_notification(user, notification_type, title, message, ticker=None, re
         redirect_url=redirect_url,
         portfolio_item_id=portfolio_item_id,
         watchlist_item_id=watchlist_item_id,
-        metadata=metadata or {}
+        metadata=metadata or {},
+        severity=resolved_severity,
     )
 
 

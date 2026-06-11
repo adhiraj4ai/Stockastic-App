@@ -14,7 +14,7 @@ class TestNotificationsAPI:
     def test_mark_all_as_read(self, auth_client):
         # Create a notification
         from django.contrib.auth.models import User
-        user = User.objects.get(username=auth_client.user.username)
+        user = User.objects.get(username='testuser')
         Notification.objects.create(user=user, message='Test', type='INFO', read=False)
         
         url = reverse('notifications-mark-all-as-read')
@@ -56,3 +56,65 @@ class TestCheckAllUserNotificationsTask:
         assert m_zone.called
         assert m_active.called
         assert 'total_active_signal_notifications' in result
+
+
+@pytest.mark.django_db
+class TestNotificationSeverity:
+    def test_create_notification_assigns_mapped_severity(self, create_user):
+        from stocks.services.notification_service import create_notification
+        user = create_user(username='sev_user', password='password')
+
+        cases = [
+            ('STOP_LOSS_HIT', 'critical'),
+            ('TARGET_REACHED', 'high'),
+            ('DAILY_PLAN_READY', 'high'),
+            ('SIGNAL_BUY', 'normal'),
+            ('VOLUME_SPIKE', 'normal'),
+            ('PORTFOLIO_DIVERSITY', 'low'),
+            ('BELOW_WACC', 'low'),
+        ]
+        for i, (ntype, expected) in enumerate(cases):
+            n = create_notification(
+                user=user, notification_type=ntype,
+                title='t', message='m', ticker=f'TICK{i}',
+            )
+            assert n.severity == expected, f"{ntype} should be {expected}, got {n.severity}"
+
+    def test_explicit_severity_override_wins(self, create_user):
+        from stocks.services.notification_service import create_notification
+        user = create_user(username='sev_user2', password='password')
+        n = create_notification(
+            user=user, notification_type='TARGET_REACHED',
+            title='t', message='m', ticker='SUMMARY',
+            severity='critical',
+        )
+        assert n.severity == 'critical'
+
+    def test_realert_updates_severity(self, create_user):
+        """Re-alerting an unread notification must refresh severity too."""
+        from stocks.services.notification_service import create_notification
+        user = create_user(username='sev_user3', password='password')
+        first = create_notification(
+            user=user, notification_type='TARGET_REACHED',
+            title='t', message='m', ticker='NABIL',
+        )
+        assert first.severity == 'high'
+        second = create_notification(
+            user=user, notification_type='TARGET_REACHED',
+            title='t2', message='m2', ticker='NABIL',
+            severity='critical',
+        )
+        assert second.id == first.id  # re-alert, not a new row
+        assert second.severity == 'critical'
+
+    def test_serializer_exposes_severity(self, auth_client):
+        from django.contrib.auth.models import User
+        user = User.objects.get(username='testuser')
+        Notification.objects.create(
+            user=user, title='t', message='m', type='STOP_LOSS_HIT',
+            severity='critical',
+        )
+        url = reverse('notifications-list')
+        response = auth_client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data[0]['severity'] == 'critical'
