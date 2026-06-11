@@ -199,3 +199,46 @@ class TestMetadataContract:
         assert md['price'] == 1142.0
         assert md['level'] == 1100.0
         assert md['level_type'] == 'target'
+
+    def test_zone_entry_metadata(self, create_user):
+        from unittest.mock import patch
+        from stocks.models import WatchlistItem, DailyTradingPlan
+        from stocks.services import notification_service
+        from datetime import date
+
+        user = create_user(username='meta_user4', password='password')
+        WatchlistItem.objects.create(user=user, ticker='SHIVM', alert_enabled=True)
+        DailyTradingPlan.objects.create(
+            date=date(2026, 6, 12),
+            payload={'as_of': '2026-06-11', 'entry_statuses': {'SHIVM': 'IN_ZONE'}},
+        )
+        with patch.object(notification_service, 'get_latest_price', return_value=612.0):
+            created = notification_service.check_zone_entry_alerts(user)
+
+        assert created == 1
+        n = Notification.objects.get(user=user, type='WATCHLIST_ENTRY', ticker='SHIVM')
+        assert n.metadata['price'] == 612.0
+        assert n.metadata['symbol'] == 'SHIVM'
+        assert n.metadata['plan_date'] == '2026-06-11'
+        assert n.severity == 'high'
+
+    def test_portfolio_concentration_fires_with_price(self, create_user):
+        """Regression: curr_price was referenced before assignment, so the
+        concentration alert raised UnboundLocalError (swallowed) and NEVER fired."""
+        from unittest.mock import patch
+        from stocks.models import PortfolioItem
+        from stocks.services import notification_service
+
+        user = create_user(username='meta_user5', password='password')
+        PortfolioItem.objects.create(user=user, ticker='BIG', quantity=100, buy_price=500, wacc=500)
+        PortfolioItem.objects.create(user=user, ticker='SMALL', quantity=10, buy_price=100, wacc=100)
+
+        with patch.object(notification_service, 'get_latest_price', return_value=510.0):
+            created = notification_service.check_portfolio_management_alerts(user)
+
+        assert created >= 1
+        n = Notification.objects.get(user=user, type='PORTFOLIO_DIVERSITY', ticker='BIG')
+        assert n.metadata['price'] == 510.0
+        assert n.metadata['symbol'] == 'BIG'
+        assert 'weight' in n.metadata
+        assert n.severity == 'low'

@@ -377,6 +377,11 @@ def check_zone_entry_alerts(user):
                 ticker=item.ticker,
                 redirect_url=f'/ticker/{item.ticker}',
                 watchlist_item_id=item.id,
+                metadata={
+                    'price': get_latest_price(item.ticker),
+                    'symbol': item.ticker,
+                    'plan_date': plan.payload.get('as_of'),
+                },
             )
             if notification:
                 notifications_created += 1
@@ -1038,6 +1043,7 @@ def check_portfolio_management_alerts(user):
         
         for item in items:
             wacc_val = float(item.wacc) if item.wacc else float(item.buy_price)
+            curr_price = get_latest_price(item.ticker)
             weight = (item.quantity * wacc_val) / total_value
             if weight > 0.40: # 40% threshold
                 if not Notification.objects.filter(user=user, ticker=item.ticker, type=Notification.NotificationType.PORTFOLIO_DIVERSITY, created_at__gte=one_week_ago).exists():
@@ -1049,10 +1055,8 @@ def check_portfolio_management_alerts(user):
                         metadata={'weight': weight, 'symbol': item.ticker, 'price': curr_price}
                     )
                     notifications_created += 1
-            
+
             # 2. Take Profit Alert (Logic: Gain > 30% or Profit over Rs 100k)
-            # This would require fetching current price for each item
-            curr_price = get_latest_price(item.ticker)
             if curr_price:
                 profit_percent = ((curr_price - wacc_val) / wacc_val) * 100
                 if profit_percent > 30:
@@ -1062,7 +1066,7 @@ def check_portfolio_management_alerts(user):
                             title=f"Profit Rocket: {item.ticker}",
                             message=f"You are up {profit_percent:.1f}% on {item.ticker}. Consider locking in some profits!",
                             redirect_url="/portfolio",
-                            metadata={'profit_percent': profit_percent, 'symbol': item.ticker, 'price': curr_price}
+                            metadata={'profit_percent': profit_percent, 'change_pct': profit_percent, 'symbol': item.ticker, 'price': curr_price}
                         )
                         notifications_created += 1
 
