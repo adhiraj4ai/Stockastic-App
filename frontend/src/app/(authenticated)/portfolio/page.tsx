@@ -858,18 +858,17 @@ function PortfolioContent() {
 
                 {/* Risk Management Section - MOVED DOWN - Only for Holdings */}
                 {activeTab === 'holdings' && displayedItems.length > 0 && (
-                    <Card className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 border-dashed">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="flex items-center gap-2 text-lg text-slate-700 dark:text-slate-200">
-                                <ShieldAlert className="h-5 w-5 text-slate-500 dark:text-slate-400" />
-                                Portfolio Health Scan
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
+                    <FadeIn delay={0.2}>
+                    <SectionCard
+                        accent="rose"
+                        icon={ShieldAlert}
+                        title="Portfolio Health"
+                        info="Automated scan for sector concentration, oversized positions, and volatility hotspots."
+                    >
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 {/* Sector Concentration Risk List */}
                                 <div>
-                                    <h4 className="text-xs font-semibold mb-4 tracking-[0.2em] flex items-center gap-2 dark:text-slate-400">
+                                    <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
                                         Allocation Alerts
                                     </h4>
                                     <div className="space-y-2">
@@ -885,21 +884,21 @@ function PortfolioContent() {
                                                 const percent = (value / totalCurrentValue) * 100;
                                                 return (
                                                     <div key={sector}>
-                                                        <div className="flex justify-between text-xs mb-1.5 p-2 bg-white dark:bg-card rounded border border-border dark:border-slate-800">
-                                                            <span className="font-bold text-slate-600 dark:text-slate-300">{sector}</span>
+                                                        <div className="flex justify-between items-center text-xs mb-1.5 p-2 bg-muted/30 rounded-lg border border-border">
+                                                            <span className="font-semibold text-foreground">{sector}</span>
                                                             <div className="flex items-center gap-2">
-                                                                <span className={`text-xs font-semibold ${percent > 40 ? "text-red-500" : "text-slate-400"}`}>
+                                                                <span className={`text-xs font-semibold tabular-nums ${percent > 40 ? "text-rose-500" : "text-muted-foreground"}`}>
                                                                     {percent.toFixed(1)}%
                                                                 </span>
-                                                                <div className="w-16 h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                                                <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                                                                     <div
-                                                                        className={`h-full rounded-full ${percent > 40 ? 'bg-red-500' : 'bg-blue-400'}`}
+                                                                        className={`h-full rounded-full ${percent > 40 ? 'bg-gradient-to-r from-rose-500 to-rose-400' : percent > 25 ? 'bg-gradient-to-r from-amber-400 to-amber-500' : 'bg-emerald-500/70'}`}
                                                                         style={{ width: `${percent}%` }}
                                                                     />
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        {percent > 40 && <p className="text-xs font-bold text-red-500 pl-2">⚠️ Diversification alert: Overexposed to {sector}.</p>}
+                                                        {percent > 40 && <p className="text-xs font-semibold text-rose-500 pl-2">⚠️ Diversification alert: Overexposed to {sector}.</p>}
                                                     </div>
                                                 );
                                             })}
@@ -909,21 +908,21 @@ function PortfolioContent() {
                                 {/* Concentration & Volatility Risks */}
                                 <div className="space-y-6">
                                     <div>
-                                        <h4 className="text-xs font-semibold tracking-[0.2em] dark:text-slate-400">Holdings Concentration</h4>
+                                        <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Holdings Concentration</h4>
                                         <ul className="space-y-2">
                                             {displayedItems
                                                 .filter(item => (Number(item.current_value) / totalCurrentValue) > 0.20)
                                                 .map(item => (
-                                                    <li key={item.ticker} className="flex items-center justify-between text-xs bg-red-50/50 dark:bg-red-900/20 p-2.5 rounded-lg border border-red-100 dark:border-red-900/50 text-red-800 dark:text-red-400">
+                                                    <li key={item.ticker} className="flex items-center justify-between text-xs bg-rose-500/10 p-2.5 rounded-lg border border-rose-500/25 text-rose-600 dark:text-rose-400">
                                                         <span className="flex items-center gap-2 font-bold uppercase tracking-tight">
                                                             <ShieldAlert className="h-3.5 w-3.5" />
                                                             {item.ticker} Oversized
                                                         </span>
-                                                        <span className="font-semibold bg-red-100 dark:bg-red-900/50 px-2 py-0.5 rounded-full">{((Number(item.current_value) / totalCurrentValue) * 100).toFixed(1)}%</span>
+                                                        <span className="font-semibold tabular-nums bg-rose-500/15 px-2 py-0.5 rounded-full">{((Number(item.current_value) / totalCurrentValue) * 100).toFixed(1)}%</span>
                                                     </li>
                                                 ))}
                                             {displayedItems.every(item => (Number(item.current_value) / totalCurrentValue) <= 0.20) && (
-                                                <li className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-900/20 p-3 rounded-lg border border-emerald-100 dark:border-emerald-900/50 flex items-center gap-2">
+                                                <li className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/25 flex items-center gap-2">
                                                     <CheckCircle2 className="h-4 w-4" />
                                                     Portfolio capital is healthy and well-distributed.
                                                 </li>
@@ -932,26 +931,26 @@ function PortfolioContent() {
                                     </div>
 
                                     <div>
-                                        <h4 className="text-xs font-semibold text-slate-400 mb-4 uppercase tracking-[0.2em]">Volatility Monitoring</h4>
+                                        <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Volatility Monitoring</h4>
                                         <div className="flex flex-wrap gap-2">
                                             {displayedItems
                                                 .filter(item => (item.volatility || 0) > 40)
                                                 .sort((a, b) => (b.volatility || 0) - (a.volatility || 0))
                                                 .map(item => (
-                                                    <div key={item.ticker} className="flex items-center gap-1.5 bg-white dark:bg-card text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 shadow-sm">
+                                                    <div key={item.ticker} className="flex items-center gap-1.5 bg-muted/40 text-foreground px-3 py-1.5 rounded-full text-xs font-semibold border border-border">
                                                         <Activity className="h-3 w-3" />
                                                         {item.ticker} <span className="text-slate-400 opacity-60">/</span> {item.volatility?.toFixed(1)}% VOL
                                                     </div>
                                                 ))}
                                             {!displayedItems.some(i => (i.volatility || 0) > 40) && (
-                                                <span className="text-xs text-slate-400 dark:text-slate-500 italic">Position stability confirmed across all holdings.</span>
+                                                <span className="text-xs text-muted-foreground italic">Position stability confirmed across all holdings.</span>
                                             )}
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
+                    </SectionCard>
+                    </FadeIn>
                 )}
 
                 {/* Strategic Watchlist Section - Only for Watchlist tab */}
