@@ -297,7 +297,7 @@ def broker_trends(symbol=None, range_key="ALL"):
     {limit_clause};
     """
 
-    # Build params: symbol_filter is used up to 3 times (floorsheet x2, accum, where)
+    # Build params: symbol_filter is used up to 4 times (floorsheet x2, accum, where)
     all_params = []
     if symbol_filter:
         all_params = [symbol_filter, symbol_filter, symbol_filter, symbol_filter]
@@ -538,8 +538,9 @@ def broker_favorites(broker_id, range_key="3M"):
                             for i in range(1, len(item_prices))
                         ]
                         recent = changes[-14:] if len(changes) >= 14 else changes
-                        avg_up = sum(c for c in recent if c > 0) / 14
-                        avg_down = sum(abs(c) for c in recent if c < 0) / 14
+                        n = len(recent)
+                        avg_up = sum(c for c in recent if c > 0) / n
+                        avg_down = sum(abs(c) for c in recent if c < 0) / n
                         if avg_down > 0:
                             rs = avg_up / avg_down
                             item['rsi'] = round(100 - (100 / (1 + rs)), 2)
@@ -1004,6 +1005,11 @@ def navigator_signals():
     Returns the list of signal dicts exactly as the REST endpoint serialises them.
     Param parsing (none required for this action) stays in the view.
     """
+    ck = _cache_key('navigator_signals')
+    cached = cache.get(ck)
+    if cached is not None:
+        return cached
+
     query = """
     WITH accumulation_ref AS (
         SELECT transaction_date as latest_acc_date
@@ -1131,6 +1137,7 @@ def navigator_signals():
             })
             signals.append(row)
 
+    cache.set(ck, signals, 300)  # 5-min cache
     return signals
 
 

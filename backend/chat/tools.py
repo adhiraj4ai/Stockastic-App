@@ -3395,7 +3395,10 @@ async def get_navigator_signals(args: dict) -> dict:
 async def get_below_cost_positions(args: dict) -> dict:
     range_key = (args.get("range") or "ALL").upper()
     sector = args.get("sector") or "All"
-    limit = min(int(args.get("limit") or 50), 200)
+    try:
+        limit = min(int(args.get("limit") or 50), 200)
+    except (TypeError, ValueError):
+        limit = 50
 
     @sync_to_async
     def _run():
