@@ -1049,9 +1049,9 @@ function PortfolioContent() {
                                                                     <TooltipTrigger asChild>
                                                                         <Badge
                                                                             variant="secondary"
-                                                                            className={`font-bold transition-all px-2 py-0.5 text-[10px] ${item.health_score >= 70 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' :
-                                                                                item.health_score >= 40 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' :
-                                                                                    'bg-rose-500/10 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'
+                                                                            className={`font-bold transition-all px-2 py-0.5 text-[10px] ${item.health_score >= 70 ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' :
+                                                                                item.health_score >= 40 ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400' :
+                                                                                    'bg-rose-500/10 text-rose-700 dark:text-rose-400'
                                                                                 }`}
                                                                         >
                                                                             {item.health_score}
