@@ -92,6 +92,12 @@ class TestNotificationSeverity:
             )
             assert n.severity == expected, f"{ntype} should be {expected}, got {n.severity}"
 
+        n_enum = create_notification(
+            user=user, notification_type=Notification.NotificationType.STOP_LOSS_HIT,
+            title='t', message='m', ticker='ENUMTICK',
+        )
+        assert n_enum.severity == 'critical'
+
     def test_explicit_severity_override_wins(self, create_user):
         from stocks.services.notification_service import create_notification
         user = create_user(username='sev_user2', password='password')
