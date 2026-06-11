@@ -2653,6 +2653,265 @@ async def explain_opportunity(args: dict) -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Next-day plan & verdict
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@tool(
+    "get_tomorrows_plan",
+    "Tomorrow's precomputed trading plan: market regime, top IN_ZONE confluence picks with entry zones/targets/analog base rates, watch list, and upcoming catalysts. Use for 'what should I trade tomorrow', daily briefings, or before recommending entries.",
+    {},
+)
+async def get_tomorrows_plan(args: dict) -> dict:
+    @sync_to_async
+    def _run():
+        from stocks.models import DailyTradingPlan
+
+        plan = DailyTradingPlan.objects.order_by("-date").first()
+        if plan is None:
+            return _result("No trading plan has been generated yet. Try again after the nightly pipeline has run.")
+
+        payload = plan.payload or {}
+        picks = payload.get("picks") or []
+        watch = payload.get("watch") or []
+        catalysts = payload.get("catalysts") or []
+
+        breadth_pct = f"{plan.breadth * 100:.0f}%" if plan.breadth is not None else "n/a"
+        lines = [f"Plan for {plan.date} (regime {plan.regime}, breadth {breadth_pct}):"]
+
+        # Picks section
+        if picks:
+            lines.append("Top setups (confluence-ranked):")
+            for i, p in enumerate(picks, 1):
+                sym = p.get("symbol", "?")
+                score = p.get("confluence_score") or 0
+                entry = p.get("entry") or {}
+                targets = p.get("targets") or {}
+                status = entry.get("status", "")
+                zl = entry.get("zone_low")
+                zh = entry.get("zone_high")
+                close = entry.get("latest_close")
+                tp = targets.get("tp1")
+                sl = targets.get("sl")
+
+                zone_str = (f"entry zone {zl:.1f}–{zh:.1f}" if zl is not None and zh is not None else "no zone")
+                close_str = (f" (close {close:.0f})" if close is not None else "")
+                tp_sl_str = ""
+                if tp is not None and sl is not None:
+                    tp_sl_str = f", TP {tp:.0f} / SL {sl:.0f}"
+                elif tp is not None:
+                    tp_sl_str = f", TP {tp:.0f}"
+                elif sl is not None:
+                    tp_sl_str = f", SL {sl:.0f}"
+
+                status_tag = f" [{status}]" if status else ""
+                line = f"{i}. {sym} — {score}/100{status_tag}, {zone_str}{close_str}{tp_sl_str}"
+
+                analog = p.get("analog")
+                if analog:
+                    n = analog.get("n")
+                    med3d = analog.get("fwd_3d_median_pct")
+                    wr = analog.get("win_rate_3d")
+                    if n and med3d is not None:
+                        wr_str = f", {wr*100:.0f}% win" if wr is not None else ""
+                        line += f"; similar setups (n={n}): {med3d:+.1f}% median 3d{wr_str}"
+
+                catalyst = p.get("catalyst")
+                if catalyst:
+                    line += f"; catalyst: {catalyst.get('type', '')} in {catalyst.get('days_away', '?')}d"
+
+                lines.append(line)
+        else:
+            lines.append("No qualifying setups — consider sitting out.")
+
+        # Watch section (top 5)
+        if watch:
+            watch_items = watch[:5]
+            watch_parts = [
+                f"{w.get('symbol')} ({w.get('confluence_score')}, {(w.get('entry') or {}).get('status', '?')})"
+                for w in watch_items
+            ]
+            lines.append(f"Watch (not actionable yet): {', '.join(watch_parts)}")
+
+        # Catalysts section (top 8)
+        if catalysts:
+            cat_lines = []
+            for c in catalysts[:8]:
+                sym = c.get("symbol", "?")
+                ctype = c.get("type", "")
+                days = c.get("days_away", "?")
+                detail = c.get("detail", "")
+                cat_lines.append(f"{sym} {ctype.lower().replace('_', ' ')} in {days}d ({detail})")
+            lines.append("Catalysts next 14d: " + "; ".join(cat_lines))
+
+        prose = "\n".join(lines)
+        card_data = _jsonable({
+            "date": plan.date.isoformat(),
+            "regime": plan.regime,
+            "breadth": plan.breadth,
+            **payload,
+        })
+        return _result(prose, card={"type": "daily_plan", "data": card_data}, _tool_name="get_tomorrows_plan")
+
+    return await _run()
+
+
+@tool(
+    "get_ticker_verdict",
+    "Canonical per-symbol verdict: cross-engine confluence score (0-100) with component breakdown, ATR entry-zone status (IN_ZONE/EXTENDED/STALE), TP/SL, historical analog base rates, and upcoming catalyst. ALWAYS prefer this over raw signal lists when judging whether a setup is actionable now. Args: symbol.",
+    {"symbol": str},
+)
+async def get_ticker_verdict(args: dict) -> dict:
+    symbol = (args.get("symbol") or "").strip().upper()
+    if not symbol:
+        return _result("A symbol is required.", is_error=True)
+
+    @sync_to_async
+    def _run():
+        from django.core.cache import cache
+        from stocks.services.ticker_verdict import build_verdict
+
+        key = f"ticker_verdict:{symbol}"
+        verdict = cache.get(key)
+        if verdict is None:
+            try:
+                verdict = build_verdict(symbol)
+            except Exception:
+                return _result(f"Verdict computation failed for {symbol}.", is_error=True)
+            cache.set(key, verdict, 900)
+
+        score = verdict.get("confluence_score", 0)
+        components = verdict.get("components") or {}
+        entry = verdict.get("entry")
+        targets = verdict.get("targets") or {}
+        analog = verdict.get("analog")
+        catalyst = verdict.get("catalyst")
+        as_of = verdict.get("as_of", "?")
+
+        # Component summary
+        agreeing = components.get("agreeing_engines") or []
+        conflicting = components.get("conflicting_engines") or []
+        opp = components.get("opportunity") or {}
+        acc = components.get("accumulation") or {}
+        sector = components.get("sector") or {}
+
+        n_agree = len(agreeing)
+        n_conflict = len(conflicting)
+        agree_str = f"{n_agree} engine{'s' if n_agree != 1 else ''} agree ({', '.join(agreeing)})" if agreeing else "no agreeing engines"
+        conflict_str = f"{n_conflict} conflicting" if n_conflict else "0 conflicting"
+        edge_label = opp.get("trust") or "UNCONFIRMED"
+        edge_p = opp.get("pvalue")
+        edge_detail = f"p={edge_p:.2f}" if edge_p is not None else "no backtest"
+        acc_signal = acc.get("signal") or "unknown"
+        sector_intensity = sector.get("intensity")
+        sector_str = f"sector accumulating ({sector_intensity:.1f})" if sector_intensity is not None else "sector neutral"
+
+        lines = [
+            f"{symbol} verdict: {score}/100.",
+            f"Components: {agree_str}, {conflict_str}; validated edge {edge_label} ({edge_detail}); "
+            f"accumulation {acc_signal}; {sector_str}.",
+        ]
+
+        # Entry / zone
+        if entry:
+            status = entry.get("status", "?")
+            zl = entry.get("zone_low")
+            zh = entry.get("zone_high")
+            close = entry.get("latest_close")
+            age = entry.get("last_signal_age_days")
+            tp = targets.get("tp1")
+            sl = targets.get("sl")
+
+            zone_str = (f"zone {zl:.1f}–{zh:.1f}" if zl is not None and zh is not None else "no zone")
+            close_str = f", last close {close:.0f}" if close is not None else ""
+            age_str = f", signal {age} trading day{'s' if age != 1 else ''} old" if age is not None else ""
+            tp_sl_str = ""
+            if tp is not None and sl is not None:
+                tp_sl_str = f" Targets: TP {tp:.0f} / SL {sl:.0f}."
+            elif tp is not None:
+                tp_sl_str = f" Target: TP {tp:.0f}."
+            elif sl is not None:
+                tp_sl_str = f" Stop: SL {sl:.0f}."
+
+            lines.append(f"Entry: {status} — {zone_str}{close_str}{age_str}.{tp_sl_str}")
+        else:
+            lines.append(f"No active entry setup as of {as_of}.")
+
+        # Analog
+        if analog:
+            n = analog.get("n")
+            med3d = analog.get("fwd_3d_median_pct")
+            wr = analog.get("win_rate_3d")
+            if n and med3d is not None:
+                wr_str = f", {wr*100:.0f}% win rate" if wr is not None else ""
+                lines.append(f"Similar setups (n={n}): {med3d:+.1f}% median over 3d{wr_str}.")
+
+        # Catalyst
+        if catalyst:
+            ctype = catalyst.get("type", "").lower().replace("_", " ")
+            days_away = catalyst.get("days_away", "?")
+            lines.append(f"Catalyst: {ctype} in {days_away}d.")
+
+        prose = "\n".join(lines)
+        return _result(prose, card={"type": "ticker_verdict", "data": _jsonable(verdict)}, _tool_name="get_ticker_verdict")
+
+    return await _run()
+
+
+@tool(
+    "get_upcoming_catalysts",
+    "Forward catalyst calendar (book-close dates and dividend announcements) within the next N days (default 14), market-wide or for one symbol. Book-close runs are a known NEPSE price phenomenon. Args: symbol (optional), days (optional).",
+    {"symbol": str, "days": int},
+)
+async def get_upcoming_catalysts(args: dict) -> dict:
+    raw_symbol = (args.get("symbol") or "").strip().upper()
+    symbol = raw_symbol or None
+    raw_days = args.get("days")
+    try:
+        horizon = int(raw_days) if raw_days is not None else 14
+    except (TypeError, ValueError):
+        horizon = 14
+    horizon = max(1, min(60, horizon))
+
+    @sync_to_async
+    def _run():
+        from stocks.services.catalysts import upcoming_catalysts
+
+        all_items = upcoming_catalysts(horizon_days=horizon)
+        if symbol:
+            items = [c for c in all_items if c.get("symbol") == symbol]
+        else:
+            items = all_items
+
+        if not items:
+            scope = f"for {symbol}" if symbol else "market-wide"
+            return _result(
+                f"No dividend/book-close catalysts {scope} in the next {horizon} days.",
+                card={"type": "catalysts", "data": {"horizon_days": horizon, "items": []}},
+                _tool_name="get_upcoming_catalysts",
+            )
+
+        lines = []
+        for c in items:
+            sym = c.get("symbol", "?")
+            ctype = c.get("type", "").lower().replace("_", " ")
+            cat_date = c.get("date", "?")
+            days_away = c.get("days_away", "?")
+            detail = c.get("detail", "")
+            lines.append(f"{sym} — {ctype} {cat_date} (in {days_away}d): {detail}")
+
+        scope_label = f"for {symbol}" if symbol else "(market-wide)"
+        prose = f"Catalysts in the next {horizon} days {scope_label}:\n" + "\n".join(lines)
+        return _result(
+            prose,
+            card={"type": "catalysts", "data": {"horizon_days": horizon, "items": _jsonable(items)}},
+            _tool_name="get_upcoming_catalysts",
+        )
+
+    return await _run()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # MCP server registration
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -2689,6 +2948,10 @@ ALL_TOOLS = [
     # Opportunity Engine
     get_top_opportunities,
     explain_opportunity,
+    # Next-day plan & verdict
+    get_tomorrows_plan,
+    get_ticker_verdict,
+    get_upcoming_catalysts,
     # Strategy builder / inference
     list_strategy_components,
     describe_strategy,
