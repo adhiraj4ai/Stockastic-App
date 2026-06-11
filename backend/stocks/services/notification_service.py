@@ -176,6 +176,15 @@ def check_portfolio_alerts(user):
                     title = f"{item.ticker} Down 10%+"
                     message = f"{item.ticker} has dropped over 10% from your cost price."
                 
+                level, level_type = None, None
+                if n_type == Notification.NotificationType.STOP_LOSS_HIT and item.stop_loss_price:
+                    level, level_type = float(item.stop_loss_price), 'stop'
+                elif n_type == Notification.NotificationType.TARGET_REACHED:
+                    for tp in (item.target_price, item.target_price_2, item.target_price_3):
+                        if tp and price >= float(tp):
+                            level, level_type = float(tp), 'target'
+                            break
+
                 notification = create_notification(
                     user=user,
                     notification_type=n_type,
@@ -188,7 +197,9 @@ def check_portfolio_alerts(user):
                         'price': price,
                         'wacc': wacc_curr,
                         'change_pct': price_change_pct,
-                        'symbol': item.ticker
+                        'symbol': item.ticker,
+                        'level': level,
+                        'level_type': level_type,
                     }
                 )
                 if notification: notifications_created += 1
@@ -278,6 +289,11 @@ def check_watchlist_alerts(user):
                 title = f"{item.ticker} Target Reached" if n_type == Notification.NotificationType.TARGET_REACHED else f"{item.ticker} Below Stop Price"
                 message = f"{item.ticker} is at Rs. {price:.2f}, hitting your watchlist alert."
                 
+                if n_type == Notification.NotificationType.TARGET_REACHED:
+                    level, level_type = (float(item.target_price), 'target') if item.target_price else (None, None)
+                else:
+                    level, level_type = (float(item.stop_loss_price), 'stop') if item.stop_loss_price else (None, None)
+
                 notification = create_notification(
                     user=user,
                     notification_type=n_type,
@@ -289,8 +305,8 @@ def check_watchlist_alerts(user):
                     metadata={
                         'price': price,
                         'symbol': item.ticker,
-                        'target': float(item.target_price) if item.target_price else None,
-                        'stop': float(item.stop_loss_price) if item.stop_loss_price else None
+                        'level': level,
+                        'level_type': level_type,
                     }
                 )
                 if notification: notifications_created += 1

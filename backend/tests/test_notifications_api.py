@@ -130,3 +130,66 @@ class TestNotificationSeverity:
         response = auth_client.get(url)
         assert response.status_code == status.HTTP_200_OK
         assert response.data[0]['severity'] == 'critical'
+
+
+@pytest.mark.django_db
+class TestMetadataContract:
+    """Popups render metrics straight from metadata — these keys are load-bearing."""
+
+    def test_portfolio_stop_loss_metadata(self, create_user):
+        from unittest.mock import patch
+        from stocks.models import PortfolioItem
+        from stocks.services import notification_service
+
+        user = create_user(username='meta_user', password='password')
+        PortfolioItem.objects.create(
+            user=user, ticker='NABIL', quantity=10,
+            buy_price=500, wacc=500, stop_loss_price=480,
+        )
+        with patch.object(notification_service, 'get_latest_price', return_value=471.1):
+            created = notification_service.check_portfolio_alerts(user)
+
+        assert created >= 1
+        n = Notification.objects.get(user=user, type='STOP_LOSS_HIT', ticker='NABIL')
+        md = n.metadata
+        assert md['price'] == 471.1
+        assert md['symbol'] == 'NABIL'
+        assert md['level'] == 480.0
+        assert md['level_type'] == 'stop'
+        assert 'change_pct' in md
+        assert n.severity == 'critical'
+
+    def test_portfolio_target_metadata(self, create_user):
+        from unittest.mock import patch
+        from stocks.models import PortfolioItem
+        from stocks.services import notification_service
+
+        user = create_user(username='meta_user2', password='password')
+        PortfolioItem.objects.create(
+            user=user, ticker='NICA', quantity=10,
+            buy_price=400, wacc=400, target_price=440,
+        )
+        with patch.object(notification_service, 'get_latest_price', return_value=445.0):
+            notification_service.check_portfolio_alerts(user)
+
+        n = Notification.objects.get(user=user, type='TARGET_REACHED', ticker='NICA')
+        assert n.metadata['level'] == 440.0
+        assert n.metadata['level_type'] == 'target'
+
+    def test_watchlist_alert_metadata(self, create_user):
+        from unittest.mock import patch
+        from stocks.models import WatchlistItem
+        from stocks.services import notification_service
+
+        user = create_user(username='meta_user3', password='password')
+        WatchlistItem.objects.create(
+            user=user, ticker='HDHPC', alert_enabled=True, target_price=1100,
+        )
+        with patch.object(notification_service, 'get_latest_price', return_value=1142.0):
+            notification_service.check_watchlist_alerts(user)
+
+        n = Notification.objects.get(user=user, type='TARGET_REACHED', ticker='HDHPC')
+        md = n.metadata
+        assert md['price'] == 1142.0
+        assert md['level'] == 1100.0
+        assert md['level_type'] == 'target'
