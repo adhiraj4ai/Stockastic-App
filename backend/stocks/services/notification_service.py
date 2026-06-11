@@ -308,6 +308,46 @@ def check_watchlist_alerts(user):
     return notifications_created
 
 
+def check_zone_entry_alerts(user):
+    """
+    Notify when an alert-enabled watchlist symbol is IN_ZONE per the latest daily plan.
+    Reads the plan's canonical ATR-based entry_statuses; create_notification dedups so the
+    hourly check won't spam.
+    """
+    from ..models import DailyTradingPlan, Notification, WatchlistItem
+
+    notifications_created = 0
+
+    try:
+        plan = DailyTradingPlan.objects.order_by('-date').first()
+        statuses = (plan.payload.get('entry_statuses') or {}) if plan else {}
+        if not statuses:
+            return 0
+
+        items = WatchlistItem.objects.filter(user=user, alert_enabled=True)
+        for item in items:
+            if statuses.get(item.ticker) != 'IN_ZONE':
+                continue
+
+            notification = create_notification(
+                user=user,
+                notification_type=Notification.NotificationType.WATCHLIST_ENTRY,
+                title=f"{item.ticker} is in its entry zone",
+                message=(f"{item.ticker} closed inside its canonical entry zone "
+                         f"(ATR-based) per the latest plan ({plan.payload.get('as_of')})."),
+                ticker=item.ticker,
+                redirect_url=f'/ticker/{item.ticker}',
+                watchlist_item_id=item.id,
+            )
+            if notification:
+                notifications_created += 1
+
+    except Exception as e:
+        print(f"Error checking zone entry alerts for user {user.username}: {e}")
+
+    return notifications_created
+
+
 def check_active_signal_alerts(user):
     """
     Monitor all ACTIVE strategy signals from the Signal Intelligence hub.

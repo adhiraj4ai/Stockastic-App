@@ -115,3 +115,27 @@ class TestWatchlistTools:
         out = _call(add_to_watchlist, {"symbol": "GVL"})
         assert WatchlistItem.objects.get(user=user, ticker="GVL").alert_enabled is True
         assert "alerts on" in out["content"][0]["text"]
+
+
+@pytest.mark.django_db
+class TestZoneEntryAlerts:
+    def test_alert_created_when_in_zone(self, create_user):
+        from stocks.models import DailyTradingPlan, Notification, WatchlistItem
+        from stocks.services.notification_service import check_zone_entry_alerts
+        user = create_user(username="zone1", password="x")
+        WatchlistItem.objects.create(user=user, ticker="SHL", alert_enabled=True)
+        WatchlistItem.objects.create(user=user, ticker="GVL", alert_enabled=True)   # EXTENDED → no alert
+        WatchlistItem.objects.create(user=user, ticker="OFF", alert_enabled=False)  # alerts off → no alert
+        DailyTradingPlan.objects.create(
+            date=date(2026, 6, 12), regime="RISK_ON",
+            payload={"entry_statuses": {"SHL": "IN_ZONE", "GVL": "EXTENDED", "OFF": "IN_ZONE"},
+                     "picks": [], "watch": [], "exits": [], "catalysts": [], "market_context": {}})
+        count = check_zone_entry_alerts(user)
+        assert count == 1
+        notif = Notification.objects.get(user=user, type="WATCHLIST_ENTRY")
+        assert notif.ticker == "SHL"
+        assert "/ticker/SHL" in notif.redirect_url
+
+    def test_no_plan_no_alerts(self, create_user):
+        from stocks.services.notification_service import check_zone_entry_alerts
+        assert check_zone_entry_alerts(create_user(username="zone2", password="x")) == 0

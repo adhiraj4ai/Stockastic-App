@@ -77,7 +77,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
         from ..services.notification_service import (
             check_portfolio_alerts, check_watchlist_alerts,
             check_signal_alerts, check_whale_watch_alerts,
-            check_active_signal_alerts,
+            check_active_signal_alerts, check_zone_entry_alerts,
         )
         
         # Cooldown check: 10 minutes
@@ -94,6 +94,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
         signal_count = check_signal_alerts(request.user)
         whale_count = check_whale_watch_alerts(request.user)
         active_signal_hits = check_active_signal_alerts(request.user)
+        zone_entry_count = check_zone_entry_alerts(request.user)
 
         # Set cooldown for 10 minutes (600 seconds)
         cache.set(cache_key, True, 600)
@@ -105,6 +106,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
             'signal_notifications': signal_count,
             'whale_notifications': whale_count,
             'active_signal_hits': active_signal_hits,
-            'total_notifications': portfolio_count + watchlist_count + signal_count + whale_count + active_signal_hits,
+            'zone_entry_notifications': zone_entry_count,
+            'total_notifications': portfolio_count + watchlist_count + signal_count + whale_count + active_signal_hits + zone_entry_count,
         })
 
