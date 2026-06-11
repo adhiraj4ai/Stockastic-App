@@ -5,10 +5,18 @@ companies, daily_stock_price) which are NOT created in the test database (they a
 seeded only in production/staging). Tests are skipped automatically when those tables are absent.
 Run against a live DB with data to fully validate equivalence.
 """
+import json
+
 import pytest
 from django.db import connection
+from rest_framework.utils.encoders import JSONEncoder
 
 from stocks.services import broker_research
+
+
+def _drf_roundtrip(obj):
+    """Coerce Decimals/dates the way DRF's JSON rendering does, so service output compares equal to resp.json()."""
+    return json.loads(json.dumps(obj, cls=JSONEncoder))
 
 pytestmark = pytest.mark.django_db
 
@@ -91,14 +99,16 @@ class TestBrokerViewExtraction:
             pytest.skip("Raw SQL tables not present in test DB")
         resp = auth_client.get("/api/stocks/broker-analysis/signals/")
         assert resp.status_code == 200
-        assert resp.json() == broker_research.navigator_signals()
+        # navigator_signals() returns Decimal columns; _drf_roundtrip coerces them to float as DRF does
+        assert resp.json() == _drf_roundtrip(broker_research.navigator_signals())
 
     def test_broker_portfolio_matches_endpoint(self, auth_client, raw_tables_exist):
         if not raw_tables_exist:
             pytest.skip("Raw SQL tables not present in test DB")
         resp = auth_client.get("/api/stocks/broker_portfolio/?broker_id=1")
         assert resp.status_code == 200
-        assert resp.json() == broker_research.broker_portfolio(broker_id=1)
+        # broker_portfolio() returns Decimal columns; _drf_roundtrip coerces them to float as DRF does
+        assert resp.json() == _drf_roundtrip(broker_research.broker_portfolio(broker_id=1))
 
     def test_accumulation_history_matches_endpoint(self, auth_client, raw_tables_exist):
         if not raw_tables_exist:
