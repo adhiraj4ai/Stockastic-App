@@ -230,3 +230,43 @@ class SavedAnalysisAPITests(APITestCase):
         foreign = ChatSession.objects.create(user=self.other, title="x")
         resp = self.client.post(f"/api/chat/sessions/{foreign.id}/bookmark_draft/")
         self.assertEqual(resp.status_code, 404)
+
+
+import asyncio
+
+from django.test import TransactionTestCase
+
+from chat import _user_context
+from chat.tools import search_saved_analyses, get_saved_analysis
+
+
+class SavedAnalysisToolTests(TransactionTestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="hank", password="x")
+        self.sa = SavedAnalysis.objects.create(
+            user=self.user, title="GBIME Quarterly Fundamentals",
+            summary="Full frozen synthesis here.", one_liner="GBIME Q2",
+            category="Quarterly Fundamentals", tags=["fundamentals"], tickers=["GBIME"],
+            series_key="GBIME · Quarterly Fundamentals", verdict="BUY",
+        )
+
+    def _run(self, coro):
+        _user_context.set_user(self.user)
+        return asyncio.run(coro)
+
+    def test_search_returns_catalog(self):
+        result = self._run(search_saved_analyses.handler({"ticker": "GBIME"}))
+        self.assertFalse(result["is_error"])
+        self.assertIn("GBIME", result["content"][0]["text"])
+
+    def test_get_returns_full_summary(self):
+        result = self._run(get_saved_analysis.handler({"id": str(self.sa.id)}))
+        self.assertFalse(result["is_error"])
+        self.assertIn("Full frozen synthesis", result["content"][0]["text"])
+
+    def test_get_rejects_foreign_id(self):
+        other = User.objects.create_user(username="ida", password="x")
+        foreign = SavedAnalysis.objects.create(user=other, title="x", summary="secret body")
+        result = self._run(get_saved_analysis.handler({"id": str(foreign.id)}))
+        self.assertTrue(result["is_error"])
+        self.assertNotIn("secret body", result["content"][0]["text"])

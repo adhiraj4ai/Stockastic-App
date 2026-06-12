@@ -54,6 +54,8 @@ from stocks.utils import (
 )
 
 from ._user_context import get_user, push_card
+from chat.models import SavedAnalysis
+from .services.saved_match import match_saved_analyses
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -3648,6 +3650,151 @@ async def get_accumulation_forecast(args: dict) -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Saved analyses recall tools
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@tool(
+    "search_saved_analyses",
+    "Search the user's saved analyses (bookmarked past analyses). Returns a compact "
+    "catalog — title, category, tags, tickers, series, date, one-line summary, verdict. "
+    "Call this BEFORE a fundamental or technical analysis to check for a prior analysis "
+    "or recurring series on this ticker/topic, then fetch the full one with "
+    "get_saved_analysis to compare what changed. Args (all optional): ticker, category, "
+    "tag, series_key, query, limit.",
+    {"ticker": str, "category": str, "tag": str, "series_key": str, "query": str, "limit": int},
+)
+async def search_saved_analyses(args: dict) -> dict:
+    user = get_user()
+
+    @sync_to_async
+    def _run():
+        ticker = (args.get("ticker") or "").upper().strip()
+        category = (args.get("category") or "").strip()
+        tag = (args.get("tag") or "").strip()
+        series_key = (args.get("series_key") or "").strip()
+        query = (args.get("query") or "").strip()
+        limit = int(args.get("limit") or 20)
+
+        qs = SavedAnalysis.objects.filter(user=user)
+        if ticker:
+            qs = qs.filter(tickers__contains=[ticker])
+        if category:
+            qs = qs.filter(category=category)
+        if tag:
+            qs = qs.filter(tags__contains=[tag])
+        if series_key:
+            qs = qs.filter(series_key=series_key)
+
+        records = list(qs.order_by("-created_at")[:max(1, min(limit, 50))])
+        # If a free-text query is given and structured filters didn't already
+        # narrow things, rank by lexical relevance.
+        if query and not (ticker or category or tag or series_key):
+            records = match_saved_analyses(user, query, limit=max(1, min(limit, 50)))
+
+        catalog = [{
+            "id": str(r.id),
+            "title": r.title,
+            "category": r.category,
+            "tags": r.tags,
+            "tickers": r.tickers,
+            "series_key": r.series_key,
+            "verdict": r.verdict,
+            "date": r.created_at.date().isoformat(),
+            "one_liner": r.one_liner,
+        } for r in records]
+
+        if not catalog:
+            return _result("No saved analyses match.", card=None, _tool_name="search_saved_analyses")
+
+        lines = [
+            f"- [{c['id']}] {c['title']} ({c['date']}) — {c['one_liner']} "
+            f"[{', '.join(c['tickers'])}{' · ' + c['series_key'] if c['series_key'] else ''}]"
+            for c in catalog
+        ]
+        prose = "Saved analyses (use get_saved_analysis with the id for full detail):\n" + "\n".join(lines)
+        return _result(prose, card={"type": "saved_analyses", "data": {"items": catalog}},
+                       _tool_name="search_saved_analyses")
+
+    return await _run()
+
+
+@tool(
+    "get_saved_analysis",
+    "Fetch one saved analysis in full by id: the frozen summary, captured verdict, and "
+    "any earlier analyses in the same series (oldest→newest) so you can describe the trend. "
+    "Args: id.",
+    {"id": str},
+)
+async def get_saved_analysis(args: dict) -> dict:
+    user = get_user()
+    sa_id = (args.get("id") or "").strip()
+    if not sa_id:
+        return _result("id is required.", is_error=True, _tool_name="get_saved_analysis")
+
+    @sync_to_async
+    def _run():
+        sa = SavedAnalysis.objects.filter(id=sa_id, user=user).first()
+        if not sa:
+            return _result("No saved analysis with that id.", is_error=True,
+                           _tool_name="get_saved_analysis")
+
+        series = []
+        if sa.series_key:
+            series = list(
+                SavedAnalysis.objects.filter(user=user, series_key=sa.series_key)
+                .order_by("created_at")
+                .values("id", "title", "created_at", "verdict", "one_liner")
+            )
+
+        transcript_link = (
+            f"/chat?session={sa.session_id}" if sa.session_id else "original chat deleted"
+        )
+        series_lines = "\n".join(
+            f"  - {s['created_at'].date().isoformat()}: {s['title']} "
+            f"({s['verdict'] or 'no verdict'}) — {s['one_liner']}"
+            for s in series
+        )
+        prose_parts = [
+            f"# {sa.title}",
+            f"Saved {sa.created_at.date().isoformat()} · category: {sa.category or 'none'} · "
+            f"tickers: {', '.join(sa.tickers) or 'none'} · verdict: {sa.verdict or 'none'}",
+            f"Transcript: {transcript_link}",
+            "",
+            sa.summary,
+        ]
+        if series_lines:
+            prose_parts += ["", f"Series '{sa.series_key}' (oldest→newest):", series_lines]
+        prose = "\n".join(prose_parts)
+
+        card = {
+            "type": "saved_analysis",
+            "data": {
+                "id": str(sa.id),
+                "title": sa.title,
+                "summary": sa.summary,
+                "category": sa.category,
+                "tags": sa.tags,
+                "tickers": sa.tickers,
+                "series_key": sa.series_key,
+                "verdict": sa.verdict,
+                "structured": sa.structured,
+                "date": sa.created_at.date().isoformat(),
+                "transcript": transcript_link,
+                "series": [
+                    {"id": str(s["id"]), "title": s["title"],
+                     "date": s["created_at"].date().isoformat(),
+                     "verdict": s["verdict"], "one_liner": s["one_liner"]}
+                    for s in series
+                ],
+            },
+        }
+        return _result(prose, card=card, _tool_name="get_saved_analysis")
+
+    return await _run()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # MCP server registration
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -3722,6 +3869,9 @@ ALL_TOOLS = [
     forget_about_user,
     # Accountability
     get_chat_action_record,
+    # Saved analyses (chat bookmarks)
+    search_saved_analyses,
+    get_saved_analysis,
     # Broker Intelligence
     get_accumulation_flows,
     get_smart_money_flows,
