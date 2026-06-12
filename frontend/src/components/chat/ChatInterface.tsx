@@ -8,10 +8,11 @@ import { cn } from '@/lib/utils';
 import { MessageBubble } from './MessageBubble';
 import { WorkbenchContext, type WorkbenchTool } from './WorkbenchContext';
 import { WorkbenchPanel } from './WorkbenchPanel';
-import type { ChatBlock, ChatMessage } from './types';
+import type { ChatBlock, ChatMessage, SavedAnalysis } from './types';
 import { filterCommands } from '@/lib/chat-commands';
 import { CommandHintMenu } from './CommandHintMenu';
 import { SaveAnalysisModal } from './SaveAnalysisModal';
+import { SavedHintChip } from './SavedHintChip';
 
 interface ChatInterfaceProps {
     sessionId: string;
@@ -486,6 +487,12 @@ function Composer({
             <div className="max-w-5xl mx-auto flex items-end gap-2">
                 {/* Relative wrapper so CommandHintMenu can position above the textarea */}
                 <div className="flex-1 relative">
+                    <SavedHintChip
+                        text={prompt}
+                        onAttach={(sa: SavedAnalysis) =>
+                            onChange(`[Reference saved analysis ${sa.id}: ${sa.title}]\n${prompt}`)
+                        }
+                    />
                     {menuOpen && (
                         <CommandHintMenu
                             items={hints}
