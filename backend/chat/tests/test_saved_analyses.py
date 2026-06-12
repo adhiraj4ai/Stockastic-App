@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from chat.models import ChatMessage, ChatSession, SavedAnalysis
+from chat.serializers import SavedAnalysisListSerializer, SavedAnalysisSerializer
 from chat.services import analysis_capture
 from chat.services.saved_match import match_saved_analyses
 
@@ -146,3 +147,28 @@ class BuildDraftTests(TestCase):
         self.assertFalse(draft["degraded"])
         self.assertEqual(draft["series_key"], "GBIME · Quarterly Fundamentals")
         self.assertEqual(draft["verdict"], "BUY")  # still captured from blocks
+
+
+class SavedAnalysisSerializerTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="erin", password="x")
+
+    def test_full_serializer_roundtrip(self):
+        data = {
+            "title": "GBIME Q2", "summary": "body", "one_liner": "ol",
+            "category": "Quarterly Fundamentals", "tags": ["q2"], "tickers": ["GBIME"],
+            "series_key": "GBIME · Quarterly Fundamentals",
+        }
+        ser = SavedAnalysisSerializer(data=data)
+        self.assertTrue(ser.is_valid(), ser.errors)
+        obj = ser.save(user=self.user)
+        self.assertEqual(obj.title, "GBIME Q2")
+        self.assertEqual(obj.user, self.user)
+
+    def test_list_serializer_omits_summary(self):
+        obj = SavedAnalysis.objects.create(
+            user=self.user, title="t", summary="long body", one_liner="ol",
+        )
+        out = SavedAnalysisListSerializer(obj).data
+        self.assertNotIn("summary", out)
+        self.assertIn("one_liner", out)

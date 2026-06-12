@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ChatMessage, ChatSession, Notebook, NotebookCell
+from .models import ChatMessage, ChatSession, Notebook, NotebookCell, SavedAnalysis
 
 
 class ChatMessageSerializer(serializers.ModelSerializer):
@@ -42,4 +42,27 @@ class NotebookCellSerializer(serializers.ModelSerializer):
         model = NotebookCell
         fields = ["id", "notebook", "prompt", "order", "execution_count", "outputs", "created_at", "updated_at"]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class SavedAnalysisSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SavedAnalysis
+        fields = [
+            "id", "session", "title", "summary", "one_liner", "category",
+            "tags", "tickers", "series_key", "verdict", "structured",
+            "created_at", "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class SavedAnalysisListSerializer(serializers.ModelSerializer):
+    """Lightweight catalog representation — omits the full summary body."""
+
+    class Meta:
+        model = SavedAnalysis
+        fields = [
+            "id", "session", "title", "one_liner", "category",
+            "tags", "tickers", "series_key", "verdict", "created_at",
+        ]
+        read_only_fields = fields
 
