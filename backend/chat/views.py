@@ -43,8 +43,13 @@ class ServerSentEventRenderer(BaseRenderer):
         return data
 
 
-from .models import ChatMessage, ChatSession, Notebook, NotebookCell
-from .serializers import ChatMessageSerializer, ChatSessionSerializer, NotebookSerializer, NotebookCellSerializer
+from .models import ChatMessage, ChatSession, Notebook, NotebookCell, SavedAnalysis
+from .serializers import (
+    ChatMessageSerializer, ChatSessionSerializer, NotebookSerializer,
+    NotebookCellSerializer, SavedAnalysisSerializer, SavedAnalysisListSerializer,
+)
+from .services.analysis_capture import build_draft
+from .services.saved_match import match_saved_analyses
 from .streaming import stream_chat
 
 log = logging.getLogger(__name__)
@@ -168,6 +173,14 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
         response["X-Accel-Buffering"] = "no"
         return response
 
+    @action(detail=True, methods=["post"], url_path="bookmark_draft")
+    def bookmark_draft(self, request, pk=None):
+        """Build an editable SavedAnalysis draft from this session (no persistence)."""
+        session = self.get_object()  # 404 if not owned by request.user
+        draft = build_draft(session)
+        draft["session"] = str(session.id)
+        return Response(draft)
+
 
 class NotebookViewSet(viewsets.ModelViewSet):
     serializer_class = NotebookSerializer
@@ -243,4 +256,36 @@ class NotebookCellViewSet(viewsets.ModelViewSet):
 
         queryset = self.get_queryset().filter(notebook=notebook)
         return Response(NotebookCellSerializer(queryset, many=True).data)
+
+
+class SavedAnalysisViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return SavedAnalysisListSerializer
+        return SavedAnalysisSerializer
+
+    def get_queryset(self):
+        qs = SavedAnalysis.objects.filter(user=self.request.user)
+        params = self.request.query_params
+        if params.get("ticker"):
+            qs = qs.filter(tickers__contains=[params["ticker"].upper()])
+        if params.get("category"):
+            qs = qs.filter(category=params["category"])
+        if params.get("tag"):
+            qs = qs.filter(tags__contains=[params["tag"]])
+        if params.get("series_key"):
+            qs = qs.filter(series_key=params["series_key"])
+        return qs.order_by("-created_at")
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=["get"], url_path="suggest")
+    def suggest(self, request):
+        """Fast lexical match for the composer hint."""
+        q = request.query_params.get("q", "")
+        matches = match_saved_analyses(request.user, q, limit=5)
+        return Response(SavedAnalysisListSerializer(matches, many=True).data)
 

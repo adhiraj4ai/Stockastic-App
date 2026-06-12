@@ -54,6 +54,14 @@ class SavedAnalysisSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
 
+    def validate_session(self, value):
+        """Only allow linking to a session the requesting user owns (or none)."""
+        if value is not None:
+            request = self.context.get("request")
+            if request is not None and value.user_id != request.user.id:
+                raise serializers.ValidationError("Session not found.")
+        return value
+
 
 class SavedAnalysisListSerializer(serializers.ModelSerializer):
     """Lightweight catalog representation — omits the full summary body."""

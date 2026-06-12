@@ -172,3 +172,61 @@ class SavedAnalysisSerializerTests(TestCase):
         out = SavedAnalysisListSerializer(obj).data
         self.assertNotIn("summary", out)
         self.assertIn("one_liner", out)
+
+
+from rest_framework.test import APITestCase
+
+
+class SavedAnalysisAPITests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="fred", password="x")
+        self.other = User.objects.create_user(username="gina", password="x")
+        self.client.force_authenticate(self.user)
+        self.session = ChatSession.objects.create(user=self.user, title="GBIME chat")
+
+    def test_create_and_list_owner_scoped(self):
+        resp = self.client.post("/api/chat/saved/", {
+            "title": "GBIME Q2", "summary": "body", "one_liner": "ol",
+            "category": "Quarterly Fundamentals", "tags": ["q2"], "tickers": ["GBIME"],
+        }, format="json")
+        self.assertEqual(resp.status_code, 201, resp.content)
+        listing = self.client.get("/api/chat/saved/")
+        self.assertEqual(len(listing.data), 1)
+        self.assertNotIn("summary", listing.data[0])
+        self.client.force_authenticate(self.other)
+        self.assertEqual(len(self.client.get("/api/chat/saved/").data), 0)
+
+    def test_create_rejects_foreign_session(self):
+        foreign = ChatSession.objects.create(user=self.other, title="theirs")
+        resp = self.client.post("/api/chat/saved/", {
+            "title": "x", "summary": "b", "session": str(foreign.id),
+        }, format="json")
+        self.assertEqual(resp.status_code, 400, resp.content)
+
+    def test_suggest_lexical(self):
+        SavedAnalysis.objects.create(
+            user=self.user, title="GBIME Quarterly Fundamentals",
+            summary="s", one_liner="GBIME Q2", tags=["fundamentals"], tickers=["GBIME"],
+        )
+        resp = self.client.get("/api/chat/saved/suggest/", {"q": "GBIME fundamentals"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.data), 1)
+        self.assertNotIn("summary", resp.data[0])
+
+    def test_bookmark_draft_calls_capture(self):
+        fake = {
+            "title": "GBIME Q2", "summary": "body", "one_liner": "ol",
+            "category": "Quarterly Fundamentals", "tags": ["q2"], "tickers": ["GBIME"],
+            "series_key": "GBIME · Quarterly Fundamentals", "verdict": "BUY",
+            "structured": {"symbol": "GBIME"}, "degraded": False,
+        }
+        with patch("chat.views.build_draft", return_value=fake) as m:
+            resp = self.client.post(f"/api/chat/sessions/{self.session.id}/bookmark_draft/")
+        self.assertEqual(resp.status_code, 200, resp.content)
+        self.assertEqual(resp.data["title"], "GBIME Q2")
+        m.assert_called_once()
+
+    def test_bookmark_draft_rejects_foreign_session(self):
+        foreign = ChatSession.objects.create(user=self.other, title="x")
+        resp = self.client.post(f"/api/chat/sessions/{foreign.id}/bookmark_draft/")
+        self.assertEqual(resp.status_code, 404)
