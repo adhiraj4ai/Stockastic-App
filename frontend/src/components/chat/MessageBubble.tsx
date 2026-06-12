@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronRight, Brain, CheckCircle2, XCircle, Loader2, Wrench } from 'lucide-react';
+import { ChevronRight, Brain, CheckCircle2, XCircle, Loader2, Wrench, Bookmark } from 'lucide-react';
 import { useWorkbench } from './WorkbenchContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -78,7 +78,13 @@ const MarkdownComponents = {
     td: ({ children }: any) => <td className="px-3 py-2">{children}</td>,
 };
 
-export function MessageBubble({ message }: { message: ChatMessage }) {
+export function MessageBubble({
+    message,
+    onBookmark,
+}: {
+    message: ChatMessage;
+    onBookmark?: (messageId: string) => void;
+}) {
     if (message.role === 'user') {
         return (
             <div className="flex justify-end">
@@ -90,7 +96,27 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
             </div>
         );
     }
-    return <AssistantBubble blocks={message.blocks || []} />;
+
+    const canBookmark = !!onBookmark && !message.id.startsWith('temp-');
+
+    return (
+        <div className="group">
+            <AssistantBubble blocks={message.blocks || []} />
+            {canBookmark && (
+                <div className="mt-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                    <button
+                        type="button"
+                        onClick={() => onBookmark!(message.id)}
+                        title="Bookmark this answer"
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-muted-foreground hover:text-emerald-500 hover:bg-accent transition-colors"
+                    >
+                        <Bookmark size={12} />
+                        Bookmark
+                    </button>
+                </div>
+            )}
+        </div>
+    );
 }
 
 // ─── Timeline types ────────────────────────────────────────────────────────────
